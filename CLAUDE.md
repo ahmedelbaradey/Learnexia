@@ -52,3 +52,5 @@ Specialized agents live in [.claude/agents/](.claude/agents/): `analyzer`, `plan
 
 - Downstream agents consume the **Pipeline Brief + Execution Plan** (and frontend also the **Design Spec**) as their spec, follow the docs above, and report back: what changed, files touched, build/test status, any rule they had to bend (with why).
 - Do not skip analyzer or planner for anything beyond a trivial one-line fix.
+
+**Parallel pipelines:** multiple stories may run at once only per [docs/dev/PARALLELISM.md](docs/dev/PARALLELISM.md) — independent siblings only, each in its own `feat/<StoryID>` git worktree, respecting the dependency order; shared-file edits (Program.cs / .sln / Claims / Directory.Packages.props) are serialized. Within a single story, run independent batches in parallel (Mode A).
