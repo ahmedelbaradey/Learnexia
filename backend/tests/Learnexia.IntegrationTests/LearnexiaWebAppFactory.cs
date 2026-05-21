@@ -70,9 +70,9 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
         var catalogDb = sp.GetRequiredService<CatalogDbContext>();
         await catalogDb.Database.MigrateAsync();
 
-        // Notifications has no EF migrations yet — use EnsureCreated so the schema is present.
+        // Notifications: 20260521111622_InitialNotifications migration creates the notifications schema/tables.
         var notificationsDb = sp.GetRequiredService<NotificationsDbContext>();
-        await notificationsDb.Database.EnsureCreatedAsync();
+        await notificationsDb.Database.MigrateAsync();
 
         // Seed roles + superadmin (idempotent).
         await IdentityModule.SeedAsync(sp);
@@ -96,6 +96,9 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
         services.RemoveAll<DbContextOptions<TContext>>();
         services.RemoveAll<TContext>();
 
+        // Each module's DbContext applies its own warning configuration in OnConfiguring
+        // (e.g. PendingModelChangesWarning ignore), so the test override does not need to
+        // re-specify it — it relies on the context-level config like the other modules.
         services.AddDbContext<TContext>(options =>
             options.UseNpgsql(
                 connectionString,

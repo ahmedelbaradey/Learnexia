@@ -136,6 +136,13 @@ public static class DependencyInjection
                     options.AddPolicy(permission, policy => { policy.RequireClaim(CustomClaimTypes.Permission, permission); });
                     }
                 }
+
+                // Admin-only gate for observability/admin-lookup endpoints (e.g. notifications
+                // by-recipient lookup). Roles are emitted as ClaimTypes.Role in the JWT
+                // (AuthenticationIdentityService.GetClaims), so RequireRole reads them directly.
+                // The seeded superadmin holds both Admin and SuperAdmin roles.
+                options.AddPolicy(Learnexia.Shared.Kernel.Abstractions.AuthorizationPolicies.AdminOnly, policy =>
+                    policy.RequireRole(RoleHelper.Admin, RoleHelper.SuperAdmin));
             });
             return services;
     }
