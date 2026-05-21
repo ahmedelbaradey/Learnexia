@@ -69,6 +69,11 @@
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.8" />
     <PackageVersion Include="System.Linq.Dynamic.Core" Version="1.6.0.2" />
+    <!-- pgvector — 0.3.x is the latest stable family; Pgvector.EntityFrameworkCore 0.3.0 declares
+         net8.0 assets + Npgsql.EFCore.PostgreSQL >= 9.0.1 as its floor; .NET 10 falls back to the
+         net8.0 assets (valid compatibility) and 10.0.0 satisfies the >=9.0.1 constraint. -->
+    <PackageVersion Include="Pgvector" Version="0.3.2" />
+    <PackageVersion Include="Pgvector.EntityFrameworkCore" Version="0.3.0" />
 
     <!-- App libs -->
     <PackageVersion Include="MediatR" Version="12.4.1" />

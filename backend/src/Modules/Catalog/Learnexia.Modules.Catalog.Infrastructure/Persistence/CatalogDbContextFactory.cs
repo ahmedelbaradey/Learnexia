@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+using Pgvector.EntityFrameworkCore;
 
 namespace Learnexia.Modules.Catalog.Infrastructure.Persistence;
 
@@ -25,7 +26,8 @@ public class CatalogDbContextFactory : IDesignTimeDbContextFactory<CatalogDbCont
         var options = new DbContextOptionsBuilder<CatalogDbContext>()
             .UseNpgsql(connectionString, sql => sql
                 .MigrationsHistoryTable("__EFMigrationsHistory", CatalogDbContext.Schema)
-                .MigrationsAssembly(typeof(CatalogDbContext).Assembly.FullName))
+                .MigrationsAssembly(typeof(CatalogDbContext).Assembly.FullName)
+                .UseVector())
             .Options;
 
         return new CatalogDbContext(options);

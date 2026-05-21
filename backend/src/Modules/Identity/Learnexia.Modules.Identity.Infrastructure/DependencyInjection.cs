@@ -27,9 +27,6 @@ public static class DependencyInjection
     public static IServiceCollection AddIdentityInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddAutoMapper(cfg => cfg.AddMaps(Assembly.GetExecutingAssembly()));
-        // services.AddDbContext<IdentityModuleDbContext>(opt =>     
-        //     opt.UseSqlServer(configuration.GetConnectionString("Default"),
-        //         sql => sql.MigrationsHistoryTable("__EFMigrationsHistory", IdentityModuleDbContext.Schema)));
         services.AddLoggerServices(configuration);
         services.AddDbContext(configuration);
         services.AddIdentityService(configuration);

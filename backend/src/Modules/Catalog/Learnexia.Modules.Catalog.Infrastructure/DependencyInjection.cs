@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Pgvector.EntityFrameworkCore;
 
 namespace Learnexia.Modules.Catalog.Infrastructure;
 
@@ -44,7 +45,10 @@ public static class DependencyInjection
     public static void AddDbContext(this IServiceCollection services, IConfiguration configuration)
     {
       services.AddDbContext<CatalogDbContext>(options => options.ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning))
-      .UseNpgsql(configuration.GetConnectionString("default"),  builder => builder.MigrationsHistoryTable("__EFMigrationsHistory", CatalogDbContext.Schema).MigrationsAssembly(typeof(CatalogDbContext).Assembly.FullName)));
+      .UseNpgsql(configuration.GetConnectionString("default"),  builder => builder
+          .MigrationsHistoryTable("__EFMigrationsHistory", CatalogDbContext.Schema)
+          .MigrationsAssembly(typeof(CatalogDbContext).Assembly.FullName)
+          .UseVector()));
     }
 
     public static IServiceCollection AddLoggerServices(this IServiceCollection services, IConfiguration configuration)
