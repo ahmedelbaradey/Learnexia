@@ -16,6 +16,8 @@ using System.Text;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Learnexia.Shared.Kernel.Logging;
+using Learnexia.Modules.Identity.Infrastructure.Behaviors;
+using MediatR;
 
 
 namespace Learnexia.Modules.Identity.Infrastructure;
@@ -31,6 +33,14 @@ public static class DependencyInjection
         services.AddLoggerServices(configuration);
         services.AddDbContext(configuration);
         services.AddIdentityService(configuration);
+
+        // Unit-of-Work behavior (ADR 0001 §2 + ADR 0002 §2): commit once per ICommand<>, then dispatch
+        // the aggregates' domain events AFTER commit. Registered here in Infrastructure (not Application)
+        // because it injects the concrete IdentityModuleDbContext, which Application cannot reference.
+        // Registered AFTER ValidationBehavior (added in AddIdentityApplication, which runs before this) so
+        // validation rejects bad input before a transaction opens. The IDomainEventDispatcher it depends on
+        // is registered at the Host (AddCrossModuleMediatR), alongside the unified IPublisher it wraps.
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(UnitOfWorkBehavior<,>));
 
 
 

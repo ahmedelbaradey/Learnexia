@@ -1,6 +1,6 @@
 # ADR 0002 — Domain Events & Dispatch
 
-- **Status:** Proposed *(pending sign-off — see ADR 0001 for the precedent)*
+- **Status:** Accepted (2026-05-21)
 - **Date:** 2026-05-21
 - **Applies to:** [backend/](../../../backend/) (.NET 10 modular monolith)
 - **Related:** [ADR 0001 — Unit of Work](0001-unit-of-work.md) · [architecture.md §4.4 (inter-module)](../../architecture.md) · brief [docs/briefs/P4-01-domain-events-backbone.md](../../briefs/P4-01-domain-events-backbone.md)

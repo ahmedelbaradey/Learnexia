@@ -39,6 +39,11 @@ builder.Services.AddIdentityModule(builder.Configuration);
 builder.Services.AddCatalogModule(builder.Configuration);
 builder.Services.AddNotificationsModule(builder.Configuration);
 
+// Single, cross-module MediatR registration spanning every module's Application assembly + the
+// IsolatedNotificationPublisher (ADR 0002 §4). Must come AFTER the modules register their validators /
+// AutoMapper / ValidationBehavior. Enables cross-module IPublisher.Publish fan-out (FR-GM-7).
+builder.Services.AddCrossModuleMediatR();
+
 // Validation error shaping (422 with BaseResponse) — mirrors backend Main.
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
