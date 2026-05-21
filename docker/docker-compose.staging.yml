@@ -1,0 +1,40 @@
+# Staging override for the Learnexia stack (P1-07-BE-4).
+#
+# Usage (once a provider is chosen — see docs/deploy/staging-decision.md):
+#   docker compose -f docker/docker-compose.yaml -f docker/docker-compose.staging.yml up -d
+#
+# This override carries NO hardcoded credentials. Every secret/value is an environment-variable
+# reference (${VAR}) supplied at deploy time by the CI/CD platform's secret store or a .env file
+# that is NOT committed. Service names match docker-compose.yaml (postgres, redis, minio, learnexia-api).
+services:
+  postgres:
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    # Do not publish the DB port publicly in staging.
+    ports: []
+
+  redis:
+    ports: []
+
+  minio:
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_REGION: ${MINIO_REGION:-us-east-1}
+
+  learnexia-api:
+    # The image is built + pushed by the deploy workflow; pull it here rather than building on the host.
+    image: ${REGISTRY_IMAGE}:${IMAGE_TAG:-staging}
+    build: !reset null
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Staging
+      - ConnectionStrings__Default=Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - ConnectionStrings__Redis=${REDIS_URL:-redis:6379}
+      - JwtSettings__Secret=${JWT_SECRET}
+      - MinIOConfiguration__Endpoint=minio:9000
+      - MinIOConfiguration__AccessKey=${MINIO_ROOT_USER}
+      - MinIOConfiguration__SecretKey=${MINIO_ROOT_PASSWORD}
+      - MinIOConfiguration__UseSSL=false
+      - MinIOConfiguration__Enabled=true

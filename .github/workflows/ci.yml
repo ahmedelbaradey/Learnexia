@@ -1,0 +1,50 @@
+name: CI
+
+# P1-07-BE-3 — Build + test the modular monolith on every push and pull request.
+# A non-zero `dotnet test` exit fails the job (default behaviour).
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    name: Build & test (.NET 10)
+    runs-on: ubuntu-latest   # Docker daemon preinstalled — required by Testcontainers.PostgreSql integration tests.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Restore
+        run: dotnet restore backend/Learnexia.Modular.sln
+
+      - name: Build (Release)
+        run: dotnet build backend/Learnexia.Modular.sln --no-restore -c Release
+
+      - name: Test (Release)
+        # Runs all test projects, including Learnexia.IntegrationTests which spins up Postgres via
+        # Testcontainers.PostgreSql against the runner's Docker daemon. Test failure -> non-zero exit -> job fails.
+        run: dotnet test backend/Learnexia.Modular.sln --no-build -c Release --logger "trx;LogFileName=test-results.trx" --results-directory ./TestResults
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ./TestResults/**/*.trx
+          if-no-files-found: ignore
+
+  docker-build:
+    name: Validate Dockerfile build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Validates the rewritten multi-stage Dockerfile builds from the repo root (no push).
+      - name: Build API image
+        run: docker build -f docker/Dockerfile -t learnexia-api:ci .

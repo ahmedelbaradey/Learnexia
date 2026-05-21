@@ -13,7 +13,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - jadwa-network
+      - learnexia-network
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d Learnexia"]
@@ -30,7 +30,7 @@ services:
     ports:
       - "6379:6379"
     networks:
-      - jadwa-network
+      - learnexia-network
 
   minio:
     image: quay.io/minio/minio:latest
@@ -50,7 +50,7 @@ services:
       - minio_data:/data
     command: server /data --console-address ":9001"
     networks:
-      - jadwa-network
+      - learnexia-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
@@ -93,12 +93,19 @@ services:
       echo 'Username: minioadmin';
       echo 'Password: minioadmin';"
     networks:
-      - jadwa-network
+      - learnexia-network
 
-  jadwa-api:
-    build: ./
-    container_name: jadwa-api
+  # Learnexia API (the modular-monolith Host). Built from the repo root so the Dockerfile
+  # can reach the whole `backend/` tree (build.context: .. relative to this docker/ folder).
+  learnexia-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: learnexia-api
     restart: always
+    ports:
+      - "8080:8080"
+      - "8081:8081"
     depends_on:
       postgres:
         condition: service_healthy
@@ -107,7 +114,7 @@ services:
       minio:
         condition: service_started
     networks:
-      - jadwa-network
+      - learnexia-network
     environment:
       # Inside the compose network the DB host is the service name, not localhost.
       - ConnectionStrings__Default=Host=postgres;Port=5432;Database=Learnexia;Username=postgres;Password=admin
@@ -126,6 +133,49 @@ services:
       - ./aspnetapp.pfx:/https/aspnetapp.pfx:ro
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
+    healthcheck:
+      # Readiness probe — hits the API's /health endpoint (added in P1-07-BE-2).
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # ---------------------------------------------------------------------------
+  # AI-Gateway PLACEHOLDER (Phase 3 stub).
+  # The real AI gateway (RAG / LLM proxy) is delivered in a later phase. For now this is a
+  # no-op stub container so the service name + network slot are reserved and documented.
+  # It does nothing but stay alive; replace the image/command when the gateway is built.
+  # ---------------------------------------------------------------------------
+  ai-gateway:
+    image: alpine:3.20
+    container_name: learnexia-ai-gateway
+    command: ["sh", "-c", "echo 'AI-Gateway placeholder (Phase 3 stub) — replace in a later story'; sleep infinity"]
+    ports:
+      - "8090:8090"   # reserved port for the future AI gateway
+    networks:
+      - learnexia-network
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # WEB FRONTEND — PLACEHOLDER ONLY (deferred to P1-09).
+  # The Expo/Turborepo web app is not dockerized yet. Uncomment and complete this block
+  # in P1-09 once the frontend Dockerfile lands.
+  #
+  # web-frontend:
+  #   build:
+  #     context: ..
+  #     dockerfile: docker/Dockerfile.web   # TODO (P1-09): create the FE Dockerfile
+  #   container_name: learnexia-web
+  #   restart: always
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     learnexia-api:
+  #       condition: service_healthy
+  #   networks:
+  #     - learnexia-network
+  # ---------------------------------------------------------------------------
 
 volumes:
   minio_data:
@@ -134,5 +184,5 @@ volumes:
   postgres_data:
 
 networks:
-  jadwa-network:
+  learnexia-network:
     driver: bridge
