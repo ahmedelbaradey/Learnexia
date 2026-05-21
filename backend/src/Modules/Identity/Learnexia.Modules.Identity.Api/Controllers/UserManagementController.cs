@@ -19,12 +19,20 @@ using Learnexia.Modules.Identity.Application.Features.Users.Queries.List;
 using Learnexia.Modules.Identity.Application.Features.Users.Queries.Responses;
 using Learnexia.Modules.Identity.Application.Features.Users.Dtos;
 using Learnexia.Modules.Identity.Domain.Constants;
+using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Responses;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Learnexia.Modules.Identity.Api.Controllers;
 
+// AC-2 / security: every user-creation, role-assignment and account-management action here is
+// admin-only. Without this gate, POST AddUser was anonymously reachable and could mint users with
+// arbitrary roles (incl. Student) — an anonymous child-creation path. The AdminOnly policy
+// (Admin/SuperAdmin role) is the same gate used by the Notifications admin lookups. A missing/
+// invalid token yields 401; an authenticated non-admin yields 403.
+[Authorize(Policy = AuthorizationPolicies.AdminOnly)]
 [Route("api/Users/UserManagement/[Action]")]
 [ApiController]
 public class UserManagementController : AppControllerBase

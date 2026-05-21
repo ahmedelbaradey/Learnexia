@@ -1,5 +1,6 @@
 using Learnexia.Modules.Identity.Api.Bases;
 using Learnexia.Modules.Identity.Application.Features.Authentications.Commands.RefreshToken;
+using Learnexia.Modules.Identity.Application.Features.Authentications.Commands.RegisterParent;
 using Learnexia.Modules.Identity.Application.Features.Authentications.Commands.SignIn;
 using Learnexia.Modules.Identity.Application.Features.Authentications.Commands.SignOut;
 using Learnexia.Modules.Identity.Application.Features.Authentications.Queries.ValidateAccessToken;
@@ -15,6 +16,12 @@ namespace Learnexia.Modules.Identity.Api.Controllers;
 [ApiController]
 public class AuthenticationController : AppControllerBase
 {
+    [AllowAnonymous]
+    [HttpPost("Register-Parent")]
+    [ProducesResponseType(typeof(BaseResponse<JwtAuthResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> RegisterParent([FromBody] RegisterParentCommand command)
+        => NewResult(await Mediator.Send(command));
+
     [AllowAnonymous]
     [HttpPost("Sign-In")]
     [ProducesResponseType(typeof(BaseResponse<JwtAuthResponse>), StatusCodes.Status200OK)]
