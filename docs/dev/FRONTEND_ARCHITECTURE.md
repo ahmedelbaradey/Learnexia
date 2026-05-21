@@ -60,7 +60,7 @@ learnexia/
 ## 5. App responsibilities
 
 - **student-app (Expo universal)** — everything in Phases 1–5 that a student or parent touches: splash, parent register/login, **parent-driven onboarding & add-children**, child login, home dashboard, subject selection, skill tree, lesson, quiz, feedback, gamification screens, and the **parent dashboard** (charts via `victory-native`/Skia).
-- **admin-dashboard (Next.js)** — curriculum upload + metadata, content management, moderation config (Phase 2+/Backlog). Data-dense: TanStack Table + Recharts on Tamagui primitives.
+- **admin-dashboard (Next.js)** — **admin sign-in + dashboard shell start in Phase 1 (story P1-10)**; the data-heavy features (curriculum upload + metadata, content management, moderation config) come in Phase 2+/Backlog. Data-dense: TanStack Table + Recharts on Tamagui primitives.
 - **marketing-site (Next.js)** — public marketing, SEO (SSG/ISR). Not in the MVP feature phases.
 
 ## 6. Cross-cutting concerns

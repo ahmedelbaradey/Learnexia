@@ -8,9 +8,11 @@ Frontend follows the **Turborepo monorepo** decision (see [../docs/dev/FRONTEND_
 tasks/
 ├── Frontend/
 │   ├── packages/              PKG-FOUNDATION-FE (monorepo, api-client, shared), P1-08-FE (design-system + ui)
-│   └── student-app/
-│       ├── Phase-1-Foundation/    P1-xx-FE.md   (Expo screens)
-│       └── Phase-2-Learning-Core/ P2-xx-FE.md   (Expo screens)
+│   ├── student-app/           Expo universal screens
+│   │   ├── Phase-1-Foundation/    P1-xx-FE.md
+│   │   └── Phase-2-Learning-Core/ P2-xx-FE.md
+│   └── admin-dashboard/       Next.js admin screens
+│       └── Phase-1-Foundation/    P1-10-FE.md   (admin sign-in & shell)
 └── Backend/
     ├── Phase-1-Foundation/   P1-xx-BE.md
     └── Phase-2-Learning-Core/ P2-xx-BE.md
@@ -54,6 +56,7 @@ tasks/
 | P1-07 | Docker & CI/CD | — | [BE](Backend/Phase-1-Foundation/P1-07-BE.md) |
 | P1-08 | Design system & components | [FE](Frontend/packages/P1-08-FE.md) | — |
 | P1-09 | Auth & onboarding screens | [FE](Frontend/student-app/Phase-1-Foundation/P1-09-FE.md) | [BE](Backend/Phase-1-Foundation/P1-09-BE.md) |
+| P1-10 | Sign in to the admin dashboard | [FE](Frontend/admin-dashboard/Phase-1-Foundation/P1-10-FE.md) *(Next.js)* | [BE](Backend/Phase-1-Foundation/P1-10-BE.md) |
 | P2-01 | Model curriculum hierarchy | — | [BE](Backend/Phase-2-Learning-Core/P2-01-BE.md) |
 | P2-02 | Browse subjects & lessons | [FE](Frontend/student-app/Phase-2-Learning-Core/P2-02-FE.md) | [BE](Backend/Phase-2-Learning-Core/P2-02-BE.md) |
 | P2-03 | Navigate the skill tree | [FE](Frontend/student-app/Phase-2-Learning-Core/P2-03-FE.md) | [BE](Backend/Phase-2-Learning-Core/P2-03-BE.md) |
