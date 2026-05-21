@@ -1,5 +1,6 @@
 ---
 name: analyzer
+model: opus
 description: FIRST agent in every cycle. Reads the task / user story, builds business + technical understanding from the product and architecture docs, and produces a structured "Pipeline Brief" that the rest of the pipeline (db-migration, backend-feature, frontend, reviewer) executes against. Read-only except for writing the brief. Always run this before dispatching implementer agents.
 tools: Read, Grep, Glob, Write, WebSearch, WebFetch
 ---

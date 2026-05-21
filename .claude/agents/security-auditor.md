@@ -1,5 +1,6 @@
 ---
 name: security-auditor
+model: opus
 description: Defensive security review stage. For security-sensitive stories (auth/authz, user or child data, file upload, AI prompts, secrets, payments) it audits the change for access-control, injection, data-exposure, secrets, child-privacy, and AI-safety issues, and reports findings by severity. Audit/report only — does not fix code; criticals/highs block the reviewer gate. Defensive use only.
 tools: Read, Grep, Glob, Bash, Write
 ---

@@ -1,5 +1,6 @@
 ---
 name: db-migration
+model: sonnet
 description: Owns PostgreSQL schema design and EF Core (Npgsql) migrations for backend — entity persistence config, DbContext changes, generating and applying migrations per module schema. Use whenever a feature changes the data model. Use for the new learning/gamification/curriculum schemas.
 tools: Read, Edit, Write, Grep, Glob, Bash
 ---

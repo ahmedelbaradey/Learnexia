@@ -1,5 +1,6 @@
 ---
 name: api-tester
+model: sonnet
 description: Runtime API/integration tester. After backend-feature implements endpoints (for any story exposing HTTP routes), this agent exercises the real API — status codes, the BaseResponse envelope, validation (422), auth, pagination, and happy/error paths from the acceptance criteria — using WebApplicationFactory + Testcontainers (PostgreSQL). Writes integration tests and reports pass/fail. Does not change feature code.
 tools: Read, Edit, Write, Grep, Glob, Bash
 ---

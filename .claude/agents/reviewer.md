@@ -1,5 +1,6 @@
 ---
 name: reviewer
+model: opus
 description: Quality + conventions gate. Reviews another agent's change against CONVENTIONS.md and the known-gaps list, runs build/tests, and returns a PASS/FAIL verdict with required fixes. Use after every backend-feature, db-migration, or frontend change before it is considered done. Read-only — it reports, it does not edit.
 tools: Read, Grep, Glob, Bash
 ---

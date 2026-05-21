@@ -1,5 +1,6 @@
 ---
 name: planner
+model: sonnet
 description: SECOND agent in the cycle, after analyzer and before any implementer. Turns the analyzer's Pipeline Brief + the story's task files into a concrete, dependency-ordered EXECUTION PLAN — task inventory, agent assignments, parallel vs sequential batches, review gates, and blockers. Read-only except for writing the plan. Does not write code.
 ---
 
