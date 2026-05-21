@@ -39,14 +39,16 @@ AI-powered, gamified, adaptive learning platform for Arabic-speaking school stud
 7. **No teacher role** in the product.
 
 ## Multi-agent workflow
-Specialized agents live in [.claude/agents/](.claude/agents/): `analyzer`, `planner`, `designer`, `db-migration`, `backend-feature`, `frontend`, `reviewer`.
+Specialized agents live in [.claude/agents/](.claude/agents/): `analyzer`, `planner`, `designer`, `db-migration`, `backend-feature`, `api-tester`, `frontend`, `security-auditor`, `reviewer`, `committer`.
 
 **Fixed order — analyzer → planner → (designer for UI) → implementers → reviewer:**
 1. **`analyzer`** (first, always) — reads the user story + task files, builds business + technical understanding, and writes a **Pipeline Brief** to `docs/briefs/<story>.md` (traceability, acceptance criteria, per-agent handoffs, open questions). If anything is ambiguous, it returns questions for the lead to ask the user **before** planning.
 2. **`planner`** — turns the brief + task files into an **Execution Plan** in `docs/plans/<story>.md`: task inventory, dependency order, agent-assigned **batches** (parallel vs sequential), review gates, blockers. The plan flags whether a **design stage** is needed.
 3. **`designer`** (only for stories with a UI surface) — turns the story into a **Design Spec** in `design-system/ui_kits/<surface>/<story>.md`, grounded in the `design-system/` kit + UI docs. Runs **before** the frontend batch. Skip for backend-only stories.
-4. The lead **dispatches implementer agents batch by batch per the plan** — `db-migration`, `backend-feature`, `frontend` — parallel where independent, sequential where dependent. The `frontend` batch consumes the Design Spec.
-5. **`reviewer`** gates each batch against the brief's acceptance criteria + CONVENTIONS.md before it's done.
+4. The lead **dispatches implementer agents batch by batch per the plan** — `db-migration`, `backend-feature`, `frontend` — parallel where independent, sequential where dependent. The `frontend` batch consumes the Design Spec. For stories exposing **HTTP endpoints**, **`api-tester`** runs after `backend-feature` to validate the running API (integration tests).
+4b. For **security-sensitive** batches (auth/authz, user or child data, file upload, AI prompts, secrets, payments), **`security-auditor`** audits before the gate; Critical/High findings block.
+5. **`reviewer`** gates each batch against the brief's acceptance criteria + CONVENTIONS.md (including `api-tester` and `security-auditor` results) before it's done.
+6. **`committer`** — only after `reviewer` PASSES — stages and commits the batch on a per-story branch (`feat/<StoryID>-…`) with a conventional message. Never on `main`, never pushes/amends unless asked.
 
 - Downstream agents consume the **Pipeline Brief + Execution Plan** (and frontend also the **Design Spec**) as their spec, follow the docs above, and report back: what changed, files touched, build/test status, any rule they had to bend (with why).
 - Do not skip analyzer or planner for anything beyond a trivial one-line fix.

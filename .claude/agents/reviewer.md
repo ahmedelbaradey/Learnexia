@@ -24,6 +24,8 @@ Against [docs/dev/CONVENTIONS.md](../../docs/dev/CONVENTIONS.md):
 
 ## Always run
 - Backend: `dotnet build backend/Learnexia.Modular.sln` and `dotnet test` (if tests touched/added). Report failures verbatim.
+- For endpoint stories, confirm the **`api-tester`** stage ran and its integration tests are **green** — treat RED or skipped API tests on an HTTP story as a blocker.
+- For security-sensitive stories, confirm the **`security-auditor`** ran and has **no unresolved Critical/High findings** — those are blockers unless the lead explicitly risk-accepts.
 - Frontend: the project's build/lint/test command if present.
 
 ## Output (required format)
