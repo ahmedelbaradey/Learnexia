@@ -43,7 +43,7 @@ function XPBar({ value = 0.65, label }) {
       }}>
         <div style={{
           height: '100%', width: `${value * 100}%`,
-          background: 'linear-gradient(90deg,#FACC15,#FB923C)',
+          background: 'linear-gradient(90deg,#22C55E,#4F46E5)',
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)',
           transition: 'width 600ms cubic-bezier(0.16,1,0.3,1)',
         }}/>
@@ -54,26 +54,27 @@ function XPBar({ value = 0.65, label }) {
 
 function PrimaryButton({ children, onClick, variant = 'primary', full = false, style = {} }) {
   const variants = {
-    primary:   { bg: '#4F46E5', fg: '#fff',     glow: 'rgba(99,102,241,0.45)' },
-    success:   { bg: '#22C55E', fg: '#0F172A',  glow: 'rgba(34,197,94,0.35)' },
-    danger:    { bg: '#EF4444', fg: '#fff',     glow: 'rgba(239,68,68,0.4)' },
-    secondary: { bg: '#334155', fg: '#F8FAFC',  glow: 'rgba(0,0,0,0.3)' },
+    primary:   { bg: '#4F46E5', fg: '#fff',     glow: 'rgba(99,102,241,0.4)' },
+    success:   { bg: '#22C55E', fg: '#0F172A',  glow: 'rgba(34,197,94,0.3)' },
+    danger:    { bg: '#EF4444', fg: '#fff',     glow: 'rgba(239,68,68,0.35)' },
+    secondary: { bg: '#334155', fg: '#F8FAFC',  glow: 'rgba(0,0,0,0.15)' },
+    purple:    { bg: '#A855F7', fg: '#fff',     glow: 'rgba(168,85,247,0.4)' },
     ghost:     { bg: 'transparent', fg: '#CBD5E1', glow: 'transparent' },
   };
   const v = variants[variant];
   return (
     <button onClick={onClick} style={{
       height: 52, padding: '0 24px', width: full ? '100%' : undefined,
-      borderRadius: 9999, border: variant === 'ghost' ? '1px solid rgba(255,255,255,0.16)' : 'none',
+      borderRadius: 16, border: variant === 'ghost' ? '1px solid rgba(255,255,255,0.16)' : 'none',
       background: v.bg, color: v.fg,
       fontFamily: 'Poppins, system-ui, sans-serif', fontWeight: 700, fontSize: 16,
       cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
       boxShadow: variant === 'ghost' ? 'none'
-        : `0 6px 18px ${v.glow}, inset 0 1px 0 rgba(255,255,255,0.2)`,
+        : `0 4px 12px ${v.glow}, inset 0 1px 0 rgba(255,255,255,0.18)`,
       transition: 'transform 120ms cubic-bezier(0.16,1,0.3,1)',
       ...style,
     }}
-    onPointerDown={e => e.currentTarget.style.transform = 'scale(0.96)'}
+    onPointerDown={e => e.currentTarget.style.transform = 'scale(0.95)'}
     onPointerUp={e => e.currentTarget.style.transform = 'scale(1)'}
     onPointerLeave={e => e.currentTarget.style.transform = 'scale(1)'}
     >{children}</button>
@@ -82,13 +83,13 @@ function PrimaryButton({ children, onClick, variant = 'primary', full = false, s
 
 function LessonCard({ tag, title, meta, progress, state = 'active', onClick }) {
   const stateStyles = {
-    active:   { border: '2px solid #4F46E5', shadow: '0 8px 24px rgba(99,102,241,0.3)', opacity: 1 },
-    completed:{ border: '1px solid rgba(34,197,94,0.3)', shadow: '0 4px 16px rgba(0,0,0,0.3)', opacity: 1 },
+    active:   { border: '2px solid #4F46E5', shadow: '0 8px 24px rgba(99,102,241,0.25)', opacity: 1 },
+    completed:{ border: '1px solid rgba(34,197,94,0.3)', shadow: '0 4px 12px rgba(0,0,0,0.15)', opacity: 1 },
     locked:   { border: '1px solid rgba(255,255,255,0.06)', shadow: 'none', opacity: 0.55 },
   }[state];
   return (
     <div onClick={state === 'locked' ? undefined : onClick} style={{
-      background: '#1E293B', borderRadius: 24, padding: 18,
+      background: '#1E293B', borderRadius: 20, padding: 18,
       display: 'flex', flexDirection: 'column', gap: 10,
       cursor: state === 'locked' ? 'not-allowed' : 'pointer',
       position: 'relative',
@@ -125,7 +126,8 @@ function MissionRow({ icon, iconBg, title, sub, value, total, reward, done }) {
     <div style={{
       display: 'flex', alignItems: 'center', gap: 14,
       background: '#1E293B', borderRadius: 20, padding: '14px 16px',
-      border: '1px solid rgba(255,255,255,0.06)', ...lxFont,
+      border: '1px solid rgba(255,255,255,0.06)',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.15)', ...lxFont,
     }}>
       <div style={{
         width: 44, height: 44, borderRadius: 14,
@@ -141,13 +143,13 @@ function MissionRow({ icon, iconBg, title, sub, value, total, reward, done }) {
         }}>
           <div style={{
             height: '100%', width: `${(value / total) * 100}%`,
-            background: done ? '#22C55E' : 'linear-gradient(90deg,#FACC15,#FB923C)',
+            background: done ? '#22C55E' : 'linear-gradient(90deg,#22C55E,#4F46E5)',
           }}/>
         </div>
       </div>
       <div style={{
-        background: done ? 'rgba(34,197,94,0.18)' : 'rgba(250,204,21,0.15)',
-        color: done ? '#22C55E' : '#FACC15',
+        background: done ? 'rgba(34,197,94,0.18)' : 'rgba(245,158,11,0.18)',
+        color: done ? '#22C55E' : '#F59E0B',
         padding: '6px 10px', borderRadius: 9999,
         fontWeight: 800, fontSize: 13, whiteSpace: 'nowrap',
       }}>⭐ +{reward}</div>

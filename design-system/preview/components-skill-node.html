@@ -2,22 +2,24 @@
 <html><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css">
 <style>
   body{padding:28px;background:radial-gradient(circle at 50% 50%,#1a2348,#0F172A 70%)}
-  .row{display:flex;justify-content:space-around;align-items:center}
+  .row{display:flex;justify-content:space-around;align-items:center;gap:8px}
   .node{display:flex;flex-direction:column;align-items:center;gap:8px}
-  .disc{width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;position:relative}
+  .disc{width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;position:relative}
   .complete{background:radial-gradient(circle at 30% 30%,#86EFAC,#22C55E);box-shadow:0 8px 20px rgba(34,197,94,0.45),inset 0 -4px 8px rgba(0,0,0,0.2)}
+  .unlocked{background:#1E293B;color:#A5B4FC;box-shadow:0 4px 12px rgba(0,0,0,0.15);border:2px solid rgba(99,102,241,0.4)}
   .active{background:radial-gradient(circle at 30% 30%,#A5B4FC,#4F46E5);box-shadow:0 0 28px rgba(99,102,241,0.6),inset 0 -4px 8px rgba(0,0,0,0.2);animation:pulse 2s ease-in-out infinite}
+  .boss{background:radial-gradient(circle at 30% 30%,#FCA5A5,#EF4444 55%,#7C2D12);box-shadow:0 0 28px rgba(239,68,68,0.55),inset 0 -4px 8px rgba(0,0,0,0.25);border:2px solid #FB923C}
   .locked{background:#334155;color:#64748B;box-shadow:inset 0 1px 0 rgba(255,255,255,0.06)}
   @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
   .label{font-family:var(--lx-font-display);font-weight:700;font-size:12px;color:var(--lx-fg2)}
-  .stars{font-size:10px;color:var(--lx-xp)}
+  .sub{font-size:10px;color:var(--lx-xp)}
 </style></head>
 <body>
 <div class="row">
-  <div class="node"><div class="disc complete">✓</div><div class="label">Numbers</div><div class="stars">⭐⭐⭐</div></div>
-  <div class="node"><div class="disc complete">✓</div><div class="label">Counting</div><div class="stars">⭐⭐</div></div>
-  <div class="node"><div class="disc active">✏️</div><div class="label" style="color:var(--lx-fg1)">Compare</div><div class="stars" style="color:var(--lx-primary);font-weight:700">In progress</div></div>
-  <div class="node"><div class="disc locked">🔒</div><div class="label" style="color:var(--lx-fg3)">Addition</div><div class="stars" style="color:var(--lx-fg3)">Locked</div></div>
-  <div class="node"><div class="disc locked">🔒</div><div class="label" style="color:var(--lx-fg3)">Fractions</div><div class="stars" style="color:var(--lx-fg3)">Locked</div></div>
+  <div class="node"><div class="disc complete">✓</div><div class="label">Completed</div><div class="sub">⭐⭐⭐</div></div>
+  <div class="node"><div class="disc unlocked">🔓</div><div class="label">Unlocked</div><div class="sub" style="color:var(--lx-fg3)">Ready</div></div>
+  <div class="node"><div class="disc active">✏️</div><div class="label" style="color:var(--lx-fg1)">Active</div><div class="sub" style="color:var(--lx-primary);font-weight:700">In progress</div></div>
+  <div class="node"><div class="disc boss">🔥</div><div class="label" style="color:#FB923C">Boss</div><div class="sub" style="color:#EF4444">Challenge</div></div>
+  <div class="node"><div class="disc locked">🔒</div><div class="label" style="color:var(--lx-fg3)">Locked</div><div class="sub" style="color:var(--lx-fg3)">Finish prev</div></div>
 </div>
 </body></html>

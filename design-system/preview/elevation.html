@@ -3,14 +3,15 @@
 <style>
   .row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
   .item{display:flex;flex-direction:column;align-items:center;gap:8px}
-  .box{width:100%;height:90px;background:#1E293B;border-radius:20px;display:flex;align-items:center;justify-content:center;color:var(--lx-fg1);font-family:var(--lx-font-display);font-weight:700;font-size:14px;border:1px solid rgba(255,255,255,0.06)}
-  .label{font-family:var(--lx-font-display);font-weight:600;font-size:12px;color:var(--lx-fg3);text-transform:uppercase;letter-spacing:0.05em}
+  .box{width:100%;height:90px;background:#1E293B;border-radius:20px;display:flex;align-items:center;justify-content:center;color:var(--lx-fg1);font-family:var(--lx-font-display);font-weight:700;font-size:14px}
+  .label{font-family:var(--lx-font-display);font-weight:600;font-size:11px;color:var(--lx-fg3);text-transform:uppercase;letter-spacing:0.06em;text-align:center}
+  .val{font-family:var(--lx-font-mono);font-size:10px;color:var(--lx-fg3);text-align:center}
 </style></head>
 <body style="padding:28px">
 <div class="row">
-  <div class="item"><div class="box" style="box-shadow:0 4px 16px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.06)">Resting</div><div class="label">Card</div></div>
-  <div class="item"><div class="box" style="background:#334155;box-shadow:0 8px 24px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.14)">Hovered</div><div class="label">Hover</div></div>
-  <div class="item"><div class="box" style="background:#4F46E5;box-shadow:0 8px 24px rgba(99,102,241,0.45),inset 0 1px 0 rgba(255,255,255,0.2)">Primary</div><div class="label">CTA glow</div></div>
-  <div class="item"><div class="box" style="background:#FACC15;color:#0F172A;box-shadow:0 0 24px rgba(250,204,21,0.55)">+50 XP</div><div class="label">XP glow</div></div>
+  <div class="item"><div class="box" style="box-shadow:0 4px 12px rgba(0,0,0,0.15)">Soft</div><div class="label">Card resting</div><div class="val">0 4px 12px /.15</div></div>
+  <div class="item"><div class="box" style="box-shadow:0 8px 24px rgba(0,0,0,0.25)">Floating</div><div class="label">Hover · popup</div><div class="val">0 8px 24px /.25</div></div>
+  <div class="item"><div class="box" style="background:#4F46E5;box-shadow:0 8px 24px rgba(99,102,241,0.45)">Primary</div><div class="label">CTA glow</div><div class="val">indigo bloom</div></div>
+  <div class="item"><div class="box" style="background:#FACC15;color:#0F172A;box-shadow:0 0 24px rgba(250,204,21,0.55)">+50 XP</div><div class="label">Reward glow</div><div class="val">yellow neon</div></div>
 </div>
 </body></html>

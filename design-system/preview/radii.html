@@ -1,18 +1,19 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css">
 <style>
+  body{padding:28px}
   .row{display:flex;gap:16px;align-items:flex-end;justify-content:space-around}
   .item{display:flex;flex-direction:column;align-items:center;gap:8px}
-  .box{width:96px;height:96px;background:linear-gradient(135deg,#6366F1,#A855F7);box-shadow:var(--lx-shadow-card)}
+  .box{width:96px;height:96px;background:linear-gradient(135deg,#6366F1,#A855F7);box-shadow:0 4px 12px rgba(0,0,0,0.15)}
   .label{font-family:var(--lx-font-display);font-weight:700;font-size:13px;color:var(--lx-fg1)}
   .val{font-family:var(--lx-font-mono);font-size:11px;color:var(--lx-fg3)}
 </style></head>
-<body style="padding:28px">
+<body>
 <div class="row">
   <div class="item"><div class="box" style="border-radius:8px"></div><div class="label">Small</div><div class="val">8px · chips, inputs</div></div>
-  <div class="item"><div class="box" style="border-radius:16px"></div><div class="label">Medium</div><div class="val">16px · default</div></div>
-  <div class="item"><div class="box" style="border-radius:20px"></div><div class="label">Large</div><div class="val">20px · large surfaces</div></div>
-  <div class="item"><div class="box" style="border-radius:24px"></div><div class="label">Card</div><div class="val">24px · cards</div></div>
-  <div class="item"><div class="box" style="border-radius:9999px"></div><div class="label">Pill</div><div class="val">∞ · buttons</div></div>
+  <div class="item"><div class="box" style="border-radius:16px"></div><div class="label">Button</div><div class="val">16px · buttons</div></div>
+  <div class="item"><div class="box" style="border-radius:20px"></div><div class="label">Card</div><div class="val">20px · cards</div></div>
+  <div class="item"><div class="box" style="border-radius:24px"></div><div class="label">Modal</div><div class="val">24px · modals, popups</div></div>
+  <div class="item"><div class="box" style="border-radius:9999px"></div><div class="label">Pill</div><div class="val">∞ · HUD pills</div></div>
 </div>
 </body></html>

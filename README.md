@@ -52,7 +52,7 @@ dotnet run --project src/Host/Learnexia.Host
 
 Connection string `Default` points at `Host=localhost;Port=5432;Database=Learnexia`. Browse design tokens/components by opening the HTML files in [design-system/preview/](design-system/preview/).
 
-> ⚠️ Known gaps (tracked in [docs/architecture.md](docs/architecture.md)): docker-compose still provisions SQL Server (app uses PostgreSQL), `design-system/colors_and_type.css` is missing (previews import it), and Cairo font isn't shipped (only Tajawal).
+> ⚠️ Known gap: [docker-compose.yaml](docker/docker-compose.yaml) still provisions **SQL Server** while the app targets **PostgreSQL** — replace the `sqlserver` service with `postgres` (see [docs/architecture.md §10](docs/architecture.md)).
 
 ## Multi-agent development pipeline
 

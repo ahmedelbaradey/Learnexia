@@ -41,6 +41,19 @@
     60% { transform: scale(1.15); opacity: 1; }
     100% { transform: scale(1); }
   }
+  @keyframes lxspin { to { transform: rotate(360deg); } }
+  @keyframes lxshake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+  /* crumb group dividers */
+  .crumb-group {
+    display: flex; gap: 6px; align-items: center;
+  }
+  .crumb-group + .crumb-group::before {
+    content: ''; width: 1px; height: 16px; background: rgba(255,255,255,0.12); margin: 0 4px;
+  }
 </style>
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
@@ -48,6 +61,7 @@
 <script type="text/babel" src="ios-frame.jsx"></script>
 <script type="text/babel" src="Components.jsx"></script>
 <script type="text/babel" src="Screens.jsx"></script>
+<script type="text/babel" src="ScreensExtra.jsx"></script>
 </head>
 <body>
 <div id="root"></div>
@@ -84,39 +98,61 @@ function App() {
   const [tab, setTab] = React.useState('home');
 
   const screens = {
-    home:    <HomeScreen onContinue={() => setScreen('lesson')} onMission={() => setScreen('missions')}/>,
-    skills:  <SkillTreeScreen onStart={() => setScreen('lesson')}/>,
-    lesson:  <LessonScreen onAsk={() => {}} onStart={() => setScreen('quiz')}/>,
-    quiz:    <QuizScreen onComplete={() => setScreen('reward')}/>,
-    reward:  <RewardScreen onDone={() => setScreen('home')}/>,
+    splash:    <SplashScreen onContinue={() => setScreen('role')}/>,
+    role:      <RoleSelectScreen onPick={() => setScreen('grade')}/>,
+    grade:     <GradeSelectScreen onPick={() => setScreen('subject')}/>,
+    subject:   <SubjectSelectScreen onPick={() => setScreen('home')}/>,
+    home:      <HomeScreen onContinue={() => setScreen('lesson')} onMission={() => setScreen('mission')}/>,
+    skills:    <SkillTreeScreen onStart={() => setScreen('lesson')}/>,
+    lesson:    <LessonScreen onAsk={() => {}} onStart={() => setScreen('quiz')}/>,
+    quiz:      <QuizScreen onComplete={() => setScreen('reward')}/>,
+    reward:    <RewardScreen onDone={() => setScreen('home')}/>,
+    league:    <LeagueScreen/>,
+    badges:    <BadgeCollectionScreen/>,
+    hearts:    <HeartsScreen onPractice={() => setScreen('lesson')}/>,
+    mission:   <DailyMissionScreen/>,
+    profile:   <ProfileScreen/>,
   };
 
   const tabToScreen = (id) => {
     setTab(id);
-    if (id === 'home')   setScreen('home');
-    if (id === 'skills') setScreen('skills');
+    const map = { home: 'home', skills: 'skills', mission: 'mission', league: 'league', profile: 'profile' };
+    if (map[id]) setScreen(map[id]);
   };
+
+  // keep tab in sync when navigating directly
+  React.useEffect(() => {
+    const tabFor = { home: 'home', skills: 'skills', mission: 'mission', league: 'league', profile: 'profile' };
+    if (tabFor[screen]) setTab(tabFor[screen]);
+  }, [screen]);
+
+  const showsTabBar = ['home', 'skills', 'mission', 'league', 'profile', 'badges', 'hearts'].includes(screen);
+
+  const groups = [
+    { name: 'Onboarding', items: [['splash', 'Splash'], ['role', 'Role'], ['grade', 'Grade'], ['subject', 'Subject']] },
+    { name: 'Core',       items: [['home', 'Home'], ['skills', 'Skill Tree'], ['profile', 'Profile']] },
+    { name: 'Lesson',     items: [['lesson', 'Lesson'], ['quiz', 'Quiz'], ['reward', 'Reward']] },
+    { name: 'Game',       items: [['mission', 'Mission'], ['league', 'League'], ['badges', 'Badges'], ['hearts', 'Hearts']] },
+  ];
 
   return (
     <div className="stage" data-screen-label={`Mobile · ${screen}`}>
       <div className="crumbs">
-        {[
-          ['home', 'Home'],
-          ['skills', 'Skill Tree'],
-          ['lesson', 'Lesson'],
-          ['quiz', 'Quiz'],
-          ['reward', 'Reward'],
-        ].map(([id, label]) => (
-          <button key={id} className={`crumb${screen === id ? ' active' : ''}`} onClick={() => setScreen(id)}>{label}</button>
+        {groups.map(g => (
+          <div key={g.name} className="crumb-group">
+            {g.items.map(([id, label]) => (
+              <button key={id} className={`crumb${screen === id ? ' active' : ''}`} onClick={() => setScreen(id)}>{label}</button>
+            ))}
+          </div>
         ))}
       </div>
       <div style={{ position: 'relative' }}>
         <DeviceShell>
           {screens[screen]}
-          {(screen === 'home' || screen === 'skills') && <TabBar active={tab} onChange={tabToScreen}/>}
+          {showsTabBar && <TabBar active={tab} onChange={tabToScreen}/>}
         </DeviceShell>
       </div>
-      <div className="hint">Tap any pill above to jump screens, or tap the purple <b>Continue</b> card on Home to run the lesson → quiz → reward flow.</div>
+      <div className="hint">Tap any pill above to jump screens. Try the <b>Splash → Role → Grade → Subject → Home</b> path for onboarding, or hit <b>Continue</b> on Home for the Lesson → Quiz → Reward flow.</div>
     </div>
   );
 }

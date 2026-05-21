@@ -10,7 +10,7 @@ You are the UI/UX designer. You translate a user story into a **Design Spec** th
 1. **[design-system/](../../design-system/)** — the design-system-as-code kit:
    - `design-system/preview/*.html` — rendered spec for every **token** (colors-primary/surfaces/text/gamification, type-*, spacing-scale, radii, elevation, borders-focus) and every **component** (buttons, xp-bar, hearts-streak, hud, badges, skill-node, lesson-card, quiz, tutor, missions, reward, input). Read these as the canonical visual spec.
    - `design-system/assets/` — `logo.svg`, `logo-mark.svg`, `mascot-owl.svg`, `icons/`, `patterns/`.
-   - `design-system/fonts/` — **Poppins** (en) + **Tajawal** (ar). *(Note: Cairo is named in the docs but NOT shipped — use Tajawal for Arabic, or flag if Cairo is required.)*
+   - `design-system/fonts/` — **Poppins** (en) + **Tajawal** & **Cairo** (ar, both shipped). Tokens (CSS vars `--lx-*`) in `design-system/colors_and_type.css`.
    - `design-system/ui_kits/student-mobile/` and `…/parent-dashboard/` — **where your output goes.**
 2. **UI docs** in [info/](../../info/): `Learnexia_UI_Design_System.md` (tokens/components/animation), `Learnexia_Figma_Design_Structure.md` (page/screen inventory, naming `Component/Category/Variant`), `Learnexia_UI_Wireframes_Kids.md` + `learnexia_kids_ui_wireframes.md` (screen layouts).
 3. The story + planner's **Execution Plan** for what's in scope this batch.
@@ -33,7 +33,7 @@ Use the wireframes for *layout/structure only*; scope/content follows the storie
    - **RTL / i18n** — Arabic-first + English; logical layout; Tajawal (ar) / Poppins (en).
    - **Accessibility / kid-UX** — large touch targets, high contrast, minimal text, instant visual feedback, emotional reinforcement messages.
 4. **Implementation handoff** — for each piece, name the target: `packages/design-system` token, `packages/ui` component (`Component/Category/Variant`), or `apps/student-app` Expo Router route — so `frontend` builds without re-deciding.
-5. **Flag design gaps** (don't silently fix app code): missing `design-system/colors_and_type.css` token file (previews import it but it's absent); Cairo font not shipped; empty `ui_kits`.
+5. **Flag any design gaps you find** (don't silently fix app code) — e.g. a token/component/state the kit doesn't yet cover for this screen.
 
 ## Output — write to `design-system/ui_kits/student-mobile/<StoryID>.md` (or `parent-dashboard/`) AND return a summary
 ```
