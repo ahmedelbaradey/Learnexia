@@ -1,0 +1,686 @@
+﻿namespace Resources
+{
+    public static class SharedResourcesKey
+    {
+        public const string EmptyIdValidation = "EmptyIdValidation";
+        public const string EmptyRequestValidation = "EmptyRequestValidation";
+        public const string EmptyNameValidation = "EmptyNameValidation";
+        public const string ExistICNumberValidation = "ExistICNumberValidation";
+        public const string HasAcceptedTerms = "ExistICNumberValidation";
+        public const string EmptyCustomerNameValidtion = "EmptyCustomerNameValidtion";
+        public const string MaximumCharsCustomerNameValidtion = "MaximumCharsCustomerNameValidtion";
+        public const string EmptyCustomerPhoneValidation = "EmptyCustomerNameValidtion";
+        public const string ExistCustomerPhoneValidation = "EmptyCustomerNameValidtion";
+        public const string EmptyCustomerEmailValidation = "EmptyCustomerEmailValidation";
+        public const string ExistCustomerEmailValidation = "EmptyCustomerNameValidtion";
+        public const string EmptyTOTPValidation = "EmptyTOTPValidation";
+        public const string MaximumDigitsTOTPValidation = "MaximumDigitsTOTPValidation";
+        public const string MinimumDigitsTOTPValidation = "MinimumDigitsTOTPValidation";
+        public const string NotValidOrExpiredTOTPValidation = "NotValidOrExpiredTOTPValidation";
+        public const string NotValidPINCodeValidation = "NotValidPINCodeValidation";
+        public const string MaximumDigitsPINCodeValidation = "MaximumDigitsPINCodeValidation";
+        public const string MinimumDigitsPINCodeValidation = "MinimumDigitsPINCodeValidation";
+        public const string CustomerCreationFailed = "CustomerCreationFailed";
+        public const string PhoneTOTPIs = "PhoneTOTPIs";
+        public const string TOTPExpireAfter = "TOTPExpireAfter";
+        public const string PINCodeUpdated = "PINCodeUpdated";
+        public const string PINCodeCreationFailed = "PINCodeCreationFailed";
+        public const string BiometricLoginEnabledSucessfully = "BiometricLoginEnabledSucessfully";
+        public const string BiometricLoginEnabledFailed = "BiometricLoginEnabledFailed";
+        public const string TermsAcceptedSucessfully = "TermsAcceptedSucessfully";
+        public const string TermsAcceptedFailed = "TermsAcceptedFailed";
+        public const string EmailVerirfiedSucessfully = "EmailVerirfiedSucessfully";
+        public const string EmailVerificationFailed = "EmailVerificationFailed";
+        public const string PhoneVerifiedAndEmailTOTPIs = "PhoneVerifiedAndEmailTOTPIs";
+        public const string PhoneVerificationFailed = "PhoneVerificationFailed";
+        public const string PINCodeVerirfiedSucessfully = "PINCodeVerirfiedSucessfully";
+        public const string PINCodeVerificationFailed = "PINCodeVerificationFailed";
+        public const string ValidEmailValidation = "ValidEmailValidation";
+        public const string TheCustomerWithICNumber = "TheCustomerWithICNumber";
+        public const string DoesntExist = "DoesntExist";
+        public const string Required = "Required";
+        public const string MaxLength = "MaxLength";
+        public const string MinLength = "MinLength";
+        public const string Unique = "Unique";
+        public const string RecordSavedSuccessfully = "RecordSavedSuccessfully";
+        public const string FundManagersListValidation = "FundManagersListValidation";
+        public const string FundBoardSecretariesListValidation = "FundBoardSecretariesListValidation";
+        public const string RequiredField = "RequiredField";
+        public const string VotingTypeRangeValidator = "VotingTypeRangeValidator";
+        public const string AnErrorIsOccurredWhileSavingData = "AnErrorIsOccurredWhileSavingData";
+        public const string InitiationDateRangeValidator = "InitiationDateRangeValidator";
+
+
+        public const string AddFundNotificationBody = "AddFundNotificationBody";
+        public const string AddFundForManagerNotificationBody = "AddFundForManagerNotificationBody";
+        public const string AddFundNotificationTitle = "AddFundNotificationTitle";
+
+        public const string ChangeExitDateNotificationBody = "ChangeExitDateNotificationBody";
+        public const string ChangeExitDateNotificationTitle = "ChangeExitDateNotificationTitle";
+
+        public const string CompeleteFundNotificationBody = "CompeleteFundNotificationBody";
+        public const string CompeleteFundNotificationTitle = "CompeleteFundNotificationTitle";
+
+        public const string RemoveFromFundNotificationBody = "RemoveFromFundNotificationBody";
+        public const string RemoveFromFundNotificationTitle = "RemoveFromFundNotificationTitle";
+
+        public const string AddedToFundNotificationBody = "AddedToFundNotificationBody";
+        public const string AddedToFundNotificationTitle = "AddedToFundNotificationTitle";
+
+        public const string OldFundCodeAlreadyExist = "OldFundCodeAlreadyExist";
+        public const string FundAlreadyExist = "FundAlreadyExist";
+        public const string InvalidFund = "InvalidFund";
+        public const string InvalidFundName = "InvalidFundName";
+
+        public const string MaxFileSize = "MaxFileSize";
+
+        public const string PropertiesNumberValidator = "PropertiesNumberValidator";
+        public const string FundSavedSuccessfully = "FundSavedSuccessfully";
+
+        // Board Member Type Localization Keys
+        public const string BoardMemberTypeIndependent = "BoardMemberTypeIndependent";
+        public const string BoardMemberTypeNotIndependent = "BoardMemberTypeNotIndependent";
+
+        // Fund Action Localization Keys
+        public const string FundCreationAction = "FundCreationAction";
+        public const string FundDataCompletionAction = "FundDataCompletionAction";
+        public const string FundDataEditAction = "FundDataEditAction";
+        public const string FundActivationAction = "FundActivationAction";
+        public const string FundExitDateEditAction = "FundExitDateEditAction";
+        public const string BoardMemberAdditionAction = "BoardMemberAdditionAction";
+        public const string FundStatusChangeAction = "FundStatusChangeAction";
+
+        // Fund Status Localization Keys
+        public const string FundStatusUnderConstruction = "FundStatusUnderConstruction";
+        public const string FundStatusWaitingForMembers = "FundStatusWaitingForMembers";
+        public const string FundStatusActive = "FundStatusActive";
+        public const string FundStatusExited = "FundStatusExited";
+
+        // Fund Audit Localization Keys
+        public const string FundStatusTransition = "FundStatusTransition";
+        public const string FundActivatedDueToMembers = "FundActivatedDueToMembers";
+        public const string UnknownAction = "UnknownAction";
+        public const string UnknownStatus = "UnknownStatus";
+
+
+        // Vote Decision Localization Keys
+        public const string VoteDecisionApprove = "VoteDecisionApprove";
+        public const string VoteDecisionReject = "VoteDecisionReject";
+        public const string VoteDecisionAbstain = "VoteDecisionAbstain";
+
+        // Voting Type Localization Keys
+        public const string VotingTypeAllMembers = "VotingTypeAllMembers";
+        public const string VotingTypeMajority = "VotingTypeMajority";
+
+        // Member Voting Result Localization Keys
+        public const string MemberVotingResultAllItems = "MemberVotingResultAllItems";
+        public const string MemberVotingResultMajorityOfItems = "MemberVotingResultMajorityOfItems";
+
+        // Board Member Validation Messages
+        public const string InvalidIdValidation = "InvalidIdValidation";
+        public const string InvalidBoardMemberType = "InvalidBoardMemberType";
+        public const string UserAlreadyBoardMember = "UserAlreadyBoardMember";
+        public const string MaxIndependentMembersReached = "MaxIndependentMembersReached";
+        public const string FundAlreadyHasChairman = "FundAlreadyHasChairman";
+        public const string BoardMemberAddedSuccessfully = "BoardMemberAddedSuccessfully";
+        public const string MeetingDateMustBeFuture = "MeetingDateMustBeFuture";
+        public const string InvalidVotingType = "InvalidVotingType";
+        public const string MaxLengthValidation = "MaxLengthValidation";
+        public const string BoardMemberUpdatedSuccessfully = "BoardMemberUpdatedSuccessfully";
+        public const string BoardMemberDeletedSuccessfully = "BoardMemberDeletedSuccessfully";
+        public const string BoardMemberNotFound = "BoardMemberNotFound";
+        public const string BoardMemberAlreadyDeleted = "BoardMemberAlreadyDeleted";
+        public const string FundNotFound = "FundNotFound";
+        public const string UserNotFound = "UserNotFound";
+
+        // Resolution Validation Messages
+        public const string ResolutionCodeExists = "ResolutionCodeExists";
+        public const string ResolutionCreatedSuccessfully = "ResolutionCreatedSuccessfully";
+        public const string ResolutionUpdatedSuccessfully = "ResolutionUpdatedSuccessfully";
+        public const string ResolutionDeletedSuccessfully = "ResolutionDeletedSuccessfully";
+        public const string ResolutionNotFound = "ResolutionNotFound";
+        public const string ResolutionTypeNotFound = "ResolutionTypeNotFound";
+        public const string AttachmentNotFound = "AttachmentNotFound";
+        public const string InvalidResolutionDate = "InvalidResolutionDate";
+        public const string InvalidVotingMethodology = "InvalidVotingMethodology";
+        public const string ResolutionDateMustBeAfterFundInitiation = "ResolutionDateMustBeAfterFundInitiation";
+        public const string ResolutionDateCannotBeFuture = "ResolutionDateCannotBeFuture";
+        public const string InvalidFileType = "InvalidFileType";
+        public const string FileSizeExceedsLimit = "FileSizeExceedsLimit";
+        public const string ResolutionCodeGenerationFailed = "ResolutionCodeGenerationFailed";
+        public const string OnlyFundManagerCanCreateResolution = "OnlyFundManagerCanCreateResolution";
+        public const string ResolutionSavedAsDraft = "ResolutionSavedAsDraft";
+        public const string ResolutionSentForReview = "ResolutionSentForReview";
+        public const string NewTypeRequiredForOtherResolutionType = "NewTypeRequiredForOtherResolutionType";
+        public const string CannotEditApprovedOrRejectedResolution = "CannotEditApprovedOrRejectedResolution";
+
+        // Board Member Notification Keys
+        public const string BoardMemberAddedNotificationTitle = "BoardMemberAddedNotificationTitle";
+        public const string BoardMemberAddedNotificationBody = "BoardMemberAddedNotificationBody";
+        public const string BoardMemberAddedToFundNotificationTitle = "BoardMemberAddedToFundNotificationTitle";
+        public const string BoardMemberAddedToFundNotificationBody = "BoardMemberAddedToFundNotificationBody";
+        public const string MaximumIndependentMembersReached = "MaximumIndependentMembersReached";
+
+        // Board Member Display Keys
+        public const string Independent = "Independent";
+        public const string NotIndependent = "NotIndependent";
+        public const string Active = "Active";
+        public const string Inactive = "Inactive";
+        public const string Chairman = "Chairman";
+        public const string Member = "Member";
+
+        // User Role Localization Keys
+        public const string FundManager = "FundManager";
+        public const string LegalCouncil = "LegalCouncil";
+        public const string BoardSecretary = "BoardSecretary";
+        public const string BoardMember = "BoardMember";
+        public const string SuperAdmin = "SuperAdmin";
+        public const string Admin = "Admin";
+        public const string Basic = "Basic";
+        public const string User = "User";
+        public const string FinanceController = "FinanceController";
+        public const string ComplianceLegalManagingDirector = "ComplianceLegalManagingDirector";
+        public const string HeadOfRealEstate = "HeadOfRealEstate";
+        public const string AssociateFundManager = "AssociateFundManager";
+
+        // Resolution Notification Messages (MSG002, MSG007, MSG008 from Sprint.md)
+        public const string ResolutionCreatedNotificationTitle = "ResolutionCreatedNotificationTitle";
+        public const string ResolutionCreatedNotificationBody = "ResolutionCreatedNotificationBody";
+        public const string ResolutionUpdatedNotificationTitle = "ResolutionUpdatedNotificationTitle";
+        public const string ResolutionUpdatedNotificationBody = "ResolutionUpdatedNotificationBody";
+        public const string FundActivatedNotificationTitle = "FundActivatedNotificationTitle";
+        public const string FundActivatedNotificationBody = "FundActivatedNotificationBody";
+
+        // Access Control Messages
+        public const string UnauthorizedAccess = "UnauthorizedAccess";
+
+        // Fund Board Member Management Messages (JDWA-1258)
+ 
+        public const string MaxBoardMembersReached = "MaxBoardMembersReached";
+        public const string MaxIndependentBoardMembersReached = "MaxIndependentBoardMembersReached";
+        public const string BoardChairmanAlreadyExists = "BoardChairmanAlreadyExists";
+ 
+
+        // Enhanced User Activation/Deactivation Messages (JDWA-1253)
+        public const string CannotDeactivateIndependentBoardMember = "CannotDeactivateIndependentBoardMember";
+        public const string CannotDeactivateSoleFundManager = "CannotDeactivateSoleFundManager";
+        public const string CannotDeactivateSingleHolderRole = "CannotDeactivateSingleHolderRole";
+        public const string UserActivatedSuccessfully = "UserActivatedSuccessfully";
+        public const string UserDeactivatedSuccessfully = "UserDeactivatedSuccessfully";
+        public const string RoleReplacementConfirmation = "RoleReplacementConfirmation";
+
+        // Enhanced Password Reset Messages (JDWA-1257)
+        public const string UserNotEligibleForPasswordReset = "UserNotEligibleForPasswordReset";
+        public const string PasswordResetConfirmation = "PasswordResetConfirmation";
+        public const string WhatsAppPasswordResetSent = "WhatsAppPasswordResetSent";
+        public const string WhatsAppPasswordResetFailed = "WhatsAppPasswordResetFailed";
+
+        // General Success Messages
+        public const string OperationCompletedSuccessfully = "OperationCompletedSuccessfully";
+        public const string SystemErrorSavingData = "SystemErrorSavingData";
+
+        // Resolution Cancel and Delete Messages (JDWA-508, JDWA-510)
+        public const string ConfirmCancelResolution = "ConfirmCancelResolution";
+        public const string ConfirmDeleteResolution = "ConfirmDeleteResolution";
+        public const string ResolutionCancelledSuccessfully = "ResolutionCancelledSuccessfully";
+        public const string ItemDeletedSuccessfully = "ItemDeletedSuccessfully";
+        public const string SystemErrorUpdatingData = "SystemErrorUpdatingData";
+        public const string SystemErrorDeletingData = "SystemErrorDeletingData";
+        public const string SystemErrorDisplayingData = "SystemErrorDisplayingData";
+        public const string CannotCancelNonPendingResolution = "CannotCancelNonPendingResolution";
+        public const string CannotDeleteNonDraftResolution = "CannotDeleteNonDraftResolution";
+
+        // Resolution Cancel Notification Messages (MSG004 from Sprint.md)
+        public const string ResolutionCancelledNotificationTitle = "ResolutionCancelledNotificationTitle";
+        public const string ResolutionCancelledNotificationBody = "ResolutionCancelledNotificationBody";
+
+        // Resolution Items and Conflicts Management (JDWA-566, JDWA-507)
+        public const string ResolutionItemAddedSuccessfully = "ResolutionItemAddedSuccessfully";
+        public const string ResolutionItemUpdatedSuccessfully = "ResolutionItemUpdatedSuccessfully";
+        public const string ResolutionItemDeletedSuccessfully = "ResolutionItemDeletedSuccessfully";
+        public const string ResolutionItemNotFound = "ResolutionItemNotFound";
+        public const string ResolutionItemTitleRequired = "ResolutionItemTitleRequired";
+        public const string ResolutionItemDescriptionMaxLength = "ResolutionItemDescriptionMaxLength";
+        public const string ConflictMembersRequired = "ConflictMembersRequired";
+        public const string InvalidBoardMemberForConflict = "InvalidBoardMemberForConflict";
+        public const string ResolutionDataCompletedSuccessfully = "ResolutionDataCompletedSuccessfully";
+        public const string NoItemsAddedConfirmation = "NoItemsAddedConfirmation"; // MSG006
+        public const string ResolutionDataCompletedNotificationTitle = "ResolutionDataCompletedNotificationTitle"; // MSG003
+        public const string ResolutionDataCompletedNotificationBody = "ResolutionDataCompletedNotificationBody"; // MSG003
+
+        // Resolution Attachments Management (JDWA-568, JDWA-505)
+        public const string AttachmentAddedSuccessfully = "AttachmentAddedSuccessfully";
+        public const string AttachmentDeletedSuccessfully = "AttachmentDeletedSuccessfully";
+        public const string MaxAttachmentsReached = "MaxAttachmentsReached"; // Max 10 files
+        public const string AttachmentCounterLabel = "AttachmentCounterLabel";
+        public const string InvalidAttachmentType = "InvalidAttachmentType";
+        public const string AttachmentSizeExceedsLimit = "AttachmentSizeExceedsLimit";
+        public const string DuplicateAttachmentsNotAllowed = "DuplicateAttachmentsNotAllowed";
+
+        // Resolution Status Management
+        public const string CannotEditResolutionInCurrentStatus = "CannotEditResolutionInCurrentStatus";
+        public const string InvalidResolutionStatusForOperation = "InvalidResolutionStatusForOperation";
+
+        // JDWA-509 Authorization Messages
+        public const string OnlyCreatorCanEditDraftResolution = "OnlyCreatorCanEditDraftResolution";
+
+        // Resolution Confirmation and Rejection (JDWA-570)
+        public const string ResolutionConfirmedSuccessfully = "ResolutionConfirmedSuccessfully";
+        public const string ResolutionRejectedSuccessfully = "ResolutionRejectedSuccessfully";
+        public const string InvalidResolutionStatusForConfirmation = "InvalidResolutionStatusForConfirmation";
+        public const string InvalidResolutionStatusForRejection = "InvalidResolutionStatusForRejection";
+        public const string RejectionReasonRequired = "RejectionReasonRequired";
+        public const string RejectionReasonLength = "RejectionReasonLength";
+
+        // Resolution Confirmation Notification Messages (MSG002 from Sprint.md)
+        public const string ResolutionConfirmedNotificationTitle = "ResolutionConfirmedNotificationTitle";
+        public const string ResolutionConfirmedNotificationBody = "ResolutionConfirmedNotificationBody";
+
+        // Resolution Rejection Notification Messages (MSG004 from Sprint.md)
+        public const string ResolutionRejectedNotificationTitle = "ResolutionRejectedNotificationTitle";
+        public const string ResolutionRejectedNotificationBody = "ResolutionRejectedNotificationBody";
+
+        // Resolution Send to Vote (JDWA-569)
+        public const string ResolutionSentToVoteSuccessfully = "ResolutionSentToVoteSuccessfully";
+        public const string InvalidResolutionStatusForVoting = "InvalidResolutionStatusForVoting";
+
+        // Resolution Send to Vote Notification Messages (MSG002 from Sprint.md)
+        public const string ResolutionSentToVoteNotificationTitle = "ResolutionSentToVoteNotificationTitle";
+        public const string ResolutionSentToVoteNotificationBody = "ResolutionSentToVoteNotificationBody";
+
+        // Alternative 2 Resolution Messages (MSG008, MSG009 from Sprint.md)
+        public const string ConfirmCreateNewResolutionFromApproved = "ConfirmCreateNewResolutionFromApproved"; // MSG008
+        public const string NewResolutionCreatedFromApprovedNotificationTitle = "NewResolutionCreatedFromApprovedNotificationTitle"; // MSG009
+        public const string NewResolutionCreatedFromApprovedNotificationBody = "NewResolutionCreatedFromApprovedNotificationBody"; // MSG009
+
+        // WhatsApp Notification Messages (Sprint 3 Requirements)
+        public const string WhatsAppPasswordResetMessage = "WhatsAppPasswordResetMessage"; // MSG-RESET-006
+        public const string WhatsAppUserRegistrationMessage = "WhatsAppUserRegistrationMessage"; // MSG-ADD-008
+        public const string WhatsAppAccountActivationMessage = "WhatsAppAccountActivationMessage"; // MSG-ACTDEACT-009
+        public const string WhatsAppAccountDeactivationMessage = "WhatsAppAccountDeactivationMessage"; // MSG-ACTDEACT-010
+        public const string WhatsAppRegistrationResendMessage = "WhatsAppRegistrationResendMessage"; // MSG-ADD-008 Resend
+        public const string WhatsAppFundMemberAddedMessage = "WhatsAppFundMemberAddedMessage"; // Fund member addition notification
+
+        // Alternative 1 Resolution Messages (MSG007 from Sprint.md)
+        public const string ConfirmSuspendVotingForEdit = "ConfirmSuspendVotingForEdit"; // MSG006 - Confirmation message for voting suspension
+        public const string ResolutionVotingSuspendedNotificationTitle = "ResolutionVotingSuspendedNotificationTitle"; // MSG007
+        public const string ResolutionVotingSuspendedNotificationBody = "ResolutionVotingSuspendedNotificationBody"; // MSG007
+        public const string VotingSuspendedSuccessfully = "VotingSuspendedSuccessfully"; // Success message after voting suspension
+        public const string CannotEditVotingResolutionWithoutSuspension = "CannotEditVotingResolutionWithoutSuspension"; // Business rule violation
+
+        // Activity Counter Validation Messages (JDWA-996)
+        public const string FundIdRequired = "FundIdRequired";
+        public const string AccessDenied = "AccessDenied";
+        public const string RecentActivityDaysInvalid = "RecentActivityDaysInvalid";
+        public const string RecentActivityDaysMaxExceeded = "RecentActivityDaysMaxExceeded";
+        public const string IncludeDetailsRequired = "IncludeDetailsRequired";
+        public const string RecentNotificationDaysInvalid = "RecentNotificationDaysInvalid";
+        public const string RecentNotificationDaysMaxExceeded = "RecentNotificationDaysMaxExceeded";
+        public const string IncludeFundBreakdownRequired = "IncludeFundBreakdownRequired";
+        public const string HighPriorityOnlyRequired = "HighPriorityOnlyRequired";
+
+        // State Pattern Transition Error Messages
+        public const string InvalidStatusTransition = "InvalidStatusTransition";
+        public const string CannotTransitionFromCurrentState = "CannotTransitionFromCurrentState";
+        public const string CannotEditInCurrentState = "CannotEditInCurrentState";
+        public const string CannotCompleteInCurrentState = "CannotCompleteInCurrentState";
+        public const string CannotCancelInCurrentState = "CannotCancelInCurrentState";
+        public const string ResolutionStateValidationFailed = "ResolutionStateValidationFailed";
+
+        // User Language Management Messages
+        public const string InvalidCultureCode = "InvalidCultureCode";
+        public const string PreferredLanguageUpdatedSuccessfully = "PreferredLanguageUpdatedSuccessfully";
+        public const string Unauthorized = "Unauthorized";
+
+        // State-Specific Messages
+        public const string ResolutionInDraftState = "ResolutionInDraftState";
+        public const string ResolutionInPendingState = "ResolutionInPendingState";
+        public const string ResolutionInCompletingDataState = "ResolutionInCompletingDataState";
+        public const string ResolutionInWaitingForConfirmationState = "ResolutionInWaitingForConfirmationState";
+        public const string ResolutionInConfirmedState = "ResolutionInConfirmedState";
+        public const string ResolutionInRejectedState = "ResolutionInRejectedState";
+        public const string ResolutionInVotingInProgressState = "ResolutionInVotingInProgressState";
+        public const string ResolutionInApprovedState = "ResolutionInApprovedState";
+        public const string ResolutionInNotApprovedState = "ResolutionInNotApprovedState";
+        public const string ResolutionInCancelledState = "ResolutionInCancelledState";
+
+        // Exit Confirmation Messages (MSG005 - Confirmation type)
+        public const string ExitWithoutSavingConfirmation = "ExitWithoutSavingConfirmation"; // MSG005 - Exit confirmation
+
+        // Resolution Edit Notification Messages (MSG005 - Notification type)
+        // Note: ResolutionUpdatedNotificationBody is already defined above for MSG005 notifications
+
+        // Meeting Time Proposal Messages (User Story 1)
+        public const string MeetingTimeProposalCreatedSuccessfully = "MeetingTimeProposalCreatedSuccessfully"; // MSG-MTV-SUC-01
+        public const string MeetingSubjectRequired = "MeetingSubjectRequired"; // MSG-MTV-ERR-01
+        public const string AtLeastOneProposedTimeRequired = "AtLeastOneProposedTimeRequired"; // MSG-MTV-ERR-02
+        public const string InvalidFileTypePdfOnly = "InvalidFileTypePdfOnly"; // MSG-MTV-ERR-03
+        public const string FileUploadFailed = "FileUploadFailed"; // MSG-MTV-ERR-04
+        public const string ConfirmDiscardChanges = "ConfirmDiscardChanges"; // MSG-MTV-WRN-01
+        public const string NewVoteStartedNotificationTitle = "NewVoteStartedNotificationTitle"; // MSG-MTV-NOT-01
+        public const string NewVoteStartedNotificationBody = "NewVoteStartedNotificationBody"; // MSG-MTV-NOT-01
+
+        // Meeting Time Vote Messages (User Story 2)
+        public const string VoteSubmittedSuccessfully = "VoteSubmittedSuccessfully"; // MSG-VMT-SUC-01
+        public const string SelectAtLeastOneOption = "SelectAtLeastOneOption"; // MSG-VMT-ERR-01
+        public const string VotingCompletedNotificationTitle = "VotingCompletedNotificationTitle"; // MSG-VMT-NOT-01
+        public const string VotingCompletedNotificationBody = "VotingCompletedNotificationBody"; // MSG-VMT-NOT-01
+        public const string VotingForProposalComplete = "VotingForProposalComplete"; // MSG-VMT-INF-01
+        public const string AlreadyVotedOnProposal = "AlreadyVotedOnProposal"; // MSG-VMT-INF-02
+
+        // Additional validation messages for meetings
+        public const string FutureDateRequired = "FutureDateRequired";
+        public const string DuplicateSelection = "DuplicateSelection";
+
+        // Meeting Status Descriptions
+        public const string MeetingStatusScheduled = "MeetingStatusScheduled";
+        public const string MeetingStatusInProgress = "MeetingStatusInProgress";
+        public const string MeetingStatusFinished = "MeetingStatusFinished";
+        public const string MeetingStatusCancelled = "MeetingStatusCancelled";
+        public const string MeetingStatusPostponed = "MeetingStatusPostponed";
+
+        // Meeting State Validation Messages
+        public const string MeetingScheduledValidationMessage = "MeetingScheduledValidationMessage";
+        public const string MeetingNotifyAttendeesMessage = "MeetingNotifyAttendeesMessage";
+        public const string MeetingInProgressValidationMessage = "MeetingInProgressValidationMessage";
+        public const string MeetingLiveFeaturesMessage = "MeetingLiveFeaturesMessage";
+        public const string MeetingFinishedValidationMessage = "MeetingFinishedValidationMessage";
+        public const string MeetingMinutesCanBeCreatedMessage = "MeetingMinutesCanBeCreatedMessage";
+        public const string MeetingCancelledValidationMessage = "MeetingCancelledValidationMessage";
+        public const string MeetingPostponedValidationMessage = "MeetingPostponedValidationMessage";
+        public const string MeetingRescheduleMessage = "MeetingRescheduleMessage";
+
+        // Audit Action Localization Keys for Resolution Status History
+        public const string AuditActionResolutionCreation = "AuditActionResolutionCreation";
+        public const string AuditActionResolutionEdit = "AuditActionResolutionEdit";
+        public const string AuditActionResolutionCompletion = "AuditActionResolutionCompletion";
+        public const string AuditActionResolutionDataUpdate = "AuditActionResolutionDataUpdate";
+        public const string AuditActionResolutionVoteSuspend = "AuditActionResolutionVoteSuspend";
+        public const string AuditActionResolutionConfirmation = "AuditActionResolutionConfirmation";
+        public const string AuditActionResolutionRejection = "AuditActionResolutionRejection";
+        public const string AuditActionResolutionSentToVote = "AuditActionResolutionSentToVote";
+        public const string AuditActionResolutionCancellation = "AuditActionResolutionCancellation";
+        public const string AuditActionResolutionApproved = "AuditActionResolutionApproved";
+        public const string AuditActionResolutionUnApproved = "AuditActionResolutionUnApproved";
+        public const string AuditActionResolutionDeletion = "AuditActionResolutionDeletion";
+
+        // Resolution Status Localization Keys for Audit History Display
+        public const string ResolutionStatusDraft = "ResolutionStatusDraft";
+        public const string ResolutionStatusPending = "ResolutionStatusPending";
+        public const string ResolutionStatusCompletingData = "ResolutionStatusCompletingData";
+        public const string ResolutionStatusWaitingForConfirmation = "ResolutionStatusWaitingForConfirmation";
+        public const string ResolutionStatusConfirmed = "ResolutionStatusConfirmed";
+        public const string ResolutionStatusVotingInProgress = "ResolutionStatusVotingInProgress";
+        public const string ResolutionStatusApproved = "ResolutionStatusApproved";
+        public const string ResolutionStatusNotApproved = "ResolutionStatusNotApproved";
+        public const string ResolutionStatusRejected = "ResolutionStatusRejected";
+        public const string ResolutionStatusCancelled = "ResolutionStatusCancelled";
+
+
+
+        public const string SystemErrorRetrievingData = "SystemErrorRetrievingData";
+        public const string NoRecords = "NoRecords";
+
+        // Sprint 3 User Management Message Codes
+
+        // User Profile Management Messages (MSG-PROFILE-001 to MSG-PROFILE-009)
+        public const string ProfileRequiredField = "ProfileRequiredField"; // MSG-PROFILE-001
+        public const string ProfileInvalidEmailFormat = "ProfileInvalidEmailFormat"; // MSG-PROFILE-002
+        public const string ProfileDuplicateEmail = "ProfileDuplicateEmail"; // MSG-PROFILE-003
+        public const string ProfileInvalidCountryCode = "ProfileInvalidCountryCode"; // MSG-PROFILE-004
+        public const string ProfileMobileAlreadyInUse = "ProfileMobileAlreadyInUse"; // MSG-PROFILE-005
+        public const string ProfileInvalidCVFile = "ProfileInvalidCVFile"; // MSG-PROFILE-006
+        public const string ProfileUpdatedSuccessfully = "ProfileUpdatedSuccessfully"; // MSG-PROFILE-007
+        public const string ProfileSystemErrorSavingData = "ProfileSystemErrorSavingData"; // MSG-PROFILE-008
+        public const string ProfileInvalidPhotoFile = "ProfileInvalidPhotoFile"; // MSG-PROFILE-009
+
+        // User Login Messages (MSG-LOGIN-001 to MSG-LOGIN-004)
+        public const string LoginUserNotFound = "LoginUserNotFound"; // MSG-LOGIN-001
+        public const string LoginIncorrectPassword = "LoginIncorrectPassword"; // MSG-LOGIN-002
+        public const string LoginAccountDeactivated = "LoginAccountDeactivated"; // MSG-LOGIN-003
+        public const string LoginTooManyFailedAttempts = "LoginTooManyFailedAttempts"; // MSG-LOGIN-004
+
+        // User Logout Messages (MSG-LOGOUT-001 to MSG-LOGOUT-002)
+        public const string LogoutSuccessful = "LogoutSuccessful"; // MSG-LOGOUT-001
+        public const string LogoutSystemError = "LogoutSystemError"; // MSG-LOGOUT-002
+
+        // Session Timeout Messages (MSG-SESSION-001 to MSG-SESSION-015)
+        public const string SessionExpiredWarning = "SessionExpiredWarning"; // MSG-SESSION-001
+        public const string SessionExpiredTitle = "SessionExpiredTitle"; // MSG-SESSION-002
+        public const string SessionExpiredMessage = "SessionExpiredMessage"; // MSG-SESSION-003
+        public const string SessionExtendedSuccessfully = "SessionExtendedSuccessfully"; // MSG-SESSION-004
+        public const string SessionExtensionFailed = "SessionExtensionFailed"; // MSG-SESSION-005
+        public const string SessionExtensionInvalidToken = "SessionExtensionInvalidToken"; // MSG-SESSION-006
+        public const string SessionExtensionSystemError = "SessionExtensionSystemError"; // MSG-SESSION-007
+        public const string SessionNotFound = "SessionNotFound"; // MSG-SESSION-008
+        public const string SessionStatusInvalidToken = "SessionStatusInvalidToken"; // MSG-SESSION-009
+        public const string SessionStatusSystemError = "SessionStatusSystemError"; // MSG-SESSION-010
+        public const string SessionWarningExtendButton = "SessionWarningExtendButton"; // MSG-SESSION-011
+        public const string SessionWarningLogoutButton = "SessionWarningLogoutButton"; // MSG-SESSION-012
+        public const string SessionWarningContinueButton = "SessionWarningContinueButton"; // MSG-SESSION-013
+        public const string SessionTimeoutConfigRetrieved = "SessionTimeoutConfigRetrieved"; // MSG-SESSION-014
+        public const string SessionActivityUpdated = "SessionActivityUpdated"; // MSG-SESSION-015
+
+        // Session Audit Messages (MSG-AUDIT-001 to MSG-AUDIT-010)
+        public const string SessionCreatedAuditNote = "SessionCreatedAuditNote"; // MSG-AUDIT-001
+        public const string SessionExtendedAuditNote = "SessionExtendedAuditNote"; // MSG-AUDIT-002
+        public const string SessionTerminatedAuditNote = "SessionTerminatedAuditNote"; // MSG-AUDIT-003
+        public const string SessionValidationFailedAuditNote = "SessionValidationFailedAuditNote"; // MSG-AUDIT-004
+        public const string SecurityViolationAuditNote = "SecurityViolationAuditNote"; // MSG-AUDIT-005
+        public const string ConcurrentSessionLimitExceededAuditNote = "ConcurrentSessionLimitExceededAuditNote"; // MSG-AUDIT-006
+        public const string SessionActivityAuditNote = "SessionActivityAuditNote"; // MSG-AUDIT-007
+
+        // Assessment Status Localization Keys
+        public const string AssessmentStatusDraft = "AssessmentStatusDraft";
+        public const string AssessmentStatusWaitingForApproval = "AssessmentStatusWaitingForApproval";
+        public const string AssessmentStatusApproved = "AssessmentStatusApproved";
+        public const string AssessmentStatusRejected = "AssessmentStatusRejected";
+        public const string AssessmentStatusActive = "AssessmentStatusActive";
+        public const string AssessmentStatusCompleted = "AssessmentStatusCompleted";
+
+        // Assessment Type Localization Keys
+        public const string AssessmentTypeQuestionnaire = "AssessmentTypeQuestionnaire";
+        public const string AssessmentTypeAttachment = "AssessmentTypeAttachment";
+
+        // Question Type Localization Keys
+        public const string QuestionTypeSingleChoice = "QuestionTypeSingleChoice";
+        public const string QuestionTypeText = "QuestionTypeText";
+
+        // Assessment Validation Messages
+        public const string AssessmentTitleRequired = "AssessmentTitleRequired";
+        public const string AssessmentTypeRequired = "AssessmentTypeRequired";
+        public const string AtLeastOneQuestionRequired = "AtLeastOneQuestionRequired";
+        public const string AttachmentRequired = "AttachmentRequired";
+       
+        public const string AllRequiredQuestionsRequired = "AllRequiredQuestionsRequired";
+        public const string QuestionTextRequired = "QuestionTextRequired";
+        public const string QuestionOptionsRequired = "QuestionOptionsRequired";
+
+        // Assessment Success Messages
+        public const string AssessmentSubmittedForApproval = "AssessmentSubmittedForApproval";
+        public const string AssessmentSavedAsDraft = "AssessmentSavedAsDraft";
+        public const string AssessmentApproved = "AssessmentApproved";
+        public const string AssessmentRejected = "AssessmentRejected";
+        public const string AssessmentDistributed = "AssessmentDistributed";
+        public const string ResponseSubmittedSuccessfully = "ResponseSubmittedSuccessfully";
+
+        // Assessment Notification Messages
+        public const string NewAssessmentWaitingApproval = "NewAssessmentWaitingApproval";
+        public const string AssessmentApprovedNotification = "AssessmentApprovedNotification";
+        public const string AssessmentRejectedNotification = "AssessmentRejectedNotification";
+        public const string NewAssessmentReadyForResponse = "NewAssessmentReadyForResponse";
+        public const string AssessmentDistributionConfirmation = "AssessmentDistributionConfirmation";
+
+ 
+        public const string AssessmentNotFound = "AssessmentNotFound";
+        public const string UnauthorizedAssessmentAccess = "UnauthorizedAssessmentAccess";
+        public const string AssessmentAlreadyResponded = "AssessmentAlreadyResponded";
+        public const string AssessmentNotActive = "AssessmentNotActive";
+        public const string SessionCleanupAuditNote = "SessionCleanupAuditNote"; // MSG-AUDIT-008
+        public const string RoleBasedTimeoutAppliedAuditNote = "RoleBasedTimeoutAppliedAuditNote"; // MSG-AUDIT-009
+        public const string RememberMeSessionCreatedAuditNote = "RememberMeSessionCreatedAuditNote"; // MSG-AUDIT-010
+
+        // Password Management Messages (MSG-PROFILE-PW-001 to MSG-PROFILE-PW-006)
+        public const string PasswordIncorrectCurrent = "PasswordIncorrectCurrent"; // MSG-PROFILE-PW-001
+        public const string PasswordComplexityError = "PasswordComplexityError"; // MSG-PROFILE-PW-002
+        public const string PasswordMismatch = "PasswordMismatch"; // MSG-PROFILE-PW-003
+        public const string PasswordSameAsCurrent = "PasswordSameAsCurrent"; // MSG-PROFILE-PW-004
+        public const string PasswordChangedSuccessfully = "PasswordChangedSuccessfully"; // MSG-PROFILE-PW-005
+        public const string PasswordChangeSystemError = "PasswordChangeSystemError"; // MSG-PROFILE-PW-006
+
+        // User Administration Messages
+ 
+        public const string UserPasswordResetSuccessfully = "UserPasswordResetSuccessfully";
+        public const string RegistrationMessageSentSuccessfully = "RegistrationMessageSentSuccessfully";
+        public const string UserNotEligibleForRegistrationMessage = "UserNotEligibleForRegistrationMessage";
+        public const string UserAlreadyActive = "UserAlreadyActive";
+        public const string UserAlreadyInactive = "UserAlreadyInactive";
+
+        // User Validation Messages
+        public const string InvalidSaudiMobileFormat = "InvalidSaudiMobileFormat";
+        public const string InvalidIBANFormat = "InvalidIBANFormat";
+        public const string InvalidFileSize = "InvalidFileSize";
+        public const string UnauthorizedUserAccess = "UnauthorizedUserAccess";
+        public const string UserUpdatedSuccessfully = "UserUpdatedSuccessfully";
+        public const string UserAddedSuccessfully = "UserAddedSuccessfully";
+
+        // MinIO File Management Messages
+        public const string MinIORequestCannotBeBlank = "MinIORequestCannotBeBlank";
+        public const string MinIOFileMissingOrEmpty = "MinIOFileMissingOrEmpty";
+        public const string MinIOStorageNotEnabled = "MinIOStorageNotEnabled";
+        public const string MinIOInvalidFileNameOrExtension = "MinIOInvalidFileNameOrExtension";
+        public const string MinIOFileUploadFailed = "MinIOFileUploadFailed";
+        public const string MinIOFileUploadedSuccessfully = "MinIOFileUploadedSuccessfully";
+        public const string MinIOFileNotFound = "MinIOFileNotFound";
+        public const string MinIOFileNotFoundInStorage = "MinIOFileNotFoundInStorage";
+        public const string MinIOPreviewUrlGenerationFailed = "MinIOPreviewUrlGenerationFailed";
+        public const string MinIOPreviewUrlGeneratedSuccessfully = "MinIOPreviewUrlGeneratedSuccessfully";
+        public const string MinIOFileDeletedSuccessfully = "MinIOFileDeletedSuccessfully";
+        public const string MinIOFileDeleteFailed = "MinIOFileDeleteFailed";
+        public const string MinIONoFilesProvided = "MinIONoFilesProvided";
+        public const string MinIOTooManyFiles = "MinIOTooManyFiles";
+        public const string MinIOFileNameCountMismatch = "MinIOFileNameCountMismatch";
+        public const string MinIOFileNullOrEmpty = "MinIOFileNullOrEmpty";
+        public const string MinIOFileSizeExceedsLimit = "MinIOFileSizeExceedsLimit";
+        public const string MinIOInvalidBucketName = "MinIOInvalidBucketName";
+        public const string MinIOFileIdRequired = "MinIOFileIdRequired";
+        public const string MinIOFileIdMustBeGreaterThanZero = "MinIOFileIdMustBeGreaterThanZero";
+        public const string MinIOFileNameTooLong = "MinIOFileNameTooLong";
+        public const string MinIOModuleIdMustBeGreaterThanZero = "MinIOModuleIdMustBeGreaterThanZero";
+        public const string MinIOMaxFilesExceeded = "MinIOMaxFilesExceeded";
+        public const string MinIOExpiryTimeInvalid = "MinIOExpiryTimeInvalid";
+
+        // Mobile Number Validation Messages
+        public const string MobileNumberRequired = "MobileNumberRequired";
+        public const string InvalidSaudiMobilePattern = "InvalidSaudiMobilePattern";
+
+        // Authentication Validation Messages
+        public const string LoginUsernameRequired = "LoginUsernameRequired";
+        public const string LoginPasswordRequired = "LoginPasswordRequired";
+        public const string UsernameAlreadyInUse = "UsernameAlreadyInUse";
+
+        // Password Validation Messages
+        public const string PasswordMinimumLength = "PasswordMinimumLength";
+
+        // Profile Field Validation Messages
+        public const string PassportNumberAlphanumeric = "PassportNumberAlphanumeric";
+
+        // Edit User Messages (MSG-EDIT-001 to MSG-EDIT-014)
+        public const string EditUserInvalidRoleSelection = "EditUserInvalidRoleSelection"; // MSG-EDIT-004
+        public const string EditUserInvalidCVFile = "EditUserInvalidCVFile"; // MSG-EDIT-008
+        public const string EditUserRoleReplacementConfirmation = "EditUserRoleReplacementConfirmation"; // MSG-EDIT-010
+        public const string EditUserCannotChangeBoardMemberRole = "EditUserCannotChangeBoardMemberRole"; // MSG-EDIT-011
+        public const string EditUserCannotChangeFundManagerRole = "EditUserCannotChangeFundManagerRole"; // MSG-EDIT-012
+        public const string EditUserRelieveOfDutiesNotification = "EditUserRelieveOfDutiesNotification"; // MSG-EDIT-013
+        public const string EditUserRoleUpdateNotification = "EditUserRoleUpdateNotification"; // MSG-EDIT-014
+
+        // Edit User Notification Titles
+        public const string EditUserRelieveOfDutiesNotificationTitle = "EditUserRelieveOfDutiesNotificationTitle";
+        public const string EditUserRoleUpdateNotificationTitle = "EditUserRoleUpdateNotificationTitle";
+
+        // Unique Role Validation Messages
+        public const string RoleConflictDetected = "RoleConflictDetected";
+        public const string RoleConflictReplacePrompt = "RoleConflictReplacePrompt";
+        public const string RoleConflictSelectDifferent = "RoleConflictSelectDifferent";
+        public const string AtLeastOneRoleRequired = "AtLeastOneRoleRequired";
+        public const string UniqueRoleAlreadyAssigned = "UniqueRoleAlreadyAssigned";
+
+        // Role List Messages
+        public const string NotFoundRoles = "NotFoundRoles";
+
+ 
+
+        // Additional Assessment Validation Messages
+        public const string AssessmentTitleMaxLength = "AssessmentTitleMaxLength";
+        public const string AssessmentWaitingTooLong = "AssessmentWaitingTooLong";
+        public const string AssessmentReadyForDistribution = "AssessmentReadyForDistribution";
+        public const string AssessmentCannotBeModified = "AssessmentCannotBeModified";
+        public const string AssessmentResponsesReceived = "AssessmentResponsesReceived";
+        public const string AssessmentCompletionReady = "AssessmentCompletionReady";
+
+        // Assessment Action Keys
+        public const string AssessmentSubmitForApproval = "AssessmentSubmitForApproval";
+        public const string AssessmentApprove = "AssessmentApprove";
+        public const string AssessmentReject = "AssessmentReject";
+        public const string AssessmentDistribute = "AssessmentDistribute";
+        public const string AssessmentComplete = "AssessmentComplete";
+        public const string AssessmentEdit = "AssessmentEdit";
+        public const string AssessmentViewDetails = "AssessmentViewDetails";
+        public const string AssessmentDelete = "AssessmentDelete";
+        public const string AssessmentSave = "AssessmentSave";
+        public const string AssessmentRespond = "AssessmentRespond";
+
+        // Assessment Review Messages
+        public const string ReviewerInformationRequired = "ReviewerInformationRequired";
+        public const string ReviewDateRequired = "ReviewDateRequired";
+        public const string FundBoardMembersRequired = "FundBoardMembersRequired";
+
+        // Additional Validation Messages
+        public const string InvalidAttachmentId = "InvalidAttachmentId";
+        public const string QuestionsNotAllowedForAttachment = "QuestionsNotAllowedForAttachment";
+        public const string QuestionDisplayOrdersUnique = "QuestionDisplayOrdersUnique";
+
+        // Question Validation Messages
+        public const string QuestionTextMaxLength = "QuestionTextMaxLength";
+        public const string QuestionTypeRequired = "QuestionTypeRequired";
+        public const string QuestionDisplayOrderRequired = "QuestionDisplayOrderRequired";
+        public const string QuestionOptionsMinimumTwo = "QuestionOptionsMinimumTwo";
+        public const string QuestionOptionsNotAllowedForText = "QuestionOptionsNotAllowedForText";
+
+        // Assessment Notification Resource Keys
+        public const string AssessmentSubmittedForApprovalNotificationTitle = "AssessmentSubmittedForApprovalNotificationTitle";
+        public const string AssessmentSubmittedForApprovalNotificationBody = "AssessmentSubmittedForApprovalNotificationBody";
+        public const string AssessmentApprovedNotificationTitle = "AssessmentApprovedNotificationTitle";
+        public const string AssessmentApprovedNotificationBody = "AssessmentApprovedNotificationBody";
+        public const string AssessmentRejectedNotificationTitle = "AssessmentRejectedNotificationTitle";
+        public const string AssessmentRejectedNotificationBody = "AssessmentRejectedNotificationBody";
+        public const string AssessmentDistributedNotificationTitle = "AssessmentDistributedNotificationTitle";
+        public const string AssessmentDistributedNotificationBody = "AssessmentDistributedNotificationBody";
+        public const string AssessmentCompletedNotificationTitle = "AssessmentCompletedNotificationTitle";
+        public const string AssessmentCompletedNotificationBody = "AssessmentCompletedNotificationBody";
+
+        // Assessment State Transition Messages
+        public const string AssessmentStatusTransitionMessage = "AssessmentStatusTransitionMessage";
+
+        // Assessment State Information Messages
+        public const string AssessmentPendingResponsesInfo = "AssessmentPendingResponsesInfo";
+        public const string AssessmentAllResponsesReceivedInfo = "AssessmentAllResponsesReceivedInfo";
+        public const string AssessmentNoResponsesWarning = "AssessmentNoResponsesWarning";
+        public const string AssessmentCompletionStatistics = "AssessmentCompletionStatistics";
+        public const string AssessmentNoResponsesReceived = "AssessmentNoResponsesReceived";
+        public const string AssessmentNoResponsesExist = "AssessmentNoResponsesExist";
+
+        // Assessment Action Keys (Additional)
+        public const string AssessmentViewRejectionReason = "AssessmentViewRejectionReason";
+        public const string AssessmentResubmit = "AssessmentResubmit";
+        public const string AssessmentViewResponses = "AssessmentViewResponses";
+        public const string AssessmentViewResults = "AssessmentViewResults";
+        public const string AssessmentCompleteAssessment = "AssessmentCompleteAssessment";
+        public const string AssessmentExportResults = "AssessmentExportResults";
+        public const string AssessmentExportData = "AssessmentExportData";
+        public const string AssessmentArchive = "AssessmentArchive";
+
+   
+
+    }
+}

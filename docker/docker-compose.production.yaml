@@ -1,0 +1,6 @@
+services:
+  jadwa-api:
+    ports:
+      - '82:80'
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production

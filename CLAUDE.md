@@ -1,0 +1,52 @@
+# Learnexia — Project Context (read first)
+
+AI-powered, gamified, adaptive learning platform for Arabic-speaking school students. This file is the shared rulebook for **all** agents (subagents auto-inherit nothing — they get this file as project context). When in doubt, the linked docs win over your general knowledge.
+
+## Hard facts (do not contradict)
+- **Backend:** [backend/](backend/) — `Learnexia.Modular.sln` (.NET 10 modular monolith). *(The legacy clean-architecture solution that previously sat here has been removed; this is the only backend.)*
+- **Stack:** **.NET 10**, ASP.NET Core, **modular monolith**, MediatR CQRS, FluentValidation, AutoMapper, ASP.NET Identity + JWT.
+- **Database:** **PostgreSQL** via `UseNpgsql` (Npgsql), DB `Learnexia`, schema-per-module. **NOT SQL Server** — ignore any stale "SQL Server" wording.
+- **Reference module:** **Catalog** is the canonical implementation. Mirror it for any new backend work.
+- **Frontend:** not started yet. **Turborepo monorepo** — Expo universal student app (web PWA + native), Tamagui, TanStack Query + Zustand; Next.js admin/marketing later. See [docs/dev/FRONTEND_ARCHITECTURE.md](docs/dev/FRONTEND_ARCHITECTURE.md). Design tokens/kit in [design-system/](design-system/).
+
+## Work intake (source of truth for what to build)
+- **User stories** (one per file, by phase) → [user-stories/](user-stories/) + [user-stories/README.md](user-stories/README.md). **These are the source of truth** for scope & acceptance criteria.
+- **Per-stack task breakdown** → [tasks/](tasks/) (`tasks/Backend/...`, `tasks/Frontend/...`) + [tasks/README.md](tasks/README.md). Task IDs `P1-01-BE-1` etc.
+- The lead names a story/task ID (e.g. `P4-02`); the `analyzer` reads its story + task files first.
+
+## Product decisions (override BRD/SRS where they conflict)
+- **Parent-driven onboarding** — parents register + add children; students don't self-register.
+- **4 subjects** — Math, Science, Arabic, English. **No Social Studies.**
+- **No teacher role.**
+- **Grade transition** preserves history (XP/badges/streaks/mastery).
+
+## Authoritative docs (consult before coding)
+- **How to build backend features:** [docs/dev/FEATURE_PLAYBOOK.md](docs/dev/FEATURE_PLAYBOOK.md)
+- **Conventions + known gaps:** [docs/dev/CONVENTIONS.md](docs/dev/CONVENTIONS.md)
+- **Copy-paste C# skeletons:** [docs/dev/CODE_TEMPLATES.md](docs/dev/CODE_TEMPLATES.md)
+- **Unit of Work decision:** [docs/dev/adr/0001-unit-of-work.md](docs/dev/adr/0001-unit-of-work.md)
+- **Architecture of record:** [docs/architecture.md](docs/architecture.md)
+- **Product spec (background):** [docs/BRD.md](docs/BRD.md) · [docs/SRS.md](docs/SRS.md) · [docs/TASK_BREAKDOWN.md](docs/TASK_BREAKDOWN.md)
+- **Frontend architecture:** [docs/dev/FRONTEND_ARCHITECTURE.md](docs/dev/FRONTEND_ARCHITECTURE.md)
+
+## Non-negotiable rules
+1. **Module isolation** — a module never references another module's projects. Cross-module = `Shared.Contracts` only (integration events / interface seams). No cross-module FKs.
+2. **Response envelope** — handlers return `BaseResponse<T>` via `BaseResponseHandler`; controllers use `NewResult(...)`. The success flag is spelled **`Successed`** (do not rename).
+3. **No Unit of Work** — `GenericRepository` commits per call (`SaveChangesAsync`). If you need atomic multi-writes, open an explicit transaction.
+4. **Validation** — `ValidationBehavior` runs for `ICommand<>` only; queries are not auto-validated.
+5. **Logging** — inject `ILoggerManager`, not `ILogger<T>`. Don't add a second logger registration.
+6. **Auth** — permission policies (`{Module}.{Action}`) exist but aren't enforced; add `[Authorize(policy)]` deliberately.
+7. **No teacher role** in the product.
+
+## Multi-agent workflow
+Specialized agents live in [.claude/agents/](.claude/agents/): `analyzer`, `planner`, `designer`, `db-migration`, `backend-feature`, `frontend`, `reviewer`.
+
+**Fixed order — analyzer → planner → (designer for UI) → implementers → reviewer:**
+1. **`analyzer`** (first, always) — reads the user story + task files, builds business + technical understanding, and writes a **Pipeline Brief** to `docs/briefs/<story>.md` (traceability, acceptance criteria, per-agent handoffs, open questions). If anything is ambiguous, it returns questions for the lead to ask the user **before** planning.
+2. **`planner`** — turns the brief + task files into an **Execution Plan** in `docs/plans/<story>.md`: task inventory, dependency order, agent-assigned **batches** (parallel vs sequential), review gates, blockers. The plan flags whether a **design stage** is needed.
+3. **`designer`** (only for stories with a UI surface) — turns the story into a **Design Spec** in `design-system/ui_kits/<surface>/<story>.md`, grounded in the `design-system/` kit + UI docs. Runs **before** the frontend batch. Skip for backend-only stories.
+4. The lead **dispatches implementer agents batch by batch per the plan** — `db-migration`, `backend-feature`, `frontend` — parallel where independent, sequential where dependent. The `frontend` batch consumes the Design Spec.
+5. **`reviewer`** gates each batch against the brief's acceptance criteria + CONVENTIONS.md before it's done.
+
+- Downstream agents consume the **Pipeline Brief + Execution Plan** (and frontend also the **Design Spec**) as their spec, follow the docs above, and report back: what changed, files touched, build/test status, any rule they had to bend (with why).
+- Do not skip analyzer or planner for anything beyond a trivial one-line fix.

@@ -1,0 +1,23 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css">
+<style>
+  body{padding:28px}
+  .stage{display:flex;gap:14px;align-items:flex-end}
+  .avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#A78BFA,#6366F1);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 8px 20px rgba(99,102,241,0.4)}
+  .avatar img{width:54px;height:54px}
+  .bubble{background:rgba(15,23,42,0.7);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);border-radius:22px;border-bottom-left-radius:4px;padding:14px 18px;max-width:480px;box-shadow:var(--lx-shadow-card)}
+  .name{font-family:var(--lx-font-display);font-weight:800;font-size:12px;color:var(--lx-primary);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px}
+  .msg{font-family:var(--lx-font-body);font-size:15px;line-height:1.5;color:var(--lx-fg1)}
+  .chips{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+  .chip{font-size:12px;font-weight:600;background:rgba(79,70,229,0.18);color:#A5B4FC;padding:5px 10px;border-radius:9999px;border:1px solid rgba(99,102,241,0.3)}
+</style></head>
+<body>
+<div class="stage">
+  <div class="avatar"><img src="../assets/mascot-owl.svg"/></div>
+  <div class="bubble">
+    <div class="name">Lexi · AI Tutor</div>
+    <div class="msg">When we compare two numbers, the one with more <b style="color:var(--lx-xp)">tens</b> is bigger. Want me to show you with blocks?</div>
+    <div class="chips"><div class="chip">Yes, show me</div><div class="chip">Give a hint</div><div class="chip">Skip</div></div>
+  </div>
+</div>
+</body></html>

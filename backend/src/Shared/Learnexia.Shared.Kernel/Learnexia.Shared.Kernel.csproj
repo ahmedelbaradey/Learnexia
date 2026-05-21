@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Learnexia.Shared.Kernel</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+  	<PackageReference Include="NLog" />
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="System.Linq.Dynamic.Core" />
+  </ItemGroup>
+</Project>

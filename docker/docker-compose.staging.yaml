@@ -1,0 +1,7 @@
+services:
+  jadwa-api:
+    ports:
+      - '44301:8080'
+      - '7010:8081'
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Staging

@@ -1,0 +1,1471 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="EmptyIdValidation" xml:space="preserve">
+    <value>Id is Required</value>
+  </data>
+  <data name="EmptyNameValidation" xml:space="preserve">
+    <value>Name is Required</value>
+  </data>
+  <data name="ExistICNumberValidation" xml:space="preserve">
+    <value>IC Number Exist before</value>
+  </data>
+  <data name="HasAcceptedTerms" xml:space="preserve">
+    <value>Terms must accepted </value>
+  </data>
+  <data name="MaximumDigitsPINCodeValidation" xml:space="preserve">
+    <value>PIN Code must 6 digits</value>
+  </data>
+  <data name="MinimumDigitsPINCodeValidation" xml:space="preserve">
+    <value>PIN Code must 6 digits</value>
+  </data>
+  <data name="EmptyCustomerNameValidtion" xml:space="preserve">
+    <value>Customer Name is Required</value>
+  </data>
+  <data name="EmptyCustomerPhoneValidation" xml:space="preserve">
+    <value>Customer Phone is Required</value>
+  </data>
+  <data name="ExistCustomerPhoneValidation" xml:space="preserve">
+    <value>Phone is Exist</value>
+  </data>
+  <data name="EmptyCustomerEmailValidation" xml:space="preserve">
+    <value>Wrong Email</value>
+  </data>
+  <data name="ExistCustomerEmailValidation" xml:space="preserve">
+    <value>Email is Exist</value>
+  </data>
+  <data name="EmptyTOTPValidation" xml:space="preserve">
+    <value>TOTP is Requied</value>
+  </data>
+  <data name="MaximumDigitsTOTPValidation" xml:space="preserve">
+    <value>TOTP Maximium 4 digits</value>
+  </data>
+  <data name="MinimumDigitsTOTPValidation" xml:space="preserve">
+    <value>TOTP Minimum 4 digits</value>
+  </data>
+  <data name="NotValidOrExpiredTOTPValidation" xml:space="preserve">
+    <value>TOTP is not Valid or Expired</value>
+  </data>
+  <data name="NotValidPINCodeValidation" xml:space="preserve">
+    <value>PIN Code is wrong</value>
+  </data>
+  <data name="CustomerCreationFailed" xml:space="preserve">
+    <value>Customer Creation Failed</value>
+  </data>
+  <data name="PhoneTOTPIs" xml:space="preserve">
+    <value>Phone TOTP is :</value>
+  </data>
+  <data name="TOTPExpireAfter" xml:space="preserve">
+    <value>and will expire after 120 Seconds</value>
+  </data>
+  <data name="PINCodeUpdated" xml:space="preserve">
+    <value>PIN Code Updated</value>
+  </data>
+  <data name="PINCodeCreationFailed" xml:space="preserve">
+    <value>PIN Code Creation Failed</value>
+  </data>
+  <data name="BiometricLoginEnabledSucessfully" xml:space="preserve">
+    <value>Biometric Login Enabled Sucessfully</value>
+  </data>
+  <data name="BiometricLoginEnabledFailed" xml:space="preserve">
+    <value>Biometric Login Enabled Failed</value>
+  </data>
+  <data name="TermsAcceptedSucessfully" xml:space="preserve">
+    <value>Terms Accepted Sucessfully</value>
+  </data>
+  <data name="TermsAcceptedFailed" xml:space="preserve">
+    <value>Terms Accepted Failed</value>
+  </data>
+  <data name="EmailVerirfiedSucessfully" xml:space="preserve">
+    <value>Email Verified Successfully</value>
+  </data>
+  <data name="EmailVerificationFailed" xml:space="preserve">
+    <value>Email Verification Failed</value>
+  </data>
+  <data name="PhoneVerifiedAndEmailTOTPIs" xml:space="preserve">
+    <value>Phone Verified And Email TOTP is : </value>
+  </data>
+  <data name="PhoneVerificationFailed" xml:space="preserve">
+    <value>Phone Verification Failed</value>
+  </data>
+  <data name="PINCodeVerirfiedSucessfully" xml:space="preserve">
+    <value>PIN Code Verified Successfully</value>
+  </data>
+  <data name="PINCodeVerificationFailed" xml:space="preserve">
+    <value>PIN Code Verification Failed</value>
+  </data>
+  <data name="MaximumCharsCustomerNameValidtion" xml:space="preserve">
+    <value>Name length cannot exceed 50 charachters</value>
+  </data>
+  <data name="ValidEmailValidation" xml:space="preserve">
+    <value>Please Add Valid Email</value>
+  </data>
+  <data name="TheCustomerWithICNumber" xml:space="preserve">
+    <value>The customer with ICNumber: </value>
+  </data>
+  <data name="DoesntExist" xml:space="preserve">
+    <value>doesn't exist.</value>
+  </data>
+  <data name="Required" xml:space="preserve">
+    <value>Required Field</value>
+  </data>
+  <data name="MaxLength" xml:space="preserve">
+    <value>Must not exceed {0} characters</value>
+  </data>
+  <data name="MinLength" xml:space="preserve">
+    <value>Must not be less than {0} characters</value>
+  </data>
+  <data name="Unique" xml:space="preserve">
+    <value>Must be unique</value>
+  </data>
+  <data name="RecordSavedSuccessfully" xml:space="preserve">
+    <value>Record Saved Successfully</value>
+  </data>
+  <data name="FundManagersListValidation" xml:space="preserve">
+    <value>List must contain between 1 and 3 items.</value>
+  </data>
+  <data name="FundBoardSecretariesListValidation" xml:space="preserve">
+    <value>List must contain between 1 and 4 items.</value>
+  </data>
+  <data name="RequiredField" xml:space="preserve">
+    <value>Required Field</value>
+  </data>
+  <data name="VotingTypeRangeValidator" xml:space="preserve">
+    <value>Voting type value must be 1 or 2.</value>
+  </data>
+  <data name="BoardSecretary" xml:space="preserve">
+    <value>Board Secretary</value>
+  </data>
+  <data name="LegalCouncil" xml:space="preserve">
+    <value>Legal Counsil</value>
+  </data>
+  <data name="FundManager" xml:space="preserve">
+    <value>Fund Manager</value>
+  </data>
+  <data name="User" xml:space="preserve">
+    <value>User</value>
+  </data>
+  <data name="Basic" xml:space="preserve">
+    <value>Basic</value>
+  </data>
+  <data name="Admin" xml:space="preserve">
+    <value>Admin</value>
+  </data>
+  <data name="SuperAdmin" xml:space="preserve">
+    <value>Super Admin</value>
+  </data>
+  <data name="AnErrorIsOccurredWhileSavingData" xml:space="preserve">
+    <value>An error is occurred while saving data</value>
+  </data>
+  <data name="InitiationDateRangeValidator" xml:space="preserve">
+    <value>Initiation date must be between 01/01/2010 and today.</value>
+  </data>
+  <data name="ChangeExitDateNotificationBody" xml:space="preserve">
+    <value>The exit date for the fund {0} has been modified to {1} by {2}</value>
+  </data>
+  <data name="AddFundNotificationBody" xml:space="preserve">
+    <value>A new fund is added with name {0} by {1}, you are assigned as {2}.</value>
+  </data>
+  <data name="AddedToFundNotificationBody" xml:space="preserve">
+    <value>You are assigned as {0} to fund {1} by {2}</value>
+  </data>
+  <data name="RemoveFromFundNotificationBody" xml:space="preserve">
+    <value>You have been relieved of your role as {0} in fund {1} by {2}</value>
+  </data>
+  <data name="AddFundNotificationTitle" xml:space="preserve">
+    <value>Adding a fund</value>
+  </data>
+  <data name="AddedToFundNotificationTitle" xml:space="preserve">
+    <value>Adding duties</value>
+  </data>
+  <data name="RemoveFromFundNotificationTitle" xml:space="preserve">
+    <value>Relieve of duties</value>
+  </data>
+  <data name="CompeleteFundNotificationTitle" xml:space="preserve">
+    <value>Fund data completion</value>
+  </data>
+  <data name="ChangeExitDateNotificationTitle" xml:space="preserve">
+    <value>Change exit date</value>
+  </data>
+  <data name="CompeleteFundNotificationBody" xml:space="preserve">
+    <value>Data is completed for the fund {0}, by {1}</value>
+  </data>
+  <data name="OldFundCodeAlreadyExist" xml:space="preserve">
+    <value>This old fund code already exists. Please choose a different one</value>
+  </data>
+  <data name="MaxFileSize" xml:space="preserve">
+    <value>File size must not exceed {0} MB.</value>
+  </data>
+  <data name="PropertiesNumberValidator" xml:space="preserve">
+    <value>Properties Number must be a positive integer</value>
+  </data>
+  <data name="FundSavedSuccessfully" xml:space="preserve">
+    <value>Record Saved Successfully
+You should add board members to be able to perform fund activities, at least 2 independent members</value>
+  </data>
+  <data name="ResolutionDeletedSuccessfully" xml:space="preserve">
+    <value>Resolution deleted successfully</value>
+  </data>
+  <data name="ResolutionRejectedNotificationBody" xml:space="preserve">
+    <value>the resolution code "{0}" attached to fund "{1}", is rejected by "{2}"</value>
+  </data>
+  <data name="ResolutionSentToVoteNotificationBody" xml:space="preserve">
+    <value>the resolution code “{0}" attached to fund “{1}”, is sent to vote by “{2}”</value>
+  </data>
+  <data name="ResolutionConfirmedNotificationBody" xml:space="preserve">
+    <value>the resolution code “{0}" attached to fund “{1}”, is confirmed by fund manager “{2}”</value>
+  </data>
+  <data name="EmptyRequestValidation" xml:space="preserve">
+    <value>Request cannot be empty</value>
+  </data>
+  <data name="BoardMemberTypeIndependent" xml:space="preserve">
+    <value>Independent</value>
+  </data>
+  <data name="BoardMemberTypeNotIndependent" xml:space="preserve">
+    <value>Not Independent</value>
+  </data>
+  <data name="ResolutionStatusDraft" xml:space="preserve">
+    <value>Draft</value>
+  </data>
+  <data name="ResolutionStatusPendingLegalReview" xml:space="preserve">
+    <value>Waiting Legal Confirmation</value>
+  </data>
+  <data name="ResolutionStatusLegalReviewCompleted" xml:space="preserve">
+    <value>Legal Confirmation Completed</value>
+  </data>
+  <data name="ResolutionStatusConfirmed" xml:space="preserve">
+    <value>Confirmed</value>
+  </data>
+  <data name="ResolutionStatusRejected" xml:space="preserve">
+    <value>Rejected</value>
+  </data>
+  <data name="ResolutionStatusVotingInProgress" xml:space="preserve">
+    <value>Voting in Progress</value>
+  </data>
+  <data name="ResolutionStatusApproved" xml:space="preserve">
+    <value>Approved</value>
+  </data>
+  <data name="ResolutionStatusNotApproved" xml:space="preserve">
+    <value>Not Approved</value>
+  </data>
+  <data name="ResolutionStatusCancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="VoteDecisionApprove" xml:space="preserve">
+    <value>Approve</value>
+  </data>
+  <data name="VoteDecisionReject" xml:space="preserve">
+    <value>Reject</value>
+  </data>
+  <data name="VoteDecisionAbstain" xml:space="preserve">
+    <value>Abstain</value>
+  </data>
+  <data name="VotingTypeAllMembers" xml:space="preserve">
+    <value>All Members</value>
+  </data>
+  <data name="VotingTypeMajority" xml:space="preserve">
+    <value>Majority</value>
+  </data>
+  <data name="MemberVotingResultAllItems" xml:space="preserve">
+    <value>All Items</value>
+  </data>
+  <data name="MemberVotingResultMajorityOfItems" xml:space="preserve">
+    <value>Majority of Items</value>
+  </data>
+  <data name="InvalidCultureCode" xml:space="preserve">
+    <value>Invalid culture code provided</value>
+  </data>
+  <data name="PreferredLanguageUpdatedSuccessfully" xml:space="preserve">
+    <value>Preferred language updated successfully</value>
+  </data>
+  <data name="Unauthorized" xml:space="preserve">
+    <value>Unauthorized access</value>
+  </data>
+  <data name="InvalidIdValidation" xml:space="preserve">
+    <value>Invalid ID provided</value>
+  </data>
+  <data name="InvalidBoardMemberType" xml:space="preserve">
+    <value>Invalid board member type</value>
+  </data>
+  <data name="UserAlreadyBoardMember" xml:space="preserve">
+    <value>User is already a board member of this fund</value>
+  </data>
+  <data name="MaxIndependentMembersReached" xml:space="preserve">
+    <value>Maximum number of independent members (14) has been reached</value>
+  </data>
+  <data name="FundAlreadyHasChairman" xml:space="preserve">
+    <value>Fund already has a chairman</value>
+  </data>
+  <data name="BoardMemberAddedSuccessfully" xml:space="preserve">
+    <value>Board member added successfully</value>
+  </data>
+  <data name="BoardMemberUpdatedSuccessfully" xml:space="preserve">
+    <value>Board member updated successfully</value>
+  </data>
+  <data name="BoardMemberDeletedSuccessfully" xml:space="preserve">
+    <value>Board member deleted successfully</value>
+  </data>
+  <data name="FundNotFound" xml:space="preserve">
+    <value>Fund not found</value>
+  </data>
+  <data name="UserNotFound" xml:space="preserve">
+    <value>User not found</value>
+  </data>
+  <data name="BoardMemberNotFound" xml:space="preserve">
+    <value>Board member not found</value>
+  </data>
+  <data name="ResolutionCodeExists" xml:space="preserve">
+    <value>Resolution code already exists</value>
+  </data>
+  <data name="ResolutionCreatedSuccessfully" xml:space="preserve">
+    <value>Resolution created successfully</value>
+  </data>
+  <data name="ResolutionUpdatedSuccessfully" xml:space="preserve">
+    <value>Resolution updated successfully</value>
+  </data>
+  <data name="ResolutionNotFound" xml:space="preserve">
+    <value>Resolution not found</value>
+  </data>
+  <data name="ResolutionTypeNotFound" xml:space="preserve">
+    <value>Resolution type not found</value>
+  </data>
+  <data name="AttachmentNotFound" xml:space="preserve">
+    <value>Attachment not found</value>
+  </data>
+  <data name="InvalidResolutionDate" xml:space="preserve">
+    <value>Invalid resolution date</value>
+  </data>
+  <data name="InvalidVotingMethodology" xml:space="preserve">
+    <value>Invalid voting methodology</value>
+  </data>
+  <data name="ResolutionDateMustBeAfterFundInitiation" xml:space="preserve">
+    <value>Resolution date must be after fund initiation date</value>
+  </data>
+  <data name="ResolutionDateCannotBeFuture" xml:space="preserve">
+    <value>Resolution date cannot be in the future</value>
+  </data>
+  <data name="InvalidFileType" xml:space="preserve">
+    <value>Invalid file type. Only PDF files are allowed</value>
+  </data>
+  <data name="FileSizeExceedsLimit" xml:space="preserve">
+    <value>File size exceeds the maximum limit of 10MB</value>
+  </data>
+  <data name="ResolutionCodeGenerationFailed" xml:space="preserve">
+    <value>Failed to generate resolution code</value>
+  </data>
+  <data name="OnlyFundManagerCanCreateResolution" xml:space="preserve">
+    <value>Only fund managers can create resolutions</value>
+  </data>
+  <data name="ResolutionStatusPending" xml:space="preserve">
+    <value>Pending</value>
+  </data>
+  <data name="ResolutionStatusCompletingData" xml:space="preserve">
+    <value>Completing Data</value>
+  </data>
+  <data name="ResolutionStatusWaitingForConfirmation" xml:space="preserve">
+    <value>Waiting for Confirmation</value>
+  </data>
+  <data name="ResolutionSavedAsDraft" xml:space="preserve">
+    <value>Resolution saved as draft successfully</value>
+  </data>
+  <data name="ResolutionSentForReview" xml:space="preserve">
+    <value>Resolution sent for review successfully</value>
+  </data>
+  <data name="NewTypeRequiredForOtherResolutionType" xml:space="preserve">
+    <value>New type is required when selecting 'Other' resolution type</value>
+  </data>
+  <data name="CannotEditApprovedOrRejectedResolution" xml:space="preserve">
+    <value>Cannot edit resolutions that have been approved or rejected</value>
+  </data>
+  <data name="BoardMemberAddedNotificationTitle" xml:space="preserve">
+    <value>Added to Board</value>
+  </data>
+  <data name="BoardMemberAddedNotificationBody" xml:space="preserve">
+    <value>You were added as a board member "{0}" to the fund "{1}" by "{2}"</value>
+  </data>
+  <data name="BoardMemberAddedToFundNotificationTitle" xml:space="preserve">
+    <value>New Board Member Added</value>
+  </data>
+  <data name="BoardMemberAddedToFundNotificationBody" xml:space="preserve">
+    <value>A new "{1}" member "{0}" is added to the fund "{2}" by "{3}" "{4}"</value>
+  </data>
+  <data name="MaximumIndependentMembersReached" xml:space="preserve">
+    <value>You have reached the maximum number of independent board members of this fund</value>
+  </data>
+  <data name="Independent" xml:space="preserve">
+    <value>Independent</value>
+  </data>
+  <data name="NotIndependent" xml:space="preserve">
+    <value>Not Independent</value>
+  </data>
+  <data name="Active" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="Inactive" xml:space="preserve">
+    <value>Inactive</value>
+  </data>
+  <data name="Chairman" xml:space="preserve">
+    <value>Chairman</value>
+  </data>
+  <data name="Member" xml:space="preserve">
+    <value>Member</value>
+  </data>
+  <data name="ResolutionCreatedNotificationTitle" xml:space="preserve">
+    <value>New Resolution Added</value>
+  </data>
+  <data name="ResolutionCreatedNotificationBody" xml:space="preserve">
+    <value>A new resolution is added attached to fund "{0}" by fund manager "{1}", kindly complete resolution info.</value>
+  </data>
+  <data name="ResolutionUpdatedNotificationTitle" xml:space="preserve">
+    <value>Resolution Updated</value>
+  </data>
+  <data name="ResolutionUpdatedNotificationBody" xml:space="preserve">
+    <value>A new resolution with "{0}" is updated which attached to fund "{1}" by fund manager "{2}", kindly complete resolution info.</value>
+  </data>
+  <data name="FundActivatedNotificationTitle" xml:space="preserve">
+    <value>Fund Activated</value>
+  </data>
+  <data name="FundActivatedNotificationBody" xml:space="preserve">
+    <value>Fund "{0}" is successfully activated, as 2 independent members are attached to it</value>
+  </data>
+  <data name="UnauthorizedAccess" xml:space="preserve">
+    <value>You do not have permission to access this resource</value>
+  </data>
+  <data name="OperationCompletedSuccessfully" xml:space="preserve">
+    <value>Record Saved Successfully</value>
+  </data>
+  <data name="SystemErrorSavingData" xml:space="preserve">
+    <value>An error occurred while saving data</value>
+  </data>
+  <data name="ConfirmCancelResolution" xml:space="preserve">
+    <value>Are you sure you want to cancel this resolution?</value>
+  </data>
+  <data name="ConfirmDeleteResolution" xml:space="preserve">
+    <value>Are you sure you want to delete this item?</value>
+  </data>
+  <data name="ResolutionCancelledSuccessfully" xml:space="preserve">
+    <value>Record Saved Successfully</value>
+  </data>
+  <data name="ItemDeletedSuccessfully" xml:space="preserve">
+    <value>Item is deleted successfully</value>
+  </data>
+  <data name="SystemErrorUpdatingData" xml:space="preserve">
+    <value>An error is occurred while updating data</value>
+  </data>
+  <data name="SystemErrorDeletingData" xml:space="preserve">
+    <value>An error is occurred while deleting data</value>
+  </data>
+  <data name="SystemErrorDisplayingData" xml:space="preserve">
+    <value>An error is occurred while displaying data</value>
+  </data>
+  <data name="CannotCancelNonPendingResolution" xml:space="preserve">
+    <value>Only pending resolutions can be cancelled</value>
+  </data>
+  <data name="CannotDeleteNonDraftResolution" xml:space="preserve">
+    <value>Only draft resolutions can be deleted</value>
+  </data>
+  <data name="ResolutionCancelledNotificationTitle" xml:space="preserve">
+    <value>Resolution Cancelled</value>
+  </data>
+  <data name="ResolutionCancelledNotificationBody" xml:space="preserve">
+    <value>Resolution "{0}" in fund "{1}" has been cancelled by fund manager "{2}"</value>
+  </data>
+  <data name="ConfirmCreateNewResolutionFromApproved" xml:space="preserve">
+    <value>Updating approved/not approved resolutions initiates a new resolution related to this one</value>
+  </data>
+  <data name="NewResolutionCreatedFromApprovedNotificationTitle" xml:space="preserve">
+    <value>New Resolution Created</value>
+  </data>
+  <data name="NewResolutionCreatedFromApprovedNotificationBody" xml:space="preserve">
+    <value>A new resolution is added to fund "{0}" by "{1}" "{2}", as an update on resolution no. "{3}"</value>
+  </data>
+  <data name="ConfirmSuspendVotingForEdit" xml:space="preserve">
+    <value>Do you want to suspend the current voting to edit the resolution? (Yes/No)</value>
+  </data>
+  <data name="ResolutionVotingSuspendedNotificationTitle" xml:space="preserve">
+    <value>Voting Suspended</value>
+  </data>
+  <data name="ResolutionVotingSuspendedNotificationBody" xml:space="preserve">
+    <value>Data is updated for the resolution code {0} attached to fund {1}, by {2} {3}, which impacts resolution voting cancelation</value>
+  </data>
+  <data name="VotingSuspendedSuccessfully" xml:space="preserve">
+    <value>Voting suspended successfully and changes saved</value>
+  </data>
+  <data name="CannotEditVotingResolutionWithoutSuspension" xml:space="preserve">
+    <value>Cannot edit resolution during voting without suspending the process</value>
+  </data>
+  <data name="OnlyCreatorCanEditDraftResolution" xml:space="preserve">
+    <value>Only the creator of a draft resolution can edit it</value>
+  </data>
+  <data name="ExitWithoutSavingConfirmation" xml:space="preserve">
+    <value>Exit from screen will not saving all data(yes/no)</value>
+  </data>
+  <data name="AuditActionResolutionCreation" xml:space="preserve">
+    <value>Resolution Creation</value>
+  </data>
+  <data name="AuditActionResolutionDataUpdate" xml:space="preserve">
+    <value>Resolution Data Update</value>
+  </data>
+  <data name="AuditActionResolutionVoteSuspend" xml:space="preserve">
+    <value>Resolution Vote Suspend</value>
+  </data>
+  <data name="AuditActionResolutionConfirmation" xml:space="preserve">
+    <value>Resolution Confirmation</value>
+  </data>
+  <data name="AuditActionResolutionRejection" xml:space="preserve">
+    <value>Resolution Rejection</value>
+  </data>
+  <data name="AuditActionResolutionSentToVote" xml:space="preserve">
+    <value>Resolution Sent to Vote</value>
+  </data>
+  <data name="AuditActionResolutionCancellation" xml:space="preserve">
+    <value>Resolution Cancellation</value>
+  </data>
+  <data name="AuditActionResolutionDeletion" xml:space="preserve">
+    <value>Resolution Deletion</value>
+  </data>
+  <data name="ResolutionDataCompletedNotificationTitle" xml:space="preserve">
+    <value>resolution data completion</value>
+  </data>
+  <data name="ResolutionDataCompletedNotificationBody" xml:space="preserve">
+    <value>Data is completed for the resolution code "{0}" attached to fund "{1}", by "{2}"</value>
+  </data>
+  <data name="NoRecords" xml:space="preserve">
+    <value>No records exist to display</value>
+  </data>
+  <data name="AddFundForManagerNotificationBody" xml:space="preserve">
+    <value>A new fund is added with name {0} by {1}, you are assigned as {2} kindly complete find info.</value>
+  </data>
+  <data name="FundAlreadyExist" xml:space="preserve">
+    <value>This value already exists. Please choose a different one.</value>
+  </data>
+  <data name="InvalidFund" xml:space="preserve">
+    <value>The number must not have a decimal point.</value>
+  </data>
+  <data name="AuditActionResolutionEdit" xml:space="preserve">
+    <value>Resolution Edit</value>
+  </data>
+  <data name="AuditActionResolutionCompletion" xml:space="preserve">
+    <value>Resolution Completion</value>
+  </data>
+  <data name="AuditActionResolutionApproved" xml:space="preserve">
+    <value>Resolution Approved</value>
+  </data>
+  <data name="AuditActionResolutionUnApproved" xml:space="preserve">
+    <value>Resolution UnApproved</value>
+  </data>
+  <data name="UserUpdatedSuccessfully" xml:space="preserve">
+    <value>User Updated Successfully</value>
+  </data>
+  <data name="UserAddedSuccessfully" xml:space="preserve">
+    <value>User Added Successfully</value>
+  </data>
+  <data name="InvalidFundName" xml:space="preserve">
+    <value>The name must not have numbers or a decimal point.</value>
+  </data>
+  <data name="BoardMember" xml:space="preserve">
+    <value>Board Member</value>
+  </data>
+  <data name="FinanceController" xml:space="preserve">
+    <value>Finance Controller</value>
+  </data>
+  <data name="ComplianceLegalManagingDirector" xml:space="preserve">
+    <value>Compliance and Legal</value>
+  </data>
+  <data name="HeadOfRealEstate" xml:space="preserve">
+    <value>Managing Director, Head Of Real Estate</value>
+  </data>
+  <data name="AssociateFundManager" xml:space="preserve">
+    <value>Fund Manager Associate</value>
+  </data>
+  <data name="MinIORequestCannotBeBlank" xml:space="preserve">
+    <value>The request cannot be blank</value>
+  </data>
+  <data name="MinIOFileMissingOrEmpty" xml:space="preserve">
+    <value>File is missing or empty</value>
+  </data>
+  <data name="MinIOStorageNotEnabled" xml:space="preserve">
+    <value>MinIO storage is not enabled</value>
+  </data>
+  <data name="MinIOInvalidFileNameOrExtension" xml:space="preserve">
+    <value>Invalid file name or extension</value>
+  </data>
+  <data name="MinIOFileUploadFailed" xml:space="preserve">
+    <value>Failed to upload file to MinIO</value>
+  </data>
+  <data name="MinIOFileUploadedSuccessfully" xml:space="preserve">
+    <value>File uploaded successfully to MinIO</value>
+  </data>
+  <data name="MinIOFileNotFound" xml:space="preserve">
+    <value>File not found</value>
+  </data>
+  <data name="MinIOFileNotFoundInStorage" xml:space="preserve">
+    <value>File not found in storage</value>
+  </data>
+  <data name="MinIOPreviewUrlGenerationFailed" xml:space="preserve">
+    <value>Failed to generate preview URL</value>
+  </data>
+  <data name="MinIOPreviewUrlGeneratedSuccessfully" xml:space="preserve">
+    <value>Preview URL generated successfully</value>
+  </data>
+  <data name="MinIOFileDeletedSuccessfully" xml:space="preserve">
+    <value>File deleted successfully</value>
+  </data>
+  <data name="MinIOFileDeleteFailed" xml:space="preserve">
+    <value>Failed to delete file</value>
+  </data>
+  <data name="MinIONoFilesProvided" xml:space="preserve">
+    <value>No files provided for upload</value>
+  </data>
+  <data name="MinIOTooManyFiles" xml:space="preserve">
+    <value>Too many files. Maximum allowed: {0}</value>
+  </data>
+  <data name="MinIOFileNameCountMismatch" xml:space="preserve">
+    <value>FileNames count must match Files count when provided</value>
+  </data>
+  <data name="MinIOFileNullOrEmpty" xml:space="preserve">
+    <value>File is null or empty</value>
+  </data>
+  <data name="MinIOFileSizeExceedsLimit" xml:space="preserve">
+    <value>File size exceeds maximum allowed size of {0} bytes</value>
+  </data>
+  <data name="MinIOInvalidBucketName" xml:space="preserve">
+    <value>Bucket name must be lowercase, contain only letters, numbers, and hyphens, and be 3-63 characters long</value>
+  </data>
+  <data name="MinIOFileIdRequired" xml:space="preserve">
+    <value>File ID is required</value>
+  </data>
+  <data name="MinIOFileIdMustBeGreaterThanZero" xml:space="preserve">
+    <value>File ID must be greater than 0</value>
+  </data>
+  <data name="MinIOFileNameTooLong" xml:space="preserve">
+    <value>File name cannot exceed 255 characters</value>
+  </data>
+  <data name="MinIOModuleIdMustBeGreaterThanZero" xml:space="preserve">
+    <value>Module ID must be greater than 0</value>
+  </data>
+  <data name="MinIOMaxFilesExceeded" xml:space="preserve">
+    <value>Maximum {0} files allowed per upload</value>
+  </data>
+  <data name="MinIOExpiryTimeInvalid" xml:space="preserve">
+    <value>Expiry time must be greater than 0</value>
+  </data>
+  <data name="WhatsAppPasswordResetMessage" xml:space="preserve">
+    <value>Your password has been reset. Your new temporary password is: {0}. Please login and change your password immediately.</value>
+  </data>
+  <data name="WhatsAppUserRegistrationMessage" xml:space="preserve">
+    <value>Welcome to  System! Your account has been created. Username: {0}. Access the system at: {1}</value>
+  </data>
+  <data name="WhatsAppAccountActivationMessage" xml:space="preserve">
+    <value>Your  System account has been activated successfully. You can now access the system.</value>
+  </data>
+  <data name="WhatsAppAccountDeactivationMessage" xml:space="preserve">
+    <value>Your  System account has been deactivated. Please contact your administrator for more information.</value>
+  </data>
+  <data name="WhatsAppRegistrationResendMessage" xml:space="preserve">
+    <value>Registration message resent. Username: {0}. Access the system at: {1}</value>
+  </data>
+  <data name="WhatsAppFundMemberAddedMessage" xml:space="preserve">
+    <value>You have been added as a member to fund {0} with role {1}. You can now access the system and review fund details.</value>
+  </data>
+  <data name="FundCreationAction" xml:space="preserve">
+    <value>Fund Creation</value>
+  </data>
+  <data name="FundDataCompletionAction" xml:space="preserve">
+    <value>Fund Data Completion</value>
+  </data>
+  <data name="FundDataEditAction" xml:space="preserve">
+    <value>Fund Data Edit</value>
+  </data>
+  <data name="FundActivationAction" xml:space="preserve">
+    <value>Fund Activation</value>
+  </data>
+  <data name="FundExitDateEditAction" xml:space="preserve">
+    <value>Exit Date Edit</value>
+  </data>
+  <data name="BoardMemberAdditionAction" xml:space="preserve">
+    <value>Board Member Addition</value>
+  </data>
+  <data name="FundStatusChangeAction" xml:space="preserve">
+    <value>Status Change</value>
+  </data>
+  <data name="FundStatusUnderConstruction" xml:space="preserve">
+    <value>Under Construction</value>
+  </data>
+  <data name="FundStatusWaitingForMembers" xml:space="preserve">
+    <value>Waiting for Adding Members</value>
+  </data>
+  <data name="FundStatusActive" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="FundStatusExited" xml:space="preserve">
+    <value>Exited</value>
+  </data>
+  <data name="FundStatusTransition" xml:space="preserve">
+    <value>Status changed from {0} to {1}</value>
+  </data>
+  <data name="FundActivatedDueToMembers" xml:space="preserve">
+    <value>Fund activated due to having 2+ independent members</value>
+  </data>
+  <data name="UnknownAction" xml:space="preserve">
+    <value>Unknown Action</value>
+  </data>
+  <data name="UnknownStatus" xml:space="preserve">
+    <value>Unknown Status</value>
+  </data>
+  <data name="ProfileRequiredField" xml:space="preserve">
+    <value>Required Field.</value>
+  </data>
+  <data name="ProfileInvalidEmailFormat" xml:space="preserve">
+    <value>Invalid email format.</value>
+  </data>
+  <data name="ProfileDuplicateEmail" xml:space="preserve">
+    <value>User with this email already exists.</value>
+  </data>
+  <data name="ProfileInvalidCountryCode" xml:space="preserve">
+    <value>Invalid Saudi mobile number format. Please enter a 10-digit number starting with 05.</value>
+  </data>
+  <data name="ProfileMobileAlreadyInUse" xml:space="preserve">
+    <value>Mobile number is already in use as a username.</value>
+  </data>
+  <data name="ProfileInvalidCVFile" xml:space="preserve">
+    <value>Invalid file format or size for CV. Please upload a PDF or DOCX file up to 10MB.</value>
+  </data>
+  <data name="ProfileUpdatedSuccessfully" xml:space="preserve">
+    <value>Profile updated successfully.</value>
+  </data>
+  <data name="ProfileSystemErrorSavingData" xml:space="preserve">
+    <value>An error is occurred while saving data.</value>
+  </data>
+  <data name="ProfileInvalidPhotoFile" xml:space="preserve">
+    <value>Invalid file format or size for Personal Photo. Please upload a JPG or PNG file up to 2MB.</value>
+  </data>
+  <data name="LoginUserNotFound" xml:space="preserve">
+    <value>User with this username not found!</value>
+  </data>
+  <data name="LoginIncorrectPassword" xml:space="preserve">
+    <value>Password is't correct.</value>
+  </data>
+  <data name="LoginAccountDeactivated" xml:space="preserve">
+    <value>Your account is inactive. Please contact support.</value>
+  </data>
+  <data name="LoginTooManyFailedAttempts" xml:space="preserve">
+    <value>Account temporarily locked due to too many failed login attempts. Please try again later.</value>
+  </data>
+  <data name="LogoutSuccessful" xml:space="preserve">
+    <value>You have been logged out successfully.</value>
+  </data>
+  <data name="LogoutSystemError" xml:space="preserve">
+    <value>An error occurred during logout. Please try again.</value>
+  </data>
+  <data name="PasswordIncorrectCurrent" xml:space="preserve">
+    <value>Incorrect current password.</value>
+  </data>
+  <data name="PasswordComplexityError" xml:space="preserve">
+    <value>Password does not meet complexity requirements.</value>
+  </data>
+  <data name="PasswordMismatch" xml:space="preserve">
+    <value>Passwords do not match.</value>
+  </data>
+  <data name="PasswordSameAsCurrent" xml:space="preserve">
+    <value>New password cannot be the same as current password.</value>
+  </data>
+  <data name="PasswordChangedSuccessfully" xml:space="preserve">
+    <value>Password changed successfully.</value>
+  </data>
+  <data name="PasswordChangeSystemError" xml:space="preserve">
+    <value>An error occurred while changing password.</value>
+  </data>
+  <data name="UserActivatedSuccessfully" xml:space="preserve">
+    <value>User activated successfully.</value>
+  </data>
+  <data name="UserDeactivatedSuccessfully" xml:space="preserve">
+    <value>User deactivated successfully.</value>
+  </data>
+  <data name="UserPasswordResetSuccessfully" xml:space="preserve">
+    <value>User password reset successfully.</value>
+  </data>
+  <data name="RegistrationMessageSentSuccessfully" xml:space="preserve">
+    <value>Registration message sent successfully.</value>
+  </data>
+  <data name="UserNotEligibleForRegistrationMessage" xml:space="preserve">
+    <value>User is not eligible for registration message.</value>
+  </data>
+  <data name="UserAlreadyActive" xml:space="preserve">
+    <value>User is already active.</value>
+  </data>
+  <data name="UserAlreadyInactive" xml:space="preserve">
+    <value>User is already inactive.</value>
+  </data>
+  <data name="InvalidSaudiMobileFormat" xml:space="preserve">
+    <value>Invalid Saudi mobile number format. Must be 9 digits starting with 5.</value>
+  </data>
+  <data name="InvalidIBANFormat" xml:space="preserve">
+    <value>Invalid IBAN format.</value>
+  </data>
+  <data name="InvalidFileSize" xml:space="preserve">
+    <value>File size exceeds maximum allowed limit.</value>
+  </data>
+  <data name="UnauthorizedUserAccess" xml:space="preserve">
+    <value>You do not have permission to access this user.</value>
+  </data>
+  <data name="MobileNumberRequired" xml:space="preserve">
+    <value>Mobile number is required.</value>
+  </data>
+  <data name="InvalidSaudiMobilePattern" xml:space="preserve">
+    <value>Mobile number must be in valid Saudi format (e.g., 05XXXXXXXX, +9665XXXXXXXX, or 9665XXXXXXXX).</value>
+  </data>
+  <data name="RoleConflictDetected" xml:space="preserve">
+    <value>Another active user already holds the role '{0}'. Only one user can have this role at a time.</value>
+  </data>
+  <data name="RoleConflictReplacePrompt" xml:space="preserve">
+    <value>User '{0}' currently holds the role '{1}'. Do you want to replace them with the new user?</value>
+  </data>
+  <data name="RoleConflictSelectDifferent" xml:space="preserve">
+    <value>Please select a different role or replace the existing user to proceed.</value>
+  </data>
+  <data name="AtLeastOneRoleRequired" xml:space="preserve">
+    <value>At least one role must be assigned to the user.</value>
+  </data>
+  <data name="UniqueRoleAlreadyAssigned" xml:space="preserve">
+    <value>The role '{0}' is already assigned to another active user and cannot be assigned to multiple users.</value>
+  </data>
+  <data name="NotFoundRoles" xml:space="preserve">
+    <value>No roles found</value>
+  </data>
+  <data name="LoginUsernameRequired" xml:space="preserve">
+    <value>Username is required.</value>
+  </data>
+  <data name="LoginPasswordRequired" xml:space="preserve">
+    <value>Password is required.</value>
+  </data>
+  <data name="UsernameAlreadyInUse" xml:space="preserve">
+    <value>Username is already in use.</value>
+  </data>
+  <data name="PasswordMinimumLength" xml:space="preserve">
+    <value>Password must be at least 8 characters long.</value>
+  </data>
+  <data name="PassportNumberAlphanumeric" xml:space="preserve">
+    <value>Passport number must be alphanumeric.</value>
+  </data>
+  <data name="EditUserInvalidRoleSelection" xml:space="preserve">
+    <value>Invalid role selection.</value>
+  </data>
+  <data name="EditUserInvalidCVFile" xml:space="preserve">
+    <value>Invalid file format or size for CV. Please upload a PDF or DOCX file up to 10MB.</value>
+  </data>
+  <data name="EditUserRoleReplacementConfirmation" xml:space="preserve">
+    <value>There is another active user with the role {0}: {1}. Do you want to replace him?</value>
+  </data>
+  <data name="EditUserCannotChangeBoardMemberRole" xml:space="preserve">
+    <value>You cannot change the role of this Board Member as they are assigned to a fund. Please unassign them first.</value>
+  </data>
+  <data name="EditUserCannotChangeFundManagerRole" xml:space="preserve">
+    <value>You cannot change the role {0} as they are assigned to one of the investment funds.</value>
+  </data>
+  <data name="EditUserRelieveOfDutiesNotification" xml:space="preserve">
+    <value>You have been relieved of your duties as {0} for all assigned funds.</value>
+  </data>
+  <data name="EditUserRoleUpdateNotification" xml:space="preserve">
+    <value>Your duties have been updated: you have been relieved of your duties as {0} and assigned as {1}.</value>
+  </data>
+  <data name="EditUserRelieveOfDutiesNotificationTitle" xml:space="preserve">
+    <value>Relieve of Duties</value>
+  </data>
+  <data name="EditUserRoleUpdateNotificationTitle" xml:space="preserve">
+    <value>Update Duties</value>
+  </data>
+  <data name="CannotDeactivateIndependentBoardMember" xml:space="preserve">
+    <value>Cannot deactivate this user as they are an independent board member and deactivation would drop the fund below the minimum of 2 independent members.</value>
+  </data>
+  <data name="CannotDeactivateSoleFundManager" xml:space="preserve">
+    <value>Cannot deactivate this user as they are the sole fund manager for one or more funds.</value>
+  </data>
+  <data name="CannotDeactivateSingleHolderRole" xml:space="preserve">
+    <value>Cannot deactivate this user as they hold a single-holder role and no other active user holds this role. Please add another user with this role first.</value>
+  </data>
+  <data name="UserActivatedSuccessfully_Duplicate[1]" xml:space="preserve">
+    <value>User activated successfully.</value>
+  </data>
+  <data name="UserDeactivatedSuccessfully_Duplicate[1]" xml:space="preserve">
+    <value>User deactivated successfully.</value>
+  </data>
+  <data name="RoleReplacementConfirmation" xml:space="preserve">
+    <value>There is another active user with the role {0}: {1}. Do you want to replace them?</value>
+  </data>
+  <data name="WhatsAppRegistrationMessage" xml:space="preserve">
+    <value>Hello {0}, you have been assigned the role of {1} in the  Fund Management System. Please access the system at: {2}</value>
+  </data>
+  <data name="WhatsAppPasswordResetMessage_Duplicate[1]" xml:space="preserve">
+    <value>Your password has been reset. Your temporary password is: {0}. Please login and change your password at: {1}</value>
+  </data>
+  <data name="SessionExpiredWarning" xml:space="preserve">
+    <value>Your session will expire in {0} minutes due to inactivity.</value>
+  </data>
+  <data name="SessionExpiredTitle" xml:space="preserve">
+    <value>Session Timeout Warning</value>
+  </data>
+  <data name="SessionExpiredMessage" xml:space="preserve">
+    <value>Your session has expired due to inactivity. Please log in again.</value>
+  </data>
+  <data name="SessionExtendedSuccessfully" xml:space="preserve">
+    <value>Your session has been extended successfully.</value>
+  </data>
+  <data name="SessionExtensionFailed" xml:space="preserve">
+    <value>Failed to extend your session. Please try again.</value>
+  </data>
+  <data name="SessionExtensionInvalidToken" xml:space="preserve">
+    <value>Invalid session token. Please log in again.</value>
+  </data>
+  <data name="SessionExtensionSystemError" xml:space="preserve">
+    <value>System error occurred while extending session. Please try again.</value>
+  </data>
+  <data name="SessionNotFound" xml:space="preserve">
+    <value>Session not found or has expired.</value>
+  </data>
+  <data name="SessionStatusInvalidToken" xml:space="preserve">
+    <value>Invalid session token for status check.</value>
+  </data>
+  <data name="SessionStatusSystemError" xml:space="preserve">
+    <value>System error occurred while checking session status.</value>
+  </data>
+  <data name="SessionWarningExtendButton" xml:space="preserve">
+    <value>Extend Session</value>
+  </data>
+  <data name="SessionWarningLogoutButton" xml:space="preserve">
+    <value>Logout Now</value>
+  </data>
+  <data name="SessionWarningContinueButton" xml:space="preserve">
+    <value>Continue Working</value>
+  </data>
+  <data name="SessionTimeoutConfigRetrieved" xml:space="preserve">
+    <value>Session timeout configuration retrieved successfully.</value>
+  </data>
+  <data name="SessionActivityUpdated" xml:space="preserve">
+    <value>Session activity updated successfully.</value>
+  </data>
+  <data name="SessionCreatedAuditNote" xml:space="preserve">
+    <value>User session created with security tracking</value>
+  </data>
+  <data name="SessionExtendedAuditNote" xml:space="preserve">
+    <value>User session timeout extended due to activity</value>
+  </data>
+  <data name="SessionTerminatedAuditNote" xml:space="preserve">
+    <value>User session terminated for security or timeout reasons</value>
+  </data>
+  <data name="SessionValidationFailedAuditNote" xml:space="preserve">
+    <value>Session validation failed - potential security issue</value>
+  </data>
+  <data name="SecurityViolationAuditNote" xml:space="preserve">
+    <value>Security violation detected in user session</value>
+  </data>
+  <data name="ConcurrentSessionLimitExceededAuditNote" xml:space="preserve">
+    <value>User exceeded maximum concurrent session limit</value>
+  </data>
+  <data name="SessionActivityAuditNote" xml:space="preserve">
+    <value>User session activity recorded for monitoring</value>
+  </data>
+  <data name="SessionCleanupAuditNote" xml:space="preserve">
+    <value>Expired sessions cleaned up by system maintenance</value>
+  </data>
+  <data name="RoleBasedTimeoutAppliedAuditNote" xml:space="preserve">
+    <value>Role-specific session timeout applied to user</value>
+  </data>
+  <data name="RememberMeSessionCreatedAuditNote" xml:space="preserve">
+    <value>Extended Remember Me session created for user</value>
+  </data>
+ 
+  <!-- Meeting Time Proposal Messages (User Story 1) -->
+  <data name="MeetingTimeProposalCreatedSuccessfully" xml:space="preserve">
+    <value>Proposal sent for voting successfully.</value>
+  </data>
+  <data name="MeetingSubjectRequired" xml:space="preserve">
+    <value>Meeting Subject is required.</value>
+  </data>
+  <data name="AtLeastOneProposedTimeRequired" xml:space="preserve">
+    <value>Please add at least one proposed date and time.</value>
+  </data>
+  <data name="InvalidFileTypePdfOnly" xml:space="preserve">
+    <value>Invalid file type. Please upload a PDF file only.</value>
+  </data>
+  <data name="FileUploadFailed" xml:space="preserve">
+    <value>File upload failed. Please try again.</value>
+  </data>
+  <data name="ConfirmDiscardChanges" xml:space="preserve">
+    <value>Are you sure you want to discard your changes?</value>
+  </data>
+  <data name="NewVoteStartedNotificationTitle" xml:space="preserve">
+    <value>New Meeting Time Vote</value>
+  </data>
+  <data name="NewVoteStartedNotificationBody" xml:space="preserve">
+    <value>A new vote has started for "{0}".</value>
+  </data>
+  <!-- Meeting Time Vote Messages (User Story 2) -->
+  <data name="VoteSubmittedSuccessfully" xml:space="preserve">
+    <value>Your vote has been submitted successfully.</value>
+  </data>
+  <data name="SelectAtLeastOneOption" xml:space="preserve">
+    <value>Please select at least one option before submitting.</value>
+  </data>
+  <data name="VotingCompletedNotificationTitle" xml:space="preserve">
+    <value>Meeting Time Voting Complete</value>
+  </data>
+  <data name="VotingCompletedNotificationBody" xml:space="preserve">
+    <value>Voting for the meeting "{0}" is now complete.</value>
+  </data>
+  <data name="VotingForProposalComplete" xml:space="preserve">
+    <value>Voting for this proposal is complete.</value>
+  </data>
+  <data name="AlreadyVotedOnProposal" xml:space="preserve">
+    <value>You have already voted on this proposal.</value>
+  </data>
+  <!-- Additional validation messages for meetings -->
+  <data name="FutureDateRequired" xml:space="preserve">
+    <value>Date must be in the future.</value>
+  </data>
+  <data name="DuplicateSelection" xml:space="preserve">
+    <value>Duplicate selections are not allowed.</value>
+  </data>
+  <!-- Meeting Status Descriptions -->
+  <data name="MeetingStatusScheduled" xml:space="preserve">
+    <value>Scheduled</value>
+  </data>
+  <data name="MeetingStatusInProgress" xml:space="preserve">
+    <value>In Progress</value>
+  </data>
+  <data name="MeetingStatusFinished" xml:space="preserve">
+    <value>Finished</value>
+  </data>
+  <data name="MeetingStatusCancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="MeetingStatusPostponed" xml:space="preserve">
+    <value>Postponed</value>
+  </data>
+  <!-- Meeting State Validation Messages -->
+  <data name="MeetingScheduledValidationMessage" xml:space="preserve">
+    <value>Meeting is scheduled and can be started, edited, cancelled, or postponed.</value>
+  </data>
+  <data name="MeetingNotifyAttendeesMessage" xml:space="preserve">
+    <value>Ensure all attendees are notified of any changes.</value>
+  </data>
+  <data name="MeetingInProgressValidationMessage" xml:space="preserve">
+    <value>Meeting is currently in progress.</value>
+  </data>
+  <data name="MeetingLiveFeaturesMessage" xml:space="preserve">
+    <value>Live meeting features (notes, attendance, attachments) are available.</value>
+  </data>
+  <data name="MeetingFinishedValidationMessage" xml:space="preserve">
+    <value>Meeting has been completed and cannot be modified.</value>
+  </data>
+  <data name="MeetingMinutesCanBeCreatedMessage" xml:space="preserve">
+    <value>Meeting minutes can be created and circulated for signature.</value>
+  </data>
+  <data name="MeetingCancelledValidationMessage" xml:space="preserve">
+    <value>Meeting has been cancelled and cannot be modified.</value>
+  </data>
+  <data name="MeetingPostponedValidationMessage" xml:space="preserve">
+    <value>Meeting has been postponed and can be rescheduled.</value>
+  </data>
+  <data name="MeetingRescheduleMessage" xml:space="preserve">
+    <value>Update the meeting date and time to reschedule.</value>
+ </data>
+  <!-- Assessment Status Localization -->
+  <data name="AssessmentStatusDraft" xml:space="preserve">
+    <value>Draft</value>
+  </data>
+  <data name="AssessmentStatusWaitingForApproval" xml:space="preserve">
+    <value>Waiting for Approval</value>
+  </data>
+  <data name="AssessmentStatusApproved" xml:space="preserve">
+    <value>Approved</value>
+  </data>
+  <data name="AssessmentStatusRejected" xml:space="preserve">
+    <value>Rejected</value>
+  </data>
+  <data name="AssessmentStatusActive" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="AssessmentStatusCompleted" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <!-- Assessment Type Localization -->
+  <data name="AssessmentTypeQuestionnaire" xml:space="preserve">
+    <value>Questionnaire</value>
+  </data>
+  <data name="AssessmentTypeAttachment" xml:space="preserve">
+    <value>Attachment</value>
+  </data>
+  <!-- Question Type Localization -->
+  <data name="QuestionTypeSingleChoice" xml:space="preserve">
+    <value>Single Choice</value>
+  </data>
+  <data name="QuestionTypeText" xml:space="preserve">
+    <value>Text</value>
+  </data>
+  <!-- Assessment Validation Messages -->
+  <data name="AssessmentTitleRequired" xml:space="preserve">
+    <value>Assessment title is required</value>
+  </data>
+  <data name="AssessmentTypeRequired" xml:space="preserve">
+    <value>Assessment type is required</value>
+  </data>
+  <data name="AtLeastOneQuestionRequired" xml:space="preserve">
+    <value>At least one question is required</value>
+  </data>
+  <data name="AttachmentRequired" xml:space="preserve">
+    <value>Attachment is required</value>
+  </data>
+  <data name="RejectionReasonRequired" xml:space="preserve">
+    <value>Rejection reason is required</value>
+  </data>
+  <data name="AllRequiredQuestionsRequired" xml:space="preserve">
+    <value>Please answer all required questions before submitting</value>
+  </data>
+  <data name="QuestionTextRequired" xml:space="preserve">
+    <value>Question text is required</value>
+  </data>
+  <data name="QuestionOptionsRequired" xml:space="preserve">
+    <value>Question options are required for single choice questions</value>
+  </data>
+  <!-- Assessment Success Messages -->
+  <data name="AssessmentSubmittedForApproval" xml:space="preserve">
+    <value>Assessment submitted for approval successfully</value>
+  </data>
+  <data name="AssessmentSavedAsDraft" xml:space="preserve">
+    <value>Assessment saved as draft</value>
+  </data>
+  <data name="AssessmentApproved" xml:space="preserve">
+    <value>The assessment has been approved</value>
+  </data>
+  <data name="AssessmentRejected" xml:space="preserve">
+    <value>The assessment has been rejected</value>
+  </data>
+  <data name="AssessmentDistributed" xml:space="preserve">
+    <value>Assessment distributed successfully</value>
+  </data>
+  <data name="ResponseSubmittedSuccessfully" xml:space="preserve">
+    <value>Your response has been submitted successfully</value>
+  </data>
+  <!-- Assessment Notification Messages -->
+  <data name="NewAssessmentWaitingApproval" xml:space="preserve">
+    <value>A new assessment '{0}' is waiting for your approval</value>
+  </data>
+  <data name="AssessmentApprovedNotification" xml:space="preserve">
+    <value>Your assessment '{0}' has been approved</value>
+  </data>
+  <data name="AssessmentRejectedNotification" xml:space="preserve">
+    <value>Your assessment '{0}' has been rejected. Reason: {1}</value>
+  </data>
+  <data name="NewAssessmentReadyForResponse" xml:space="preserve">
+    <value>A new assessment, '{0}', is ready for your review. Please submit your response</value>
+  </data>
+  <data name="AssessmentDistributionConfirmation" xml:space="preserve">
+    <value>Are you sure you want to send this assessment to {0} board members? It cannot be recalled</value>
+  </data>
+  <!-- Assessment Error Messages -->
+  <data name="InvalidStatusTransition" xml:space="preserve">
+    <value>Invalid status transition</value>
+  </data>
+  <data name="AssessmentNotFound" xml:space="preserve">
+    <value>Assessment not found</value>
+  </data>
+  <data name="UnauthorizedAssessmentAccess" xml:space="preserve">
+    <value>Unauthorized access to assessment</value>
+  </data>
+  <data name="AssessmentAlreadyResponded" xml:space="preserve">
+    <value>You have already responded to this assessment</value>
+  </data>
+  <data name="AssessmentNotActive" xml:space="preserve">
+    <value>Assessment is not active for responses</value>
+  </data>
+  <!-- Additional Assessment Validation Messages -->
+  <data name="AssessmentTitleMaxLength" xml:space="preserve">
+    <value>Assessment title must be less than 255 characters</value>
+  </data>
+  <data name="AssessmentWaitingTooLong" xml:space="preserve">
+    <value>Warning: Assessment has been waiting for approval for more than {0} days</value>
+  </data>
+  <data name="AssessmentReadyForDistribution" xml:space="preserve">
+    <value>Assessment is ready for distribution to board members</value>
+  </data>
+  <data name="AssessmentCannotBeModified" xml:space="preserve">
+    <value>Assessment cannot be modified in current status</value>
+  </data>
+  <data name="AssessmentResponsesReceived" xml:space="preserve">
+    <value>Assessment responses have been received from board members</value>
+  </data>
+  <data name="AssessmentCompletionReady" xml:space="preserve">
+    <value>Assessment is ready for completion</value>
+  </data>
+  <!-- Assessment Action Localization -->
+  <data name="AssessmentSubmitForApproval" xml:space="preserve">
+    <value>Submit for Approval</value>
+  </data>
+  <data name="AssessmentApprove" xml:space="preserve">
+    <value>Approve</value>
+  </data>
+  <data name="AssessmentReject" xml:space="preserve">
+    <value>Reject</value>
+  </data>
+  <data name="AssessmentDistribute" xml:space="preserve">
+    <value>Distribute</value>
+  </data>
+  <data name="AssessmentComplete" xml:space="preserve">
+    <value>Complete</value>
+  </data>
+  <data name="AssessmentEdit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="AssessmentViewDetails" xml:space="preserve">
+    <value>View Details</value>
+  </data>
+  <data name="AssessmentDelete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="AssessmentSave" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="AssessmentRespond" xml:space="preserve">
+    <value>Respond</value>
+  </data>
+  <!-- Assessment Review Messages -->
+  <data name="ReviewerInformationRequired" xml:space="preserve">
+    <value>Reviewer information is required</value>
+  </data>
+  <data name="ReviewDateRequired" xml:space="preserve">
+    <value>Review date is required</value>
+  </data>
+  <data name="FundBoardMembersRequired" xml:space="preserve">
+    <value>Fund must have board members for assessment distribution</value>
+  </data>
+  <!-- Additional Validation Messages -->
+  <data name="InvalidAttachmentId" xml:space="preserve">
+    <value>Invalid attachment ID</value>
+  </data>
+  <data name="QuestionsNotAllowedForAttachment" xml:space="preserve">
+    <value>Questions should not be provided for attachment type assessments</value>
+  </data>
+  <data name="QuestionDisplayOrdersUnique" xml:space="preserve">
+    <value>Question display orders must be unique</value>
+  </data>
+  <!-- Question Validation Messages -->
+  <data name="QuestionTextMaxLength" xml:space="preserve">
+    <value>Question text must be less than 1000 characters</value>
+  </data>
+  <data name="QuestionTypeRequired" xml:space="preserve">
+    <value>Question type is required</value>
+  </data>
+  <data name="QuestionDisplayOrderRequired" xml:space="preserve">
+    <value>Question display order must be greater than 0</value>
+  </data>
+  <data name="QuestionOptionsMinimumTwo" xml:space="preserve">
+    <value>Single choice questions must have at least 2 options</value>
+  </data>
+  <data name="QuestionOptionsNotAllowedForText" xml:space="preserve">
+    <value>Options should not be provided for text questions</value>
+  </data>
+  <!-- Assessment Notification Messages -->
+  <data name="AssessmentSubmittedForApprovalNotificationTitle" xml:space="preserve">
+    <value>Assessment Submitted for Approval</value>
+  </data>
+  <data name="AssessmentSubmittedForApprovalNotificationBody" xml:space="preserve">
+    <value>Assessment '{0}' in fund '{1}' has been submitted for approval by {2}</value>
+  </data>
+  <data name="AssessmentApprovedNotificationTitle" xml:space="preserve">
+    <value>Assessment Approved</value>
+  </data>
+  <data name="AssessmentApprovedNotificationBody" xml:space="preserve">
+    <value>Your assessment '{0}' in fund '{1}' has been approved by {2}</value>
+  </data>
+  <data name="AssessmentRejectedNotificationTitle" xml:space="preserve">
+    <value>Assessment Rejected</value>
+  </data>
+  <data name="AssessmentRejectedNotificationBody" xml:space="preserve">
+    <value>Your assessment '{0}' in fund '{1}' has been rejected by {2}. Reason: {3}</value>
+  </data>
+  <data name="AssessmentDistributedNotificationTitle" xml:space="preserve">
+    <value>New Assessment Available</value>
+  </data>
+  <data name="AssessmentDistributedNotificationBody" xml:space="preserve">
+    <value>Assessment '{0}' in fund '{1}' is now available for your response. Distributed by {2}</value>
+  </data>
+  <data name="AssessmentCompletedNotificationTitle" xml:space="preserve">
+    <value>Assessment Completed</value>
+  </data>
+  <data name="AssessmentCompletedNotificationBody" xml:space="preserve">
+    <value>Assessment '{0}' in fund '{1}' has been completed by {2}</value>
+  </data>
+  <!-- Assessment State Transition Messages -->
+  <data name="AssessmentStatusTransitionMessage" xml:space="preserve">
+    <value>Assessment status changed from {0} to {1}. Reason: {2}</value>
+  </data>
+  <!-- Assessment State Information Messages -->
+  <data name="AssessmentPendingResponsesInfo" xml:space="preserve">
+    <value>Info: {0} pending responses out of {1}</value>
+  </data>
+  <data name="AssessmentAllResponsesReceivedInfo" xml:space="preserve">
+    <value>Info: All responses received, assessment can be completed</value>
+  </data>
+  <data name="AssessmentNoResponsesWarning" xml:space="preserve">
+    <value>Warning: No responses have been created for this assessment yet</value>
+  </data>
+  <data name="AssessmentCompletionStatistics" xml:space="preserve">
+    <value>Info: Received {0} responses out of {1} ({2:F1}%)</value>
+  </data>
+  <data name="AssessmentNoResponsesReceived" xml:space="preserve">
+    <value>Warning: No responses were received</value>
+  </data>
+  <data name="AssessmentNoResponsesExist" xml:space="preserve">
+    <value>Warning: No responses exist for this assessment</value>
+  </data>
+  <!-- Additional Assessment Action Localization -->
+  <data name="AssessmentViewRejectionReason" xml:space="preserve">
+    <value>View Rejection Reason</value>
+  </data>
+  <data name="AssessmentResubmit" xml:space="preserve">
+    <value>Resubmit</value>
+  </data>
+  <data name="AssessmentViewResponses" xml:space="preserve">
+    <value>View Responses</value>
+  </data>
+  <data name="AssessmentViewResults" xml:space="preserve">
+    <value>View Results</value>
+  </data>
+  <data name="AssessmentCompleteAssessment" xml:space="preserve">
+    <value>Complete Assessment</value>
+  </data>
+  <data name="AssessmentExportResults" xml:space="preserve">
+    <value>Export Results</value>
+  </data>
+  <data name="AssessmentExportData" xml:space="preserve">
+    <value>Export Data</value>
+  </data>
+  <data name="AssessmentArchive" xml:space="preserve">
+    <value>Archive</value>
+  </data>
+  <!-- Question Type Localization -->
+  <data name="QuestionTypeSingleChoice" xml:space="preserve">
+    <value>Single Choice</value>
+  </data>
+  <data name="QuestionTypeText" xml:space="preserve">
+    <value>Text</value>
+ 
+  </data>
+</root>

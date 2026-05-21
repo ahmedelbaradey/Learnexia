@@ -1,0 +1,112 @@
+# Learnexia — User Stories Backlog
+
+Generated from [BRD.md](../docs/BRD.md), [BUSINESS_PLAN.md](../docs/BUSINESS_PLAN.md), [SRS.md](../docs/SRS.md), and [TASK_BREAKDOWN.md](../docs/TASK_BREAKDOWN.md), reconciled into one coherent backlog.
+
+- **Project:** Learnexia
+- **Format:** one user story per `.md` file, Jira-ready (Summary / Issue type / Description / Acceptance Criteria / Story Points / Labels / Notes).
+- **Sprints:** one sprint per phase, following the 9-week, 6-phase MVP plan. Each phase folder = one Jira sprint.
+- **Phase 2+ (post-MVP):** Curriculum Intelligence work lives in `Backlog-Phase-2-Plus/` (modeled now, built later).
+
+## Product decisions that override the source docs
+
+These intentional decisions diverge from the source docs; each affected story records the override in its Notes.
+
+- **Parent-driven onboarding:** the parent (not the student) registers, adds one or more children, and completes each child's onboarding (grade/language/country). The parent assigns each child a login email; the child then logs in to their own account. Students do **not** self-register. *(Overrides SRS FR-ID-2's implied student onboarding — see P1-01, P1-03, P1-04, P1-09.)*
+- **4 subjects, not 5:** Math, Science, Arabic, English. **Social Studies removed.** *(Overrides BRD §4 — see P2-02, P2-10, P3-03.)*
+- **Grade transition:** the parent dashboard has a per-child grade-transition control that **re-scopes the skill tree to the new grade while preserving history** (XP/badges/streaks/mastery retained). *(New — see P5-05, P5-06.)*
+
+## Sprint → Phase mapping
+
+| Sprint (folder) | Phase | Weeks | Theme | Done when… |
+|---|---|---|---|---|
+| `Phase-1-Foundation` | P1 | 1–2 | Auth, users, DB, design system, DevOps | A user can register/login; design system + auth screens live; DB provisioned |
+| `Phase-2-Learning-Core` | P2 | 3–4 | Subjects, lessons, skill tree, quiz | A student can browse subjects, open a lesson, navigate a skill tree, take a quiz |
+| `Phase-3-AI-Tutor` | P3 | 5–6 | Prompt builder, RAG, hints, adaptivity | Tutor explains/hints/generates questions, grounded + behind safety layer |
+| `Phase-4-Gamification` | P4 | 7 | XP, streaks, hearts, badges, missions, leagues | Gamification fires on learning events and is visible in UI |
+| `Phase-5-Parent-Analytics` | P5 | 8 | Weekly reports, weak areas, KPIs, parent dashboard | A parent sees a weekly report with weak areas; KPI events captured |
+| `Phase-6-Stabilization` | P6 | 9 | Testing, perf, prompt tuning, observability | NFR-1 perf met, prompts tuned, critical bugs cleared → launch-ready |
+| `Backlog-Phase-2-Plus` | post-MVP | — | Curriculum Intelligence (ingestion, KG, RAG at scale) | Deferred; data model designed in MVP |
+
+## How to load into Jira
+
+1. Create a **Scrum** project with key **`LEX`** (or reuse an existing Learnexia project).
+2. Create one sprint per phase folder above (Sprint name = phase name).
+3. For each `.md` file, create a **Story** (or Epic / Technical Enabler per the file's *Issue type*):
+   - Copy the file body into the Description field.
+   - Set Story Points, Labels, and Sprint as stated in the file.
+   - Link dependencies using the *Notes* ("blocked by") section.
+4. Group stories under the phase **Epic** named in each file if you use an Epic layer.
+
+> No live Jira sync was performed — these are local artifacts to copy or bulk-import.
+
+## Story index
+
+### Phase 1 — Foundation
+- P1-01 Register as a parent (children provisioned by parent)
+- P1-02 Stay signed in (token refresh & sign-out)
+- P1-03 Parent completes onboarding & adds children
+- P1-04 Link a parent to a child account
+- P1-05 Enforce role-based access control
+- P1-06 Provision PostgreSQL + pgvector + Redis (Npgsql migration)
+- P1-07 Dockerized environment & CI/CD pipeline
+- P1-08 Design system & core component library (RTL/Arabic)
+- P1-09 Auth & onboarding screens
+
+### Phase 2 — Learning Core
+- P2-01 Model the curriculum hierarchy
+- P2-02 Browse subjects and lessons
+- P2-03 Navigate the skill tree
+- P2-04 Unlock lessons by prerequisite/mastery rules
+- P2-05 Open and complete a lesson
+- P2-06 Take a quiz (4 question types)
+- P2-07 Get instant answer feedback
+- P2-08 Record granular per-question answers
+- P2-09 See the home dashboard
+- P2-10 Seed demo subjects & skill trees
+
+### Phase 3 — AI Tutor
+- P3-01 Route AI requests through an AI Gateway
+- P3-02 Filter AI output through a Safety Layer
+- P3-03 Build personalized tutor prompts
+- P3-04 Explain a concept on demand
+- P3-05 Get progressive hints & simpler re-explanations
+- P3-06 Generate curriculum-grounded questions (RAG)
+- P3-07 Retrieve curriculum context via vector search
+- P3-08 Adjust difficulty adaptively
+- P3-09 Track per-skill mastery
+- P3-10 Schedule spaced-repetition practice
+- P3-11 Serve adaptive quizzes
+- P3-12 Interact with the AI tutor UI
+
+### Phase 4 — Gamification
+- P4-01 Emit learning domain events
+- P4-02 Earn XP and level up
+- P4-03 Maintain a daily streak
+- P4-04 Lose hearts and enter Practice Mode
+- P4-05 Earn badges
+- P4-06 Complete daily/weekly missions
+- P4-07 Compete in weekly leagues
+- P4-08 Gamification screens & motion
+
+### Phase 5 — Parent + Analytics
+- P5-01 Generate a weekly student report
+- P5-02 Detect and rank weak areas
+- P5-03 Capture product analytics events
+- P5-04 Deliver reports via notifications
+- P5-05 View the parent dashboard
+- P5-06 Transition a child to a new grade
+
+### Phase 6 — Stabilization
+- P6-01 Meet API & AI performance targets
+- P6-02 Validate AI safety with an eval set
+- P6-03 Pass localization & RTL review
+- P6-04 Regression, prompt-tuning & bug triage
+- P6-05 Observability: logging, tracing, dashboards
+
+### Backlog (Phase 2+) — Curriculum Intelligence
+*Three-stage pipeline: Multimodal Parsing (BL-02) → Curriculum Ingestion (BL-05) → Knowledge Graph (BL-03).*
+- BL-01 Upload curriculum documents with metadata
+- BL-02 Parse curriculum files into structured content (Multimodal Parsing)
+- BL-03 Build & query the knowledge graph
+- BL-04 Curriculum, knowledge-graph & vector schema
+- BL-05 Ingest parsed content into the curriculum hierarchy (Curriculum Ingestion)

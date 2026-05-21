@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Learnexia · Parent Dashboard</title>
+<link rel="stylesheet" href="../../colors_and_type.css"/>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; background: #0a1020; color: #F8FAFC;
+    font-family: 'Poppins', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .frame {
+    width: 1280px; margin: 24px auto; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
+    background: #0F172A;
+  }
+  .chrome {
+    height: 40px; background: #1E293B; display: flex; align-items: center; gap: 8px;
+    padding: 0 14px; border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .chrome .dots { display: flex; gap: 6px; }
+  .chrome .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .chrome .url {
+    flex: 1; margin: 0 14px; background: #0F172A; border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px; height: 26px; padding: 0 12px;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: #94A3B8;
+  }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="Components.jsx"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+function App() {
+  const [section, setSection] = React.useState('overview');
+
+  const weekData = [
+    { day: 'Mon', xp: 45 },
+    { day: 'Tue', xp: 80 },
+    { day: 'Wed', xp: 30 },
+    { day: 'Thu', xp: 95 },
+    { day: 'Fri', xp: 50 },
+    { day: 'Sat', xp: 70 },
+    { day: 'Sun', xp: 110, today: true },
+  ];
+
+  const weak = [
+    { topic: 'Subtraction with borrowing', subject: 'Math',     icon: '➖', color: '#EF4444', accuracy: 42 },
+    { topic: 'Long vowels',                subject: 'Reading',  icon: '🔤', color: '#F59E0B', accuracy: 58 },
+    { topic: 'States of matter',           subject: 'Science',  icon: '🧪', color: '#F59E0B', accuracy: 64 },
+    { topic: 'Multiplication tables',      subject: 'Math',     icon: '✕',  color: '#22C55E', accuracy: 78 },
+  ];
+
+  return (
+    <div className="frame" data-screen-label="Parent Dashboard · Overview">
+      <div className="chrome">
+        <div className="dots">
+          <div className="dot" style={{ background: '#FF5F57' }}/>
+          <div className="dot" style={{ background: '#FEBC2E' }}/>
+          <div className="dot" style={{ background: '#28C840' }}/>
+        </div>
+        <div className="url">🔒 app.learnexia.com/parents/sami/overview</div>
+        <div style={{ color: '#64748B', fontSize: 14 }}>⋯</div>
+      </div>
+      <div style={{ display: 'flex', minHeight: 820 }}>
+        <PDSidebar active={section} onChange={setSection}/>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          <PDHeader title="Sami's progress" sub="Mon, Nov 18 → Sun, Nov 24" />
+          <div style={{ flex: 1, overflow: 'auto', padding: 28, display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+            {/* KPI row */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+              <PDStatCard label="Time learning" value="3h 24m" delta="+42m" accent="#4F46E5" icon="⏱️"/>
+              <PDStatCard label="XP earned"     value="480"    delta="+28%" accent="#FACC15" icon="⭐"/>
+              <PDStatCard label="Lessons done"  value="14"     delta="+3"   accent="#22C55E" icon="✓"/>
+              <PDStatCard label="Day streak"    value="7"      delta="+1"   accent="#FB923C" icon="🔥"/>
+            </div>
+
+            {/* Activity chart + weak areas */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 20 }}>
+              <PDPanel title="Daily activity" sub="XP earned per day" action="Export CSV">
+                <PDActivityChart data={weekData}/>
+              </PDPanel>
+              <PDPanel title="Subject mastery" sub="Last 7 days">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {[
+                    { name: 'Math',     pct: 72, color: '#4F46E5' },
+                    { name: 'Reading',  pct: 65, color: '#A855F7' },
+                    { name: 'Science',  pct: 58, color: '#22C55E' },
+                    { name: 'Art',      pct: 84, color: '#FB923C' },
+                  ].map(s => (
+                    <div key={s.name} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 700 }}>
+                        <span style={{ color: '#F8FAFC' }}>{s.name}</span>
+                        <span style={{ color: s.color, fontVariantNumeric: 'tabular-nums' }}>{s.pct}%</span>
+                      </div>
+                      <div style={{ height: 8, background: '#0F172A', borderRadius: 9999, overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${s.pct}%`, background: s.color }}/>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </PDPanel>
+            </div>
+
+            {/* Weak areas */}
+            <PDPanel title="Areas to focus on" sub="Topics where Sami is still building confidence" action="See all">
+              <PDWeakAreas items={weak}/>
+            </PDPanel>
+
+            {/* Recommendations */}
+            <PDPanel title="Recommendations from Lexi" sub="Tailored to this week's activity">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+                <PDRecommendation icon="🎯" accent="#4F46E5"
+                  title="Practice subtraction 5 min/day"
+                  body="Short daily reps will lift accuracy from 42% in about a week."
+                  cta="Plan it"/>
+                <PDRecommendation icon="📖" accent="#A855F7"
+                  title="Read with a parent on Fridays"
+                  body="Sami reads 28% faster when reading aloud with a grown-up."
+                  cta="Schedule"/>
+                <PDRecommendation icon="🎉" accent="#FACC15"
+                  title="Celebrate the 7-day streak"
+                  body="A weekend reward keeps motivation high. Suggest a screen-time bonus."
+                  cta="Send praise"/>
+              </div>
+            </PDPanel>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

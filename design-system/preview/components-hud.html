@@ -1,0 +1,23 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css">
+<style>
+  body{padding:28px}
+  .hud{display:flex;gap:10px;align-items:center;justify-content:space-between;background:#1E293B;border:1px solid rgba(255,255,255,0.06);border-radius:9999px;padding:8px 12px}
+  .pill{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:9999px;font-family:var(--lx-font-display);font-weight:800;font-size:14px;color:#0F172A}
+  .streak{background:rgba(251,146,60,0.18);color:#FB923C}
+  .heart{background:rgba(251,113,133,0.18);color:#FB7185}
+  .xp{background:rgba(250,204,21,0.18);color:#FACC15}
+  .gem{background:rgba(56,189,248,0.18);color:#38BDF8}
+  .ico{font-size:16px}
+  .xpbar{flex:1;height:10px;background:#0F172A;border-radius:9999px;overflow:hidden;margin:0 6px;border:1px solid rgba(255,255,255,0.06)}
+  .xpfill{height:100%;width:65%;background:linear-gradient(90deg,#FACC15,#FB923C);box-shadow:0 0 12px rgba(250,204,21,0.6)}
+</style></head>
+<body>
+<div class="hud">
+  <div class="pill streak"><span class="ico">🔥</span>7</div>
+  <div class="pill heart"><span class="ico">❤️</span>4</div>
+  <div class="xpbar"><div class="xpfill"></div></div>
+  <div class="pill xp"><span class="ico">⭐</span>1,240</div>
+  <div class="pill gem"><span class="ico">💎</span>42</div>
+</div>
+</body></html>

@@ -1,0 +1,1470 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="EmptyIdValidation" xml:space="preserve">
+    <value>المعرف مطلوب</value>
+  </data>
+  <data name="EmptyNameValidation" xml:space="preserve">
+    <value>الاسم مطلوب</value>
+  </data>
+  <data name="ExistICNumberValidation" xml:space="preserve">
+    <value>رقم العميل موجود من قبل</value>
+  </data>
+  <data name="HasAcceptedTerms" xml:space="preserve">
+    <value>يرجى قبول الشروط </value>
+  </data>
+  <data name="MaximumDigitsPINCodeValidation" xml:space="preserve">
+    <value>الرقم السرى لا يجب ان يزيد عن 6 ارقام فقط</value>
+  </data>
+  <data name="MinimumDigitsPINCodeValidation" xml:space="preserve">
+    <value>الرقم السرى لا يجب ان يقل عن  6 ارقام فقط</value>
+  </data>
+  <data name="EmptyCustomerNameValidtion" xml:space="preserve">
+    <value>اسم العميل مطلوب</value>
+  </data>
+  <data name="EmptyCustomerPhoneValidation" xml:space="preserve">
+    <value>رقم الهاتف مطلوب</value>
+  </data>
+  <data name="ExistCustomerPhoneValidation" xml:space="preserve">
+    <value>رقم الهاتف موجود من قبل</value>
+  </data>
+  <data name="EmptyCustomerEmailValidation" xml:space="preserve">
+    <value>البريد الإلكترونى مطلوب</value>
+  </data>
+  <data name="ExistCustomerEmailValidation" xml:space="preserve">
+    <value>البريد الإلكترونى موجود من قبل</value>
+  </data>
+  <data name="EmptyTOTPValidation" xml:space="preserve">
+    <value>الرقم مطلوب</value>
+  </data>
+  <data name="MaximumDigitsTOTPValidation" xml:space="preserve">
+    <value>الرقم لا يجب ان يزيد عن 4 ارقام فقط</value>
+  </data>
+  <data name="MinimumDigitsTOTPValidation" xml:space="preserve">
+    <value>الرقم لا يجب ان يقل عن 4 ارقام فقط</value>
+  </data>
+  <data name="NotValidOrExpiredTOTPValidation" xml:space="preserve">
+    <value>الرقم خاطئ او انتهت صلاحيته</value>
+  </data>
+  <data name="NotValidPINCodeValidation" xml:space="preserve">
+    <value>الرقم السرى خاطئ</value>
+  </data>
+  <data name="CustomerCreationFailed" xml:space="preserve">
+    <value>لم تتم إضافة العميل</value>
+  </data>
+  <data name="PhoneTOTPIs" xml:space="preserve">
+    <value>الرقم المتغير هو :</value>
+  </data>
+  <data name="TOTPExpireAfter" xml:space="preserve">
+    <value>وستنتهى صلاحيته بعد 120 ثانية</value>
+  </data>
+  <data name="PINCodeUpdated" xml:space="preserve">
+    <value>تم تغيير الرقم السرى بنجاح</value>
+  </data>
+  <data name="PINCodeCreationFailed" xml:space="preserve">
+    <value>فشل تغيير الرقم السرى</value>
+  </data>
+  <data name="BiometricLoginEnabledSucessfully" xml:space="preserve">
+    <value>تم تفعيل الدخول بالبصمة</value>
+  </data>
+  <data name="BiometricLoginEnabledFailed" xml:space="preserve">
+    <value>فشل تفعيل الدخول بالبصمة</value>
+  </data>
+  <data name="TermsAcceptedSucessfully" xml:space="preserve">
+    <value>تم قبول الشروط</value>
+  </data>
+  <data name="TermsAcceptedFailed" xml:space="preserve">
+    <value>فشل قبول الشروط</value>
+  </data>
+  <data name="EmailVerirfiedSucessfully" xml:space="preserve">
+    <value>تم التأكد من البريد الإلكتروني</value>
+  </data>
+  <data name="EmailVerificationFailed" xml:space="preserve">
+    <value>فشل التأكد من البريد الإلكتروني</value>
+  </data>
+  <data name="PhoneVerifiedAndEmailTOTPIs" xml:space="preserve">
+    <value>تم التأكد من رقم الهاتف و كود تفعيل البريد الإلكتروني هو : </value>
+  </data>
+  <data name="PhoneVerificationFailed" xml:space="preserve">
+    <value>فشل التأكد من البريد الهاتف</value>
+  </data>
+  <data name="PINCodeVerirfiedSucessfully" xml:space="preserve">
+    <value>تم التأكد من الرقم السري</value>
+  </data>
+  <data name="PINCodeVerificationFailed" xml:space="preserve">
+    <value>فشل التأكد من الرقم السري</value>
+  </data>
+  <data name="MaximumCharsCustomerNameValidtion" xml:space="preserve">
+    <value>لا يجب ان يزيد طول الاسم عن 50 حرف</value>
+  </data>
+  <data name="ValidEmailValidation" xml:space="preserve">
+    <value>يرجى إضافة بريد إلكتروني صالح</value>
+  </data>
+  <data name="TheCustomerWithICNumber" xml:space="preserve">
+    <value>العميل برقم : </value>
+  </data>
+  <data name="DoesntExist" xml:space="preserve">
+    <value>غير موجود</value>
+  </data>
+  <data name="Required" xml:space="preserve">
+    <value>حقل إلزامي</value>
+  </data>
+  <data name="MaxLength" xml:space="preserve">
+    <value>لا يجب ان يتعدي {0} احرف</value>
+  </data>
+  <data name="MinLength" xml:space="preserve">
+    <value>لا يجب ان يقل عن {0} احرف</value>
+  </data>
+  <data name="Unique" xml:space="preserve">
+    <value>يجب ان لا يتكرر</value>
+  </data>
+  <data name="RecordSavedSuccessfully" xml:space="preserve">
+    <value>تم حفظ البيانات بنجاح</value>
+  </data>
+  <data name="FundManagersListValidation" xml:space="preserve">
+    <value>برجاء اختيار مدير للصندوق او اختيار ثلاثة كحد اقصى</value>
+  </data>
+  <data name="FundBoardSecretariesListValidation" xml:space="preserve">
+    <value>برجاء اختيار أمين سر المجلس او اختيار اربعه كحد اقصى</value>
+  </data>
+  <data name="RequiredField" xml:space="preserve">
+    <value>حقل إلزامي</value>
+  </data>
+  <data name="VotingTypeRangeValidator" xml:space="preserve">
+    <value>يجب ان تكون قيمة الية التصويت 1 او 2</value>
+  </data>
+  <data name="BoardSecretary" xml:space="preserve">
+    <value>أمين سر مجلس الإدارة</value>
+  </data>
+  <data name="LegalCouncil" xml:space="preserve">
+    <value>المستشار القانوني</value>
+  </data>
+  <data name="FundManager" xml:space="preserve">
+    <value>مدير الصندوق</value>
+  </data>
+  <data name="User" xml:space="preserve">
+    <value>مستخدم</value>
+  </data>
+  <data name="Basic" xml:space="preserve">
+    <value>مستخدم أساسي</value>
+  </data>
+  <data name="Admin" xml:space="preserve">
+    <value>مشرف</value>
+  </data>
+  <data name="SuperAdmin" xml:space="preserve">
+    <value>مشرف عام</value>
+  </data>
+  <data name="AnErrorIsOccurredWhileSavingData" xml:space="preserve">
+    <value>حدث خطأ بالنظام , لم يتم حفظ البيانات</value>
+  </data>
+  <data name="InitiationDateRangeValidator" xml:space="preserve">
+    <value>تاريخ الأنشاء يجب ان يكون في الفترة من 01/01/2010 الى تاريخ اليوم.</value>
+  </data>
+  <data name="ChangeExitDateNotificationBody" xml:space="preserve">
+    <value>تم تعديل تاريخ التخارج للصندوق {0} ليصبح تاريخ التخارج {1} بواسطة {2}</value>
+  </data>
+  <data name="AddFundNotificationBody" xml:space="preserve">
+    <value>تم إضافة صندوق جديد باسم {0} بواسطة {1} و تم تعيينك ك{2}</value>
+  </data>
+  <data name="AddedToFundNotificationBody" xml:space="preserve">
+    <value>تم تعيينك ك{0} في صندوق {1} بواسطة {2}</value>
+  </data>
+  <data name="RemoveFromFundNotificationBody" xml:space="preserve">
+    <value>تم إعفاؤك من دور {0} في صندوق {1} بواسطة {2}</value>
+  </data>
+  <data name="AddFundNotificationTitle" xml:space="preserve">
+    <value>إنشاء صندوق</value>
+  </data>
+  <data name="AddedToFundNotificationTitle" xml:space="preserve">
+    <value>إضافة مهام</value>
+  </data>
+  <data name="RemoveFromFundNotificationTitle" xml:space="preserve">
+    <value>إعفاء من مهام</value>
+  </data>
+  <data name="CompeleteFundNotificationTitle" xml:space="preserve">
+    <value>تم استكمال بيانات الصندوق</value>
+  </data>
+  <data name="ChangeExitDateNotificationTitle" xml:space="preserve">
+    <value>تغيير تاريخ التخارج</value>
+  </data>
+  <data name="CompeleteFundNotificationBody" xml:space="preserve">
+    <value>تم استكمال بيانات الصندوق {0} بواسطة {1}</value>
+  </data>
+  <data name="OldFundCodeAlreadyExist" xml:space="preserve">
+    <value>الكود القديم للصندوق موجود بالفعل. يرجى اختيار قيمة مختلفة</value>
+  </data>
+  <data name="MaxFileSize" xml:space="preserve">
+    <value>لا يجب ان يتعدى حجم الملف 10 ميجابايت</value>
+  </data>
+  <data name="PropertiesNumberValidator" xml:space="preserve">
+    <value>يجب ان يكون عدد المباني صحيح موجب</value>
+  </data>
+  <data name="FundSavedSuccessfully" xml:space="preserve">
+    <value>تم حفظ البيانات بنجاح
+يجب إضافة أعضاء الصندوق حتى  تتمكن من التعامل مع أنشطة الصندوق , على الأقل 2 عضو مستقل</value>
+  </data>
+  <data name="ResolutionDeletedSuccessfully" xml:space="preserve">
+    <value>تم حذف القرار بنجاح</value>
+  </data>
+  <data name="ResolutionRejectedNotificationBody" xml:space="preserve">
+    <value>تم رفض القرار رقم "{0}" في الصندوق "{1}" بواسطة "{2}"</value>
+  </data>
+  <data name="ResolutionSentToVoteNotificationBody" xml:space="preserve">
+    <value>تم إرسال القرار رقم "{0}" للتصويت من قبل الأعضاء في الصندوق "{1}" بواسطة ”الدور” "{2}"</value>
+  </data>
+  <data name="ResolutionConfirmedNotificationBody" xml:space="preserve">
+    <value>تم تأكيد القرار رقم "{0}" في الصندوق "{1}" بواسطة  مدير الصندوق "{2}"</value>
+  </data>
+  <data name="EmptyRequestValidation" xml:space="preserve">
+    <value>لا يمكن أن يكون الطلب فارغاً</value>
+  </data>
+  <data name="BoardMemberTypeIndependent" xml:space="preserve">
+    <value>مستقل</value>
+  </data>
+  <data name="BoardMemberTypeNotIndependent" xml:space="preserve">
+    <value>غير مستقل</value>
+  </data>
+  <data name="ResolutionStatusDraft" xml:space="preserve">
+    <value>مسودة</value>
+  </data>
+  <data name="ResolutionStatusPendingLegalReview" xml:space="preserve">
+    <value>في انتظار المراجعة القانونية</value>
+  </data>
+  <data name="ResolutionStatusLegalReviewCompleted" xml:space="preserve">
+    <value>تمت المراجعة القانونية</value>
+  </data>
+  <data name="ResolutionStatusConfirmed" xml:space="preserve">
+    <value>مؤكد</value>
+  </data>
+  <data name="ResolutionStatusRejected" xml:space="preserve">
+    <value>مرفوض</value>
+  </data>
+  <data name="ResolutionStatusVotingInProgress" xml:space="preserve">
+    <value>التصويت قيد التقدم</value>
+  </data>
+  <data name="ResolutionStatusApproved" xml:space="preserve">
+    <value>موافق عليه</value>
+  </data>
+  <data name="ResolutionStatusNotApproved" xml:space="preserve">
+    <value>غير موافق عليه</value>
+  </data>
+  <data name="ResolutionStatusCancelled" xml:space="preserve">
+    <value>ملغي</value>
+  </data>
+  <data name="VoteDecisionApprove" xml:space="preserve">
+    <value>موافق</value>
+  </data>
+  <data name="VoteDecisionReject" xml:space="preserve">
+    <value>رافض</value>
+  </data>
+  <data name="VoteDecisionAbstain" xml:space="preserve">
+    <value>ممتنع</value>
+  </data>
+  <data name="VotingTypeAllMembers" xml:space="preserve">
+    <value>جميع الأعضاء</value>
+  </data>
+  <data name="VotingTypeMajority" xml:space="preserve">
+    <value>الأغلبية</value>
+  </data>
+  <data name="MemberVotingResultAllItems" xml:space="preserve">
+    <value>جميع البنود</value>
+  </data>
+  <data name="MemberVotingResultMajorityOfItems" xml:space="preserve">
+    <value>أغلبية البنود</value>
+  </data>
+  <data name="InvalidCultureCode" xml:space="preserve">
+    <value>رمز اللغة غير صحيح</value>
+  </data>
+  <data name="PreferredLanguageUpdatedSuccessfully" xml:space="preserve">
+    <value>تم تحديث اللغة المفضلة بنجاح</value>
+  </data>
+  <data name="Unauthorized" xml:space="preserve">
+    <value>غير مخول للوصول</value>
+  </data>
+  <data name="InvalidIdValidation" xml:space="preserve">
+    <value>معرف غير صحيح</value>
+  </data>
+  <data name="InvalidBoardMemberType" xml:space="preserve">
+    <value>نوع عضو مجلس الإدارة غير صحيح</value>
+  </data>
+  <data name="UserAlreadyBoardMember" xml:space="preserve">
+    <value>المستخدم عضو بالفعل في مجلس إدارة هذا الصندوق</value>
+  </data>
+  <data name="MaxIndependentMembersReached" xml:space="preserve">
+    <value>تم الوصول للحد الأقصى من الأعضاء المستقلين (14)</value>
+  </data>
+  <data name="FundAlreadyHasChairman" xml:space="preserve">
+    <value>الصندوق لديه رئيس مجلس إدارة بالفعل</value>
+  </data>
+  <data name="BoardMemberAddedSuccessfully" xml:space="preserve">
+    <value>تم إضافة عضو مجلس الإدارة بنجاح</value>
+  </data>
+  <data name="BoardMemberUpdatedSuccessfully" xml:space="preserve">
+    <value>تم تحديث عضو مجلس الإدارة بنجاح</value>
+  </data>
+  <data name="BoardMemberDeletedSuccessfully" xml:space="preserve">
+    <value>تم حذف عضو مجلس الإدارة بنجاح</value>
+  </data>
+  <data name="FundNotFound" xml:space="preserve">
+    <value>الصندوق غير موجود</value>
+  </data>
+  <data name="UserNotFound" xml:space="preserve">
+    <value>المستخدم غير موجود</value>
+  </data>
+  <data name="BoardMemberNotFound" xml:space="preserve">
+    <value>عضو مجلس الإدارة غير موجود</value>
+  </data>
+  <data name="ResolutionCodeExists" xml:space="preserve">
+    <value>رمز القرار موجود بالفعل</value>
+  </data>
+  <data name="ResolutionCreatedSuccessfully" xml:space="preserve">
+    <value>تم إنشاء القرار بنجاح</value>
+  </data>
+  <data name="ResolutionUpdatedSuccessfully" xml:space="preserve">
+    <value>تم تحديث القرار بنجاح</value>
+  </data>
+  <data name="ResolutionNotFound" xml:space="preserve">
+    <value>القرار غير موجود</value>
+  </data>
+  <data name="ResolutionTypeNotFound" xml:space="preserve">
+    <value>نوع القرار غير موجود</value>
+  </data>
+  <data name="AttachmentNotFound" xml:space="preserve">
+    <value>المرفق غير موجود</value>
+  </data>
+  <data name="InvalidResolutionDate" xml:space="preserve">
+    <value>تاريخ القرار غير صحيح</value>
+  </data>
+  <data name="InvalidVotingMethodology" xml:space="preserve">
+    <value>منهجية التصويت غير صحيحة</value>
+  </data>
+  <data name="ResolutionDateMustBeAfterFundInitiation" xml:space="preserve">
+    <value>يجب أن يكون تاريخ القرار بعد تاريخ إنشاء الصندوق</value>
+  </data>
+  <data name="ResolutionDateCannotBeFuture" xml:space="preserve">
+    <value>لا يمكن أن يكون تاريخ القرار في المستقبل</value>
+  </data>
+  <data name="InvalidFileType" xml:space="preserve">
+    <value>نوع الملف غير صحيح. يُسمح فقط بملفات PDF</value>
+  </data>
+  <data name="FileSizeExceedsLimit" xml:space="preserve">
+    <value>حجم الملف يتجاوز الحد الأقصى المسموح وهو 10 ميجابايت</value>
+  </data>
+  <data name="ResolutionCodeGenerationFailed" xml:space="preserve">
+    <value>فشل في إنشاء رمز القرار</value>
+  </data>
+  <data name="OnlyFundManagerCanCreateResolution" xml:space="preserve">
+    <value>يمكن لمديري الصناديق فقط إنشاء القرارات</value>
+  </data>
+  <data name="ResolutionStatusPending" xml:space="preserve">
+    <value>معلق</value>
+  </data>
+  <data name="ResolutionStatusCompletingData" xml:space="preserve">
+    <value>استكمال البيانات</value>
+  </data>
+  <data name="ResolutionStatusWaitingForConfirmation" xml:space="preserve">
+    <value>في انتظار التأكيد</value>
+  </data>
+  <data name="ResolutionSavedAsDraft" xml:space="preserve">
+    <value>تم حفظ القرار كمسودة بنجاح</value>
+  </data>
+  <data name="ResolutionSentForReview" xml:space="preserve">
+    <value>تم إرسال القرار للمراجعة بنجاح</value>
+  </data>
+  <data name="NewTypeRequiredForOtherResolutionType" xml:space="preserve">
+    <value>النوع الجديد مطلوب عند اختيار نوع القرار 'أخرى'</value>
+  </data>
+  <data name="CannotEditApprovedOrRejectedResolution" xml:space="preserve">
+    <value>لا يمكن تعديل القرارات التي تم اعتمادها أو رفضها</value>
+  </data>
+  <data name="BoardMemberAddedNotificationTitle" xml:space="preserve">
+    <value>إضافة لمجلس الصندوق</value>
+  </data>
+  <data name="BoardMemberAddedNotificationBody" xml:space="preserve">
+    <value>تم إضافتك كعضو "{0}" في مجلس الصندوق "{1}" بواسطة "{2}"</value>
+  </data>
+  <data name="BoardMemberAddedToFundNotificationTitle" xml:space="preserve">
+    <value>إضافة عضو جديد لمجلس الصندوق</value>
+  </data>
+  <data name="BoardMemberAddedToFundNotificationBody" xml:space="preserve">
+    <value>تم إضافة "{0}" كعضو جديد "{1}" في مجلس الصندوق "{2}" بواسطة "{3}" "{4}"</value>
+  </data>
+  <data name="MaximumIndependentMembersReached" xml:space="preserve">
+    <value>لقد وصلت للحد الأقصى لعدد الأعضاء المستقلين للصندوق</value>
+  </data>
+  <data name="Independent" xml:space="preserve">
+    <value>مستقل</value>
+  </data>
+  <data name="NotIndependent" xml:space="preserve">
+    <value>غير مستقل</value>
+  </data>
+  <data name="Active" xml:space="preserve">
+    <value>نشط</value>
+  </data>
+  <data name="Inactive" xml:space="preserve">
+    <value>غير نشط</value>
+  </data>
+  <data name="Chairman" xml:space="preserve">
+    <value>رئيس مجلس الإدارة</value>
+  </data>
+  <data name="Member" xml:space="preserve">
+    <value>عضو</value>
+  </data>
+  <data name="ResolutionCreatedNotificationTitle" xml:space="preserve">
+    <value>إضافة قرار جديد</value>
+  </data>
+  <data name="ResolutionCreatedNotificationBody" xml:space="preserve">
+    <value>تم إضافة قرار جديد ضمن فعاليات صندوق "{0}" بواسطة مدير الصندوق "{1}" يرجى استكمال بيانات القرار</value>
+  </data>
+  <data name="ResolutionUpdatedNotificationTitle" xml:space="preserve">
+    <value>تحديث القرار</value>
+  </data>
+  <data name="ResolutionUpdatedNotificationBody" xml:space="preserve">
+    <value>تم تعديل بيانات القرار الجديد "{0}" ضمن فعاليات صندوق "{1}" بواسطة مدير الصندوق "{2}" يرجى استكمال بيانات القرار</value>
+  </data>
+  <data name="FundActivatedNotificationTitle" xml:space="preserve">
+    <value>تفعيل الصندوق</value>
+  </data>
+  <data name="FundActivatedNotificationBody" xml:space="preserve">
+    <value>تم تفعيل الصندوق "{0}" بنجاح وذلك باتمام اضافة 2 عضو مستقل</value>
+  </data>
+  <data name="UnauthorizedAccess" xml:space="preserve">
+    <value>ليس لديك صلاحية للوصول إلى هذا المورد</value>
+  </data>
+  <data name="OperationCompletedSuccessfully" xml:space="preserve">
+    <value>تم حفظ البيانات بنجاح</value>
+  </data>
+  <data name="SystemErrorSavingData" xml:space="preserve">
+    <value>حدث خطأ أثناء حفظ البيانات</value>
+  </data>
+  <data name="ConfirmCancelResolution" xml:space="preserve">
+    <value>هل انت متاكد أنك تريد الغاء هذا القرار؟</value>
+  </data>
+  <data name="ConfirmDeleteResolution" xml:space="preserve">
+    <value>هل انت متاكد أنك تريد حذف هذا العنصر؟</value>
+  </data>
+  <data name="ResolutionCancelledSuccessfully" xml:space="preserve">
+    <value>تم حفظ البيانات بنجاح</value>
+  </data>
+  <data name="ItemDeletedSuccessfully" xml:space="preserve">
+    <value>تم حذف العنصر بنجاح</value>
+  </data>
+  <data name="SystemErrorUpdatingData" xml:space="preserve">
+    <value>حدث خطأ بالنظام , لم يتم تحديث البيانات</value>
+  </data>
+  <data name="SystemErrorDeletingData" xml:space="preserve">
+    <value>حدث خطأ بالنظام , لم يتم حذف البيانات</value>
+  </data>
+  <data name="SystemErrorDisplayingData" xml:space="preserve">
+    <value>حدث خطأ بالنظام , لم يتمكن من عرض البيانات</value>
+  </data>
+  <data name="CannotCancelNonPendingResolution" xml:space="preserve">
+    <value>يمكن إلغاء القرارات المعلقة فقط</value>
+  </data>
+  <data name="CannotDeleteNonDraftResolution" xml:space="preserve">
+    <value>يمكن حذف المسودات فقط</value>
+  </data>
+  <data name="ResolutionCancelledNotificationTitle" xml:space="preserve">
+    <value>إلغاء القرار</value>
+  </data>
+  <data name="ResolutionCancelledNotificationBody" xml:space="preserve">
+    <value>تم الغاء القرار "{0}" ضمن فعاليات صندوق "{1}" بواسطة مدير الصندوق "{2}"</value>
+  </data>
+  <data name="ConfirmCreateNewResolutionFromApproved" xml:space="preserve">
+    <value>تحديث بيانات القرار المعتمد\غير معتمد يترتب عليه إنشاء قرار جديد مرتبط بهذا القرار</value>
+  </data>
+  <data name="NewResolutionCreatedFromApprovedNotificationTitle" xml:space="preserve">
+    <value>إضافة قرار جديد</value>
+  </data>
+  <data name="NewResolutionCreatedFromApprovedNotificationBody" xml:space="preserve">
+    <value>تم إضافة قرار جديد ضمن فعاليات صندوق "{0}" بواسطة "{1}" "{2}" كتحديث على القرار "{3}"</value>
+  </data>
+  <data name="ConfirmSuspendVotingForEdit" xml:space="preserve">
+    <value>هل تريد تعليق التصويت الحالي لتعديل القرار؟ (نعم/لا)</value>
+  </data>
+  <data name="ResolutionVotingSuspendedNotificationTitle" xml:space="preserve">
+    <value>تعليق التصويت</value>
+  </data>
+  <data name="ResolutionVotingSuspendedNotificationBody" xml:space="preserve">
+    <value>تم تحديث بيانات القرار رقم {0} في الصندوق {1} بواسطة {2}  {3} مما يترتب عليه إلغاء التصويت الجارى على القرار</value>
+  </data>
+  <data name="VotingSuspendedSuccessfully" xml:space="preserve">
+    <value>تم تعليق التصويت بنجاح وحفظ التعديلات</value>
+  </data>
+  <data name="CannotEditVotingResolutionWithoutSuspension" xml:space="preserve">
+    <value>لا يمكن تعديل القرار أثناء التصويت بدون تعليق العملية</value>
+  </data>
+  <data name="OnlyCreatorCanEditDraftResolution" xml:space="preserve">
+    <value>يمكن لمنشئ القرار المسودة فقط تعديله</value>
+  </data>
+  <data name="ExitWithoutSavingConfirmation" xml:space="preserve">
+    <value>الخروج من الصفحة يعنى عدم حفظ جميع البيانات التي قمت بإضافتها (نعم\لا)</value>
+  </data>
+  <data name="AuditActionResolutionCreation" xml:space="preserve">
+    <value>إنشاء قرار</value>
+  </data>
+  <data name="AuditActionResolutionDataUpdate" xml:space="preserve">
+    <value>تعديل بيانات القرار</value>
+  </data>
+  <data name="AuditActionResolutionVoteSuspend" xml:space="preserve">
+    <value>تعليق التصويت</value>
+  </data>
+  <data name="AuditActionResolutionConfirmation" xml:space="preserve">
+    <value>تأكيد القرار</value>
+  </data>
+  <data name="AuditActionResolutionRejection" xml:space="preserve">
+    <value>رفض القرار</value>
+  </data>
+  <data name="AuditActionResolutionSentToVote" xml:space="preserve">
+    <value>إرسال للتصويت</value>
+  </data>
+  <data name="AuditActionResolutionCancellation" xml:space="preserve">
+    <value>إلغاء القرار</value>
+  </data>
+  <data name="AuditActionResolutionDeletion" xml:space="preserve">
+    <value>حذف القرار</value>
+  </data>
+  <data name="ResolutionDataCompletedNotificationTitle" xml:space="preserve">
+    <value>استكمال بيانات القرار</value>
+  </data>
+  <data name="ResolutionDataCompletedNotificationBody" xml:space="preserve">
+    <value>تم استكمال بيانات القرار رقم "{0}" في الصندوق "{1}" بواسطة "{2}"</value>
+  </data>
+  <data name="NoRecords" xml:space="preserve">
+    <value>عفوا, لا توجد  بيانات مسجلة لعرضها</value>
+  </data>
+  <data name="AddFundForManagerNotificationBody" xml:space="preserve">
+    <value>تم إضافة صندوق جديد باسم {0} بواسطة {1} و تم تعيينك ك{2} يرجى استكمال بيانات الصندوق</value>
+  </data>
+  <data name="FundAlreadyExist" xml:space="preserve">
+    <value>هذه القيمة موجودة بالفعل. يرجى اختيار قيمة مختلفة.</value>
+  </data>
+  <data name="InvalidFund" xml:space="preserve">
+    <value>يجب أن لا يحتوي الرقم على نقطة عشرية.</value>
+  </data>
+  <data name="AuditActionResolutionEdit" xml:space="preserve">
+    <value>تعديل قرار</value>
+  </data>
+  <data name="AuditActionResolutionCompletion" xml:space="preserve">
+    <value>استكمال قرار</value>
+  </data>
+  <data name="AuditActionResolutionApproved" xml:space="preserve">
+    <value>موافقة قرار</value>
+  </data>
+  <data name="AuditActionResolutionUnApproved" xml:space="preserve">
+    <value>غير موافقة قرار</value>
+  </data>
+  <data name="UserUpdatedSuccessfully" xml:space="preserve">
+    <value>تم تحديث بيانات العضو بنجاح</value>
+  </data>
+  <data name="UserAddedSuccessfully" xml:space="preserve">
+    <value>تم اضافة العضو بنجاح</value>
+  </data>
+  <data name="InvalidFundName" xml:space="preserve">
+    <value>يجب أن لا يحتوي الاسم على ارقام او نقطة عشرية</value>
+  </data>
+  <data name="BoardMember" xml:space="preserve">
+    <value>عضو مجلس إدارة/  رئيس مجلس ادارة</value>
+  </data>
+  <data name="FinanceController" xml:space="preserve">
+    <value>المراقب المالي</value>
+  </data>
+  <data name="ComplianceLegalManagingDirector" xml:space="preserve">
+    <value>المطابقة والالتزام</value>
+  </data>
+  <data name="HeadOfRealEstate" xml:space="preserve">
+    <value>رئيس إدارة الاستثمارات العقارية</value>
+  </data>
+  <data name="AssociateFundManager" xml:space="preserve">
+    <value>مساعد مدير الصندوق</value>
+  </data>
+  <data name="MinIORequestCannotBeBlank" xml:space="preserve">
+    <value>لا يمكن أن يكون الطلب فارغاً</value>
+  </data>
+  <data name="MinIOFileMissingOrEmpty" xml:space="preserve">
+    <value>الملف مفقود أو فارغ</value>
+  </data>
+  <data name="MinIOStorageNotEnabled" xml:space="preserve">
+    <value>تخزين MinIO غير مفعل</value>
+  </data>
+  <data name="MinIOInvalidFileNameOrExtension" xml:space="preserve">
+    <value>اسم الملف أو الامتداد غير صحيح</value>
+  </data>
+  <data name="MinIOFileUploadFailed" xml:space="preserve">
+    <value>فشل في رفع الملف إلى MinIO</value>
+  </data>
+  <data name="MinIOFileUploadedSuccessfully" xml:space="preserve">
+    <value>تم رفع الملف بنجاح إلى MinIO</value>
+  </data>
+  <data name="MinIOFileNotFound" xml:space="preserve">
+    <value>الملف غير موجود</value>
+  </data>
+  <data name="MinIOFileNotFoundInStorage" xml:space="preserve">
+    <value>الملف غير موجود في التخزين</value>
+  </data>
+  <data name="MinIOPreviewUrlGenerationFailed" xml:space="preserve">
+    <value>فشل في إنشاء رابط المعاينة</value>
+  </data>
+  <data name="MinIOPreviewUrlGeneratedSuccessfully" xml:space="preserve">
+    <value>تم إنشاء رابط المعاينة بنجاح</value>
+  </data>
+  <data name="MinIOFileDeletedSuccessfully" xml:space="preserve">
+    <value>تم حذف الملف بنجاح</value>
+  </data>
+  <data name="MinIOFileDeleteFailed" xml:space="preserve">
+    <value>فشل في حذف الملف</value>
+  </data>
+  <data name="MinIONoFilesProvided" xml:space="preserve">
+    <value>لم يتم توفير ملفات للرفع</value>
+  </data>
+  <data name="MinIOTooManyFiles" xml:space="preserve">
+    <value>عدد كبير من الملفات. الحد الأقصى المسموح: {0}</value>
+  </data>
+  <data name="MinIOFileNameCountMismatch" xml:space="preserve">
+    <value>يجب أن يتطابق عدد أسماء الملفات مع عدد الملفات عند توفيرها</value>
+  </data>
+  <data name="MinIOFileNullOrEmpty" xml:space="preserve">
+    <value>الملف فارغ أو غير موجود</value>
+  </data>
+  <data name="MinIOFileSizeExceedsLimit" xml:space="preserve">
+    <value>حجم الملف يتجاوز الحد الأقصى المسموح وهو {0} بايت</value>
+  </data>
+  <data name="MinIOInvalidBucketName" xml:space="preserve">
+    <value>يجب أن يكون اسم الحاوية بأحرف صغيرة ويحتوي على أحرف وأرقام وشرطات فقط، وطوله بين 3-63 حرف</value>
+  </data>
+  <data name="MinIOFileIdRequired" xml:space="preserve">
+    <value>معرف الملف مطلوب</value>
+  </data>
+  <data name="MinIOFileIdMustBeGreaterThanZero" xml:space="preserve">
+    <value>يجب أن يكون معرف الملف أكبر من صفر</value>
+  </data>
+  <data name="MinIOFileNameTooLong" xml:space="preserve">
+    <value>لا يمكن أن يتجاوز اسم الملف 255 حرف</value>
+  </data>
+  <data name="MinIOModuleIdMustBeGreaterThanZero" xml:space="preserve">
+    <value>يجب أن يكون معرف الوحدة أكبر من صفر</value>
+  </data>
+  <data name="MinIOMaxFilesExceeded" xml:space="preserve">
+    <value>الحد الأقصى {0} ملف مسموح لكل عملية رفع</value>
+  </data>
+  <data name="MinIOExpiryTimeInvalid" xml:space="preserve">
+    <value>يجب أن يكون وقت انتهاء الصلاحية أكبر من صفر</value>
+  </data>
+  <data name="WhatsAppPasswordResetMessage" xml:space="preserve">
+    <value>تم إعادة تعيين كلمة المرور الخاصة بك. كلمة المرور المؤقتة الجديدة هي: {0}. يرجى تسجيل الدخول وتغيير كلمة المرور فوراً.</value>
+  </data>
+  <data name="WhatsAppUserRegistrationMessage" xml:space="preserve">
+    <value>مرحباً بك في نظام جدوى! تم إنشاء حسابك. اسم المستخدم: {0}. يمكنك الوصول للنظام عبر: {1}</value>
+  </data>
+  <data name="WhatsAppAccountActivationMessage" xml:space="preserve">
+    <value>تم تفعيل حسابك في نظام جدوى بنجاح. يمكنك الآن الوصول للنظام.</value>
+  </data>
+  <data name="WhatsAppAccountDeactivationMessage" xml:space="preserve">
+    <value>تم إلغاء تفعيل حسابك في نظام جدوى. يرجى التواصل مع المسؤول للحصول على مزيد من المعلومات.</value>
+  </data>
+  <data name="WhatsAppRegistrationResendMessage" xml:space="preserve">
+    <value>تم إعادة إرسال رسالة التسجيل. اسم المستخدم: {0}. يمكنك الوصول للنظام عبر: {1}</value>
+  </data>
+  <data name="WhatsAppFundMemberAddedMessage" xml:space="preserve">
+    <value>تم إضافتك كعضو في صندوق {0} بصفة {1}. يمكنك الآن الوصول إلى النظام ومراجعة تفاصيل الصندوق.</value>
+  </data>
+  <data name="FundCreationAction" xml:space="preserve">
+    <value>إنشاء صندوق</value>
+  </data>
+  <data name="FundDataCompletionAction" xml:space="preserve">
+    <value>استكمال بيانات الصندوق</value>
+  </data>
+  <data name="FundDataEditAction" xml:space="preserve">
+    <value>تعديل بيانات الصندوق</value>
+  </data>
+  <data name="FundActivationAction" xml:space="preserve">
+    <value>تفعيل الصندوق</value>
+  </data>
+  <data name="FundExitDateEditAction" xml:space="preserve">
+    <value>تعديل تاريخ التخارج</value>
+  </data>
+  <data name="BoardMemberAdditionAction" xml:space="preserve">
+    <value>إضافة عضو مجلس</value>
+  </data>
+  <data name="FundStatusChangeAction" xml:space="preserve">
+    <value>تغيير الحالة</value>
+  </data>
+  <data name="FundStatusUnderConstruction" xml:space="preserve">
+    <value>تحت الإنشاء</value>
+  </data>
+  <data name="FundStatusWaitingForMembers" xml:space="preserve">
+    <value>لا يوجد أعضاء</value>
+  </data>
+  <data name="FundStatusActive" xml:space="preserve">
+    <value>نشط</value>
+  </data>
+  <data name="FundStatusExited" xml:space="preserve">
+    <value>تم التخارج</value>
+  </data>
+  <data name="FundStatusTransition" xml:space="preserve">
+    <value>تم تغيير الحالة من {0} إلى {1}</value>
+  </data>
+  <data name="FundActivatedDueToMembers" xml:space="preserve">
+    <value>تم تفعيل الصندوق لوجود عضوين مستقلين أو أكثر</value>
+  </data>
+  <data name="UnknownAction" xml:space="preserve">
+    <value>إجراء غير معروف</value>
+  </data>
+  <data name="UnknownStatus" xml:space="preserve">
+    <value>حالة غير معروفة</value>
+  </data>
+  <data name="ProfileRequiredField" xml:space="preserve">
+    <value>حقل إلزامي.</value>
+  </data>
+  <data name="ProfileInvalidEmailFormat" xml:space="preserve">
+    <value>صيغة البريد الإلكتروني غير صحيحة.</value>
+  </data>
+  <data name="ProfileDuplicateEmail" xml:space="preserve">
+    <value>يوجد مستخدم بهذا البريد الإلكتروني بالفعل.</value>
+  </data>
+  <data name="ProfileInvalidCountryCode" xml:space="preserve">
+    <value>صيغة رقم الجوال السعودي غير صالحة. يرجى إدخال رقم مكون من 10 أرقام يبدأ بـ 05.</value>
+  </data>
+  <data name="ProfileMobileAlreadyInUse" xml:space="preserve">
+    <value>رقم الجوال مستخدم بالفعل كاسم مستخدم.</value>
+  </data>
+  <data name="ProfileInvalidCVFile" xml:space="preserve">
+    <value>صيغة الملف أو حجمه غير صالح للسيرة الذاتية. يرجى تحميل ملف PDF أو DOCX بحجم أقصى 10 ميجابايت.</value>
+  </data>
+  <data name="ProfileUpdatedSuccessfully" xml:space="preserve">
+    <value>تم تحديث الملف الشخصي بنجاح.</value>
+  </data>
+  <data name="ProfileSystemErrorSavingData" xml:space="preserve">
+    <value>لم يتم حفظ البيانات، حدث خطأ بالنظام.</value>
+  </data>
+  <data name="ProfileInvalidPhotoFile" xml:space="preserve">
+    <value>صيغة الملف أو حجمه غير صالح للصورة الشخصية. يرجى تحميل ملف JPG أو PNG بحجم أقصى 2 ميجابايت.</value>
+  </data>
+  <data name="LoginUserNotFound" xml:space="preserve">
+    <value>المستخدم بهذا الاسم غير موجود!</value>
+  </data>
+  <data name="LoginIncorrectPassword" xml:space="preserve">
+    <value>كلمة المرور غير صحيحة.</value>
+  </data>
+  <data name="LoginAccountDeactivated" xml:space="preserve">
+    <value>حسابك غير نشط. يرجى الاتصال بالدعم.</value>
+  </data>
+  <data name="LoginTooManyFailedAttempts" xml:space="preserve">
+    <value>تم قفل الحساب مؤقتاً بسبب محاولات تسجيل دخول فاشلة كثيرة. يرجى المحاولة لاحقاً.</value>
+  </data>
+  <data name="LogoutSuccessful" xml:space="preserve">
+    <value>تم تسجيل خروجك بنجاح.</value>
+  </data>
+  <data name="LogoutSystemError" xml:space="preserve">
+    <value>حدث خطأ أثناء تسجيل الخروج. يرجى المحاولة مرة أخرى.</value>
+  </data>
+  <data name="PasswordIncorrectCurrent" xml:space="preserve">
+    <value>كلمة المرور الحالية غير صحيحة.</value>
+  </data>
+  <data name="PasswordComplexityError" xml:space="preserve">
+    <value>كلمة المرور لا تفي بمتطلبات التعقيد.</value>
+  </data>
+  <data name="PasswordMismatch" xml:space="preserve">
+    <value>كلمات المرور غير متطابقة.</value>
+  </data>
+  <data name="PasswordSameAsCurrent" xml:space="preserve">
+    <value>كلمة المرور الجديدة لا يمكن أن تكون مطابقة لكلمة المرور الحالية.</value>
+  </data>
+  <data name="PasswordChangedSuccessfully" xml:space="preserve">
+    <value>تم تغيير كلمة المرور بنجاح.</value>
+  </data>
+  <data name="PasswordChangeSystemError" xml:space="preserve">
+    <value>حدث خطأ أثناء تغيير كلمة المرور.</value>
+  </data>
+  <data name="UserActivatedSuccessfully" xml:space="preserve">
+    <value>تم تفعيل المستخدم بنجاح.</value>
+  </data>
+  <data name="UserDeactivatedSuccessfully" xml:space="preserve">
+    <value>تم إلغاء تفعيل المستخدم بنجاح.</value>
+  </data>
+  <data name="UserPasswordResetSuccessfully" xml:space="preserve">
+    <value>تم إعادة تعيين كلمة مرور المستخدم بنجاح.</value>
+  </data>
+  <data name="RegistrationMessageSentSuccessfully" xml:space="preserve">
+    <value>تم إرسال رسالة التسجيل بنجاح.</value>
+  </data>
+  <data name="UserNotEligibleForRegistrationMessage" xml:space="preserve">
+    <value>المستخدم غير مؤهل لرسالة التسجيل.</value>
+  </data>
+  <data name="UserAlreadyActive" xml:space="preserve">
+    <value>المستخدم مفعل بالفعل.</value>
+  </data>
+  <data name="UserAlreadyInactive" xml:space="preserve">
+    <value>المستخدم غير مفعل بالفعل.</value>
+  </data>
+  <data name="InvalidSaudiMobileFormat" xml:space="preserve">
+    <value>صيغة رقم الجوال السعودي غير صالحة. يجب أن يكون 9 أرقام تبدأ بـ 5.</value>
+  </data>
+  <data name="InvalidIBANFormat" xml:space="preserve">
+    <value>صيغة رقم الحساب المصرفي الدولي غير صالحة.</value>
+  </data>
+  <data name="InvalidFileSize" xml:space="preserve">
+    <value>حجم الملف يتجاوز الحد الأقصى المسموح.</value>
+  </data>
+  <data name="UnauthorizedUserAccess" xml:space="preserve">
+    <value>ليس لديك صلاحية للوصول إلى هذا المستخدم.</value>
+  </data>
+  <data name="MobileNumberRequired" xml:space="preserve">
+    <value>رقم الجوال مطلوب.</value>
+  </data>
+  <data name="InvalidSaudiMobilePattern" xml:space="preserve">
+    <value>يجب أن يكون رقم الجوال بصيغة سعودية صحيحة (مثل: 05XXXXXXXX، +9665XXXXXXXX، أو 9665XXXXXXXX).</value>
+  </data>
+  <data name="RoleConflictDetected" xml:space="preserve">
+    <value>يحمل مستخدم نشط آخر بالفعل الدور '{0}'. يمكن لمستخدم واحد فقط أن يحمل هذا الدور في نفس الوقت.</value>
+  </data>
+  <data name="RoleConflictReplacePrompt" xml:space="preserve">
+    <value>المستخدم '{0}' يحمل حالياً الدور '{1}'. هل تريد استبداله بالمستخدم الجديد؟</value>
+  </data>
+  <data name="RoleConflictSelectDifferent" xml:space="preserve">
+    <value>يرجى اختيار دور مختلف أو استبدال المستخدم الحالي للمتابعة.</value>
+  </data>
+  <data name="AtLeastOneRoleRequired" xml:space="preserve">
+    <value>يجب تعيين دور واحد على الأقل للمستخدم.</value>
+  </data>
+  <data name="UniqueRoleAlreadyAssigned" xml:space="preserve">
+    <value>الدور '{0}' مُعيّن بالفعل لمستخدم نشط آخر ولا يمكن تعيينه لعدة مستخدمين.</value>
+  </data>
+  <data name="NotFoundRoles" xml:space="preserve">
+    <value>لم يتم العثور على أدوار</value>
+  </data>
+  <data name="LoginUsernameRequired" xml:space="preserve">
+    <value>اسم المستخدم مطلوب.</value>
+  </data>
+  <data name="LoginPasswordRequired" xml:space="preserve">
+    <value>كلمة المرور مطلوبة.</value>
+  </data>
+  <data name="UsernameAlreadyInUse" xml:space="preserve">
+    <value>اسم المستخدم مستخدم بالفعل.</value>
+  </data>
+  <data name="PasswordMinimumLength" xml:space="preserve">
+    <value>يجب أن تكون كلمة المرور 8 أحرف على الأقل.</value>
+  </data>
+  <data name="PassportNumberAlphanumeric" xml:space="preserve">
+    <value>رقم جواز السفر يجب أن يكون أرقام وحروف فقط.</value>
+  </data>
+  <data name="EditUserInvalidRoleSelection" xml:space="preserve">
+    <value>اختيار الدور غير صالح.</value>
+  </data>
+  <data name="EditUserInvalidCVFile" xml:space="preserve">
+    <value>صيغة الملف أو حجمه غير صالح للسيرة الذاتية. يرجى تحميل ملف PDF أو DOCX بحجم أقصى 10 ميجابايت.</value>
+  </data>
+  <data name="EditUserRoleReplacementConfirmation" xml:space="preserve">
+    <value>يوجد مستخدم نشط آخر بالدور {0}: {1}. هل تريد استبداله؟</value>
+  </data>
+  <data name="EditUserCannotChangeBoardMemberRole" xml:space="preserve">
+    <value>لا يمكنك تغيير دور عضو مجلس الإدارة هذا لأنه معين لصندوق. يرجى إلغاء تعيينه أولاً.</value>
+  </data>
+  <data name="EditUserCannotChangeFundManagerRole" xml:space="preserve">
+    <value>لا يمكنك تغيير الدور "{0}" حيث انه مضاف لاحد الصناديق الاستثمارية.</value>
+  </data>
+  <data name="EditUserRelieveOfDutiesNotification" xml:space="preserve">
+    <value>تم اعفاءك من مهامك ك {0} و ذلك على كافة الصناديق المنضم اليها</value>
+  </data>
+  <data name="EditUserRoleUpdateNotification" xml:space="preserve">
+    <value>تم اعفاءك من مهامك ك {0} و قد تم تعيينك ك {1}</value>
+  </data>
+  <data name="EditUserRelieveOfDutiesNotificationTitle" xml:space="preserve">
+    <value>إعفاء من مهام</value>
+  </data>
+  <data name="EditUserRoleUpdateNotificationTitle" xml:space="preserve">
+    <value>تعديل مهام</value>
+  </data>
+  <data name="CannotDeactivateIndependentBoardMember" xml:space="preserve">
+    <value>لا يمكن إلغاء تفعيل هذا المستخدم لأنه عضو مجلس إدارة مستقل وإلغاء التفعيل سيؤدي إلى انخفاض الصندوق عن الحد الأدنى وهو عضوين مستقلين.</value>
+  </data>
+  <data name="CannotDeactivateSoleFundManager" xml:space="preserve">
+    <value>لا يمكن إلغاء تفعيل هذا المستخدم لأنه مدير الصندوق الوحيد لصندوق واحد أو أكثر.</value>
+  </data>
+  <data name="CannotDeactivateSingleHolderRole" xml:space="preserve">
+    <value>لا يمكن إلغاء تفعيل هذا المستخدم لأنه يشغل دورًا فرديًا ولا يوجد مستخدم نشط آخر يشغل هذا الدور. يرجى إضافة مستخدم آخر بهذا الدور أولاً.</value>
+  </data>
+  <data name="UserActivatedSuccessfully_Duplicate[1]" xml:space="preserve">
+    <value>تم تفعيل المستخدم بنجاح.</value>
+  </data>
+  <data name="UserDeactivatedSuccessfully_Duplicate[1]" xml:space="preserve">
+    <value>تم إلغاء تفعيل المستخدم بنجاح.</value>
+  </data>
+  <data name="RoleReplacementConfirmation" xml:space="preserve">
+    <value>يوجد مستخدم نشط آخر بالدور {0}: {1}. هل تريد استبداله؟</value>
+  </data>
+  <data name="WhatsAppRegistrationMessage" xml:space="preserve">
+    <value>مرحباً {0}، تم تعيينك في دور {1} في نظام إدارة صناديق جدوى. يرجى الوصول إلى النظام على: {2}</value>
+  </data>
+  <data name="WhatsAppPasswordResetMessage_Duplicate[1]" xml:space="preserve">
+    <value>تم إعادة تعيين كلمة المرور الخاصة بك. كلمة المرور المؤقتة هي: {0}. يرجى تسجيل الدخول وتغيير كلمة المرور على: {1}</value>
+  </data>
+  <data name="SessionExpiredWarning" xml:space="preserve">
+    <value>ستنتهي صلاحية جلستك خلال {0} دقيقة بسبب عدم النشاط.</value>
+  </data>
+  <data name="SessionExpiredTitle" xml:space="preserve">
+    <value>تحذير انتهاء صلاحية الجلسة</value>
+  </data>
+  <data name="SessionExpiredMessage" xml:space="preserve">
+    <value>انتهت صلاحية جلستك بسبب عدم النشاط. يرجى تسجيل الدخول مرة أخرى.</value>
+  </data>
+  <data name="SessionExtendedSuccessfully" xml:space="preserve">
+    <value>تم تمديد جلستك بنجاح.</value>
+  </data>
+  <data name="SessionExtensionFailed" xml:space="preserve">
+    <value>فشل في تمديد جلستك. يرجى المحاولة مرة أخرى.</value>
+  </data>
+  <data name="SessionExtensionInvalidToken" xml:space="preserve">
+    <value>رمز الجلسة غير صالح. يرجى تسجيل الدخول مرة أخرى.</value>
+  </data>
+  <data name="SessionExtensionSystemError" xml:space="preserve">
+    <value>حدث خطأ في النظام أثناء تمديد الجلسة. يرجى المحاولة مرة أخرى.</value>
+  </data>
+  <data name="SessionNotFound" xml:space="preserve">
+    <value>الجلسة غير موجودة أو انتهت صلاحيتها.</value>
+  </data>
+  <data name="SessionStatusInvalidToken" xml:space="preserve">
+    <value>رمز الجلسة غير صالح للتحقق من الحالة.</value>
+  </data>
+  <data name="SessionStatusSystemError" xml:space="preserve">
+    <value>حدث خطأ في النظام أثناء التحقق من حالة الجلسة.</value>
+  </data>
+  <data name="SessionWarningExtendButton" xml:space="preserve">
+    <value>تمديد الجلسة</value>
+  </data>
+  <data name="SessionWarningLogoutButton" xml:space="preserve">
+    <value>تسجيل الخروج الآن</value>
+  </data>
+  <data name="SessionWarningContinueButton" xml:space="preserve">
+    <value>متابعة العمل</value>
+  </data>
+  <data name="SessionTimeoutConfigRetrieved" xml:space="preserve">
+    <value>تم استرداد إعدادات انتهاء صلاحية الجلسة بنجاح.</value>
+  </data>
+  <data name="SessionActivityUpdated" xml:space="preserve">
+    <value>تم تحديث نشاط الجلسة بنجاح.</value>
+  </data>
+  <data name="SessionCreatedAuditNote" xml:space="preserve">
+    <value>تم إنشاء جلسة المستخدم مع تتبع الأمان</value>
+  </data>
+  <data name="SessionExtendedAuditNote" xml:space="preserve">
+    <value>تم تمديد مهلة جلسة المستخدم بسبب النشاط</value>
+  </data>
+  <data name="SessionTerminatedAuditNote" xml:space="preserve">
+    <value>تم إنهاء جلسة المستخدم لأسباب أمنية أو انتهاء المهلة</value>
+  </data>
+  <data name="SessionValidationFailedAuditNote" xml:space="preserve">
+    <value>فشل في التحقق من صحة الجلسة - مشكلة أمنية محتملة</value>
+  </data>
+  <data name="SecurityViolationAuditNote" xml:space="preserve">
+    <value>تم اكتشاف انتهاك أمني في جلسة المستخدم</value>
+  </data>
+  <data name="ConcurrentSessionLimitExceededAuditNote" xml:space="preserve">
+    <value>تجاوز المستخدم الحد الأقصى للجلسات المتزامنة</value>
+  </data>
+  <data name="SessionActivityAuditNote" xml:space="preserve">
+    <value>تم تسجيل نشاط جلسة المستخدم للمراقبة</value>
+  </data>
+  <data name="SessionCleanupAuditNote" xml:space="preserve">
+    <value>تم تنظيف الجلسات المنتهية الصلاحية بواسطة صيانة النظام</value>
+  </data>
+  <data name="RoleBasedTimeoutAppliedAuditNote" xml:space="preserve">
+    <value>تم تطبيق مهلة الجلسة الخاصة بالدور على المستخدم</value>
+  </data>
+  <data name="RememberMeSessionCreatedAuditNote" xml:space="preserve">
+    <value>تم إنشاء جلسة "تذكرني" ممتدة للمستخدم</value>
+  </data>
+
+  <!-- Meeting Time Proposal Messages (User Story 1) -->
+  <data name="MeetingTimeProposalCreatedSuccessfully" xml:space="preserve">
+    <value>تم إرسال المقترح للتصويت بنجاح.</value>
+  </data>
+  <data name="MeetingSubjectRequired" xml:space="preserve">
+    <value>موضوع الاجتماع مطلوب.</value>
+  </data>
+  <data name="AtLeastOneProposedTimeRequired" xml:space="preserve">
+    <value>يرجى إضافة موعد مقترح واحد على الأقل.</value>
+  </data>
+  <data name="InvalidFileTypePdfOnly" xml:space="preserve">
+    <value>نوع الملف غير صالح. يرجى رفع ملف PDF فقط.</value>
+  </data>
+  <data name="FileUploadFailed" xml:space="preserve">
+    <value>فشل رفع الملف. يرجى المحاولة مرة أخرى.</value>
+  </data>
+  <data name="ConfirmDiscardChanges" xml:space="preserve">
+    <value>هل أنت متأكد من أنك تريد تجاهل التغييرات؟</value>
+  </data>
+  <data name="NewVoteStartedNotificationTitle" xml:space="preserve">
+    <value>تصويت جديد على موعد الاجتماع</value>
+  </data>
+  <data name="NewVoteStartedNotificationBody" xml:space="preserve">
+    <value>تم بدء تصويت جديد بخصوص "{0}".</value>
+  </data>
+  <!-- Meeting Time Vote Messages (User Story 2) -->
+  <data name="VoteSubmittedSuccessfully" xml:space="preserve">
+    <value>تم إرسال تصويتك بنجاح.</value>
+  </data>
+  <data name="SelectAtLeastOneOption" xml:space="preserve">
+    <value>يرجى اختيار خيار واحد على الأقل قبل الإرسال.</value>
+  </data>
+  <data name="VotingCompletedNotificationTitle" xml:space="preserve">
+    <value>اكتمل التصويت على موعد الاجتماع</value>
+  </data>
+  <data name="VotingCompletedNotificationBody" xml:space="preserve">
+    <value>اكتمل التصويت لاجتماع "{0}".</value>
+  </data>
+  <data name="VotingForProposalComplete" xml:space="preserve">
+    <value>التصويت لهذا المقترح قد اكتمل.</value>
+  </data>
+  <data name="AlreadyVotedOnProposal" xml:space="preserve">
+    <value>لقد قمت بالتصويت على هذا المقترح مسبقًا.</value>
+  </data>
+  <!-- Additional validation messages for meetings -->
+  <data name="FutureDateRequired" xml:space="preserve">
+    <value>يجب أن يكون التاريخ في المستقبل.</value>
+  </data>
+  <data name="DuplicateSelection" xml:space="preserve">
+    <value>الاختيارات المكررة غير مسموحة.</value>
+  </data>
+  <!-- Meeting Status Descriptions -->
+  <data name="MeetingStatusScheduled" xml:space="preserve">
+    <value>مجدول</value>
+  </data>
+  <data name="MeetingStatusInProgress" xml:space="preserve">
+    <value>جاري</value>
+  </data>
+  <data name="MeetingStatusFinished" xml:space="preserve">
+    <value>منتهي</value>
+  </data>
+  <data name="MeetingStatusCancelled" xml:space="preserve">
+    <value>ملغي</value>
+  </data>
+  <data name="MeetingStatusPostponed" xml:space="preserve">
+    <value>مؤجل</value>
+  </data>
+  <!-- Meeting State Validation Messages -->
+  <data name="MeetingScheduledValidationMessage" xml:space="preserve">
+    <value>الاجتماع مجدول ويمكن بدؤه أو تعديله أو إلغاؤه أو تأجيله.</value>
+  </data>
+  <data name="MeetingNotifyAttendeesMessage" xml:space="preserve">
+    <value>تأكد من إشعار جميع الحضور بأي تغييرات.</value>
+  </data>
+  <data name="MeetingInProgressValidationMessage" xml:space="preserve">
+    <value>الاجتماع جاري حاليًا.</value>
+  </data>
+  <data name="MeetingLiveFeaturesMessage" xml:space="preserve">
+    <value>ميزات الاجتماع المباشر (الملاحظات، الحضور، المرفقات) متاحة.</value>
+  </data>
+  <data name="MeetingFinishedValidationMessage" xml:space="preserve">
+    <value>تم إنهاء الاجتماع ولا يمكن تعديله.</value>
+  </data>
+  <data name="MeetingMinutesCanBeCreatedMessage" xml:space="preserve">
+    <value>يمكن إنشاء محضر الاجتماع وتوزيعه للتوقيع.</value>
+  </data>
+  <data name="MeetingCancelledValidationMessage" xml:space="preserve">
+    <value>تم إلغاء الاجتماع ولا يمكن تعديله.</value>
+  </data>
+  <data name="MeetingPostponedValidationMessage" xml:space="preserve">
+    <value>تم تأجيل الاجتماع ويمكن إعادة جدولته.</value>
+  </data>
+  <data name="MeetingRescheduleMessage" xml:space="preserve">
+    <value>قم بتحديث تاريخ ووقت الاجتماع لإعادة الجدولة.</value>
+ </data>
+  <!-- Assessment Status Localization -->
+  <data name="AssessmentStatusDraft" xml:space="preserve">
+    <value>مسودة</value>
+  </data>
+  <data name="AssessmentStatusWaitingForApproval" xml:space="preserve">
+    <value>في انتظار الموافقة</value>
+  </data>
+  <data name="AssessmentStatusApproved" xml:space="preserve">
+    <value>موافق عليه</value>
+  </data>
+  <data name="AssessmentStatusRejected" xml:space="preserve">
+    <value>مرفوض</value>
+  </data>
+  <data name="AssessmentStatusActive" xml:space="preserve">
+    <value>نشط</value>
+  </data>
+  <data name="AssessmentStatusCompleted" xml:space="preserve">
+    <value>مكتمل</value>
+  </data>
+  <!-- Assessment Type Localization -->
+  <data name="AssessmentTypeQuestionnaire" xml:space="preserve">
+    <value>استبيان</value>
+  </data>
+  <data name="AssessmentTypeAttachment" xml:space="preserve">
+    <value>مرفق</value>
+  </data>
+  <!-- Question Type Localization -->
+  <data name="QuestionTypeSingleChoice" xml:space="preserve">
+    <value>اختيار واحد</value>
+  </data>
+  <data name="QuestionTypeText" xml:space="preserve">
+    <value>نص</value>
+  </data>
+  <!-- Assessment Validation Messages -->
+  <data name="AssessmentTitleRequired" xml:space="preserve">
+    <value>عنوان التقييم مطلوب</value>
+  </data>
+  <data name="AssessmentTypeRequired" xml:space="preserve">
+    <value>نوع التقييم مطلوب</value>
+  </data>
+  <data name="AtLeastOneQuestionRequired" xml:space="preserve">
+    <value>مطلوب سؤال واحد على الأقل</value>
+  </data>
+  <data name="AttachmentRequired" xml:space="preserve">
+    <value>مطلوب إرفاق ملف</value>
+  </data>
+  <data name="RejectionReasonRequired" xml:space="preserve">
+    <value>سبب الرفض مطلوب</value>
+  </data>
+  <data name="AllRequiredQuestionsRequired" xml:space="preserve">
+    <value>يرجى الإجابة على جميع الأسئلة المطلوبة قبل الإرسال</value>
+  </data>
+  <data name="QuestionTextRequired" xml:space="preserve">
+    <value>نص السؤال مطلوب</value>
+  </data>
+  <data name="QuestionOptionsRequired" xml:space="preserve">
+    <value>خيارات السؤال مطلوبة للأسئلة ذات الاختيار الواحد</value>
+  </data>
+  <!-- Assessment Success Messages -->
+  <data name="AssessmentSubmittedForApproval" xml:space="preserve">
+    <value>تم إرسال التقييم للموافقة بنجاح</value>
+  </data>
+  <data name="AssessmentSavedAsDraft" xml:space="preserve">
+    <value>تم حفظ التقييم كمسودة</value>
+  </data>
+  <data name="AssessmentApproved" xml:space="preserve">
+    <value>تمت الموافقة على التقييم</value>
+  </data>
+  <data name="AssessmentRejected" xml:space="preserve">
+    <value>تم رفض التقييم</value>
+  </data>
+  <data name="AssessmentDistributed" xml:space="preserve">
+    <value>تم توزيع التقييم بنجاح</value>
+  </data>
+  <data name="ResponseSubmittedSuccessfully" xml:space="preserve">
+    <value>تم استلام إجابتك بنجاح</value>
+  </data>
+  <!-- Assessment Notification Messages -->
+  <data name="NewAssessmentWaitingApproval" xml:space="preserve">
+    <value>تقييم جديد بعنوان "{0}" ينتظر موافقتك</value>
+  </data>
+  <data name="AssessmentApprovedNotification" xml:space="preserve">
+    <value>تمت الموافقة على تقييمك "{0}"</value>
+  </data>
+  <data name="AssessmentRejectedNotification" xml:space="preserve">
+    <value>تم رفض تقييمك "{0}". السبب: {1}</value>
+  </data>
+  <data name="NewAssessmentReadyForResponse" xml:space="preserve">
+    <value>تقييم جديد بعنوان "{0}" جاهز لمراجعتك. يرجى تقديم إجابتك</value>
+  </data>
+  <data name="AssessmentDistributionConfirmation" xml:space="preserve">
+    <value>هل أنت متأكد من إرسال هذا التقييم إلى {0} عضو مجلس إدارة؟ لا يمكن استرجاعه</value>
+  </data>
+  <!-- Assessment Error Messages -->
+  <data name="InvalidStatusTransition" xml:space="preserve">
+    <value>انتقال حالة غير صالح</value>
+  </data>
+  <data name="AssessmentNotFound" xml:space="preserve">
+    <value>التقييم غير موجود</value>
+  </data>
+  <data name="UnauthorizedAssessmentAccess" xml:space="preserve">
+    <value>وصول غير مصرح به للتقييم</value>
+  </data>
+  <data name="AssessmentAlreadyResponded" xml:space="preserve">
+    <value>لقد قمت بالإجابة على هذا التقييم بالفعل</value>
+  </data>
+  <data name="AssessmentNotActive" xml:space="preserve">
+    <value>التقييم غير نشط للإجابات</value>
+  </data>
+  <!-- Additional Assessment Validation Messages -->
+  <data name="AssessmentTitleMaxLength" xml:space="preserve">
+    <value>عنوان التقييم يجب أن يكون أقل من 255 حرف</value>
+  </data>
+  <data name="AssessmentWaitingTooLong" xml:space="preserve">
+    <value>تحذير: التقييم في انتظار الموافقة لأكثر من {0} أيام</value>
+  </data>
+  <data name="AssessmentReadyForDistribution" xml:space="preserve">
+    <value>التقييم جاهز للتوزيع على أعضاء مجلس الإدارة</value>
+  </data>
+  <data name="AssessmentCannotBeModified" xml:space="preserve">
+    <value>لا يمكن تعديل التقييم في الحالة الحالية</value>
+  </data>
+  <data name="AssessmentResponsesReceived" xml:space="preserve">
+    <value>تم استلام إجابات التقييم من أعضاء مجلس الإدارة</value>
+  </data>
+  <data name="AssessmentCompletionReady" xml:space="preserve">
+    <value>التقييم جاهز للإكمال</value>
+  </data>
+  <!-- Assessment Action Localization -->
+  <data name="AssessmentSubmitForApproval" xml:space="preserve">
+    <value>إرسال للموافقة</value>
+  </data>
+  <data name="AssessmentApprove" xml:space="preserve">
+    <value>موافقة</value>
+  </data>
+  <data name="AssessmentReject" xml:space="preserve">
+    <value>رفض</value>
+  </data>
+  <data name="AssessmentDistribute" xml:space="preserve">
+    <value>توزيع</value>
+  </data>
+  <data name="AssessmentComplete" xml:space="preserve">
+    <value>إكمال</value>
+  </data>
+  <data name="AssessmentEdit" xml:space="preserve">
+    <value>تحرير</value>
+  </data>
+  <data name="AssessmentViewDetails" xml:space="preserve">
+    <value>عرض التفاصيل</value>
+  </data>
+  <data name="AssessmentDelete" xml:space="preserve">
+    <value>حذف</value>
+  </data>
+  <data name="AssessmentSave" xml:space="preserve">
+    <value>حفظ</value>
+  </data>
+  <data name="AssessmentRespond" xml:space="preserve">
+    <value>إجابة</value>
+  </data>
+  <!-- Assessment Review Messages -->
+  <data name="ReviewerInformationRequired" xml:space="preserve">
+    <value>معلومات المراجع مطلوبة</value>
+  </data>
+  <data name="ReviewDateRequired" xml:space="preserve">
+    <value>تاريخ المراجعة مطلوب</value>
+  </data>
+  <data name="FundBoardMembersRequired" xml:space="preserve">
+    <value>يجب أن يحتوي الصندوق على أعضاء مجلس إدارة لتوزيع التقييم</value>
+  </data>
+  <!-- Additional Validation Messages -->
+  <data name="InvalidAttachmentId" xml:space="preserve">
+    <value>معرف المرفق غير صالح</value>
+  </data>
+  <data name="QuestionsNotAllowedForAttachment" xml:space="preserve">
+    <value>لا يجب تقديم أسئلة لتقييمات نوع المرفق</value>
+  </data>
+  <data name="QuestionDisplayOrdersUnique" xml:space="preserve">
+    <value>ترتيب عرض الأسئلة يجب أن يكون فريد</value>
+  </data>
+  <!-- Question Validation Messages -->
+  <data name="QuestionTextMaxLength" xml:space="preserve">
+    <value>نص السؤال يجب أن يكون أقل من 1000 حرف</value>
+  </data>
+  <data name="QuestionTypeRequired" xml:space="preserve">
+    <value>نوع السؤال مطلوب</value>
+  </data>
+  <data name="QuestionDisplayOrderRequired" xml:space="preserve">
+    <value>ترتيب عرض السؤال يجب أن يكون أكبر من 0</value>
+  </data>
+  <data name="QuestionOptionsMinimumTwo" xml:space="preserve">
+    <value>أسئلة الاختيار الواحد يجب أن تحتوي على خيارين على الأقل</value>
+  </data>
+  <data name="QuestionOptionsNotAllowedForText" xml:space="preserve">
+    <value>لا يجب تقديم خيارات للأسئلة النصية</value>
+  </data>
+  <!-- Assessment Notification Messages -->
+  <data name="AssessmentSubmittedForApprovalNotificationTitle" xml:space="preserve">
+    <value>تم إرسال التقييم للموافقة</value>
+  </data>
+  <data name="AssessmentSubmittedForApprovalNotificationBody" xml:space="preserve">
+    <value>تم إرسال التقييم '{0}' في الصندوق '{1}' للموافقة من قبل {2}</value>
+  </data>
+  <data name="AssessmentApprovedNotificationTitle" xml:space="preserve">
+    <value>تمت الموافقة على التقييم</value>
+  </data>
+  <data name="AssessmentApprovedNotificationBody" xml:space="preserve">
+    <value>تمت الموافقة على تقييمك '{0}' في الصندوق '{1}' من قبل {2}</value>
+  </data>
+  <data name="AssessmentRejectedNotificationTitle" xml:space="preserve">
+    <value>تم رفض التقييم</value>
+  </data>
+  <data name="AssessmentRejectedNotificationBody" xml:space="preserve">
+    <value>تم رفض تقييمك '{0}' في الصندوق '{1}' من قبل {2}. السبب: {3}</value>
+  </data>
+  <data name="AssessmentDistributedNotificationTitle" xml:space="preserve">
+    <value>تقييم جديد متاح</value>
+  </data>
+  <data name="AssessmentDistributedNotificationBody" xml:space="preserve">
+    <value>التقييم '{0}' في الصندوق '{1}' متاح الآن لإجابتك. تم توزيعه من قبل {2}</value>
+  </data>
+  <data name="AssessmentCompletedNotificationTitle" xml:space="preserve">
+    <value>تم إكمال التقييم</value>
+  </data>
+  <data name="AssessmentCompletedNotificationBody" xml:space="preserve">
+    <value>تم إكمال التقييم '{0}' في الصندوق '{1}' من قبل {2}</value>
+  </data>
+  <!-- Assessment State Transition Messages -->
+  <data name="AssessmentStatusTransitionMessage" xml:space="preserve">
+    <value>تم تغيير حالة التقييم من {0} إلى {1}. السبب: {2}</value>
+  </data>
+  <!-- Assessment State Information Messages -->
+  <data name="AssessmentPendingResponsesInfo" xml:space="preserve">
+    <value>معلومات: {0} إجابة معلقة من أصل {1}</value>
+  </data>
+  <data name="AssessmentAllResponsesReceivedInfo" xml:space="preserve">
+    <value>معلومات: تم استلام جميع الإجابات، يمكن إغلاق التقييم</value>
+  </data>
+  <data name="AssessmentNoResponsesWarning" xml:space="preserve">
+    <value>تحذير: لم يتم إنشاء إجابات للتقييم بعد</value>
+  </data>
+  <data name="AssessmentCompletionStatistics" xml:space="preserve">
+    <value>معلومات: تم استلام {0} إجابة من أصل {1} ({2:F1}%)</value>
+  </data>
+  <data name="AssessmentNoResponsesReceived" xml:space="preserve">
+    <value>تحذير: لم يتم استلام أي إجابات</value>
+  </data>
+  <data name="AssessmentNoResponsesExist" xml:space="preserve">
+    <value>تحذير: لا توجد إجابات للتقييم</value>
+  </data>
+  <!-- Additional Assessment Action Localization -->
+  <data name="AssessmentViewRejectionReason" xml:space="preserve">
+    <value>عرض سبب الرفض</value>
+  </data>
+  <data name="AssessmentResubmit" xml:space="preserve">
+    <value>إعادة إرسال</value>
+  </data>
+  <data name="AssessmentViewResponses" xml:space="preserve">
+    <value>عرض الإجابات</value>
+  </data>
+  <data name="AssessmentViewResults" xml:space="preserve">
+    <value>عرض النتائج</value>
+  </data>
+  <data name="AssessmentCompleteAssessment" xml:space="preserve">
+    <value>إغلاق التقييم</value>
+  </data>
+  <data name="AssessmentExportResults" xml:space="preserve">
+    <value>تصدير النتائج</value>
+  </data>
+  <data name="AssessmentExportData" xml:space="preserve">
+    <value>تصدير البيانات</value>
+  </data>
+  <data name="AssessmentArchive" xml:space="preserve">
+    <value>أرشفة</value>
+  </data>
+  <!-- Question Type Localization -->
+  <data name="QuestionTypeSingleChoice" xml:space="preserve">
+    <value>اختيار واحد</value>
+  </data>
+  <data name="QuestionTypeText" xml:space="preserve">
+    <value>نص</value>
+  </data>
+</root>

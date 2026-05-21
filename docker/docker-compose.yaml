@@ -1,0 +1,138 @@
+services:
+  # PostgreSQL (pgvector image: drop-in Postgres + the `vector` extension for future RAG work).
+  # Credentials/DB match appsettings.json ConnectionStrings:Default (Database=Learnexia, postgres/admin).
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: learnexia_postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: Learnexia
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - jadwa-network
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d Learnexia"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - jadwa-network
+
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: jadwa-minio
+    restart: always
+    ports:
+      - "9000:9000"   # MinIO API port
+      - "9001:9001"   # MinIO Console (Web UI) port
+    environment:
+      # Default credentials (change these for production)
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      # Set default region
+      MINIO_REGION: us-east-1
+    volumes:
+      # Persist MinIO data
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - jadwa-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 30s
+
+  minio-setup:
+    image: quay.io/minio/mc:latest
+    container_name: jadwa-minio-setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Waiting for MinIO to be ready...';
+      sleep 10;
+      echo 'Setting up MinIO alias...';
+      /usr/bin/mc alias set jadwa-minio http://minio:9000 minioadmin minioadmin;
+      echo 'Creating default buckets...';
+      /usr/bin/mc mb jadwa-minio/fund --ignore-existing;
+      /usr/bin/mc mb jadwa-minio/user --ignore-existing;
+      /usr/bin/mc mb jadwa-minio/other --ignore-existing;
+      /usr/bin/mc mb jadwa-minio/resolution --ignore-existing;
+      /usr/bin/mc mb jadwa-minio/documents --ignore-existing;
+      echo 'Setting bucket policies for no expiry...';
+      /usr/bin/mc anonymous set download jadwa-minio/fund;
+      /usr/bin/mc anonymous set download jadwa-minio/user;
+      /usr/bin/mc anonymous set download jadwa-minio/other;
+      /usr/bin/mc anonymous set download jadwa-minio/resolution;
+      /usr/bin/mc anonymous set download jadwa-minio/documents;
+      echo 'Removing any existing lifecycle policies...';
+      /usr/bin/mc ilm remove jadwa-minio/fund --force || true;
+      /usr/bin/mc ilm remove jadwa-minio/user --force || true;
+      /usr/bin/mc ilm remove jadwa-minio/other --force || true;
+      /usr/bin/mc ilm remove jadwa-minio/resolution --force || true;
+      /usr/bin/mc ilm remove jadwa-minio/documents --force || true;
+      echo 'MinIO setup completed successfully with no expiry policies!';
+      echo 'MinIO Console available at: http://localhost:9001';
+      echo 'Username: minioadmin';
+      echo 'Password: minioadmin';"
+    networks:
+      - jadwa-network
+
+  jadwa-api:
+    build: ./
+    container_name: jadwa-api
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
+    networks:
+      - jadwa-network
+    environment:
+      # Inside the compose network the DB host is the service name, not localhost.
+      - ConnectionStrings__Default=Host=postgres;Port=5432;Database=Learnexia;Username=postgres;Password=admin
+      - ConnectionStrings__Redis=redis:6379
+      - ASPNETCORE_Kestrel__Endpoints__Https__Url=https://+:8081
+      - ASPNETCORE_Kestrel__Endpoints__Http__Url=http://+:8080
+      - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/aspnetapp.pfx
+      - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=123456
+      # MinIO configuration for containerized environment
+      - MinIOConfiguration__Endpoint=minio:9000
+      - MinIOConfiguration__AccessKey=minioadmin
+      - MinIOConfiguration__SecretKey=minioadmin
+      - MinIOConfiguration__UseSSL=false
+      - MinIOConfiguration__Enabled=true
+    volumes:
+      - ./aspnetapp.pfx:/https/aspnetapp.pfx:ro
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+
+volumes:
+  minio_data:
+    driver: local
+
+  postgres_data:
+
+networks:
+  jadwa-network:
+    driver: bridge

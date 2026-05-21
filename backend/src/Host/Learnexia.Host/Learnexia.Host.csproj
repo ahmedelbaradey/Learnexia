@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>Learnexia.Host</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+    <PackageReference Include="Swashbuckle.AspNetCore.Annotations" />
+    <PackageReference Include="AspNetCoreRateLimit" />
+    <PackageReference Include="Asp.Versioning.Mvc" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\Learnexia.Shared.Kernel\Learnexia.Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\Modules\Identity\Learnexia.Modules.Identity.Api\Learnexia.Modules.Identity.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Catalog\Learnexia.Modules.Catalog.Api\Learnexia.Modules.Catalog.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Notifications\Learnexia.Modules.Notifications.Api\Learnexia.Modules.Notifications.Api.csproj" />
+  </ItemGroup>
+</Project>

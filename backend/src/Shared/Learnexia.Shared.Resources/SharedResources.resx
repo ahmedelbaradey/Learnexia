@@ -1,0 +1,682 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="EmptyIdValidation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="EmptyNameValidation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ExistICNumberValidation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="HasAcceptedTerms" xml:space="preserve">
+    <value />
+  </data>
+  <data name="MaximumDigitsPINCodeValidation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="MinimumDigitsPINCodeValidation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="EmptyCustomerNameValidtion" xml:space="preserve">
+    <value />
+  </data>
+  <data name="EmptyCustomerPhoneValidation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ExistCustomerPhoneValidation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="EmptyCustomerEmailValidation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ExistCustomerEmailValidation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="EmptyTOTPValidation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="MaximumDigitsTOTPValidation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="MinimumDigitsTOTPValidation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="NotValidOrExpiredTOTPValidation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="NotValidPINCodeValidation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="CustomerCreationFailed" xml:space="preserve">
+    <value />
+  </data>
+  <data name="PhoneTOTPIs" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TOTPExpireAfter" xml:space="preserve">
+    <value />
+  </data>
+  <data name="PINCodeUpdated" xml:space="preserve">
+    <value />
+  </data>
+  <data name="PINCodeCreationFailed" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BiometricLoginEnabledSucessfully" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BiometricLoginEnabledFailed" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TermsAcceptedSucessfully" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TermsAcceptedFailed" xml:space="preserve">
+    <value />
+  </data>
+  <data name="EmailVerirfiedSucessfully" xml:space="preserve">
+    <value />
+  </data>
+  <data name="EmailVerificationFailed" xml:space="preserve">
+    <value />
+  </data>
+  <data name="PhoneVerifiedAndEmailTOTPIs" xml:space="preserve">
+    <value />
+  </data>
+  <data name="PhoneVerificationFailed" xml:space="preserve">
+    <value />
+  </data>
+  <data name="PINCodeVerirfiedSucessfully" xml:space="preserve">
+    <value />
+  </data>
+  <data name="PINCodeVerificationFailed" xml:space="preserve">
+    <value />
+  </data>
+  <data name="MaximumCharsCustomerNameValidtion" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ValidEmailValidation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TheCustomerWithICNumber" xml:space="preserve">
+    <value />
+  </data>
+  <data name="DoesntExist" xml:space="preserve">
+    <value />
+  </data>
+  <data name="Required" xml:space="preserve">
+    <value />
+  </data>
+  <data name="MaxLength" xml:space="preserve">
+    <value />
+  </data>
+  <data name="MinLength" xml:space="preserve">
+    <value />
+  </data>
+  <data name="Unique" xml:space="preserve">
+    <value />
+  </data>
+  <data name="RecordSavedSuccessfully" xml:space="preserve">
+    <value />
+  </data>
+  <data name="FundManagersListValidation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="FundBoardSecretariesListValidation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="RequiredField" xml:space="preserve">
+    <value />
+  </data>
+  <data name="VotingTypeRangeValidator" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BoardSecretary" xml:space="preserve">
+    <value />
+  </data>
+  <data name="LegalCouncil" xml:space="preserve">
+    <value />
+  </data>
+  <data name="FundManager" xml:space="preserve">
+    <value />
+  </data>
+  <data name="User" xml:space="preserve">
+    <value />
+  </data>
+  <data name="Basic" xml:space="preserve">
+    <value />
+  </data>
+  <data name="Admin" xml:space="preserve">
+    <value />
+  </data>
+  <data name="SuperAdmin" xml:space="preserve">
+    <value />
+  </data>
+  <data name="AnErrorIsOccurredWhileSavingData" xml:space="preserve">
+    <value />
+  </data>
+  <data name="InitiationDateRangeValidator" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ChangeExitDateNotificationBody" xml:space="preserve">
+    <value />
+  </data>
+  <data name="AddFundNotificationBody" xml:space="preserve">
+    <value />
+  </data>
+  <data name="AddedToFundNotificationBody" xml:space="preserve">
+    <value />
+  </data>
+  <data name="RemoveFromFundNotificationBody" xml:space="preserve">
+    <value />
+  </data>
+  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="AddFundNotificationTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
+  <data name="AddedToFundNotificationTitle" xml:space="preserve">
+    <value />
+  </data>
+  <data name="RemoveFromFundNotificationTitle" xml:space="preserve">
+    <value />
+  </data>
+  <data name="CompeleteFundNotificationTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
+  <data name="ChangeExitDateNotificationTitle" xml:space="preserve">
+    <value />
+  </data>
+  <data name="CompeleteFundNotificationBody" xml:space="preserve">
+    <value />
+  </data>
+  <data name="OldFundCodeAlreadyExist" xml:space="preserve">
+    <value />
+  </data>
+  <data name="MaxFileSize" xml:space="preserve">
+    <value />
+  </data>
+  <data name="PropertiesNumberValidator" xml:space="preserve">
+    <value />
+  </data>
+  <data name="FundSavedSuccessfully" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionDeletedSuccessfully" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
+  <data name="ResolutionRejectedNotificationBody" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionSentToVoteNotificationBody" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionConfirmedNotificationBody" xml:space="preserve">
+    <value />
+  </data>
+  <data name="EmptyRequestValidation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BoardMemberTypeIndependent" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BoardMemberTypeNotIndependent" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionStatusDraft" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionStatusPendingLegalReview" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionStatusLegalReviewCompleted" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionStatusConfirmed" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionStatusRejected" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionStatusVotingInProgress" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionStatusApproved" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionStatusNotApproved" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionStatusCancelled" xml:space="preserve">
+    <value />
+  </data>
+  <data name="VoteDecisionApprove" xml:space="preserve">
+    <value />
+  </data>
+  <data name="VoteDecisionReject" xml:space="preserve">
+    <value />
+  </data>
+  <data name="VoteDecisionAbstain" xml:space="preserve">
+    <value />
+  </data>
+  <data name="VotingTypeAllMembers" xml:space="preserve">
+    <value />
+  </data>
+  <data name="VotingTypeMajority" xml:space="preserve">
+    <value />
+  </data>
+  <data name="MemberVotingResultAllItems" xml:space="preserve">
+    <value />
+  </data>
+  <data name="MemberVotingResultMajorityOfItems" xml:space="preserve">
+    <value />
+  </data>
+  <data name="InvalidCultureCode" xml:space="preserve">
+    <value />
+  </data>
+  <data name="PreferredLanguageUpdatedSuccessfully" xml:space="preserve">
+    <value />
+  </data>
+  <data name="Unauthorized" xml:space="preserve">
+    <value />
+  </data>
+  <data name="InvalidIdValidation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="InvalidBoardMemberType" xml:space="preserve">
+    <value />
+  </data>
+  <data name="UserAlreadyBoardMember" xml:space="preserve">
+    <value />
+  </data>
+  <data name="MaxIndependentMembersReached" xml:space="preserve">
+    <value />
+  </data>
+  <data name="FundAlreadyHasChairman" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BoardMemberAddedSuccessfully" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BoardMemberUpdatedSuccessfully" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BoardMemberDeletedSuccessfully" xml:space="preserve">
+    <value />
+  </data>
+  <data name="FundNotFound" xml:space="preserve">
+    <value />
+  </data>
+  <data name="UserNotFound" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BoardMemberNotFound" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionCodeExists" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionCreatedSuccessfully" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionUpdatedSuccessfully" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionNotFound" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionTypeNotFound" xml:space="preserve">
+    <value />
+  </data>
+  <data name="AttachmentNotFound" xml:space="preserve">
+    <value />
+  </data>
+  <data name="InvalidResolutionDate" xml:space="preserve">
+    <value />
+  </data>
+  <data name="InvalidVotingMethodology" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionDateMustBeAfterFundInitiation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionDateCannotBeFuture" xml:space="preserve">
+    <value />
+  </data>
+  <data name="InvalidFileType" xml:space="preserve">
+    <value />
+  </data>
+  <data name="FileSizeExceedsLimit" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionCodeGenerationFailed" xml:space="preserve">
+    <value />
+  </data>
+  <data name="OnlyFundManagerCanCreateResolution" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionStatusPending" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionStatusCompletingData" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionStatusWaitingForConfirmation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionSavedAsDraft" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionSentForReview" xml:space="preserve">
+    <value />
+  </data>
+  <data name="NewTypeRequiredForOtherResolutionType" xml:space="preserve">
+    <value />
+  </data>
+  <data name="CannotEditApprovedOrRejectedResolution" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BoardMemberAddedNotificationTitle" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BoardMemberAddedNotificationBody" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BoardMemberAddedToFundNotificationTitle" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BoardMemberAddedToFundNotificationBody" xml:space="preserve">
+    <value />
+  </data>
+  <data name="MaximumIndependentMembersReached" xml:space="preserve">
+    <value />
+  </data>
+  <data name="Independent" xml:space="preserve">
+    <value />
+  </data>
+  <data name="NotIndependent" xml:space="preserve">
+    <value />
+  </data>
+  <data name="Active" xml:space="preserve">
+    <value />
+  </data>
+  <data name="Inactive" xml:space="preserve">
+    <value />
+  </data>
+  <data name="Chairman" xml:space="preserve">
+    <value />
+  </data>
+  <data name="Member" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionCreatedNotificationTitle" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionCreatedNotificationBody" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionUpdatedNotificationTitle" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionUpdatedNotificationBody" xml:space="preserve">
+    <value />
+  </data>
+  <data name="FundActivatedNotificationTitle" xml:space="preserve">
+    <value />
+  </data>
+  <data name="FundActivatedNotificationBody" xml:space="preserve">
+    <value />
+  </data>
+  <data name="UnauthorizedAccess" xml:space="preserve">
+    <value />
+  </data>
+  <data name="OperationCompletedSuccessfully" xml:space="preserve">
+    <value />
+  </data>
+  <data name="SystemErrorSavingData" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ConfirmCancelResolution" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ConfirmDeleteResolution" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionCancelledSuccessfully" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ItemDeletedSuccessfully" xml:space="preserve">
+    <value />
+  </data>
+  <data name="SystemErrorUpdatingData" xml:space="preserve">
+    <value />
+  </data>
+  <data name="SystemErrorDeletingData" xml:space="preserve">
+    <value />
+  </data>
+  <data name="SystemErrorDisplayingData" xml:space="preserve">
+    <value />
+  </data>
+  <data name="CannotCancelNonPendingResolution" xml:space="preserve">
+    <value />
+  </data>
+  <data name="CannotDeleteNonDraftResolution" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionCancelledNotificationTitle" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionCancelledNotificationBody" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ConfirmCreateNewResolutionFromApproved" xml:space="preserve">
+    <value />
+  </data>
+  <data name="NewResolutionCreatedFromApprovedNotificationTitle" xml:space="preserve">
+    <value />
+  </data>
+  <data name="NewResolutionCreatedFromApprovedNotificationBody" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ConfirmSuspendVotingForEdit" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionVotingSuspendedNotificationTitle" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionVotingSuspendedNotificationBody" xml:space="preserve">
+    <value />
+  </data>
+  <data name="VotingSuspendedSuccessfully" xml:space="preserve">
+    <value />
+  </data>
+  <data name="CannotEditVotingResolutionWithoutSuspension" xml:space="preserve">
+    <value />
+  </data>
+  <data name="OnlyCreatorCanEditDraftResolution" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ExitWithoutSavingConfirmation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="AuditActionResolutionCreation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="AuditActionResolutionDataUpdate" xml:space="preserve">
+    <value />
+  </data>
+  <data name="AuditActionResolutionVoteSuspend" xml:space="preserve">
+    <value />
+  </data>
+  <data name="AuditActionResolutionConfirmation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="AuditActionResolutionRejection" xml:space="preserve">
+    <value />
+  </data>
+  <data name="AuditActionResolutionSentToVote" xml:space="preserve">
+    <value />
+  </data>
+  <data name="AuditActionResolutionCancellation" xml:space="preserve">
+    <value />
+  </data>
+  <data name="AuditActionResolutionDeletion" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionDataCompletedNotificationTitle" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ResolutionDataCompletedNotificationBody" xml:space="preserve">
+    <value />
+  </data>
+  <data name="NoRecords" xml:space="preserve">
+    <value />
+  </data>
+  <data name="AddFundForManagerNotificationBody" xml:space="preserve">
+    <value />
+  </data>
+  <data name="FundAlreadyExist" xml:space="preserve">
+    <value />
+  </data>
+  <data name="InvalidFund" xml:space="preserve">
+    <value />
+  </data>
+  <data name="AuditActionResolutionEdit" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="AuditActionResolutionCompletion" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="AuditActionResolutionApproved" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="AuditActionResolutionUnApproved" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="UserUpdatedSuccessfully" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="UserAddedSuccessfully" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="InvalidFundName" xml:space="preserve">
+    <value></value>
+  </data>
+</root>

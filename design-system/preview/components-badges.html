@@ -1,0 +1,22 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css">
+<style>
+  body{padding:28px}
+  .row{display:flex;justify-content:space-around;align-items:center;gap:12px}
+  .badge{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .disc{width:78px;height:78px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;position:relative}
+  .gold{background:radial-gradient(circle at 30% 30%,#FDE68A,#F59E0B);box-shadow:0 8px 20px rgba(245,158,11,0.45),inset 0 -4px 8px rgba(0,0,0,0.2)}
+  .silver{background:radial-gradient(circle at 30% 30%,#F1F5F9,#94A3B8);box-shadow:0 8px 20px rgba(148,163,184,0.35),inset 0 -4px 8px rgba(0,0,0,0.2)}
+  .bronze{background:radial-gradient(circle at 30% 30%,#FCD9B5,#B45309);box-shadow:0 8px 20px rgba(180,83,9,0.45),inset 0 -4px 8px rgba(0,0,0,0.25)}
+  .locked{background:#334155;color:#64748B;box-shadow:inset 0 1px 0 rgba(255,255,255,0.06)}
+  .label{font-family:var(--lx-font-display);font-weight:700;font-size:12px;color:var(--lx-fg2)}
+  .sub{font-size:10px;color:var(--lx-fg3);text-transform:uppercase;letter-spacing:0.06em}
+</style></head>
+<body>
+<div class="row">
+  <div class="badge"><div class="disc gold">🏆</div><div class="label">Gold Streak</div><div class="sub">30 days</div></div>
+  <div class="badge"><div class="disc silver">⚡</div><div class="label">Quick Thinker</div><div class="sub">Earned</div></div>
+  <div class="badge"><div class="disc bronze">🎯</div><div class="label">First Quiz</div><div class="sub">Earned</div></div>
+  <div class="badge"><div class="disc locked">🔒</div><div class="label" style="color:var(--lx-fg3)">Math Wizard</div><div class="sub">Locked</div></div>
+</div>
+</body></html>

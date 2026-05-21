@@ -1,0 +1,53 @@
+# ---- .NET (backend) ----
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+.vs/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+TestResults/
+*.trx
+*.coverage
+*.nupkg
+project.lock.json
+
+# ---- Node / Turborepo / Expo / Next (frontend, future) ----
+node_modules/
+.turbo/
+dist/
+build/
+.next/
+out/
+.expo/
+.expo-shared/
+*.tsbuildinfo
+.pnpm-store/
+
+# ---- Env & secrets ----
+.env
+.env.*
+!.env.example
+*.pfx
+appsettings.*.local.json
+
+# ---- Logs ----
+*.log
+logs/
+npm-debug.log*
+pnpm-debug.log*
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+
+# ---- Claude Code (keep shared agents/skills/settings.json; ignore local) ----
+.claude/settings.local.json
+
+# ---- Docker volumes (local data) ----
+postgres_data/
+minio_data/
+mssql_data/

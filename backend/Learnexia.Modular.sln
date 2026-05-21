@@ -1,0 +1,180 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.4.11620.152
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{A0000001-0000-0000-0000-000000000001}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Host", "Host", "{A0000002-0000-0000-0000-000000000002}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Modules", "Modules", "{A0000003-0000-0000-0000-000000000003}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared", "Shared", "{A0000004-0000-0000-0000-000000000004}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Identity", "Identity", "{A0000010-0000-0000-0000-000000000010}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Catalog", "Catalog", "{A0000020-0000-0000-0000-000000000020}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Notifications", "Notifications", "{A0000030-0000-0000-0000-000000000030}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{A0000005-0000-0000-0000-000000000005}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A0000006-0000-0000-0000-000000000006}"
+	ProjectSection(SolutionItems) = preProject
+		Directory.Build.props = Directory.Build.props
+		Directory.Packages.props = Directory.Packages.props
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Host", "src\Host\Learnexia.Host\Learnexia.Host.csproj", "{B0000001-0000-0000-0000-000000000001}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Shared.Kernel", "src\Shared\Learnexia.Shared.Kernel\Learnexia.Shared.Kernel.csproj", "{B0000002-0000-0000-0000-000000000002}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Shared.Contracts", "src\Shared\Learnexia.Shared.Contracts\Learnexia.Shared.Contracts.csproj", "{B0000003-0000-0000-0000-000000000003}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Shared.Resources", "src\Shared\Learnexia.Shared.Resources\Learnexia.Shared.Resources.csproj", "{B0000004-0000-0000-0000-000000000004}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Identity.Domain", "src\Modules\Identity\Learnexia.Modules.Identity.Domain\Learnexia.Modules.Identity.Domain.csproj", "{B0000011-0000-0000-0000-000000000011}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Identity.Application", "src\Modules\Identity\Learnexia.Modules.Identity.Application\Learnexia.Modules.Identity.Application.csproj", "{B0000012-0000-0000-0000-000000000012}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Identity.Infrastructure", "src\Modules\Identity\Learnexia.Modules.Identity.Infrastructure\Learnexia.Modules.Identity.Infrastructure.csproj", "{B0000013-0000-0000-0000-000000000013}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Identity.Api", "src\Modules\Identity\Learnexia.Modules.Identity.Api\Learnexia.Modules.Identity.Api.csproj", "{B0000014-0000-0000-0000-000000000014}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Catalog.Domain", "src\Modules\Catalog\Learnexia.Modules.Catalog.Domain\Learnexia.Modules.Catalog.Domain.csproj", "{B0000021-0000-0000-0000-000000000021}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Catalog.Application", "src\Modules\Catalog\Learnexia.Modules.Catalog.Application\Learnexia.Modules.Catalog.Application.csproj", "{B0000022-0000-0000-0000-000000000022}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Catalog.Infrastructure", "src\Modules\Catalog\Learnexia.Modules.Catalog.Infrastructure\Learnexia.Modules.Catalog.Infrastructure.csproj", "{B0000023-0000-0000-0000-000000000023}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Catalog.Api", "src\Modules\Catalog\Learnexia.Modules.Catalog.Api\Learnexia.Modules.Catalog.Api.csproj", "{B0000024-0000-0000-0000-000000000024}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Notifications.Domain", "src\Modules\Notifications\Learnexia.Modules.Notifications.Domain\Learnexia.Modules.Notifications.Domain.csproj", "{B0000031-0000-0000-0000-000000000031}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Notifications.Application", "src\Modules\Notifications\Learnexia.Modules.Notifications.Application\Learnexia.Modules.Notifications.Application.csproj", "{B0000032-0000-0000-0000-000000000032}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Notifications.Infrastructure", "src\Modules\Notifications\Learnexia.Modules.Notifications.Infrastructure\Learnexia.Modules.Notifications.Infrastructure.csproj", "{B0000033-0000-0000-0000-000000000033}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Notifications.Api", "src\Modules\Notifications\Learnexia.Modules.Notifications.Api\Learnexia.Modules.Notifications.Api.csproj", "{B0000034-0000-0000-0000-000000000034}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Modules.Identity.UnitTests", "tests\Modules.Identity.UnitTests\Modules.Identity.UnitTests.csproj", "{C0000001-0000-0000-0000-000000000001}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Modules.Catalog.UnitTests", "tests\Modules.Catalog.UnitTests\Modules.Catalog.UnitTests.csproj", "{C0000002-0000-0000-0000-000000000002}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Modules.Notifications.UnitTests", "tests\Modules.Notifications.UnitTests\Modules.Notifications.UnitTests.csproj", "{C0000003-0000-0000-0000-000000000003}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B0000001-0000-0000-0000-000000000001}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000001-0000-0000-0000-000000000001}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000001-0000-0000-0000-000000000001}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000001-0000-0000-0000-000000000001}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0000002-0000-0000-0000-000000000002}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000002-0000-0000-0000-000000000002}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000002-0000-0000-0000-000000000002}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000002-0000-0000-0000-000000000002}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0000003-0000-0000-0000-000000000003}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000003-0000-0000-0000-000000000003}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000003-0000-0000-0000-000000000003}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000003-0000-0000-0000-000000000003}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0000004-0000-0000-0000-000000000004}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000004-0000-0000-0000-000000000004}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000004-0000-0000-0000-000000000004}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000004-0000-0000-0000-000000000004}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0000011-0000-0000-0000-000000000011}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000011-0000-0000-0000-000000000011}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000011-0000-0000-0000-000000000011}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000011-0000-0000-0000-000000000011}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0000012-0000-0000-0000-000000000012}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000012-0000-0000-0000-000000000012}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000012-0000-0000-0000-000000000012}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000012-0000-0000-0000-000000000012}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0000013-0000-0000-0000-000000000013}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000013-0000-0000-0000-000000000013}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000013-0000-0000-0000-000000000013}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000013-0000-0000-0000-000000000013}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0000014-0000-0000-0000-000000000014}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000014-0000-0000-0000-000000000014}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000014-0000-0000-0000-000000000014}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000014-0000-0000-0000-000000000014}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0000021-0000-0000-0000-000000000021}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000021-0000-0000-0000-000000000021}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000021-0000-0000-0000-000000000021}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000021-0000-0000-0000-000000000021}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0000022-0000-0000-0000-000000000022}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000022-0000-0000-0000-000000000022}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000022-0000-0000-0000-000000000022}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000022-0000-0000-0000-000000000022}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0000023-0000-0000-0000-000000000023}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000023-0000-0000-0000-000000000023}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000023-0000-0000-0000-000000000023}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000023-0000-0000-0000-000000000023}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0000024-0000-0000-0000-000000000024}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000024-0000-0000-0000-000000000024}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000024-0000-0000-0000-000000000024}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000024-0000-0000-0000-000000000024}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0000031-0000-0000-0000-000000000031}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000031-0000-0000-0000-000000000031}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000031-0000-0000-0000-000000000031}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000031-0000-0000-0000-000000000031}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0000032-0000-0000-0000-000000000032}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000032-0000-0000-0000-000000000032}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000032-0000-0000-0000-000000000032}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000032-0000-0000-0000-000000000032}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0000033-0000-0000-0000-000000000033}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000033-0000-0000-0000-000000000033}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000033-0000-0000-0000-000000000033}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000033-0000-0000-0000-000000000033}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0000034-0000-0000-0000-000000000034}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000034-0000-0000-0000-000000000034}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000034-0000-0000-0000-000000000034}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000034-0000-0000-0000-000000000034}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0000001-0000-0000-0000-000000000001}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0000001-0000-0000-0000-000000000001}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0000001-0000-0000-0000-000000000001}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0000001-0000-0000-0000-000000000001}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0000002-0000-0000-0000-000000000002}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0000002-0000-0000-0000-000000000002}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0000002-0000-0000-0000-000000000002}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0000002-0000-0000-0000-000000000002}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0000003-0000-0000-0000-000000000003}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0000003-0000-0000-0000-000000000003}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0000003-0000-0000-0000-000000000003}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0000003-0000-0000-0000-000000000003}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{A0000002-0000-0000-0000-000000000002} = {A0000001-0000-0000-0000-000000000001}
+		{A0000003-0000-0000-0000-000000000003} = {A0000001-0000-0000-0000-000000000001}
+		{A0000004-0000-0000-0000-000000000004} = {A0000001-0000-0000-0000-000000000001}
+		{A0000010-0000-0000-0000-000000000010} = {A0000003-0000-0000-0000-000000000003}
+		{A0000020-0000-0000-0000-000000000020} = {A0000003-0000-0000-0000-000000000003}
+		{A0000030-0000-0000-0000-000000000030} = {A0000003-0000-0000-0000-000000000003}
+		{B0000001-0000-0000-0000-000000000001} = {A0000002-0000-0000-0000-000000000002}
+		{B0000002-0000-0000-0000-000000000002} = {A0000004-0000-0000-0000-000000000004}
+		{B0000003-0000-0000-0000-000000000003} = {A0000004-0000-0000-0000-000000000004}
+		{B0000004-0000-0000-0000-000000000004} = {A0000004-0000-0000-0000-000000000004}
+		{B0000011-0000-0000-0000-000000000011} = {A0000010-0000-0000-0000-000000000010}
+		{B0000012-0000-0000-0000-000000000012} = {A0000010-0000-0000-0000-000000000010}
+		{B0000013-0000-0000-0000-000000000013} = {A0000010-0000-0000-0000-000000000010}
+		{B0000014-0000-0000-0000-000000000014} = {A0000010-0000-0000-0000-000000000010}
+		{B0000021-0000-0000-0000-000000000021} = {A0000020-0000-0000-0000-000000000020}
+		{B0000022-0000-0000-0000-000000000022} = {A0000020-0000-0000-0000-000000000020}
+		{B0000023-0000-0000-0000-000000000023} = {A0000020-0000-0000-0000-000000000020}
+		{B0000024-0000-0000-0000-000000000024} = {A0000020-0000-0000-0000-000000000020}
+		{B0000031-0000-0000-0000-000000000031} = {A0000030-0000-0000-0000-000000000030}
+		{B0000032-0000-0000-0000-000000000032} = {A0000030-0000-0000-0000-000000000030}
+		{B0000033-0000-0000-0000-000000000033} = {A0000030-0000-0000-0000-000000000030}
+		{B0000034-0000-0000-0000-000000000034} = {A0000030-0000-0000-0000-000000000030}
+		{C0000001-0000-0000-0000-000000000001} = {A0000005-0000-0000-0000-000000000005}
+		{C0000002-0000-0000-0000-000000000002} = {A0000005-0000-0000-0000-000000000005}
+		{C0000003-0000-0000-0000-000000000003} = {A0000005-0000-0000-0000-000000000005}
+	EndGlobalSection
+EndGlobal

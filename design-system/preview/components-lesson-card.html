@@ -1,0 +1,35 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css">
+<style>
+  body{padding:28px;display:flex;gap:14px}
+  .lc{flex:1;background:#1E293B;border:1px solid rgba(255,255,255,0.06);border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--lx-shadow-card);position:relative;overflow:hidden}
+  .tag{font-family:var(--lx-font-display);font-weight:700;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--lx-primary);background:rgba(79,70,229,0.18);padding:4px 10px;border-radius:9999px;align-self:flex-start}
+  .ttl{font-family:var(--lx-font-display);font-weight:800;font-size:18px;color:var(--lx-fg1);line-height:1.2}
+  .meta{display:flex;gap:10px;font-size:12px;color:var(--lx-fg3);align-items:center}
+  .dot{width:3px;height:3px;background:var(--lx-fg3);border-radius:50%}
+  .bar{height:8px;background:#0F172A;border-radius:9999px;overflow:hidden;border:1px solid rgba(255,255,255,0.05)}
+  .fill{height:100%;background:linear-gradient(90deg,#4F46E5,#A855F7)}
+  .active{border:2px solid #4F46E5;box-shadow:0 8px 24px rgba(99,102,241,0.35)}
+  .locked{opacity:0.55}
+  .lock{position:absolute;top:14px;right:14px;font-size:18px}
+</style></head>
+<body>
+<div class="lc active">
+  <div class="tag">Math · Numbers</div>
+  <div class="ttl">Compare Bigger & Smaller</div>
+  <div class="meta"><span>5 min</span><span class="dot"></span><span>10 questions</span><span class="dot"></span><span>+50 XP</span></div>
+  <div class="bar"><div class="fill" style="width:60%"></div></div>
+</div>
+<div class="lc">
+  <div class="tag" style="color:#22C55E;background:rgba(34,197,94,0.18)">Completed</div>
+  <div class="ttl">Counting to 100</div>
+  <div class="meta"><span>Mastered ⭐⭐⭐</span></div>
+  <div class="bar"><div class="fill" style="width:100%;background:#22C55E"></div></div>
+</div>
+<div class="lc locked">
+  <div class="lock">🔒</div>
+  <div class="tag" style="color:var(--lx-fg3);background:rgba(255,255,255,0.06)">Locked</div>
+  <div class="ttl" style="color:var(--lx-fg3)">Addition Mastery</div>
+  <div class="meta">Finish previous lesson</div>
+</div>
+</body></html>

@@ -1,0 +1,17 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css">
+<style>
+  body{padding:28px;display:flex;flex-direction:column;gap:12px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  label{font-family:var(--lx-font-display);font-weight:600;font-size:12px;color:var(--lx-fg3);text-transform:uppercase;letter-spacing:0.06em}
+  .input{height:48px;background:#1E293B;border:1px solid rgba(255,255,255,0.1);border-radius:14px;color:var(--lx-fg1);font-family:var(--lx-font-body);font-size:15px;padding:0 14px;display:flex;align-items:center}
+  .ph{color:var(--lx-fg3)}
+  .focus{border-color:#4F46E5;box-shadow:0 0 0 4px rgba(99,102,241,0.25)}
+  .err{border-color:#EF4444;box-shadow:0 0 0 4px rgba(239,68,68,0.2)}
+  .hint{font-size:12px;color:var(--lx-danger)}
+</style></head>
+<body>
+<div class="field"><label>Your name</label><div class="input">Sami</div></div>
+<div class="field"><label>School grade</label><div class="input focus">Grade 3</div></div>
+<div class="field"><label>Parent email</label><div class="input err"><span class="ph">name@home.com</span></div><div class="hint">Looks like that email isn't valid</div></div>
+</body></html>
