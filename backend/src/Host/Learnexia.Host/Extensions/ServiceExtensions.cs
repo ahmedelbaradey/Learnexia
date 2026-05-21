@@ -28,7 +28,12 @@ public static class ServiceExtensions
     public static void ConfigureRateLimitingOptions(this IServiceCollection services)
     {
         var rateLimitRules = new List<RateLimitRule> { new() { Endpoint = "*", Limit = 200, Period = "1m" } };
-        services.Configure<IpRateLimitOptions>(opt => opt.GeneralRules = rateLimitRules);
+        services.Configure<IpRateLimitOptions>(opt =>
+        {
+            opt.GeneralRules = rateLimitRules;
+            // Health probes must never be throttled — container/orchestrator probes hit them repeatedly.
+            opt.EndpointWhitelist = new List<string> { "get:/health", "get:/health/live" };
+        });
         services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
         services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
         services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();

@@ -7,6 +7,15 @@
     <MicrosoftExtensionsVersion>10.0.8</MicrosoftExtensionsVersion>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Health checks (P1-07 — readiness/liveness probes) -->
+    <PackageVersion Include="AspNetCore.HealthChecks.NpgSql" Version="9.0.0" />
+    <PackageVersion Include="AspNetCore.HealthChecks.Redis" Version="9.0.0" />
+
+    <!-- Background-jobs host (P1-07 — Hangfire + PostgreSQL storage; no jobs implemented yet) -->
+    <PackageVersion Include="Hangfire.Core" Version="1.8.18" />
+    <PackageVersion Include="Hangfire.AspNetCore" Version="1.8.18" />
+    <PackageVersion Include="Hangfire.PostgreSql" Version="1.20.10" />
+
     <!-- Storage / external services -->
     <PackageVersion Include="Minio" Version="6.0.5" />
     <PackageVersion Include="FirebaseAdmin" Version="3.5.0" />

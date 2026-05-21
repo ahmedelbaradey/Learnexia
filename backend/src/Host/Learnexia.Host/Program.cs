@@ -1,13 +1,17 @@
 using AspNetCoreRateLimit;
+using Hangfire;
+using Hangfire.PostgreSql;
 using Learnexia.Host.Extensions;
 using Learnexia.Host.Middleware;
 using Learnexia.Host.SystemConfiguration;
 using Learnexia.Modules.Catalog.Api;
 using Learnexia.Modules.Identity.Api;
 using Learnexia.Modules.Notifications.Api;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
 // The codebase stamps DateTime.Now (Kind=Local) on entities/audit/seed (ported from the SQL Server
@@ -46,6 +50,37 @@ if (!string.IsNullOrWhiteSpace(redisConnectionString))
 else
 {
     builder.Services.AddDistributedMemoryCache();
+}
+
+// Health checks (P1-07-BE-2) — readiness probe dependencies.
+// - "database": Npgsql check against ConnectionStrings:Default (Unhealthy when the DB is down → 503).
+// - "redis": only registered when ConnectionStrings:Redis is set; failureStatus = Degraded so a missing
+//   or down Redis does NOT fail the readiness probe (Redis is optional locally, mirroring the cache wiring
+//   above). When no Redis connection string is configured the check is skipped entirely.
+var defaultConnectionString = builder.Configuration.GetConnectionString("Default");
+var healthChecks = builder.Services.AddHealthChecks();
+if (!string.IsNullOrWhiteSpace(defaultConnectionString))
+{
+    healthChecks.AddNpgSql(defaultConnectionString, name: "database", tags: ["ready"]);
+}
+if (!string.IsNullOrWhiteSpace(redisConnectionString))
+{
+    healthChecks.AddRedis(redisConnectionString, name: "redis", failureStatus: HealthStatus.Degraded, tags: ["ready"]);
+}
+
+// Background-jobs host (P1-07-BE-5) — Hangfire with PostgreSQL storage.
+// This registers the scheduler + server only; NO jobs are implemented in this story. It is the home for
+// later Phase 4 (streaks/leagues) and Phase 5 (report) recurring/background jobs. Hangfire bootstraps its
+// own `hangfire` schema tables in the existing Learnexia database via its storage initializer (not an EF
+// migration). The dashboard is gated to Development only (see the app section below).
+if (!string.IsNullOrWhiteSpace(defaultConnectionString))
+{
+    builder.Services.AddHangfire(config => config
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UsePostgreSqlStorage(o => o.UseNpgsqlConnection(defaultConnectionString)));
+    builder.Services.AddHangfireServer();
 }
 
 // Modules (each wires its own Application + Infrastructure + JWT auth + controllers application part)
@@ -106,6 +141,20 @@ using (var scope = app.Services.CreateScope())
     await IdentityModule.SeedAsync(scope.ServiceProvider);
 }
 
+// Health probes (P1-07-BE-2) — mapped BEFORE auth, rate limiting, and error/auth-logging middleware so
+// container/orchestrator probes are never blocked by 401/429. Both endpoints are anonymous.
+// - /health/live  : liveness — no dependency checks (Predicate = _ => false), always 200 if the process is up.
+// - /health       : readiness — runs the registered checks (DB hard-fail → 503; Redis degraded-tolerant).
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false
+}).AllowAnonymous();
+
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    Predicate = _ => true
+}).AllowAnonymous();
+
 app.UseMiddleware<ErrorHandlerMiddleWare>();
 app.UseMiddleware<AuthorizationLoggingMiddleware>();
 app.UseIpRateLimiting();
@@ -113,6 +162,13 @@ app.UseResponseCaching();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Hangfire dashboard (P1-07-BE-5) — DEVELOPMENT ONLY. Outside Development the middleware is not
+// registered at all, so /hangfire returns 404 (never an anonymous dashboard in staging/production).
+if (app.Environment.IsDevelopment())
+{
+    app.UseHangfireDashboard("/hangfire");
+}
 
 app.MapControllers();
 

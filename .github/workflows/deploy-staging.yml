@@ -1,0 +1,50 @@
+name: Deploy Staging
+
+# P1-07-BE-4 — Staging deploy scaffolding.
+# This workflow is a HOST-AGNOSTIC placeholder. The concrete deploy provider (Azure / Railway / Render)
+# is an OPEN lead decision — see docs/deploy/staging-decision.md. All credentials are referenced via
+# GitHub Actions secrets; NONE are hardcoded here.
+on:
+  workflow_dispatch: {}        # manual trigger until a provider + branch policy is confirmed
+  push:
+    tags:
+      - "staging-*"            # e.g. tag `staging-2026.05.22` to cut a staging deploy
+
+jobs:
+  build-and-push:
+    name: Build & push image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.REGISTRY_URL }}
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build & push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: true
+          tags: ${{ secrets.REGISTRY_IMAGE }}:staging-${{ github.sha }}
+
+  deploy:
+    name: Deploy to staging
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+      # TODO (open lead decision — docs/deploy/staging-decision.md):
+      # Replace this placeholder with the chosen provider's deploy action once confirmed, e.g.
+      #   - Azure:   azure/webapps-deploy@v3  (App Service / Container Apps)
+      #   - Railway: railwayapp/railway-deploy or `railway up` via CLI
+      #   - Render:  render deploy hook (curl ${{ secrets.RENDER_DEPLOY_HOOK }})
+      # The deploy step MUST consume secrets (DEPLOY_TARGET, provider tokens) — never inline creds.
+      - name: Deploy (placeholder)
+        run: |
+          echo "Deploy target: ${{ secrets.DEPLOY_TARGET }}"
+          echo "Provider not yet bound — see docs/deploy/staging-decision.md. No-op."
