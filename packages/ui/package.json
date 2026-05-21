@@ -1,5 +1,68 @@
 {
   "name": "@learnexia/ui",
   "version": "0.0.0",
-  "private": true
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./components/Button": {
+      "types": "./src/components/Button/index.tsx",
+      "default": "./src/components/Button/index.tsx"
+    },
+    "./components/Card": {
+      "types": "./src/components/Card/index.tsx",
+      "default": "./src/components/Card/index.tsx"
+    },
+    "./catalog": {
+      "types": "./catalog/index.tsx",
+      "default": "./catalog/index.tsx"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "catalog:type-check": "tsc --noEmit --project tsconfig.json"
+  },
+  "dependencies": {
+    "@learnexia/design-system": "workspace:*",
+    "@learnexia/shared": "workspace:*",
+    "@tamagui/core": "^1.116.0",
+    "tamagui": "^1.116.0"
+  },
+  "//deps-note": "Animation deps pinned to Expo SDK 53 / RN 0.76 nominal versions. reanimated 3.16 ships with SDK 53; moti 0.29 supports reanimated 3; skia 1.5 is SDK-53 compatible. Re-verify when apps/student-app Metro config lands (P1-09).",
+  "peerDependencies": {
+    "@shopify/react-native-skia": ">=1.5.0",
+    "expo-linear-gradient": "*",
+    "moti": ">=0.29.0",
+    "react": "*",
+    "react-native": "*",
+    "react-native-reanimated": ">=3.16.0"
+  },
+  "peerDependenciesMeta": {
+    "react": { "optional": false },
+    "react-native": { "optional": true },
+    "react-native-reanimated": { "optional": true },
+    "moti": { "optional": true },
+    "@shopify/react-native-skia": { "optional": true },
+    "expo-linear-gradient": { "optional": true }
+  },
+  "devDependencies": {
+    "@learnexia/eslint-config": "workspace:*",
+    "@learnexia/tsconfig": "workspace:*",
+    "@shopify/react-native-skia": "^1.5.0",
+    "@types/react": "^18.3.12",
+    "eslint": "^9.17.0",
+    "expo-linear-gradient": "^14.0.1",
+    "moti": "^0.29.0",
+    "react": "^18.3.1",
+    "react-native": "^0.76.5",
+    "react-native-reanimated": "^3.16.0",
+    "typescript": "^5.7.2"
+  }
 }

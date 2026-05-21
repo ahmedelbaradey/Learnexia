@@ -1,0 +1,12 @@
+{
+  "extends": "@learnexia/tsconfig/react-library.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": ".",
+    "composite": true,
+    "types": ["react", "react-native"]
+  },
+  "references": [{ "path": "../design-system" }],
+  "include": ["src", "catalog"],
+  "exclude": ["node_modules", "dist", ".turbo"]
+}
