@@ -3,6 +3,10 @@
     <RootNamespace>Learnexia.Modules.Catalog.Domain</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Pgvector base package — provides the Vector value type used by EmbeddingDemo (DEMO ONLY). -->
+    <PackageReference Include="Pgvector" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\..\Shared\Learnexia.Shared.Kernel\Learnexia.Shared.Kernel.csproj" />
   </ItemGroup>
 </Project>

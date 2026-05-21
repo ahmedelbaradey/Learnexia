@@ -31,8 +31,22 @@ builder.Services.ConfigureForwardedHeaders();
 builder.Services.AddHttpContextAccessor();
 
 // IDistributedCache backing for sessions / token cache.
-// NOTE: backend/ uses Redis (StackExchangeRedis). In-memory keeps the app runnable locally.
-builder.Services.AddDistributedMemoryCache();
+// When a Redis endpoint is configured (compose injects ConnectionStrings__Redis=redis:6379), back the
+// distributed cache with Redis so sessions/token cache survive restarts and span multiple instances.
+// When absent (local dev / tests), fall back to in-memory so the app stays runnable without Redis.
+var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
+if (!string.IsNullOrWhiteSpace(redisConnectionString))
+{
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        options.Configuration = redisConnectionString;
+        options.InstanceName = "Learnexia:";
+    });
+}
+else
+{
+    builder.Services.AddDistributedMemoryCache();
+}
 
 // Modules (each wires its own Application + Infrastructure + JWT auth + controllers application part)
 builder.Services.AddIdentityModule(builder.Configuration);
