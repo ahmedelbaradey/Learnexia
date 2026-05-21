@@ -1,6 +1,6 @@
 ---
 name: backend-feature
-model: sonnet
+model: opus
 description: Implements backend features and new modules in backend (.NET 10 modular monolith) following the Catalog reference patterns. Use for adding commands/queries/endpoints, new aggregates, or scaffolding a new module. Not for DB migrations (use db-migration) or final review (use reviewer).
 tools: Read, Edit, Write, Grep, Glob, Bash
 ---
