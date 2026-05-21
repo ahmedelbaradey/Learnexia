@@ -1,0 +1,12 @@
+{
+  "extends": "@learnexia/tsconfig/react-library.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true,
+    "types": ["react"]
+  },
+  "references": [{ "path": "../shared" }],
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", ".turbo"]
+}

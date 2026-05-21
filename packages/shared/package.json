@@ -1,0 +1,69 @@
+{
+  "name": "@learnexia/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./envelope": {
+      "types": "./src/envelope/index.ts",
+      "default": "./src/envelope/index.ts"
+    },
+    "./types": {
+      "types": "./src/types/index.ts",
+      "default": "./src/types/index.ts"
+    },
+    "./constants": {
+      "types": "./src/constants/index.ts",
+      "default": "./src/constants/index.ts"
+    },
+    "./schemas": {
+      "types": "./src/schemas/index.ts",
+      "default": "./src/schemas/index.ts"
+    },
+    "./stores": {
+      "types": "./src/stores/index.ts",
+      "default": "./src/stores/index.ts"
+    },
+    "./storage": {
+      "types": "./src/storage/index.ts",
+      "default": "./src/storage/index.ts"
+    },
+    "./i18n": {
+      "types": "./src/i18n/index.ts",
+      "default": "./src/i18n/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "i18next": "^24.2.0",
+    "react-i18next": "^15.4.0",
+    "zod": "^3.24.1",
+    "zustand": "^5.0.3"
+  },
+  "peerDependencies": {
+    "react": "*"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": false
+    }
+  },
+  "devDependencies": {
+    "@learnexia/eslint-config": "workspace:*",
+    "@learnexia/tsconfig": "workspace:*",
+    "@types/react": "^18.3.12",
+    "eslint": "^9.17.0",
+    "react": "^18.3.1",
+    "typescript": "^5.7.2"
+  }
+}
