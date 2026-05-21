@@ -19,7 +19,7 @@ namespace Learnexia.IntegrationTests;
 public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
-        .WithImage("postgres:16")
+        .WithImage("pgvector/pgvector:pg16")
         .WithDatabase("Learnexia")
         .WithUsername("postgres")
         .WithPassword("testpassword")

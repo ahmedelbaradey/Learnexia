@@ -17,6 +17,8 @@ public enum Roles
     [Description("مدير الادارة")] ComplianceLegalManagingDirector,
     [Description("مدير العقارات")] HeadOfRealEstate,
     [Description("مدير صندوق")] AssociatedFundManager,
+    [Description("ولي أمر")] Parent,
+    [Description("طالب")] Student,
 }
 
 public static class RoleHelper
