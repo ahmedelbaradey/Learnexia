@@ -84,6 +84,7 @@ Two access aggregators, both registered Scoped:
   - **Catalog (and any code reusing its `GenericRepository`)** commits **per repository call** (`SaveChangesAsync` inside each write). Do not assume multiple writes are atomic there.
   - **New modules (Learning, Gamification, Curriculum, …)** use **deferred commit**: repositories only `Add/Update/Remove` (no `SaveChangesAsync`); a MediatR **`UnitOfWorkBehavior<TRequest,TResponse>`** (constrained to `ICommand<>`, registered **after** `ValidationBehavior`) opens a transaction, runs the handler, calls the module `DbContext.SaveChangesAsync(currentUserId)` once, and commits — rolling back on exception. Queries never commit.
   - **Scope = one module DbContext.** Never open a transaction spanning modules; cross-module consistency uses integration events + the **Outbox** pattern, and events publish **after** commit.
+  - **Domain events dispatch after commit — per [ADR 0002](adr/0002-domain-events-and-dispatch.md).** After its single `SaveChangesAsync` + `CommitAsync`, `UnitOfWorkBehavior` collects the `DomainEvents` from tracked `AggregateRoot`s, dispatches them via `IDomainEventDispatcher`, then clears them — **only on a successful commit, never on rollback**. Cross-module fan-out works because MediatR is registered once at the Host across all module Application assemblies, behind the `IsolatedNotificationPublisher` (one failing handler does not abort its siblings).
 
 ## 9. Persistence & schema isolation
 

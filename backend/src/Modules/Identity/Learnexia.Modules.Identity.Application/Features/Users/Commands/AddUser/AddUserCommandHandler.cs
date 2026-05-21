@@ -3,10 +3,12 @@ using AutoMapper;
 using Learnexia.Modules.Identity.Application.Abstractions;
 using Learnexia.Modules.Identity.Domain.Constants;
 using Learnexia.Modules.Identity.Domain.Entities;
+using Learnexia.Shared.Contracts.Identity;
 using Learnexia.Shared.Contracts.Notifications;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
+using MediatR;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -20,6 +22,7 @@ public class AddUserCommandHandler : BaseResponseHandler, ICommandHandler<AddUse
     private readonly ICurrentUserService _currentUserService;
     private readonly IUserNotificationService _userNotificationService;
     private readonly ILoggerManager _logger;
+    private readonly IPublisher _publisher;
 
     public AddUserCommandHandler(
         IIdentityServiceManager identityServiceManager,
@@ -27,7 +30,8 @@ public class AddUserCommandHandler : BaseResponseHandler, ICommandHandler<AddUse
         IStringLocalizer<SharedResources> localizer,
         ICurrentUserService currentUserService,
         IUserNotificationService userNotificationService,
-        ILoggerManager logger)
+        ILoggerManager logger,
+        IPublisher publisher)
     {
         _mapper = mapper;
         _identityServiceManager = identityServiceManager;
@@ -35,6 +39,7 @@ public class AddUserCommandHandler : BaseResponseHandler, ICommandHandler<AddUse
         _currentUserService = currentUserService;
         _userNotificationService = userNotificationService;
         _logger = logger;
+        _publisher = publisher;
     }
 
     public async Task<BaseResponse<string>> Handle(AddUserCommand request, CancellationToken cancellationToken)
@@ -116,11 +121,40 @@ public class AddUserCommandHandler : BaseResponseHandler, ICommandHandler<AddUse
             if (user.RegistrationMessageIsSent)
                 await SendWhatsAppRegistrationNotificationAsync(user, assignedRoles, password);
 
+            // Publish the cross-module integration event AFTER the user is committed (ASP.NET Identity's
+            // CreateAsync persists immediately), consistent with ADR 0002 after-commit ordering. User is an
+            // IdentityUser<int> — not an AggregateRoot — so the UnitOfWorkBehavior domain-event path cannot
+            // carry it; we publish the Shared.Contracts event directly via IPublisher instead. A publish
+            // failure must NOT change the existing success behavior/response, so it is isolated here.
+            await PublishUserRegisteredEventAsync(user, cancellationToken);
+
             return Success<string>(_localizer[SharedResourcesKey.UserAddedSuccessfully]);
         }
         catch (Exception)
         {
             return ServerError<string>(_localizer[SharedResourcesKey.SystemErrorSavingData]);
+        }
+    }
+
+    private async Task PublishUserRegisteredEventAsync(User user, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var integrationEvent = new UserRegisteredIntegrationEvent(
+                EventId: Guid.NewGuid(),
+                OccurredOnUtc: DateTime.UtcNow,
+                UserId: user.Id,
+                UserName: user.UserName ?? string.Empty);
+
+            await _publisher.Publish(integrationEvent, cancellationToken);
+
+            _logger.LogInfo($"Published UserRegisteredIntegrationEvent for user {user.Id}.");
+        }
+        catch (Exception ex)
+        {
+            // Best-effort cross-module fan-out (in-process, Tier 1). A failure here must not affect the
+            // committed user or the success response returned to the caller (ADR 0002 §5 / costs section).
+            _logger.LogError(ex, $"Failed to publish UserRegisteredIntegrationEvent for user {user.Id}.");
         }
     }
 
