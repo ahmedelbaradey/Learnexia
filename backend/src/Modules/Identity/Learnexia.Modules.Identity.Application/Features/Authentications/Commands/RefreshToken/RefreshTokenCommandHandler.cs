@@ -23,14 +23,19 @@ public class RefreshTokenCommandHandler : BaseResponseHandler, ICommandHandler<R
 
             switch (userIdAndExpiryDate)
             {
+                // P1-02 (AC-4): auth failures must be 401, not 500 — no internal-state leakage and the
+                // client knows to re-login. AlgorithmIsWrong / not-found / expired are all auth failures.
                 case ("AlgorithmIsWrong", null):
-                    return ServerError<JwtAuthResponse>("Algorithm is wrong.");
-                case ("TokenIsRunning", null):
-                    return ServerError<JwtAuthResponse>("Toekn is not expired.");
+                    return Unauthorized<JwtAuthResponse>("Algorithm is wrong.");
                 case ("RefreshTokenNotFound", null):
-                    return ServerError<JwtAuthResponse>("Refresh token not found.");
+                    return Unauthorized<JwtAuthResponse>("Refresh token not found.");
                 case ("RefreshTokenIsExpired", null):
-                    return ServerError<JwtAuthResponse>("Refresh token is expired.");
+                    return Unauthorized<JwtAuthResponse>("Refresh token is expired.");
+
+                // TokenIsRunning = the access token is still valid; this is a caller logic error
+                // (refresh too early), not an auth failure, so it stays a 400 BadRequest.
+                case ("TokenIsRunning", null):
+                    return BadRequest<JwtAuthResponse>("Token is not expired.");
             }
 
             var (userId, expiryDate) = userIdAndExpiryDate;

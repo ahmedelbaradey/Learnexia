@@ -24,7 +24,7 @@
 |---|---|:--:|:--:|
 | — | Monorepo, api-client & shared (foundation) | — | ✅ |
 | P1-01 | Register as a parent | ✅ | 🔲 |
-| P1-02 | Stay signed in (token refresh & sign-out) | 🔲 | 🔲 |
+| P1-02 | Stay signed in (token refresh & sign-out) | ✅ | 🔲 |
 | P1-03 | Parent onboarding & add children | 🔲 | 🔲 |
 | P1-04 | Link a parent to a child account | 🔲 | 🔲 |
 | P1-05 | Role-based access control | 🔲 | — |
