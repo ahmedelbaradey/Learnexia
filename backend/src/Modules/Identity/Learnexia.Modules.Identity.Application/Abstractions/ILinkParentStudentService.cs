@@ -40,4 +40,12 @@ public interface ILinkParentStudentService
     /// parent (AC-3 family isolation). Empty when the parent has no linked children.
     /// </summary>
     Task<IReadOnlyList<User>> GetLinkedStudentsAsync(int parentId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns <c>true</c> when the given parent has at least one linked child
+    /// (any <c>ParentStudent</c> row with <c>ParentId == parentId</c>). Scoped strictly to that
+    /// parent — used by the self-scoped Me endpoint to surface <c>HasChildren</c> without exposing
+    /// any other parent's family data.
+    /// </summary>
+    Task<bool> ParentHasAnyChildAsync(int parentId, CancellationToken cancellationToken = default);
 }

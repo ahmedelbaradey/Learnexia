@@ -27,15 +27,15 @@
       "default": "./src/schemas.ts"
     },
     "./generated": {
-      "types": "./src/generated/api-types.ts",
-      "default": "./src/generated/api-types.ts"
+      "types": "./src/generated/index.ts",
+      "default": "./src/generated/index.ts"
     }
   },
   "scripts": {
     "build": "tsc --build",
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
-    "gen:api": "openapi-typescript ./swagger.json -o ./src/generated/api-types.ts",
+    "gen:api": "node -e \"require('child_process').spawnSync(process.execPath,[require.resolve('nswag/bin/nswag.js'),'run','nswag.json'],{stdio:'inherit'})\"",
     "refresh:swagger": "node ./scripts/refresh-swagger.mjs"
   },
   "dependencies": {
@@ -59,7 +59,7 @@
     "@tanstack/react-query": "^5.64.0",
     "@types/react": "^18.3.12",
     "eslint": "^9.17.0",
-    "openapi-typescript": "^7.5.0",
+    "nswag": "^14.7.1",
     "react": "^18.3.1",
     "typescript": "^5.7.2"
   }

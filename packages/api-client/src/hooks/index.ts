@@ -1,6 +1,7 @@
 export {
   ApiClientProvider,
   useApiClient,
+  useTypedClient,
   type ApiClientProviderProps,
 } from './apiClientContext';
 
@@ -20,3 +21,11 @@ export {
 export { useSignIn } from './useSignIn';
 export { useUserProfile, useCurrentUser } from './useUserProfile';
 export { useUserList, type UserListFilters } from './useUserList';
+
+// P1-09 auth + family hooks.
+export { useRegisterParent } from './useRegisterParent';
+export { useSignOut } from './useSignOut';
+export { useAddChild } from './useAddChild';
+export { useLinkChild } from './useLinkChild';
+export { useMe } from './useMe';
+export { useMyChildren } from './useMyChildren';

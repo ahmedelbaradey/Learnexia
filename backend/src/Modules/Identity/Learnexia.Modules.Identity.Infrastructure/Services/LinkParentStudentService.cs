@@ -68,6 +68,11 @@ public class LinkParentStudentService : ILinkParentStudentService
         => _dbContext.ParentStudents
             .AnyAsync(ps => ps.StudentId == studentId, cancellationToken);
 
+    public Task<bool> ParentHasAnyChildAsync(int parentId, CancellationToken cancellationToken = default)
+        // Strictly parent-scoped: only rows where ParentId == the caller's id (no IDOR surface).
+        => _dbContext.ParentStudents
+            .AnyAsync(ps => ps.ParentId == parentId, cancellationToken);
+
     public async Task<IReadOnlyList<User>> GetLinkedStudentsAsync(int parentId, CancellationToken cancellationToken = default)
     {
         // Strictly parent-scoped (AC-3): only rows where ParentId == the caller's id.
