@@ -679,4 +679,10 @@
   <data name="InvalidFundName" xml:space="preserve">
     <value></value>
   </data>
+  <data name="CannotLinkChild" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="ChildLinkedSuccessfully" xml:space="preserve">
+    <value></value>
+  </data>
 </root>

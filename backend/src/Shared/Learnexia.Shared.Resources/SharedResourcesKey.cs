@@ -680,7 +680,12 @@
         public const string AssessmentExportData = "AssessmentExportData";
         public const string AssessmentArchive = "AssessmentArchive";
 
-   
+        // Parent-Child Linkage Messages (P1-04)
+        // Single generic, non-enumerating message for ALL link-child failures (non-existent email,
+        // not a student, already linked to another family) — AC-5 / AC-7. Do not split into
+        // specific reasons; differing messages would leak whether an email exists.
+        public const string CannotLinkChild = "CannotLinkChild";
+        public const string ChildLinkedSuccessfully = "ChildLinkedSuccessfully";
 
     }
 }

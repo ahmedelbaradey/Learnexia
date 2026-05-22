@@ -50,6 +50,11 @@ public static class DependencyInjection
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<ISessionManagementService, SessionManagementService>();
         services.AddScoped<IIdentityServiceManager, IdentityServiceManager>();
+        services.AddScoped<ILinkParentStudentService, LinkParentStudentService>();
+
+        // P1-04: family-scope resource authorization handler (consumed by P1-05). Scoped because it
+        // injects the scoped IdentityModuleDbContext. Minimal single-line addition — see merge note.
+        services.AddScoped<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, Authorization.FamilyScopeAuthorizationHandler>();
 
         // Cross-module seams (stubs until the real adapters are provided)
         services.AddScoped<Learnexia.Shared.Contracts.Notifications.IUserNotificationService, Services.Stubs.NoOpUserNotificationService>();

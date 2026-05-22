@@ -18,6 +18,7 @@ public class IdentityModuleDbContext : IdentityDbContext<User, Role, int,
 
     public DbSet<UserRefreshToken> UserRefreshTokens => Set<UserRefreshToken>();
     public DbSet<UserAuditHistory> UserAuditHistories => Set<UserAuditHistory>();
+    public DbSet<ParentStudent> ParentStudents => Set<ParentStudent>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));

@@ -1467,4 +1467,10 @@
   <data name="QuestionTypeText" xml:space="preserve">
     <value>نص</value>
   </data>
+  <data name="CannotLinkChild" xml:space="preserve">
+    <value>تعذّر ربط هذا الطفل. يرجى التحقق من البيانات والمحاولة مرة أخرى.</value>
+  </data>
+  <data name="ChildLinkedSuccessfully" xml:space="preserve">
+    <value>تم ربط الطفل بنجاح.</value>
+  </data>
 </root>
