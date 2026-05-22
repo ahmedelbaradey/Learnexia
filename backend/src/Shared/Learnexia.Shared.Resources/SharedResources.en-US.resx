@@ -1474,4 +1474,10 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="ChildLinkedSuccessfully" xml:space="preserve">
     <value>Child linked successfully.</value>
   </data>
+  <data name="GradeOutOfRange" xml:space="preserve">
+    <value>Grade must be between 1 and 6.</value>
+  </data>
+  <data name="InvalidLanguageCode" xml:space="preserve">
+    <value>Language must be "ar" or "en".</value>
+  </data>
 </root>

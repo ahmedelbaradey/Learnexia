@@ -1473,4 +1473,10 @@
   <data name="ChildLinkedSuccessfully" xml:space="preserve">
     <value>تم ربط الطفل بنجاح.</value>
   </data>
+  <data name="GradeOutOfRange" xml:space="preserve">
+    <value>يجب أن يكون الصف الدراسي بين 1 و6.</value>
+  </data>
+  <data name="InvalidLanguageCode" xml:space="preserve">
+    <value>يجب أن تكون اللغة "ar" أو "en".</value>
+  </data>
 </root>
