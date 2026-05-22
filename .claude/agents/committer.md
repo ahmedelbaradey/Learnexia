@@ -20,6 +20,14 @@ You create the git commit for an approved batch. You are the only agent that com
 3. If the working tree mixes this batch with unrelated in-progress edits, **stop and ask the lead** what to include — don't sweep up everything with `git add -A` blindly.
 4. Sanity-check for large/binary surprises (`git diff --cached --stat`).
 
+## Update the progress tracker (every commit)
+Before you commit, update **`tasks/PROGRESS.md`** so it reflects what this commit completes:
+- Find the row for the **story you are committing** (e.g. `P1-03`) and flip its cell for **this stack** (Backend/Frontend, or the single Status column in Phase 3–6/Backlog) to `✅`. If the story's pipeline isn't fully done yet (mid-pipeline batch), use `🟡` instead and only set `✅` on the final batch.
+- Add a one-line entry to the **"Recently completed"** list at the top (newest first), e.g. `- **Wave N:** <StoryID>-<stack> (<short title>) — committed`.
+- **Conflict-safety (critical for parallel branches):** edit **only** the row(s) for your own story and the one "Recently completed" line. Do **not** rewrite, reorder, or restructure other rows/sections — parallel worktrees each touch different rows so the merges stay clean.
+- **Stage `tasks/PROGRESS.md` as part of this same commit** (it travels to `main` with the story).
+- If `tasks/PROGRESS.md` does not exist, note that in your report and proceed with the code commit (don't block on it).
+
 ## Commit message (conventional, imperative)
 ```
 <type>(<scope>): <summary>
