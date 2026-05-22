@@ -12,6 +12,7 @@
 - `—` — no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
+- **Wave 2:** P1-02-BE (token refresh & sign-out), P1-04-BE (parent↔child link + family-scope authz) — PR open
 - **Wave 1:** P1-01-BE (register parent), P1-07-BE (Docker/CI + health + jobs) — merged
 - **Wave 0:** P1-06-BE (Postgres+pgvector+Redis), P1-08-FE (design system) — merged
 - **Foundation:** PKG-FOUNDATION-FE (Turborepo monorepo, shared + api-client) — merged
