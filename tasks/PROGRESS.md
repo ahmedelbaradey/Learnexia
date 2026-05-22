@@ -33,7 +33,7 @@
 | P1-06 | PostgreSQL + pgvector + Redis | ✅ | — |
 | P1-07 | Dockerized environment & CI/CD | ✅ | — |
 | P1-08 | Design system & components (RTL) | — | ✅ |
-| P1-09 | Auth & onboarding screens | 🔲 | 🔲 |
+| P1-09 | Auth & onboarding screens | ✅ | ✅ |
 | P1-10 | Sign in to the admin dashboard | 🔲 | 🔲 |
 
 ## Phase 2 — Learning Core

@@ -60,6 +60,11 @@ export class ApiClient {
     this.fetchImpl = config.fetchImpl ?? globalThis.fetch.bind(globalThis);
   }
 
+  /** API origin (no trailing slash). Used to construct the NSwag typed client. */
+  get baseUrl(): string {
+    return this.config.baseUrl.replace(/\/+$/, '');
+  }
+
   get<T>(path: string, opts?: RequestOptions): Promise<T> {
     return this.request<T>('GET', path, opts);
   }
@@ -84,6 +89,67 @@ export class ApiClient {
     opts?: RequestOptions,
   ): Promise<PaginatedResult<T>> {
     return this.requestPaginated<T>('GET', path, opts);
+  }
+
+  /**
+   * Transport seam for the NSwag-generated typed client.
+   *
+   * The generated `Client` (src/generated/nswag-client.ts) is constructed with
+   * `new Client(baseUrl, { fetch })`. We pass THIS method as that `fetch` so
+   * every generated endpoint method flows through the SAME pipeline as the
+   * hand-written `get`/`post` helpers:
+   *   - attaches `Authorization: Bearer <accessToken>` (unless the URL is the
+   *     anonymous sign-in / register / refresh path);
+   *   - performs the SINGLE-FLIGHT silent 401 refresh + ONE retry;
+   *   - signs out on unrecoverable refresh failure.
+   *
+   * It returns the raw `Response` so the generated client can run its own typed
+   * envelope parsing. Envelope semantics (`successed` flag, 422 → ValidationError)
+   * are applied by `unwrapEnvelope()` in the typed-client wrapper, keeping a
+   * single source of truth for both the hand-written and generated paths.
+   *
+   * `url` is absolute (the generated client prepends `baseUrl`); `init` carries
+   * method/headers/body already serialized by the generator.
+   */
+  transportFetch = async (
+    url: RequestInfo,
+    init?: RequestInit,
+  ): Promise<Response> => {
+    const skipAuth = isAnonymousPath(typeof url === 'string' ? url : String(url));
+    return this.transportRequest(url, init ?? {}, skipAuth, false);
+  };
+
+  private async transportRequest(
+    url: RequestInfo,
+    init: RequestInit,
+    skipAuth: boolean,
+    isRetry: boolean,
+  ): Promise<Response> {
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      ...this.config.defaultHeaders,
+      ...normalizeHeaders(init.headers),
+    };
+
+    if (!skipAuth) {
+      const tokens = await this.config.tokenStorage.getTokens();
+      if (tokens?.accessToken) {
+        // NOTE: token attached here is NEVER logged.
+        headers.Authorization = `Bearer ${tokens.accessToken}`;
+      }
+    }
+
+    const res = await this.fetchImpl(url, { ...init, headers });
+
+    if (res.status === 401 && !skipAuth && !isRetry) {
+      const refreshed = await this.refreshTokens();
+      if (refreshed) {
+        return this.transportRequest(url, init, skipAuth, true);
+      }
+      throw new ApiAuthError();
+    }
+
+    return res;
   }
 
   /**
@@ -350,6 +416,41 @@ function extractTokens(data: unknown): AuthTokens | null {
 
   if (!accessToken || !refreshToken) return null;
   return { accessToken, refreshToken };
+}
+
+/**
+ * Anonymous endpoints that must NOT carry an Authorization header (and must NOT
+ * trigger the 401-refresh retry, since they ARE the auth bootstrap). Matched by
+ * path suffix so the absolute URLs the NSwag client builds still resolve.
+ */
+const ANONYMOUS_PATH_SUFFIXES = [
+  '/api/Users/Authentication/Sign-In',
+  '/api/Users/Authentication/Register-Parent',
+  '/api/Users/Authentication/Refresh-Token',
+];
+
+function isAnonymousPath(url: string): boolean {
+  // Drop any query string before matching the path suffix.
+  const path = url.split('?')[0] ?? url;
+  return ANONYMOUS_PATH_SUFFIXES.some((suffix) => path.endsWith(suffix));
+}
+
+/** Normalize the various `HeadersInit` shapes into a plain record. */
+function normalizeHeaders(
+  headers: HeadersInit | undefined,
+): Record<string, string> {
+  if (!headers) return {};
+  if (headers instanceof Headers) {
+    const out: Record<string, string> = {};
+    headers.forEach((value: string, key: string) => {
+      out[key] = value;
+    });
+    return out;
+  }
+  if (Array.isArray(headers)) {
+    return Object.fromEntries(headers);
+  }
+  return { ...(headers as Record<string, string>) };
 }
 
 /** Factory matching the rest of the @learnexia/shared `createX` convention. */

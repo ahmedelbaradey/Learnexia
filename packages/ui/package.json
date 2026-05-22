@@ -18,6 +18,22 @@
       "types": "./src/components/Card/index.tsx",
       "default": "./src/components/Card/index.tsx"
     },
+    "./components/TextField": {
+      "types": "./src/components/TextField/index.tsx",
+      "default": "./src/components/TextField/index.tsx"
+    },
+    "./components/Select": {
+      "types": "./src/components/Select/index.tsx",
+      "default": "./src/components/Select/index.tsx"
+    },
+    "./components/ProgressSteps": {
+      "types": "./src/components/ProgressSteps/index.tsx",
+      "default": "./src/components/ProgressSteps/index.tsx"
+    },
+    "./components/ChildCard": {
+      "types": "./src/components/ChildCard/index.tsx",
+      "default": "./src/components/ChildCard/index.tsx"
+    },
     "./catalog": {
       "types": "./catalog/index.tsx",
       "default": "./catalog/index.tsx"

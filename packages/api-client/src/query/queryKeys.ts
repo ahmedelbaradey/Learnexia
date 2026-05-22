@@ -13,6 +13,11 @@ export const queryKeys = {
   auth: {
     all: ['auth'] as const,
     currentUser: () => [...queryKeys.auth.all, 'current-user'] as const,
+    me: () => [...queryKeys.auth.all, 'me'] as const,
+  },
+  family: {
+    all: ['family'] as const,
+    myChildren: () => [...queryKeys.family.all, 'my-children'] as const,
   },
   users: {
     all: ['users'] as const,
