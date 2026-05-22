@@ -1,5 +1,12 @@
 # Learnexia — BRD + Technical Requirements + Execution Plan
 
+> ⚠️ **SUPERSEDED — historical source material.** This is an early synthesis doc. Where it conflicts with the current sources of truth, **those win**: [docs/BRD.md](../docs/BRD.md), [docs/SRS.md](../docs/SRS.md), [docs/architecture.md](../docs/architecture.md), and [CLAUDE.md](../CLAUDE.md). Known divergences in this doc, **do not follow them here**:
+> - **AI is framed as the core moat** (§6, §24). Corrected: the moat is the **habit loop + curriculum data + behavior + gamification**, *not* the AI model — see [docs/BRD.md §1](../docs/BRD.md) and [docs/briefs/barrier-to-entry-gap-analysis.md](../docs/briefs/barrier-to-entry-gap-analysis.md).
+> - **Curriculum Intelligence listed as "Phase 3 future"** (§23). Corrected: modeled now (SRS §4.8) with a hand-authored MVP skill-graph slice (story P2-11).
+> - **5 subjects incl. Social Studies.** Corrected: **4 subjects** (Math, Science, Arabic, English); no Social Studies.
+> - **ASP.NET Core 9 / Next.js-only frontend.** Corrected: **.NET 10** modular monolith; frontend is a **Turborepo + Expo universal** student app (Next.js for admin/marketing later) — see [docs/dev/FRONTEND_ARCHITECTURE.md](../docs/dev/FRONTEND_ARCHITECTURE.md).
+> - **Teacher role.** Corrected: **no teacher role** in the product.
+
 # 1. Product Overview
 
 ## Product Name

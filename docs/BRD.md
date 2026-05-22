@@ -112,8 +112,8 @@ Minimum team (per source): **1 Product Owner, 1 Frontend Engineer, 1 Backend Eng
 1. Which curriculum standard(s) for MVP — Egyptian national, international, or multiple?
 2. Primary AI provider: OpenAI GPT vs. Google Gemini (both mentioned)?
 3. Pricing / ARPU / financial targets?
-4. Streak grace period and hearts-regeneration mechanics (not specified)?
-5. COPPA-style parental consent / age verification for under-13 users?
-6. English-language scope vs. Arabic-first rollout sequencing?
+4. COPPA-style parental consent / age verification for under-13 users?
+5. English-language scope vs. Arabic-first rollout sequencing?
 
 > **Resolved:** DB = **PostgreSQL** (+ pgvector); stack = **.NET 10**; **no teacher role/tools** in the product.
+> **Resolved (streak/hearts mechanics):** the daily-habit mechanic is **streak freeze** (FR-GM-9 / story P4-11) — a limited, earnable/spendable freeze auto-consumes to preserve a streak on a missed day — rather than an open-ended grace window. Hearts regeneration uses a configurable timed/practice-based refill (FR-GM-3). The exact dials (freeze inventory, regen interval, event cadence) are **config-driven and tunable**, not launch blockers. See [docs/briefs/barrier-to-entry-gap-analysis.md](briefs/barrier-to-entry-gap-analysis.md).
