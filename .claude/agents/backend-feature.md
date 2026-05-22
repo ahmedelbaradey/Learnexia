@@ -20,6 +20,7 @@ You implement backend features in `backend` by **mirroring the Catalog module ex
 - Entities derive from `FullAuditedEntity`; never hand-stamp audit fields (the DbContext `SaveChangesAsync(userId)` does it).
 - **No Unit of Work** — repository writes commit per call. **Module isolation** — cross-module only via `Shared.Contracts`.
 - EF provider is **Npgsql/PostgreSQL**.
+- **Design patterns — ask first.** Default to mirroring existing Catalog shapes; do not invent abstractions. If a task genuinely calls for a design pattern (Strategy, Factory, Decorator, etc.), **stop and ask the lead/user before implementing it** — name the pattern, where it would apply, and why. Wait for approval; do not introduce it unilaterally.
 
 ## Boundaries
 - **Do NOT** create or run EF migrations — hand any schema change to the **db-migration** agent (state exactly which entities/fields changed).

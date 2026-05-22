@@ -37,6 +37,7 @@ AI-powered, gamified, adaptive learning platform for Arabic-speaking school stud
 5. **Logging** — inject `ILoggerManager`, not `ILogger<T>`. Don't add a second logger registration.
 6. **Auth** — permission policies (`{Module}.{Action}`) exist but aren't enforced; add `[Authorize(policy)]` deliberately.
 7. **No teacher role** in the product.
+8. **Design patterns — ask first.** Default to mirroring existing shapes (Catalog on backend, the decided architecture + existing component/hook shapes on frontend); do not invent abstractions. If a task genuinely calls for a design pattern (Strategy, Factory, Decorator, provider/compound-component, etc.), **stop and ask the lead/user before implementing it** — name the pattern, where it applies, and why. Wait for approval; never introduce one unilaterally. This applies to both backend and frontend agents.
 
 ## Multi-agent workflow
 Specialized agents live in [.claude/agents/](.claude/agents/): `analyzer`, `planner`, `designer`, `db-migration`, `backend-feature`, `api-tester`, `frontend`, `security-auditor`, `reviewer`, `committer`.
