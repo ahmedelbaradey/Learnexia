@@ -28,14 +28,13 @@ namespace Learnexia.IntegrationTests;
 /// </summary>
 public sealed class HealthCheckWebAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    // Use the plain postgres:16 image (same as the existing LearnexiaWebAppFactory).
-    // We deliberately skip the Catalog migration (which requires the pgvector extension) because
-    // the health-check tests only need: (a) a reachable Postgres for the Npgsql probe, and
-    // (b) the Identity schema so Program.cs SeedAsync does not throw at startup.
-    // The Catalog DbContext is still overridden to point at this container so no connection
-    // attempt reaches localhost:5432, but CatalogDbContext.MigrateAsync is NOT called.
+    // Use the pgvector-capable image (same as LearnexiaWebAppFactory). Program.cs now applies EVERY
+    // module's pending migrations at startup (Identity.SeedAsync + Catalog.InitializeAsync +
+    // Notifications.InitializeAsync), so the Catalog DEMO_PgvectorProof migration runs at host startup and
+    // requires the `vector` extension — plain postgres:16 would fail. The health-check tests still only
+    // assert on the Npgsql probe, but the host startup migration must succeed for CreateClient() to work.
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
-        .WithImage("postgres:16")
+        .WithImage("pgvector/pgvector:pg16")
         .WithDatabase("Learnexia")
         .WithUsername("postgres")
         .WithPassword("testpassword")
@@ -84,11 +83,10 @@ public sealed class HealthCheckWebAppFactory : WebApplicationFactory<Program>, I
     /// <summary>
     /// Migrate Identity and Notifications schemas and seed roles/superadmin (idempotent).
     ///
-    /// Catalog migration is intentionally skipped: the DEMO_PgvectorProof migration runs
-    /// <c>CREATE EXTENSION IF NOT EXISTS vector</c> which is not available on the plain
-    /// postgres:16 image. The Npgsql health check only needs a connectable Postgres instance —
-    /// it does not depend on any specific schema being present. CatalogDbContext is still
-    /// overridden to point at the container so no connection attempt escapes to localhost:5432.
+    /// All three module migrations (Identity, Catalog, Notifications) are also applied at host startup
+    /// by Program.cs, so this helper is largely redundant now — but it is kept and is harmless because
+    /// <c>MigrateAsync</c> is idempotent. Catalog is applied at startup against the pgvector-capable
+    /// container (see the factory image above), so it is not repeated here.
     /// </summary>
     public async Task ApplyMigrationsAsync()
     {
@@ -96,7 +94,7 @@ public sealed class HealthCheckWebAppFactory : WebApplicationFactory<Program>, I
         var sp = scope.ServiceProvider;
 
         await sp.GetRequiredService<IdentityModuleDbContext>().Database.MigrateAsync();
-        // Catalog skipped — requires pgvector extension (see factory comment above).
+        // Catalog applied at host startup (Program.cs → CatalogModule.InitializeAsync).
         await sp.GetRequiredService<NotificationsDbContext>().Database.MigrateAsync();
         await IdentityModule.SeedAsync(sp);
     }

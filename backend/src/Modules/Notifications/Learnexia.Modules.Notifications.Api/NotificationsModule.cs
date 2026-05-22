@@ -2,11 +2,13 @@ using Learnexia.Modules.Notifications.Api.Controllers;
 using Learnexia.Modules.Notifications.Application;
 using Learnexia.Modules.Notifications.Application.Features.SendNotification;
 using Learnexia.Modules.Notifications.Infrastructure;
+using Learnexia.Modules.Notifications.Infrastructure.Persistence;
 using Learnexia.Shared.Kernel.Abstractions;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -39,5 +41,14 @@ public static class NotificationsModule
         // envelope — the ad-hoc minimal-API GET was removed in the Batch 3 revision.
 
         return endpoints;
+    }
+
+    // Host-callable startup hook. Applies any pending Notifications migrations. Idempotent — MigrateAsync is
+    // a no-op when the schema is up to date. The Host calls this through the module Api entry point only, so
+    // the DbContext (Infrastructure) stays internal to the module (module isolation preserved).
+    public static async Task InitializeAsync(IServiceProvider serviceProvider)
+    {
+        var dbContext = serviceProvider.GetRequiredService<NotificationsDbContext>();
+        await dbContext.Database.MigrateAsync();
     }
 }
