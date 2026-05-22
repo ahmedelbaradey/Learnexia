@@ -1466,6 +1466,12 @@ You should add board members to be able to perform fund activities, at least 2 i
   </data>
   <data name="QuestionTypeText" xml:space="preserve">
     <value>Text</value>
- 
+
+  </data>
+  <data name="CannotLinkChild" xml:space="preserve">
+    <value>We couldn't link this child. Please check the details and try again.</value>
+  </data>
+  <data name="ChildLinkedSuccessfully" xml:space="preserve">
+    <value>Child linked successfully.</value>
   </data>
 </root>

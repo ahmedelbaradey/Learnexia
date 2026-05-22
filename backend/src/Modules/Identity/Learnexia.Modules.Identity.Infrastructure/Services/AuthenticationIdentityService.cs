@@ -22,6 +22,13 @@ public class AuthenticationIdentityService : IAuthenticationService
     private readonly ILoggerManager _logger;
     private readonly IDistributedCache _distributedCache;
 
+    // The cache DTO (UserRefreshToken) carries a User navigation property that is always null here;
+    // ignore cycles defensively so serialization never throws on the unused navigation.
+    private static readonly JsonSerializerOptions RefreshTokenSerializerOptions = new()
+    {
+        ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles,
+    };
+
     public AuthenticationIdentityService(UserManager<User> userManager, RoleManager<Role> roleManager, JwtSettings jwtSettings, ILoggerManager logger, IDistributedCache distributedCache)
     {
         _userManager = userManager;
@@ -35,8 +42,18 @@ public class AuthenticationIdentityService : IAuthenticationService
     {
         try
         {
-            var (_, accessToken) = await GenerateJwtToken(user);
-            return new JwtAuthResponse { AccessToken = accessToken };
+            var (jwtToken, accessToken) = await GenerateJwtToken(user);
+
+            // P1-02: issue + persist a refresh token in Redis on every access-token issuance.
+            // This is the SHARED path used by sign-in AND parent registration, so both flows
+            // now return a refresh token the client can later exchange at /Refresh-Token.
+            var refreshToken = await PersistRefreshToken(user.Id, accessToken, jwtToken);
+
+            return new JwtAuthResponse
+            {
+                AccessToken = accessToken,
+                refreshToken = refreshToken,
+            };
         }
         catch (Exception ex)
         {
@@ -55,13 +72,13 @@ public class AuthenticationIdentityService : IAuthenticationService
     {
         try
         {
-            var (_, newToken) = await GenerateJwtToken(user);
-            var refreshTokenResult = new RefreshToken
-            {
-                UserName = jwtToken.Claims.FirstOrDefault(x => x.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")!.Value,
-                TokenString = refreshToken,
-                ExpireAt = (DateTime)expiryDate!,
-            };
+            var (newJwtToken, newToken) = await GenerateJwtToken(user);
+
+            // P1-02 (AC-8): ROTATE. Generate a brand-new refresh token and overwrite the stored
+            // entry under "userrefreshtoken-{userId}". SetStringAsync overwrites in place, so the
+            // previously-supplied refresh token is immediately invalid — a replay is rejected by the
+            // match check in ValidateDetails.
+            var refreshTokenResult = await PersistRefreshToken(user.Id, newToken, newJwtToken);
 
             return new JwtAuthResponse
             {
@@ -91,13 +108,25 @@ public class AuthenticationIdentityService : IAuthenticationService
             if (jwtToken == null || !jwtToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256Signature))
                 return ("AlgorithmIsWrong", null);
 
-            if (jwtToken.ValidTo > DateTime.Now)
+            // JwtSecurityToken.ValidTo is UTC; compare against UtcNow so the "still-valid token"
+            // guard fires correctly regardless of the host timezone (was DateTime.Now — a non-UTC
+            // server would let a not-yet-expired access token be refreshed).
+            if (jwtToken.ValidTo > DateTime.UtcNow)
                 return ("TokenIsRunning", null);
 
             var userId = jwtToken.Claims.FirstOrDefault(x => x.Type == "Id")!.Value;
             var userRefreshtoken = await GetById(int.Parse(userId));
             if (userRefreshtoken == null)
                 return ("RefreshTokenNotFound", null);
+
+            // P1-02 (AC-5): the supplied refresh token must match the stored one. Reject an arbitrary
+            // string just because a cache entry exists; this also rejects a rotated-away (replayed) token.
+            if (!string.Equals(refreshTken, userRefreshtoken.RefreshToken, StringComparison.Ordinal))
+                return ("RefreshTokenNotFound", null);
+
+            // P1-02 (AC-4): enforce the 7-day refresh window. Stored ExpiryDate is UTC.
+            if (userRefreshtoken.ExpiryDate < DateTime.UtcNow)
+                return ("RefreshTokenIsExpired", null);
 
             return (userId, userRefreshtoken.ExpiryDate);
         }
@@ -151,7 +180,7 @@ public class AuthenticationIdentityService : IAuthenticationService
             _jwtSettings.Issure,
             _jwtSettings.Audience,
             claims: claims,
-            expires: DateTime.Now.AddMinutes(_jwtSettings.AccessTokenExpireMinutes),
+            expires: DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpireMinutes),
             signingCredentials: credentials);
 
         var accessToken = new JwtSecurityTokenHandler().WriteToken(jwtToken);
@@ -188,11 +217,51 @@ public class AuthenticationIdentityService : IAuthenticationService
         return claims;
     }
 
+    // P1-02 (AC-2, AC-6, AC-8): generate a high-entropy refresh token, persist it in Redis under
+    // "userrefreshtoken-{userId}" with a 7-day TTL (JwtSettings.RefreshTokenExpireDate), and return the
+    // RefreshToken DTO for JwtAuthResponse. Used by both initial issuance (GetJwtToken) and rotation
+    // (GetRefreshToken). The write overwrites any existing entry, which is what makes rotation atomic.
+    //
+    // NOTE (cleanup debt): the persisted model is the EF entity type UserRefreshToken used purely as a
+    // cache DTO here; the actual EF table is dormant (Redis is authoritative). See P1-02 plan.
+    private async Task<RefreshToken> PersistRefreshToken(int userId, string accessToken, JwtSecurityToken jwtToken)
+    {
+        var refreshTokenString = GenerateRefreshToken();
+        var now = DateTime.UtcNow;
+        var expiryDate = now.AddDays(_jwtSettings.RefreshTokenExpireDate);
+        var jti = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Jti)?.Value;
+
+        var stored = new UserRefreshToken
+        {
+            UserId = userId,
+            Token = accessToken,
+            RefreshToken = refreshTokenString,
+            JwtId = jti,
+            AddedTime = now,
+            ExpiryDate = expiryDate,
+            IsUsed = false,
+            IsRevoked = false,
+        };
+
+        var options = new DistributedCacheEntryOptions { AbsoluteExpiration = expiryDate };
+        await _distributedCache.SetStringAsync(
+            $"userrefreshtoken-{userId}",
+            JsonSerializer.Serialize(stored, RefreshTokenSerializerOptions),
+            options);
+
+        return new RefreshToken
+        {
+            UserName = jwtToken.Claims.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier)?.Value ?? string.Empty,
+            TokenString = refreshTokenString,
+            ExpireAt = expiryDate,
+        };
+    }
+
     private async Task<UserRefreshToken?> GetById(int userId)
     {
         var key = $"userrefreshtoken-{userId}";
         var json = await _distributedCache.GetStringAsync(key);
-        return string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<UserRefreshToken>(json);
+        return string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<UserRefreshToken>(json, RefreshTokenSerializerOptions);
     }
 
     private static string GenerateRefreshToken()

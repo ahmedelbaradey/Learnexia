@@ -1,10 +1,10 @@
-using System.IdentityModel.Tokens.Jwt;
 using Learnexia.Modules.Identity.Application.Abstractions;
 using Learnexia.Modules.Identity.Domain.Constants;
 using Learnexia.Modules.Identity.Domain.Enums;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -16,6 +16,7 @@ public class SignOutCommandHandler : BaseResponseHandler, ICommandHandler<SignOu
     private readonly ICurrentUserService _currentUserService;
     private readonly IStringLocalizer<SharedResources> _localizer;
     private readonly ISessionManagementService _sessionManagementService;
+    private readonly IDistributedCache _distributedCache;
     private readonly ILoggerManager _logger;
 
     public SignOutCommandHandler(
@@ -23,12 +24,14 @@ public class SignOutCommandHandler : BaseResponseHandler, ICommandHandler<SignOu
         ICurrentUserService currentUserService,
         IStringLocalizer<SharedResources> localizer,
         ISessionManagementService sessionManagementService,
+        IDistributedCache distributedCache,
         ILoggerManager logger)
     {
         _identityServiceManager = identityServiceManager;
         _currentUserService = currentUserService;
         _localizer = localizer;
         _sessionManagementService = sessionManagementService;
+        _distributedCache = distributedCache;
         _logger = logger;
     }
 
@@ -45,6 +48,11 @@ public class SignOutCommandHandler : BaseResponseHandler, ICommandHandler<SignOu
                 return NotFound<string>(_localizer[SharedResourcesKey.UserNotFound]);
 
             await TerminateUserSessionsAsync(userId, request);
+
+            // P1-02 (AC-3): the primary, load-bearing revocation. Delete the refresh-token cache entry
+            // directly so it can never be exchanged again — this runs regardless of whether the session
+            // record was resolved/terminated above (best-effort session termination is complementary).
+            await RevokeRefreshTokenAsync(userId);
 
             var userClaims = await _identityServiceManager.UserManagmentService.GetClaimsAsync(user);
             var fcmClaims = userClaims.Where(c => c.Type == CustomClaimTypes.FCMWebToken).ToList();
@@ -86,11 +94,27 @@ public class SignOutCommandHandler : BaseResponseHandler, ICommandHandler<SignOu
         }
     }
 
+    private async Task RevokeRefreshTokenAsync(int userId)
+    {
+        try
+        {
+            await _distributedCache.RemoveAsync($"userrefreshtoken-{userId}");
+            _logger.LogInfo($"Revoked refresh token for user {userId} during logout");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error revoking refresh token for user {userId} during logout");
+        }
+    }
+
     private string? GetCurrentSessionId()
     {
         try
         {
-            return _currentUserService.GetClaimValue(JwtRegisteredClaimNames.Jti);
+            // P1-02 (AC-3): SessionManagementService stores sessions keyed by the "SessionId" GUID claim,
+            // NOT the Jti. Reading Jti here looked up a non-existent key and silently no-op'd. Use the
+            // "SessionId" claim so session termination targets the correct record.
+            return _currentUserService.GetClaimValue("SessionId");
         }
         catch (Exception ex)
         {
