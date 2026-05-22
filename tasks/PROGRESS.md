@@ -1,4 +1,4 @@
-# Learnexia — Build Progress Tracker
+﻿# Learnexia — Build Progress Tracker
 
 > Single source of truth for **what's done vs. not** across the whole backlog.
 > Maintained automatically: the **`committer` agent updates this file on every commit** (flips the row for the story it just committed). The lead may also reconcile it after merges.
@@ -28,7 +28,7 @@
 | P1-02 | Stay signed in (token refresh & sign-out) | ✅ | 🔲 |
 | P1-03 | Parent onboarding & add children | ✅ | 🔲 |
 | P1-04 | Link a parent to a child account | ✅ | 🔲 |
-| P1-05 | Role-based access control | 🔲 | — |
+| P1-05 | Role-based access control | ✅ | — |
 | P1-06 | PostgreSQL + pgvector + Redis | ✅ | — |
 | P1-07 | Dockerized environment & CI/CD | ✅ | — |
 | P1-08 | Design system & components (RTL) | — | ✅ |

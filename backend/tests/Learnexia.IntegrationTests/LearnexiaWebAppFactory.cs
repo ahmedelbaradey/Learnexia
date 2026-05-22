@@ -2,6 +2,7 @@ using Learnexia.Modules.Catalog.Infrastructure.Persistence;
 using Learnexia.Modules.Identity.Api;
 using Learnexia.Modules.Identity.Infrastructure.Persistence;
 using Learnexia.Modules.Notifications.Infrastructure.Persistence;
+using AspNetCoreRateLimit;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -46,6 +47,20 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
             ReplaceDbContext<IdentityModuleDbContext>(services, connectionString, "identity");
             ReplaceDbContext<CatalogDbContext>(services, connectionString, "catalog");
             ReplaceDbContext<NotificationsDbContext>(services, connectionString, "notifications");
+
+            // Testing-host only: neutralise the IP rate limiter so the combined integration suite
+            // (~250+ requests in well under a minute) never trips the production 200 req/min cap and
+            // returns spurious 429s. This Configure<> runs *after* the host's ConfigureRateLimitingOptions,
+            // so it wins for the Testing host without touching production behaviour in Program.cs.
+            // The production rule (Endpoint "*", Limit 200, Period "1m") is unchanged outside tests.
+            services.Configure<IpRateLimitOptions>(opt =>
+            {
+                opt.EnableEndpointRateLimiting = false;
+                opt.GeneralRules = new List<RateLimitRule>
+                {
+                    new() { Endpoint = "*", Limit = int.MaxValue, Period = "1m" }
+                };
+            });
         });
 
         builder.ConfigureAppConfiguration((_, config) =>

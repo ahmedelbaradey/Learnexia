@@ -2,6 +2,7 @@ using Learnexia.Modules.Notifications.Api.Controllers;
 using Learnexia.Modules.Notifications.Application;
 using Learnexia.Modules.Notifications.Application.Features.SendNotification;
 using Learnexia.Modules.Notifications.Infrastructure;
+using Learnexia.Shared.Kernel.Abstractions;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -30,7 +31,8 @@ public static class NotificationsModule
         {
             var result = await sender.Send(command, ct);
             return result.IsSuccess ? Results.Accepted() : Results.BadRequest(result.Error);
-        });
+        })
+        .RequireAuthorization(AuthorizationPolicies.AdminOnly);
 
         // The read-side observability surface (get notifications by recipient) now lives on the MVC
         // NotificationsController (GET /api/Notifications/Notifications/List) returning the BaseResponse<T>
