@@ -34,7 +34,7 @@
 | P1-07 | Dockerized environment & CI/CD | ✅ | — |
 | P1-08 | Design system & components (RTL) | — | ✅ |
 | P1-09 | Auth & onboarding screens | ✅ | ✅ |
-| P1-10 | Sign in to the admin dashboard | 🔲 | 🔲 |
+| P1-10 | Sign in to the admin dashboard | ✅ | ✅ |
 
 ## Phase 2 — Learning Core
 | Story | Title | Backend | Frontend |
@@ -115,3 +115,4 @@
 - Container non-root image, CI action SHA-pinning, staging TLS cert — P1-07
 - Tokenize inline glow/alpha shades in components — P1-08
 - **Open decision:** staging deploy provider (Azure / Railway / Render) — see `docs/deploy/staging-decision.md`
+
