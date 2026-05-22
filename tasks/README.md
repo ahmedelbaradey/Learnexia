@@ -18,6 +18,8 @@ tasks/
     └── Phase-2-Learning-Core/ P2-xx-BE.md
 ```
 
+> **Scope:** this tree covers **Phase 1 & 2** stories only. The barrier-to-entry stories added in Phase 3–5 — **P3-13** (adaptive student profile), **P4-09** (re-engagement notifications), **P4-10** (Redis realtime gamification), **P4-11** (streak freeze / timed events), **P5-07** (data feedback / calibration) — are **pending task breakdown** and will be decomposed when their phase trees are built. The Phase-2 story **P2-11** (skill dependency graph) is broken down here. See [../docs/briefs/barrier-to-entry-gap-analysis.md](../docs/briefs/barrier-to-entry-gap-analysis.md).
+
 - **Frontend agent** → work under [Frontend/](Frontend/): build `packages/` first (foundation + design-system/ui), then `student-app/` screens.
 - **Backend agent** → work only under [Backend/](Backend/).
 - Cross-stack dependencies are referenced by task ID across files (e.g. a FE task "blocked by P1-01-BE-1"); each FE screen task carries a **Target** column naming its monorepo location (`packages/*` or `apps/student-app`).
@@ -67,3 +69,4 @@ tasks/
 | P2-08 | Record granular answers | — | [BE](Backend/Phase-2-Learning-Core/P2-08-BE.md) |
 | P2-09 | Home dashboard | [FE](Frontend/student-app/Phase-2-Learning-Core/P2-09-FE.md) | [BE](Backend/Phase-2-Learning-Core/P2-09-BE.md) |
 | P2-10 | Seed demo data | — | [BE](Backend/Phase-2-Learning-Core/P2-10-BE.md) |
+| P2-11 | Author the skill dependency graph *(barrier-to-entry BE1)* | — | [BE](Backend/Phase-2-Learning-Core/P2-11-BE.md) |

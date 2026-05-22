@@ -64,6 +64,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P2-08 Record granular per-question answers
 - P2-09 See the home dashboard
 - P2-10 Seed demo subjects & skill trees
+- P2-11 Author the skill dependency graph (relational, hand-authored) *(barrier-to-entry: BE1)*
 
 ### Phase 3 — AI Tutor
 - P3-01 Route AI requests through an AI Gateway
@@ -78,6 +79,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P3-10 Schedule spaced-repetition practice
 - P3-11 Serve adaptive quizzes
 - P3-12 Interact with the AI tutor UI
+- P3-13 Build the adaptive student profile (behavioral modeling) *(barrier-to-entry: BE2)*
 
 ### Phase 4 — Gamification
 - P4-01 Emit learning domain events
@@ -88,6 +90,9 @@ These intentional decisions diverge from the source docs; each affected story re
 - P4-06 Complete daily/weekly missions
 - P4-07 Compete in weekly leagues
 - P4-08 Gamification screens & motion
+- P4-09 Bring the student back tomorrow (re-engagement notifications) *(barrier-to-entry: BE4)*
+- P4-10 Serve realtime gamification state from Redis *(barrier-to-entry: BE3)*
+- P4-11 Streak freeze, timed events & weekly challenges *(barrier-to-entry: BE4)*
 
 ### Phase 5 — Parent + Analytics
 - P5-01 Generate a weekly student report
@@ -96,6 +101,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P5-04 Deliver reports via notifications
 - P5-05 View the parent dashboard
 - P5-06 Transition a child to a new grade
+- P5-07 Feed learning data back into the system (calibration loop) *(barrier-to-entry: BE7)*
 
 ### Phase 6 — Stabilization
 - P6-01 Meet API & AI performance targets
