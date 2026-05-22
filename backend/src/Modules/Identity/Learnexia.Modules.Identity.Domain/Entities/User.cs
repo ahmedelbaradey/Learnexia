@@ -34,4 +34,8 @@ public class User : IdentityUser<int>
     public User? DeletedByUser { get; set; }
 
     public virtual ICollection<Role> Roles { get; set; } = new List<Role>();
+
+    // Navigation properties for the parent↔student linkage (P1-04).
+    public virtual ICollection<ParentStudent> LinksAsParent { get; set; } = new List<ParentStudent>();
+    public virtual ICollection<ParentStudent> LinksAsStudent { get; set; } = new List<ParentStudent>();
 }
