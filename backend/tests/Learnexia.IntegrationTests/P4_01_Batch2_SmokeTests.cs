@@ -95,12 +95,35 @@ public sealed class P4_01_Batch2_SmokeTests : IAsyncLifetime
 
     // =========================================================================
     // Test 3: Catalog list — cross-module handler resolution after MediatR rewire
+    // P1-05 RBAC: Catalog reads now require authentication (any role). Attach the
+    // superadmin bearer token obtained in T2 by re-running sign-in here.
     // =========================================================================
     [Fact(DisplayName = "T3 CatalogList: GET /api/Catalog/Products/List returns 200 with BaseResponse envelope")]
     public async Task T3_CatalogList_Returns200_WithPaginatedEnvelope()
     {
-        // Act
-        var response = await _client.GetAsync("/api/Catalog/Products/List?pageNumber=1&pageSize=10");
+        // P1-05: Catalog reads are now gated behind [Authorize]. Mint a superadmin token so the
+        // request is authenticated — any authenticated role is permitted for read endpoints.
+        var signInBody = new { UserName = "superadmin", Password = "123Pa$$word!" };
+        var signInResp = await _client.PostAsJsonAsync("/api/Users/Authentication/Sign-In", signInBody);
+        signInResp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "prerequisite: superadmin sign-in must succeed; T3 requires an authenticated client; " +
+            "HTTP {0} indicates a seed/startup problem: {1}",
+            (int)signInResp.StatusCode,
+            await signInResp.Content.ReadAsStringAsync());
+
+        var signInContent = await signInResp.Content.ReadAsStringAsync();
+        var signInDoc = JsonDocument.Parse(signInContent);
+        var accessToken = signInDoc.RootElement
+            .GetProperty("data")
+            .GetProperty("accessToken")
+            .GetString();
+        accessToken.Should().NotBeNullOrWhiteSpace("superadmin sign-in must return a valid JWT; T3 needs it for auth");
+
+        // Act — attach the bearer token (P1-05 RBAC: authenticated reads now required)
+        using var request = new System.Net.Http.HttpRequestMessage(
+            System.Net.Http.HttpMethod.Get, "/api/Catalog/Products/List?pageNumber=1&pageSize=10");
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        var response = await _client.SendAsync(request);
 
         // Assert — HTTP 200
         response.StatusCode.Should().Be(HttpStatusCode.OK,
