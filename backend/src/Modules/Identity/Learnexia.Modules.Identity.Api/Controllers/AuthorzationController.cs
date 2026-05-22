@@ -6,7 +6,9 @@ using Learnexia.Modules.Identity.Application.Features.Authorizations.Queries.Get
 using Learnexia.Modules.Identity.Application.Features.Authorizations.Queries.GetRoleById;
 using Learnexia.Modules.Identity.Application.Features.Authorizations.Queries.GetRoleList;
 using Learnexia.Modules.Identity.Application.Features.Authorizations.Queries.Responses;
+using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Responses;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,6 +16,9 @@ namespace Learnexia.Modules.Identity.Api.Controllers;
 
 [Route("api/Users/[controller]")]
 [ApiController]
+// P1-05 (RBAC): role/claim CRUD is an admin-only surface — gate every action with the
+// AdminOnly role policy (Admin or SuperAdmin). Was fully anonymous before this story.
+[Authorize(Policy = AuthorizationPolicies.AdminOnly)]
 public class AuthorzationController : AppControllerBase
 {
     [HttpGet("RoleList")]

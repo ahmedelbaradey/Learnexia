@@ -685,4 +685,10 @@
   <data name="ChildLinkedSuccessfully" xml:space="preserve">
     <value></value>
   </data>
+  <data name="GradeOutOfRange" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="InvalidLanguageCode" xml:space="preserve">
+    <value></value>
+  </data>
 </root>

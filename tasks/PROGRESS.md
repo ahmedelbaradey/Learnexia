@@ -1,4 +1,4 @@
-# Learnexia — Build Progress Tracker
+﻿# Learnexia — Build Progress Tracker
 
 > Single source of truth for **what's done vs. not** across the whole backlog.
 > Maintained automatically: the **`committer` agent updates this file on every commit** (flips the row for the story it just committed). The lead may also reconcile it after merges.
@@ -12,7 +12,8 @@
 - `—` — no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
-- **Wave 2:** P1-02-BE (token refresh & sign-out), P1-04-BE (parent↔child link + family-scope authz) — PR open
+- **Wave 3:** P1-03-BE (parent onboarding & add children), P1-05-BE (role-based access control) — PR open
+- **Wave 2:** P1-02-BE (token refresh & sign-out), P1-04-BE (parent↔child link + family-scope authz) — merged (PR #1)
 - **Wave 1:** P1-01-BE (register parent), P1-07-BE (Docker/CI + health + jobs) — merged
 - **Wave 0:** P1-06-BE (Postgres+pgvector+Redis), P1-08-FE (design system) — merged
 - **Foundation:** PKG-FOUNDATION-FE (Turborepo monorepo, shared + api-client) — merged
@@ -26,9 +27,9 @@
 | — | Monorepo, api-client & shared (foundation) | — | ✅ |
 | P1-01 | Register as a parent | ✅ | 🔲 |
 | P1-02 | Stay signed in (token refresh & sign-out) | ✅ | 🔲 |
-| P1-03 | Parent onboarding & add children | 🔲 | 🔲 |
+| P1-03 | Parent onboarding & add children | ✅ | 🔲 |
 | P1-04 | Link a parent to a child account | ✅ | 🔲 |
-| P1-05 | Role-based access control | 🔲 | — |
+| P1-05 | Role-based access control | ✅ | — |
 | P1-06 | PostgreSQL + pgvector + Redis | ✅ | — |
 | P1-07 | Dockerized environment & CI/CD | ✅ | — |
 | P1-08 | Design system & components (RTL) | — | ✅ |

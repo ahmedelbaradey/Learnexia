@@ -10,6 +10,8 @@ public class User : IdentityUser<int>
     public string CountryCode { get; set; } = "+20";
     
     public string? Nationality { get; set; }
+    public int? Grade { get; set; }
+    public int? Age { get; set; }
     public string? PersonalPhotoPath { get; set; }
     public bool RegistrationMessageIsSent { get; set; } = false;
     public bool RegistrationIsCompleted { get; set; } = false;

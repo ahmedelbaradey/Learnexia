@@ -687,5 +687,9 @@
         public const string CannotLinkChild = "CannotLinkChild";
         public const string ChildLinkedSuccessfully = "ChildLinkedSuccessfully";
 
+        // Add-Child Validation Messages (P1-03)
+        public const string GradeOutOfRange = "GradeOutOfRange";
+        public const string InvalidLanguageCode = "InvalidLanguageCode";
+
     }
 }
