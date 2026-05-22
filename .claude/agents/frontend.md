@@ -34,6 +34,7 @@ packages/shared          domain types, Zustand stores, zod, i18n + RTL helpers, 
 - **Kid UX (NFR-6):** large touch targets, one primary action/screen, minimal text, instant visual feedback, gamified animations.
 - **Product overrides (from CLAUDE.md):** parent-driven onboarding (no student self-register); **4 subjects, no Social Studies**; no teacher role.
 - **No server data in Zustand** — that's TanStack Query's job.
+- **Design patterns — ask first.** Follow the decided architecture and existing component/hook shapes; don't invent abstractions. If a task genuinely calls for a design pattern (provider/compound-component/factory/strategy, etc.), **stop and ask the lead/user before implementing it** — name the pattern, where it would apply, and why. Wait for approval; do not introduce it unilaterally.
 
 ## Build order (P1→P2)
 Turborepo skeleton → `design-system` → `ui` (P1-08) → `api-client` + `shared` → `student-app` shell (Expo Router + theme + i18n/RTL providers) → feature screens in story order.

@@ -37,6 +37,7 @@ AI-powered, gamified, adaptive learning platform for Arabic-speaking school stud
 5. **Logging** — inject `ILoggerManager`, not `ILogger<T>`. Don't add a second logger registration.
 6. **Auth** — permission policies (`{Module}.{Action}`) exist but aren't enforced; add `[Authorize(policy)]` deliberately.
 7. **No teacher role** in the product.
+8. **Design patterns — ask first.** Default to mirroring existing shapes (Catalog on backend, the decided architecture + existing component/hook shapes on frontend); do not invent abstractions. If a task genuinely calls for a design pattern (Strategy, Factory, Decorator, provider/compound-component, etc.), **stop and ask the lead/user before implementing it** — name the pattern, where it applies, and why. Wait for approval; never introduce one unilaterally. This applies to both backend and frontend agents.
 
 ## Multi-agent workflow
 Specialized agents live in [.claude/agents/](.claude/agents/): `analyzer`, `planner`, `designer`, `db-migration`, `backend-feature`, `api-tester`, `frontend`, `security-auditor`, `reviewer`, `committer`.
@@ -48,7 +49,7 @@ Specialized agents live in [.claude/agents/](.claude/agents/): `analyzer`, `plan
 4. The lead **dispatches implementer agents batch by batch per the plan** — `db-migration`, `backend-feature`, `frontend` — parallel where independent, sequential where dependent. The `frontend` batch consumes the Design Spec. For stories exposing **HTTP endpoints**, **`api-tester`** runs after `backend-feature` to validate the running API (integration tests).
 4b. For **security-sensitive** batches (auth/authz, user or child data, file upload, AI prompts, secrets, payments), **`security-auditor`** audits before the gate; Critical/High findings block.
 5. **`reviewer`** gates each batch against the brief's acceptance criteria + CONVENTIONS.md (including `api-tester` and `security-auditor` results) before it's done.
-6. **`committer`** — only after `reviewer` PASSES — stages and commits the batch on a per-story branch (`feat/<StoryID>-…`) with a conventional message. Never on `main`, never pushes/amends unless asked.
+6. **`committer`** — only after `reviewer` PASSES — stages and commits the batch on a per-story branch (`feat/<StoryID>-…`) with a conventional message, then **always pushes the branch and opens a Pull Request** (with a full description). Never on `main`, never amends/force-pushes, and never merges the PR itself unless explicitly told.
 
 - Downstream agents consume the **Pipeline Brief + Execution Plan** (and frontend also the **Design Spec**) as their spec, follow the docs above, and report back: what changed, files touched, build/test status, any rule they had to bend (with why).
 - Do not skip analyzer or planner for anything beyond a trivial one-line fix.

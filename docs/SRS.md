@@ -81,6 +81,7 @@ Roles build on the existing Identity module's role/permission model (see [archit
 - **FR-AD-2** The Student Modeling Engine shall track per-skill mastery % and status (not_started/in_progress/mastered/needs_review). *(G2)*
 - **FR-AD-3** Mastery shall be rule-based: ≥80% = mastered, <50% = needs remediation. *(G2)*
 - **FR-AD-4** The system shall schedule spaced-repetition reinforcement on weak/forgotten skills. *(G2,G3)*
+- **FR-AD-5** The system shall derive an **adaptive student (behavioral) profile** from captured signals — question-type affinity, recurring-error clusters, attention-span/session-fatigue, and a derived `PreferredExplanationStyle` — using **rule-based, explainable** logic, and expose it to the Prompt Builder (FR-AI-5) and Adaptivity Engine (FR-AD-1). *(G2,G3)* — *(barrier-to-entry BE2; see story P3-13.)*
 
 ### 4.5 Quiz Engine (`FR-QZ`)
 - **FR-QZ-1** Support question types: MCQ, True/False, Matching, Fill-in-the-blank. *(G2)*
@@ -90,22 +91,25 @@ Roles build on the existing Identity module's role/permission model (see [archit
 
 ### 4.6 Gamification (`FR-GM`)
 - **FR-GM-1** Award XP per event (e.g., correct +10, quiz +20, lesson +50, streak bonus +30) and compute level. *(G1,G3)*
-- **FR-GM-2** Maintain streaks with daily activity; surface streak state. *(G3)* — *(open: grace period unspecified.)*
-- **FR-GM-3** Hearts system: limited hearts/session, −1 on wrong answer; on depletion enter Practice Mode. *(G1)* — *(open: regeneration unspecified.)*
+- **FR-GM-2** Maintain streaks with daily activity; surface streak state. *(G3)* — *(streak preservation handled by **streak freeze**, FR-GM-9, not an open grace window; dials are config-driven.)*
+- **FR-GM-3** Hearts system: limited hearts/session, −1 on wrong answer; on depletion enter Practice Mode. *(G1)* — *(regeneration is a config-driven timed/practice-based refill; dials tunable, not a blocker.)*
 - **FR-GM-4** Award badges by rule (skill mastered, N-day streak, quiz master, etc.). *(G1,G3)*
 - **FR-GM-5** Daily/weekly **missions** with objectives and rewards. *(G3)*
 - **FR-GM-6** Weekly **leagues** (Bronze→Silver→Gold→Diamond) with promotion/demotion. *(G1)*
-- **FR-GM-7** Gamification shall be **event-driven**: a `LessonCompleted`/`AnswerSubmitted` event fans out to XP, badge, streak, analytics handlers. *(G5)*
+- **FR-GM-7** Gamification shall be **event-driven**: a `LessonCompleted`/`AnswerSubmitted` event fans out to XP, badge, streak, analytics handlers. *(G5)* — *(realtime read model: XP totals, streak counters, and league leaderboards are served from **Redis** in the hot path with **PostgreSQL as the durable ledger**, meeting NFR-1; see story P4-10.)*
+- **FR-GM-8** The system shall send **student re-engagement notifications** — streak-at-risk, daily-mission reminder, and lapse win-back — under **parent-controlled** per-child opt-in, quiet hours, and a daily cap; copy is Arabic-first, child-safe, and never shaming. *(G1,G3)* — *(barrier-to-entry BE4; see story P4-09.)*
+- **FR-GM-9** The Daily Habit System shall provide **streak freeze** (consumed to preserve a streak on a missed day), **timed events** (scheduled limited-window challenges with rewards), and recurring **weekly challenges**, all granting rewards through the existing XP/badge engine. *(G1,G3)* — *(resolves the FR-GM-2/FR-GM-3 open dials; see story P4-11.)*
 
 ### 4.7 Parent & Analytics (`FR-PA`)
 - **FR-PA-1** Generate weekly reports per student (XP earned, skills improved, weak areas, recommendations). *(G4)*
 - **FR-PA-2** Surface detected weak areas with severity. *(G4)*
 - **FR-PA-3** Collect analytics: DAU/WAU, session duration, mission completion, quiz accuracy, retention, subject engagement. *(G1,G5)*
+- **FR-PA-4** The system shall **feed aggregate outcome data back** to recalibrate per-question empirical difficulty, flag low-quality AI-generated questions for review, and tune adaptivity thresholds (config-driven, auditable, reversible), operating on **de-identified aggregates**. *(G2,G5)* — *(barrier-to-entry BE7 "data network effect"; see story P5-07.)*
 
 ### 4.8 Curriculum Intelligence (`FR-CI`) — *Phase 2+, modeled now*
 - **FR-CI-1** Admins shall upload curriculum (PDF/DOCX/images) with metadata (grade/subject/language/country). *(G5)*
 - **FR-CI-2** Documents shall be OCR'd (Arabic-capable), structured into the curriculum hierarchy, and semantically chunked. *(G5)*
-- **FR-CI-3** Build a knowledge graph of concepts/skills with prerequisite/related edges. *(G2,G5)*
+- **FR-CI-3** Build a knowledge graph of concepts/skills with prerequisite/related edges. *(G2,G5)* — *(an **MVP slice** of this — a hand-authored, relational, acyclic skill dependency graph using `KnowledgeNode`/`KnowledgeEdge` — is pulled forward to Phase 2 to back prerequisite unlocks and remediation without the OCR pipeline; see story P2-11.)*
 - **FR-CI-4** Store chunk embeddings in a vector store for retrieval by the AI tutor. *(G2,G5)*
 
 ## 5. Non-Functional Requirements
@@ -334,8 +338,12 @@ erDiagram
 | QuizQuestion | AI-generated or curated items | per Skill |
 | XPTransaction / Badge / StudentBadge / Mission / StudentMission | Gamification ledger | event-driven writes |
 | WeeklyReport | Parent analytics | per Student/week |
-| KnowledgeNode / KnowledgeEdge | Knowledge graph (concepts/skills + prereqs) | self-referential graph |
+| KnowledgeNode / KnowledgeEdge | Knowledge graph (concepts/skills + prereqs); **hand-authored relational slice in MVP (P2-11)** | self-referential graph |
 | CurriculumChunk | RAG retrieval unit + embedding | per Concept; vector store |
+| StudentLearningProfile | Derived **behavioral** model: question-type affinity, recurring-error clusters, attention-span signal, `PreferredExplanationStyle` (FR-AD-5) | per Student; rule-derived from Attempt/StudentAnswer |
+| StreakFreeze / TimedEvent / WeeklyChallenge | Daily-habit mechanics (FR-GM-9): freeze inventory, scheduled events, recurring weekly goals | per Student / global schedule |
+| NotificationPreference / NotificationLog | Parent-controlled per-child re-engagement settings + send/open audit (FR-GM-8) | per ParentStudent; feeds analytics |
+| QuestionDifficultyStat | Aggregated empirical difficulty + quality flags driving calibration (FR-PA-4) | per QuizQuestion; de-identified aggregate |
 
 > **(assumption)** Integer surrogate keys are used to match the existing Identity module (int keys). `EmbeddingVectorRef` maps to a **pgvector** column in **PostgreSQL** (confirmed DB). The knowledge graph is relational here (Phase 2 explicit), migrating to a graph DB (Neo4j/LightRAG) only in Phase 3+.
 
@@ -362,8 +370,8 @@ The current [backend](architecture.md) is a **.NET 10 modular monolith on SQL Se
 
 | BRD Goal | Functional Requirements |
 |---|---|
-| **G1** Engagement | FR-ID-1/4, FR-LR-2, FR-QZ-2, FR-GM-1/3/6, FR-PA-3 |
-| **G2** Learning outcomes | FR-ID-2, FR-LR-1/3/4, FR-AI-1..6, FR-AD-1..4, FR-QZ-1/3/4, FR-CI-3/4 |
-| **G3** Daily habit | FR-AD-4, FR-GM-1/2/4/5 |
+| **G1** Engagement | FR-ID-1/4, FR-LR-2, FR-QZ-2, FR-GM-1/3/6/8/9, FR-PA-3 |
+| **G2** Learning outcomes | FR-ID-2, FR-LR-1/3/4, FR-AI-1..6, FR-AD-1..5, FR-QZ-1/3/4, FR-CI-3/4, FR-PA-4 |
+| **G3** Daily habit | FR-AD-4/5, FR-GM-1/2/4/5/8/9 |
 | **G4** Parent visibility | FR-ID-3, FR-PA-1/2 |
-| **G5** Scalable platform | FR-ID-2, FR-LR-1, FR-GM-7, FR-PA-3, FR-CI-1..4 |
+| **G5** Scalable platform | FR-ID-2, FR-LR-1, FR-GM-7, FR-PA-3/4, FR-CI-1..4 |
