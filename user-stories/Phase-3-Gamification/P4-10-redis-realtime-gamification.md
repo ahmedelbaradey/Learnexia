@@ -1,7 +1,7 @@
 # Serve realtime gamification state from Redis
 
 - **Project:** Learnexia
-- **Sprint / Phase:** Phase 4 — Gamification (Week 7)
+- **Sprint / Phase:** Phase 3 — Gamification (Week 5)
 - **Epic:** Gamification Module
 - **Issue type:** Technical Enabler
 - **Story Points:** 5 — Redis-backed read model for XP/streak/leaderboard + write-through to Postgres ledger + reconciliation.

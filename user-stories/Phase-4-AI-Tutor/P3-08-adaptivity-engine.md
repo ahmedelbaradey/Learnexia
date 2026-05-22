@@ -1,7 +1,7 @@
 # Adjust difficulty adaptively
 
 - **Project:** Learnexia
-- **Sprint / Phase:** Phase 3 — AI Tutor (Week 5–6)
+- **Sprint / Phase:** Phase 4 — AI Tutor (Week 6–7)
 - **Epic:** Adaptivity & Student Modeling
 - **Issue type:** Story
 - **Story Points:** 5 — deterministic engine combining several signals; core differentiator, needs tuning.

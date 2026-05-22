@@ -1,7 +1,7 @@
 # Filter AI output through a Safety Layer
 
 - **Project:** Learnexia
-- **Sprint / Phase:** Phase 3 — AI Tutor (Week 5–6)
+- **Sprint / Phase:** Phase 4 — AI Tutor (Week 6–7)
 - **Epic:** AI Gateway
 - **Issue type:** Story
 - **Story Points:** 5 — mandatory, child-safety-critical filtering with multiple checks; high importance and care.

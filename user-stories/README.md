@@ -14,6 +14,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - **Parent-driven onboarding:** the parent (not the student) registers, adds one or more children, and completes each child's onboarding (grade/language/country). The parent assigns each child a login email; the child then logs in to their own account. Students do **not** self-register. *(Overrides SRS FR-ID-2's implied student onboarding — see P1-01, P1-03, P1-04, P1-09.)*
 - **4 subjects, not 5:** Math, Science, Arabic, English. **Social Studies removed.** *(Overrides BRD §4 — see P2-02, P2-10, P3-03.)*
 - **Grade transition:** the parent dashboard has a per-child grade-transition control that **re-scopes the skill tree to the new grade while preserving history** (XP/badges/streaks/mastery retained). *(New — see P5-05, P5-06.)*
+- **Phase order: Gamification before AI Tutor.** **Phase 3 = Gamification** (Week 5), **Phase 4 = AI Tutor** (Weeks 6–7) — building the habit loop before the AI layer, per the barrier-to-entry strategy ([docs/briefs/barrier-to-entry-gap-analysis.md](../docs/briefs/barrier-to-entry-gap-analysis.md)). **Story IDs were kept stable** when the phases were resequenced, so the prefix no longer equals the phase number: Gamification stories are `P4-xx` (in `Phase-3-Gamification/`) and AI-Tutor stories are `P3-xx` (in `Phase-4-AI-Tutor/`). This avoids renaming the already-built, merged `P4-01`.
 
 ## Sprint → Phase mapping
 
@@ -21,8 +22,8 @@ These intentional decisions diverge from the source docs; each affected story re
 |---|---|---|---|---|
 | `Phase-1-Foundation` | P1 | 1–2 | Auth, users, DB, design system, DevOps | A user can register/login; design system + auth screens live; DB provisioned |
 | `Phase-2-Learning-Core` | P2 | 3–4 | Subjects, lessons, skill tree, quiz | A student can browse subjects, open a lesson, navigate a skill tree, take a quiz |
-| `Phase-3-AI-Tutor` | P3 | 5–6 | Prompt builder, RAG, hints, adaptivity | Tutor explains/hints/generates questions, grounded + behind safety layer |
-| `Phase-4-Gamification` | P4 | 7 | XP, streaks, hearts, badges, missions, leagues | Gamification fires on learning events and is visible in UI |
+| `Phase-3-Gamification` | P3 | 5 | XP, streaks, hearts, badges, missions, leagues *(story IDs `P4-xx`)* | Gamification fires on learning events and is visible in UI |
+| `Phase-4-AI-Tutor` | P4 | 6–7 | Prompt builder, RAG, hints, adaptivity *(story IDs `P3-xx`)* | Tutor explains/hints/generates questions, grounded + behind safety layer |
 | `Phase-5-Parent-Analytics` | P5 | 8 | Weekly reports, weak areas, KPIs, parent dashboard | A parent sees a weekly report with weak areas; KPI events captured |
 | `Phase-6-Stabilization` | P6 | 9 | Testing, perf, prompt tuning, observability | NFR-1 perf met, prompts tuned, critical bugs cleared → launch-ready |
 | `Backlog-Phase-2-Plus` | post-MVP | — | Curriculum Intelligence (ingestion, KG, RAG at scale) | Deferred; data model designed in MVP |
@@ -66,7 +67,20 @@ These intentional decisions diverge from the source docs; each affected story re
 - P2-10 Seed demo subjects & skill trees
 - P2-11 Author the skill dependency graph (relational, hand-authored) *(barrier-to-entry: BE1)*
 
-### Phase 3 — AI Tutor
+### Phase 3 — Gamification *(story IDs `P4-xx`)*
+- P4-01 Emit learning domain events
+- P4-02 Earn XP and level up
+- P4-03 Maintain a daily streak
+- P4-04 Lose hearts and enter Practice Mode
+- P4-05 Earn badges
+- P4-06 Complete daily/weekly missions
+- P4-07 Compete in weekly leagues
+- P4-08 Gamification screens & motion
+- P4-09 Bring the student back tomorrow (re-engagement notifications) *(barrier-to-entry: BE4)*
+- P4-10 Serve realtime gamification state from Redis *(barrier-to-entry: BE3)*
+- P4-11 Streak freeze, timed events & weekly challenges *(barrier-to-entry: BE4)*
+
+### Phase 4 — AI Tutor *(story IDs `P3-xx`)*
 - P3-01 Route AI requests through an AI Gateway
 - P3-02 Filter AI output through a Safety Layer
 - P3-03 Build personalized tutor prompts
@@ -80,19 +94,6 @@ These intentional decisions diverge from the source docs; each affected story re
 - P3-11 Serve adaptive quizzes
 - P3-12 Interact with the AI tutor UI
 - P3-13 Build the adaptive student profile (behavioral modeling) *(barrier-to-entry: BE2)*
-
-### Phase 4 — Gamification
-- P4-01 Emit learning domain events
-- P4-02 Earn XP and level up
-- P4-03 Maintain a daily streak
-- P4-04 Lose hearts and enter Practice Mode
-- P4-05 Earn badges
-- P4-06 Complete daily/weekly missions
-- P4-07 Compete in weekly leagues
-- P4-08 Gamification screens & motion
-- P4-09 Bring the student back tomorrow (re-engagement notifications) *(barrier-to-entry: BE4)*
-- P4-10 Serve realtime gamification state from Redis *(barrier-to-entry: BE3)*
-- P4-11 Streak freeze, timed events & weekly challenges *(barrier-to-entry: BE4)*
 
 ### Phase 5 — Parent + Analytics
 - P5-01 Generate a weekly student report

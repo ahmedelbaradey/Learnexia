@@ -1,7 +1,7 @@
 # Maintain a daily streak
 
 - **Project:** Learnexia
-- **Sprint / Phase:** Phase 4 — Gamification (Week 7)
+- **Sprint / Phase:** Phase 3 — Gamification (Week 5)
 - **Epic:** Gamification Module
 - **Issue type:** Story
 - **Story Points:** 3 — streak engine + daily reset job; grace-period rule is an open question to confirm.

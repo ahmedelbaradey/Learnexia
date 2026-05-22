@@ -1,7 +1,7 @@
 # Get progressive hints & simpler re-explanations
 
 - **Project:** Learnexia
-- **Sprint / Phase:** Phase 3 — AI Tutor (Week 5–6)
+- **Sprint / Phase:** Phase 4 — AI Tutor (Week 6–7)
 - **Epic:** Prompt Builder & Tutor
 - **Issue type:** Story
 - **Story Points:** 3 — hint/simplify endpoints reusing the explain pipeline with escalation logic.

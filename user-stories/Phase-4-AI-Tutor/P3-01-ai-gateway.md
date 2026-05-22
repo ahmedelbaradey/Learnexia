@@ -1,7 +1,7 @@
 # Route AI requests through an AI Gateway
 
 - **Project:** Learnexia
-- **Sprint / Phase:** Phase 3 — AI Tutor (Week 5–6)
+- **Sprint / Phase:** Phase 4 — AI Tutor (Week 6–7)
 - **Epic:** AI Gateway
 - **Issue type:** Technical Enabler
 - **Story Points:** 5 — new FastAPI service + provider abstraction + model routing; foundation for all AI features.

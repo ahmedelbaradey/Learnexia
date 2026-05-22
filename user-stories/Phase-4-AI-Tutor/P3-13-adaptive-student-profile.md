@@ -1,7 +1,7 @@
 # Build the adaptive student profile (behavioral modeling)
 
 - **Project:** Learnexia
-- **Sprint / Phase:** Phase 3 — AI Tutor (Week 5–6)
+- **Sprint / Phase:** Phase 4 — AI Tutor (Week 6–7)
 - **Epic:** Adaptivity & Student Modeling
 - **Issue type:** Story
 - **Story Points:** 8 — derivation jobs over captured signals + profile store + integration into prompts & adaptivity; the richest unbuilt moat layer.

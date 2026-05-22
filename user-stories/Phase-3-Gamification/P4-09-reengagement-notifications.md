@@ -1,7 +1,7 @@
 # Bring the student back tomorrow (re-engagement notifications)
 
 - **Project:** Learnexia
-- **Sprint / Phase:** Phase 4 — Gamification (Week 7)
+- **Sprint / Phase:** Phase 3 — Gamification (Week 5)
 - **Epic:** Gamification Module
 - **Issue type:** Story
 - **Story Points:** 5 — notification service + scheduling + streak-at-risk trigger + per-child opt-in & quiet hours; child-data sensitive.
