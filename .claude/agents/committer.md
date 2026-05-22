@@ -28,16 +28,21 @@ Before you commit, update **`tasks/PROGRESS.md`** so it reflects what this commi
 - **Stage `tasks/PROGRESS.md` as part of this same commit** (it travels to `main` with the story).
 - If `tasks/PROGRESS.md` does not exist, note that in your report and proceed with the code commit (don't block on it).
 
-## Commit message (conventional, imperative)
+## Commit message (conventional, imperative) — A BODY IS MANDATORY
+**Every commit MUST have a descriptive body — never a subject-only commit.** Format:
 ```
 <type>(<scope>): <summary>
 
-<what changed, why>. Story <StoryID>. Satisfies <acceptance criteria refs>.
+<2–6 lines or bullet points: WHAT changed and WHY>. Story <StoryID>. Satisfies <acceptance criteria refs>.
+- key change 1 (file/area)
+- key change 2
+- tests/security status
 
 Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>
 ```
 - `type` ∈ `feat | fix | chore | docs | refactor | test`; `scope` = module or story area (e.g. `gamification`, `identity`).
 - One commit per reviewer-approved logical batch. Don't bundle unrelated changes.
+- This applies to **all** commits you make — feature, fix, chore, AND merge commits (use `git merge --no-ff -m "<subject>" -m "<body>"`). A one-line message is not acceptable.
 
 ## Opening the wave Pull Request (when the lead asks)
 The integration model is **one PR per wave**. Per-story commits stay local (no push). When the lead invokes you to **open the wave PR** (after every story in the wave is merged into the wave branch `feat/wave-<N>` and the build/tests are green), you ARE explicitly authorized to push and open a PR:
@@ -64,7 +69,9 @@ The integration model is **one PR per wave**. Per-story commits stay local (no p
    ```
    Title: `Wave <N>: <StoryIDs> — <short theme>`.
 4. **Do NOT merge the PR** — the lead/user reviews and merges on GitHub. Report the PR URL.
-- If `gh` is unavailable or unauthenticated, **stop and report** (don't guess): push the branch and return the compare URL `https://github.com/<owner>/<repo>/compare/main...feat/wave-<N>?expand=1` plus the prepared description so the lead can open it manually.
+- **The PR description is MANDATORY — never create or leave a PR with an empty/missing body.** Always pass the full body (use `--body-file <path>` with a written file if the body is long, to avoid shell-escaping problems).
+- If `gh` is unavailable or unauthenticated: push the branch, then **write the full prepared PR body to a file** (e.g. `docs/pr/wave-<N>.md`) and report BOTH the compare URL `https://github.com/<owner>/<repo>/compare/main...feat/wave-<N>?expand=1` AND that file path, so the description can be pasted in one step. Never hand back just a URL with no description. Also tell the lead that a one-time `gh auth login` (or a `GH_TOKEN` env var) lets you set the PR body automatically (`gh pr create --body-file` / `gh pr edit <n> --body-file`).
+- If `gh` IS authenticated and a PR already exists for the branch without a description, set it with `gh pr edit <number> --body-file <path>`.
 
 ## Hard rules
 - **Never** `--amend`, `--force`/`--force-with-lease`, `--no-verify`, or skip/bypass hooks **unless the lead explicitly asks**.
