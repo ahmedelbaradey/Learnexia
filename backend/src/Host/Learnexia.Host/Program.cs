@@ -135,10 +135,15 @@ app.UseHsts();
 app.UseStaticFiles();
 app.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.All });
 
-// Seed roles + users (idempotent). Identity owns the seed; Host only invokes the module hook.
+// Apply pending migrations per module + seed (all idempotent). Each module owns its own DbContext and
+// exposes a Host-callable hook through its Api entry point — the Host never references module Infrastructure
+// directly (module isolation). Identity's SeedAsync also migrates before seeding; Catalog and Notifications
+// migrate via InitializeAsync. Modules are independent, so ordering is not significant.
 using (var scope = app.Services.CreateScope())
 {
     await IdentityModule.SeedAsync(scope.ServiceProvider);
+    await CatalogModule.InitializeAsync(scope.ServiceProvider);
+    await NotificationsModule.InitializeAsync(scope.ServiceProvider);
 }
 
 // Health probes (P1-07-BE-2) — mapped BEFORE auth, rate limiting, and error/auth-logging middleware so
