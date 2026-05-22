@@ -1,4 +1,5 @@
 using Learnexia.Modules.Identity.Api.Bases;
+using Learnexia.Modules.Identity.Application.Features.Family.Commands.AddChild;
 using Learnexia.Modules.Identity.Application.Features.Family.Commands.LinkChild;
 using Learnexia.Modules.Identity.Application.Features.Family.Queries.ListMyChildren;
 using Learnexia.Shared.Kernel.Responses;
@@ -20,6 +21,13 @@ namespace Learnexia.Modules.Identity.Api.Controllers;
 [ApiController]
 public class ParentController : AppControllerBase
 {
+    // Parent provisions a new child (Student-role) account and is auto-linked to it. The acting
+    // parent is resolved from the JWT inside the handler — there is no ParentId/Role on the command.
+    [HttpPost("Add-Child")]
+    [ProducesResponseType(typeof(BaseResponse<AddedChildResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> AddChild([FromBody] AddChildCommand command)
+        => NewResult(await Mediator.Send(command));
+
     [HttpPost("Link-Child")]
     [ProducesResponseType(typeof(BaseResponse<LinkedChildResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> LinkChild([FromBody] LinkChildCommand command)

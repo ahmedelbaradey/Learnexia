@@ -41,6 +41,8 @@ public class UserEntityConfig : IEntityTypeConfiguration<User>
             .HasComment("Country code for mobile number");
 
         builder.Property(u => u.Nationality).HasMaxLength(100).HasComment("User's nationality");
+        builder.Property(u => u.Grade).HasComment("Child's grade level (1–6); null for non-students");
+        builder.Property(u => u.Age).HasComment("Child's age in years; null when unknown");
         builder.Property(u => u.PersonalPhotoPath).HasMaxLength(500).HasComment("File path for user's personal photo");
 
         builder.Property(u => u.RegistrationMessageIsSent)
