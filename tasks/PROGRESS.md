@@ -12,7 +12,8 @@
 - `—` — no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
-- **Wave 3:** P1-03-BE (parent onboarding & add children), P1-05-BE (role-based access control) — PR open
+- **Wave 4:** P1-09 (auth & onboarding screens, Expo + NSwag client + shared Tamagui UI primitives + Me endpoint), P1-10 (admin dashboard sign-in on shared Tamagui UI) — PR open
+- **Wave 3:** P1-03-BE (parent onboarding & add children), P1-05-BE (role-based access control) — merged
 - **Wave 2:** P1-02-BE (token refresh & sign-out), P1-04-BE (parent↔child link + family-scope authz) — merged (PR #1)
 - **Wave 1:** P1-01-BE (register parent), P1-07-BE (Docker/CI + health + jobs) — merged
 - **Wave 0:** P1-06-BE (Postgres+pgvector+Redis), P1-08-FE (design system) — merged
