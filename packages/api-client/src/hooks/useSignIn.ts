@@ -1,18 +1,20 @@
 /**
- * useSignIn — mutation example.
+ * useSignIn — mutation example (the pattern other mutations follow).
  *
- * Pattern other mutations follow: take the client from context, call an
- * endpoint, let the client unwrap the `BaseResponse` envelope (so the hook gets
- * `data` directly or a typed error), expose typed `data`/`error` to callers.
+ * Wraps the NSwag-generated `signIn` method (typed `Client.signIn`) and unwraps
+ * the `BaseResponse` envelope via `unwrapEnvelope`, returning the typed
+ * `JwtAuthResponse`. Sign-in is anonymous: the transport recognizes the
+ * Sign-In path and attaches no Authorization header (and skips 401-refresh).
  *
- * Sign-in is `skipAuth` (no Authorization header) and returns the unwrapped
- * `JwtAuthResponse`. The caller is responsible for persisting tokens via
- * `authStore.setTokens` + the token-storage abstraction.
+ * PUBLIC SIGNATURE IS STABLE — `useSignIn(): UseMutationResult<JwtAuthResponse,
+ * Error, SignInCommand>`. P1-10 (admin sign-in) consumes this; do not change it.
+ * The caller persists tokens via `authStore.setTokens`.
  */
 
 import { useMutation, type UseMutationResult } from '@tanstack/react-query';
 
-import { useApiClient } from './apiClientContext';
+import { useTypedClient } from './apiClientContext';
+import { unwrapEnvelope } from '../client/typedClient';
 import type { JwtAuthResponse, SignInCommand } from '../schemas';
 
 export function useSignIn(): UseMutationResult<
@@ -20,12 +22,9 @@ export function useSignIn(): UseMutationResult<
   Error,
   SignInCommand
 > {
-  const client = useApiClient();
+  const client = useTypedClient();
   return useMutation({
-    mutationFn: (input: SignInCommand) =>
-      client.post<JwtAuthResponse>('/api/Users/Authentication/Sign-In', {
-        body: input,
-        skipAuth: true,
-      }),
+    mutationFn: (input: SignInCommand): Promise<JwtAuthResponse> =>
+      unwrapEnvelope(client.signIn(input)) as Promise<JwtAuthResponse>,
   });
 }

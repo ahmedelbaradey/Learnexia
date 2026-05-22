@@ -1,0 +1,193 @@
+/* =========================================================================
+   Learnexia Admin Dashboard — global stylesheet.
+
+   Mirrors the design-system token surface (`design-system/colors_and_type.css`)
+   as CSS custom properties. The admin chrome is now built from Tamagui + the
+   shared `@learnexia/ui` primitives, so token COLORS are consumed via the
+   TamaguiProvider config. These `--lx-*` vars remain for the few web-only CSS
+   touches that Tamagui tokens cannot express: the `@keyframes` shimmer/banner
+   animations and the inline `transition:`/`background:` styles in the side-nav
+   drawer, error banner, and loading skeleton (Design Spec §3e/§4a/§5b). Tamagui
+   token values stay in lock-step with these.
+   ========================================================================= */
+
+/* ---- Self-hosted fonts (subset of weights used by the admin surface) ---- */
+@font-face { font-family: 'Poppins'; font-style: normal; font-weight: 400; src: url('/fonts/Poppins-Regular.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Poppins'; font-style: normal; font-weight: 500; src: url('/fonts/Poppins-Medium.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Poppins'; font-style: normal; font-weight: 600; src: url('/fonts/Poppins-SemiBold.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Poppins'; font-style: normal; font-weight: 700; src: url('/fonts/Poppins-Bold.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Poppins'; font-style: normal; font-weight: 800; src: url('/fonts/Poppins-ExtraBold.ttf') format('truetype'); font-display: swap; }
+
+@font-face { font-family: 'Cairo'; font-style: normal; font-weight: 400; src: url('/fonts/Cairo-Regular.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Cairo'; font-style: normal; font-weight: 600; src: url('/fonts/Cairo-SemiBold.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Cairo'; font-style: normal; font-weight: 700; src: url('/fonts/Cairo-Bold.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Cairo'; font-style: normal; font-weight: 800; src: url('/fonts/Cairo-ExtraBold.ttf') format('truetype'); font-display: swap; }
+
+@font-face { font-family: 'Tajawal'; font-style: normal; font-weight: 400; src: url('/fonts/Tajawal-Regular.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Tajawal'; font-style: normal; font-weight: 500; src: url('/fonts/Tajawal-Medium.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Tajawal'; font-style: normal; font-weight: 700; src: url('/fonts/Tajawal-Bold.ttf') format('truetype'); font-display: swap; }
+
+:root {
+  /* Surfaces */
+  --lx-bg: #0F172A;
+  --lx-bg-elevated: #111B33;
+  --lx-card: #1E293B;
+  --lx-card-soft: #334155;
+  --lx-overlay: rgba(15, 23, 42, 0.72);
+
+  /* Primary */
+  --lx-primary: #4F46E5;
+  --lx-primary-hover: #6366F1;
+  --lx-primary-press: #4338CA;
+  --lx-primary-soft: rgba(79, 70, 229, 0.18);
+  --lx-primary-glow: rgba(99, 102, 241, 0.45);
+
+  /* Accents / semantic */
+  --lx-accent: #F59E0B;
+  --lx-danger: #EF4444;
+  --lx-danger-soft: rgba(239, 68, 68, 0.18);
+  --lx-warning-soft: rgba(245, 158, 11, 0.18);
+  --lx-purple: #A855F7;
+  --lx-purple-soft: rgba(168, 85, 247, 0.18);
+
+  /* Text */
+  --lx-fg1: #F8FAFC;
+  --lx-fg2: #CBD5E1;
+  --lx-fg3: #94A3B8;
+  --lx-fg4: #64748B;
+
+  /* Borders */
+  --lx-border: rgba(255, 255, 255, 0.08);
+  --lx-border-strong: rgba(255, 255, 255, 0.16);
+  --lx-border-focus: #4F46E5;
+
+  /* Radii */
+  --lx-radius-sm: 8px;
+  --lx-radius-button: 16px;
+  --lx-radius-card: 20px;
+  --lx-radius-modal: 24px;
+  --lx-radius-pill: 9999px;
+
+  /* Elevation */
+  --lx-shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --lx-shadow-float: 0 8px 24px rgba(0, 0, 0, 0.25);
+  --lx-shadow-primary-glow: 0 8px 24px rgba(99, 102, 241, 0.45);
+  /* Admin-surface focus ring: tighter outer ring than the kid-facing glow
+     (Design Spec §8 note — intentional admin adjustment, applied here). */
+  --lx-focus-ring-admin: 0 0 0 2px #4F46E5, 0 0 0 6px rgba(99, 102, 241, 0.25);
+  --lx-focus-ring-error: 0 0 0 2px #EF4444, 0 0 0 4px rgba(239, 68, 68, 0.2);
+
+  /* Motion */
+  --lx-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --lx-dur-fast: 120ms;
+  --lx-dur-base: 240ms;
+
+  /* Fonts */
+  --lx-font-en-display: 'Poppins', system-ui, sans-serif;
+  --lx-font-en-body: 'Poppins', system-ui, sans-serif;
+  --lx-font-ar-display: 'Cairo', system-ui, sans-serif;
+  --lx-font-ar-body: 'Tajawal', system-ui, sans-serif;
+
+  /* Active font families — default EN; flipped via [dir="rtl"] below. */
+  --lx-font-display: var(--lx-font-en-display);
+  --lx-font-body: var(--lx-font-en-body);
+}
+
+[dir='rtl'] {
+  --lx-font-display: var(--lx-font-ar-display);
+  --lx-font-body: var(--lx-font-ar-body);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--lx-bg);
+  color: var(--lx-fg1);
+  font-family: var(--lx-font-body);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* ---- Admin keyframes (CSS-only, no Moti/Reanimated) ---- */
+
+/* Error-banner entrance: fade + slide up (Design Spec §3e). */
+@keyframes lx-banner-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading-skeleton shimmer sweep (Design Spec §5b). */
+@keyframes lx-shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+/* ---- Side-nav responsive drawer (Design Spec §4a + Gap 2) ----
+   Web-only breakpoint mechanics for the Tamagui `<nav className="lx-side-nav">`.
+   Colors/width/layout are set via Tamagui tokens on the element itself; only the
+   fixed-drawer-vs-static-column switch + the locale-aware slide live here, since
+   `position: fixed/sticky` and breakpoint-switched positioning are not
+   expressible through Tamagui's RN-style typed props. */
+
+.lx-side-nav {
+  min-height: 100vh;
+  border-inline-end: 1px solid var(--lx-border);
+}
+
+/* Below the laptop breakpoint: fixed off-screen drawer that slides in. */
+@media (max-width: 1023px) {
+  .lx-side-nav {
+    position: fixed;
+    inset-block: 0;
+    inset-inline-start: 0;
+    transform: translateX(-100%);
+    transition: transform var(--lx-dur-base) var(--lx-ease-out);
+  }
+  .lx-side-nav[data-rtl='true'] {
+    inset-inline-start: auto;
+    inset-inline-end: 0;
+    transform: translateX(100%);
+  }
+  .lx-side-nav.is-open {
+    transform: translateX(0);
+  }
+
+  .lx-nav-backdrop {
+    position: fixed;
+    inset: 0;
+  }
+}
+
+/* Laptop+: static column, no drawer/backdrop. */
+@media (min-width: 1024px) {
+  .lx-side-nav {
+    position: relative;
+    transform: none;
+  }
+  .lx-nav-backdrop {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

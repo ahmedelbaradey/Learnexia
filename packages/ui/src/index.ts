@@ -28,3 +28,26 @@ export type { AITutorBubbleProps, AITutorVariant } from './components/AITutorBub
 
 export { RewardPopup } from './components/RewardPopup';
 export type { RewardPopupProps, RewardVariant } from './components/RewardPopup';
+
+// --- P1-09 form + onboarding primitives ---------------------------------
+export { TextField, FormField } from './components/TextField';
+export type { TextFieldProps } from './components/TextField';
+
+export { Select, GradePicker, LanguageSelect } from './components/Select';
+export type {
+  SelectProps,
+  SelectOption,
+  SelectValue,
+  GradePickerProps,
+  LanguageSelectProps,
+} from './components/Select';
+
+export { ProgressSteps } from './components/ProgressSteps';
+export type { ProgressStepsProps } from './components/ProgressSteps';
+
+export { ChildCard } from './components/ChildCard';
+export type {
+  ChildCardProps,
+  ChildCardVariant,
+  ChildCardChild,
+} from './components/ChildCard';

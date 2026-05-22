@@ -54,7 +54,7 @@ learnexia/
 |---|---|
 | `design-system` | Tamagui `createTamagui()` config: colors (`#4F46E5` primary, `#22C55E` success, `#F59E0B` reward, `#EF4444` danger, `#A855F7` badge; bg `#0F172A`, card `#1E293B`), spacing 4–48, radius 8/16/20/24, shadows/glow, fonts (Poppins / Cairo / Tajawal), media queries (`sm`, `tablet`=768, `laptop`=1024), light + dark themes |
 | `ui` | Universal Tamagui components: `Button`, `Card`, `XPBar`, `Hearts`, `StreakFlame`, `Badge`, `AITutorBubble`, `RewardPopup`, `SkillNode`, `LessonCard`, `QuizCard`. Naming `Component/Category/Variant` |
-| `api-client` | Typed client to the .NET API; generated types from Swagger v2 (NSwag/openapi-typescript); `BaseResponse<T>` / `PaginatedResult<T>` envelope handling; JWT attach + refresh interceptor; TanStack Query hooks |
+| `api-client` | Typed client to the .NET API; **NSwag** generates a full typed Fetch client (DTOs + method per endpoint) from the committed Swagger v2 snapshot (`refresh:swagger` → `gen:api`); `BaseResponse<T>` / `PaginatedResult<T>` envelope handling; JWT attach + single-flight refresh interceptor; TanStack Query hooks wrap the generated methods through the transport |
 | `shared` | Domain types (Subject/Unit/Lesson/Concept/Skill, Attempt, StudentAnswer…), constants (`Roles`, grades 1–6, **4 subjects**), zod schemas, i18n resources (ar/en) + RTL helpers, Zustand stores (`authStore`, `childContextStore`), utils |
 
 ## 5. App responsibilities
@@ -86,6 +86,14 @@ learnexia/
 - **No server data in Zustand** — that's TanStack Query's job.
 - **Imports** use workspace aliases (`@learnexia/ui`, `@learnexia/api-client`, …).
 - Components follow `Component/Category/Variant`; screens are Expo Router route files.
+- **API client generation standard:** **NSwag** is the generator for `api-client`
+  (config in `packages/api-client/nswag.json`). Flow: `refresh:swagger` pulls the
+  Swagger v2 snapshot from the running backend → `gen:api` runs NSwag to emit
+  `src/generated/nswag-client.ts` (typed `Client` + DTO interfaces) → hooks wrap
+  the generated methods via `createTypedClient` + `unwrapEnvelope`, reusing the
+  single-flight 401-refresh transport. This **supersedes** the earlier
+  `openapi-typescript` types-only approach. The generated client is committed; do
+  not hand-edit `src/generated/**`.
 
 ## 9. Open questions
 

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 64" width="240" height="64">
+  <defs>
+    <linearGradient id="lxg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6366F1"></stop>
+      <stop offset="1" stop-color="#A855F7"></stop>
+    </linearGradient>
+  </defs>
+  
+  <g transform="translate(8,8)">
+    <rect x="0" y="0" width="48" height="48" rx="14" fill="url(#lxg)"></rect>
+    <path d="M24 9 L27.8 20.2 L39 24 L27.8 27.8 L24 39 L20.2 27.8 L9 24 L20.2 20.2 Z" fill="#FACC15"></path>
+    <circle cx="24" cy="24" r="3" fill="#FFFFFF"></circle>
+  </g>
+  
+  <text x="68" y="42" font-family="Poppins, system-ui, sans-serif" font-weight="800" font-size="26" fill="#F8FAFC" letter-spacing="-0.5">
+    Learn<tspan fill="#FACC15">e</tspan>xia
+  </text>
+</svg>

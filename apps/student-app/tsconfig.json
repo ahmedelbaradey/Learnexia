@@ -1,0 +1,31 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    // Match the monorepo packages (which expose `exports` subpaths like
+    // `@learnexia/shared/i18n`). Expo's base uses classic `node` resolution,
+    // which cannot resolve package `exports` subpaths — use `bundler`
+    // (Metro is a bundler) so subpath imports type-check correctly.
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "app",
+    "src",
+    "types",
+    "*.ts",
+    "*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ],
+  "exclude": ["node_modules", ".expo", "dist", ".turbo"]
+}
