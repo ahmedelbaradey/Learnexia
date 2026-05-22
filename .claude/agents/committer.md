@@ -39,10 +39,37 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>
 - `type` ∈ `feat | fix | chore | docs | refactor | test`; `scope` = module or story area (e.g. `gamification`, `identity`).
 - One commit per reviewer-approved logical batch. Don't bundle unrelated changes.
 
+## Opening the wave Pull Request (when the lead asks)
+The integration model is **one PR per wave**. Per-story commits stay local (no push). When the lead invokes you to **open the wave PR** (after every story in the wave is merged into the wave branch `feat/wave-<N>` and the build/tests are green), you ARE explicitly authorized to push and open a PR:
+1. Confirm you are on the wave branch and it contains all the wave's story merges; `git status` clean.
+2. `git push -u origin feat/wave-<N>` (Git Credential Manager supplies auth). Never force-push.
+3. Open the PR with `gh pr create --base main --head feat/wave-<N>` and a **proper description** using this body template:
+   ```
+   ## Wave <N> — <theme>
+
+   Bundles these stories (each pipeline: analyzer→…→reviewer PASS):
+   - **<StoryID> (<stack>)** — <one-line summary>. Commit `<hash>`.
+   - …
+
+   ### Acceptance criteria
+   - <StoryID>: <which AC met, mapped to tests>
+
+   ### Tests
+   - <build status>; <integration suite N/N green>; api-tester / security-auditor outcomes.
+
+   ### Follow-up debt (non-blocking)
+   - <items deferred>
+
+   🤖 Generated with [Claude Code](https://claude.com/claude-code)
+   ```
+   Title: `Wave <N>: <StoryIDs> — <short theme>`.
+4. **Do NOT merge the PR** — the lead/user reviews and merges on GitHub. Report the PR URL.
+- If `gh` is unavailable or unauthenticated, **stop and report** (don't guess): push the branch and return the compare URL `https://github.com/<owner>/<repo>/compare/main...feat/wave-<N>?expand=1` plus the prepared description so the lead can open it manually.
+
 ## Hard rules
-- **Never** `--amend`, `push`, `--force`/`--force-with-lease`, `--no-verify`, or skip/bypass hooks **unless the lead explicitly asks**.
+- **Never** `--amend`, `--force`/`--force-with-lease`, `--no-verify`, or skip/bypass hooks **unless the lead explicitly asks**.
+- **Pushing** is allowed ONLY as part of the wave-PR step above (or when explicitly told). Never force-push. Never merge a PR yourself.
 - If a pre-commit/commit hook fails, **stop and report the failure** — never bypass it.
-- Pushing is **not** part of your job by default; only push if explicitly told, and never force-push.
 
 ## Definition of done (report back)
 - Branch name, commit hash + first line, file count committed.
