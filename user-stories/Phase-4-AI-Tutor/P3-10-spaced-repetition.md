@@ -1,7 +1,7 @@
 # Schedule spaced-repetition practice
 
 - **Project:** Learnexia
-- **Sprint / Phase:** Phase 3 — AI Tutor (Week 5–6)
+- **Sprint / Phase:** Phase 4 — AI Tutor (Week 6–7)
 - **Epic:** Adaptivity & Student Modeling
 - **Issue type:** Story
 - **Story Points:** 3 — scheduler over mastery data + a background job; moderate logic.

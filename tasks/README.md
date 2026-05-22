@@ -19,6 +19,8 @@ tasks/
 ```
 
 > **Scope:** this tree covers **Phase 1 & 2** stories only. The barrier-to-entry stories added in Phase 3–5 — **P3-13** (adaptive student profile), **P4-09** (re-engagement notifications), **P4-10** (Redis realtime gamification), **P4-11** (streak freeze / timed events), **P5-07** (data feedback / calibration) — are **pending task breakdown** and will be decomposed when their phase trees are built. The Phase-2 story **P2-11** (skill dependency graph) is broken down here. See [../docs/briefs/barrier-to-entry-gap-analysis.md](../docs/briefs/barrier-to-entry-gap-analysis.md).
+>
+> **Phase order (resequenced):** Phase 3 = **Gamification** (`P4-xx`), Phase 4 = **AI Tutor** (`P3-xx`) — Gamification builds before AI Tutor; story IDs were kept stable so the prefix no longer equals the phase number. See [../user-stories/README.md](../user-stories/README.md).
 
 - **Frontend agent** → work under [Frontend/](Frontend/): build `packages/` first (foundation + design-system/ui), then `student-app/` screens.
 - **Backend agent** → work only under [Backend/](Backend/).

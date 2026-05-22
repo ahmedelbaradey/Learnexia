@@ -345,7 +345,7 @@ erDiagram
 | NotificationPreference / NotificationLog | Parent-controlled per-child re-engagement settings + send/open audit (FR-GM-8) | per ParentStudent; feeds analytics |
 | QuestionDifficultyStat | Aggregated empirical difficulty + quality flags driving calibration (FR-PA-4) | per QuizQuestion; de-identified aggregate |
 
-> **(assumption)** Integer surrogate keys are used to match the existing Identity module (int keys). `EmbeddingVectorRef` maps to a **pgvector** column in **PostgreSQL** (confirmed DB). The knowledge graph is relational here (Phase 2 explicit), migrating to a graph DB (Neo4j/LightRAG) only in Phase 3+.
+> **(assumption)** Integer surrogate keys are used to match the existing Identity module (int keys). `EmbeddingVectorRef` maps to a **pgvector** column in **PostgreSQL** (confirmed DB). The knowledge graph is relational here (Phase 2 explicit), migrating to a graph DB (Neo4j/LightRAG) only **post-MVP** (Curriculum-Intelligence backlog).
 
 ## 7. Reconciliation with Existing backend
 

@@ -1,7 +1,7 @@
 # Serve adaptive quizzes
 
 - **Project:** Learnexia
-- **Sprint / Phase:** Phase 3 — AI Tutor (Week 5–6)
+- **Sprint / Phase:** Phase 4 — AI Tutor (Week 6–7)
 - **Epic:** Assessment Module
 - **Issue type:** Story
 - **Story Points:** 3 — selection hook joining quiz engine to adaptivity; moderate integration.

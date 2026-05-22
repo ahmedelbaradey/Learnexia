@@ -51,7 +51,22 @@
 | P2-09 | See the home dashboard | 🔲 | 🔲 |
 | P2-10 | Seed demo subjects & skill trees | 🔲 | — |
 
-## Phase 3 — AI Tutor
+## Phase 3 — Gamification *(story IDs `P4-xx`)*
+| Story | Title | Status |
+|---|---|:--:|
+| P4-01 | Emit learning domain events | ✅ |
+| P4-02 | Earn XP and level up | 🔲 |
+| P4-03 | Maintain a daily streak | 🔲 |
+| P4-04 | Lose hearts and enter Practice Mode | 🔲 |
+| P4-05 | Earn badges | 🔲 |
+| P4-06 | Complete daily/weekly missions | 🔲 |
+| P4-07 | Compete in weekly leagues | 🔲 |
+| P4-08 | Gamification screens & motion | 🔲 |
+| P4-09 | Re-engagement notifications | 🔲 |
+| P4-10 | Redis realtime gamification state | 🔲 |
+| P4-11 | Streak freeze, timed events & weekly challenges | 🔲 |
+
+## Phase 4 — AI Tutor *(story IDs `P3-xx`)*
 | Story | Title | Status |
 |---|---|:--:|
 | P3-01 | Route AI requests through an AI Gateway | 🔲 |
@@ -66,18 +81,7 @@
 | P3-10 | Schedule spaced-repetition practice | 🔲 |
 | P3-11 | Serve adaptive quizzes | 🔲 |
 | P3-12 | Interact with the AI tutor UI | 🔲 |
-
-## Phase 4 — Gamification
-| Story | Title | Status |
-|---|---|:--:|
-| P4-01 | Emit learning domain events | ✅ |
-| P4-02 | Earn XP and level up | 🔲 |
-| P4-03 | Maintain a daily streak | 🔲 |
-| P4-04 | Lose hearts and enter Practice Mode | 🔲 |
-| P4-05 | Earn badges | 🔲 |
-| P4-06 | Complete daily/weekly missions | 🔲 |
-| P4-07 | Compete in weekly leagues | 🔲 |
-| P4-08 | Gamification screens & motion | 🔲 |
+| P3-13 | Build the adaptive student profile | 🔲 |
 
 ## Phase 5 — Parent + Analytics
 | Story | Title | Status |

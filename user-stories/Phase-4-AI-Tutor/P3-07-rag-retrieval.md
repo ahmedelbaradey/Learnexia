@@ -1,7 +1,7 @@
 # Retrieve curriculum context via vector search
 
 - **Project:** Learnexia
-- **Sprint / Phase:** Phase 3 — AI Tutor (Week 5–6)
+- **Sprint / Phase:** Phase 4 — AI Tutor (Week 6–7)
 - **Epic:** RAG Retrieval
 - **Issue type:** Story
 - **Story Points:** 5 — embeddings + pgvector query + grade/subject/weak-area filtering; quality-sensitive.

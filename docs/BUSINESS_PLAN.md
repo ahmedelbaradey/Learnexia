@@ -24,8 +24,8 @@ Build and launch the Learnexia MVP — an AI-tutored, gamified, adaptive learnin
 graph LR
     P1["Phase 1 · Wk1-2<br/>Foundation<br/>auth, users, DB, design system"]
     P2["Phase 2 · Wk3-4<br/>Learning Core<br/>subjects, lessons, skill tree, quiz"]
-    P3["Phase 3 · Wk5-6<br/>AI Tutor<br/>prompt builder, RAG, hints"]
-    P4["Phase 4 · Wk7<br/>Gamification<br/>XP, streaks, badges, missions"]
+    P3["Phase 3 · Wk5<br/>Gamification<br/>XP, streaks, badges, missions"]
+    P4["Phase 4 · Wk6-7<br/>AI Tutor<br/>prompt builder, RAG, hints"]
     P5["Phase 5 · Wk8<br/>Parent + Analytics"]
     P6["Phase 6 · Wk9<br/>Stabilization<br/>testing, perf, prompt tuning"]
     P1 --> P2 --> P3 --> P4 --> P5 --> P6
@@ -101,7 +101,7 @@ From [info/Learnexia_OpenSource_Architecture_Repos.md](../info/Learnexia_OpenSou
 |---|---|
 | 1 Foundation | A user can register/login; design system + auth screens live; DB provisioned |
 | 2 Learning Core | A student can browse subjects, open a lesson, navigate a skill tree, take a quiz |
-| 3 AI Tutor | The tutor explains/ hints/ generates questions grounded in curriculum, behind the safety layer |
-| 4 Gamification | XP/streaks/badges/missions fire on learning events and are visible in UI |
+| 3 Gamification | XP/streaks/badges/missions fire on learning events and are visible in UI |
+| 4 AI Tutor | The tutor explains/ hints/ generates questions grounded in curriculum, behind the safety layer |
 | 5 Parent + Analytics | A parent sees a weekly report with weak areas; KPI events are captured |
 | 6 Stabilization | Performance targets met (NFR-1), prompts tuned, critical bugs cleared → launch-ready |

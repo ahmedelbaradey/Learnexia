@@ -1,7 +1,7 @@
 # Streak freeze, timed events & weekly challenges
 
 - **Project:** Learnexia
-- **Sprint / Phase:** Phase 4 — Gamification (Week 7)
+- **Sprint / Phase:** Phase 3 — Gamification (Week 5)
 - **Epic:** Gamification Module
 - **Issue type:** Story
 - **Story Points:** 5 — streak-freeze item + recurring timed events / weekly challenges layered on missions & leagues.

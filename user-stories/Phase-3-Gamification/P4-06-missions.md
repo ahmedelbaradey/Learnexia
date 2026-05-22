@@ -1,7 +1,7 @@
 # Complete daily/weekly missions
 
 - **Project:** Learnexia
-- **Sprint / Phase:** Phase 4 — Gamification (Week 7)
+- **Sprint / Phase:** Phase 3 — Gamification (Week 5)
 - **Epic:** Gamification Module
 - **Issue type:** Story
 - **Story Points:** 3 — mission definitions + per-student progress tracking + reward grant.

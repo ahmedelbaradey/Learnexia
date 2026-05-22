@@ -47,7 +47,7 @@ Before fanning out, for each candidate pair ask:
 If any box is unchecked → **serialize them.**
 
 ## Current critical path
-**P4-01 (domain-events backbone) is a serializer.** P4-02…P4-08 all consume the event backbone + `UnitOfWorkBehavior` it introduces, so **nothing in Phase 4 parallelizes with P4-01** — it must land and merge first. After P4-01 merges, independent siblings (e.g. P4-02 XP ∥ P4-05 badges) can run in parallel worktrees. Phase 1/2 independent stories can likewise parallelize among themselves once their shared foundation (P1-06 DB, P1-08 design-system, the monorepo skeleton) is in.
+**P4-01 (domain-events backbone) is a serializer.** P4-02…P4-08 all consume the event backbone + `UnitOfWorkBehavior` it introduces, so **nothing in Phase 3 (Gamification, `P4-xx`) parallelizes with P4-01** — it must land and merge first. After P4-01 merges, independent siblings (e.g. P4-02 XP ∥ P4-05 badges) can run in parallel worktrees. Phase 1/2 independent stories can likewise parallelize among themselves once their shared foundation (P1-06 DB, P1-08 design-system, the monorepo skeleton) is in.
 
 ## Integration hygiene
 - Merge order = dependency order; rebase a worktree branch on the latest `main` before merging if `main` moved.

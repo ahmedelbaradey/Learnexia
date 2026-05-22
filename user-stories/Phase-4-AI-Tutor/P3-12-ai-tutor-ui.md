@@ -1,7 +1,7 @@
 # Interact with the AI tutor UI
 
 - **Project:** Learnexia
-- **Sprint / Phase:** Phase 3 — AI Tutor (Week 5–6)
+- **Sprint / Phase:** Phase 4 — AI Tutor (Week 6–7)
 - **Epic:** AI Tutor UI
 - **Issue type:** Story
 - **Story Points:** 5 — chat/explanation UI with streaming + hint bubbles + simplify flow.

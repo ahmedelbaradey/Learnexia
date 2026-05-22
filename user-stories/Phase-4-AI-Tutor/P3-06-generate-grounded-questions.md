@@ -1,7 +1,7 @@
 # Generate curriculum-grounded questions (RAG)
 
 - **Project:** Learnexia
-- **Sprint / Phase:** Phase 3 — AI Tutor (Week 5–6)
+- **Sprint / Phase:** Phase 4 — AI Tutor (Week 6–7)
 - **Epic:** Prompt Builder & Tutor
 - **Issue type:** Story
 - **Story Points:** 5 — generation grounded in retrieval + validity checks + mapping to quiz schema.
