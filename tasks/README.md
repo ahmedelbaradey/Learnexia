@@ -79,6 +79,7 @@ tasks/
 | P2-10 | Seed demo data | — | [BE](Backend/Phase-2-Learning-Core/P2-10-BE.md) |
 | P2-11 | Author the skill dependency graph *(barrier-to-entry BE1)* | — | [BE](Backend/Phase-2-Learning-Core/P2-11-BE.md) |
 | P2-12 | Parent account settings tabs *(carved from P1-11)* | [FE](Frontend/student-app/Phase-2-Learning-Core/P2-12-FE.md) | [BE](Backend/Phase-2-Learning-Core/P2-12-BE.md) |
+| P5-05 | Parent dashboard charts + wire real analytics *(charts carved from P1-11)* | [FE](Frontend/student-app/Phase-5-Parent-Analytics/P5-05-FE.md) | — |
 
 ### Phase 7 — Admin Console *(post-MVP)*
 
