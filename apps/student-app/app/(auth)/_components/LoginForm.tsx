@@ -1,24 +1,41 @@
 /**
- * LoginForm — shared parent + child sign-in (Design Spec Screen 3).
+ * LoginForm — shared parent + child sign-in (Design Spec Screen 2, P1-11).
  *
  * react-hook-form + zod (`signInSchema`). Posts via `useSignIn`; on success
  * persists tokens then routes to `/` (splash), where the routing guard reads
  * `Me` and redirects by role (parent → onboarding/dashboard; student → child
  * home in the child's language). Invalid credentials show a generic banner (no
  * field-level reveal). RTL-aware.
+ *
+ * P1-11 additions (re-skin around the same wiring): a Parent/Student persona
+ * toggle (UI-only hint — does NOT enable student self-register), a "Remember me"
+ * checkbox, a "Forgot password?" link, an "OR CONTINUE WITH" divider, and
+ * Google/Apple/Microsoft social buttons. The persona, remember-me, and social
+ * buttons are UI-only placeholders wired to no-op TODO handlers (no faked auth)
+ * until the corresponding backend stories land. The auth mutation, error
+ * mapping, token persistence and routing are unchanged.
  */
 import { useSignIn } from '@learnexia/api-client';
-import { signInSchema, useAuthStore, type SignInFormValues } from '@learnexia/shared';
+import {
+  LOGIN_PERSONAS,
+  signInSchema,
+  useAuthStore,
+  type LoginPersona,
+  type SignInFormValues,
+} from '@learnexia/shared';
 import { Button, TextField } from '@learnexia/ui';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Stack } from '@tamagui/core';
+import { Stack, Text } from '@tamagui/core';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import { ServerErrorBanner } from '../../../src/components/ServerErrorBanner';
 import { useLocale } from '../../../src/hooks/useLocale';
 import { useServerError } from '../../../src/hooks/useServerError';
+import { Checkbox, OrDivider, SocialButton, SocialRow } from './loginParts';
+import { PersonaToggle } from './PersonaToggle';
 
 export function LoginForm() {
   const { t } = useTranslation();
@@ -27,6 +44,10 @@ export function LoginForm() {
   const setTokens = useAuthStore((s) => s.setTokens);
   const signIn = useSignIn();
   const resolveError = useServerError();
+
+  // UI-only client state (NOT server data → local component state, not Zustand).
+  const [persona, setPersona] = useState<LoginPersona>(LOGIN_PERSONAS.Parent);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const { control, handleSubmit, formState } = useForm<SignInFormValues>({
     resolver: zodResolver(signInSchema),
@@ -61,8 +82,29 @@ export function LoginForm() {
 
   const disabled = signIn.isPending;
 
+  // Social auth is UI-only until the OAuth story lands — no faked auth.
+  const handleSocial = (provider: string) => {
+    // TODO(P-OAuth): wire `provider` to the OAuth flow once the backend exists.
+    void provider;
+  };
+
+  const handleForgotPassword = () => {
+    // TODO(P-ForgotPassword): route to the forgot-password screen once it exists.
+  };
+
   return (
     <Stack gap="$4">
+      <PersonaToggle
+        value={persona}
+        onChange={setPersona}
+        labelFor={(p) =>
+          p === LOGIN_PERSONAS.Parent ? t('auth.login.personaParent') : t('auth.login.personaStudent')
+        }
+        accessibilityLabel={t('auth.login.personaToggleLabel')}
+        direction={direction}
+        disabled={disabled}
+      />
+
       <Controller
         control={control}
         name="userName"
@@ -97,6 +139,37 @@ export function LoginForm() {
         )}
       />
 
+      {/* Remember me + Forgot password row */}
+      <Stack
+        flexDirection={direction === 'rtl' ? 'row-reverse' : 'row'}
+        alignItems="center"
+        justifyContent="space-between"
+        flexWrap="wrap"
+        gap="$2"
+      >
+        <Checkbox
+          checked={rememberMe}
+          onChange={setRememberMe}
+          label={t('auth.login.rememberMe')}
+          direction={direction}
+          disabled={disabled}
+        />
+        <Text
+          color="$primaryLight"
+          fontSize={14}
+          fontWeight="600"
+          fontFamily="$body"
+          cursor="pointer"
+          onPress={handleForgotPassword}
+          accessibilityRole="link"
+          accessibilityLabel={t('auth.login.forgotPassword')}
+          aria-label={t('auth.login.forgotPassword')}
+          writingDirection={direction}
+        >
+          {t('auth.login.forgotPassword')}
+        </Text>
+      </Stack>
+
       <ServerErrorBanner message={serverMessage} direction={direction} />
 
       <Button
@@ -109,6 +182,49 @@ export function LoginForm() {
       >
         {t('auth.login.submitButton')}
       </Button>
+
+      {/* OR divider — "Or" on phones, "Or continue with" on tablet+. */}
+      <Stack $tablet={{ display: 'none' }}>
+        <OrDivider label={t('auth.login.orDivider')} direction={direction} />
+      </Stack>
+      <Stack display="none" $tablet={{ display: 'flex' }}>
+        <OrDivider label={t('auth.login.orContinueWith')} direction={direction} />
+      </Stack>
+
+      {/* Social buttons — Google + Apple on all sizes; Microsoft on tablet+. */}
+      <SocialRow direction={direction}>
+        <SocialButton
+          label={t('auth.login.socialGoogle')}
+          glyph={SOCIAL_GLYPH_GOOGLE}
+          onPress={() => handleSocial(SOCIAL_GOOGLE)}
+          direction={direction}
+        />
+        <SocialButton
+          label={t('auth.login.socialApple')}
+          glyph={SOCIAL_GLYPH_APPLE}
+          onPress={() => handleSocial(SOCIAL_APPLE)}
+          direction={direction}
+        />
+        <Stack display="none" flex={1} $tablet={{ display: 'flex' }}>
+          <SocialButton
+            label={t('auth.login.socialMicrosoft')}
+            glyph={SOCIAL_GLYPH_MICROSOFT}
+            onPress={() => handleSocial(SOCIAL_MICROSOFT)}
+            direction={direction}
+          />
+        </Stack>
+      </SocialRow>
     </Stack>
   );
 }
+
+// Non-user-facing technical identifiers for the no-op social handlers.
+const SOCIAL_GOOGLE = 'google';
+const SOCIAL_APPLE = 'apple';
+const SOCIAL_MICROSOFT = 'microsoft';
+
+// Decorative brand glyphs (icon stand-ins until brand SVGs are sourced —
+// `accessibilityElementsHidden` in SocialButton, so not user-facing copy).
+const SOCIAL_GLYPH_GOOGLE = 'G';
+const SOCIAL_GLYPH_APPLE = '🍎'; // apple emoji stand-in for the Apple logo
+const SOCIAL_GLYPH_MICROSOFT = '⊞'; // squared-plus (window grid stand-in)
