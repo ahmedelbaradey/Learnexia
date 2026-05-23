@@ -1,4 +1,4 @@
-﻿# Learnexia — Build Progress Tracker
+# Learnexia — Build Progress Tracker
 
 > Single source of truth for **what's done vs. not** across the whole backlog.
 > Maintained automatically: the **`committer` agent updates this file on every commit** (flips the row for the story it just committed). The lead may also reconcile it after merges.
@@ -12,6 +12,7 @@
 - `—` — no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
+- **Wave 5:** P2-01-BE (model curriculum hierarchy, 6 entities, CQRS vertical slices, 30 endpoints) — committed
 - **Wave 4:** P1-09 (auth & onboarding screens, Expo + NSwag client + shared Tamagui UI primitives + Me endpoint), P1-10 (admin dashboard sign-in on shared Tamagui UI) — PR open
 - **Wave 3:** P1-03-BE (parent onboarding & add children), P1-05-BE (role-based access control) — merged
 - **Wave 2:** P1-02-BE (token refresh & sign-out), P1-04-BE (parent↔child link + family-scope authz) — merged (PR #1)
@@ -40,7 +41,7 @@
 ## Phase 2 — Learning Core
 | Story | Title | Backend | Frontend |
 |---|---|:--:|:--:|
-| P2-01 | Model the curriculum hierarchy | 🔲 | — |
+| P2-01 | Model the curriculum hierarchy | ✅ | — |
 | P2-02 | Browse subjects and lessons | 🔲 | 🔲 |
 | P2-03 | Navigate the skill tree | 🔲 | 🔲 |
 | P2-04 | Unlock lessons by prerequisite/mastery | 🔲 | — |
@@ -102,6 +103,22 @@
 | P6-04 | Regression, prompt-tuning & bug triage | 🔲 |
 | P6-05 | Observability: logging, tracing, dashboards | 🔲 |
 
+## Phase 7 — Admin Console *(post-MVP)*
+| Story | Title | Backend | Frontend |
+|---|---|:--:|:--:|
+| P7-01 | Manage subjects & units | 🔲 | 🔲 |
+| P7-02 | Manage lessons & lesson content | 🔲 | 🔲 |
+| P7-03 | Author skills & the skill dependency graph | 🔲 | 🔲 |
+| P7-04 | Manage quizzes & questions | 🔲 | 🔲 |
+| P7-05 | Publish, version & preview curriculum content | 🔲 | 🔲 |
+| P7-06 | Search & inspect users | 🔲 | 🔲 |
+| P7-07 | Suspend, reactivate & delete accounts | 🔲 | 🔲 |
+| P7-08 | Manage child profiles & grade overrides | 🔲 | 🔲 |
+| P7-09 | Content moderation queue & review actions | 🔲 | 🔲 |
+| P7-10 | Platform analytics & KPI dashboard | 🔲 | 🔲 |
+| P7-11 | AI-safety & quality monitoring dashboard | 🔲 | 🔲 |
+| P7-12 | Admin action audit log | 🔲 | 🔲 |
+
 ## Backlog (Phase 2+) — Curriculum Intelligence
 | Story | Title | Status |
 |---|---|:--:|
@@ -120,4 +137,3 @@
 - Container non-root image, CI action SHA-pinning, staging TLS cert — P1-07
 - Tokenize inline glow/alpha shades in components — P1-08
 - **Open decision:** staging deploy provider (Azure / Railway / Render) — see `docs/deploy/staging-decision.md`
-

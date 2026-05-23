@@ -26,6 +26,22 @@ export type Role = (typeof ROLES)[keyof typeof ROLES];
 
 export const ALL_ROLES: readonly Role[] = Object.values(ROLES);
 
+/**
+ * Login persona — which kind of account the user is signing in as on the shared
+ * login screen. This is a UI-only hint for the login form (e.g. autofill /
+ * future routing); it does NOT enable student self-registration (parent-driven
+ * onboarding stands). Fixed value set → enum-style const, never a raw literal.
+ */
+export const LOGIN_PERSONAS = {
+  Parent: 'parent',
+  Student: 'student',
+} as const;
+
+export type LoginPersona = (typeof LOGIN_PERSONAS)[keyof typeof LOGIN_PERSONAS];
+
+export const ALL_LOGIN_PERSONAS: readonly LoginPersona[] =
+  Object.values(LOGIN_PERSONAS);
+
 /* ------------------------------------------------------------------ */
 /* Grades                                                              */
 /* ------------------------------------------------------------------ */
@@ -67,3 +83,33 @@ export const DEFAULT_LOCALE: Locale = 'ar';
 
 /** Locales that render right-to-left. */
 export const RTL_LOCALES: readonly Locale[] = ['ar'];
+
+/* ------------------------------------------------------------------ */
+/* Countries — parent registration / add-child country picker.         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Supported countries (ISO 3166-1 alpha-2) with bilingual display names.
+ * These are data (proper nouns), not UI copy, so the localized labels live here
+ * as an `as const` map rather than i18n keys — the picker resolves the label
+ * for the active locale. Ordered Arabic-market-first to match the audience.
+ */
+export const COUNTRIES = [
+  { code: 'SA', en: 'Saudi Arabia', ar: 'السعودية' },
+  { code: 'EG', en: 'Egypt', ar: 'مصر' },
+  { code: 'AE', en: 'United Arab Emirates', ar: 'الإمارات العربية المتحدة' },
+  { code: 'KW', en: 'Kuwait', ar: 'الكويت' },
+  { code: 'QA', en: 'Qatar', ar: 'قطر' },
+  { code: 'BH', en: 'Bahrain', ar: 'البحرين' },
+  { code: 'OM', en: 'Oman', ar: 'عُمان' },
+  { code: 'JO', en: 'Jordan', ar: 'الأردن' },
+  { code: 'LB', en: 'Lebanon', ar: 'لبنان' },
+  { code: 'IQ', en: 'Iraq', ar: 'العراق' },
+  { code: 'MA', en: 'Morocco', ar: 'المغرب' },
+  { code: 'DZ', en: 'Algeria', ar: 'الجزائر' },
+  { code: 'TN', en: 'Tunisia', ar: 'تونس' },
+  { code: 'US', en: 'United States', ar: 'الولايات المتحدة' },
+  { code: 'GB', en: 'United Kingdom', ar: 'المملكة المتحدة' },
+] as const;
+
+export type CountryCode = (typeof COUNTRIES)[number]['code'];

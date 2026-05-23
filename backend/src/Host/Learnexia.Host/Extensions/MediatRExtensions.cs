@@ -28,6 +28,7 @@ public static class MediatRExtensions
             // assemblies here (e.g. Gamification) as they come online.
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Identity.Application.AssemblyReference>();
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Catalog.Application.AssemblyReference>();
+            cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Learning.Application.AssemblyReference>();
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Notifications.Application.AssemblyReference>();
 
             // Independent fan-out: every handler runs, per-handler failures are caught + logged

@@ -26,6 +26,7 @@ These intentional decisions diverge from the source docs; each affected story re
 | `Phase-4-AI-Tutor` | P4 | 6–7 | Prompt builder, RAG, hints, adaptivity *(story IDs `P3-xx`)* | Tutor explains/hints/generates questions, grounded + behind safety layer |
 | `Phase-5-Parent-Analytics` | P5 | 8 | Weekly reports, weak areas, KPIs, parent dashboard | A parent sees a weekly report with weak areas; KPI events captured |
 | `Phase-6-Stabilization` | P6 | 9 | Testing, perf, prompt tuning, observability | NFR-1 perf met, prompts tuned, critical bugs cleared → launch-ready |
+| `Phase-7-Admin-Console` | P7 | post-MVP | Admin console: curriculum mgmt, user/account mgmt, moderation, analytics/AI oversight | Admins can manage curriculum, users, moderate content, and view platform + AI-safety dashboards |
 | `Backlog-Phase-2-Plus` | post-MVP | — | Curriculum Intelligence (ingestion, KG, RAG at scale) | Deferred; data model designed in MVP |
 
 ## How to load into Jira
@@ -113,6 +114,21 @@ These intentional decisions diverge from the source docs; each affected story re
 - P6-03 Pass localization & RTL review
 - P6-04 Regression, prompt-tuning & bug triage
 - P6-05 Observability: logging, tracing, dashboards
+
+### Phase 7 — Admin Console *(post-MVP / ongoing)*
+*The admin feature set behind the P1-10 dashboard shell — curriculum management, user/account management, content moderation, and analytics/AI oversight. Admin-only per SRS §3; no teacher role.*
+- P7-01 Manage subjects & units
+- P7-02 Manage lessons & lesson content
+- P7-03 Author skills & the skill dependency graph *(admin UI over P2-11)*
+- P7-04 Manage quizzes & questions
+- P7-05 Publish, version & preview curriculum content
+- P7-06 Search & inspect users (parents + children)
+- P7-07 Suspend, reactivate & delete accounts
+- P7-08 Manage child profiles & grade overrides
+- P7-09 Content moderation queue & review actions
+- P7-10 Platform analytics & KPI dashboard
+- P7-11 AI-safety & quality monitoring dashboard
+- P7-12 Admin action audit log
 
 ### Backlog (Phase 2+) — Curriculum Intelligence
 *Three-stage pipeline: Multimodal Parsing (BL-02) → Curriculum Ingestion (BL-05) → Knowledge Graph (BL-03).*

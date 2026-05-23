@@ -28,6 +28,7 @@ AI-powered, gamified, adaptive learning platform for Arabic-speaking school stud
 - **Architecture of record:** [docs/architecture.md](docs/architecture.md)
 - **Product spec (background):** [docs/BRD.md](docs/BRD.md) · [docs/SRS.md](docs/SRS.md) · [docs/TASK_BREAKDOWN.md](docs/TASK_BREAKDOWN.md)
 - **Frontend architecture:** [docs/dev/FRONTEND_ARCHITECTURE.md](docs/dev/FRONTEND_ARCHITECTURE.md)
+- **Lead handoff (read if picking up web FE / dev env):** [docs/dev/HANDOFF.md](docs/dev/HANDOFF.md) — what's done, decisions, load-bearing config, how to run the stack, and the P1-12 Batch-2 backend backlog.
 
 ## Non-negotiable rules
 1. **Module isolation** — a module never references another module's projects. Cross-module = `Shared.Contracts` only (integration events / interface seams). No cross-module FKs.

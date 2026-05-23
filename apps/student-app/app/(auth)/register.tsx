@@ -1,40 +1,164 @@
 /**
- * Parent Register screen (Design Spec Screen 2). The ONLY registration screen —
- * no student self-register. Responsive via FormScaffold (phone full-width /
- * tablet+ centered card). Parent-trust tone, no mascot.
+ * Parent Register screen (P1-11 capture) — the ONLY registration screen (no
+ * student self-register). Web (≥768): split-panel — form column LEFT on `$bg`,
+ * `$primary` feature panel RIGHT (the mirror of Login, whose brand panel is
+ * left). Phone (≤768): the feature panel collapses to a single-column form.
+ *
+ * Left column: logo + wordmark · "STEP 1 OF 2" eyebrow + a ~50% progress bar ·
+ * "Create your parent account" heading + subtitle · a "Parent / Guardian only"
+ * info banner · the RegisterForm (full name, country, email, password, Terms,
+ * Continue → Add Children). RTL-aware; all copy via i18n.
  */
+import { type Direction } from '@learnexia/shared';
 import { Stack, Text } from '@tamagui/core';
 import { useRouter } from 'expo-router';
-import { Image } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { assets } from '../../src/assets';
 import { FormScaffold } from '../../src/components/FormScaffold';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useLocale } from '../../src/hooks/useLocale';
+import { RegisterFeaturePanel } from './_components/RegisterFeaturePanel';
 import { RegisterForm } from './_components/RegisterForm';
 
 export default function RegisterScreen() {
   const { t } = useTranslation();
   const { direction } = useLocale();
   const router = useRouter();
+  const align = direction === 'rtl' ? 'right' : 'left';
+  const rowDir = direction === 'rtl' ? 'row-reverse' : 'row';
 
   return (
     <FormScaffold
-      header={<ScreenHeader onBack={() => router.replace('/(auth)/login')} backLabel={t('auth.register.backToSignIn')} />}
+      variant="split"
+      brandSide="end"
+      brandPanel={<RegisterFeaturePanel direction={direction} />}
+      header={
+        <ScreenHeader
+          onBack={() => router.replace('/(auth)/login')}
+          backLabel={t('auth.register.backToSignIn')}
+        />
+      }
     >
       <Stack gap="$6">
-        <Stack alignItems="center" gap="$2">
-          <Image source={assets.logoMark} style={{ width: 48, height: 48, resizeMode: 'contain' }} accessibilityElementsHidden />
-          <Text color="$fg1" fontSize={28} fontWeight="800" fontFamily="$heading" textAlign="center" accessibilityRole="header" writingDirection={direction}>
+        {/* Logo + wordmark */}
+        <Stack flexDirection={rowDir} alignItems="center" gap="$3">
+          <Stack
+            width={40}
+            height={40}
+            borderRadius="$button"
+            backgroundColor="$primary"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <Text fontSize={20} accessibilityElementsHidden>
+              ✦
+            </Text>
+          </Stack>
+          <Text color="$fg1" fontSize={22} fontWeight="800" fontFamily="$heading" writingDirection={direction}>
+            {t('common.appName')}
+          </Text>
+        </Stack>
+
+        {/* Step eyebrow + progress bar (~50% = step 1 of 2) */}
+        <Stack gap="$2">
+          <Text
+            color="$fg3"
+            fontSize={12}
+            fontWeight="700"
+            fontFamily="$heading"
+            textTransform="uppercase"
+            letterSpacing={1.5}
+            textAlign={align}
+            writingDirection={direction}
+          >
+            {t('auth.register.step')}
+          </Text>
+          <Stack
+            height={6}
+            borderRadius="$pill"
+            backgroundColor="$card"
+            overflow="hidden"
+            flexDirection={rowDir}
+            accessibilityRole="progressbar"
+            accessible
+            accessibilityValue={{ min: 1, max: 2, now: 1 }}
+            accessibilityLabel={t('auth.register.progressA11y')}
+            aria-label={t('auth.register.progressA11y')}
+          >
+            <Stack width="50%" height={6} borderRadius="$pill" backgroundColor="$primary" />
+          </Stack>
+        </Stack>
+
+        {/* Heading + subtitle */}
+        <Stack gap="$2">
+          <Text
+            color="$fg1"
+            fontSize={32}
+            fontWeight="800"
+            fontFamily="$heading"
+            lineHeight={38}
+            textAlign={align}
+            accessibilityRole="header"
+            writingDirection={direction}
+          >
             {t('auth.register.title')}
           </Text>
-          <Text color="$fg3" fontSize={14} fontFamily="$body" textAlign="center" writingDirection={direction}>
+          <Text color="$fg3" fontSize={14} fontFamily="$body" textAlign={align} writingDirection={direction}>
             {t('auth.register.subtitle')}
           </Text>
         </Stack>
+
+        {/* Parent / Guardian only info banner */}
+        <ParentOnlyBanner direction={direction} />
+
         <RegisterForm />
       </Stack>
     </FormScaffold>
+  );
+}
+
+/** Purple-soft consent banner reinforcing the parent-driven onboarding rule. */
+function ParentOnlyBanner({ direction }: { direction: Direction }) {
+  const { t } = useTranslation();
+  const align = direction === 'rtl' ? 'right' : 'left';
+  const rowDir = direction === 'rtl' ? 'row-reverse' : 'row';
+
+  return (
+    <Stack
+      flexDirection={rowDir}
+      alignItems="flex-start"
+      gap="$3"
+      padding="$4"
+      borderRadius="$card"
+      borderWidth={1}
+      borderColor="$primary"
+      backgroundColor="$primarySoft"
+    >
+      <Text fontSize={22} accessibilityElementsHidden>
+        👨‍👩‍👧
+      </Text>
+      <Stack flex={1} gap="$1">
+        <Text
+          color="$primaryLight"
+          fontSize={13}
+          fontWeight="700"
+          fontFamily="$heading"
+          textAlign={align}
+          writingDirection={direction}
+        >
+          {t('auth.register.parentOnlyTitle')}
+        </Text>
+        <Text
+          color="$fg2"
+          fontSize={13}
+          lineHeight={18}
+          fontFamily="$body"
+          textAlign={align}
+          writingDirection={direction}
+        >
+          {t('auth.register.parentOnlyBody')}
+        </Text>
+      </Stack>
+    </Stack>
   );
 }

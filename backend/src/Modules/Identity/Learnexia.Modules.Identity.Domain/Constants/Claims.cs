@@ -5,6 +5,7 @@ public static partial class Claims
     public static List<string> GenerateModules() => new()
     {
         "Catalog",
+        "Learning",
 
     };
 

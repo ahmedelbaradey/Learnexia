@@ -26,7 +26,7 @@ export function ServerErrorBanner({ message, direction = 'ltr' }: ServerErrorBan
         color="$danger"
         fontSize={14}
         fontFamily="$body"
-        textAlign="left"
+        textAlign={direction === 'rtl' ? 'right' : 'left'}
         writingDirection={direction}
       >
         {message}

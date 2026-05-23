@@ -12,13 +12,15 @@ tasks/
 │   │   ├── Phase-1-Foundation/    P1-xx-FE.md
 │   │   └── Phase-2-Learning-Core/ P2-xx-FE.md
 │   └── admin-dashboard/       Next.js admin screens
-│       └── Phase-1-Foundation/    P1-10-FE.md   (admin sign-in & shell)
+│       ├── Phase-1-Foundation/    P1-10-FE.md   (admin sign-in & shell)
+│       └── Phase-7-Admin-Console/ P7-xx-FE.md   (admin feature screens)
 └── Backend/
     ├── Phase-1-Foundation/   P1-xx-BE.md
-    └── Phase-2-Learning-Core/ P2-xx-BE.md
+    ├── Phase-2-Learning-Core/ P2-xx-BE.md
+    └── Phase-7-Admin-Console/ P7-xx-BE.md
 ```
 
-> **Scope:** this tree covers **Phase 1 & 2** stories only. The barrier-to-entry stories added in Phase 3–5 — **P3-13** (adaptive student profile), **P4-09** (re-engagement notifications), **P4-10** (Redis realtime gamification), **P4-11** (streak freeze / timed events), **P5-07** (data feedback / calibration) — are **pending task breakdown** and will be decomposed when their phase trees are built. The Phase-2 story **P2-11** (skill dependency graph) is broken down here. See [../docs/briefs/barrier-to-entry-gap-analysis.md](../docs/briefs/barrier-to-entry-gap-analysis.md).
+> **Scope:** this tree covers **Phase 1 & 2** stories, plus the **Phase 7 — Admin Console** feature breakdown (`P7-xx`, the admin features behind the P1-10 shell). The barrier-to-entry stories added in Phase 3–5 — **P3-13** (adaptive student profile), **P4-09** (re-engagement notifications), **P4-10** (Redis realtime gamification), **P4-11** (streak freeze / timed events), **P5-07** (data feedback / calibration) — are **pending task breakdown** and will be decomposed when their phase trees are built. The Phase-2 story **P2-11** (skill dependency graph) is broken down here. See [../docs/briefs/barrier-to-entry-gap-analysis.md](../docs/briefs/barrier-to-entry-gap-analysis.md).
 >
 > **Phase order (resequenced):** Phase 3 = **Gamification** (`P4-xx`), Phase 4 = **AI Tutor** (`P3-xx`) — Gamification builds before AI Tutor; story IDs were kept stable so the prefix no longer equals the phase number. See [../user-stories/README.md](../user-stories/README.md).
 
@@ -75,3 +77,22 @@ tasks/
 | P2-10 | Seed demo data | — | [BE](Backend/Phase-2-Learning-Core/P2-10-BE.md) |
 | P2-11 | Author the skill dependency graph *(barrier-to-entry BE1)* | — | [BE](Backend/Phase-2-Learning-Core/P2-11-BE.md) |
 | P2-12 | Parent account settings tabs *(carved from P1-11)* | [FE](Frontend/student-app/Phase-2-Learning-Core/P2-12-FE.md) | [BE](Backend/Phase-2-Learning-Core/P2-12-BE.md) |
+
+### Phase 7 — Admin Console *(post-MVP)*
+
+Admin feature breakdown behind the P1-10 shell. **All FE work lands in `apps/admin-dashboard` (Next.js 15)**, reusing the shared `packages/` and the P1-10 admin shell. BE reuses the `learning`/`assessment`/`Identity` modules plus a new `Moderation` (governance) module for the moderation queue + audit log.
+
+| Story | Title | Frontend | Backend |
+|---|---|---|---|
+| P7-01 | Manage subjects & units | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-01-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-01-BE.md) |
+| P7-02 | Manage lessons & lesson content | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-02-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-02-BE.md) |
+| P7-03 | Author skills & the skill dependency graph | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-03-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-03-BE.md) |
+| P7-04 | Manage quizzes & questions | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-04-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-04-BE.md) |
+| P7-05 | Publish, version & preview curriculum content | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-05-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-05-BE.md) |
+| P7-06 | Search & inspect users | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-06-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-06-BE.md) |
+| P7-07 | Suspend, reactivate & delete accounts | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-07-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-07-BE.md) |
+| P7-08 | Manage child profiles & grade overrides | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-08-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-08-BE.md) |
+| P7-09 | Content moderation queue & review actions | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-09-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-09-BE.md) |
+| P7-10 | Platform analytics & KPI dashboard | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-10-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-10-BE.md) |
+| P7-11 | AI-safety & quality monitoring dashboard | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-11-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-11-BE.md) |
+| P7-12 | Admin action audit log | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-12-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-12-BE.md) |

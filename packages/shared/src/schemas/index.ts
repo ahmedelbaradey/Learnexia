@@ -27,6 +27,19 @@ const passwordField = z
   .string()
   .regex(PASSWORD_REGEX, 'auth.register.errors.weakPassword');
 
+/** Minimum password length surfaced to parents (Register capture helper). */
+export const PASSWORD_MIN_LENGTH = 6;
+
+/**
+ * Register-screen password rule (P1-11 capture): a single password field with a
+ * minimal ≥6-char gate and the "At least 6 characters" helper. The backend
+ * still enforces the stronger `PASSWORD_REGEX`; that surfaces as the
+ * `weakPassword` server error if the chosen password is too simple.
+ */
+const registerPasswordField = z
+  .string()
+  .min(PASSWORD_MIN_LENGTH, 'auth.register.errors.weakPassword');
+
 const emailField = z
   .string()
   .trim()
@@ -45,22 +58,25 @@ export const signInSchema = z.object({
 export type SignInFormValues = z.infer<typeof signInSchema>;
 
 /**
- * Parent registration form. Maps to `RegisterParentCommand`
- * (`{ email, password, fullName? }`) — `confirmPassword` is client-only and
- * dropped before posting. `fullName` is optional (the backend defaults it to
- * the email local-part).
+ * Parent registration form (P1-11 capture). Maps to `RegisterParentCommand`
+ * (`{ email, password, fullName? }`). `country` and `acceptedTerms` are
+ * client-only consent/onboarding fields and are NOT posted:
+ *  - `country` — collected for UX; the BE `RegisterParentCommand` has no country
+ *    field yet (TODO(P1-12): country-on-register needs a Batch-2 BE field), so
+ *    the form keeps it in state but the register call omits it.
+ *  - `acceptedTerms` — required client-side consent gate; no backend flag exists
+ *    yet, so it is validated locally only.
+ * `fullName` is optional (the backend defaults it to the email local-part).
  */
-export const registerParentSchema = z
-  .object({
-    fullName: z.string().trim().optional(),
-    email: emailField,
-    password: passwordField,
-    confirmPassword: z.string(),
-  })
-  .refine((v) => v.password === v.confirmPassword, {
-    message: 'auth.register.errors.passwordMismatch',
-    path: ['confirmPassword'],
-  });
+export const registerParentSchema = z.object({
+  fullName: z.string().trim().optional(),
+  country: z.string().trim().min(1, 'auth.register.errors.countryRequired'),
+  email: emailField,
+  password: registerPasswordField,
+  acceptedTerms: z
+    .boolean()
+    .refine((v) => v === true, { message: 'auth.register.errors.termsRequired' }),
+});
 
 export type RegisterParentFormValues = z.infer<typeof registerParentSchema>;
 
