@@ -103,6 +103,22 @@
 | P6-04 | Regression, prompt-tuning & bug triage | 🔲 |
 | P6-05 | Observability: logging, tracing, dashboards | 🔲 |
 
+## Phase 7 — Admin Console *(post-MVP)*
+| Story | Title | Backend | Frontend |
+|---|---|:--:|:--:|
+| P7-01 | Manage subjects & units | 🔲 | 🔲 |
+| P7-02 | Manage lessons & lesson content | 🔲 | 🔲 |
+| P7-03 | Author skills & the skill dependency graph | 🔲 | 🔲 |
+| P7-04 | Manage quizzes & questions | 🔲 | 🔲 |
+| P7-05 | Publish, version & preview curriculum content | 🔲 | 🔲 |
+| P7-06 | Search & inspect users | 🔲 | 🔲 |
+| P7-07 | Suspend, reactivate & delete accounts | 🔲 | 🔲 |
+| P7-08 | Manage child profiles & grade overrides | 🔲 | 🔲 |
+| P7-09 | Content moderation queue & review actions | 🔲 | 🔲 |
+| P7-10 | Platform analytics & KPI dashboard | 🔲 | 🔲 |
+| P7-11 | AI-safety & quality monitoring dashboard | 🔲 | 🔲 |
+| P7-12 | Admin action audit log | 🔲 | 🔲 |
+
 ## Backlog (Phase 2+) — Curriculum Intelligence
 | Story | Title | Status |
 |---|---|:--:|
