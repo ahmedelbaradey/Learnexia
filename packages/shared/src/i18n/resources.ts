@@ -45,6 +45,12 @@ export const en = {
       language: 'Language',
       theme: 'Theme',
     },
+    splash: {
+      subtitle: 'AI Learning Adventure Begins',
+      loading: 'Loading… ⚡',
+      poweredBy: 'POWERED BY AI',
+      tagline: '✦ Gamified Learning ✦',
+    },
   },
   auth: {
     signIn: 'Sign in',
@@ -295,6 +301,12 @@ export const ar = {
       switchToEnglish: 'English',
       language: 'اللغة',
       theme: 'المظهر',
+    },
+    splash: {
+      subtitle: 'تبدأ مغامرة التعلّم بالذكاء الاصطناعي',
+      loading: 'جارٍ التحميل… ⚡',
+      poweredBy: 'مدعوم بالذكاء الاصطناعي',
+      tagline: '✦ تعلّم بأسلوب اللعب ✦',
     },
   },
   auth: {
