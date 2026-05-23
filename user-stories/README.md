@@ -56,6 +56,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P1-10 Sign in to the admin dashboard
 - P1-11 Parent web app — all pages, pixel-perfect from design-system screenshots *(epic: landing, login, register, my-children, dashboard, reports, settings; fonts, language switch, dark-mode)*
 - P1-12 Web account backend — profile, avatar, OAuth, password reset *(**Batch 2**, deferred; from the Phase-1 design gap analysis)*
+- P1-13 Backend hardening — lockout, sign-in safety, email delivery & admin seed *(post-Batch-2; from the Phase-1 **backend** gap analysis)*
 
 ### Phase 2 — Learning Core
 - P2-01 Model the curriculum hierarchy
