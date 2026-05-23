@@ -1,0 +1,14 @@
+# Next.js build output
+.next/
+out/
+
+# Dependencies
+node_modules/
+
+# Local env (never commit secrets / API URLs)
+.env
+.env.local
+.env*.local
+
+# Misc
+*.tsbuildinfo
