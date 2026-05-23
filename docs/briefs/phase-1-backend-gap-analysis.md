@@ -108,6 +108,14 @@ The task file below mirrors the exact format of `tasks/Backend/Phase-1-Foundatio
 
 ## 5. Open questions / decisions for the lead
 
+> **RESOLVED 2026-05-24 (lead):**
+> - **Q1 Email verification at registration → BYPASSED for now** (deferred; no `RequireConfirmedEmail`/confirm flow).
+> - **Q2 COPPA under-13 consent record → deferred to a compliance pass** (out of Phase 1; no entity added).
+> - **Q4/Q6 Email delivery (Gap #4/#6) → split into its own story `P1-13a` and built first.** P1-13 retains lockout (#1), sign-in safety (#2), admin seed (#5), CAPTCHA (#3). See `P1-13a-BE.md` / `P1-13-BE.md`.
+> - Q3 (Phase-1 vs P6): BE-1/2/3 land in P1 now; CAPTCHA (BE-4) may defer to P6. Q5 folded into the admin-seed task. Email-provider choice + the `IEmailSender` Adapter pattern remain an **ask-first** decision before P1-13a coding.
+
+Original questions (for the record):
+
 1. **Email verification at registration (Gap-adjacent decision).** `SignIn.RequireConfirmedEmail=false` and no confirm flow. Is parent-email verification in scope for Phase 1, or deferred? It is a prerequisite for trustworthy password-reset (P1-12d) and anti-abuse. Recommend: **decide now**; if in-scope it folds naturally into P1-13 BE-3/BE-4.
 2. **COPPA under-13 parental-consent record.** P1-12f stores a *terms-consent at register*. P1-03/P1-04 flag a separate *per-child under-13 consent* (NFR-10, BRD §10). Is a distinct consent record/audit required for Phase 1, or deferred to a compliance pass? Currently **no entity captures it** — not built anywhere.
 3. **Is P1-13 a Phase-1 story or a Phase-6 hardening pull?** Gaps #1/#2/#5 are security-meaningful enough to land in P1; Gap #3 (CAPTCHA) and observability-style hardening are arguably Phase-6 (P6-05). Recommend: **#1/#2/#4/#5 in P1-13 now; #3/#6 may defer**.

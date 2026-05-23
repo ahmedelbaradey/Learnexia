@@ -39,7 +39,8 @@
 | P1-10 | Sign in to the admin dashboard | ✅ | ✅ |
 | P1-11 | Web app pages (pixel-perfect, parent web) | — | 🟡 |
 | P1-12 | Web account backend (Batch 2, deferred) | 🔲 | 🔲 |
-| P1-13 | Backend hardening (lockout/sign-in/email/admin seed) | 🔲 | — |
+| P1-13a | Notifications email delivery (enabler, built first) | 🔲 | — |
+| P1-13 | Backend hardening (lockout/sign-in/admin seed) | 🔲 | — |
 
 ## Phase 2 — Learning Core
 | Story | Title | Backend | Frontend |
