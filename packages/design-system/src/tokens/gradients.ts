@@ -33,6 +33,13 @@ export const gradientStops = {
   badgeGold: { colors: ['#FDE68A', '#F59E0B'] },
   badgeLegendary: { colors: ['#FBCFE8', '#A855F7', '#4F46E5'] },
   tutorAvatar: { colors: ['#A78BFA', '#6366F1'], angle: 135 },
+
+  /**
+   * Splash screen full-bleed background — purple glow → dark bg.
+   * Indigo/violet center fading to the app `bg`, matching the splash capture.
+   * Used as a top→bottom linear approximation of the radial glow on native.
+   */
+  splashBg: { colors: ['#4338CA', '#3730A3', '#0F172A'], angle: 160 },
 } as const;
 
 /** CSS radial-gradient strings for web (Badge discs). */
@@ -42,6 +49,8 @@ export const radialGradients = {
   badgeGold: 'radial-gradient(circle at 30% 30%, #FDE68A, #F59E0B)',
   badgeLegendary: 'radial-gradient(circle at 30% 30%, #FBCFE8, #A855F7 55%, #4F46E5)',
   tutorAvatar: 'linear-gradient(135deg, #A78BFA, #6366F1)',
+  /** Splash background — centered purple glow fading to the dark app bg. */
+  splashBg: 'radial-gradient(circle at 50% 42%, #4F46E5 0%, #3730A3 45%, #0F172A 100%)',
 } as const;
 
 export type Gradients = typeof gradients;
