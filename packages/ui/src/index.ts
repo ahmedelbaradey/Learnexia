@@ -54,3 +54,16 @@ export type {
   ChildCardVariant,
   ChildCardChild,
 } from './components/ChildCard';
+
+// --- P1-11 parent-dashboard primitives ----------------------------------
+export { Avatar } from './components/Avatar';
+export type { AvatarProps, AvatarSize, AvatarColor } from './components/Avatar';
+
+export { KPIStatCard } from './components/KPIStatCard';
+export type { KPIStatCardProps, KPIStatVariant } from './components/KPIStatCard';
+
+export { MasteryBar } from './components/MasteryBar';
+export type { MasteryBarProps } from './components/MasteryBar';
+
+export { GradientBox } from './components/GradientBox';
+export type { GradientBoxProps } from './components/GradientBox';
