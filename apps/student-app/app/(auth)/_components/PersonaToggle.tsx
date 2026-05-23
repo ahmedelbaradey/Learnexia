@@ -64,7 +64,7 @@ export function PersonaToggle({
           <Stack
             key={persona}
             flex={1}
-            height={44}
+            height={52}
             alignItems="center"
             justifyContent="center"
             borderRadius="$pill"

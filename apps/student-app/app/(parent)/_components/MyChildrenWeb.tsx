@@ -50,6 +50,7 @@ export function MyChildrenWeb() {
   const rowDir = isRtl ? 'row-reverse' : 'row';
   const children = query.data ?? [];
   const childIds = children.map((c) => String(c.id));
+  const childNames = children.map((c) => c.fullName ?? '').filter((n) => n.length > 0);
   const totals = getFamilyTotalsStub(childIds);
 
   return (
@@ -69,6 +70,7 @@ export function MyChildrenWeb() {
           <Stack width={150}>
             <Select
               label={t('parent.myChildren.periodLabel')}
+              hideLabel
               value={period}
               onChange={(v) => setPeriod(String(v))}
               options={[{ value: REPORTING_PERIOD.ThisWeek, label: t('parent.myChildren.periodThisWeek') }]}
@@ -91,7 +93,7 @@ export function MyChildrenWeb() {
       </Stack>
 
       {/* Family summary (TODO(P5) stub totals) */}
-      <FamilySummaryStrip totals={totals} />
+      <FamilySummaryStrip totals={totals} childNames={childNames} />
 
       {/* Pick-a-child row */}
       <Stack flexDirection={rowDir} alignItems="center" justifyContent="space-between" gap="$4" flexWrap="wrap">

@@ -43,6 +43,7 @@
   --lx-primary-hover:  #6366F1;
   --lx-primary-press:  #4338CA;
   --lx-primary-soft:   rgba(79, 70, 229, 0.18);
+  --lx-primary-soft-strong: rgba(79, 70, 229, 0.28); /* active-pill tint (Tabs/Sidebar) */
   --lx-primary-glow:   rgba(99, 102, 241, 0.45);
 
   --lx-secondary:      #22C55E;   /* Success states */

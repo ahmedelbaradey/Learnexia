@@ -203,6 +203,12 @@ export const en = {
       settings: 'Settings',
       sectionLabel: 'Parent menu',
     },
+    // TODO(P5): weekly-XP delta is server analytics — static stub copy for now.
+    xpWidget: {
+      eyebrow: 'This week',
+      value: '+{{xp}} XP',
+      delta: 'Up {{percent}}% from last week',
+    },
     childSelector: {
       label: 'Active child',
       meta: 'Grade {{grade}} · Level {{level}}',
@@ -246,6 +252,7 @@ export const en = {
       lessons: 'Lessons',
       bestStreak: 'Best streak',
       badgesEarned: 'Badges earned',
+      childrenCluster: '{{count}} children',
     },
     overview: {
       title: "{{name}}'s progress",
@@ -546,6 +553,12 @@ export const ar = {
       settings: 'الإعدادات',
       sectionLabel: 'قائمة ولي الأمر',
     },
+    // TODO(P5): فرق نقاط الخبرة الأسبوعي بيانات تحليلية من الخادم — نص مؤقت الآن.
+    xpWidget: {
+      eyebrow: 'هذا الأسبوع',
+      value: '+{{xp}} نقطة خبرة',
+      delta: 'بزيادة {{percent}}% عن الأسبوع الماضي',
+    },
     childSelector: {
       label: 'الطفل النشط',
       meta: 'الصف {{grade}} · المستوى {{level}}',
@@ -589,6 +602,7 @@ export const ar = {
       lessons: 'الدروس',
       bestStreak: 'أفضل سلسلة',
       badgesEarned: 'الأوسمة المكتسبة',
+      childrenCluster: '{{count}} أطفال',
     },
     overview: {
       title: 'تقدّم {{name}}',

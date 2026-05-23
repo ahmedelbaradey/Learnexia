@@ -52,6 +52,7 @@ export function ChildDashboardCard({
       gap="$4"
       flex={1}
       minWidth={300}
+      minHeight={300}
       borderRadius="$card"
       borderWidth={1}
       borderColor="$border"
@@ -103,7 +104,7 @@ export function ChildDashboardCard({
       {/* Stat tiles */}
       <Stack flexDirection={rowDir} gap="$3">
         <KPIStatCard
-          icon="🎚"
+          icon="🧠"
           value={`${t('parent.myChildren.statLevelShort')} ${stats.level}`}
           label={t('parent.myChildren.statLevel')}
           accent="$primaryLight"

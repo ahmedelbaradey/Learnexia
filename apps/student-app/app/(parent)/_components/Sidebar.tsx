@@ -13,6 +13,7 @@
  * RTL: the whole column mirrors via logical flips; the active pill uses the
  * logical START border. i18n: every label is a translation key.
  */
+import { type Direction } from '@learnexia/shared';
 import { Avatar } from '@learnexia/ui';
 import { Stack, Text } from '@tamagui/core';
 import { useRouter } from 'expo-router';
@@ -173,8 +174,59 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
           );
         })}
       </Stack>
+
+      {/* Weekly-XP summary widget — pinned to the bottom (capture). */}
+      <SidebarXpWidget direction={direction} />
     </Stack>
   );
 }
 
 Sidebar.displayName = 'ParentSidebar';
+
+/**
+ * SidebarXpWidget — the bottom "THIS WEEK +XP" gamification card (capture
+ * `web/04-my-children.png`). TODO(P5): the real weekly-XP delta is server
+ * analytics; rendered with a static stub until the Phase-5 reports endpoint
+ * lands. Token-only; the eyebrow uses the `$xp` gamification color.
+ */
+function SidebarXpWidget({ direction }: { direction: Direction }) {
+  const { t } = useTranslation();
+
+  // TODO(P5): replace these static placeholders with the real weekly delta.
+  const STUB_XP = 340;
+  const STUB_DELTA_PERCENT = 28;
+
+  return (
+    <Stack
+      marginTop="auto"
+      borderRadius="$card"
+      backgroundColor="$card"
+      borderWidth={1}
+      borderColor="$border"
+      padding="$4"
+      gap="$1"
+      accessible
+      accessibilityLabel={`${t('parent.nav.xpWidget.eyebrow')} ${t('parent.nav.xpWidget.value', { xp: STUB_XP })} ${t('parent.nav.xpWidget.delta', { percent: STUB_DELTA_PERCENT })}`}
+    >
+      <Text
+        color="$xp"
+        fontSize={10}
+        fontWeight="800"
+        fontFamily="$heading"
+        textTransform="uppercase"
+        letterSpacing={1}
+        writingDirection={direction}
+      >
+        {t('parent.nav.xpWidget.eyebrow')}
+      </Text>
+      <Text color="$fg1" fontSize={24} fontWeight="800" fontFamily="$heading" writingDirection={direction}>
+        {t('parent.nav.xpWidget.value', { xp: STUB_XP })}
+      </Text>
+      <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction}>
+        {t('parent.nav.xpWidget.delta', { percent: STUB_DELTA_PERCENT })}
+      </Text>
+    </Stack>
+  );
+}
+
+SidebarXpWidget.displayName = 'SidebarXpWidget';

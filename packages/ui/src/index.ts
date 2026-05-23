@@ -59,6 +59,9 @@ export type {
 export { Avatar } from './components/Avatar';
 export type { AvatarProps, AvatarSize, AvatarColor } from './components/Avatar';
 
+export { AvatarStack } from './components/AvatarStack';
+export type { AvatarStackProps, AvatarStackEntry } from './components/AvatarStack';
+
 export { KPIStatCard } from './components/KPIStatCard';
 export type { KPIStatCardProps, KPIStatVariant } from './components/KPIStatCard';
 

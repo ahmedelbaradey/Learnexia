@@ -18,6 +18,8 @@ export const colors = {
   primaryHover: '#6366F1',
   primaryPress: '#4338CA',
   primarySoft: 'rgba(79, 70, 229, 0.18)',
+  /** Stronger active-pill tint (Tabs/Sidebar active item) — Design Gap GAP-02. */
+  primarySoftStrong: 'rgba(79, 70, 229, 0.28)',
   primaryGlow: 'rgba(99, 102, 241, 0.45)',
 
   // ---- Accent / status ----

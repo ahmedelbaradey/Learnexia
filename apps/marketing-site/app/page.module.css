@@ -59,16 +59,16 @@
   justify-content: center;
   padding: 10px var(--lx-space-5);
   border-radius: var(--lx-radius-button);
-  border: 1px solid var(--lx-border-strong);
+  border: none;
   background: transparent;
   color: var(--lx-fg1);
   font-weight: 600;
   font-size: 15px;
-  transition: border-color var(--lx-dur-fast) var(--lx-ease-out);
+  transition: color var(--lx-dur-fast) var(--lx-ease-out);
 }
 
 .btnOutline:hover {
-  border-color: var(--lx-fg3);
+  color: var(--lx-fg3);
 }
 
 .btnPrimary {

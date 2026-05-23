@@ -3,8 +3,8 @@
  * (capture `web/07-settings.png`). P1-11-FE-14.
  *
  * Mirrors the existing component shapes (Sidebar nav rows, Select option rows):
- * a token-driven list of pressable rows with an active-state pill (`$primarySoft`
- * background + bold `$fg1` label) and a logical START accent border, like the
+ * a token-driven list of pressable rows with an active-state pill
+ * (`$primarySoftStrong` background + bold `$fg1` label) and a logical START accent border, like the
  * Sidebar's active nav item. Each item carries an icon glyph + an already-i18n-
  * resolved label (labels are NOT hardcoded here — the caller injects them).
  *
@@ -70,10 +70,10 @@ export function Tabs({
             minHeight={48}
             paddingHorizontal="$3"
             borderRadius="$button"
-            backgroundColor={isActive ? '$primarySoft' : 'transparent'}
+            backgroundColor={isActive ? '$primarySoftStrong' : 'transparent'}
             borderStartWidth={isActive ? 3 : 0}
             borderStartColor={isActive ? '$primary' : 'transparent'}
-            hoverStyle={{ backgroundColor: isActive ? '$primarySoft' : '$card' }}
+            hoverStyle={{ backgroundColor: isActive ? '$primarySoftStrong' : '$card' }}
             pressStyle={{ scale: 0.98 }}
             cursor="pointer"
             onPress={() => onChange(item.value)}

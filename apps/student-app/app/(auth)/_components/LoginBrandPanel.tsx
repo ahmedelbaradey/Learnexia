@@ -26,7 +26,7 @@ export function LoginBrandPanel({ direction = 'ltr', appName }: LoginBrandPanelP
         <Stack
           width={44}
           height={44}
-          borderRadius="$button"
+          borderRadius="$card"
           backgroundColor="$primaryHover"
           alignItems="center"
           justifyContent="center"

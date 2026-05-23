@@ -30,15 +30,15 @@ export function RegisterFeaturePanel({ direction = 'ltr' }: RegisterFeaturePanel
     <Stack flex={1} justifyContent="center" gap="$8">
       {/* Game-controller icon chip */}
       <Stack
-        width={120}
-        height={120}
+        width={80}
+        height={80}
         borderRadius="$pill"
         backgroundColor="$primaryHover"
         alignItems="center"
         justifyContent="center"
         alignSelf={direction === 'rtl' ? 'flex-end' : 'flex-start'}
       >
-        <Text fontSize={56} accessibilityElementsHidden>
+        <Text fontSize={40} accessibilityElementsHidden>
           🎮
         </Text>
       </Stack>
