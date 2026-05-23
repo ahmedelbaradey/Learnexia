@@ -54,6 +54,17 @@ As the team, we need the backend that the redesigned web pages (P1-11) imply but
 **Labels:** `backend`, `batch-2`, `auth`, `security`
 **Notes:** reuses Identity password/session services; needs email delivery (Notifications module).
 
+### P1-12e — Update / edit child
+**Issue type:** Story · **Points:** 3 — gates My Children "edit child" (P1-11-FE-7/FE-8); the FE `EditChildSheet` is currently a placeholder with no save wire, and **no Update-Child command exists** in the Family feature.
+**Description:** As a parent, I want to edit a child's details (full name, grade, preferred language, country) so that I can correct or update them after adding the child.
+**Acceptance Criteria:**
+- Update-child command/endpoint (full name, grade, preferred language, country); **family-scope authz** — a parent may only edit their own child.
+- `BaseResponse<T>` via `BaseResponseHandler`; `ValidationBehavior` (shape-only) with en/ar localized messages.
+- Returns the updated child so the FE list refreshes; email/login change is out of scope here.
+- New `api-client` `updateChild` typed method (regenerate from OpenAPI) wires `EditChildSheet`.
+**Labels:** `backend`, `batch-2`, `family`
+**Notes:** sits beside AddChild/LinkChild in the Identity Family feature; reuses P1-04 family-scope authz.
+
 ## Notes
 - **Parallel-safe:** all Identity-module; cross-module only via `Shared.Contracts`. No Unit of Work; explicit transaction for multi-write. **Ask before adding any design pattern.**
 - **Blocked by** nothing in Batch 1 except it consumes the existing Identity foundation; **blocks** the *functional* parts of P1-11h (Profile save), the Login social buttons, and forgot-password — those ship as UI-first in P1-11 and light up when this batch merges.
