@@ -100,14 +100,17 @@ As a parent, I want the full Learnexia web experience — marketing landing, a r
 **Labels:** `frontend`, `web`, `analytics`
 **Notes:** see P5-01 (weekly report) / P5-05 (parent dashboard); shares data sources.
 
-### P1-11h — Settings (tabbed) incl. Language & region
-**Issue type:** Story · **Points:** 5 — six tabs; Profile + Language & region in scope first.
-**Description:** As a parent, I want a tabbed settings page so that I can manage my account, linked children, security, plan, and language.
+### P1-11h — Settings (Profile + Language & region)
+**Issue type:** Story · **Points:** 3 — Profile + Language tabs only; the tab bar shows all six but the other four route to P2-12.
+**Description:** As a parent, I want a settings page where I can edit my profile and switch language/region so that my account basics and locale are under my control.
 **Acceptance Criteria:**
-- Matches `screenshots/web/07-settings.png`: tabs Profile / Notifications / Linked children / Security / Plan & billing / **Language & region**; Profile form (avatar upload/remove, Full name, Email, Phone, Country, Cancel / Save changes).
-- **Language & region** tab changes the app language (en/ar) + region; the change applies app-wide and persists.
+- Matches `screenshots/web/07-settings.png`: the six-tab bar (Profile / Notifications / Linked children / Security / Plan & billing / Language & region) renders pixel-perfect; **Profile** and **Language & region** are functional.
+- **Profile** form (avatar upload/remove, Full name, Email, Phone, Country, Cancel / Save changes) works.
+- **Language & region** changes the app language (en/ar) + region; applies app-wide and persists.
+- The other four tabs are out of scope here (see **P2-12**); selecting one shows a "coming soon" placeholder, not a broken view.
 - Renders in en (LTR) and ar (RTL).
 **Labels:** `frontend`, `web`, `settings`
+**Notes:** Notifications / Linked children / Security / Plan & billing tabs → **P2-12** (full story, back + front).
 
 ---
 
@@ -128,3 +131,4 @@ As a parent, I want the full Learnexia web experience — marketing landing, a r
 - **Blocked by** P1-08 (design system), P1-09 (auth screens + error handling reused by Login/Register). Dashboard/Reports data depends on Phase 5 — layout-first against seed data is acceptable in Phase 1.
 - **New affordances beyond the captures:** dark-mode switch on Login (P1-11c) and the explicit language switch (P1-11c, P1-11h).
 - Mobile equivalents live in `design-system/screenshots/mobile/` (18 screens) and map to the existing mobile stories (P1-09, P2-09, P4-08, etc.) — out of scope for this web epic.
+- **Scope trims (confirmed):** **Child Home** (`mobile/08-home.png`) is **deferred to P2-09** (home dashboard) — not built here. The four secondary **Settings** tabs (Notifications / Linked children / Security / Plan & billing) move to **P2-12** (new story, back + front); P1-11h keeps Profile + Language only.

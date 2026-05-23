@@ -73,3 +73,4 @@ tasks/
 | P2-09 | Home dashboard | [FE](Frontend/student-app/Phase-2-Learning-Core/P2-09-FE.md) | [BE](Backend/Phase-2-Learning-Core/P2-09-BE.md) |
 | P2-10 | Seed demo data | — | [BE](Backend/Phase-2-Learning-Core/P2-10-BE.md) |
 | P2-11 | Author the skill dependency graph *(barrier-to-entry BE1)* | — | [BE](Backend/Phase-2-Learning-Core/P2-11-BE.md) |
+| P2-12 | Parent account settings tabs *(carved from P1-11)* | [FE](Frontend/student-app/Phase-2-Learning-Core/P2-12-FE.md) | [BE](Backend/Phase-2-Learning-Core/P2-12-BE.md) |

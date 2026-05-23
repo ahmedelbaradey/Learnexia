@@ -67,6 +67,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P2-09 See the home dashboard
 - P2-10 Seed demo subjects & skill trees
 - P2-11 Author the skill dependency graph (relational, hand-authored) *(barrier-to-entry: BE1)*
+- P2-12 Parent account settings — notifications, linked children, security, plan & billing *(back + front; carved out of P1-11 Settings)*
 
 ### Phase 3 — Gamification *(story IDs `P4-xx`)*
 - P4-01 Emit learning domain events
