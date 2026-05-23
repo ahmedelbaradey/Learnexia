@@ -64,6 +64,7 @@ tasks/
 | P1-09 | Auth & onboarding screens | [FE](Frontend/student-app/Phase-1-Foundation/P1-09-FE.md) | [BE](Backend/Phase-1-Foundation/P1-09-BE.md) |
 | P1-10 | Sign in to the admin dashboard | [FE](Frontend/admin-dashboard/Phase-1-Foundation/P1-10-FE.md) *(Next.js)* | [BE](Backend/Phase-1-Foundation/P1-10-BE.md) |
 | P1-11 | Web app pages — pixel-perfect from screenshots | [FE](Frontend/student-app/Phase-1-Foundation/P1-11-FE.md) *(epic; Landing in marketing-site)* | — |
+| P1-12 | Web account backend — profile/avatar/OAuth/reset/edit-child *(**Batch 2**, deferred)* | [FE](Frontend/student-app/Phase-1-Foundation/P1-12-FE.md) | [BE](Backend/Phase-1-Foundation/P1-12-BE.md) |
 | P2-01 | Model curriculum hierarchy | — | [BE](Backend/Phase-2-Learning-Core/P2-01-BE.md) |
 | P2-02 | Browse subjects & lessons | [FE](Frontend/student-app/Phase-2-Learning-Core/P2-02-FE.md) | [BE](Backend/Phase-2-Learning-Core/P2-02-BE.md) |
 | P2-03 | Navigate the skill tree | [FE](Frontend/student-app/Phase-2-Learning-Core/P2-03-FE.md) | [BE](Backend/Phase-2-Learning-Core/P2-03-BE.md) |
@@ -75,6 +76,7 @@ tasks/
 | P2-09 | Home dashboard | [FE](Frontend/student-app/Phase-2-Learning-Core/P2-09-FE.md) | [BE](Backend/Phase-2-Learning-Core/P2-09-BE.md) |
 | P2-10 | Seed demo data | — | [BE](Backend/Phase-2-Learning-Core/P2-10-BE.md) |
 | P2-11 | Author the skill dependency graph *(barrier-to-entry BE1)* | — | [BE](Backend/Phase-2-Learning-Core/P2-11-BE.md) |
+| P2-12 | Parent account settings tabs *(carved from P1-11)* | [FE](Frontend/student-app/Phase-2-Learning-Core/P2-12-FE.md) | [BE](Backend/Phase-2-Learning-Core/P2-12-BE.md) |
 
 ### Phase 7 — Admin Console *(post-MVP)*
 

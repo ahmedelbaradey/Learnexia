@@ -55,6 +55,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P1-09 Auth & onboarding screens
 - P1-10 Sign in to the admin dashboard
 - P1-11 Parent web app — all pages, pixel-perfect from design-system screenshots *(epic: landing, login, register, my-children, dashboard, reports, settings; fonts, language switch, dark-mode)*
+- P1-12 Web account backend — profile, avatar, OAuth, password reset *(**Batch 2**, deferred; from the Phase-1 design gap analysis)*
 
 ### Phase 2 — Learning Core
 - P2-01 Model the curriculum hierarchy
@@ -68,6 +69,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P2-09 See the home dashboard
 - P2-10 Seed demo subjects & skill trees
 - P2-11 Author the skill dependency graph (relational, hand-authored) *(barrier-to-entry: BE1)*
+- P2-12 Parent account settings — notifications, linked children, security, plan & billing *(back + front; carved out of P1-11 Settings)*
 
 ### Phase 3 — Gamification *(story IDs `P4-xx`)*
 - P4-01 Emit learning domain events
