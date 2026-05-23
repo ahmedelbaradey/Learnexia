@@ -31,30 +31,27 @@ function HomeScreen({ onContinue, onMission }) {
           </div>
         </div>
 
-        {/* Continue lesson hero */}
-        <div style={{ padding: '0 16px' }}>
-          <div onClick={onContinue} style={{
-            borderRadius: 24, padding: 20,
-            background: 'linear-gradient(135deg,#4F46E5 0%,#A855F7 100%)',
-            boxShadow: '0 16px 36px rgba(99,102,241,0.4), inset 0 1px 0 rgba(255,255,255,0.2)',
-            position: 'relative', overflow: 'hidden', cursor: 'pointer',
+        {/* Continue Learning — horizontal subject cards */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, padding: '0 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontWeight: 900, fontSize: 22, color: '#F8FAFC' }}>Continue Learning</span>
+              <span style={{ fontSize: 20 }}>📚</span>
+            </div>
+            <button style={{
+              background: 'transparent', border: 'none', color: '#94A3B8',
+              fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
+            }}>See all</button>
+          </div>
+          <div style={{
+            display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4,
+            scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch',
+            padding: '0 16px 4px',
           }}>
-            <div style={{
-              position: 'absolute', right: -20, bottom: -30, fontSize: 140,
-              opacity: 0.18, pointerEvents: 'none',
-            }}>📚</div>
-            <div style={{
-              fontWeight: 700, fontSize: 10, color: '#FACC15',
-              textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6,
-            }}>Continue Learning</div>
-            <div style={{ fontWeight: 800, fontSize: 22, color: '#fff', lineHeight: 1.15 }}>Compare Bigger<br/>& Smaller</div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', marginTop: 6 }}>Math · 3 of 5 questions left</div>
-            <div style={{ marginTop: 14 }}><XPBar value={0.6}/></div>
-            <div style={{
-              marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 8,
-              background: '#fff', color: '#4F46E5', padding: '10px 18px',
-              borderRadius: 9999, fontWeight: 800, fontSize: 14,
-            }}>Continue →</div>
+            <SubjectCard emoji="🧮" subject="Math"    topic="Fractions" pct={60}/>
+            <SubjectCard emoji="🧪" subject="Science" topic="Plants"    pct={35}/>
+            <SubjectCard emoji="🇬🇧" subject="English" topic="Verbs"     pct={48}/>
+            <SubjectCard emoji="📖" subject="Arabic"  topic="Reading"   pct={72}/>
           </div>
         </div>
 
@@ -220,66 +217,143 @@ function QuizScreen({ onComplete }) {
   const [selected, setSelected] = React.useState(null);
   const [revealed, setRevealed] = React.useState(false);
   const answers = [
-    { id: 'A', label: '27', correct: false },
-    { id: 'B', label: '54', correct: false },
-    { id: 'C', label: '89', correct: true },
-    { id: 'D', label: '12', correct: false },
+    { id: 'A', label: '2', correct: false },
+    { id: 'B', label: '4', correct: true },
+    { id: 'C', label: '6', correct: false },
   ];
   const check = () => setRevealed(true);
   const next = () => onComplete();
+  const answeredCorrect = revealed && answers.find(a => a.id === selected)?.correct;
   return (
-    <ScreenShell padTop={66}>
+    <ScreenShell padTop={56}>
       <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 18 }}>
-        {/* progress dots */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ fontSize: 18 }}>❤️ 4</div>
-          <div style={{ flex: 1, height: 8, background: '#1E293B', borderRadius: 9999, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: '60%', background: 'linear-gradient(90deg,#FACC15,#FB923C)' }}/>
+        {/* Header: Quiz Time + hearts */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontWeight: 900, fontSize: 22, color: '#F8FAFC' }}>Quiz Time</span>
+            <span style={{ fontSize: 20 }}>⚡</span>
           </div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#94A3B8', fontVariantNumeric: 'tabular-nums' }}>3/5</div>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {[1, 2, 3, 4, 5].map(i => (
+              <span key={i} style={{
+                fontSize: 18,
+                filter: i <= 5 ? 'drop-shadow(0 0 4px rgba(239,68,68,0.5))' : 'grayscale(1) opacity(0.3)',
+              }}>❤️</span>
+            ))}
+          </div>
         </div>
 
-        <div style={{ fontWeight: 800, fontSize: 22, color: '#F8FAFC', lineHeight: 1.25 }}>
-          Which number is the biggest?
+        {/* Question + progress */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ fontWeight: 700, fontSize: 15, color: '#CBD5E1' }}>Question 1 / 5</div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: '#CBD5E1', fontVariantNumeric: 'tabular-nums' }}>20%</div>
+          </div>
+          <div style={{ height: 6, background: '#1E2030', borderRadius: 9999, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: '20%', background: 'linear-gradient(90deg,#F59E0B,#EF4444)' }}/>
+          </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        {/* Question card */}
+        <div style={{
+          background: '#1A1C26', borderRadius: 20, padding: '20px 18px 28px',
+          border: '1px solid rgba(255,255,255,0.04)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            fontSize: 12, fontWeight: 700, color: '#94A3B8',
+            letterSpacing: '0.12em', textTransform: 'uppercase',
+            marginBottom: 18,
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/>
+              <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/>
+            </svg>
+            Math · Fractions
+          </div>
+          <div style={{
+            fontWeight: 900, fontSize: 26, color: '#F8FAFC',
+            textAlign: 'center', lineHeight: 1.2,
+          }}>What is 1/2 of 8?</div>
+        </div>
+
+        {/* Answers — indigo left-border style */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {answers.map(a => {
             let state = 'default';
             if (revealed) {
               if (a.correct) state = 'correct';
               else if (selected === a.id) state = 'wrong';
             } else if (selected === a.id) state = 'selected';
-            return (
-              <AnswerButton key={a.id} keyLetter={a.id} state={state}
-                onClick={() => !revealed && setSelected(a.id)}>
-                {a.label}
-              </AnswerButton>
-            );
+            return <QuizAnswer key={a.id} answer={a} state={state}
+              onClick={() => !revealed && setSelected(a.id)} />;
           })}
         </div>
 
-        {revealed && (
-          <div style={{
-            background: answers.find(a => a.id === selected)?.correct
-              ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
-            border: `1px solid ${answers.find(a => a.id === selected)?.correct ? '#22C55E' : '#EF4444'}`,
-            borderRadius: 16, padding: 14,
-            color: answers.find(a => a.id === selected)?.correct ? '#22C55E' : '#FB7185',
-            fontWeight: 700, fontSize: 14,
-          }}>
-            {answers.find(a => a.id === selected)?.correct
-              ? '🎉 Nice work! 89 has the most tens.'
-              : 'Hmm, not quite — 89 is the biggest.'}
-          </div>
-        )}
+        {/* XP Earned line */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          fontWeight: 700, fontSize: 16, color: '#F59E0B',
+        }}>
+          XP Earned: <span style={{ color: '#FACC15', fontWeight: 800 }}>+20</span>
+          <span style={{ fontSize: 18, filter: 'drop-shadow(0 0 6px rgba(250,204,21,0.5))' }}>⭐</span>
+        </div>
 
+        {/* Submit / Continue */}
         {!revealed
-          ? <PrimaryButton full variant={selected ? 'primary' : 'secondary'}
-              onClick={selected ? check : undefined}>Check Answer</PrimaryButton>
-          : <PrimaryButton full variant="success" onClick={next}>Continue →</PrimaryButton>}
+          ? <button onClick={selected ? check : undefined} disabled={!selected} style={{
+              height: 56, borderRadius: 16, border: 'none',
+              background: selected ? '#4F46E5' : '#2A2D3E',
+              color: selected ? '#fff' : '#64748B',
+              fontFamily: 'inherit', fontWeight: 800, fontSize: 17,
+              cursor: selected ? 'pointer' : 'not-allowed',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              boxShadow: selected ? '0 4px 12px rgba(99,102,241,0.4), inset 0 1px 0 rgba(255,255,255,0.2)' : 'none',
+            }}>Submit Answer →</button>
+          : <button onClick={next} style={{
+              height: 56, borderRadius: 16, border: 'none',
+              background: answeredCorrect ? '#22C55E' : '#4F46E5',
+              color: '#fff',
+              fontFamily: 'inherit', fontWeight: 800, fontSize: 17,
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              boxShadow: '0 4px 12px rgba(99,102,241,0.4), inset 0 1px 0 rgba(255,255,255,0.2)',
+            }}>Continue →</button>}
       </div>
     </ScreenShell>
+  );
+}
+
+function QuizAnswer({ answer, state, onClick }) {
+  const styles = {
+    default:  { border: '#4F46E5',   bg: '#1A1C26', dotBg: '#0F1018', dotFg: '#A5B4FC' },
+    selected: { border: '#A855F7',   bg: 'rgba(168,85,247,0.08)', dotBg: '#A855F7', dotFg: '#fff' },
+    correct:  { border: '#22C55E',   bg: 'rgba(34,197,94,0.10)',  dotBg: '#22C55E', dotFg: '#0F172A' },
+    wrong:    { border: '#EF4444',   bg: 'rgba(239,68,68,0.10)',  dotBg: '#EF4444', dotFg: '#fff' },
+  }[state];
+  return (
+    <button onClick={onClick} style={{
+      display: 'flex', alignItems: 'center', gap: 14,
+      padding: '16px 18px 16px 14px',
+      background: styles.bg,
+      borderRadius: 16,
+      border: 'none',
+      borderLeft: `4px solid ${styles.border}`,
+      fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left',
+      transition: 'all 180ms cubic-bezier(0.16,1,0.3,1)',
+      animation: state === 'wrong' ? 'lxshake 0.3s' : 'none',
+    }}>
+      <div style={{
+        width: 36, height: 36, borderRadius: '50%',
+        background: styles.dotBg, color: styles.dotFg,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontWeight: 800, fontSize: 15, flexShrink: 0,
+      }}>{answer.id}</div>
+      <div style={{ flex: 1, fontWeight: 800, fontSize: 20, color: '#F8FAFC' }}>{answer.label}</div>
+      {state === 'correct' && <span style={{ color: '#22C55E', fontSize: 22 }}>✓</span>}
+      {state === 'wrong' && <span style={{ color: '#EF4444', fontSize: 22 }}>✗</span>}
+    </button>
   );
 }
 
@@ -342,6 +416,29 @@ function Stat({ icon, value, label, color }) {
   );
 }
 
+function SubjectCard({ emoji, subject, topic, pct }) {
+  return (
+    <div style={{
+      flex: '0 0 160px', minWidth: 160,
+      background: '#1E293B', borderRadius: 20, padding: 14,
+      border: '1px solid rgba(99,102,241,0.45)',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+      display: 'flex', flexDirection: 'column', gap: 8,
+      cursor: 'pointer',
+    }}>
+      <div style={{ fontSize: 32 }}>{emoji}</div>
+      <div style={{ fontWeight: 900, fontSize: 19, color: '#F8FAFC', lineHeight: 1 }}>{subject}</div>
+      <div style={{ fontSize: 12, color: '#94A3B8' }}>
+        {topic} · <span style={{ color: '#CBD5E1', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{pct}%</span>
+      </div>
+      <div style={{ height: 4, background: '#0F172A', borderRadius: 9999, overflow: 'hidden', marginTop: 2 }}>
+        <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg,#22C55E,#4F46E5)' }}/>
+      </div>
+    </div>
+  );
+}
+
 Object.assign(window, {
   HomeScreen, SkillTreeScreen, LessonScreen, QuizScreen, RewardScreen, ScreenShell,
+  SubjectCard,
 });
