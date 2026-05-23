@@ -37,7 +37,11 @@ export function LoginForm() {
   const serverMessage = signIn.isError
     ? resolveError(signIn.error, {
         hints: [{ contains: ['not found', 'no account'], key: 'auth.login.errors.notFound' }],
-        byStatus: { 401: 'auth.login.errors.invalidCredentials', 404: 'auth.login.errors.notFound' },
+        byStatus: {
+          400: 'auth.login.errors.invalidCredentials',
+          401: 'auth.login.errors.invalidCredentials',
+          404: 'auth.login.errors.notFound',
+        },
       })
     : null;
 

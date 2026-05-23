@@ -36,7 +36,7 @@ export function RegisterForm() {
   const serverMessage = register.isError
     ? resolveError(register.error, {
         hints: [
-          { contains: ['exists', 'duplicate', 'taken'], key: 'auth.register.errors.duplicateEmail' },
+          { contains: ['exists', 'duplicate', 'taken', 'email'], key: 'auth.register.errors.duplicateEmail' },
           { contains: ['password', 'weak'], key: 'auth.register.errors.weakPassword' },
         ],
         byStatus: { 409: 'auth.register.errors.duplicateEmail', 422: 'auth.register.errors.weakPassword' },
