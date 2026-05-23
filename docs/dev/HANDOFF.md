@@ -1,6 +1,6 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend work. Last updated 2026-05-23.
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-23 (added Phase 7 Admin Console backlog + the P1-12 Batch-2 backend pickup).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
 
 ## TL;DR
@@ -30,6 +30,7 @@ These exist because the WSL clean install drifts dependencies past the Expo SDK 
 - **P1-11 planning docs** (story, tasks, pixel audit, designer pixel-perfect rule) + **P2-12** (settings tabs) + **P1-12** (Batch-2 BE) + the **gap analysis**.
 - **Login** screen pixel-perfect (split layout, persona toggle, social buttons UI-only, theme/lang switches) + shared `SplitFormScaffold`.
 - **Register** screen pixel-perfect + `packages/ui` `CheckboxField` (pending merge — see PR list).
+- **Phase 7 — Admin Console backlog** (PR #21, merged): 12 admin stories `P7-01..P7-12` (curriculum mgmt, user/account mgmt, content moderation, analytics/AI-safety oversight) — the feature set behind the P1-10 shell — each with BE + admin-dashboard (Next.js) task files in `…/Phase-7-Admin-Console/`. Added a real **`FR-ADM-1..12`** group to [SRS §4.9](../SRS.md) (note: `FR-ADM`, not `FR-AD` = Adaptivity) and expanded §3 + the goal matrix; all P7 stories trace to it. **Backlog/spec only — nothing implemented (all P7 rows in PROGRESS.md are 🔲).** Handoff/decisions for whoever builds it: [docs/briefs/P7-admin-console.md](../briefs/P7-admin-console.md) (PR #24).
 
 ## Key decisions (so you don't relitigate them)
 - **Pixel-perfect to `design-system/screenshots/`** is the bar. The `designer` agent has a rule: when a capture exists it's the highest-priority target (cite it, match it, express in `--lx-*` tokens). See `.claude/agents/designer.md`.
@@ -48,6 +49,13 @@ All Identity-module-scoped, parallel-safe with your Phase 2 BE work. Stories + t
 - **My Children** (sidebar + family summary + child cards; needs `Avatar` + `KPIStatCard` primitives — see `P1-11-FE-14`).
 - **Splash** polish; then Dashboard / Reports / Settings / Landing.
 - Remaining shared primitives (`P1-11-FE-14`): Tabs, Avatar, Switch, Sidebar, KPIStatCard, PasswordStrengthMeter.
+
+## What's next (backend — P1-12 "Batch 2", my pickup)
+> Owner: backend lead (me). Identity-module-scoped → **parallel-safe with the Phase 2 BE work**. Story: [P1-12](../../user-stories/Phase-1-Foundation/P1-12-web-account-backend-batch2.md) · Tasks: [P1-12-BE](../../tasks/Backend/Phase-1-Foundation/P1-12-BE.md) · Source: [phase-1-design-gap-analysis.md](../briefs/phase-1-design-gap-analysis.md). Mirror **Catalog**; `BaseResponse<T>`/`Successed`; no cross-module FK.
+- **Not started yet.** Planned order: (1) **BE-3** migration — add `Phone` (+ `Country`, `AvatarUrl`) to Identity `User`; (2) **BE-1/BE-2** profile read/update + enriched `/Me`; (3) **BE-9** register `country` + terms-consent record (COPPA); (4) **BE-8** update/edit-child with family-scope authz (unblocks P1-11 edit-child); then the heavier, security-gated items: (5) **BE-4** avatar upload + storage abstraction, (6) **BE-5** OAuth (Google/Apple/Microsoft), (7) **BE-6** password reset.
+- **`security-auditor` (BE-7)** gates upload/OAuth/reset before the reviewer — Critical/High block.
+- **Two design-pattern decisions to raise with the lead first** (CLAUDE.md rule #8): the **file-storage abstraction** (BE-4, dev-local vs object-store) and the **OAuth provider abstraction** (BE-5) — name the pattern and wait for approval; don't introduce unilaterally.
+- FE (P1-11) ships these surfaces **UI-first** (placeholder avatar, disabled social/forgot) and lights them up as each task merges; regenerate the `api-client` after BE-8/BE-9.
 
 ## Workflow notes
 - Branch per change; **PRs to main**, the user merges. **Don't stack PRs on an unmerged base and then merge the base first** — the stacked changes get stranded (this happened to Register; it was re-PR'd straight to main). Now that Login is in main, branch new screens **off main**.
