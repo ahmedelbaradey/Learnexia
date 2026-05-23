@@ -31,6 +31,11 @@ packages/shared          domain types, Zustand stores, zod, i18n + RTL helpers, 
 ## Non-negotiables
 - **API contract:** consume the backend `BaseResponse<T>` envelope (`statusCode`, `successed`, `message`, `data`, `errors`) + `PaginatedResult<T>`; types generated from Swagger v2 in `api-client`. See [docs/architecture.md §6](../../docs/architecture.md).
 - **i18n/RTL is first-class:** Arabic-first + English, Tamagui logical props; native LTR↔RTL flip needs an app reload — design the language switch around that. Fonts Cairo/Tajawal (ar) + Poppins (en).
+- **NO free-text string literals in code.** A bare string literal used as a value is a violation. Every string must resolve to exactly one of two allowed sources:
+  1. **User-facing text → an i18n translation key** (react-i18next, `t('...')`): labels, buttons, titles, errors, placeholders, toasts, a11y labels — never a literal.
+  2. **Fixed value sets → a TypeScript `enum` or `as const` union** (status, role, question type, difficulty, league tier, …) — referenced by the enum, never the raw string.
+  - **Every key must be fully translated in BOTH locales — `ar` (default/RTL) and `en` — added together in the same change.** No missing/empty values, no falling back to the key name or the other language. Keys live in `packages/shared` i18n and must be typed/namespaced (no untyped key strings).
+  - Permitted literals: typed i18n key references and the enum/const definitions themselves. Exceptions: tests, Storybook, dev-only logs, design-token keys, and non-user-facing technical identifiers.
 - **Kid UX (NFR-6):** large touch targets, one primary action/screen, minimal text, instant visual feedback, gamified animations.
 - **Product overrides (from CLAUDE.md):** parent-driven onboarding (no student self-register); **4 subjects, no Social Studies**; no teacher role.
 - **No server data in Zustand** — that's TanStack Query's job.
