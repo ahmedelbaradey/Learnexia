@@ -6,7 +6,7 @@
 - **Issue type:** Story
 - **Story Points:** 8 — a draft→published lifecycle with versioning and a student-eye preview spanning the whole hierarchy.
 - **Labels:** `admin`, `curriculum`, `backend`, `frontend`
-- **Requirements:** SRS §3 (Admin role), FR-LR-1, FR-LR-2
+- **Requirements:** SRS §3 (Admin role), FR-ADM-4
 
 ## Description
 As an admin, I want curriculum content to move through a draft→published lifecycle with versions and a preview, so that I can edit safely and only expose vetted content to students.

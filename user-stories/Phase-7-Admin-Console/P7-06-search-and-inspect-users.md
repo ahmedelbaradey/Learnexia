@@ -6,7 +6,7 @@
 - **Issue type:** Story
 - **Story Points:** 5 — paginated/filterable search over parents + children plus a read-only profile/family/activity view; reuses Identity, but aggregates cross-module activity via contracts.
 - **Labels:** `admin`, `identity`, `backend`, `frontend`
-- **Requirements:** SRS §3 (Admin role), FR-ID-1, FR-ID-3
+- **Requirements:** SRS §3 (Admin role), FR-ADM-5
 
 ## Description
 As an admin, I want to search and inspect parent and child accounts, so that I can resolve support requests and investigate issues without touching another family's data unnecessarily.

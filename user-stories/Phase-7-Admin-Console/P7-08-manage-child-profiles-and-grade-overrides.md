@@ -6,7 +6,7 @@
 - **Issue type:** Story
 - **Story Points:** 5 — admin edits to a child's grade/language/country; grade override must re-scope curriculum while preserving history (per P5-06) via integration events.
 - **Labels:** `admin`, `identity`, `backend`, `frontend`
-- **Requirements:** SRS §3 (Admin role), FR-ID-2, FR-ID-3, FR-LR-1
+- **Requirements:** SRS §3 (Admin role), FR-ADM-7
 
 ## Description
 As an admin, I want to edit a child's profile and override their grade, so that I can correct mistakes and help with support cases without forcing the parent to redo onboarding.

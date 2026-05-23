@@ -6,7 +6,7 @@
 - **Issue type:** Story
 - **Story Points:** 5 — lifecycle state machine on Identity accounts with confirmation + reason, cascade to linked children, and integration-event notification of other modules.
 - **Labels:** `admin`, `identity`, `backend`, `frontend`
-- **Requirements:** SRS §3 (Admin role), FR-ID-1, FR-ID-3, NFR-4
+- **Requirements:** SRS §3 (Admin role), FR-ADM-6
 
 ## Description
 As an admin, I want to suspend, reactivate, and delete parent or child accounts, so that I can enforce policy and handle abuse, support, or data-removal requests safely.

@@ -6,7 +6,7 @@
 - **Issue type:** Story
 - **Story Points:** 5 — read-only aggregate dashboard over AI-safety signals (P3-02) + eval results (P6-02) plus tutor usage/cost; child-safety sensitive, admin-only.
 - **Labels:** `admin`, `analytics`, `ai`, `safety`, `backend`, `frontend`
-- **Requirements:** SRS §3 (Admin role), FR-AI-4 (AI safety), NFR-1
+- **Requirements:** SRS §3 (Admin role), FR-ADM-10, FR-AI-4
 
 ## Description
 As an admin, I want an AI-safety & quality monitoring dashboard, so that I can confirm the AI Safety Layer is working — see blocked/flagged AI outputs, eval pass/fail rates, and tutor usage & cost — and catch regressions before they reach children.

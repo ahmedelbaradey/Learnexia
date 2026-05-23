@@ -6,7 +6,7 @@
 - **Issue type:** Story
 - **Story Points:** 8 — CRUD over quizzes and the 4 question types with per-type validation, plus attachment to lessons/skills across module boundaries.
 - **Labels:** `admin`, `curriculum`, `backend`, `frontend`
-- **Requirements:** SRS §3 (Admin role), FR-QZ-1, FR-QZ-3
+- **Requirements:** SRS §3 (Admin role), FR-ADM-3
 
 ## Description
 As an admin, I want to create quizzes and author their questions across the 4 supported types, then attach a quiz to a lesson or skill, so that assessments are curated through the dashboard instead of seeded.

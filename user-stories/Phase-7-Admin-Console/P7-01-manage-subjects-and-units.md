@@ -6,7 +6,7 @@
 - **Issue type:** Story
 - **Story Points:** 5 — CRUD over two hierarchy levels plus ordering and activate/deactivate, on top of the existing `learning` entities.
 - **Labels:** `admin`, `curriculum`, `backend`, `frontend`
-- **Requirements:** SRS §3 (Admin role), FR-LR-1
+- **Requirements:** SRS §3 (Admin role), FR-ADM-1
 
 ## Description
 As an admin, I want to create, edit, reorder and activate/deactivate subjects and their units, so that I can curate the top of the curriculum hierarchy without a developer running seed scripts.

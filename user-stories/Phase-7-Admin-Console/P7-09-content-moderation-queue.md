@@ -6,7 +6,7 @@
 - **Issue type:** Story
 - **Story Points:** 8 — cross-cutting queue fed by multiple modules via contracts, plus stateful review actions and admin-only access.
 - **Labels:** `admin`, `moderation`, `backend`, `frontend`
-- **Requirements:** SRS §3 (Admin role), FR-AI-4 (AI safety), FR-CI-1 (curriculum ingestion)
+- **Requirements:** SRS §3 (Admin role), FR-ADM-8, FR-AI-4
 
 ## Description
 As an admin, I want a moderation queue where I can review, approve, reject, or flag AI-generated and uploaded content, so that no unsafe or low-quality material reaches children and the human-in-the-loop layer on top of the AI Safety Layer is enforced.

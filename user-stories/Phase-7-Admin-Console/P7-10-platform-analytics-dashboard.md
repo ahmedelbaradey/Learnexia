@@ -6,7 +6,7 @@
 - **Issue type:** Story
 - **Story Points:** 5 — read-only aggregate read-model over the P5-03 analytics events plus a charted KPI dashboard; admin-only.
 - **Labels:** `admin`, `analytics`, `backend`, `frontend`
-- **Requirements:** SRS §3 (Admin role), FR-PA-3, NFR-1
+- **Requirements:** SRS §3 (Admin role), FR-ADM-9, FR-PA-3
 
 ## Description
 As an admin, I want a platform-wide KPI dashboard, so that I can see how the whole platform is performing — active users, retention, learning throughput, and engagement — and make product decisions without querying the database by hand.

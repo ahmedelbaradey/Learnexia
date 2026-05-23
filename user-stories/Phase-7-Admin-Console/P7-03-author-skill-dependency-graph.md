@@ -6,7 +6,7 @@
 - **Issue type:** Story
 - **Story Points:** 8 — CRUD over skills plus a visual editor over the relational graph with acyclic validation surfaced to the admin.
 - **Labels:** `admin`, `curriculum`, `backend`, `frontend`
-- **Requirements:** SRS §3 (Admin role), FR-AD-1, FR-QZ-3
+- **Requirements:** SRS §3 (Admin role), FR-ADM-2, FR-CI-3
 
 ## Description
 As an admin, I want to author skills and edit their prerequisite dependency graph through a visual UI, so that I can maintain "the most important asset in the company" without writing seed data by hand.

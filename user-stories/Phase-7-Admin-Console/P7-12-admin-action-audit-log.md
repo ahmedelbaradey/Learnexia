@@ -6,7 +6,7 @@
 - **Issue type:** Story
 - **Story Points:** 5 — append-only event-fed log with searchable/exportable read side; care needed to guarantee immutability.
 - **Labels:** `admin`, `moderation`, `backend`, `frontend`
-- **Requirements:** SRS §3 (Admin role), NFR-4 (security/auditability)
+- **Requirements:** SRS §3 (Admin role), FR-ADM-11, NFR-4
 
 ## Description
 As an admin, I want an immutable log of every admin action recording who did what, when, and the before/after state, so that all governance activity is traceable, accountable, and reviewable for compliance.

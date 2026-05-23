@@ -6,7 +6,7 @@
 - **Issue type:** Story
 - **Story Points:** 8 — CRUD plus an ordered content-block editor and lesson metadata, the richest editing surface in the area.
 - **Labels:** `admin`, `curriculum`, `backend`, `frontend`
-- **Requirements:** SRS §3 (Admin role), FR-LR-1, FR-LR-2
+- **Requirements:** SRS §3 (Admin role), FR-ADM-1
 
 ## Description
 As an admin, I want to create and edit lessons within a unit and author their content as ordered blocks, so that students see structured lesson material curated through the dashboard rather than seeded by hand.

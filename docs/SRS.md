@@ -50,7 +50,7 @@ graph TD
 |---|---|---|
 | **Student** | Learn, take quizzes, ask AI tutor, earn XP/badges, view own profile/leagues | See other students' private data, access parent reports |
 | **Parent** | View linked child's reports/weak-areas/progress, manage account | Access learning content as a learner, see other families |
-| **Admin** | Manage curriculum upload, subjects, content moderation config | — |
+| **Admin** | Manage the curriculum (subjects, units, lessons, skills/graph, quizzes; draft→publish & versioning); upload curriculum; search/inspect & manage user accounts (suspend/reactivate/delete, child grade overrides); moderate content; view platform analytics & AI-safety dashboards; all actions audited | Act as a learner; bypass the audit log; self-register (admins are seeded/invited) |
 
 Roles build on the existing Identity module's role/permission model (see [architecture.md §9](architecture.md)). **No teacher role exists.**
 
@@ -111,6 +111,21 @@ Roles build on the existing Identity module's role/permission model (see [archit
 - **FR-CI-2** Documents shall be OCR'd (Arabic-capable), structured into the curriculum hierarchy, and semantically chunked. *(G5)*
 - **FR-CI-3** Build a knowledge graph of concepts/skills with prerequisite/related edges. *(G2,G5)* — *(an **MVP slice** of this — a hand-authored, relational, acyclic skill dependency graph using `KnowledgeNode`/`KnowledgeEdge` — is pulled forward to Phase 2 to back prerequisite unlocks and remediation without the OCR pipeline; see story P2-11.)*
 - **FR-CI-4** Store chunk embeddings in a vector store for retrieval by the AI tutor. *(G2,G5)*
+
+### 4.9 Admin Console (`FR-ADM`) — *post-MVP; admin features behind the P1-10 dashboard shell*
+> The admin sign-in + dashboard shell is delivered in Phase 1 (story P1-10, reusing FR-ID-1/4 + the §3 Admin role + RBAC). The requirements below specify the **admin feature set** that shell hosts (stories P7-01..P7-12). All are **Admin-role-only** and **audited** (FR-ADM-11/12). The curriculum-authoring requirements complement the ingestion pipeline (FR-CI-*): FR-ADM covers **hand-authoring/management via the dashboard**, FR-CI covers **automated ingestion** of uploaded documents.
+- **FR-ADM-1** Admins shall create, edit, reorder, and activate/deactivate **subjects, units, and lessons** (including lesson content blocks); inactive items are hidden from learners but preserved (soft state), and a non-empty container cannot be deleted. *(G5)* — *(stories P7-01, P7-02; manages the FR-LR-1 hierarchy.)*
+- **FR-ADM-2** Admins shall author **skills and the relational skill dependency graph** (prerequisite edges within/across lessons), validated as **acyclic** at author time. *(G2,G5)* — *(story P7-03; the dashboard authoring surface for the FR-CI-3 / P2-11 graph.)*
+- **FR-ADM-3** Admins shall create, edit, and manage **quizzes and questions** across the four question types (MCQ, True/False, Matching, Fill-in-the-blank), attaching them to lessons/skills. *(G2,G5)* — *(story P7-04; authors content for FR-QZ-1.)*
+- **FR-ADM-4** Curriculum content shall support a **draft → published lifecycle with versioning** and a **preview** of unpublished content; only published content is visible to learners. *(G5)* — *(story P7-05.)*
+- **FR-ADM-5** Admins shall **search and inspect user accounts** (parents and children) — profile, family links, and activity — applying **child-data minimization** (aggregates/necessary fields only). *(G4,G5)* — *(story P7-06.)*
+- **FR-ADM-6** Admins shall perform **account-lifecycle actions** — suspend, reactivate, and delete — each requiring a **reason and confirmation**, and each audited. *(G5)* — *(story P7-07.)*
+- **FR-ADM-7** Admins shall edit a child's profile and **override grade/language/country**, **preserving learning history** (XP/badges/streaks/mastery), consistent with the grade-transition rule. *(G4,G5)* — *(story P7-08; mirrors FR-PA grade transition / P5-06.)*
+- **FR-ADM-8** A **content moderation queue** shall let admins review, approve, reject, or flag **AI-generated and uploaded content** — a human-in-the-loop layer **on top of** the AI Safety Layer (FR-AI-4), not a replacement. *(G2)* — *(story P7-09.)*
+- **FR-ADM-9** Admins shall view a **platform analytics & KPI dashboard** (active users, retention, lessons/quizzes completed, engagement) built on captured analytics (FR-PA-3), showing **aggregates** rather than individual child PII unless drilling into a specific account. *(G5)* — *(story P7-10.)*
+- **FR-ADM-10** Admins shall view an **AI-safety & quality monitoring dashboard** (safety-eval results, blocked/flagged AI outputs, tutor usage & cost) built on the Safety Layer (FR-AI-4) and the AI-safety eval set. *(G2)* — *(story P7-11.)*
+- **FR-ADM-11** All admin actions shall be recorded in an **immutable, append-only audit log** (actor, action, target, timestamp, before/after), **searchable and exportable**, with no edit/delete path. *(G5)* — *(story P7-12.)*
+- **FR-ADM-12** All admin-console capabilities shall be **restricted to the Admin role** via permission policies (RBAC); admin accounts are **provisioned by seeding/invite — never public self-registration**. *(G5)* — *(cross-cutting; reuses P1-05 RBAC + P1-10.)*
 
 ## 5. Non-Functional Requirements
 
@@ -371,7 +386,7 @@ The current [backend](architecture.md) is a **.NET 10 modular monolith on SQL Se
 | BRD Goal | Functional Requirements |
 |---|---|
 | **G1** Engagement | FR-ID-1/4, FR-LR-2, FR-QZ-2, FR-GM-1/3/6/8/9, FR-PA-3 |
-| **G2** Learning outcomes | FR-ID-2, FR-LR-1/3/4, FR-AI-1..6, FR-AD-1..5, FR-QZ-1/3/4, FR-CI-3/4, FR-PA-4 |
+| **G2** Learning outcomes | FR-ID-2, FR-LR-1/3/4, FR-AI-1..6, FR-AD-1..5, FR-QZ-1/3/4, FR-CI-3/4, FR-PA-4, FR-ADM-2/3/8/10 |
 | **G3** Daily habit | FR-AD-4/5, FR-GM-1/2/4/5/8/9 |
-| **G4** Parent visibility | FR-ID-3, FR-PA-1/2 |
-| **G5** Scalable platform | FR-ID-2, FR-LR-1, FR-GM-7, FR-PA-3/4, FR-CI-1..4 |
+| **G4** Parent visibility | FR-ID-3, FR-PA-1/2, FR-ADM-5/7 |
+| **G5** Scalable platform | FR-ID-2, FR-LR-1, FR-GM-7, FR-PA-3/4, FR-CI-1..4, FR-ADM-1/2/3/4/5/6/7/9/11/12 |
