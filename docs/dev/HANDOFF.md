@@ -70,6 +70,15 @@ All Identity-module-scoped, parallel-safe with your Phase 2 BE work. Stories + t
 - **Build order:** **P1-13a first** (email infra → unblocks P1-12d & P5-04), then **P1-13** = lockout (#1), sign-in safety/anti-enumeration (#2), config-driven admin seed (#5), CAPTCHA (#3, may defer to P6). P1-13's lockout/sign-in/admin-seed don't depend on email and can run in parallel with P1-13a.
 - **Ask-first before coding P1-13a:** the `IEmailSender` Adapter pattern + the staging/prod email-provider choice (SMTP relay vs SendGrid/SES) need lead approval (CLAUDE.md rule #8).
 
+### Backend → Frontend coverage gap analysis (new, 2026-05-24)
+> The reverse of the FE-design gap analysis: starting from every Phase-1 **backend capability**, does a FE story/task consume it? Brief: [docs/briefs/phase-1-frontend-coverage-gap-analysis.md](../briefs/phase-1-frontend-coverage-gap-analysis.md) (grounded in the real Identity/Notifications controllers).
+- **Headline:** most backend is already FE-covered — the earlier design gap analysis routed every design-implied backend gap into **P1-12 (Batch 2)**, and **P1-12-FE already plans that wiring** (FE-1..5). Those are deferred, not gaps.
+- **Real FE gaps found → tasks added (no new story needed):**
+  - **F2 (sign-in contract change, highest value):** P1-13-BE-1/2 change Sign-In (locked-account message + uniform "invalid credentials" anti-enumeration) but no FE consumed it → added **P1-11-FE-15** (student login) + **P1-10-FE-6** (admin login). **Both must land after P1-13-BE-1/2 merge.**
+  - **F1 (register country+consent wiring):** P1-12-BE-9 persists `country`+terms-consent but no FE task wired the collected fields → added **P1-12-FE-7** (Batch 2, after BE-9 + api-client regen).
+- **CAPTCHA on register (P1-13-BE-4) — confirmed in P1 scope (2026-05-24):** added **P1-11-FE-16** — Register integrates the bot-challenge and sends the token when the server advertises the requirement; **lands after P1-13-BE-4 merges**. (P1-13-BE-4 stays in P1, no longer deferred to P6.)
+- **Resolved non-gaps:** student-app sign-out is already covered by **P1-02-FE-3** (`useSignOut`); email-verification UX is N/A (BYPASSED by lead decision); the AdminOnly UserManagement/Authorzation surface is correctly deferred to the Phase 7 Admin Console.
+
 ## Workflow notes
 - Branch per change; **PRs to main**, the user merges. **Don't stack PRs on an unmerged base and then merge the base first** — the stacked changes get stranded (this happened to Register; it was re-PR'd straight to main). Now that Login is in main, branch new screens **off main**.
 - Git identity isn't set in this WSL checkout — commits use a per-invocation `-c user.name/email` override (`Ahmed Elbaradey <elbaradeyahmed1985@gmail.com>`); set it permanently if you prefer.
