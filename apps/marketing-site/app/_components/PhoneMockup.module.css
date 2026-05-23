@@ -1,0 +1,175 @@
+/* Decorative phone mockup + floating reward chips. Tokens only. */
+
+.stage {
+  position: relative;
+  width: 320px;
+  max-width: 100%;
+}
+
+/* Device frame */
+.phone {
+  position: relative;
+  width: 320px;
+  max-width: 100%;
+  aspect-ratio: 320 / 640;
+  border-radius: 44px;
+  padding: 14px;
+  background: #050a18;
+  border: 2px solid var(--lx-border-strong);
+  box-shadow: var(--lx-shadow-float), 0 0 80px rgba(99, 102, 241, 0.25);
+}
+
+/* Screen: purple gamified gradient (matches capture) */
+.screen {
+  position: relative;
+  height: 100%;
+  border-radius: 32px;
+  padding: var(--lx-space-5);
+  background: linear-gradient(160deg, #6d28d9 0%, #5b21b6 40%, #4c1d95 100%);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lx-space-4);
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.childName {
+  font-family: var(--lx-font-display);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--lx-fg1);
+}
+
+.streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--lx-radius-pill);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--lx-streak);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.streakFlame {
+  font-size: 13px;
+}
+
+/* Continue-learning card */
+.continueCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lx-space-2);
+  padding: var(--lx-space-4);
+  border-radius: var(--lx-radius-card);
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--lx-border);
+}
+
+.continueLabel {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--lx-accent);
+}
+
+.continueSubject {
+  font-family: var(--lx-font-display);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--lx-fg1);
+}
+
+.progressTrack {
+  margin-top: var(--lx-space-1);
+  height: 8px;
+  border-radius: var(--lx-radius-pill);
+  background: rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.progressFill {
+  display: block;
+  height: 100%;
+  width: 62%;
+  border-radius: var(--lx-radius-pill);
+  background: var(--lx-grad-xp);
+}
+
+/* 2×2 subject grid */
+.subjectGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--lx-space-3);
+}
+
+.subjectTile {
+  aspect-ratio: 1.4 / 1;
+  border-radius: var(--lx-radius-card);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--lx-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.subjectIcon {
+  font-size: 26px;
+}
+
+.subjectText {
+  font-family: var(--lx-font-display);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--lx-fg1);
+}
+
+/* Decorative star */
+.star {
+  margin-top: auto;
+  align-self: center;
+  color: var(--lx-xp);
+  font-size: 24px;
+  text-shadow: 0 0 16px var(--lx-xp-glow);
+}
+
+/* ----------------------------- Reward chips ---------------------------- */
+.chip {
+  position: absolute;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 14px;
+  border-radius: var(--lx-radius-pill);
+  box-shadow: var(--lx-shadow-float);
+}
+
+.chipXp {
+  top: 56px;
+  inset-inline-end: -40px;
+  padding: 10px 16px;
+  background: var(--lx-secondary);
+  color: var(--lx-fg-inverse);
+}
+
+.chipBadge {
+  bottom: 96px;
+  inset-inline-start: -56px;
+  padding: 12px 18px;
+  background: var(--lx-card);
+  color: var(--lx-fg1);
+  border: 1px solid var(--lx-border-strong);
+}
+
+.chipBadgeIcon {
+  font-size: 15px;
+}

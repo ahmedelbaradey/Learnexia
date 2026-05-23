@@ -1,0 +1,297 @@
+/* Landing page layout — pixel-perfect to 01-landing.png. All colour/type/
+   radius/spacing values resolve to the design-system --lx-* tokens. */
+
+.root {
+  min-height: 100vh;
+  background: var(--lx-bg);
+  color: var(--lx-fg1);
+  font-family: var(--lx-font-body);
+}
+
+/* ------------------------------- Top nav ------------------------------- */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--lx-bg);
+  border-bottom: 1px solid var(--lx-border);
+}
+
+.navInner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--lx-space-4) var(--lx-space-6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lx-space-6);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.navLinks {
+  display: flex;
+  align-items: center;
+  gap: var(--lx-space-8);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--lx-fg1);
+}
+
+.navLinks a:hover {
+  color: var(--lx-fg2);
+}
+
+.navActions {
+  display: flex;
+  align-items: center;
+  gap: var(--lx-space-3);
+  flex-shrink: 0;
+}
+
+.btnOutline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px var(--lx-space-5);
+  border-radius: var(--lx-radius-button);
+  border: 1px solid var(--lx-border-strong);
+  background: transparent;
+  color: var(--lx-fg1);
+  font-weight: 600;
+  font-size: 15px;
+  transition: border-color var(--lx-dur-fast) var(--lx-ease-out);
+}
+
+.btnOutline:hover {
+  border-color: var(--lx-fg3);
+}
+
+.btnPrimary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px var(--lx-space-5);
+  border-radius: var(--lx-radius-button);
+  background: var(--lx-primary);
+  color: var(--lx-fg1);
+  font-weight: 700;
+  font-size: 15px;
+  box-shadow: var(--lx-shadow-primary-glow);
+  transition: background var(--lx-dur-fast) var(--lx-ease-out);
+}
+
+.btnPrimary:hover {
+  background: var(--lx-primary-hover);
+}
+
+/* -------------------------------- Hero --------------------------------- */
+.hero {
+  position: relative;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--lx-space-16) var(--lx-space-6);
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  align-items: center;
+  gap: var(--lx-space-12);
+  overflow: hidden;
+}
+
+/* Soft radial glow behind the hero copy (matches the capture). */
+.heroGlow {
+  position: absolute;
+  top: -120px;
+  inset-inline-start: -80px;
+  width: 620px;
+  height: 620px;
+  border-radius: var(--lx-radius-pill);
+  background: radial-gradient(
+    circle,
+    var(--lx-primary-soft) 0%,
+    rgba(168, 85, 247, 0.06) 45%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.heroCopy {
+  position: relative;
+  z-index: 1;
+  max-width: 560px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lx-space-2);
+  padding: 6px var(--lx-space-3);
+  border-radius: var(--lx-radius-pill);
+  border: 1px solid var(--lx-border-strong);
+  background: var(--lx-primary-soft);
+  color: var(--lx-primary-hover);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.pillSpark {
+  color: var(--lx-purple);
+}
+
+.headline {
+  margin: var(--lx-space-6) 0 0;
+  font-family: var(--lx-font-display);
+  font-size: clamp(40px, 5.2vw, 68px);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--lx-fg1);
+}
+
+.headlineAccent {
+  color: var(--lx-accent);
+}
+
+.paragraph {
+  margin: var(--lx-space-6) 0 0;
+  max-width: 520px;
+  font-size: 19px;
+  line-height: 1.55;
+  color: var(--lx-fg2);
+}
+
+.paragraphStrong {
+  color: var(--lx-fg1);
+  font-weight: 700;
+}
+
+.ctaRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: var(--lx-space-4);
+  margin-top: var(--lx-space-10);
+}
+
+.ctaPrimary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px var(--lx-space-6);
+  border-radius: var(--lx-radius-button);
+  background: var(--lx-primary);
+  color: var(--lx-fg1);
+  font-weight: 700;
+  font-size: 17px;
+  box-shadow: var(--lx-shadow-primary-glow);
+  transition: background var(--lx-dur-fast) var(--lx-ease-out);
+}
+
+.ctaPrimary:hover {
+  background: var(--lx-primary-hover);
+}
+
+.ctaSecondary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lx-space-3);
+  padding: 18px var(--lx-space-6);
+  border-radius: var(--lx-radius-button);
+  border: 1px solid var(--lx-border-strong);
+  background: var(--lx-card);
+  color: var(--lx-fg1);
+  font-weight: 600;
+  font-size: 17px;
+  transition: border-color var(--lx-dur-fast) var(--lx-ease-out);
+}
+
+.ctaSecondary:hover {
+  border-color: var(--lx-fg3);
+}
+
+.playIcon {
+  font-size: 12px;
+  color: var(--lx-fg1);
+}
+
+.trustRow {
+  list-style: none;
+  margin: var(--lx-space-8) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lx-space-6);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--lx-fg2);
+}
+
+.trustRow li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lx-space-2);
+}
+
+.trustIcon {
+  font-size: 15px;
+}
+
+/* ------------------------------ Hero art ------------------------------- */
+.heroArt {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ----------------------- Below-the-fold sections ----------------------- */
+.section {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--lx-space-12) var(--lx-space-6);
+  border-top: 1px solid var(--lx-border);
+}
+
+.sectionTitle {
+  margin: 0 0 var(--lx-space-4);
+  font-family: var(--lx-font-display);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--lx-fg1);
+}
+
+.sectionBody {
+  margin: 0 0 var(--lx-space-6);
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--lx-fg2);
+}
+
+.footer {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--lx-space-8) var(--lx-space-6) var(--lx-space-12);
+  border-top: 1px solid var(--lx-border);
+  color: var(--lx-fg3);
+  font-size: 14px;
+}
+
+/* ------------------------------ Responsive ----------------------------- */
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+    padding-top: var(--lx-space-12);
+  }
+  .heroArt {
+    order: -1;
+  }
+  .navLinks {
+    display: none;
+  }
+}
