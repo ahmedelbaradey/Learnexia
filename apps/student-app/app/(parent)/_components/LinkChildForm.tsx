@@ -45,9 +45,14 @@ export function LinkChildForm() {
     : null;
 
   const onSubmit = handleSubmit(async (values) => {
-    const res = await linkChild.mutateAsync({ childEmail: values.email.trim() });
-    await queryClient.invalidateQueries({ queryKey: ['family', 'my-children'] });
-    setLinked(res);
+    try {
+      const res = await linkChild.mutateAsync({ childEmail: values.email.trim() });
+      await queryClient.invalidateQueries({ queryKey: ['family', 'my-children'] });
+      setLinked(res);
+    } catch {
+      // Failure is surfaced inline via linkChild.error; swallow the rejection so
+      // it doesn't bubble as an uncaught promise error.
+    }
   });
 
   if (linked) {

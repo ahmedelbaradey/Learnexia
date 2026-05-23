@@ -44,14 +44,19 @@ export function RegisterForm() {
     : null;
 
   const onSubmit = handleSubmit(async (values) => {
-    const res = await register.mutateAsync({
-      email: values.email.trim(),
-      password: values.password,
-      fullName: values.fullName?.trim() || undefined,
-    });
-    if (res.accessToken && res.refreshToken?.tokenString) {
-      await setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken.tokenString });
-      router.replace('/(onboarding)/add-child');
+    try {
+      const res = await register.mutateAsync({
+        email: values.email.trim(),
+        password: values.password,
+        fullName: values.fullName?.trim() || undefined,
+      });
+      if (res.accessToken && res.refreshToken?.tokenString) {
+        await setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken.tokenString });
+        router.replace('/(onboarding)/add-child');
+      }
+    } catch {
+      // Failure is surfaced inline via register.error → serverMessage; swallow
+      // the rejection so it doesn't bubble as an uncaught promise error.
     }
   });
 

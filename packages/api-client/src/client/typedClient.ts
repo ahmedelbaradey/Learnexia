@@ -117,6 +117,28 @@ function translateError(err: unknown): Error {
   }
   // ApiAuthError is thrown directly by transportFetch on unrecoverable refresh.
   if (err instanceof Error) return err;
+  // NSwag's generated `throwException` throws the PARSED response body (not an
+  // ApiException) whenever the endpoint declares a result type for that status
+  // code — so a 4xx/5xx `BaseResponse` envelope arrives here as a plain object.
+  // Map it to our typed errors so callers get the real status + message/errors
+  // instead of an opaque "Unknown request error".
+  if (err && typeof err === 'object') {
+    const env = err as GeneratedEnvelope<unknown> & { errors?: unknown[] };
+    if ('successed' in env || 'statusCode' in env || 'message' in env) {
+      const status = (env.statusCode as number) ?? 0;
+      if (status === 422) {
+        return new ValidationError(
+          env.message ?? 'Validation failed',
+          (env.errors as unknown[]) ?? [],
+          status,
+        );
+      }
+      if (status === 401) {
+        return new ApiAuthError(env.message ?? 'Authentication required');
+      }
+      return new ApiEnvelopeError(env as BaseResponse<unknown>, status);
+    }
+  }
   return new ApiError('Unknown request error', 0);
 }
 
