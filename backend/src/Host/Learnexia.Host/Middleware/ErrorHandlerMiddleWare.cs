@@ -8,6 +8,14 @@ namespace Learnexia.Host.Middleware;
 
 public class ErrorHandlerMiddleWare
 {
+    // Match the controllers' BaseResponse output (MVC uses camelCase). Without
+    // this, the exception path emits PascalCase (StatusCode/Errors), so error
+    // envelopes were inconsistent with success envelopes and broke client parsing.
+    private static readonly JsonSerializerOptions SerializerOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    };
+
     private readonly ILoggerManager _logger;
     private readonly RequestDelegate _next;
 
@@ -65,7 +73,7 @@ public class ErrorHandlerMiddleWare
                 break;
         }
 
-        var result = JsonSerializer.Serialize(responseModel);
+        var result = JsonSerializer.Serialize(responseModel, SerializerOptions);
         await response.WriteAsync(result);
     }
 
