@@ -6,51 +6,105 @@ const extraFont = { fontFamily: 'Poppins, system-ui, sans-serif' };
 
 // ───────────────────────────────────────────── SPLASH
 function SplashScreen({ onContinue }) {
+  // deterministic sparkle positions so they don't jump on re-render
+  const sparkles = React.useMemo(() => Array.from({ length: 14 }, (_, i) => ({
+    top: (i * 73) % 100, left: (i * 41 + 17) % 100,
+    size: (i % 3) + 3,
+    opacity: 0.25 + ((i * 7) % 50) / 100,
+  })), []);
   return (
     <div onClick={onContinue} style={{
       width: '100%', height: '100%', position: 'relative',
-      background: 'radial-gradient(circle at 50% 35%,#A855F7 0%,#4F46E5 40%,#0F172A 80%)',
+      background: 'radial-gradient(circle at 50% 45%,#4F3FB0 0%,#3B2C8F 40%,#241B6A 100%)',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      gap: 24, cursor: 'pointer', ...extraFont,
+      cursor: 'pointer', ...extraFont, overflow: 'hidden',
     }}>
-      {/* sparkles */}
-      {Array.from({ length: 18 }).map((_, i) => (
+      {sparkles.map((s, i) => (
         <div key={i} style={{
           position: 'absolute',
-          top: `${Math.random() * 100}%`, left: `${Math.random() * 100}%`,
-          width: 4, height: 4, borderRadius: '50%',
-          background: ['#FACC15', '#FB7185', '#86EFAC', '#A5B4FC'][i % 4],
-          boxShadow: '0 0 8px currentColor',
-          opacity: 0.7,
+          top: `${s.top}%`, left: `${s.left}%`,
+          width: s.size, height: s.size, borderRadius: '50%',
+          background: '#fff', opacity: s.opacity,
+          boxShadow: `0 0 ${s.size * 2}px rgba(255,255,255,${s.opacity})`,
         }}/>
       ))}
+      {/* centered content */}
       <div style={{
-        width: 120, height: 120, borderRadius: 36,
-        background: 'linear-gradient(135deg,#A855F7,#6366F1)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        boxShadow: '0 24px 60px rgba(168,85,247,0.55), inset 0 2px 0 rgba(255,255,255,0.2)',
-        animation: 'lxpop 800ms cubic-bezier(0.34,1.56,0.64,1)',
+        position: 'absolute', top: '40%', left: '50%',
+        transform: 'translate(-50%, -50%)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18,
       }}>
-        <div style={{ fontSize: 64 }}>🌟</div>
-      </div>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontWeight: 900, fontSize: 40, color: '#F8FAFC', letterSpacing: '-0.02em' }}>
-          Learn<span style={{ color: '#FACC15' }}>e</span>xia
+        <div style={{
+          width: 132, height: 132, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(250,204,21,0.35) 0%, rgba(168,85,247,0) 65%)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          animation: 'lxpop 800ms cubic-bezier(0.34,1.56,0.64,1)',
+        }}>
+          <div style={{
+            fontSize: 88, filter: 'drop-shadow(0 0 20px rgba(250,204,21,0.6))',
+            animation: 'lxpulse 2.4s ease-in-out infinite',
+          }}>🌟</div>
         </div>
-        <div style={{ fontSize: 14, color: '#CBD5E1', marginTop: 6, fontWeight: 500 }}>
-          AI Learning Adventure Begins
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontWeight: 900, fontSize: 36, color: '#F8FAFC', letterSpacing: '-0.02em' }}>
+            Learnexia
+          </div>
+          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 8, fontWeight: 500 }}>
+            AI Learning Adventure Begins
+          </div>
         </div>
       </div>
+
+      {/* loading bar at ~70% */}
       <div style={{
-        marginTop: 18, fontSize: 12, color: '#94A3B8',
-        fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase',
-        display: 'flex', alignItems: 'center', gap: 6,
+        position: 'absolute', top: '70%', left: 0, right: 0,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14,
       }}>
-        <span style={{
-          width: 14, height: 14, border: '2px solid #94A3B8', borderTopColor: '#FACC15',
-          borderRadius: '50%', display: 'inline-block', animation: 'lxspin 1s linear infinite',
-        }}/>
-        Loading…
+        <div style={{ display: 'flex', gap: 6 }}>
+          {[0, 1, 2].map(i => (
+            <div key={i} style={{
+              width: 8, height: 8, borderRadius: '50%',
+              background: i === 0 ? '#A855F7' : i === 1 ? '#6366F1' : 'rgba(255,255,255,0.3)',
+              animation: `lxdot 1.4s ease-in-out ${i * 0.2}s infinite`,
+            }}/>
+          ))}
+        </div>
+        <div style={{
+          width: 220, height: 6, borderRadius: 9999,
+          background: 'rgba(0,0,0,0.35)', overflow: 'hidden',
+        }}>
+          <div style={{
+            height: '100%', width: '55%',
+            background: 'linear-gradient(90deg,#C4B5FD,#818CF8)',
+            borderRadius: 9999,
+            animation: 'lxload 2.5s ease-in-out infinite',
+          }}/>
+        </div>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          color: 'rgba(255,255,255,0.7)', fontSize: 15, fontWeight: 500,
+        }}>
+          Loading… <span style={{ fontSize: 16 }}>⚡</span>
+        </div>
+      </div>
+
+      {/* footer */}
+      <div style={{
+        position: 'absolute', bottom: 50, left: 0, right: 0,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+      }}>
+        <div style={{
+          fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)',
+          letterSpacing: '0.18em', textTransform: 'uppercase',
+        }}>POWERED BY AI</div>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          fontSize: 13, color: 'rgba(255,255,255,0.65)', fontWeight: 500,
+        }}>
+          <span style={{ color: '#A78BFA' }}>✦</span>
+          Gamified Learning
+          <span style={{ color: '#A78BFA' }}>✦</span>
+        </div>
       </div>
     </div>
   );
@@ -543,4 +597,155 @@ function StatTile({ icon, value, label, color }) {
 Object.assign(window, {
   SplashScreen, RoleSelectScreen, GradeSelectScreen, SubjectSelectScreen,
   LeagueScreen, BadgeCollectionScreen, HeartsScreen, DailyMissionScreen, ProfileScreen,
+  MissionCompletedScreen,
 });
+
+// ───────────────────────────────────────────── MISSION COMPLETED
+function MissionCompletedScreen({ onContinue, onChallenge }) {
+  return (
+    <div style={{
+      width: '100%', height: '100%', position: 'relative',
+      background: '#0A0B11',
+      display: 'flex', flexDirection: 'column',
+      padding: '60px 20px 32px',
+      ...extraFont, overflow: 'auto',
+    }}>
+      {/* Title */}
+      <div style={{ textAlign: 'center', marginBottom: 24 }}>
+        <div style={{
+          fontSize: 84, marginBottom: 12,
+          animation: 'lxpop 800ms cubic-bezier(0.34,1.56,0.64,1)',
+        }}>🎉</div>
+        <div style={{
+          fontWeight: 900, fontSize: 36, color: '#F8FAFC',
+          letterSpacing: '-0.02em', lineHeight: 1.1,
+        }}>Mission Completed!</div>
+        <div style={{
+          fontSize: 15, color: '#94A3B8',
+          marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+        }}>
+          You crushed today's challenge <span style={{ fontSize: 17 }}>💪</span>
+        </div>
+      </div>
+
+      {/* Big reward card with orange glow */}
+      <div style={{
+        background: '#15161D', borderRadius: 24, padding: '24px 20px 20px',
+        border: '1px solid rgba(245,158,11,0.5)',
+        boxShadow: '0 0 0 1px rgba(245,158,11,0.3), 0 0 48px rgba(245,158,11,0.25)',
+        marginBottom: 28,
+        animation: 'lxglow 2.4s ease-in-out infinite',
+      }}>
+        <div style={{
+          fontSize: 13, fontWeight: 800, color: '#94A3B8',
+          textAlign: 'center', letterSpacing: '0.12em', textTransform: 'uppercase',
+          marginBottom: 6,
+        }}>Total Reward</div>
+        <div style={{
+          fontWeight: 900, fontSize: 56, textAlign: 'center', lineHeight: 1,
+          marginBottom: 22,
+          background: 'linear-gradient(90deg,#F59E0B,#EF4444)',
+          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+          fontVariantNumeric: 'tabular-nums',
+        }}>+120 XP</div>
+
+        {/* Badge pill */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '14px 16px', borderRadius: 16,
+          background: 'rgba(168,85,247,0.08)',
+          border: '1px solid rgba(168,85,247,0.3)',
+          marginBottom: 10,
+        }}>
+          <span style={{ fontSize: 22 }}>🏆</span>
+          <div style={{ flex: 1, fontWeight: 800, fontSize: 16, color: '#A855F7' }}>
+            New Badge: Math Explorer
+          </div>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A855F7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 3-1.9 5.8a2 2 0 0 0 0 1.4L12 13l1.9-5.8a2 2 0 0 0 0-1.4L12 3Z"/>
+            <path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
+          </svg>
+        </div>
+
+        {/* Streak pill */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '14px 16px', borderRadius: 16,
+          background: 'rgba(245,158,11,0.08)',
+          border: '1px solid rgba(245,158,11,0.3)',
+        }}>
+          <span style={{ fontSize: 22 }}>🔥</span>
+          <div style={{ flex: 1, fontWeight: 800, fontSize: 16, color: '#F59E0B' }}>
+            Streak: 8 Days
+          </div>
+          <span style={{ fontSize: 18 }}>👌</span>
+        </div>
+      </div>
+
+      {/* Level progress */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>
+            </svg>
+            <span style={{ fontWeight: 700, fontSize: 17, color: '#CBD5E1' }}>Level 5 → 6</span>
+          </div>
+          <div style={{ fontWeight: 700, fontSize: 17, color: '#CBD5E1', fontVariantNumeric: 'tabular-nums' }}>
+            850 / 1000 XP
+          </div>
+        </div>
+        <div style={{ height: 12, background: '#1E2030', borderRadius: 9999, overflow: 'hidden' }}>
+          <div style={{
+            height: '100%', width: '85%',
+            background: 'linear-gradient(90deg,#22C55E,#4F46E5)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)',
+            borderRadius: 9999,
+            transition: 'width 1.2s cubic-bezier(0.16,1,0.3,1)',
+          }}/>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 13, color: '#94A3B8' }}>
+          <span>85% to next level</span>
+          <span style={{ fontVariantNumeric: 'tabular-nums' }}>150 XP left</span>
+        </div>
+      </div>
+
+      {/* Spacer to push buttons down */}
+      <div style={{ flex: 1, minHeight: 20 }}/>
+
+      {/* Buttons */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <button onClick={onContinue} style={{
+          height: 60, borderRadius: 18, border: 'none',
+          background: '#4F46E5', color: '#fff',
+          fontFamily: 'inherit', fontWeight: 800, fontSize: 17,
+          cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+          boxShadow: '0 6px 20px rgba(99,102,241,0.45), inset 0 1px 0 rgba(255,255,255,0.2)',
+        }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2Z"/>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7Z"/>
+          </svg>
+          Continue Learning →
+        </button>
+        <button onClick={onChallenge} style={{
+          height: 60, borderRadius: 18,
+          background: 'transparent', color: '#A5B4FC',
+          border: '1.5px solid #4F46E5',
+          fontFamily: 'inherit', fontWeight: 800, fontSize: 17,
+          cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+        }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A5B4FC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/><path d="M16 16l4 4"/>
+            <path d="M19 21l2-2"/><path d="M14.5 6.5 21 13"/>
+            <path d="M21 3v3l-3.5 3.5"/>
+          </svg>
+          Play Challenge
+        </button>
+      </div>
+    </div>
+  );
+}

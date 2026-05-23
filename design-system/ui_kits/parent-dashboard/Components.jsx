@@ -4,6 +4,7 @@ const pdFont = { fontFamily: 'Poppins, system-ui, sans-serif' };
 
 function PDSidebar({ active, onChange }) {
   const items = [
+    { id: 'children',    label: 'My Children',  icon: '👨‍👩‍👦' },
     { id: 'overview',    label: 'Overview',     icon: '📊' },
     { id: 'reports',     label: 'Reports',      icon: '📈' },
     { id: 'activity',    label: 'Activity',     icon: '⏱️' },
