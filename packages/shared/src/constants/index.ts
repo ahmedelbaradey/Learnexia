@@ -26,6 +26,22 @@ export type Role = (typeof ROLES)[keyof typeof ROLES];
 
 export const ALL_ROLES: readonly Role[] = Object.values(ROLES);
 
+/**
+ * Login persona — which kind of account the user is signing in as on the shared
+ * login screen. This is a UI-only hint for the login form (e.g. autofill /
+ * future routing); it does NOT enable student self-registration (parent-driven
+ * onboarding stands). Fixed value set → enum-style const, never a raw literal.
+ */
+export const LOGIN_PERSONAS = {
+  Parent: 'parent',
+  Student: 'student',
+} as const;
+
+export type LoginPersona = (typeof LOGIN_PERSONAS)[keyof typeof LOGIN_PERSONAS];
+
+export const ALL_LOGIN_PERSONAS: readonly LoginPersona[] =
+  Object.values(LOGIN_PERSONAS);
+
 /* ------------------------------------------------------------------ */
 /* Grades                                                              */
 /* ------------------------------------------------------------------ */

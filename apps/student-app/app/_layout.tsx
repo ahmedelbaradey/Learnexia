@@ -31,6 +31,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { resolveApiBaseUrl } from '../src/providers/apiBaseUrl';
 import { useLocaleStore } from '../src/providers/localeStore';
+import { useThemeStore } from '../src/providers/themeStore';
 import { createPlatformTokenStorage } from '../src/providers/tokenStorage';
 
 // Initialize i18n synchronously at module load (inline resources → `ready` is
@@ -42,6 +43,7 @@ initI18n();
 
 export default function RootLayout() {
   const locale = useLocaleStore((s) => s.locale);
+  const theme = useThemeStore((s) => s.theme);
 
   // One stable QueryClient + ApiClient for the app lifetime.
   const queryClient = useMemo(() => createQueryClient(), []);
@@ -74,10 +76,10 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <LearnexiaProvider locale={locale} theme="dark">
+      <LearnexiaProvider locale={locale} theme={theme}>
         <QueryClientProvider client={queryClient}>
           <ApiClientProvider client={clientRef.current}>
-            <StatusBar style="light" />
+            <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
             <Slot />
           </ApiClientProvider>
         </QueryClientProvider>

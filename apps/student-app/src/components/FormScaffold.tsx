@@ -5,6 +5,12 @@
  * Tablet/laptop: a centered `Card` (max-width 480px) on `$bg`. Tamagui media
  * props (`$tablet`) switch between the two without JS branching. Wraps content
  * in `KeyboardAvoidingView` + `ScrollView` for keyboard-aware native forms.
+ *
+ * `variant="split"` (web login/register, P1-11): a two-column split-panel — a
+ * left brand panel (`$primary`, brand copy) + a right `$bg` form column at the
+ * `$tablet` breakpoint (≥768). At ≤768 the brand panel is hidden via the `$sm`
+ * media prop and it collapses to the same single-column form as the default
+ * scaffold. The prop/style shape mirrors the default scaffold (no new pattern).
  */
 import { Card } from '@learnexia/ui';
 import { Stack } from '@tamagui/core';
@@ -12,14 +18,34 @@ import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+export type FormScaffoldVariant = 'default' | 'split';
+
 export interface FormScaffoldProps {
   children: ReactNode;
   /** Optional header rendered above the scroll area (e.g. ScreenHeader). */
   header?: ReactNode;
+  /** Layout variant. `split` adds the web brand panel (requires `brandPanel`). */
+  variant?: FormScaffoldVariant;
+  /** Left brand panel content, rendered at `$tablet`+ when `variant="split"`. */
+  brandPanel?: ReactNode;
 }
 
-export function FormScaffold({ children, header }: FormScaffoldProps) {
+export function FormScaffold({
+  children,
+  header,
+  variant = 'default',
+  brandPanel,
+}: FormScaffoldProps) {
   const insets = useSafeAreaInsets();
+
+  if (variant === 'split') {
+    return (
+      <SplitFormScaffold header={header} brandPanel={brandPanel}>
+        {children}
+      </SplitFormScaffold>
+    );
+  }
+
   return (
     <Stack flex={1} backgroundColor="$bg" paddingTop={insets.top}>
       {header}
@@ -53,6 +79,66 @@ export function FormScaffold({ children, header }: FormScaffoldProps) {
           </Stack>
         </ScrollView>
       </KeyboardAvoidingView>
+    </Stack>
+  );
+}
+
+/**
+ * SplitFormScaffold — the two-column web variant. Left brand panel (`$primary`)
+ * + right `$bg` form column at `$tablet`+; single-column form (no brand panel)
+ * at `$sm`. Same scroll/keyboard wiring as the default scaffold.
+ */
+export function SplitFormScaffold({ children, header, brandPanel }: Omit<FormScaffoldProps, 'variant'>) {
+  const insets = useSafeAreaInsets();
+  return (
+    <Stack
+      flex={1}
+      backgroundColor="$bg"
+      paddingTop={insets.top}
+      flexDirection="column"
+      $tablet={{ flexDirection: 'row', paddingTop: 0 }}
+    >
+      {/* Left brand panel — hidden on phones, shown side-by-side on tablet+. */}
+      {brandPanel ? (
+        <Stack
+          display="none"
+          $tablet={{
+            display: 'flex',
+            flex: 1,
+            backgroundColor: '$primary',
+            paddingHorizontal: '$8',
+            paddingVertical: '$10',
+            justifyContent: 'space-between',
+            overflow: 'hidden',
+          }}
+        >
+          {brandPanel}
+        </Stack>
+      ) : null}
+
+      {/* Right form column. */}
+      <Stack flex={1} $tablet={{ flex: 1 }}>
+        {header}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1 }}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Stack flex={1} alignItems="center" justifyContent="center" paddingVertical="$6">
+              <Stack
+                width="100%"
+                paddingHorizontal="$6"
+                $tablet={{ maxWidth: 440, paddingHorizontal: 0 }}
+              >
+                {children}
+              </Stack>
+            </Stack>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Stack>
     </Stack>
   );
 }
