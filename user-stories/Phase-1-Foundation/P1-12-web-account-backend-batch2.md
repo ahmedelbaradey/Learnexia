@@ -65,6 +65,16 @@ As the team, we need the backend that the redesigned web pages (P1-11) imply but
 **Labels:** `backend`, `batch-2`, `family`
 **Notes:** sits beside AddChild/LinkChild in the Identity Family feature; reuses P1-04 family-scope authz.
 
+### P1-12f — Register: capture parent country + terms consent
+**Issue type:** Story · **Points:** 3 — found while building the Register screen (P1-11-FE-5); the UI collects them but the BE can't persist.
+**Description:** As the team, we need the register endpoint to store the parent's country and a record of terms/consent so the data the Register form collects is actually persisted.
+**Acceptance Criteria:**
+- `RegisterParentCommand` accepts **`country`**; validated + stored on the user (reuses the `Country` column from P1-12a/BE-3).
+- A **terms-consent** record is stored at registration (boolean + timestamp, or a consent row) for COPPA auditability.
+- `/Me` + profile reflect the stored country; the P1-11 Register form's country + Terms checkbox stop being client-only TODOs.
+**Labels:** `backend`, `batch-2`, `auth`, `account`
+**Notes:** surfaced by the Register build — the FE currently collects `country` + `acceptedTerms` but posts only `{email, password, fullName}`.
+
 ## Notes
 - **Parallel-safe:** all Identity-module; cross-module only via `Shared.Contracts`. No Unit of Work; explicit transaction for multi-write. **Ask before adding any design pattern.**
 - **Blocked by** nothing in Batch 1 except it consumes the existing Identity foundation; **blocks** the *functional* parts of P1-11h (Profile save), the Login social buttons, and forgot-password — those ship as UI-first in P1-11 and light up when this batch merges.
