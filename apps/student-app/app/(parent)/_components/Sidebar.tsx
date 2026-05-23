@@ -39,17 +39,21 @@ interface NavDef {
   key: NavItemKey;
   icon: string;
   /** Route this item navigates to (Phase-2+ items fall back to children). */
-  route: '/(parent)/children' | '/(parent)/overview';
+  route:
+    | '/(parent)/children'
+    | '/(parent)/overview'
+    | '/(parent)/reports'
+    | '/(parent)/settings';
 }
 
 const NAV: readonly NavDef[] = [
   { key: NAV_ITEM.MyChildren, icon: '👧', route: '/(parent)/children' },
   { key: NAV_ITEM.Overview, icon: '📊', route: '/(parent)/overview' },
-  // TODO(P2+): wire reports/activity/subjects/settings to their own routes.
-  { key: NAV_ITEM.Reports, icon: '📝', route: '/(parent)/children' },
+  { key: NAV_ITEM.Reports, icon: '📝', route: '/(parent)/reports' },
+  // TODO(P2+): wire activity/subjects to their own routes.
   { key: NAV_ITEM.Activity, icon: '🎯', route: '/(parent)/children' },
   { key: NAV_ITEM.Subjects, icon: '📚', route: '/(parent)/children' },
-  { key: NAV_ITEM.Settings, icon: '⚙️', route: '/(parent)/children' },
+  { key: NAV_ITEM.Settings, icon: '⚙️', route: '/(parent)/settings' },
 ];
 
 export interface SidebarChild {

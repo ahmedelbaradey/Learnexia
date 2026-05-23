@@ -67,3 +67,6 @@ export type { MasteryBarProps } from './components/MasteryBar';
 
 export { GradientBox } from './components/GradientBox';
 export type { GradientBoxProps } from './components/GradientBox';
+
+export { Tabs } from './components/Tabs';
+export type { TabsProps, TabItem, TabValue } from './components/Tabs';
