@@ -6,6 +6,7 @@ using Learnexia.Host.Middleware;
 using Learnexia.Host.SystemConfiguration;
 using Learnexia.Modules.Catalog.Api;
 using Learnexia.Modules.Identity.Api;
+using Learnexia.Modules.Learning.Api;
 using Learnexia.Modules.Notifications.Api;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -86,6 +87,7 @@ if (!string.IsNullOrWhiteSpace(defaultConnectionString))
 // Modules (each wires its own Application + Infrastructure + JWT auth + controllers application part)
 builder.Services.AddIdentityModule(builder.Configuration);
 builder.Services.AddCatalogModule(builder.Configuration);
+builder.Services.AddLearningModule(builder.Configuration);
 builder.Services.AddNotificationsModule(builder.Configuration);
 
 // Single, cross-module MediatR registration spanning every module's Application assembly + the
@@ -143,6 +145,7 @@ using (var scope = app.Services.CreateScope())
 {
     await IdentityModule.SeedAsync(scope.ServiceProvider);
     await CatalogModule.InitializeAsync(scope.ServiceProvider);
+    await LearningModule.InitializeAsync(scope.ServiceProvider);
     await NotificationsModule.InitializeAsync(scope.ServiceProvider);
 }
 
@@ -179,6 +182,7 @@ app.MapControllers();
 
 // Module endpoints (minimal APIs for not-yet-controllerized modules)
 app.MapCatalogModule();
+app.MapLearningModule();
 app.MapNotificationsModule();
 
 // Host-owned endpoints
