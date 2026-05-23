@@ -60,6 +60,10 @@ public static class DependencyInjection
         services.AddScoped<Learnexia.Shared.Contracts.Notifications.IUserNotificationService, Services.Stubs.NoOpUserNotificationService>();
         services.AddScoped<Learnexia.Shared.Contracts.Storage.IFilePreviewUrlProvider, Services.Stubs.NoOpFilePreviewUrlProvider>();
 
+        // Identity-side implementation of the IUserLookup seam: lets Notifications (welcome-email)
+        // and password-reset resolve a user's email by id. Real implementation, not a stub.
+        services.AddScoped<Learnexia.Shared.Contracts.Identity.IUserLookup, Services.UserLookup>();
+
         return services;
     }
 
