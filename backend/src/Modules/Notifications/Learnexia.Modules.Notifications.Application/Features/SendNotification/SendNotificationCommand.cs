@@ -8,4 +8,7 @@ public sealed record SendNotificationCommand(
     string Title,
     string Body,
     Guid NotificationTypeId,
-    Guid? NotificationModuleId) : IRequest<Result>;
+    Guid? NotificationModuleId,
+    // Recipient email address. Required to actually deliver the notification by email; callers that only
+    // need an in-app notification row can leave it null (the email step is then skipped).
+    string? RecipientEmail = null) : IRequest<Result>;

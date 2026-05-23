@@ -10,5 +10,8 @@ public sealed class SendNotificationCommandValidator : AbstractValidator<SendNot
         RuleFor(x => x.Title).NotEmpty().MaximumLength(200);
         RuleFor(x => x.Body).NotEmpty().MaximumLength(4000);
         RuleFor(x => x.NotificationTypeId).NotEmpty();
+        RuleFor(x => x.RecipientEmail)
+            .EmailAddress()
+            .When(x => !string.IsNullOrWhiteSpace(x.RecipientEmail));
     }
 }

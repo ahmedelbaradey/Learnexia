@@ -4,6 +4,7 @@ using Learnexia.Shared.Contracts.Identity;
 using Learnexia.Shared.Kernel.Abstractions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Learnexia.Modules.Notifications.Application.IntegrationEventHandlers;
 
@@ -24,11 +25,19 @@ public sealed class UserRegisteredIntegrationEventHandler
 {
     private readonly INotificationsDbContext _db;
     private readonly ILoggerManager _logger;
+    private readonly IEmailSender _emailSender;
+    private readonly IServiceProvider _services;
 
-    public UserRegisteredIntegrationEventHandler(INotificationsDbContext db, ILoggerManager logger)
+    public UserRegisteredIntegrationEventHandler(
+        INotificationsDbContext db,
+        ILoggerManager logger,
+        IEmailSender emailSender,
+        IServiceProvider services)
     {
         _db = db;
         _logger = logger;
+        _emailSender = emailSender;
+        _services = services;
     }
 
     public async Task Handle(UserRegisteredIntegrationEvent notification, CancellationToken cancellationToken)
@@ -47,15 +56,64 @@ public sealed class UserRegisteredIntegrationEventHandler
             return;
         }
 
+        const string title = "Welcome to Learnexia";
+        var body = $"Welcome {notification.UserName}! Your account has been created.";
+
         var welcome = Notification.CreateWelcome(
             externalUserId: notification.UserId,
-            title: "Welcome to Learnexia",
-            body: $"Welcome {notification.UserName}! Your account has been created.");
+            title: title,
+            body: body);
 
         _db.Notifications.Add(welcome);
         await _db.SaveChangesAsync(cancellationToken);
 
         _logger.LogInfo(
             $"Notifications: created welcome notification {welcome.Id} for user {notification.UserId}.");
+
+        // Best-effort welcome email: never let an email failure fail this handler (or, upstream, the
+        // registration that produced the event). The in-app notification row above is the source of truth;
+        // the email is an additive delivery channel. The event intentionally carries no email (PII), so we
+        // resolve it through the Shared.Contracts IUserLookup seam if an implementation is registered;
+        // otherwise we log and skip — keeping the module isolated and the path ready for when Identity
+        // provides the adapter.
+        await TrySendWelcomeEmailAsync(notification, title, body, cancellationToken);
+    }
+
+    private async Task TrySendWelcomeEmailAsync(
+        UserRegisteredIntegrationEvent notification,
+        string title,
+        string body,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var userLookup = _services.GetService<IUserLookup>();
+            if (userLookup is null)
+            {
+                _logger.LogInfo(
+                    $"Notifications: no IUserLookup registered; skipping welcome email for user {notification.UserId}.");
+                return;
+            }
+
+            var user = await userLookup.FindByIdAsync(notification.UserId, cancellationToken);
+            if (user is null || string.IsNullOrWhiteSpace(user.Email))
+            {
+                _logger.LogInfo(
+                    $"Notifications: no email resolved for user {notification.UserId}; skipping welcome email.");
+                return;
+            }
+
+            var result = await _emailSender.SendAsync(user.Email, title, body, cancellationToken);
+            if (result.IsFailure)
+            {
+                _logger.LogWarn(
+                    $"Notifications: welcome email delivery failed for user {notification.UserId} ({result.Error.Code}).");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Isolate the email failure: log and swallow so registration/notification-row write stand.
+            _logger.LogError(ex, $"Notifications: welcome email send threw for user {notification.UserId}; isolated.");
+        }
     }
 }
