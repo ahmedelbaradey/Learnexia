@@ -7,10 +7,12 @@
  * in `KeyboardAvoidingView` + `ScrollView` for keyboard-aware native forms.
  *
  * `variant="split"` (web login/register, P1-11): a two-column split-panel — a
- * left brand panel (`$primary`, brand copy) + a right `$bg` form column at the
- * `$tablet` breakpoint (≥768). At ≤768 the brand panel is hidden via the `$sm`
- * media prop and it collapses to the same single-column form as the default
- * scaffold. The prop/style shape mirrors the default scaffold (no new pattern).
+ * `$primary` brand/feature panel + a `$bg` form column at the `$tablet`
+ * breakpoint (≥768). `brandSide` chooses which visual side the panel sits on:
+ * `'start'` = login (panel left), `'end'` = register (panel right, the Login
+ * mirror). At ≤768 the brand panel is hidden via the media prop and it collapses
+ * to the same single-column form as the default scaffold. The prop/style shape
+ * mirrors the default scaffold (no new pattern).
  */
 import { Card } from '@learnexia/ui';
 import { Stack } from '@tamagui/core';
@@ -20,14 +22,19 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export type FormScaffoldVariant = 'default' | 'split';
 
+/** Which visual side the `$primary` brand panel sits on (split variant). */
+export type BrandSide = 'start' | 'end';
+
 export interface FormScaffoldProps {
   children: ReactNode;
   /** Optional header rendered above the scroll area (e.g. ScreenHeader). */
   header?: ReactNode;
   /** Layout variant. `split` adds the web brand panel (requires `brandPanel`). */
   variant?: FormScaffoldVariant;
-  /** Left brand panel content, rendered at `$tablet`+ when `variant="split"`. */
+  /** Brand/feature panel content, rendered at `$tablet`+ when `variant="split"`. */
   brandPanel?: ReactNode;
+  /** Side the brand panel sits on: `start` (login, left) or `end` (register, right). */
+  brandSide?: BrandSide;
 }
 
 export function FormScaffold({
@@ -35,12 +42,13 @@ export function FormScaffold({
   header,
   variant = 'default',
   brandPanel,
+  brandSide = 'start',
 }: FormScaffoldProps) {
   const insets = useSafeAreaInsets();
 
   if (variant === 'split') {
     return (
-      <SplitFormScaffold header={header} brandPanel={brandPanel}>
+      <SplitFormScaffold header={header} brandPanel={brandPanel} brandSide={brandSide}>
         {children}
       </SplitFormScaffold>
     );
@@ -84,19 +92,29 @@ export function FormScaffold({
 }
 
 /**
- * SplitFormScaffold — the two-column web variant. Left brand panel (`$primary`)
- * + right `$bg` form column at `$tablet`+; single-column form (no brand panel)
- * at `$sm`. Same scroll/keyboard wiring as the default scaffold.
+ * SplitFormScaffold — the two-column web variant. A `$primary` brand panel +
+ * `$bg` form column at `$tablet`+; single-column form (no brand panel) at `$sm`.
+ * `brandSide` flips which visual side the panel sits on (`row` vs `row-reverse`)
+ * without reordering the DOM (form stays first for tab/reading order). Same
+ * scroll/keyboard wiring as the default scaffold.
  */
-export function SplitFormScaffold({ children, header, brandPanel }: Omit<FormScaffoldProps, 'variant'>) {
+export function SplitFormScaffold({
+  children,
+  header,
+  brandPanel,
+  brandSide = 'start',
+}: Omit<FormScaffoldProps, 'variant'>) {
   const insets = useSafeAreaInsets();
+  // `start` → brand left (panel rendered first, plain `row`).
+  // `end` → brand right (panel still rendered first, flipped via `row-reverse`).
+  const tabletRowDirection = brandSide === 'end' ? 'row-reverse' : 'row';
   return (
     <Stack
       flex={1}
       backgroundColor="$bg"
       paddingTop={insets.top}
       flexDirection="column"
-      $tablet={{ flexDirection: 'row', paddingTop: 0 }}
+      $tablet={{ flexDirection: tabletRowDirection, paddingTop: 0 }}
     >
       {/* Left brand panel — hidden on phones, shown side-by-side on tablet+. */}
       {brandPanel ? (
