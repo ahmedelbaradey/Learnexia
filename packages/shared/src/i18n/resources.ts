@@ -288,6 +288,52 @@ export const en = {
         seeAll: 'See all',
       },
     },
+    reports: {
+      // TODO(P1-11-FE-9 / P5-05-FE): full Reports + charts.
+      title: 'Reports',
+      comingSoon: 'Detailed reports and charts are on their way. Check back soon.',
+    },
+    settings: {
+      title: 'Settings',
+      subtitle: 'Manage your account and preferences',
+      thisWeekEyebrow: 'This week',
+      thisWeekXp: '+{{value}} XP',
+      thisWeekDelta: 'Up {{value}}% from last week',
+      tabs: {
+        navLabel: 'Settings sections',
+        profile: 'Profile',
+        notifications: 'Notifications',
+        linkedChildren: 'Linked children',
+        security: 'Security',
+        billing: 'Plan & billing',
+        language: 'Language & region',
+      },
+      profile: {
+        title: 'Profile',
+        subtitle: 'This is how Learnexia knows you',
+        uploadPhoto: 'Upload photo',
+        removePhoto: 'Remove',
+        fullName: 'Full name',
+        email: 'Email',
+        phone: 'Phone',
+        country: 'Country',
+        countryPlaceholder: 'Select country',
+        cancel: 'Cancel',
+        save: 'Save changes',
+      },
+      language: {
+        title: 'Language & region',
+        subtitle: 'Choose the language and region for your account',
+        languageLabel: 'Language',
+        regionLabel: 'Region',
+        regionPlaceholder: 'Select region',
+      },
+      comingSoon: {
+        // TODO(P2-12): Notifications / Linked children / Security / Plan & billing.
+        title: 'Coming soon',
+        body: 'This section is on its way. Check back soon.',
+      },
+    },
     linkChild: {
       title: 'Link a Child',
       explanation:
@@ -583,6 +629,52 @@ export const ar = {
         title: 'مجالات تحتاج إلى تركيز',
         subtitle: 'مواضيع لا يزال {{name}} يبني الثقة فيها',
         seeAll: 'عرض الكل',
+      },
+    },
+    reports: {
+      // TODO(P1-11-FE-9 / P5-05-FE): full Reports + charts.
+      title: 'التقارير',
+      comingSoon: 'التقارير التفصيلية والمخططات في الطريق. عُد قريباً للاطلاع عليها.',
+    },
+    settings: {
+      title: 'الإعدادات',
+      subtitle: 'إدارة حسابك وتفضيلاتك',
+      thisWeekEyebrow: 'هذا الأسبوع',
+      thisWeekXp: '+{{value}} نقطة خبرة',
+      thisWeekDelta: 'ارتفاع بنسبة {{value}}% عن الأسبوع الماضي',
+      tabs: {
+        navLabel: 'أقسام الإعدادات',
+        profile: 'الملف الشخصي',
+        notifications: 'الإشعارات',
+        linkedChildren: 'الأطفال المرتبطون',
+        security: 'الأمان',
+        billing: 'الخطة والفوترة',
+        language: 'اللغة والمنطقة',
+      },
+      profile: {
+        title: 'الملف الشخصي',
+        subtitle: 'هكذا تعرفك ليرنيكسيا',
+        uploadPhoto: 'رفع صورة',
+        removePhoto: 'إزالة',
+        fullName: 'الاسم الكامل',
+        email: 'البريد الإلكتروني',
+        phone: 'الهاتف',
+        country: 'الدولة',
+        countryPlaceholder: 'اختر الدولة',
+        cancel: 'إلغاء',
+        save: 'حفظ التغييرات',
+      },
+      language: {
+        title: 'اللغة والمنطقة',
+        subtitle: 'اختر اللغة والمنطقة لحسابك',
+        languageLabel: 'اللغة',
+        regionLabel: 'المنطقة',
+        regionPlaceholder: 'اختر المنطقة',
+      },
+      comingSoon: {
+        // TODO(P2-12): Notifications / Linked children / Security / Plan & billing.
+        title: 'قريباً',
+        body: 'هذا القسم في الطريق. عُد قريباً للاطلاع عليه.',
       },
     },
     linkChild: {
