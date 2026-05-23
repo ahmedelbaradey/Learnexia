@@ -247,6 +247,47 @@ export const en = {
       bestStreak: 'Best streak',
       badgesEarned: 'Badges earned',
     },
+    overview: {
+      title: "{{name}}'s progress",
+      // TODO(P5-05): real week range from analytics; placeholder copy for now.
+      dateRange: 'Mon, Nov 18 → Sun, Nov 24',
+      periodLabel: 'Reporting period',
+      periodThisWeek: 'This week',
+      sendReport: 'Send Report',
+      empty: 'Add a child to see their weekly progress.',
+      loadError: 'Could not load progress. Tap to retry.',
+      kpi: {
+        timeLearning: 'Time learning',
+        timeDelta: '+{{value}} vs last week',
+        xpEarned: 'XP earned',
+        xpDelta: '+{{value}}% vs last week',
+        lessonsDone: 'Lessons done',
+        lessonsDelta: '+{{value}} vs last week',
+        streak: 'Day streak',
+        streakDelta: '+{{value}} vs last week',
+      },
+      dailyActivity: {
+        title: 'Daily activity',
+        subtitle: 'XP earned per day',
+        exportCsv: 'Export CSV',
+        placeholder: 'Activity chart — coming soon',
+      },
+      subjectMastery: {
+        title: 'Subject mastery',
+        subtitle: 'Last 7 days',
+      },
+      subjects: {
+        math: 'Math',
+        science: 'Science',
+        arabic: 'Arabic',
+        english: 'English',
+      },
+      focusAreas: {
+        title: 'Areas to focus on',
+        subtitle: 'Topics where {{name}} is still building confidence',
+        seeAll: 'See all',
+      },
+    },
     linkChild: {
       title: 'Link a Child',
       explanation:
@@ -502,6 +543,47 @@ export const ar = {
       lessons: 'الدروس',
       bestStreak: 'أفضل سلسلة',
       badgesEarned: 'الأوسمة المكتسبة',
+    },
+    overview: {
+      title: 'تقدّم {{name}}',
+      // TODO(P5-05): real week range from analytics; placeholder copy for now.
+      dateRange: 'الإثنين ١٨ نوفمبر ← الأحد ٢٤ نوفمبر',
+      periodLabel: 'فترة التقرير',
+      periodThisWeek: 'هذا الأسبوع',
+      sendReport: 'إرسال تقرير',
+      empty: 'أضف طفلاً لعرض تقدّمه الأسبوعي.',
+      loadError: 'تعذر تحميل التقدّم. اضغط للمحاولة مجدداً.',
+      kpi: {
+        timeLearning: 'وقت التعلم',
+        timeDelta: '+{{value}} عن الأسبوع الماضي',
+        xpEarned: 'نقاط الخبرة المكتسبة',
+        xpDelta: '+{{value}}% عن الأسبوع الماضي',
+        lessonsDone: 'الدروس المكتملة',
+        lessonsDelta: '+{{value}} عن الأسبوع الماضي',
+        streak: 'أيام السلسلة',
+        streakDelta: '+{{value}} عن الأسبوع الماضي',
+      },
+      dailyActivity: {
+        title: 'النشاط اليومي',
+        subtitle: 'نقاط الخبرة المكتسبة يومياً',
+        exportCsv: 'تصدير CSV',
+        placeholder: 'مخطط النشاط — قريباً',
+      },
+      subjectMastery: {
+        title: 'إتقان المواد',
+        subtitle: 'آخر ٧ أيام',
+      },
+      subjects: {
+        math: 'الرياضيات',
+        science: 'العلوم',
+        arabic: 'اللغة العربية',
+        english: 'اللغة الإنجليزية',
+      },
+      focusAreas: {
+        title: 'مجالات تحتاج إلى تركيز',
+        subtitle: 'مواضيع لا يزال {{name}} يبني الثقة فيها',
+        seeAll: 'عرض الكل',
+      },
     },
     linkChild: {
       title: 'ربط طفل',

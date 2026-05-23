@@ -31,7 +31,8 @@ These exist because the WSL clean install drifts dependencies past the Expo SDK 
 - **Login** screen pixel-perfect (split layout, persona toggle, social buttons UI-only, theme/lang switches) + shared `SplitFormScaffold`.
 - **Register** screen pixel-perfect + `packages/ui` `CheckboxField` (merged).
 - **My Children** screen pixel-perfect (parent `Sidebar` + child-selector, family-summary strip, child cards, dashed add-card) + new `packages/ui` primitives **`Avatar`, `KPIStatCard`, `MasteryBar`, `GradientBox`** (PR #29, merged). Per-child + family stats are **Phase-5 stubs** (`parentDashboardStubs.ts`, TODO(P5)) since `LinkedChildResponse` only exposes id/fullName/email.
-- **Splash** screen pixel-perfect (`app/index.tsx`): removed the mascot; purple gradient bg + star field, wordmark + subtitle, `DotPulse`, decorative progress bar, "Loading… ⚡", "POWERED BY AI / Gamified Learning" footer. Boot logic (i18n init + `useAuthRoute` guard, hook order) preserved (pending merge). Added `splashBg` gradient tokens.
+- **Splash** screen pixel-perfect (`app/index.tsx`): removed the mascot; purple gradient bg + star field, wordmark + subtitle, `DotPulse`, decorative progress bar, "Loading… ⚡", "POWERED BY AI / Gamified Learning" footer. Boot logic (i18n init + `useAuthRoute` guard, hook order) preserved (PR #31). Added `splashBg` gradient tokens.
+- **Dashboard / Overview** screen pixel-perfect **minus the chart** (`(parent)/overview.tsx` + cards): header, 4 KPI tiles w/ deltas, subject-mastery (4 product subjects), "Areas to focus on"; the **daily-activity chart is a placeholder** (pending merge). Stats are Phase-5 stubs. **Charts were carved out to Phase 5 → [P5-05-FE](../../tasks/Frontend/student-app/Phase-5-Parent-Analytics/P5-05-FE.md)** (BarChart primitive + daily/20-day/time-of-day + wire real analytics). NB: KPI tiles built inline (not `KPIStatCard` — it lacks a delta slot) to stay pixel-perfect.
 - **Phase 7 — Admin Console backlog** (PR #21, merged): 12 admin stories `P7-01..P7-12` (curriculum mgmt, user/account mgmt, content moderation, analytics/AI-safety oversight) — the feature set behind the P1-10 shell — each with BE + admin-dashboard (Next.js) task files in `…/Phase-7-Admin-Console/`. Added a real **`FR-ADM-1..12`** group to [SRS §4.9](../SRS.md) (note: `FR-ADM`, not `FR-AD` = Adaptivity) and expanded §3 + the goal matrix; all P7 stories trace to it. **Backlog/spec only — nothing implemented (all P7 rows in PROGRESS.md are 🔲).** Handoff/decisions for whoever builds it: [docs/briefs/P7-admin-console.md](../briefs/P7-admin-console.md) (PR #24).
 
 ## Key decisions (so you don't relitigate them)
@@ -48,7 +49,7 @@ All Identity-module-scoped, parallel-safe with your Phase 2 BE work. Stories + t
 - Source analysis: `docs/briefs/phase-1-design-gap-analysis.md`.
 
 ## What's next (web FE)
-- **Dashboard / Reports / Settings / Landing** (Login, Register, My Children, Splash done). Dashboard & Reports reuse `KPIStatCard` + `MasteryBar` (built) and still need a **chart** primitive (`P1-11-FE-2`: bar / 20-day / time-of-day).
+- **Reports / Settings / Landing** (Login, Register, My Children, Splash, Dashboard done — Dashboard is chart-less). **Charts moved to Phase 5** ([P5-05-FE](../../tasks/Frontend/student-app/Phase-5-Parent-Analytics/P5-05-FE.md)) — Reports also ships chart-less (KPIs/mastery now, 20-day + time-of-day charts in P5). `P1-11-FE-2` is retired into P5-05-FE.
 - Remaining shared primitives (`P1-11-FE-14`): **Tabs**, **Switch**, **PasswordStrengthMeter** (Avatar, KPIStatCard, Sidebar, MasteryBar, GradientBox now built).
 - Per-child/family analytics stats are stubbed (`(parent)/_components/parentDashboardStubs.ts`) until **Phase 5** (P5-01/P5-05) lands real data.
 

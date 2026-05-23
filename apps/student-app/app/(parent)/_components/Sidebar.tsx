@@ -5,9 +5,10 @@
  * active-state pill. Built from existing primitives (Stack/Text/Avatar) — no new
  * design pattern.
  *
- * Routing: only "My Children" is implemented (P1-11); the other destinations are
- * Phase-2+/Phase-5 surfaces and render as non-active items that route to the
- * children screen for now (TODO: wire to their routes as they ship).
+ * Routing: "My Children" and "Overview" are implemented (P1-11); the other
+ * destinations are Phase-2+/Phase-5 surfaces and render as non-active items that
+ * route to the children screen for now (TODO: wire to their routes as they ship).
+ * The caller passes `activeKey` so each screen lights up its own nav item.
  *
  * RTL: the whole column mirrors via logical flips; the active pill uses the
  * logical START border. i18n: every label is a translation key.
@@ -23,7 +24,7 @@ import { assets } from '../../../src/assets';
 import { useLocale } from '../../../src/hooks/useLocale';
 
 /** Fixed parent nav destinations (enum-style const, never raw literals). */
-const NAV_ITEM = {
+export const NAV_ITEM = {
   MyChildren: 'myChildren',
   Overview: 'overview',
   Reports: 'reports',
@@ -32,20 +33,23 @@ const NAV_ITEM = {
   Settings: 'settings',
 } as const;
 
-type NavItemKey = (typeof NAV_ITEM)[keyof typeof NAV_ITEM];
+export type NavItemKey = (typeof NAV_ITEM)[keyof typeof NAV_ITEM];
 
 interface NavDef {
   key: NavItemKey;
   icon: string;
+  /** Route this item navigates to (Phase-2+ items fall back to children). */
+  route: '/(parent)/children' | '/(parent)/overview';
 }
 
 const NAV: readonly NavDef[] = [
-  { key: NAV_ITEM.MyChildren, icon: '👧' },
-  { key: NAV_ITEM.Overview, icon: '📊' },
-  { key: NAV_ITEM.Reports, icon: '📝' },
-  { key: NAV_ITEM.Activity, icon: '🎯' },
-  { key: NAV_ITEM.Subjects, icon: '📚' },
-  { key: NAV_ITEM.Settings, icon: '⚙️' },
+  { key: NAV_ITEM.MyChildren, icon: '👧', route: '/(parent)/children' },
+  { key: NAV_ITEM.Overview, icon: '📊', route: '/(parent)/overview' },
+  // TODO(P2+): wire reports/activity/subjects/settings to their own routes.
+  { key: NAV_ITEM.Reports, icon: '📝', route: '/(parent)/children' },
+  { key: NAV_ITEM.Activity, icon: '🎯', route: '/(parent)/children' },
+  { key: NAV_ITEM.Subjects, icon: '📚', route: '/(parent)/children' },
+  { key: NAV_ITEM.Settings, icon: '⚙️', route: '/(parent)/children' },
 ];
 
 export interface SidebarChild {
@@ -58,18 +62,15 @@ export interface SidebarChild {
 export interface SidebarProps {
   /** The child shown in the selector card (the active/first linked child). */
   activeChild?: SidebarChild;
+  /** Which nav item is highlighted (defaults to My Children). */
+  activeKey?: NavItemKey;
 }
 
-export function Sidebar({ activeChild }: SidebarProps) {
+export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: SidebarProps) {
   const { t } = useTranslation();
   const { direction, isRtl } = useLocale();
   const router = useRouter();
   const rowDir = isRtl ? 'row-reverse' : 'row';
-
-  // Only My Children is routed in P1-11; the other destinations are Phase-2+/
-  // Phase-5 surfaces, so My Children is the active item for now. When the sibling
-  // routes (overview/reports/…) ship, derive this from the current route.
-  const activeKey: NavItemKey = NAV_ITEM.MyChildren;
 
   return (
     <Stack
@@ -144,7 +145,7 @@ export function Sidebar({ activeChild }: SidebarProps) {
               hoverStyle={{ backgroundColor: isActive ? '$primarySoft' : '$card' }}
               cursor="pointer"
               pressStyle={{ scale: 0.98 }}
-              onPress={() => router.push('/(parent)/children')}
+              onPress={() => router.push(item.route)}
               accessibilityRole="menuitem"
               accessible
               accessibilityState={{ selected: isActive }}
