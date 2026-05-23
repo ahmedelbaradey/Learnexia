@@ -20,6 +20,11 @@ You implement backend features in `backend` by **mirroring the Catalog module ex
 - Entities derive from `FullAuditedEntity`; never hand-stamp audit fields (the DbContext `SaveChangesAsync(userId)` does it).
 - **No Unit of Work** — repository writes commit per call. **Module isolation** — cross-module only via `Shared.Contracts`.
 - EF provider is **Npgsql/PostgreSQL**.
+- **NO free-text string literals in code.** A bare string literal used as a value is a violation. Every string must resolve to exactly one of two allowed sources:
+  1. **User-facing text → a localized resource key.** Validation messages, `BaseResponse<T>.message`, and notification titles/bodies use a `SharedResourcesKey` constant resolved through the string localizer (e.g. `_localizer[SharedResourcesKey.X]`) — never an inline message string.
+  2. **Fixed value sets → a C# `enum`** (status, role, question type, difficulty, league tier, …) — referenced by the enum member, never a magic string/int.
+  - **Every resource key must have a value in BOTH `SharedResources.en-US.resx` AND `SharedResources.ar-EG.resx`, added together in the same change.** No missing/empty entries; a key present in one culture but not the other is a defect. Add the `const` to `SharedResourcesKey.cs` too.
+  - Permitted literals: `SharedResourcesKey` keys, enum members, and non-user-facing technical identifiers (route templates, config/claim keys, EF column/schema names, dev-only log text). When in doubt whether text is user-facing, treat it as user-facing and localize it.
 - **Design patterns — ask first.** Default to mirroring existing Catalog shapes; do not invent abstractions. If a task genuinely calls for a design pattern (Strategy, Factory, Decorator, etc.), **stop and ask the lead/user before implementing it** — name the pattern, where it would apply, and why. Wait for approval; do not introduce it unilaterally.
 
 ## Boundaries
