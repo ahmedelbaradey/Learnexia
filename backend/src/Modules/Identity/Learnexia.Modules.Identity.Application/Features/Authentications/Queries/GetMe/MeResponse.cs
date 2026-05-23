@@ -21,4 +21,13 @@ public class MeResponse
 
     // True when the caller (a parent) has at least one linked child; always false for non-parents.
     public bool HasChildren { get; set; }
+
+    // Account-profile fields (P1-12 BE-2). Additive: the web dashboard header + Settings → Profile
+    // read these from /Me. Phone maps to the inherited Identity PhoneNumber; Country maps to
+    // Nationality; AvatarUrl is set later by the avatar-upload endpoint (BE-4) and is null until then.
+    public string? Phone { get; set; }
+
+    public string? Country { get; set; }
+
+    public string? AvatarUrl { get; set; }
 }

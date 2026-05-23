@@ -13,6 +13,11 @@ public class User : IdentityUser<int>
     public int? Grade { get; set; }
     public int? Age { get; set; }
     public string? PersonalPhotoPath { get; set; }
+    /// <summary>
+    /// Public URL of the user's avatar image; set by the avatar-upload endpoint (BE-4).
+    /// Null until the user uploads an avatar.
+    /// </summary>
+    public string? AvatarUrl { get; set; }
     public bool RegistrationMessageIsSent { get; set; } = false;
     public bool RegistrationIsCompleted { get; set; } = false;
     public bool IsActive { get; set; } = true;

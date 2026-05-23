@@ -850,6 +850,15 @@
   <data name="ProfileUpdatedSuccessfully" xml:space="preserve">
     <value>تم تحديث الملف الشخصي بنجاح.</value>
   </data>
+  <data name="ProfileFullNameTooLong" xml:space="preserve">
+    <value>يجب ألا يتجاوز الاسم الكامل 100 حرف.</value>
+  </data>
+  <data name="ProfileInvalidPhoneFormat" xml:space="preserve">
+    <value>رقم هاتف غير صالح. أدخل من 7 إلى 15 رقمًا، ويمكن أن يبدأ بعلامة +.</value>
+  </data>
+  <data name="ProfileCountryTooLong" xml:space="preserve">
+    <value>يجب ألا تتجاوز الدولة 100 حرف.</value>
+  </data>
   <data name="ProfileSystemErrorSavingData" xml:space="preserve">
     <value>لم يتم حفظ البيانات، حدث خطأ بالنظام.</value>
   </data>

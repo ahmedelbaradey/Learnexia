@@ -850,6 +850,15 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="ProfileUpdatedSuccessfully" xml:space="preserve">
     <value>Profile updated successfully.</value>
   </data>
+  <data name="ProfileFullNameTooLong" xml:space="preserve">
+    <value>Full name must not exceed 100 characters.</value>
+  </data>
+  <data name="ProfileInvalidPhoneFormat" xml:space="preserve">
+    <value>Invalid phone number. Enter 7 to 15 digits, optionally starting with +.</value>
+  </data>
+  <data name="ProfileCountryTooLong" xml:space="preserve">
+    <value>Country must not exceed 100 characters.</value>
+  </data>
   <data name="ProfileSystemErrorSavingData" xml:space="preserve">
     <value>An error is occurred while saving data.</value>
   </data>
