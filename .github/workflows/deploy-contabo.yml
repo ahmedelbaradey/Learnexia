@@ -1,0 +1,208 @@
+name: Build & Test then Deploy To Contabo and Smoke-Test Endpoints
+
+# Mirrors the Azure pipeline shape (Build -> Test -> Deploy -> Test endpoints) but targets a
+# Contabo VPS over SSH instead of Azure Web Apps. Deploy strategy: build & push the API image to a
+# container registry, then SSH into the Contabo host and `docker compose pull && up -d` using the
+# committed compose files (docker/docker-compose.yaml + docker/docker-compose.staging.yml).
+#
+# The endpoint stage runs a COMMITTED Postman collection (tests/postman/learnexia.postman_collection.json)
+# with Newman — NOT the Postman cloud API — so it does not consume Postman test credits.
+#
+# Required GitHub Actions secrets (none are hardcoded here):
+#   Registry:  REGISTRY_URL, REGISTRY_USER, REGISTRY_PASSWORD, REGISTRY_IMAGE
+#   Contabo:   CONTABO_HOST, CONTABO_USER, CONTABO_SSH_KEY  (CONTABO_SSH_PORT optional, default 22)
+#   App env:   POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB, JWT_SECRET,
+#              MINIO_ROOT_USER, MINIO_ROOT_PASSWORD  (REDIS_URL optional)
+#   Newman:    BASE_URL  (e.g. http://your.contabo.host:8080 — no trailing slash)
+
+on:
+  push:
+    branches:
+      - "main"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+run-name: Build & Test then Deploy To Contabo by @${{ github.actor }} on ${{ github.ref }}
+
+env:
+  IMAGE_TAG: ${{ github.sha }}
+  DEPLOY_DIR: /opt/learnexia        # directory on the Contabo host that holds the compose files + .env
+
+jobs:
+  build-and-test:
+    name: Build & Test (.NET 10)
+    runs-on: ubuntu-latest          # Docker daemon preinstalled — required by Testcontainers integration tests.
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Restore
+        run: dotnet restore backend/Learnexia.Modular.sln
+
+      - name: Build (Release)
+        run: dotnet build backend/Learnexia.Modular.sln --no-restore -c Release
+
+      - name: Test (Release)
+        run: dotnet test backend/Learnexia.Modular.sln --no-build -c Release --logger "trx;LogFileName=test-results.trx" --results-directory ./TestResults
+
+      - name: Report Test
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Publish xUnit Test Result
+          reporter: dotnet-trx
+          path: "**/test-results.trx"
+          fail-on-error: 'true'
+          fail-on-empty: 'true'
+
+  build-and-push:
+    name: Build & push image
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.REGISTRY_URL }}
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build & push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.REGISTRY_IMAGE }}:${{ env.IMAGE_TAG }}
+            ${{ secrets.REGISTRY_IMAGE }}:latest
+
+  deploy-to-contabo:
+    name: Deploy To Contabo
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Ship the compose files to the host so it can pull the freshly pushed image.
+      - name: Copy compose files to Contabo
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.CONTABO_HOST }}
+          username: ${{ secrets.CONTABO_USER }}
+          key: ${{ secrets.CONTABO_SSH_KEY }}
+          port: ${{ secrets.CONTABO_SSH_PORT || 22 }}
+          source: "docker/docker-compose.yaml,docker/docker-compose.staging.yml"
+          target: ${{ env.DEPLOY_DIR }}
+          strip_components: 1   # drop the leading docker/ so files land directly in DEPLOY_DIR
+
+      - name: Pull image & restart stack on Contabo
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          REGISTRY_URL: ${{ secrets.REGISTRY_URL }}
+          REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+          REGISTRY_IMAGE: ${{ secrets.REGISTRY_IMAGE }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          MINIO_ROOT_USER: ${{ secrets.MINIO_ROOT_USER }}
+          MINIO_ROOT_PASSWORD: ${{ secrets.MINIO_ROOT_PASSWORD }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+        with:
+          host: ${{ secrets.CONTABO_HOST }}
+          username: ${{ secrets.CONTABO_USER }}
+          key: ${{ secrets.CONTABO_SSH_KEY }}
+          port: ${{ secrets.CONTABO_SSH_PORT || 22 }}
+          # Pass the env vars through to the remote shell so the .env render below can see them.
+          envs: REGISTRY_URL,REGISTRY_USER,REGISTRY_PASSWORD,REGISTRY_IMAGE,IMAGE_TAG,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,JWT_SECRET,MINIO_ROOT_USER,MINIO_ROOT_PASSWORD,REDIS_URL
+          script: |
+            set -euo pipefail
+            cd "${{ env.DEPLOY_DIR }}"
+
+            # Render a .env consumed by docker-compose.staging.yml (variable substitution).
+            cat > .env <<EOF
+            REGISTRY_IMAGE=${REGISTRY_IMAGE}
+            IMAGE_TAG=${IMAGE_TAG}
+            POSTGRES_USER=${POSTGRES_USER}
+            POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+            POSTGRES_DB=${POSTGRES_DB}
+            JWT_SECRET=${JWT_SECRET}
+            MINIO_ROOT_USER=${MINIO_ROOT_USER}
+            MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+            REDIS_URL=${REDIS_URL}
+            EOF
+            chmod 600 .env
+
+            echo "${REGISTRY_PASSWORD}" | docker login "${REGISTRY_URL}" -u "${REGISTRY_USER}" --password-stdin
+
+            docker compose -f docker-compose.yaml -f docker-compose.staging.yml pull
+            docker compose -f docker-compose.yaml -f docker-compose.staging.yml up -d --remove-orphans
+            docker image prune -f
+            docker logout "${REGISTRY_URL}" || true
+
+  test-endpoints:
+    name: Postman Test (Newman)
+    runs-on: ubuntu-latest
+    needs: deploy-to-contabo
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+
+      - name: Install Newman & HTML reporter
+        run: |
+          npm install -g newman
+          npm install -g newman-reporter-htmlextra
+
+      # Gate Newman behind a readiness probe so we don't run the suite before the stack is up.
+      - name: Wait for /health to return 200
+        run: |
+          set -euo pipefail
+          BASE_URL="${{ secrets.BASE_URL }}"
+          echo "Probing $BASE_URL/health"
+          for i in $(seq 1 20); do
+            code=$(curl -k -s -o /dev/null -w "%{http_code}" "$BASE_URL/health" || echo "000")
+            echo "attempt $i -> HTTP $code"
+            [ "$code" = "200" ] && { echo "Stack is up."; break; }
+            [ "$i" = "20" ] && { echo "::error::Stack never became healthy."; exit 1; }
+            sleep 10
+          done
+
+      - name: Make dir for test results
+        run: mkdir -p testResults
+
+      # Runs the COMMITTED collection (no Postman cloud API -> no test credits used).
+      # baseUrl is injected so the same collection works against any host.
+      - name: Run Postman collection (committed)
+        run: |
+          newman run tests/postman/learnexia.postman_collection.json \
+            --env-var "baseUrl=${{ secrets.BASE_URL }}" \
+            --insecure \
+            --reporters cli,htmlextra \
+            --reporter-htmlextra-export testResults/htmlReport.html
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RunReports
+          path: ./testResults
