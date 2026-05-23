@@ -33,6 +33,13 @@ import { resolveApiBaseUrl } from '../src/providers/apiBaseUrl';
 import { useLocaleStore } from '../src/providers/localeStore';
 import { createPlatformTokenStorage } from '../src/providers/tokenStorage';
 
+// Initialize i18n synchronously at module load (inline resources → `ready` is
+// true immediately). Must happen before the first render: react-i18next's
+// useTranslation calls a different number of hooks while it's not ready, so an
+// unready→ready transition mid-mount changes SplashScreen's hook order and
+// crashes ("Should have a queue"). The active locale is applied via changeLocale.
+initI18n();
+
 export default function RootLayout() {
   const locale = useLocaleStore((s) => s.locale);
 
@@ -52,13 +59,12 @@ export default function RootLayout() {
     }),
   );
 
-  // i18n init + token-storage wiring + hydrate (once).
+  // Token-storage wiring + hydrate (once). i18n is initialized at module load.
   useEffect(() => {
-    initI18n({ locale });
     const store = useAuthStore.getState();
     store.setStorage(createPlatformTokenStorage());
     void store.hydrate();
-    // Intentionally run once on mount (no deps): one-time i18n + storage wiring.
+    // Intentionally run once on mount (no deps): one-time storage wiring.
   }, []);
 
   // Keep i18n language in sync with the active locale (web flips dir instantly).

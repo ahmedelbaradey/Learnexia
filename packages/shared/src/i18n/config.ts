@@ -11,7 +11,18 @@ import i18n, { type i18n as I18nInstance } from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
 import { DEFAULT_LOCALE, LOCALES, type Locale } from '../constants';
-import { defaultNS, NAMESPACES, resources } from './resources';
+import { ar, en } from './resources';
+
+/**
+ * Components access the whole tree as one flat namespace via dotted keys
+ * (e.g. `t('auth.login.title')`, `t('common.appName')`), so load each language
+ * under a single namespace rather than splitting per top-level group.
+ */
+const DEFAULT_NS = 'app';
+const singleNsResources = {
+  en: { [DEFAULT_NS]: en },
+  ar: { [DEFAULT_NS]: ar },
+} as const;
 
 export interface InitI18nOptions {
   /** Initial locale; defaults to the product default (ar). */
@@ -34,12 +45,12 @@ export function initI18n(options: InitI18nOptions = {}): I18nInstance {
   }
 
   void i18n.use(initReactI18next).init({
-    resources,
+    resources: singleNsResources,
     lng: locale,
     fallbackLng: 'en',
     supportedLngs: LOCALES,
-    ns: NAMESPACES,
-    defaultNS,
+    ns: [DEFAULT_NS],
+    defaultNS: DEFAULT_NS,
     debug,
     interpolation: {
       escapeValue: false, // React already escapes.

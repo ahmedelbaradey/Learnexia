@@ -42,11 +42,16 @@ export function LoginForm() {
     : null;
 
   const onSubmit = handleSubmit(async (values) => {
-    const res = await signIn.mutateAsync({ userName: values.userName.trim(), password: values.password });
-    if (res.accessToken && res.refreshToken?.tokenString) {
-      await setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken.tokenString });
-      // Hand off to the routing guard (reads Me, routes by role + locale).
-      router.replace('/');
+    try {
+      const res = await signIn.mutateAsync({ userName: values.userName.trim(), password: values.password });
+      if (res.accessToken && res.refreshToken?.tokenString) {
+        await setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken.tokenString });
+        // Hand off to the routing guard (reads Me, routes by role + locale).
+        router.replace('/');
+      }
+    } catch {
+      // Failure is surfaced inline via signIn.error → serverMessage; swallow the
+      // rejection so it doesn't bubble as an uncaught promise error.
     }
   });
 

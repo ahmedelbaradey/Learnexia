@@ -23,6 +23,10 @@ config.resolver.nodeModulesPaths = [
 ];
 config.resolver.disableHierarchicalLookup = true;
 
+// Honor the `exports` maps in the @learnexia/* workspace packages so subpath
+// imports like `@learnexia/shared/i18n` resolve (off by default in Metro/SDK 52).
+config.resolver.unstable_enablePackageExports = true;
+
 module.exports = withTamagui(config, {
   components: ['tamagui', '@learnexia/ui'],
   config: '../../packages/design-system/src/tamagui.config.ts',
