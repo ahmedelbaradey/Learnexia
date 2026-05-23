@@ -47,6 +47,18 @@
     25% { transform: translateX(-6px); }
     75% { transform: translateX(6px); }
   }
+  @keyframes lxdot {
+    0%, 100% { opacity: 0.3; transform: scale(0.85); }
+    50%      { opacity: 1;   transform: scale(1); }
+  }
+  @keyframes lxload {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(280%); }
+  }
+  @keyframes lxglow {
+    0%, 100% { box-shadow: 0 0 0 1px rgba(245,158,11,0.6), 0 0 28px rgba(245,158,11,0.25); }
+    50%      { box-shadow: 0 0 0 2px rgba(245,158,11,0.8), 0 0 48px rgba(245,158,11,0.45); }
+  }
   /* crumb group dividers */
   .crumb-group {
     display: flex; gap: 6px; align-items: center;
@@ -62,6 +74,7 @@
 <script type="text/babel" src="Components.jsx"></script>
 <script type="text/babel" src="Screens.jsx"></script>
 <script type="text/babel" src="ScreensExtra.jsx"></script>
+<script type="text/babel" src="ScreensAuth.jsx"></script>
 </head>
 <body>
 <div id="root"></div>
@@ -98,20 +111,24 @@ function App() {
   const [tab, setTab] = React.useState('home');
 
   const screens = {
-    splash:    <SplashScreen onContinue={() => setScreen('role')}/>,
-    role:      <RoleSelectScreen onPick={() => setScreen('grade')}/>,
-    grade:     <GradeSelectScreen onPick={() => setScreen('subject')}/>,
-    subject:   <SubjectSelectScreen onPick={() => setScreen('home')}/>,
-    home:      <HomeScreen onContinue={() => setScreen('lesson')} onMission={() => setScreen('mission')}/>,
-    skills:    <SkillTreeScreen onStart={() => setScreen('lesson')}/>,
-    lesson:    <LessonScreen onAsk={() => {}} onStart={() => setScreen('quiz')}/>,
-    quiz:      <QuizScreen onComplete={() => setScreen('reward')}/>,
-    reward:    <RewardScreen onDone={() => setScreen('home')}/>,
-    league:    <LeagueScreen/>,
-    badges:    <BadgeCollectionScreen/>,
-    hearts:    <HeartsScreen onPractice={() => setScreen('lesson')}/>,
-    mission:   <DailyMissionScreen/>,
-    profile:   <ProfileScreen/>,
+    splash:      <SplashScreen onContinue={() => setScreen('login')}/>,
+    login:       <LoginScreen onLogin={() => setScreen('home')} onRegister={() => setScreen('register')}/>,
+    register:    <RegisterScreen onRegister={() => setScreen('children')} onLogin={() => setScreen('login')}/>,
+    children:    <MyChildrenScreen onAddChild={() => setScreen('grade')} onPick={() => setScreen('home')}/>,
+    role:        <RoleSelectScreen onPick={() => setScreen('grade')}/>,
+    grade:       <GradeSelectScreen onPick={() => setScreen('subject')}/>,
+    subject:     <SubjectSelectScreen onPick={() => setScreen('home')}/>,
+    home:        <HomeScreen onContinue={() => setScreen('lesson')} onMission={() => setScreen('mission')}/>,
+    skills:      <SkillTreeScreen onStart={() => setScreen('lesson')}/>,
+    lesson:      <LessonScreen onAsk={() => {}} onStart={() => setScreen('quiz')}/>,
+    quiz:        <QuizScreen onComplete={() => setScreen('reward')}/>,
+    reward:      <RewardScreen onDone={() => setScreen('completed')}/>,
+    completed:   <MissionCompletedScreen onContinue={() => setScreen('home')} onChallenge={() => setScreen('quiz')}/>,
+    league:      <LeagueScreen/>,
+    badges:      <BadgeCollectionScreen/>,
+    hearts:      <HeartsScreen onPractice={() => setScreen('lesson')}/>,
+    mission:     <DailyMissionScreen/>,
+    profile:     <ProfileScreen/>,
   };
 
   const tabToScreen = (id) => {
@@ -129,9 +146,11 @@ function App() {
   const showsTabBar = ['home', 'skills', 'mission', 'league', 'profile', 'badges', 'hearts'].includes(screen);
 
   const groups = [
-    { name: 'Onboarding', items: [['splash', 'Splash'], ['role', 'Role'], ['grade', 'Grade'], ['subject', 'Subject']] },
+    { name: 'Auth',       items: [['splash', 'Splash'], ['login', 'Login'], ['register', 'Register']] },
+    { name: 'Onboarding', items: [['role', 'Role'], ['grade', 'Grade'], ['subject', 'Subject']] },
+    { name: 'Parent',     items: [['children', 'My Children']] },
     { name: 'Core',       items: [['home', 'Home'], ['skills', 'Skill Tree'], ['profile', 'Profile']] },
-    { name: 'Lesson',     items: [['lesson', 'Lesson'], ['quiz', 'Quiz'], ['reward', 'Reward']] },
+    { name: 'Lesson',     items: [['lesson', 'Lesson'], ['quiz', 'Quiz'], ['reward', 'Reward'], ['completed', 'Mission ✓']] },
     { name: 'Game',       items: [['mission', 'Mission'], ['league', 'League'], ['badges', 'Badges'], ['hearts', 'Hearts']] },
   ];
 
