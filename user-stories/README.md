@@ -53,6 +53,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P1-08 Design system & core component library (RTL/Arabic)
 - P1-09 Auth & onboarding screens
 - P1-10 Sign in to the admin dashboard
+- P1-11 Parent web app — all pages, pixel-perfect from design-system screenshots *(epic: landing, login, register, my-children, dashboard, reports, settings; fonts, language switch, dark-mode)*
 
 ### Phase 2 — Learning Core
 - P2-01 Model the curriculum hierarchy
