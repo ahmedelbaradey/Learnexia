@@ -1,4 +1,4 @@
-﻿# Learnexia — Build Progress Tracker
+# Learnexia — Build Progress Tracker
 
 > Single source of truth for **what's done vs. not** across the whole backlog.
 > Maintained automatically: the **`committer` agent updates this file on every commit** (flips the row for the story it just committed). The lead may also reconcile it after merges.
@@ -12,6 +12,7 @@
 - `—` — no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
+- **Wave 5:** P2-01-BE (model curriculum hierarchy, 6 entities, CQRS vertical slices, 30 endpoints) — committed
 - **Wave 4:** P1-09 (auth & onboarding screens, Expo + NSwag client + shared Tamagui UI primitives + Me endpoint), P1-10 (admin dashboard sign-in on shared Tamagui UI) — PR open
 - **Wave 3:** P1-03-BE (parent onboarding & add children), P1-05-BE (role-based access control) — merged
 - **Wave 2:** P1-02-BE (token refresh & sign-out), P1-04-BE (parent↔child link + family-scope authz) — merged (PR #1)
@@ -40,7 +41,7 @@
 ## Phase 2 — Learning Core
 | Story | Title | Backend | Frontend |
 |---|---|:--:|:--:|
-| P2-01 | Model the curriculum hierarchy | 🔲 | — |
+| P2-01 | Model the curriculum hierarchy | ✅ | — |
 | P2-02 | Browse subjects and lessons | 🔲 | 🔲 |
 | P2-03 | Navigate the skill tree | 🔲 | 🔲 |
 | P2-04 | Unlock lessons by prerequisite/mastery | 🔲 | — |
@@ -120,4 +121,3 @@
 - Container non-root image, CI action SHA-pinning, staging TLS cert — P1-07
 - Tokenize inline glow/alpha shades in components — P1-08
 - **Open decision:** staging deploy provider (Azure / Railway / Render) — see `docs/deploy/staging-decision.md`
-
