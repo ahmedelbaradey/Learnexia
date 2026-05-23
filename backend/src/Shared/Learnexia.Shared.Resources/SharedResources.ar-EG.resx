@@ -868,6 +868,12 @@
   <data name="LoginTooManyFailedAttempts" xml:space="preserve">
     <value>تم قفل الحساب مؤقتاً بسبب محاولات تسجيل دخول فاشلة كثيرة. يرجى المحاولة لاحقاً.</value>
   </data>
+  <data name="LoginInvalidCredentials" xml:space="preserve">
+    <value>اسم المستخدم أو كلمة المرور غير صحيحة.</value>
+  </data>
+  <data name="LoginSystemError" xml:space="preserve">
+    <value>حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.</value>
+  </data>
   <data name="LogoutSuccessful" xml:space="preserve">
     <value>تم تسجيل خروجك بنجاح.</value>
   </data>

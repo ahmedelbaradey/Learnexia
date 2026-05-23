@@ -439,6 +439,8 @@
         public const string LoginIncorrectPassword = "LoginIncorrectPassword"; // MSG-LOGIN-002
         public const string LoginAccountDeactivated = "LoginAccountDeactivated"; // MSG-LOGIN-003
         public const string LoginTooManyFailedAttempts = "LoginTooManyFailedAttempts"; // MSG-LOGIN-004
+        public const string LoginInvalidCredentials = "LoginInvalidCredentials"; // MSG-LOGIN-005
+        public const string LoginSystemError = "LoginSystemError"; // MSG-LOGIN-006
 
         // User Logout Messages (MSG-LOGOUT-001 to MSG-LOGOUT-002)
         public const string LogoutSuccessful = "LogoutSuccessful"; // MSG-LOGOUT-001

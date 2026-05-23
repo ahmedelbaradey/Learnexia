@@ -868,6 +868,12 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="LoginTooManyFailedAttempts" xml:space="preserve">
     <value>Account temporarily locked due to too many failed login attempts. Please try again later.</value>
   </data>
+  <data name="LoginInvalidCredentials" xml:space="preserve">
+    <value>Invalid username or password.</value>
+  </data>
+  <data name="LoginSystemError" xml:space="preserve">
+    <value>An error occurred during sign-in. Please try again.</value>
+  </data>
   <data name="LogoutSuccessful" xml:space="preserve">
     <value>You have been logged out successfully.</value>
   </data>
