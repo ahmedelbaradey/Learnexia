@@ -1,6 +1,6 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-23 (added Phase 7 Admin Console backlog + the P1-12 Batch-2 backend pickup).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-24 (added the Phase 1 backend gap analysis + P1-13 hardening story; earlier: Phase 7 Admin Console backlog + P1-12 Batch-2 pickup).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
 
 ## TL;DR
@@ -57,6 +57,12 @@ All Identity-module-scoped, parallel-safe with your Phase 2 BE work. Stories + t
 - **`security-auditor` (BE-7)** gates upload/OAuth/reset before the reviewer — Critical/High block.
 - **Two design-pattern decisions to raise with the lead first** (CLAUDE.md rule #8): the **file-storage abstraction** (BE-4, dev-local vs object-store) and the **OAuth provider abstraction** (BE-5) — name the pattern and wait for approval; don't introduce unilaterally.
 - FE (P1-11) ships these surfaces **UI-first** (placeholder avatar, disabled social/forgot) and lights them up as each task merges; regenerate the `api-client` after BE-8/BE-9.
+
+### P1-13 — Phase 1 backend hardening (new, from the backend gap analysis)
+> A code-grounded **backend-only gap analysis of all Phase 1** (excluding P1-12) is at [docs/briefs/phase-1-backend-gap-analysis.md](../briefs/phase-1-backend-gap-analysis.md). It confirmed most suspected gaps are **already covered** (refresh rotation, sign-out revocation, RBAC `[Authorize]` + family/self-scope, JWT secret from env) and found **6 real gaps**, now broken down as **P1-13** ([story](../../user-stories/Phase-1-Foundation/P1-13-backend-hardening.md) · [P1-13-BE](../../tasks/Backend/Phase-1-Foundation/P1-13-BE.md)). Not started.
+- **Gaps:** account lockout configured but never engaged (`SignInCommandHandler` passes `lockoutOnFailure:false`); sign-in leaks `ex.Message` + allows email enumeration; **Notifications can't send email** (`SendNotificationCommandHandler` throws — this is the only piece of the P1-12d reset chain P1-12 doesn't build); no env-driven Admin seed (only `superadmin@gmail.com` with committed `123Pa$$word!`); no CAPTCHA on register (tracked debt); no working registration-message send.
+- **Sequencing:** email-delivery infra (BE-3) is a shared enabler for P1-12d **and** P5-04 — consider standing it up (possibly as its own story **P1-13a**) before P1-12d. Email-provider abstraction is an **ask-first** design-pattern decision.
+- **Open decisions for the lead** (brief §5): email verification at registration in P1 or deferred? COPPA under-13 consent record (distinct from P1-12f terms-consent; **no entity today**)? Is P1-13 a Phase-1 story or a P6 hardening pull (rec: BE-1/2/4/5 in P1, BE-6 CAPTCHA may defer)?
 
 ## Workflow notes
 - Branch per change; **PRs to main**, the user merges. **Don't stack PRs on an unmerged base and then merge the base first** — the stacked changes get stranded (this happened to Register; it was re-PR'd straight to main). Now that Login is in main, branch new screens **off main**.

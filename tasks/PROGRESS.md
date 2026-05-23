@@ -37,6 +37,9 @@
 | P1-08 | Design system & components (RTL) | — | ✅ |
 | P1-09 | Auth & onboarding screens | ✅ | ✅ |
 | P1-10 | Sign in to the admin dashboard | ✅ | ✅ |
+| P1-11 | Web app pages (pixel-perfect, parent web) | — | 🟡 |
+| P1-12 | Web account backend (Batch 2, deferred) | 🔲 | 🔲 |
+| P1-13 | Backend hardening (lockout/sign-in/email/admin seed) | 🔲 | — |
 
 ## Phase 2 — Learning Core
 | Story | Title | Backend | Frontend |
