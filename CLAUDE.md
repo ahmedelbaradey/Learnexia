@@ -2,6 +2,12 @@
 
 AI-powered, gamified, adaptive learning platform for Arabic-speaking school students. This file is the shared rulebook for **all** agents (subagents auto-inherit nothing — they get this file as project context). When in doubt, the linked docs win over your general knowledge.
 
+## Shared dev memory — read first, update last (every cycle)
+Private Claude/session memory does **not** travel with the repo, and one lead's notes aren't visible to another. The **single shared memory is [docs/dev/HANDOFF.md](docs/dev/HANDOFF.md)** — the one place people *and* Claude sessions sync context. The protocol is mandatory for every dev cycle:
+1. **Before starting new development:** read `docs/dev/HANDOFF.md` first (then the relevant story/tasks). It carries load-bearing config, how to run the stack, decisions, and open backlogs that aren't obvious from the code or git history.
+2. **Before opening the PR for that work:** update `docs/dev/HANDOFF.md` with anything non-obvious the next person needs — new/changed load-bearing config (and *why*), decisions, gotchas, what's done, what's next — and include the update **in the same PR**. Prune anything now stale.
+3. That is how memory is shared: write it to HANDOFF.md → commit → it's in `main` for everyone (human or agent) on the next pull. If it isn't in HANDOFF.md, assume the next lead won't know it.
+
 ## Hard facts (do not contradict)
 - **Backend:** [backend/](backend/) — `Learnexia.Modular.sln` (.NET 10 modular monolith). *(The legacy clean-architecture solution that previously sat here has been removed; this is the only backend.)*
 - **Stack:** **.NET 10**, ASP.NET Core, **modular monolith**, MediatR CQRS, FluentValidation, AutoMapper, ASP.NET Identity + JWT.
