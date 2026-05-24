@@ -42,7 +42,7 @@
 | P1-12b | IUserLookup cross-module seam | ✅ | — |
 | P1-13a | Notifications email delivery (enabler) | ✅ | — |
 | P1-13 | Backend hardening (lockout/sign-in/admin seed/CAPTCHA) | ✅ | — |
-| P1-13b | Backend hardening pass (rate-limit/timing-oracle/email-locale/secrets) | 🔲 | — |
+| P1-13b | Backend hardening pass — BE-1 rate-limiting (PR #50); rest → P6-06 | ✅ | — |
 
 ## Phase 2 — Learning Core
 | Story | Title | Backend | Frontend |
@@ -108,6 +108,7 @@
 | P6-03 | Pass localization & RTL review | 🔲 |
 | P6-04 | Regression, prompt-tuning & bug triage | 🔲 |
 | P6-05 | Observability: logging, tracing, dashboards | 🔲 |
+| P6-06 | Backend security hardening (timing-oracle/email-locale/secrets/Redis rate-limit) | 🔲 |
 
 ## Phase 7 — Admin Console *(post-MVP)*
 | Story | Title | Backend | Frontend |

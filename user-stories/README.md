@@ -117,6 +117,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P6-03 Pass localization & RTL review
 - P6-04 Regression, prompt-tuning & bug triage
 - P6-05 Observability: logging, tracing, dashboards
+- P6-06 Backend security hardening *(auth timing-oracle, email localization, secrets, Redis rate-limit store; relocated from the P1-13b pass)*
 
 ### Phase 7 — Admin Console *(post-MVP / ongoing)*
 *The admin feature set behind the P1-10 dashboard shell — curriculum management, user/account management, content moderation, and analytics/AI oversight. Admin-only per SRS §3; no teacher role.*
