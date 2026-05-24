@@ -15,6 +15,10 @@ export const queryKeys = {
     currentUser: () => [...queryKeys.auth.all, 'current-user'] as const,
     me: () => [...queryKeys.auth.all, 'me'] as const,
   },
+  account: {
+    all: ['account'] as const,
+    profile: () => [...queryKeys.account.all, 'profile'] as const,
+  },
   family: {
     all: ['family'] as const,
     myChildren: () => [...queryKeys.family.all, 'my-children'] as const,
