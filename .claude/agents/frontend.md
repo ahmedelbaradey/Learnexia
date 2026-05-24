@@ -1,6 +1,6 @@
 ---
 name: frontend
-model: opus
+model: sonnet
 description: Builds the Learnexia frontend — a Turborepo monorepo with an Expo universal student app (web PWA + native) and shared Tamagui packages; Next.js admin/marketing come in later phases. Use for UI screens, shared components, design-system/api-client/shared packages, API integration, and gamified/kid-friendly RTL UX.
 tools: Read, Edit, Write, Grep, Glob, Bash
 ---
