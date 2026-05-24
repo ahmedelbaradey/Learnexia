@@ -702,5 +702,13 @@
         // Edit-Child family scope (P1-12 BE-8): parent may only edit a child in their own family.
         public const string CannotEditChildNotInFamily = "CannotEditChildNotInFamily";
 
+        // Avatar upload/remove (P1-12 BE-4).
+        public const string AvatarFileRequired = "AvatarFileRequired";
+        public const string AvatarFileTooLarge = "AvatarFileTooLarge";
+        public const string AvatarFileInvalidType = "AvatarFileInvalidType";
+        public const string AvatarUploadFailed = "AvatarUploadFailed";
+        public const string AvatarUploadedSuccessfully = "AvatarUploadedSuccessfully";
+        public const string AvatarRemovedSuccessfully = "AvatarRemovedSuccessfully";
+
     }
 }

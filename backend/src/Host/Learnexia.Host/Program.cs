@@ -8,6 +8,7 @@ using Learnexia.Modules.Catalog.Api;
 using Learnexia.Modules.Identity.Api;
 using Learnexia.Modules.Learning.Api;
 using Learnexia.Modules.Notifications.Api;
+using Learnexia.Shared.Kernel.Storage;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
@@ -34,6 +35,10 @@ builder.Services.AddMemoryCache();
 builder.Services.ConfigureLocalization();
 builder.Services.ConfigureForwardedHeaders();
 builder.Services.AddHttpContextAccessor();
+
+// Platform-wide MinIO object storage (relocated from Identity to Shared.Kernel — a shared capability for
+// ANY file upload). Registered ONCE here at the Host so every module can inject IStorageService.
+builder.Services.AddMinIODependencies(builder.Configuration);
 
 // IDistributedCache backing for sessions / token cache.
 // When a Redis endpoint is configured (compose injects ConnectionStrings__Redis=redis:6379), back the

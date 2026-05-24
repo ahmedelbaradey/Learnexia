@@ -31,6 +31,10 @@ public static class DependencyInjection
         services.AddDbContext(configuration);
         services.AddIdentityService(configuration);
 
+        // P1-12 BE-4: MinIO object storage is now registered ONCE at the Host (relocated to Shared.Kernel
+        // as a platform-wide capability — see Host Program.cs AddMinIODependencies). Modules inject
+        // IStorageService directly; no module-local registration here.
+
         // Unit-of-Work behavior (ADR 0001 §2 + ADR 0002 §2): commit once per ICommand<>, then dispatch
         // the aggregates' domain events AFTER commit. Registered here in Infrastructure (not Application)
         // because it injects the concrete IdentityModuleDbContext, which Application cannot reference.

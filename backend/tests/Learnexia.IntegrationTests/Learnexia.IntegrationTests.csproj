@@ -15,6 +15,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <!-- Testcontainers PostgreSQL (3.x API: PostgreSqlBuilder) -->
     <PackageReference Include="Testcontainers.PostgreSql" />
+    <!-- Testcontainers generic container (ContainerBuilder) — used to spin up MinIO for avatar tests -->
+    <PackageReference Include="Testcontainers" />
   </ItemGroup>
 
   <!-- Reference the Host project — it pulls in all modules transitively -->

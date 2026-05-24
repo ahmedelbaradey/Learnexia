@@ -64,6 +64,13 @@ public class BaseResponseHandler
         Message = message ?? "Forbidden",
     };
 
+    public BaseResponse<T> UnprocessableEntity<T>(string? message = null) => new()
+    {
+        StatusCode = HttpStatusCode.UnprocessableEntity,
+        Successed = false,
+        Message = message ?? "Unprocessable Entity.",
+    };
+
     public BaseResponse<T> BusinessValidation<T>(string? message = null) => new()
     {
         StatusCode = HttpStatusCode.FailedDependency,
