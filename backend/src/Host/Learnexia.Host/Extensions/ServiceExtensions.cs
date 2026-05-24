@@ -27,9 +27,21 @@ public static class ServiceExtensions
 
     public static void ConfigureRateLimitingOptions(this IServiceCollection services)
     {
-        var rateLimitRules = new List<RateLimitRule> { new() { Endpoint = "*", Limit = 200, Period = "1m" } };
+        var rateLimitRules = new List<RateLimitRule>
+        {
+            new() { Endpoint = "*", Limit = 200, Period = "1m" },
+            // P1-13b BE-1: per-endpoint abuse/DoS ceiling on the anonymous auth endpoints (100 req/s per IP).
+            // Endpoint rules use the lowercased "{verb}:{path}" form and require EnableEndpointRateLimiting.
+            new() { Endpoint = "post:/api/users/authentication/sign-in", Limit = 100, Period = "1s" },
+            new() { Endpoint = "post:/api/users/authentication/register-parent", Limit = 100, Period = "1s" },
+            new() { Endpoint = "post:/api/users/authentication/google-signin", Limit = 100, Period = "1s" },
+            new() { Endpoint = "post:/api/users/authentication/forgot-password", Limit = 100, Period = "1s" },
+            new() { Endpoint = "post:/api/users/authentication/reset-password", Limit = 100, Period = "1s" },
+        };
         services.Configure<IpRateLimitOptions>(opt =>
         {
+            // Required so the "{verb}:{path}" rules above are counted per-endpoint (not folded into the global "*").
+            opt.EnableEndpointRateLimiting = true;
             opt.GeneralRules = rateLimitRules;
             // Health probes must never be throttled — container/orchestrator probes hit them repeatedly.
             opt.EndpointWhitelist = new List<string> { "get:/health", "get:/health/live" };
