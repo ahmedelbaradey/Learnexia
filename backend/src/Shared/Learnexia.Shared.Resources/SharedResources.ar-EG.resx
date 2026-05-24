@@ -1500,6 +1500,9 @@
   <data name="CaptchaVerificationFailed" xml:space="preserve">
     <value>فشل التحقق من اختبار CAPTCHA. يرجى المحاولة مرة أخرى.</value>
   </data>
+  <data name="CannotUnlinkLastParent" xml:space="preserve">
+    <value>لا يمكن إزالة ولي الأمر الوحيد المرتبط بهذا الطفل. يرجى ربط ولي أمر آخر أولاً.</value>
+  </data>
   <data name="CannotEditChildNotInFamily" xml:space="preserve">
     <value>غير مسموح لك بتعديل بيانات هذا الطفل.</value>
   </data>
@@ -1538,5 +1541,53 @@
   </data>
   <data name="GoogleEmailNotVerified" xml:space="preserve">
     <value>يجب أن يكون بريدك الإلكتروني في Google موثّقًا لتسجيل الدخول.</value>
+  </data>
+  <data name="NotificationPreferencesUpdatedSuccessfully" xml:space="preserve">
+    <value>تم تحديث تفضيلات الإشعارات بنجاح.</value>
+  </data>
+  <data name="OtherSessionsSignedOutSuccessfully" xml:space="preserve">
+    <value>تم تسجيل الخروج من جميع الجلسات الأخرى بنجاح.</value>
+  </data>
+  <data name="NotificationPreferencesRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد تفضيلات الإشعارات بنجاح.</value>
+  </data>
+  <data name="NotificationPreferenceInvalidCategory" xml:space="preserve">
+    <value>فئة إشعار واحدة أو أكثر غير صالحة.</value>
+  </data>
+  <data name="NotificationPreferenceDuplicateCategory" xml:space="preserve">
+    <value>لا يُسمح بتكرار فئات الإشعارات.</value>
+  </data>
+  <data name="SessionsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد الجلسات بنجاح.</value>
+  </data>
+  <data name="PlanRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد الخطة بنجاح.</value>
+  </data>
+  <data name="AttemptStartedSuccessfully" xml:space="preserve">
+    <value>تم بدء محاولة الاختبار بنجاح.</value>
+  </data>
+  <data name="AttemptResumedSuccessfully" xml:space="preserve">
+    <value>تم استئناف محاولة الاختبار بنجاح.</value>
+  </data>
+  <data name="LessonNotFound" xml:space="preserve">
+    <value>الدرس المطلوب غير موجود.</value>
+  </data>
+  <data name="LessonIdMustBePositive" xml:space="preserve">
+    <value>يجب أن يكون معرّف الدرس عدداً صحيحاً موجباً.</value>
+  </data>
+  <data name="McqRequiresAtLeastTwoOptions" xml:space="preserve">
+    <value>تتطلب أسئلة الاختيار من متعدد خيارين على الأقل.</value>
+  </data>
+  <data name="McqCorrectAnswerMustBeValidOption" xml:space="preserve">
+    <value>يجب أن تتطابق الإجابة الصحيحة مع أحد الخيارات المقدمة.</value>
+  </data>
+  <data name="TrueFalseCorrectAnswerInvalid" xml:space="preserve">
+    <value>يجب أن تكون الإجابة الصحيحة لأسئلة الصح والخطأ إما صحيح أو خطأ.</value>
+  </data>
+  <data name="MatchingOptionsMustBePaired" xml:space="preserve">
+    <value>تتطلب أسئلة المطابقة عدداً متساوياً من الخيارات اليسرى واليمنى.</value>
+  </data>
+  <data name="FillInBlankCorrectAnswerRequired" xml:space="preserve">
+    <value>تتطلب أسئلة ملء الفراغ إجابة صحيحة غير فارغة.</value>
   </data>
 </root>

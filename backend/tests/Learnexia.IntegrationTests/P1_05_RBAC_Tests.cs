@@ -594,7 +594,7 @@ public sealed class P1_05_RBAC_Tests : IAsyncLifetime
 
         // Admin token on My-Children returns 200 even though admin has no children.
         // This proves the Admin role is allowed by the role gate (Parent,Admin,SuperAdmin).
-        var (resp, root, body) = await SendAsync(_client, HttpMethod.Get, "api/Users/Parent/My-Children",
+        var (resp, root, body) = await SendAsync(_client, HttpMethod.Get, "api/Parent/My-Children",
             null, adminToken);
 
         resp.StatusCode.Should().Be(HttpStatusCode.OK,
@@ -632,14 +632,14 @@ public sealed class P1_05_RBAC_Tests : IAsyncLifetime
 
         // Parent A links the child
         var parentAToken = await RegisterParentAndGetTokenAsync();
-        var (linkAResp, _, linkABody) = await SendAsync(_client, HttpMethod.Post, "api/Users/Parent/Link-Child",
+        var (linkAResp, _, linkABody) = await SendAsync(_client, HttpMethod.Post, "api/Parent/Link-Child",
             new { ChildEmail = studentEmail }, parentAToken);
         linkAResp.StatusCode.Should().Be(HttpStatusCode.OK,
             "parent A must link successfully; body: {0}", linkABody);
 
         // Parent B attempts to steal the same child (FamilyScopeAuthorizationHandler denies via business layer)
         var parentBToken = await RegisterParentAndGetTokenAsync();
-        var (linkBResp, rootB, linkBBody) = await SendAsync(_client, HttpMethod.Post, "api/Users/Parent/Link-Child",
+        var (linkBResp, rootB, linkBBody) = await SendAsync(_client, HttpMethod.Post, "api/Parent/Link-Child",
             new { ChildEmail = studentEmail }, parentBToken);
 
         ((int)linkBResp.StatusCode).Should().NotBeInRange(200, 299,
@@ -662,13 +662,13 @@ public sealed class P1_05_RBAC_Tests : IAsyncLifetime
         await SendAsync(_client, HttpMethod.Post, "api/Users/UserManagement/AddUser",
             new { Email = studentEmail, UserName = studentUserName, FullName = "Child for A", Roles = new[] { "Student" } },
             adminToken);
-        var (linkResp, _, linkBody) = await SendAsync(_client, HttpMethod.Post, "api/Users/Parent/Link-Child",
+        var (linkResp, _, linkBody) = await SendAsync(_client, HttpMethod.Post, "api/Parent/Link-Child",
             new { ChildEmail = studentEmail }, parentAToken);
         linkResp.StatusCode.Should().Be(HttpStatusCode.OK, "parent A must link; body: {0}", linkBody);
 
         // Parent B — fresh, no children
         var parentBToken = await RegisterParentAndGetTokenAsync();
-        var (listResp, listRoot, listBody) = await SendAsync(_client, HttpMethod.Get, "api/Users/Parent/My-Children",
+        var (listResp, listRoot, listBody) = await SendAsync(_client, HttpMethod.Get, "api/Parent/My-Children",
             null, parentBToken);
 
         listResp.StatusCode.Should().Be(HttpStatusCode.OK, "My-Children must return 200; body: {0}", listBody);

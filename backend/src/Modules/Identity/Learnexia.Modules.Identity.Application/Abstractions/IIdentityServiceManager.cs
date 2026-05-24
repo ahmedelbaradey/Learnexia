@@ -5,5 +5,4 @@ public interface IIdentityServiceManager
     IAuthenticationService AuthenticationService { get; }
     IAuthorizationService AuthorizationService { get; }
     IUserManagmentService UserManagmentService { get; }
-    ILinkParentStudentService LinkParentStudentService { get; }
 }

@@ -23,6 +23,76 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.Attempt", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<double>("AccuracyPercentage")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("double precision")
+                        .HasDefaultValue(0.0);
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("DurationSeconds")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("HintsUsedCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<bool?>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("LessonId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId")
+                        .HasDatabaseName("IX_Attempts_LessonId");
+
+                    b.HasIndex("StudentId")
+                        .HasDatabaseName("IX_Attempts_StudentId");
+
+                    b.ToTable("Attempts", "learning");
+                });
+
             modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.Concept", b =>
                 {
                     b.Property<int>("Id")
@@ -176,6 +246,73 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
                     b.ToTable("Lessons", "learning");
                 });
 
+            modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.QuizQuestion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CorrectAnswer")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Difficulty")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("GeneratedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<bool?>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("LessonId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Options")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("QuestionText")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("QuestionType")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SkillId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId")
+                        .HasDatabaseName("IX_QuizQuestions_LessonId");
+
+                    b.HasIndex("SkillId")
+                        .HasDatabaseName("IX_QuizQuestions_SkillId");
+
+                    b.ToTable("QuizQuestions", "learning");
+                });
+
             modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.Skill", b =>
                 {
                     b.Property<int>("Id")
@@ -224,6 +361,69 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
                         .HasDatabaseName("IX_Skills_ConceptId");
 
                     b.ToTable("Skills", "learning");
+                });
+
+            modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.StudentAnswer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AnswerPayload")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("AttemptId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("HintUsed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsCorrect")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool?>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("QuestionId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TimeSpentSeconds")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AttemptId")
+                        .HasDatabaseName("IX_StudentAnswers_AttemptId");
+
+                    b.HasIndex("QuestionId")
+                        .HasDatabaseName("IX_StudentAnswers_QuestionId");
+
+                    b.ToTable("StudentAnswers", "learning");
                 });
 
             modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.Subject", b =>
@@ -363,6 +563,25 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
                     b.Navigation("Concept");
                 });
 
+            modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.StudentAnswer", b =>
+                {
+                    b.HasOne("Learnexia.Modules.Learning.Domain.Entities.Attempt", "Attempt")
+                        .WithMany("StudentAnswers")
+                        .HasForeignKey("AttemptId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Learnexia.Modules.Learning.Domain.Entities.QuizQuestion", "Question")
+                        .WithMany("StudentAnswers")
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Attempt");
+
+                    b.Navigation("Question");
+                });
+
             modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.Subject", b =>
                 {
                     b.HasOne("Learnexia.Modules.Learning.Domain.Entities.Grade", "Grade")
@@ -385,6 +604,11 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
                     b.Navigation("Subject");
                 });
 
+            modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.Attempt", b =>
+                {
+                    b.Navigation("StudentAnswers");
+                });
+
             modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.Concept", b =>
                 {
                     b.Navigation("Skills");
@@ -393,6 +617,11 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
             modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.Grade", b =>
                 {
                     b.Navigation("Subjects");
+                });
+
+            modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.QuizQuestion", b =>
+                {
+                    b.Navigation("StudentAnswers");
                 });
 
             modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.Skill", b =>

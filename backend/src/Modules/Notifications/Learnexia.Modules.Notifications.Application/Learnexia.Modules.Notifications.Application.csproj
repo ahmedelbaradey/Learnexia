@@ -13,5 +13,6 @@
     <ProjectReference Include="..\Learnexia.Modules.Notifications.Domain\Learnexia.Modules.Notifications.Domain.csproj" />
     <ProjectReference Include="..\..\..\Shared\Learnexia.Shared.Kernel\Learnexia.Shared.Kernel.csproj" />
     <ProjectReference Include="..\..\..\Shared\Learnexia.Shared.Contracts\Learnexia.Shared.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Learnexia.Shared.Resources\Learnexia.Shared.Resources.csproj" />
   </ItemGroup>
 </Project>

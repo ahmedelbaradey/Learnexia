@@ -1,6 +1,6 @@
 ---
 name: designer
-model: sonnet
+model: opus
 description: UI/UX design stage. Runs after planner and before the frontend implementer batches, for any story with a UI surface. Turns a user story into a concrete Design Spec (screen layout, component composition, states, tokens, motion, RTL/accessibility) grounded in the design-system kit + UI docs, that the frontend agent implements in Tamagui. Does not write app code. Skip for backend-only stories.
 tools: Read, Grep, Glob, Write
 ---

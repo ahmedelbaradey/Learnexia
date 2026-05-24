@@ -1,6 +1,6 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-24 (Phase-1 backend leftover **DONE & merged**: P1-13a email, IUserLookup, P1-13 hardening, P1-12 BE-1..BE-9 incl. MinIO avatar + Google sign-in + password reset; only P1-13 BE-4 CAPTCHA remains).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-25 (Phase-1 backend leftover **DONE & merged**: P1-13a email, IUserLookup, P1-13 hardening, P1-12 BE-1..BE-9 incl. MinIO avatar + Google sign-in + password reset; only P1-13 BE-4 CAPTCHA remains; **P2-06** take-a-quiz (StartAttempt) committed on feat/P2-06-assessment-quiz, pending Wave-6 PR; **P2-12** account-settings 3-module refactor committed on feat/P2-12-account-settings-apis, pending Wave-6 PR; **P2-10** demo curriculum seeder committed on feat/P2-10-seed-demo-data, pending Wave-6 PR).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
 
 ## TL;DR
@@ -8,6 +8,73 @@
 - The Expo **student-app web** now boots, translates (ar/en), and talks to the backend end-to-end (register/login → 200 + JWT).
 - **P1-11** (parent web pages, pixel-perfect from `design-system/screenshots/`) is planned + two screens built: **Login** and **Register**.
 - All **new backend** the design implies is deferred to **P1-12 "Batch 2"** (Identity-scoped, parallel-safe with the Phase 2 BE lead) — see "For the backend lead".
+
+
+## P2-06 — Take a quiz (folded into Learning module)
+> Committed on `feat/P2-06-assessment-quiz`; pending Wave-6 PR. Build green, integration + unit tests pass, reviewer PASS.
+
+**Lead decision:** quiz/assessment functionality lives in the **Learning** module (schema `learning`), NOT a separate Assessment module. A separate Assessment module was scaffolded then deleted per lead instruction. **Ask before creating new modules** — all quiz work goes in Learning going forward.
+
+**New domain entities (Learning.Domain):**
+- `QuizQuestion` — polymorphic question record with `QuestionType` (MCQ/TrueFalse/Matching/FillInBlank), `Content` (JSON blob), `CorrectAnswer`, `Order`, and `GeneratedBy` (Human/AI). Linked to a `Lesson`.
+- `Attempt` — student quiz attempt record; status `AttemptStatus` (NotStarted/InProgress/Completed/Abandoned); links to a `Lesson` and `StudentId`.
+- `StudentAnswer` — per-question answer record inside an attempt.
+
+**Migration:** `AddQuizTables` (learning schema) — creates `quiz_questions`, `attempts`, `student_answers` tables in the `learning` schema.
+
+**New endpoint:**
+- `POST /api/Learning/Quizzes/{lessonId}/Attempt` — `[Authorize(Roles="Student")]` — creates a new `InProgress` attempt (or resumes an existing one) and returns the lesson's questions **without** the `CorrectAnswer` field. Enforces: lesson-existence check (404), Student-role-only (403), no-answer-leak.
+
+**4 question types modeled** (MCQ / TrueFalse / Matching / FillInBlank) with a per-type content validator (`QuizQuestionContentValidator` helper) and unit tests in `Modules.Learning.UnitTests/QuizQuestionTypeValidationTests.cs`.
+
+**`AttemptService.StartNewAsync` explicit SaveChangesAsync:** calls `LearningDbContext.SaveChangesAsync` directly (not waiting for UoW) to obtain the DB-generated `AttemptId` before returning questions — mirrors the `LinkParentStudentService` precedent. UoW's later save is a no-op.
+
+**Secret hygiene (no new secrets introduced):**
+- Remote dev DB connection string lives ONLY in gitignored `appsettings.Development.local.json`.
+- `Program.cs` now loads optional `appsettings.{Environment}.local.json` at startup (before other config, optional:true so the app runs without it).
+- Tracked `appsettings.Development.json` keeps the localhost default only. **Never commit the .local.json file.**
+- Remote DB (75.119.158.102:5346/learnexia): all 5 module schemas migrated; NOT seeded yet. To seed, run `dotnet run --project backend/src/Host/Learnexia.Host -- --environment Development --MinIOConfiguration:Enabled false` (or add a `Bash(dotnet run:*)` allow-rule for the seeding agent).
+
+**P6-06 pre-existing deferrals (NOT introduced by P2-06):**
+- F2: JWT `CHANGE_ME` secret in `appsettings.json` should be env-driven + startup-guarded.
+- F6: `RequireHttpsMetadata=false` should be Development-only.
+- F9: `DbContext` audit stamp uses `DateTime.Now` (should be `UtcNow`).
+- F11: MinIO default credentials should be env-driven.
+- MSB3277: EF 10.0.0/10.0.8 version conflict to resolve in `Directory.Packages.props`.
+
+## P2-10 — Seed demo subjects & skill trees
+> Committed on `feat/P2-10-seed-demo-data`; pending Wave-6 PR. Dev-only idempotent seeder; unit tests green.
+
+- **Seeder location:** `backend/src/Modules/Learning/Learnexia.Modules.Learning.Infrastructure/Persistence/Seed/LearningSeeder.cs`
+- **Activation:** runs at startup ONLY in Development, via `IHostEnvironment.IsDevelopment()` inside `LearningModule.InitializeAsync`. The environment check lives in `LearningModule` (not in the seeder) so the seeder is environment-neutral and unit tests can call it directly.
+- **Coverage:** all **6 grades × 4 subjects** (Math, Science, Arabic, English; **NO Social Studies**). Math is the deepest tree: 5 units / 15 lessons / 5 concepts / 15 skills per grade; the other three subjects use 2 units / 4 lessons / 2 concepts / 4 skills per grade.
+- **Idempotent:** natural-key checks on Subject.Name + Grade; re-running the seeder in an already-seeded DB adds zero rows.
+- **`SystemUserId = 0`** convention for all seed-authored rows (matches the broader platform convention for system-generated data).
+- **P2-11 extension seam:** Skill `Name` strings are stable lookup keys — P2-11 (skill dependency graph) will use them to attach prerequisite edges. **Do NOT rename skill name strings** after the seeder ships.
+- **Demo-ready:** P2-02 (browse subjects/lessons) and P2-03 (navigate skill tree) can now be demoed against a populated DB. Run the backend in `Development` mode to auto-seed.
+
+## P2-12 — Account settings (3-module refactor)
+> Committed on `feat/P2-12-account-settings-apis`; pending Wave-6 PR. Build green, 39/39 integration tests pass, security-auditor 2 High findings remediated.
+
+**Architecture:** the original Identity-only plan was restructured (lead decision) into **3 modules + a Shared.Contracts seam**:
+
+- **NEW `Parent` module** (schema `parent`) — owns ALL parent↔child family code: `AddChild`, `LinkChild`, `UpdateChild`, `ListMyChildren`, plus new `UnlinkChild`. Identity's `Family/` handlers, `FamilyScope` authz handler, `ParentController`, and `ParentStudents` entity are **fully removed** from Identity. Route base changed from `/api/Users/Parent/*` to **`/api/Parent/*`**.
+- **`Shared.Contracts` seams** — `IChildAccountService` (implemented in `Identity.Infrastructure`) is the ONLY cross-module bridge for child-account create/read/update (mirrors `IUserLookup`). `IParentChildQuery` (implemented in `Parent`) is the reverse seam so Identity `GetMe` can still return `HasChildren`.
+- **`Notifications` module** — gained `NotificationPreference` entity (schema `notifications`) + `GET /api/Notifications/Preferences` and `PUT /api/Notifications/Preferences`. Categories: `WeeklyReport`, `StreakAtRisk`, `ProductAnnouncement`, `Achievement` x `Email`/`Push`. First `GET` returns defaults (not persisted until first `PUT`).
+- **`Identity` module** — kept account-security endpoints: `POST /api/Users/Account/ChangePassword` (now invalidates OTHER sessions + revokes refresh token; rate-limited 5/15m), `GET /api/Users/Account/Sessions`, `POST /api/Users/Account/Sessions/SignOutOthers`, `GET /api/Users/Account/Plan` (STUB returning `{planName:"Free",status:"Active"}` — replace when payments module lands, **TODO P2-12-PAYMENTS**).
+
+**Migrations applied locally (3 total):**
+- `InitialParent` — creates `parent` schema + `ParentStudent` table in the Parent module.
+- `AddNotificationPreferences` — creates `notifications.NotificationPreferences` table.
+- `DropParentStudent` — drops `identity.ParentStudents` table from Identity.
+
+**Production follow-up:** `identity."ParentStudents"` rows are **NOT** copied to `parent."ParentStudent"` (dev rows are disposable; lead-accepted). A data-copy migration **must** be written before applying `DropParentStudent` to any environment with real link data.
+
+**Known gaps (non-blocking):**
+- `Notifications.Application` does not register `ValidationBehavior` per-module (masked by global registration — functionally OK).
+- MSB3277 EF version-conflict warning on `Parent.Api` / `Learning.Api` (track in `Directory.Packages.props` alignment).
+- `RequireHttpsMetadata` + MinIO default creds deferred to **P6-06**.
+
 
 ## ⚠️ Load-bearing config — do NOT "clean up"
 These exist because the WSL clean install drifts dependencies past the Expo SDK 52 pins. Removing them reintroduces a hard crash.
