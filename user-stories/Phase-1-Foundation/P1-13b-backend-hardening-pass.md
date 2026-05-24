@@ -7,7 +7,7 @@
 - **Story Points:** 8 — bundles the non-blocking follow-ups surfaced by the P1-12/P1-13 security audits.
 - **Labels:** `backend`, `security`, `hardening`, `identity`, `notifications`
 - **Requirements:** NFR-4 (security), FR-ID-1/4
-- **Status:** Backlog — consolidates the **non-blocking** follow-ups from the per-PR security briefs (`docs/briefs/P1-12-*-security-audit.md`, `P1-13-*-security-audit.md`). None blocked their original PR; this is the single tracked "hardening pass" to clear them before launch.
+- **Status:** **BE-1 (auth rate-limiting) shipped — PR #50.** The remaining items were **relocated to Phase 6 — [P6-06](../Phase-6-Stabilization/P6-06-backend-security-hardening.md)** (lead decision: hardening follow-ups land in stabilization). This story is effectively complete; retained for traceability of the bundle's origin (the non-blocking follow-ups from `docs/briefs/P1-12-*-security-audit.md`, `P1-13-*-security-audit.md`).
 
 ## Description
 As the platform owner, I want the backend security follow-ups left as non-blocking notes across the P1-12 / P1-13 / P1-13a work closed in one pass — tighter auth rate-limiting, the forgot-password timing oracle, localized transactional emails, and remaining secrets/transport config — so the auth surface is launch-hardened.

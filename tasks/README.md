@@ -20,7 +20,7 @@ tasks/
     └── Phase-7-Admin-Console/ P7-xx-BE.md
 ```
 
-> **Scope:** this tree covers **Phase 1 & 2** stories, plus the **Phase 7 — Admin Console** feature breakdown (`P7-xx`, the admin features behind the P1-10 shell). The barrier-to-entry stories added in Phase 3–5 — **P3-13** (adaptive student profile), **P4-09** (re-engagement notifications), **P4-10** (Redis realtime gamification), **P4-11** (streak freeze / timed events), **P5-07** (data feedback / calibration) — are **pending task breakdown** and will be decomposed when their phase trees are built. The Phase-2 story **P2-11** (skill dependency graph) is broken down here. See [../docs/briefs/barrier-to-entry-gap-analysis.md](../docs/briefs/barrier-to-entry-gap-analysis.md).
+> **Scope:** this tree covers **Phase 1 & 2** stories, plus the **Phase 7 — Admin Console** feature breakdown (`P7-xx`), plus the **Phase 6 — `P6-06`** backend security-hardening pass (relocated from P1-13b). The barrier-to-entry stories added in Phase 3–5 — **P3-13** (adaptive student profile), **P4-09** (re-engagement notifications), **P4-10** (Redis realtime gamification), **P4-11** (streak freeze / timed events), **P5-07** (data feedback / calibration) — are **pending task breakdown** and will be decomposed when their phase trees are built. The Phase-2 story **P2-11** (skill dependency graph) is broken down here. See [../docs/briefs/barrier-to-entry-gap-analysis.md](../docs/briefs/barrier-to-entry-gap-analysis.md).
 >
 > **Phase order (resequenced):** Phase 3 = **Gamification** (`P4-xx`), Phase 4 = **AI Tutor** (`P3-xx`) — Gamification builds before AI Tutor; story IDs were kept stable so the prefix no longer equals the phase number. See [../user-stories/README.md](../user-stories/README.md).
 
@@ -67,7 +67,8 @@ tasks/
 | P1-12 | Web account backend — profile/avatar/OAuth/reset/edit-child *(**Batch 2**, deferred)* | [FE](Frontend/student-app/Phase-1-Foundation/P1-12-FE.md) | [BE](Backend/Phase-1-Foundation/P1-12-BE.md) |
 | P1-13a | Notifications email delivery *(enabler — built first; unblocks P1-12d & P5-04)* | — | [BE](Backend/Phase-1-Foundation/P1-13a-BE.md) |
 | P1-13 | Backend hardening — lockout/sign-in safety/admin seed/CAPTCHA *(post-Batch-2 gap analysis)* | — | [BE](Backend/Phase-1-Foundation/P1-13-BE.md) |
-| P1-13b | Backend hardening pass — rate-limit/timing-oracle/email-locale/secrets *(bundled audit follow-ups)* | — | [BE](Backend/Phase-1-Foundation/P1-13b-BE.md) |
+| P1-13b | Backend hardening pass — BE-1 rate-limiting done (PR #50); rest → P6-06 | — | [BE](Backend/Phase-1-Foundation/P1-13b-BE.md) |
+| P6-06 | Backend security hardening — timing-oracle/email-locale/secrets/Redis rate-limit store *(Phase 6; relocated from P1-13b)* | — | [BE](Backend/Phase-6-Stabilization/P6-06-BE.md) |
 | P2-01 | Model curriculum hierarchy | — | [BE](Backend/Phase-2-Learning-Core/P2-01-BE.md) |
 | P2-02 | Browse subjects & lessons | [FE](Frontend/student-app/Phase-2-Learning-Core/P2-02-FE.md) | [BE](Backend/Phase-2-Learning-Core/P2-02-BE.md) |
 | P2-03 | Navigate the skill tree | [FE](Frontend/student-app/Phase-2-Learning-Core/P2-03-FE.md) | [BE](Backend/Phase-2-Learning-Core/P2-03-BE.md) |
