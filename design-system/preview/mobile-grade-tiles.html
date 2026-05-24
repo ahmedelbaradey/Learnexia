@@ -1,0 +1,22 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css">
+<style>
+  body{padding:24px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:380px;margin:0 auto}
+  .tile{padding:20px 16px;border-radius:20px;background:#1E293B;border:2px solid rgba(255,255,255,0.06);box-shadow:0 4px 12px rgba(0,0,0,0.15);display:flex;flex-direction:column;align-items:flex-start;gap:6px;cursor:pointer;color:#F8FAFC}
+  .tile.active{background:linear-gradient(135deg,#A855F7,#6366F1);border:none;box-shadow:0 8px 24px rgba(99,102,241,0.4)}
+  .emoji{font-size:28px}
+  .ttl{font-family:var(--lx-font-display);font-weight:800;font-size:18px}
+  .sub{font-size:11px;color:#94A3B8}
+  .tile.active .sub{color:rgba(255,255,255,0.85)}
+</style></head>
+<body>
+<div class="grid">
+  <div class="tile"><div class="emoji">🌱</div><div class="ttl">Grade 1</div><div class="sub">Ages 6–7</div></div>
+  <div class="tile"><div class="emoji">🌿</div><div class="ttl">Grade 2</div><div class="sub">Ages 7–8</div></div>
+  <div class="tile active"><div class="emoji">🌳</div><div class="ttl">Grade 3</div><div class="sub">Ages 8–9</div></div>
+  <div class="tile"><div class="emoji">🌲</div><div class="ttl">Grade 4</div><div class="sub">Ages 9–10</div></div>
+  <div class="tile"><div class="emoji">🍃</div><div class="ttl">Grade 5</div><div class="sub">Ages 10–11</div></div>
+  <div class="tile"><div class="emoji">🌴</div><div class="ttl">Grade 6</div><div class="sub">Ages 11–12</div></div>
+</div>
+</body></html>
