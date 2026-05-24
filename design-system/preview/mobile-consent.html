@@ -1,0 +1,16 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css">
+<style>
+  body{padding:24px;display:flex;flex-direction:column;gap:12px}
+  .consent{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:14px;background:#15161D;border:1px solid rgba(255,255,255,0.06)}
+  .consent.on{background:rgba(34,197,94,0.06);border-color:rgba(34,197,94,0.25)}
+  .box{width:24px;height:24px;border-radius:7px;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;color:#0F172A;font-weight:900;font-size:14px}
+  .box.off{background:transparent;border:2px solid rgba(255,255,255,0.2)}
+  .box.on{background:#22C55E}
+  .txt{flex:1;font-size:13px;color:var(--lx-fg2);line-height:1.5}
+  .link{color:#A5B4FC;font-weight:700}
+</style></head>
+<body>
+<div class="consent"><div class="box off"></div><div class="txt">I'm a parent or legal guardian and I agree to the <span class="link">Terms</span> and <span class="link">Privacy Policy</span>.</div></div>
+<div class="consent on"><div class="box on">✓</div><div class="txt">I'm a parent or legal guardian and I agree to the <span class="link">Terms</span> and <span class="link">Privacy Policy</span>, including consent to create accounts for my children.</div></div>
+</body></html>

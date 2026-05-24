@@ -1,0 +1,21 @@
+/* Arabic preview base — Cairo display, Tajawal body, RTL. */
+@import url('../colors_and_type.css');
+
+* { box-sizing: border-box; }
+html { direction: rtl; }
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--lx-bg);
+  color: var(--lx-fg1);
+  font-family: 'Tajawal', 'Cairo', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+body {
+  padding: 24px;
+  min-height: 100vh;
+}
+.ar-display { font-family: 'Cairo', sans-serif; font-weight: 800; }
+.ar-body    { font-family: 'Tajawal', sans-serif; }
+.muted { color: var(--lx-fg3); font-size: 12px; font-weight: 500; letter-spacing: 0.04em; }
+.mono  { font-family: var(--lx-font-mono); font-size: 11px; color: var(--lx-fg3); direction: ltr; }
