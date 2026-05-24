@@ -8,4 +8,6 @@ public interface ILearningServiceManager
     ILessonService LessonService { get; }
     IConceptService ConceptService { get; }
     ISkillService SkillService { get; }
+    IAttemptService AttemptService { get; }
+    IQuizQuestionService QuizQuestionService { get; }
 }

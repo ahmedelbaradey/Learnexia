@@ -110,6 +110,40 @@ namespace Learnexia.Modules.Notifications.Infrastructure.Migrations
 
                     b.ToTable("Notifications", "notifications");
                 });
+
+            modelBuilder.Entity("Learnexia.Modules.Notifications.Domain.Entities.NotificationPreference", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("EmailEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("PushEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("UserId", "Category");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("IX_NotificationPreferences_UserId");
+
+                    b.ToTable("NotificationPreferences", "notifications");
+                });
 #pragma warning restore 612, 618
         }
     }
