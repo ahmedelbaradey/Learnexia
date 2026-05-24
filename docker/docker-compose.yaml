@@ -1,8 +1,11 @@
 services:
-  # PostgreSQL (pgvector image: drop-in Postgres + the `vector` extension for future RAG work).
+  # PostgreSQL — MUST be a pgvector image: the Catalog module's migration runs `CREATE EXTENSION vector`
+  # (and Phase-4 RAG will need it), which fails on a plain `postgres` image with
+  # "extension vector is not available". Pinned to pg15 to match the deployed staging/prod server
+  # (pgvector/pgvector:pg15) — keep dev↔prod on the same major version to avoid EF/migration drift.
   # Credentials/DB match appsettings.json ConnectionStrings:Default (Database=Learnexia, postgres/admin).
   postgres:
-    image: pgvector/pgvector:pg17
+    image: pgvector/pgvector:pg15
     container_name: learnexia_postgres
     ports:
       - "5432:5432"
