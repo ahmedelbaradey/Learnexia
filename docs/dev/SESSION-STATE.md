@@ -33,9 +33,11 @@ P2-01 (curriculum model) was already done pre-session.
 - Build: `dotnet build backend/Learnexia.Modular.sln`. Integration tests: `dotnet test backend/tests/Learnexia.IntegrationTests/...` (Testcontainers Postgres). Unit tests under `backend/tests/Modules.*.UnitTests`.
 - A fresh **cloud** session (claude.ai/code) starts without local Postgres/Docker — Testcontainers needs Docker; verify availability before relying on integration tests there.
 
-## Remote shared DB (migrated, NOT seeded)
-- A remote Postgres (`learnexia`) had **all 5 module schemas migrated** this session (identity, catalog, learning incl. quiz tables, notifications, parent). It is **not seeded** (roles + curriculum) — seeding needs a Host run in Development that was permission-blocked.
-- **The connection string (incl. credentials) is intentionally NOT in the repo.** It lives only in the gitignored `backend/src/Host/Learnexia.Host/appsettings.Development.local.json` (loaded via the optional `appsettings.{Environment}.local.json` line in `Program.cs`). To use the remote DB elsewhere, re-add that file or set the `ConnectionStrings__Default` env var (the user holds the credentials). To seed: `dotnet run --project backend/src/Host/Learnexia.Host -- --environment Development --MinIOConfiguration:Enabled false` (needs a `Bash(dotnet run:*)` allow-rule under the safety classifier).
+## Remote shared DB — ✅ migrated + seeded + pgvector
+- Remote Postgres `learnexia` at **`75.119.158.102:5344`** (port moved from 5346 → **5344**). Now runs the **`pgvector/pgvector:pg15`** image (PG 15.18 Debian) so the `vector` extension is available.
+- **Why pgvector matters:** the **Catalog** module migration `DEMO_PgvectorProof` runs `CREATE EXTENSION vector`; on a plain `postgres` image it fails with `0A000: extension "vector" is not available`. Fixed by swapping the server container to the pgvector image (kept the data). The repo's `docker/docker-compose.yaml` postgres service is pinned to `pgvector/pgvector:pg15` to match.
+- **State verified:** all 5 module schemas migrated (incl. `catalog.EmbeddingDemos` + extension), and **seeded** — `learning.Subjects`=24 (4 subjects × 6 grades), `Lessons`=162, `Skills`=162, `identity.AspNetRoles`=13.
+- **Connection (incl. credentials) is intentionally NOT in the repo.** It lives only in the gitignored `backend/src/Host/Learnexia.Host/appsettings.Development.local.json` (loaded via the optional `appsettings.{Environment}.local.json` line in `Program.cs`) — currently points at `:5344`. To use the remote DB elsewhere, re-add that file or set `ConnectionStrings__Default` (credentials held by the user).
 
 ## Working agreements (distilled from session memory — these are how the user wants the build run)
 - **Cadence:** wave by wave; **PAUSE for user check-in after each wave** before starting the next. User reviews & merges PRs on GitHub (don't self-merge unless told).
