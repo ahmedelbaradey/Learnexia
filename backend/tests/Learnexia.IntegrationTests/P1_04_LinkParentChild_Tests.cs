@@ -15,8 +15,8 @@ namespace Learnexia.IntegrationTests;
 ///
 /// Endpoints under test:
 ///   [Authorize(Roles="Parent,Admin,SuperAdmin")]
-///   POST api/Users/Parent/Link-Child
-///   GET  api/Users/Parent/My-Children
+///   POST api/Parent/Link-Child
+///   GET  api/Parent/My-Children
 ///
 /// Test strategy:
 ///   - Create Parent users via POST /api/Users/Authentication/Register-Parent (returns a JWT).
@@ -58,8 +58,8 @@ public sealed class P1_04_LinkParentChild_Tests : IAsyncLifetime
     // ---------------------------------------------------------------------------
     // Constants
     // ---------------------------------------------------------------------------
-    private const string LinkChildUrl = "api/Users/Parent/Link-Child";
-    private const string MyChildrenUrl = "api/Users/Parent/My-Children";
+    private const string LinkChildUrl = "api/Parent/Link-Child";
+    private const string MyChildrenUrl = "api/Parent/My-Children";
     private const string RegisterParentUrl = "api/Users/Authentication/Register-Parent";
     private const string SignInUrl = "api/Users/Authentication/Sign-In";
     private const string AddUserUrl = "api/Users/UserManagement/AddUser";

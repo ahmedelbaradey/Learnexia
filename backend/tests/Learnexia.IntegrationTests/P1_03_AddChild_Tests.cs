@@ -14,8 +14,8 @@ namespace Learnexia.IntegrationTests;
 ///
 /// Endpoints under test:
 ///   [Authorize(Roles="Parent,Admin,SuperAdmin")]
-///   POST api/Users/Parent/Add-Child
-///   GET  api/Users/Parent/My-Children          (used for persistence / auto-link verification)
+///   POST api/Parent/Add-Child
+///   GET  api/Parent/My-Children                (used for persistence / auto-link verification)
 ///   POST api/Users/Authentication/Sign-In      (used for child sign-in round-trip)
 ///
 /// Command shape (actual implementation fields): { FullName, Email, Password, Grade, Language, Country }
@@ -45,8 +45,8 @@ public sealed class P1_03_AddChild_Tests : IAsyncLifetime
     // ---------------------------------------------------------------------------
     // URLs
     // ---------------------------------------------------------------------------
-    private const string AddChildUrl = "api/Users/Parent/Add-Child";
-    private const string MyChildrenUrl = "api/Users/Parent/My-Children";
+    private const string AddChildUrl = "api/Parent/Add-Child";
+    private const string MyChildrenUrl = "api/Parent/My-Children";
     private const string RegisterParentUrl = "api/Users/Authentication/Register-Parent";
     private const string SignInUrl = "api/Users/Authentication/Sign-In";
 

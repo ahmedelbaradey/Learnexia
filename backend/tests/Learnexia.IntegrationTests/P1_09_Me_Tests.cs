@@ -48,7 +48,7 @@ public sealed class P1_09_Me_Tests : IAsyncLifetime
     private const string MeUrl = "api/Users/Me";
     private const string RegisterParentUrl = "api/Users/Authentication/Register-Parent";
     private const string SignInUrl = "api/Users/Authentication/Sign-In";
-    private const string AddChildUrl = "api/Users/Parent/Add-Child";
+    private const string AddChildUrl = "api/Parent/Add-Child";
 
     // Seeded accounts
     private const string SuperAdminUserName = "superadmin";

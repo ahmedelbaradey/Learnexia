@@ -22,7 +22,7 @@ namespace Learnexia.IntegrationTests;
 ///   AcceptedTerms=true, country omitted → success, country is null in /Me
 ///
 /// BE-8 — Edit-Child (parent edits their OWN linked child):
-///   PUT /api/Users/Parent/Update-Child
+///   PUT /api/Parent/Update-Child
 ///   Body: { childId, fullName, grade, language, country }
 ///   Success → 200, BaseResponse&lt;UpdatedChildResponse&gt;, Successed=true
 ///   Happy path: re-fetch reflects updated values
@@ -51,9 +51,9 @@ public sealed class P1_12_BE9_Register_BE8_EditChild_Tests : IAsyncLifetime
     private const string RegisterParentUrl = "api/Users/Authentication/Register-Parent";
     private const string SignInUrl = "api/Users/Authentication/Sign-In";
     private const string MeUrl = "api/Users/Me";
-    private const string AddChildUrl = "api/Users/Parent/Add-Child";
-    private const string UpdateChildUrl = "api/Users/Parent/Update-Child";
-    private const string MyChildrenUrl = "api/Users/Parent/My-Children";
+    private const string AddChildUrl = "api/Parent/Add-Child";
+    private const string UpdateChildUrl = "api/Parent/Update-Child";
+    private const string MyChildrenUrl = "api/Parent/My-Children";
 
     // Passwords that satisfy Identity policy: RequireDigit + RequireLowercase + RequireUppercase +
     // RequireNonAlphanumeric + length >= 6.
