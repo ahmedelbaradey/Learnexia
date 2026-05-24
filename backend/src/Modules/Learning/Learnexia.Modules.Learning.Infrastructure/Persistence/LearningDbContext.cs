@@ -32,6 +32,11 @@ public class LearningDbContext : DbContext
     public DbSet<Concept> Concepts => Set<Concept>();
     public DbSet<Skill> Skills => Set<Skill>();
 
+    // Quiz entities (P2-06 folded into Learning from Assessment)
+    public DbSet<QuizQuestion> QuizQuestions => Set<QuizQuestion>();
+    public DbSet<Attempt> Attempts => Set<Attempt>();
+    public DbSet<StudentAnswer> StudentAnswers => Set<StudentAnswer>();
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 

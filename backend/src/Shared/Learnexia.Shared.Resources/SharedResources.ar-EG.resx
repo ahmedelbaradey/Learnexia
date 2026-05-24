@@ -1563,4 +1563,31 @@
   <data name="PlanRetrievedSuccessfully" xml:space="preserve">
     <value>تم استرداد الخطة بنجاح.</value>
   </data>
+  <data name="AttemptStartedSuccessfully" xml:space="preserve">
+    <value>تم بدء محاولة الاختبار بنجاح.</value>
+  </data>
+  <data name="AttemptResumedSuccessfully" xml:space="preserve">
+    <value>تم استئناف محاولة الاختبار بنجاح.</value>
+  </data>
+  <data name="LessonNotFound" xml:space="preserve">
+    <value>الدرس المطلوب غير موجود.</value>
+  </data>
+  <data name="LessonIdMustBePositive" xml:space="preserve">
+    <value>يجب أن يكون معرّف الدرس عدداً صحيحاً موجباً.</value>
+  </data>
+  <data name="McqRequiresAtLeastTwoOptions" xml:space="preserve">
+    <value>تتطلب أسئلة الاختيار من متعدد خيارين على الأقل.</value>
+  </data>
+  <data name="McqCorrectAnswerMustBeValidOption" xml:space="preserve">
+    <value>يجب أن تتطابق الإجابة الصحيحة مع أحد الخيارات المقدمة.</value>
+  </data>
+  <data name="TrueFalseCorrectAnswerInvalid" xml:space="preserve">
+    <value>يجب أن تكون الإجابة الصحيحة لأسئلة الصح والخطأ إما صحيح أو خطأ.</value>
+  </data>
+  <data name="MatchingOptionsMustBePaired" xml:space="preserve">
+    <value>تتطلب أسئلة المطابقة عدداً متساوياً من الخيارات اليسرى واليمنى.</value>
+  </data>
+  <data name="FillInBlankCorrectAnswerRequired" xml:space="preserve">
+    <value>تتطلب أسئلة ملء الفراغ إجابة صحيحة غير فارغة.</value>
+  </data>
 </root>

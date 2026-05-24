@@ -1564,4 +1564,31 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="PlanRetrievedSuccessfully" xml:space="preserve">
     <value>Plan retrieved successfully.</value>
   </data>
+  <data name="AttemptStartedSuccessfully" xml:space="preserve">
+    <value>Quiz attempt started successfully.</value>
+  </data>
+  <data name="AttemptResumedSuccessfully" xml:space="preserve">
+    <value>Quiz attempt resumed successfully.</value>
+  </data>
+  <data name="LessonNotFound" xml:space="preserve">
+    <value>The requested lesson was not found.</value>
+  </data>
+  <data name="LessonIdMustBePositive" xml:space="preserve">
+    <value>Lesson ID must be a positive integer.</value>
+  </data>
+  <data name="McqRequiresAtLeastTwoOptions" xml:space="preserve">
+    <value>MCQ questions require at least two options.</value>
+  </data>
+  <data name="McqCorrectAnswerMustBeValidOption" xml:space="preserve">
+    <value>The correct answer must match one of the provided options.</value>
+  </data>
+  <data name="TrueFalseCorrectAnswerInvalid" xml:space="preserve">
+    <value>True/False questions must have a correct answer of true or false.</value>
+  </data>
+  <data name="MatchingOptionsMustBePaired" xml:space="preserve">
+    <value>Matching questions require an equal number of left and right options.</value>
+  </data>
+  <data name="FillInBlankCorrectAnswerRequired" xml:space="preserve">
+    <value>Fill-in-the-blank questions require a non-empty correct answer.</value>
+  </data>
 </root>

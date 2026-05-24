@@ -24,6 +24,14 @@ AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Optional, gitignored per-developer overrides (e.g. a private ConnectionStrings:Default pointing at a
+// remote/shared DB). Never commit secrets to the tracked appsettings.{Environment}.json files; put them
+// here instead. Matches the `appsettings.*.local.json` entry in .gitignore.
+builder.Configuration.AddJsonFile(
+    $"appsettings.{builder.Environment.EnvironmentName}.local.json",
+    optional: true,
+    reloadOnChange: true);
+
 builder.Services.AddSwaggerService();
 
 // Cross-cutting host services (ported from backend/src/apis/Main)
