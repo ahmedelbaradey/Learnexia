@@ -117,7 +117,7 @@ public sealed class P1_02_RefreshAndSignOut_Tests : IAsyncLifetime
     {
         var email = UniqueEmail(tag);
         var (response, root, body) = await PostJsonAsync("/api/Users/Authentication/Register-Parent",
-            new { Email = email, Password = "Str0ng@Pass" });
+            new { Email = email, Password = "Str0ng@Pass", AcceptedTerms = true });
 
         response.StatusCode.Should().Be(HttpStatusCode.OK,
             "Register-Parent must succeed to bootstrap the P1-02 test; body: {0}", body);
@@ -182,7 +182,7 @@ public sealed class P1_02_RefreshAndSignOut_Tests : IAsyncLifetime
     {
         var email = UniqueEmail("regrefresh");
         var (response, root, body) = await PostJsonAsync("/api/Users/Authentication/Register-Parent",
-            new { Email = email, Password = "Str0ng@Pass" });
+            new { Email = email, Password = "Str0ng@Pass", AcceptedTerms = true });
 
         response.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", body);
 

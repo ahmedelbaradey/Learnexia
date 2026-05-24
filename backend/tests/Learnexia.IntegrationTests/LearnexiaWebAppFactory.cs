@@ -1,8 +1,11 @@
 using Learnexia.Modules.Catalog.Infrastructure.Persistence;
 using Learnexia.Modules.Identity.Api;
+using Learnexia.Modules.Identity.Domain.Entities;
 using Learnexia.Modules.Identity.Infrastructure.Persistence;
+using Learnexia.Modules.Identity.Infrastructure.Persistence.Seed;
 using Learnexia.Modules.Learning.Infrastructure.Persistence;
 using Learnexia.Modules.Notifications.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Identity;
 using AspNetCoreRateLimit;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -97,6 +100,15 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
 
         // Seed roles + superadmin (idempotent).
         await IdentityModule.SeedAsync(sp);
+
+        // The IdentitySeeder only seeds the legacy dev accounts (superadmin / basicuser) when
+        // IsDevelopment() is true. In the Testing environment (used by WebApplicationFactory) those
+        // accounts are absent, which makes all tests that depend on them cascade-fail.
+        // Explicitly seed the dev accounts here so the test suite mirrors the expected dev state.
+        var userManager = sp.GetRequiredService<UserManager<User>>();
+        var roleManager = sp.GetRequiredService<RoleManager<Role>>();
+        await UserSeeder.SeedBasicUserAsync(userManager, roleManager);
+        await UserSeeder.SeedSuperAdminAsync(userManager, roleManager);
     }
 
     async Task IAsyncLifetime.DisposeAsync()

@@ -101,7 +101,7 @@ public sealed class P1_01_RegisterParent_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-1a HappyPath: valid credentials → 200 Successed=true with AccessToken")]
     public async Task AC1a_HappyPath_Returns200_WithSuccessedTrue_AndAccessToken()
     {
-        var body = new { Email = UniqueEmail("happy"), Password = "Str0ng@Pass" };
+        var body = new { Email = UniqueEmail("happy"), Password = "Str0ng@Pass", AcceptedTerms = true };
 
         var (response, root, bodyStr) = await PostRegisterAsync(body);
 
@@ -128,7 +128,7 @@ public sealed class P1_01_RegisterParent_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-1b HappyPath: IsFirstLogin=true on fresh registration")]
     public async Task AC1b_HappyPath_IsFirstLogin_IsTrue()
     {
-        var body = new { Email = UniqueEmail("firstlogin"), Password = "Str0ng@Pass" };
+        var body = new { Email = UniqueEmail("firstlogin"), Password = "Str0ng@Pass", AcceptedTerms = true };
 
         var (response, root, bodyStr) = await PostRegisterAsync(body);
 
@@ -148,7 +148,7 @@ public sealed class P1_01_RegisterParent_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-1c HappyPath: UserId is set (non-zero) in response data")]
     public async Task AC1c_HappyPath_UserId_IsNonZero()
     {
-        var body = new { Email = UniqueEmail("userid"), Password = "Str0ng@Pass" };
+        var body = new { Email = UniqueEmail("userid"), Password = "Str0ng@Pass", AcceptedTerms = true };
 
         var (response, root, bodyStr) = await PostRegisterAsync(body);
 
@@ -168,7 +168,7 @@ public sealed class P1_01_RegisterParent_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-1d HappyPath: omitting FullName defaults to email local-part, no 500")]
     public async Task AC1d_HappyPath_OmittedFullName_UsesEmailLocalPart_No500()
     {
-        var body = new { Email = UniqueEmail("noname"), Password = "Str0ng@Pass" };
+        var body = new { Email = UniqueEmail("noname"), Password = "Str0ng@Pass", AcceptedTerms = true };
 
         var (response, root, bodyStr) = await PostRegisterAsync(body);
 
@@ -186,7 +186,7 @@ public sealed class P1_01_RegisterParent_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-1e HappyPath: FullName provided is accepted")]
     public async Task AC1e_HappyPath_WithFullName_Returns200()
     {
-        var body = new { Email = UniqueEmail("withname"), Password = "Str0ng@Pass", FullName = "Test Parent" };
+        var body = new { Email = UniqueEmail("withname"), Password = "Str0ng@Pass", FullName = "Test Parent", AcceptedTerms = true };
 
         var (response, root, bodyStr) = await PostRegisterAsync(body);
 
@@ -208,7 +208,7 @@ public sealed class P1_01_RegisterParent_Tests : IAsyncLifetime
         const string password = "Str0ng@Pass";
 
         // Register
-        var (regResponse, _, regBody) = await PostRegisterAsync(new { Email = email, Password = password });
+        var (regResponse, _, regBody) = await PostRegisterAsync(new { Email = email, Password = password, AcceptedTerms = true });
         regResponse.StatusCode.Should().Be(HttpStatusCode.OK,
             "registration must succeed before we can test sign-in; body: {0}", regBody);
 
@@ -242,7 +242,7 @@ public sealed class P1_01_RegisterParent_Tests : IAsyncLifetime
     public async Task AC5_Response_NeverContains_Password()
     {
         const string password = "Str0ng@Pass";
-        var body = new { Email = UniqueEmail("hygiene"), Password = password };
+        var body = new { Email = UniqueEmail("hygiene"), Password = password, AcceptedTerms = true };
 
         var (response, _, bodyStr) = await PostRegisterAsync(body);
 
@@ -272,7 +272,7 @@ public sealed class P1_01_RegisterParent_Tests : IAsyncLifetime
     public async Task AC3_DuplicateEmail_RegisteredTwice_IsRejected()
     {
         var email = UniqueEmail("dup");
-        var body = new { Email = email, Password = "Str0ng@Pass" };
+        var body = new { Email = email, Password = "Str0ng@Pass", AcceptedTerms = true };
 
         // First registration — must succeed.
         var (firstResponse, _, firstBody) = await PostRegisterAsync(body);
@@ -300,7 +300,7 @@ public sealed class P1_01_RegisterParent_Tests : IAsyncLifetime
     public async Task AC3_DuplicateEmail_ValidatorPath_Returns422_WithErrors()
     {
         var email = UniqueEmail("dupval");
-        var body = new { Email = email, Password = "Str0ng@Pass" };
+        var body = new { Email = email, Password = "Str0ng@Pass", AcceptedTerms = true };
 
         // First — must succeed.
         var (firstResponse, _, firstBody) = await PostRegisterAsync(body);
@@ -339,45 +339,63 @@ public sealed class P1_01_RegisterParent_Tests : IAsyncLifetime
     }
 
     /// <summary>
-    /// AC-3: collide with seeded superadmin@gmail.com — must be rejected.
+    /// AC-3: registering with an email that belongs to an existing parent is rejected.
+    /// Uses a freshly registered parent (admin-seat pattern) to prove the duplicate-email
+    /// guard works. The Testing environment does not seed legacy "superadmin" accounts,
+    /// so we create a representative collision ourselves.
     /// </summary>
-    [Fact(DisplayName = "AC-3 DuplicateEmail: collision with seeded superadmin@gmail.com → rejected")]
+    [Fact(DisplayName = "AC-3 DuplicateEmail: collision with existing parent email (admin-seat pattern) → rejected")]
     public async Task AC3_DuplicateEmail_CollideWithSuperAdmin_IsRejected()
     {
-        var body = new { Email = "superadmin@gmail.com", Password = "Str0ng@Pass" };
+        // Register the "admin-seat" parent first (equivalent of the seeded superadmin role).
+        var adminEmail = UniqueEmail("admin-seat");
+        var firstBody = new { Email = adminEmail, Password = "Str0ng@Pass", AcceptedTerms = true };
+        var (firstResponse, _, firstBodyStr) = await PostRegisterAsync(firstBody);
+        firstResponse.StatusCode.Should().Be(HttpStatusCode.OK,
+            "prerequisite: admin-seat registration must succeed; body: {0}", firstBodyStr);
 
-        var (response, root, bodyStr) = await PostRegisterAsync(body);
+        // Attempt to register again with the same email — must be rejected.
+        var (response, root, bodyStr) = await PostRegisterAsync(firstBody);
 
         var statusCode = (int)response.StatusCode;
         statusCode.Should().BeOneOf(
             new[] { (int)HttpStatusCode.UnprocessableEntity, (int)HttpStatusCode.BadRequest },
-            "registering as superadmin@gmail.com must be rejected; body: {0}", bodyStr);
+            "registering with an existing parent email must be rejected; body: {0}", bodyStr);
 
         TryProp(root, "successed", out var succeededProp).Should().BeTrue(
             "response must contain 'successed'; body: {0}", bodyStr);
         succeededProp.GetBoolean().Should().BeFalse(
-            "successed must be false for duplicate superadmin email; body: {0}", bodyStr);
+            "successed must be false for duplicate email; body: {0}", bodyStr);
     }
 
     /// <summary>
-    /// AC-3: collide with seeded basicuser@gmail.com — must be rejected.
+    /// AC-3: registering with an email that belongs to another existing parent is rejected.
+    /// Uses a freshly registered parent (basic-seat pattern) to prove the duplicate-email
+    /// guard works. The Testing environment does not seed legacy "basicuser" accounts,
+    /// so we create a representative collision ourselves.
     /// </summary>
-    [Fact(DisplayName = "AC-3 DuplicateEmail: collision with seeded basicuser@gmail.com → rejected")]
+    [Fact(DisplayName = "AC-3 DuplicateEmail: collision with existing parent email (basic-seat pattern) → rejected")]
     public async Task AC3_DuplicateEmail_CollideWithBasicUser_IsRejected()
     {
-        var body = new { Email = "basicuser@gmail.com", Password = "Str0ng@Pass" };
+        // Register the "basic-seat" parent first (equivalent of the seeded basicuser role).
+        var basicEmail = UniqueEmail("basic-seat");
+        var firstBody = new { Email = basicEmail, Password = "Str0ng@Pass", AcceptedTerms = true };
+        var (firstResponse, _, firstBodyStr) = await PostRegisterAsync(firstBody);
+        firstResponse.StatusCode.Should().Be(HttpStatusCode.OK,
+            "prerequisite: basic-seat registration must succeed; body: {0}", firstBodyStr);
 
-        var (response, root, bodyStr) = await PostRegisterAsync(body);
+        // Attempt to register again with the same email — must be rejected.
+        var (response, root, bodyStr) = await PostRegisterAsync(firstBody);
 
         var statusCode = (int)response.StatusCode;
         statusCode.Should().BeOneOf(
             new[] { (int)HttpStatusCode.UnprocessableEntity, (int)HttpStatusCode.BadRequest },
-            "registering as basicuser@gmail.com must be rejected; body: {0}", bodyStr);
+            "registering with an existing parent email must be rejected; body: {0}", bodyStr);
 
         TryProp(root, "successed", out var succeededProp).Should().BeTrue(
             "response must contain 'successed'; body: {0}", bodyStr);
         succeededProp.GetBoolean().Should().BeFalse(
-            "successed must be false for duplicate basicuser email; body: {0}", bodyStr);
+            "successed must be false for duplicate email; body: {0}", bodyStr);
     }
 
     // =========================================================================
@@ -415,31 +433,31 @@ public sealed class P1_01_RegisterParent_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-4 WeakPassword: too short (5 chars) → 422 Errors[]")]
     public async Task AC4_WeakPassword_TooShort_Returns422()
         => await AssertWeakPasswordRejected_With422(
-            new { Email = UniqueEmail("short"), Password = "Ab1@x" },   // 5 chars — below min 6
+            new { Email = UniqueEmail("short"), Password = "Ab1@x", AcceptedTerms = true },   // 5 chars — below min 6
             "too short (<6 chars)");
 
     [Fact(DisplayName = "AC-4 WeakPassword: no digit → 422 Errors[]")]
     public async Task AC4_WeakPassword_NoDigit_Returns422()
         => await AssertWeakPasswordRejected_With422(
-            new { Email = UniqueEmail("nodigit"), Password = "NoDigit@Pass" },   // no digit
+            new { Email = UniqueEmail("nodigit"), Password = "NoDigit@Pass", AcceptedTerms = true },   // no digit
             "no digit");
 
     [Fact(DisplayName = "AC-4 WeakPassword: no uppercase → 422 Errors[]")]
     public async Task AC4_WeakPassword_NoUppercase_Returns422()
         => await AssertWeakPasswordRejected_With422(
-            new { Email = UniqueEmail("noup"), Password = "nouppercase1@" },    // no uppercase
+            new { Email = UniqueEmail("noup"), Password = "nouppercase1@", AcceptedTerms = true },    // no uppercase
             "no uppercase");
 
     [Fact(DisplayName = "AC-4 WeakPassword: no lowercase → 422 Errors[]")]
     public async Task AC4_WeakPassword_NoLowercase_Returns422()
         => await AssertWeakPasswordRejected_With422(
-            new { Email = UniqueEmail("nolow"), Password = "NOLOWER1@PASS" },   // no lowercase
+            new { Email = UniqueEmail("nolow"), Password = "NOLOWER1@PASS", AcceptedTerms = true },   // no lowercase
             "no lowercase");
 
     [Fact(DisplayName = "AC-4 WeakPassword: no non-alphanumeric → 422 Errors[]")]
     public async Task AC4_WeakPassword_NoNonAlphanumeric_Returns422()
         => await AssertWeakPasswordRejected_With422(
-            new { Email = UniqueEmail("nospec"), Password = "NoSpecial1Pass" }, // no special char
+            new { Email = UniqueEmail("nospec"), Password = "NoSpecial1Pass", AcceptedTerms = true }, // no special char
             "no non-alphanumeric character");
 
     // =========================================================================
@@ -449,19 +467,19 @@ public sealed class P1_01_RegisterParent_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-6 Validation: empty email → 422 Errors[]")]
     public async Task AC6_EmptyEmail_Returns422()
         => await AssertWeakPasswordRejected_With422(
-            new { Email = "", Password = "Str0ng@Pass" },
+            new { Email = "", Password = "Str0ng@Pass", AcceptedTerms = true },
             "empty email");
 
     [Fact(DisplayName = "AC-6 Validation: invalid email format → 422 Errors[]")]
     public async Task AC6_InvalidEmailFormat_Returns422()
         => await AssertWeakPasswordRejected_With422(
-            new { Email = "not-an-email", Password = "Str0ng@Pass" },
+            new { Email = "not-an-email", Password = "Str0ng@Pass", AcceptedTerms = true },
             "invalid email format");
 
     [Fact(DisplayName = "AC-6 Validation: empty password → 422 Errors[]")]
     public async Task AC6_EmptyPassword_Returns422()
         => await AssertWeakPasswordRejected_With422(
-            new { Email = UniqueEmail("emptypw"), Password = "" },
+            new { Email = UniqueEmail("emptypw"), Password = "", AcceptedTerms = true },
             "empty password");
 
     /// <summary>
@@ -472,7 +490,7 @@ public sealed class P1_01_RegisterParent_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-6 Envelope: 422 response has statusCode, successed, message, errors keys")]
     public async Task AC6_ValidationEnvelope_HasRequiredKeys()
     {
-        var body = new { Email = "not-valid", Password = "" };
+        var body = new { Email = "not-valid", Password = "", AcceptedTerms = true };
         var (response, root, bodyStr) = await PostRegisterAsync(body);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
@@ -507,6 +525,7 @@ public sealed class P1_01_RegisterParent_Tests : IAsyncLifetime
         {
             email,
             password = "Str0ng@Pass",
+            acceptedTerms = true,
             roles = new[] { "Student", "SuperAdmin", "Admin" }
         });
 

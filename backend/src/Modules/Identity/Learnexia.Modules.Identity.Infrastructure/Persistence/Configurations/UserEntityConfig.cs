@@ -45,6 +45,8 @@ public class UserEntityConfig : IEntityTypeConfiguration<User>
         builder.Property(u => u.Age).HasComment("Child's age in years; null when unknown");
         builder.Property(u => u.PersonalPhotoPath).HasMaxLength(500).HasComment("File path for user's personal photo");
         builder.Property(u => u.AvatarUrl).HasMaxLength(2048).HasComment("Public URL of the user's avatar image; set by the avatar-upload endpoint (BE-4)");
+        builder.Property(u => u.AcceptedTermsAtUtc)
+            .HasComment("UTC timestamp when the parent accepted the platform terms at registration (BE-9, COPPA audit). Null = consent not recorded.");
 
         builder.Property(u => u.RegistrationMessageIsSent)
             .IsRequired().HasDefaultValue(false)

@@ -55,6 +55,12 @@ public class RegisterParentCommandHandler : BaseResponseHandler, ICommandHandler
                     : request.FullName!,
                 PreferredLanguage = "ar-EG",
                 CountryCode = "+20",
+                // BE-9: optional country stored on Nationality; consent stamped as a timestamp
+                // (presence == consent given). The validator guarantees AcceptedTerms is true here,
+                // so AcceptedTermsAtUtc is always set on this path. Set before CreateAsync so both
+                // persist in the single Identity write (no Unit of Work).
+                Nationality = string.IsNullOrWhiteSpace(request.Country) ? null : request.Country,
+                AcceptedTermsAtUtc = DateTime.UtcNow,
                 RegistrationIsCompleted = false,
                 CreatedAt = DateTime.UtcNow,
             };
@@ -64,8 +70,10 @@ public class RegisterParentCommandHandler : BaseResponseHandler, ICommandHandler
             var result = await _service.UserManagmentService.CreateAsync(user, request.Password);
             if (!result.Succeeded)
             {
-                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                return BadRequest<JwtAuthResponse>($"{_localizer[SharedResourcesKey.SystemErrorSavingData]}: {errors}");
+                // Log Identity error detail server-side only; return a generic localized message so we don't
+                // disclose internals (and avoid an enumeration oracle), consistent with the sign-in handler.
+                _logger.LogWarn($"RegisterParent failed: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                return BadRequest<JwtAuthResponse>(_localizer[SharedResourcesKey.SystemErrorSavingData]);
             }
 
             // Role is server-assigned — always Parent, never client-supplied (AC-2). Seeded as PascalCase.

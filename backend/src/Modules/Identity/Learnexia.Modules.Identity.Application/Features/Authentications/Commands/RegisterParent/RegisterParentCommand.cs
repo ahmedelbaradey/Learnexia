@@ -13,4 +13,11 @@ public record RegisterParentCommand : ICommand<BaseResponse<JwtAuthResponse>>
     public string Email { get; set; } = null!;
     public string Password { get; set; } = null!;
     public string? FullName { get; set; }
+
+    // Optional country of the parent; stored on User.Nationality (BE-9). Length-bounded by the validator.
+    public string? Country { get; set; }
+
+    // Terms-of-service consent (BE-9, COPPA audit). Must be true; the handler stamps
+    // User.AcceptedTermsAtUtc = UtcNow when accepted (presence of that timestamp IS the consent).
+    public bool AcceptedTerms { get; set; }
 }
