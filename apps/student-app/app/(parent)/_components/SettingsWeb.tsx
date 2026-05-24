@@ -51,7 +51,7 @@ const TAB_ICON: Record<SettingsTabKey, string> = {
   [SETTINGS_TAB.Notifications]: '🔔',
   [SETTINGS_TAB.LinkedChildren]: '👨‍👧',
   [SETTINGS_TAB.Security]: '🛡️',
-  [SETTINGS_TAB.Billing]: '💳',
+  [SETTINGS_TAB.Billing]: '💎',
   [SETTINGS_TAB.Language]: '🌐',
 };
 
@@ -110,6 +110,7 @@ export function SettingsWeb() {
           <Stack width={150}>
             <Select
               label={t('parent.overview.periodLabel')}
+              hideLabel
               value={period}
               onChange={(v) => setPeriod(String(v))}
               options={[{ value: REPORTING_PERIOD.ThisWeek, label: t('parent.overview.periodThisWeek') }]}
@@ -233,7 +234,7 @@ function ProfilePanel({ direction, rowDir, fullName }: ProfilePanelProps) {
 
       {/* Avatar + upload/remove (P1-12 stubs — no backend yet) */}
       <Stack flexDirection={rowDir} alignItems="center" gap="$4">
-        <Avatar name={name || fullName || 'A'} size="lg" accessibilityLabel={t('parent.settings.profile.title')} />
+        <Avatar name={name || fullName || 'A'} size="xl" accessibilityLabel={t('parent.settings.profile.title')} />
         <Stack flexDirection={rowDir} alignItems="center" gap="$3">
           {/* TODO(P1-12): avatar upload — no storage/AvatarUrl backend yet. */}
           <Button

@@ -100,12 +100,13 @@ export function OrDivider({ label, direction = 'ltr' }: OrDividerProps) {
 
 export interface SocialButtonProps {
   label: string;
-  glyph: string;
+  /** Brand icon node (e.g. `<GoogleIcon />`) — decorative, hidden from a11y. */
+  icon: ReactNode;
   onPress: () => void;
   direction?: Direction;
 }
 
-export function SocialButton({ label, glyph, onPress, direction = 'ltr' }: SocialButtonProps) {
+export function SocialButton({ label, icon, onPress, direction = 'ltr' }: SocialButtonProps) {
   return (
     <Stack
       flex={1}
@@ -127,9 +128,9 @@ export function SocialButton({ label, glyph, onPress, direction = 'ltr' }: Socia
       accessibilityLabel={label}
       aria-label={label}
     >
-      <Text fontSize={16} accessibilityElementsHidden>
-        {glyph}
-      </Text>
+      <Stack accessibilityElementsHidden aria-hidden>
+        {icon}
+      </Stack>
       <Text color="$fg1" fontSize={14} fontWeight="700" fontFamily="$heading" writingDirection={direction}>
         {label}
       </Text>

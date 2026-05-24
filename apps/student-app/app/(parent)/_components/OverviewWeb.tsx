@@ -131,6 +131,7 @@ export function OverviewWeb() {
           <Stack width={150}>
             <Select
               label={t('parent.overview.periodLabel')}
+              hideLabel
               value={period}
               onChange={(v) => setPeriod(String(v))}
               options={[{ value: REPORTING_PERIOD.ThisWeek, label: t('parent.overview.periodThisWeek') }]}

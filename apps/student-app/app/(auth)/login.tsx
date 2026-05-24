@@ -69,20 +69,19 @@ export default function LoginScreen() {
         {/* Header — eyebrow + heading + subtitle */}
         <Stack gap="$2" alignItems="center" $tablet={{ alignItems: 'flex-start' }}>
           <Text
-            color="$fg3"
+            color="$primary"
             fontSize={12}
             fontWeight="700"
             fontFamily="$heading"
             textTransform="uppercase"
             letterSpacing={1.5}
-            $tablet={{ color: '$primary' }}
             writingDirection={direction}
           >
             {t('auth.login.eyebrow')}
           </Text>
           <Text
             color="$fg1"
-            fontSize={28}
+            fontSize={32}
             fontWeight="800"
             fontFamily="$heading"
             textAlign={align}

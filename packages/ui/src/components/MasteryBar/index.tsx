@@ -25,6 +25,12 @@ export interface MasteryBarProps {
   /** Caption shown on the start side (already localized). */
   label: string;
   direction?: Direction;
+  /**
+   * Optional solid fill color token (e.g. `'$primary'`). When set, the bar
+   * fills with this single color instead of the default `gradXp` gradient —
+   * used by the subject-mastery card (per-subject accent). Design Gap GAP-03.
+   */
+  accent?: StackProps['backgroundColor'];
   /** Required for screen readers, e.g. "Mastery 72 percent". */
   accessibilityLabel: string;
 }
@@ -36,6 +42,7 @@ export function MasteryBar({
   asPercent = false,
   label,
   direction = 'ltr',
+  accent,
   accessibilityLabel,
 }: MasteryBarProps) {
   const ratio = Math.max(0, Math.min(1, asPercent ? value / 100 : value));
@@ -85,8 +92,11 @@ export function MasteryBar({
           height="100%"
           borderRadius={9999}
           overflow="hidden"
+          backgroundColor={accent}
         >
-          <GradientFill stops={gradientStops.gradXp.colors} angle={isRtl ? 270 : 90} height="100%" width="100%" />
+          {accent ? null : (
+            <GradientFill stops={gradientStops.gradXp.colors} angle={isRtl ? 270 : 90} height="100%" width="100%" />
+          )}
         </Stack>
       </Stack>
     </YStack>

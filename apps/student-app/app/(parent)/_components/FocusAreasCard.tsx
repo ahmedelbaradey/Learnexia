@@ -38,6 +38,14 @@ const SUBJECT_LABEL_KEY: Record<OverviewSubjectKey, string> = {
   [OVERVIEW_SUBJECT.English]: 'parent.overview.subjects.english',
 };
 
+/** Subject → focus-row icon glyph (decorative; subject-keyed per capture). */
+const SUBJECT_ICON: Record<OverviewSubjectKey, string> = {
+  [OVERVIEW_SUBJECT.Math]: '🔢',
+  [OVERVIEW_SUBJECT.Science]: '🔬',
+  [OVERVIEW_SUBJECT.Arabic]: 'ع',
+  [OVERVIEW_SUBJECT.English]: 'A',
+};
+
 /** Topic key → i18n label key (reuses the existing myChildren topic copy). */
 const TOPIC_LABEL_KEY: Record<string, string> = {
   fractions: 'parent.myChildren.topics.fractions',
@@ -139,7 +147,7 @@ export function FocusAreasCard({ childId, childName, direction, rowDir }: FocusA
                 justifyContent="center"
                 accessibilityElementsHidden
               >
-                <Text fontSize={18}>{'📘'}</Text>
+                <Text fontSize={18}>{SUBJECT_ICON[row.subject]}</Text>
               </Stack>
 
               {/* Topic + subject */}

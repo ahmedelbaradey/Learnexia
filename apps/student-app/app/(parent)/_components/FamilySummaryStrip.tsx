@@ -11,25 +11,25 @@
  * i18n: all copy via translation keys.
  */
 import { gradientStops } from '@learnexia/design-system';
-import { GradientBox, KPIStatCard } from '@learnexia/ui';
+import { AvatarStack, GradientBox, KPIStatCard } from '@learnexia/ui';
 import { Stack, Text } from '@tamagui/core';
 import React from 'react';
-import { Image } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { assets } from '../../../src/assets';
 import { useLocale } from '../../../src/hooks/useLocale';
 import type { FamilyTotalsStub } from './parentDashboardStubs';
 
 export interface FamilySummaryStripProps {
   totals: FamilyTotalsStub;
+  /** Linked-child display names — drive the overlapping avatar cluster. */
+  childNames: string[];
 }
 
 function formatNumber(value: number, locale: string): string {
   return new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US').format(value);
 }
 
-export function FamilySummaryStrip({ totals }: FamilySummaryStripProps) {
+export function FamilySummaryStrip({ totals, childNames }: FamilySummaryStripProps) {
   const { t } = useTranslation();
   const { direction, isRtl, locale } = useLocale();
   const rowDir = isRtl ? 'row-reverse' : 'row';
@@ -80,7 +80,7 @@ export function FamilySummaryStrip({ totals }: FamilySummaryStripProps) {
       </Stack>
 
       {/* Stats */}
-      <Stack flexDirection={rowDir} alignItems="center" gap="$8" flexWrap="wrap">
+      <Stack flexDirection={rowDir} alignItems="center" gap="$6" flexWrap="wrap">
         <KPIStatCard
           variant="inline"
           icon="⭐"
@@ -115,12 +115,15 @@ export function FamilySummaryStrip({ totals }: FamilySummaryStripProps) {
         />
       </Stack>
 
-      {/* Mascot art (decorative) */}
-      <Image
-        source={assets.mascotOwl}
-        style={{ width: 96, height: 96, resizeMode: 'contain', opacity: 0.9 }}
-        accessibilityElementsHidden
-      />
+      {/* Linked-child avatar cluster (capture shows stacked child avatars). */}
+      {childNames.length > 0 ? (
+        <AvatarStack
+          items={childNames.map((name) => ({ name }))}
+          size="lg"
+          direction={direction}
+          accessibilityLabel={t('parent.familySummary.childrenCluster', { count: childNames.length })}
+        />
+      ) : null}
     </Stack>
   );
 }

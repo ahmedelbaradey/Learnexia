@@ -39,6 +39,11 @@ export interface SelectProps {
   direction?: Direction;
   locale?: string;
   accessibilityLabel?: string;
+  /**
+   * Suppress the visible stacked label for compact inline usage (e.g. the
+   * page-header period picker) — the label still feeds the a11y name. GAP-05.
+   */
+  hideLabel?: boolean;
   testID?: string;
 }
 
@@ -59,6 +64,7 @@ export function Select({
   direction,
   locale,
   accessibilityLabel,
+  hideLabel = false,
   testID,
 }: SelectProps) {
   const dir = resolveDirection(direction, locale);
@@ -76,18 +82,20 @@ export function Select({
 
   return (
     <YStack gap="$1" opacity={disabled ? 0.5 : 1} pointerEvents={disabled ? 'none' : 'auto'}>
-      <Text
-        color="$fg3"
-        fontSize={12}
-        fontWeight="600"
-        fontFamily="$heading"
-        textTransform="uppercase"
-        letterSpacing={0.6}
-        textAlign="left"
-        writingDirection={dir}
-      >
-        {label}
-      </Text>
+      {hideLabel ? null : (
+        <Text
+          color="$fg3"
+          fontSize={12}
+          fontWeight="600"
+          fontFamily="$heading"
+          textTransform="uppercase"
+          letterSpacing={0.6}
+          textAlign="left"
+          writingDirection={dir}
+        >
+          {label}
+        </Text>
+      )}
 
       <Stack position="relative">
         <XStack

@@ -36,6 +36,7 @@ import { useLocale } from '../../../src/hooks/useLocale';
 import { useServerError } from '../../../src/hooks/useServerError';
 import { Checkbox, OrDivider, SocialButton, SocialRow } from './loginParts';
 import { PersonaToggle } from './PersonaToggle';
+import { AppleIcon, GoogleIcon, MicrosoftIcon } from './SocialIcons';
 
 export function LoginForm() {
   const { t } = useTranslation();
@@ -195,20 +196,20 @@ export function LoginForm() {
       <SocialRow direction={direction}>
         <SocialButton
           label={t('auth.login.socialGoogle')}
-          glyph={SOCIAL_GLYPH_GOOGLE}
+          icon={<GoogleIcon />}
           onPress={() => handleSocial(SOCIAL_GOOGLE)}
           direction={direction}
         />
         <SocialButton
           label={t('auth.login.socialApple')}
-          glyph={SOCIAL_GLYPH_APPLE}
+          icon={<AppleIcon />}
           onPress={() => handleSocial(SOCIAL_APPLE)}
           direction={direction}
         />
         <Stack display="none" flex={1} $tablet={{ display: 'flex' }}>
           <SocialButton
             label={t('auth.login.socialMicrosoft')}
-            glyph={SOCIAL_GLYPH_MICROSOFT}
+            icon={<MicrosoftIcon />}
             onPress={() => handleSocial(SOCIAL_MICROSOFT)}
             direction={direction}
           />
@@ -222,9 +223,3 @@ export function LoginForm() {
 const SOCIAL_GOOGLE = 'google';
 const SOCIAL_APPLE = 'apple';
 const SOCIAL_MICROSOFT = 'microsoft';
-
-// Decorative brand glyphs (icon stand-ins until brand SVGs are sourced —
-// `accessibilityElementsHidden` in SocialButton, so not user-facing copy).
-const SOCIAL_GLYPH_GOOGLE = 'G';
-const SOCIAL_GLYPH_APPLE = '🍎'; // apple emoji stand-in for the Apple logo
-const SOCIAL_GLYPH_MICROSOFT = '⊞'; // squared-plus (window grid stand-in)

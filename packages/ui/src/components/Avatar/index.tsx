@@ -18,7 +18,7 @@ import { Image } from 'react-native';
 
 import { Text } from '../../internal/primitives';
 
-export type AvatarSize = 'sm' | 'md' | 'lg';
+export type AvatarSize = 'sm' | 'md' | 'lg' | 'xl';
 
 export interface AvatarProps {
   /** Display name — first character is used as the initial. */
@@ -50,12 +50,14 @@ const SIZE_PX: Record<AvatarSize, number> = {
   sm: 40,
   md: 48,
   lg: 64,
+  xl: 72,
 };
 
 const FONT_PX: Record<AvatarSize, number> = {
   sm: 16,
   md: 20,
   lg: 26,
+  xl: 30,
 };
 
 /** Stable hash → palette index (same name always maps to the same color). */

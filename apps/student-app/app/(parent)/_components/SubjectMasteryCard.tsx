@@ -9,7 +9,7 @@
  * RTL + ar/en; reuses `@learnexia/ui` MasteryBar; tokens only.
  */
 import { type Direction } from '@learnexia/shared/i18n';
-import { MasteryBar } from '@learnexia/ui';
+import { MasteryBar, type MasteryBarProps } from '@learnexia/ui';
 import { Stack, Text } from '@tamagui/core';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +27,14 @@ const SUBJECT_LABEL_KEY: Record<OverviewSubjectKey, string> = {
   [OVERVIEW_SUBJECT.Science]: 'parent.overview.subjects.science',
   [OVERVIEW_SUBJECT.Arabic]: 'parent.overview.subjects.arabic',
   [OVERVIEW_SUBJECT.English]: 'parent.overview.subjects.english',
+};
+
+/** Per-subject solid mastery-bar accent (capture uses distinct colors). */
+const SUBJECT_ACCENT: Record<OverviewSubjectKey, MasteryBarProps['accent']> = {
+  [OVERVIEW_SUBJECT.Math]: '$primary',
+  [OVERVIEW_SUBJECT.Science]: '$success',
+  [OVERVIEW_SUBJECT.Arabic]: '$purple',
+  [OVERVIEW_SUBJECT.English]: '$accent',
 };
 
 export function SubjectMasteryCard({ childId, direction }: SubjectMasteryCardProps) {
@@ -71,6 +79,7 @@ export function SubjectMasteryCard({ childId, direction }: SubjectMasteryCardPro
               asPercent
               label={label}
               direction={direction}
+              accent={SUBJECT_ACCENT[row.subject]}
               accessibilityLabel={`${label} ${row.percent}%`}
             />
           );

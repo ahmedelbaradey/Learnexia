@@ -62,7 +62,7 @@ export default function RegisterScreen() {
         {/* Step eyebrow + progress bar (~50% = step 1 of 2) */}
         <Stack gap="$2">
           <Text
-            color="$fg3"
+            color="$primary"
             fontSize={12}
             fontWeight="700"
             fontFamily="$heading"
