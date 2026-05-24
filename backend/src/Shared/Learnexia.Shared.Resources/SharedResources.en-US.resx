@@ -1519,4 +1519,13 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="AvatarRemovedSuccessfully" xml:space="preserve">
     <value>Avatar removed successfully.</value>
   </data>
+  <data name="GoogleIdTokenRequired" xml:space="preserve">
+    <value>A Google ID token is required.</value>
+  </data>
+  <data name="GoogleSignInFailed" xml:space="preserve">
+    <value>We couldn't sign you in with Google. Please try again.</value>
+  </data>
+  <data name="GoogleEmailNotVerified" xml:space="preserve">
+    <value>Your Google email address must be verified to sign in.</value>
+  </data>
 </root>

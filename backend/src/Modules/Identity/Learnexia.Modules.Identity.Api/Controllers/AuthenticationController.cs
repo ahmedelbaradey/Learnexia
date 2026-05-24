@@ -1,4 +1,5 @@
 using Learnexia.Modules.Identity.Api.Bases;
+using Learnexia.Modules.Identity.Application.Features.Authentications.Commands.GoogleSignIn;
 using Learnexia.Modules.Identity.Application.Features.Authentications.Commands.RefreshToken;
 using Learnexia.Modules.Identity.Application.Features.Authentications.Commands.RegisterParent;
 using Learnexia.Modules.Identity.Application.Features.Authentications.Commands.SignIn;
@@ -26,6 +27,12 @@ public class AuthenticationController : AppControllerBase
     [HttpPost("Sign-In")]
     [ProducesResponseType(typeof(BaseResponse<JwtAuthResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> SignIn([FromBody] SignInCommand command)
+        => NewResult(await Mediator.Send(command));
+
+    [AllowAnonymous]
+    [HttpPost("Google-SignIn")]
+    [ProducesResponseType(typeof(BaseResponse<JwtAuthResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GoogleSignIn([FromBody] GoogleSignInCommand command)
         => NewResult(await Mediator.Send(command));
 
     [AllowAnonymous]

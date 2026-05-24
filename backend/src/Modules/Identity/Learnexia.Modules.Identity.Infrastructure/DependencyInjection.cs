@@ -56,6 +56,12 @@ public static class DependencyInjection
         services.AddScoped<IIdentityServiceManager, IdentityServiceManager>();
         services.AddScoped<ILinkParentStudentService, LinkParentStudentService>();
 
+        // Google social sign-in (P1-12 BE-5). Bind the "GoogleAuth" section (ClientId is the OAuth
+        // audience; supplied via GoogleAuth__ClientId env in real environments) and register the
+        // SDK-backed ID-token validator. Singleton: stateless, no scoped dependencies.
+        services.Configure<Application.Configurations.GoogleAuthSettings>(configuration.GetSection("GoogleAuth"));
+        services.AddSingleton<IGoogleTokenValidator, Services.GoogleTokenValidator>();
+
         // P1-04: family-scope resource authorization handler (consumed by P1-05). Scoped because it
         // injects the scoped IdentityModuleDbContext. Minimal single-line addition — see merge note.
         services.AddScoped<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, Authorization.FamilyScopeAuthorizationHandler>();

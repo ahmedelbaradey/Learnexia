@@ -584,6 +584,11 @@
         public const string LoginPasswordRequired = "LoginPasswordRequired";
         public const string UsernameAlreadyInUse = "UsernameAlreadyInUse";
 
+        // Google Social Sign-In Messages (P1-12 BE-5)
+        public const string GoogleIdTokenRequired = "GoogleIdTokenRequired";
+        public const string GoogleSignInFailed = "GoogleSignInFailed";
+        public const string GoogleEmailNotVerified = "GoogleEmailNotVerified";
+
         // Password Validation Messages
         public const string PasswordMinimumLength = "PasswordMinimumLength";
 
