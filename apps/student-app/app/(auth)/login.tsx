@@ -69,12 +69,12 @@ export default function LoginScreen() {
         {/* Header — eyebrow + heading + subtitle */}
         <Stack gap="$2" alignItems="center" $tablet={{ alignItems: 'flex-start' }}>
           <Text
-            color="$primary"
+            color="$primaryLight"
             fontSize={12}
-            fontWeight="700"
+            fontWeight="800"
             fontFamily="$heading"
-            textTransform="uppercase"
-            letterSpacing={1.5}
+            textTransform={direction === 'rtl' ? 'none' : 'uppercase'}
+            letterSpacing={1.44}
             writingDirection={direction}
           >
             {t('auth.login.eyebrow')}
@@ -84,6 +84,8 @@ export default function LoginScreen() {
             fontSize={32}
             fontWeight="800"
             fontFamily="$heading"
+            letterSpacing={-0.64}
+            lineHeight={37}
             textAlign={align}
             accessibilityRole="header"
             writingDirection={direction}
@@ -122,7 +124,7 @@ export default function LoginScreen() {
           <Text
             color="$primaryLight"
             fontSize={14}
-            fontWeight="600"
+            fontWeight="800"
             fontFamily="$body"
             cursor="pointer"
             onPress={() => router.push('/(auth)/register')}

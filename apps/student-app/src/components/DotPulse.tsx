@@ -22,11 +22,11 @@ export function DotPulse() {
       {DELAYS.map((delay) => (
         <MotiView
           key={delay}
-          from={{ opacity: 0.3, scale: 0.8 }}
+          from={{ opacity: 0.3, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: 'timing', duration: 600, loop: true, repeatReverse: true, delay }}
         >
-          <Stack width={10} height={10} borderRadius={9999} backgroundColor="$primary" />
+          <Stack width={8} height={8} borderRadius={9999} backgroundColor="$primary" />
         </MotiView>
       ))}
     </Stack>

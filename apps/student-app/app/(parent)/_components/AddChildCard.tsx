@@ -1,7 +1,8 @@
 /**
  * AddChildCard — the trailing dashed "+ Add a child" action card in the parent
- * dashboard grid (capture `web/04-my-children.png`). A circle "+" icon, a title,
- * and a subtitle; routes to the add-child flow.
+ * dashboard grid (captures `web/04-my-children.png` + `web-ar/04`). A rounded-
+ * square "+" icon centered above a title and subtitle (vertical column layout);
+ * routes to the add-child flow.
  *
  * Token-only styling, RTL-aware, i18n labels. Built from a pressable Stack — no
  * new design pattern.
@@ -18,27 +19,27 @@ export interface AddChildCardProps {
 
 export function AddChildCard({ onPress }: AddChildCardProps) {
   const { t } = useTranslation();
-  const { direction, isRtl } = useLocale();
-  const rowDir = isRtl ? 'row-reverse' : 'row';
+  const { direction } = useLocale();
 
   return (
     <Stack
-      flexDirection={rowDir}
+      flexDirection="column"
       alignItems="center"
-      gap="$4"
+      justifyContent="center"
+      gap="$3"
       flex={1}
       minWidth={300}
-      minHeight={120}
-      borderRadius="$card"
+      minHeight={260}
+      borderRadius="$modal"
       borderWidth={2}
-      borderColor="$borderStrong"
-      // dashed border (web). Native falls back to the solid strong border.
+      borderColor="rgba(99,102,241,0.4)"
+      // dashed border (web). Native falls back to the solid indigo-tinted border.
       style={{ borderStyle: 'dashed' }}
       backgroundColor="transparent"
-      padding="$5"
+      padding={22}
       cursor="pointer"
-      pressStyle={{ scale: 0.98 }}
-      hoverStyle={{ borderColor: '$primary', backgroundColor: '$primarySoft' }}
+      pressStyle={{ scale: 0.95 }}
+      hoverStyle={{ borderColor: '#4F46E5', backgroundColor: 'rgba(79,70,229,0.06)' }}
       onPress={() => onPress()}
       accessibilityRole="button"
       accessible
@@ -46,23 +47,30 @@ export function AddChildCard({ onPress }: AddChildCardProps) {
       aria-label={t('parent.myChildren.addCardTitle')}
     >
       <Stack
-        width={48}
-        height={48}
-        borderRadius={9999}
+        width={64}
+        height={64}
+        borderRadius={20}
         backgroundColor="$primarySoft"
         alignItems="center"
         justifyContent="center"
         accessibilityElementsHidden
       >
-        <Text color="$primaryLight" fontSize={26} fontWeight="800" fontFamily="$heading">
+        <Text color="$primaryLight" fontSize={32} fontWeight="800" fontFamily="$heading">
           {'+'}
         </Text>
       </Stack>
-      <Stack flexDirection="column" flex={1} gap="$1">
-        <Text color="$fg1" fontSize={16} fontWeight="700" fontFamily="$heading" writingDirection={direction}>
+      <Stack flexDirection="column" alignItems="center" gap="$1">
+        <Text color="$fg1" fontSize={16} fontWeight="800" fontFamily="$heading" textAlign="center" writingDirection={direction}>
           {t('parent.myChildren.addCardTitle')}
         </Text>
-        <Text color="$fg3" fontSize={13} fontFamily="$body" writingDirection={direction}>
+        <Text
+          color="$fg3"
+          fontSize={12}
+          fontFamily="$body"
+          textAlign="center"
+          maxWidth={200}
+          writingDirection={direction}
+        >
           {t('parent.myChildren.addCardSubtitle')}
         </Text>
       </Stack>

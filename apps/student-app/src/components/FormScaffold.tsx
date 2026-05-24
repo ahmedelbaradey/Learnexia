@@ -14,11 +14,32 @@
  * to the same single-column form as the default scaffold. The prop/style shape
  * mirrors the default scaffold (no new pattern).
  */
+import { gradients } from '@learnexia/design-system';
 import { Card } from '@learnexia/ui';
 import { Stack } from '@tamagui/core';
 import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+/**
+ * Decorative glowing particle dots scattered across the web brand panel
+ * (align-login m-16). Web-only: positions/sizes are fixed design values, each a
+ * soft white glow. Hidden from a11y. Native renders the flat `$primary` panel.
+ */
+const BRAND_PANEL_DOTS = [
+  { top: '12%', left: '18%', size: 4 },
+  { top: '20%', left: '72%', size: 3 },
+  { top: '30%', left: '40%', size: 5 },
+  { top: '38%', left: '85%', size: 3 },
+  { top: '46%', left: '10%', size: 4 },
+  { top: '54%', left: '60%', size: 3 },
+  { top: '62%', left: '28%', size: 5 },
+  { top: '70%', left: '78%', size: 4 },
+  { top: '78%', left: '15%', size: 3 },
+  { top: '84%', left: '50%', size: 4 },
+  { top: '88%', left: '88%', size: 3 },
+  { top: '24%', left: '5%', size: 4 },
+] as const;
 
 export type FormScaffoldVariant = 'default' | 'split';
 
@@ -105,6 +126,7 @@ export function SplitFormScaffold({
   brandSide = 'start',
 }: Omit<FormScaffoldProps, 'variant'>) {
   const insets = useSafeAreaInsets();
+  const isWeb = Platform.OS === 'web';
   // `start` → brand left (panel rendered first, plain `row`).
   // `end` → brand right (panel still rendered first, flipped via `row-reverse`).
   const tabletRowDirection = brandSide === 'end' ? 'row-reverse' : 'row';
@@ -120,16 +142,45 @@ export function SplitFormScaffold({
       {brandPanel ? (
         <Stack
           display="none"
+          // Native: flat `$primary`. Web: the 3-stop brand gradient (align-login m-15).
+          backgroundColor="$primary"
+          style={isWeb ? ({ backgroundImage: gradients.gradBrandPanel } as object) : undefined}
           $tablet={{
             display: 'flex',
             flex: 1,
-            backgroundColor: '$primary',
             paddingHorizontal: '$8',
             paddingVertical: '$10',
             justifyContent: 'space-between',
             overflow: 'hidden',
           }}
         >
+          {/* Scattered glowing particle dots (web-only decoration, align-login m-16). */}
+          {isWeb ? (
+            <Stack
+              position="absolute"
+              top={0}
+              left={0}
+              right={0}
+              bottom={0}
+              pointerEvents="none"
+              accessibilityElementsHidden
+              aria-hidden
+            >
+              {BRAND_PANEL_DOTS.map((dot, i) => (
+                <Stack
+                  key={i}
+                  position="absolute"
+                  top={dot.top as unknown as number}
+                  left={dot.left as unknown as number}
+                  width={dot.size}
+                  height={dot.size}
+                  borderRadius={9999}
+                  backgroundColor="rgba(255,255,255,0.25)"
+                  style={{ boxShadow: '0 0 8px rgba(255,255,255,0.5)' } as object}
+                />
+              ))}
+            </Stack>
+          ) : null}
           {brandPanel}
         </Stack>
       ) : null}
@@ -149,7 +200,7 @@ export function SplitFormScaffold({
               <Stack
                 width="100%"
                 paddingHorizontal="$6"
-                $tablet={{ maxWidth: 440, paddingHorizontal: 0 }}
+                $tablet={{ maxWidth: 500, paddingHorizontal: 0 }}
               >
                 {children}
               </Stack>

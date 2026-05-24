@@ -60,6 +60,10 @@ export const size = {
 export const radius = {
   0: 0,
   sm: 8,
+  /** Nested-card / nav-item radius (12px) — sidebar nav, settings tabs, focus rows. */
+  nav: 12,
+  /** Inner-card radius (14px) — child-selector card, inputs, focus-area rows. */
+  cardInner: 14,
   button: 16,
   card: 20,
   modal: 24,
@@ -90,6 +94,8 @@ export const fontSize = {
   5: 18, // h3
   6: 24, // h2
   7: 32, // h1
+  /** Splash wordmark step (between h1 32 and display 48) — align-splash M1/GAP. */
+  wordmark: 36,
   8: 48, // display
 } as const;
 

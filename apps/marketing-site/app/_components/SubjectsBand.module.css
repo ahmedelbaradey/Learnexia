@@ -1,0 +1,107 @@
+/* Subjects band — web-subject-band.html. Tokens only.
+   Per-card `--tone` / `--tone-soft` drive the icon tint + grade-link colour. */
+
+.section {
+  background: var(--lx-bg-deep);
+}
+
+.inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 var(--lx-space-12) 96px;
+}
+
+.title {
+  margin: 0 0 var(--lx-space-10);
+  font-family: var(--lx-font-display);
+  font-size: 36px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--lx-fg1);
+  text-align: center;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--lx-space-3);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lx-space-2);
+  padding: var(--lx-space-5);
+  background: var(--lx-card);
+  border-radius: var(--lx-radius-card);
+  border: 1px solid var(--lx-border);
+  box-shadow: var(--lx-shadow-soft);
+}
+
+/* Tone tokens — set both the accent colour and its 13% tint. */
+.toneIndigo {
+  --tone: #4f46e5;
+  --tone-soft: rgba(79, 70, 229, 0.13);
+}
+
+.toneGreen {
+  --tone: #22c55e;
+  --tone-soft: rgba(34, 197, 94, 0.13);
+}
+
+.toneOrange {
+  --tone: #fb923c;
+  --tone-soft: rgba(251, 146, 60, 0.13);
+}
+
+.tonePurple {
+  --tone: #a855f7;
+  --tone-soft: rgba(168, 85, 247, 0.13);
+}
+
+.icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--tone-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+}
+
+.name {
+  margin: 0;
+  font-family: var(--lx-font-display);
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--lx-fg1);
+}
+
+.topics {
+  margin: 0;
+  font-size: 12px;
+  color: var(--lx-fg3);
+}
+
+.grade {
+  margin-top: var(--lx-space-1);
+  color: var(--tone);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .inner {
+    padding: 0 var(--lx-space-8) 72px;
+  }
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .inner {
+    padding: 0 var(--lx-space-6) 56px;
+  }
+}

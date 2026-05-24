@@ -34,6 +34,12 @@ const ButtonFrame = styled(Stack, {
         backgroundColor: '$primary',
         hoverStyle: { backgroundColor: '$primaryHover' },
         pressStyle: { backgroundColor: '$primaryPress', scale: 0.95 },
+        // Indigo glow (--lx-shadow-primary-glow). RN shadow props → CSS box-shadow
+        // on RN Web; a soft drop-glow on native.
+        shadowColor: '$primaryGlow',
+        shadowOpacity: 1,
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 4 },
       },
       secondary: {
         backgroundColor: '$cardSoft',

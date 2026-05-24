@@ -46,7 +46,7 @@ export function PersonaToggle({
     <Stack
       flexDirection={direction === 'rtl' ? 'row-reverse' : 'row'}
       backgroundColor="$card"
-      borderRadius="$pill"
+      borderRadius="$button"
       borderWidth={1}
       borderColor="$border"
       padding={4}
@@ -67,7 +67,7 @@ export function PersonaToggle({
             height={52}
             alignItems="center"
             justifyContent="center"
-            borderRadius="$pill"
+            borderRadius={10}
             cursor="pointer"
             backgroundColor={active ? '$primary' : 'transparent'}
             hoverStyle={active ? undefined : { backgroundColor: '$cardSoft' }}

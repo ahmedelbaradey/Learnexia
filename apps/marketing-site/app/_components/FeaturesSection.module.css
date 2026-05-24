@@ -1,0 +1,109 @@
+/* "Why Learnexia" feature grid — web-feature-card.html. Tokens only. */
+
+.section {
+  background: var(--lx-bg-deep);
+  border-top: 1px solid var(--lx-border-soft);
+}
+
+.inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 96px var(--lx-space-12);
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--lx-purple);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: var(--lx-space-3) 0 var(--lx-space-12);
+  font-family: var(--lx-font-display);
+  font-size: 44px;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--lx-fg1);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--lx-space-4);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lx-space-3);
+  padding: var(--lx-space-6);
+  background: var(--lx-card);
+  border-radius: var(--lx-radius-modal);
+  border: 1px solid var(--lx-border);
+  box-shadow: var(--lx-shadow-soft);
+}
+
+.icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.tonePurple {
+  background: rgba(168, 85, 247, 0.15);
+}
+
+.toneOrange {
+  background: rgba(251, 146, 60, 0.15);
+}
+
+.toneGreen {
+  background: rgba(34, 197, 94, 0.15);
+}
+
+.cardTitle {
+  margin: 0;
+  font-family: var(--lx-font-display);
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--lx-fg1);
+}
+
+.cardBody {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--lx-fg2);
+}
+
+@media (max-width: 900px) {
+  .inner {
+    padding: 72px var(--lx-space-8);
+  }
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .title {
+    font-size: 36px;
+  }
+}
+
+@media (max-width: 600px) {
+  .inner {
+    padding: 56px var(--lx-space-6);
+  }
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .title {
+    font-size: 30px;
+  }
+}

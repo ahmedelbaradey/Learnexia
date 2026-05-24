@@ -28,6 +28,13 @@ export interface FocusAreasCardProps {
   childName: string;
   direction: Direction;
   rowDir: 'row' | 'row-reverse';
+  /** Active locale — formats the percent in the a11y label (N-10). */
+  locale: string;
+}
+
+/** Localized percent for the row a11y label (Eastern-Arabic digits in AR). */
+function formatPercent(value: number, locale: string): string {
+  return `${new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US').format(value)}%`;
 }
 
 /** Subject → i18n label key. */
@@ -42,8 +49,8 @@ const SUBJECT_LABEL_KEY: Record<OverviewSubjectKey, string> = {
 const SUBJECT_ICON: Record<OverviewSubjectKey, string> = {
   [OVERVIEW_SUBJECT.Math]: '🔢',
   [OVERVIEW_SUBJECT.Science]: '🔬',
-  [OVERVIEW_SUBJECT.Arabic]: 'ع',
-  [OVERVIEW_SUBJECT.English]: 'A',
+  [OVERVIEW_SUBJECT.Arabic]: '📖',
+  [OVERVIEW_SUBJECT.English]: '🔡',
 };
 
 /** Topic key → i18n label key (reuses the existing myChildren topic copy). */
@@ -63,7 +70,13 @@ const SEVERITY_COLOR: Record<FocusSeverity, TextColor> = {
   [FOCUS_SEVERITY.Medium]: '$warning',
 };
 
-export function FocusAreasCard({ childId, childName, direction, rowDir }: FocusAreasCardProps) {
+/** Severity → soft icon-chip background tint (B-14). */
+const SEVERITY_CHIP_BG: Record<FocusSeverity, TextColor> = {
+  [FOCUS_SEVERITY.High]: '$dangerSoft',
+  [FOCUS_SEVERITY.Medium]: '$warningSoft',
+};
+
+export function FocusAreasCard({ childId, childName, direction, rowDir, locale }: FocusAreasCardProps) {
   const { t } = useTranslation();
   const rows = getFocusAreasStub(childId);
 
@@ -73,7 +86,7 @@ export function FocusAreasCard({ childId, childName, direction, rowDir }: FocusA
       backgroundColor="$card"
       borderWidth={1}
       borderColor="$border"
-      padding="$6"
+      padding={22}
       gap="$5"
     >
       {/* Header */}
@@ -93,14 +106,18 @@ export function FocusAreasCard({ childId, childName, direction, rowDir }: FocusA
             {t('parent.overview.focusAreas.subtitle', { name: childName })}
           </Text>
         </Stack>
-        {/* See all — Phase-5 stub (no-op until the full topics list ships). */}
+        {/* See all — ghost pill (M-20). Phase-5 stub (no-op until topics ship). */}
         <Stack
           minHeight={36}
-          paddingHorizontal="$3"
+          paddingHorizontal="$4"
+          alignItems="center"
           justifyContent="center"
-          borderRadius="$button"
+          borderRadius={9999}
+          borderWidth={1}
+          borderColor="$borderStrong"
+          backgroundColor="transparent"
           cursor="pointer"
-          hoverStyle={{ backgroundColor: '$card' }}
+          hoverStyle={{ backgroundColor: '$cardSoft' }}
           pressStyle={{ scale: 0.98 }}
           onPress={() => {
             /* TODO(P5-05): open the full focus-areas list. */
@@ -117,42 +134,47 @@ export function FocusAreasCard({ childId, childName, direction, rowDir }: FocusA
       </Stack>
 
       {/* Rows */}
-      <Stack flexDirection="column" gap="$3">
+      <Stack flexDirection="column" gap={10}>
         {rows.map((row) => {
           const topic = t(TOPIC_LABEL_KEY[row.topicKey] ?? 'parent.myChildren.topics.numbers');
           const subject = t(SUBJECT_LABEL_KEY[row.subject]);
           const fill = SEVERITY_COLOR[row.severity];
+          const chipBg = SEVERITY_CHIP_BG[row.severity];
+          const a11yPercent = formatPercent(row.percent, locale);
           return (
             <Stack
               key={`${row.topicKey}-${row.subject}`}
               flexDirection={rowDir}
               alignItems="center"
               gap="$3"
-              borderRadius="$sm"
+              borderRadius="$cardInner"
               backgroundColor="$bg"
               borderWidth={1}
               borderColor="$border"
-              padding="$4"
+              paddingVertical={12}
+              paddingHorizontal={14}
               accessible
-              accessibilityLabel={`${topic} ${subject} ${row.percent}%`}
-              aria-label={`${topic} ${subject} ${row.percent}%`}
+              accessibilityLabel={`${topic} ${subject} ${a11yPercent}`}
+              aria-label={`${topic} ${subject} ${a11yPercent}`}
             >
-              {/* Icon chip */}
+              {/* Icon chip — severity-tinted soft bg + matching icon color (B-14). */}
               <Stack
                 width={40}
                 height={40}
                 borderRadius="$sm"
-                backgroundColor="$cardSoft"
+                backgroundColor={chipBg}
                 alignItems="center"
                 justifyContent="center"
                 accessibilityElementsHidden
               >
-                <Text fontSize={18}>{SUBJECT_ICON[row.subject]}</Text>
+                <Text fontSize={18} color={fill}>
+                  {SUBJECT_ICON[row.subject]}
+                </Text>
               </Stack>
 
               {/* Topic + subject */}
               <Stack flexDirection="column" gap="$1" flex={1}>
-                <Text color="$fg1" fontSize={15} fontWeight="700" fontFamily="$heading" writingDirection={direction}>
+                <Text color="$fg1" fontSize={13} fontWeight="700" fontFamily="$heading" writingDirection={direction}>
                   {topic}
                 </Text>
                 <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction}>
@@ -160,20 +182,21 @@ export function FocusAreasCard({ childId, childName, direction, rowDir }: FocusA
                 </Text>
               </Stack>
 
-              {/* Confidence bar */}
+              {/* Confidence bar — stays LTR in RTL (M-22); track $card + hairline (B-13). */}
               <Stack
                 width={120}
                 height={8}
                 borderRadius={9999}
-                backgroundColor="$cardSoft"
+                backgroundColor="$card"
+                borderWidth={1}
+                borderColor="rgba(255,255,255,0.04)"
                 overflow="hidden"
-                flexDirection={rowDir}
+                flexDirection="row"
                 accessibilityElementsHidden
               >
                 <Stack
                   width={`${Math.max(0, Math.min(100, row.percent))}%` as StackProps['width']}
                   height="100%"
-                  borderRadius={9999}
                   backgroundColor={fill}
                 />
               </Stack>
@@ -184,7 +207,7 @@ export function FocusAreasCard({ childId, childName, direction, rowDir }: FocusA
                 fontSize={14}
                 fontWeight="800"
                 fontFamily="$heading"
-                width={48}
+                width={44}
                 textAlign={direction === 'rtl' ? 'left' : 'right'}
                 style={{ fontVariant: ['tabular-nums'] }}
               >

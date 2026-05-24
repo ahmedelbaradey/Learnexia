@@ -15,7 +15,7 @@
  */
 import { useMyChildren } from '@learnexia/api-client';
 import { Button, Select } from '@learnexia/ui';
-import { Stack, Text } from '@tamagui/core';
+import { Stack, Text, type StackProps } from '@tamagui/core';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -31,12 +31,25 @@ const REPORTING_PERIOD = {
   ThisWeek: 'thisWeek',
 } as const;
 
-/** Format minutes as "Xh Ym" (digits localized; the h/m glyphs are unit symbols). */
+/**
+ * Format minutes as "Xh Ym" (EN) / "Xس Yد" (AR). Digits are localized via Intl
+ * (`ar-EG` → Eastern-Arabic numerals); the unit glyphs are fixed locale symbols
+ * (h/m in EN, س/د in AR) per the align spec (M-25). These are unit symbols, not
+ * free-text copy, so they live with the deferred duration formatter rather than
+ * the i18n resource bundle (which only carries the surrounding delta phrase).
+ */
+const DURATION_UNITS = {
+  en: { hour: 'h', minute: 'm' },
+  ar: { hour: 'س', minute: 'د' },
+} as const;
+
 function formatDuration(totalMinutes: number, locale: string): string {
-  const fmt = (n: number) => new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US').format(n);
+  const isAr = locale === 'ar';
+  const fmt = (n: number) => new Intl.NumberFormat(isAr ? 'ar-EG' : 'en-US').format(n);
+  const units = isAr ? DURATION_UNITS.ar : DURATION_UNITS.en;
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  return `${fmt(hours)}h ${fmt(minutes)}m`;
+  return `${fmt(hours)}${units.hour} ${fmt(minutes)}${units.minute}`;
 }
 
 function formatNumber(value: number, locale: string): string {
@@ -48,6 +61,8 @@ interface KpiTileDef {
   value: string;
   label: string;
   delta: string;
+  /** 32×32 icon-chip tint, per accent (align spec accent-to-soft map B-03/N-06). */
+  chipBg: StackProps['backgroundColor'];
 }
 
 function buildKpis(
@@ -58,6 +73,7 @@ function buildKpis(
   return [
     {
       icon: '⏱️',
+      chipBg: '$primarySoft',
       value: formatDuration(kpi.timeLearningMinutes, locale),
       label: t('parent.overview.kpi.timeLearning'),
       delta: t('parent.overview.kpi.timeDelta', {
@@ -66,6 +82,7 @@ function buildKpis(
     },
     {
       icon: '⭐',
+      chipBg: '$xpSoft',
       value: formatNumber(kpi.xpEarned, locale),
       label: t('parent.overview.kpi.xpEarned'),
       delta: t('parent.overview.kpi.xpDelta', {
@@ -74,6 +91,7 @@ function buildKpis(
     },
     {
       icon: '✅',
+      chipBg: '$successSoft',
       value: formatNumber(kpi.lessonsDone, locale),
       label: t('parent.overview.kpi.lessonsDone'),
       delta: t('parent.overview.kpi.lessonsDelta', {
@@ -82,6 +100,7 @@ function buildKpis(
     },
     {
       icon: '🔥',
+      chipBg: '$streakSoft',
       value: formatNumber(kpi.streakDays, locale),
       label: t('parent.overview.kpi.streak'),
       delta: t('parent.overview.kpi.streakDelta', {
@@ -108,13 +127,13 @@ export function OverviewWeb() {
   const dateRange = t('parent.overview.dateRange');
 
   return (
-    <Stack flexDirection="column" gap="$6" padding="$6" maxWidth={1200} width="100%" alignSelf="center">
+    <Stack flexDirection="column" gap="$6" padding="$6" maxWidth={1280} width="100%" alignSelf="center">
       {/* Header */}
       <Stack flexDirection={rowDir} alignItems="flex-start" justifyContent="space-between" gap="$4" flexWrap="wrap">
         <Stack flexDirection="column" gap="$1">
           <Text
             color="$fg1"
-            fontSize={26}
+            fontSize={22}
             fontWeight="800"
             fontFamily="$heading"
             accessibilityRole="header"
@@ -122,7 +141,7 @@ export function OverviewWeb() {
           >
             {t('parent.overview.title', { name: childName })}
           </Text>
-          <Text color="$fg3" fontSize={14} fontFamily="$body" writingDirection={direction}>
+          <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction}>
             {dateRange}
           </Text>
         </Stack>
@@ -201,8 +220,8 @@ function OverviewBody({ childId, childName, rowDir, direction, locale }: Overvie
 
   return (
     <>
-      {/* 4 KPI cards */}
-      <Stack flexDirection={rowDir} flexWrap="wrap" gap="$4" alignItems="stretch">
+      {/* 4 KPI cards (inline by decision GAP-04 — no new KPIStatCard variant). */}
+      <Stack flexDirection={rowDir} flexWrap="wrap" gap={14} alignItems="stretch">
         {kpis.map((k) => (
           <Stack
             key={k.label}
@@ -214,6 +233,7 @@ function OverviewBody({ childId, childName, rowDir, direction, locale }: Overvie
             borderColor="$border"
             padding="$5"
             gap="$2"
+            hoverStyle={{ backgroundColor: '$cardSoft', scale: 1.02 }}
           >
             <Stack flexDirection={rowDir} alignItems="center" justifyContent="space-between" gap="$2">
               <Text
@@ -222,19 +242,28 @@ function OverviewBody({ childId, childName, rowDir, direction, locale }: Overvie
                 fontWeight="700"
                 fontFamily="$heading"
                 textTransform="uppercase"
-                letterSpacing={0.6}
+                letterSpacing={0.88}
                 writingDirection={direction}
                 flex={1}
               >
                 {k.label}
               </Text>
-              <Text fontSize={18} accessibilityElementsHidden>
-                {k.icon}
-              </Text>
+              {/* 32×32 radius-8 tinted icon chip, per accent (B-03/N-06). */}
+              <Stack
+                width={32}
+                height={32}
+                borderRadius="$sm"
+                backgroundColor={k.chipBg}
+                alignItems="center"
+                justifyContent="center"
+                accessibilityElementsHidden
+              >
+                <Text fontSize={18}>{k.icon}</Text>
+              </Stack>
             </Stack>
             <Text
               color="$fg1"
-              fontSize={32}
+              fontSize={28}
               fontWeight="800"
               fontFamily="$heading"
               style={{ fontVariant: ['tabular-nums'] }}
@@ -272,7 +301,13 @@ function OverviewBody({ childId, childName, rowDir, direction, locale }: Overvie
       </Stack>
 
       {/* Areas to focus on */}
-      <FocusAreasCard childId={seed} childName={childName} direction={direction} rowDir={rowDir} />
+      <FocusAreasCard
+        childId={seed}
+        childName={childName}
+        direction={direction}
+        rowDir={rowDir}
+        locale={locale}
+      />
     </>
   );
 }

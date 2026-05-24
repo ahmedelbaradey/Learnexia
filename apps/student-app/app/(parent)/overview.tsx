@@ -19,6 +19,7 @@ import { ScrollView, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
+import { useLocale } from '../../src/hooks/useLocale';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { NAV_ITEM, Sidebar } from './_components/Sidebar';
 import { OverviewWeb } from './_components/OverviewWeb';
@@ -32,6 +33,7 @@ export default function OverviewScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
+  const { isRtl } = useLocale();
   const query = useMyChildren();
 
   const isWide = width >= WIDE_BREAKPOINT;
@@ -52,7 +54,7 @@ export default function OverviewScreen() {
       : undefined;
 
     return (
-      <Stack flex={1} flexDirection="row" backgroundColor="$bg">
+      <Stack flex={1} flexDirection={isRtl ? 'row-reverse' : 'row'} backgroundColor="$bg">
         <Sidebar activeChild={activeChild} activeKey={NAV_ITEM.Overview} />
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingBottom: 48 }}>
           <OverviewWeb />

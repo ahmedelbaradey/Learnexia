@@ -6,26 +6,27 @@
   max-width: 100%;
 }
 
-/* Device frame */
+/* Device frame — near-black 8px bezel, tilted (B-6, m-2). */
 .phone {
   position: relative;
   width: 320px;
   max-width: 100%;
   aspect-ratio: 320 / 640;
-  border-radius: 44px;
-  padding: 14px;
-  background: #050a18;
-  border: 2px solid var(--lx-border-strong);
-  box-shadow: var(--lx-shadow-float), 0 0 80px rgba(99, 102, 241, 0.25);
+  border-radius: var(--lx-radius-device); /* 36px */
+  padding: 8px;
+  background: #1a1a1a;
+  border: 8px solid #1a1a1a;
+  transform: rotate(-4deg);
+  box-shadow: 0 40px 100px rgba(99, 102, 241, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
-/* Screen: purple gamified gradient (matches capture) */
+/* Screen: bright gamified purple → indigo → card gradient (B-5). */
 .screen {
   position: relative;
   height: 100%;
-  border-radius: 32px;
+  border-radius: var(--lx-radius-screen); /* 28px */
   padding: var(--lx-space-5);
-  background: linear-gradient(160deg, #6d28d9 0%, #5b21b6 40%, #4c1d95 100%);
+  background: linear-gradient(165deg, var(--lx-purple) 0%, var(--lx-primary) 50%, var(--lx-card) 100%);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -95,12 +96,13 @@
   overflow: hidden;
 }
 
+/* Green → yellow XP fill (M-10). */
 .progressFill {
   display: block;
   height: 100%;
   width: 62%;
   border-radius: var(--lx-radius-pill);
-  background: var(--lx-grad-xp);
+  background: linear-gradient(90deg, var(--lx-secondary), var(--lx-xp));
 }
 
 /* 2×2 subject grid */
@@ -124,20 +126,13 @@
   font-size: 26px;
 }
 
-.subjectText {
-  font-family: var(--lx-font-display);
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--lx-fg1);
-}
-
-/* Decorative star */
+/* Decorative animated star (M-12). */
 .star {
   margin-top: auto;
   align-self: center;
-  color: var(--lx-xp);
-  font-size: 24px;
+  font-size: 32px;
   text-shadow: 0 0 16px var(--lx-xp-glow);
+  animation: lxpulse 2s ease-in-out infinite;
 }
 
 /* ----------------------------- Reward chips ---------------------------- */
@@ -153,21 +148,25 @@
   box-shadow: var(--lx-shadow-float);
 }
 
+/* "+50 XP ⭐" — green, tilted right (B-7). */
 .chipXp {
   top: 56px;
   inset-inline-end: -40px;
   padding: 10px 16px;
   background: var(--lx-secondary);
   color: var(--lx-fg-inverse);
+  transform: rotate(8deg);
 }
 
+/* "🏆 New badge!" — card chip, tilted left (M-9). */
 .chipBadge {
-  bottom: 96px;
-  inset-inline-start: -56px;
+  bottom: 70px;
+  inset-inline-start: -40px;
   padding: 12px 18px;
   background: var(--lx-card);
   color: var(--lx-fg1);
   border: 1px solid var(--lx-border-strong);
+  transform: rotate(-4deg);
 }
 
 .chipBadgeIcon {

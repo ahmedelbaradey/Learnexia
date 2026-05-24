@@ -18,6 +18,10 @@ export const gradients = {
   gradLevelup: 'linear-gradient(135deg, #A855F7, #6366F1)',
   /** XP bar at 100% — gold shimmer. */
   gradXpFull: 'linear-gradient(90deg, #FACC15, #FBBF24, #FACC15)',
+  /** Auth split-panel brand background — warm purple → deep indigo (align-login GAP-B). */
+  gradBrandPanel: 'linear-gradient(165deg, #4F3FB0 0%, #3B2C8F 50%, #1E1B4B 100%)',
+  /** Splash progress fill — violet → indigo (align-splash B3). */
+  splashProgress: 'linear-gradient(90deg, #C4B5FD, #818CF8)',
 } as const;
 
 /** Decomposed color-stop pairs for Skia / expo-linear-gradient on native. */
@@ -26,6 +30,7 @@ export const gradientStops = {
   gradReward: { colors: ['#F59E0B', '#EF4444'], angle: 90 },
   gradLevelup: { colors: ['#A855F7', '#6366F1'], angle: 135 },
   gradXpFull: { colors: ['#FACC15', '#FBBF24', '#FACC15'], angle: 90 },
+  gradBrandPanel: { colors: ['#4F3FB0', '#3B2C8F', '#1E1B4B'], angle: 165 },
 
   // Radial disc gradients for Badge / RewardPopup discs.
   badgeBronze: { colors: ['#FCD9B5', '#B45309'] },
@@ -35,11 +40,13 @@ export const gradientStops = {
   tutorAvatar: { colors: ['#A78BFA', '#6366F1'], angle: 135 },
 
   /**
-   * Splash screen full-bleed background — purple glow → dark bg.
-   * Indigo/violet center fading to the app `bg`, matching the splash capture.
+   * Splash screen full-bleed background — WARM purple glow → deep indigo.
+   * Matches the splash capture's radial center colours (align-splash B2).
    * Used as a top→bottom linear approximation of the radial glow on native.
    */
-  splashBg: { colors: ['#4338CA', '#3730A3', '#0F172A'], angle: 160 },
+  splashBg: { colors: ['#4F3FB0', '#3B2C8F', '#241B6A'], angle: 160 },
+  /** Splash progress fill — violet → indigo (align-splash B3). */
+  splashProgress: { colors: ['#C4B5FD', '#818CF8'], angle: 90 },
 } as const;
 
 /** CSS radial-gradient strings for web (Badge discs). */
@@ -49,8 +56,8 @@ export const radialGradients = {
   badgeGold: 'radial-gradient(circle at 30% 30%, #FDE68A, #F59E0B)',
   badgeLegendary: 'radial-gradient(circle at 30% 30%, #FBCFE8, #A855F7 55%, #4F46E5)',
   tutorAvatar: 'linear-gradient(135deg, #A78BFA, #6366F1)',
-  /** Splash background — centered purple glow fading to the dark app bg. */
-  splashBg: 'radial-gradient(circle at 50% 42%, #4F46E5 0%, #3730A3 45%, #0F172A 100%)',
+  /** Splash background — warm purple radial glow at 50% 45% (align-splash B2). */
+  splashBg: 'radial-gradient(circle at 50% 45%, #4F3FB0 0%, #3B2C8F 40%, #241B6A 100%)',
 } as const;
 
 export type Gradients = typeof gradients;

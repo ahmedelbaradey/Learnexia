@@ -4,16 +4,21 @@ import styles from './page.module.css';
 import { LANDING_COPY as C } from '../lib/copy';
 import { REGISTER_URL, LOGIN_URL } from '../lib/config';
 import { PhoneMockup } from './_components/PhoneMockup';
+import { FeaturesSection } from './_components/FeaturesSection';
+import { SubjectsBand } from './_components/SubjectsBand';
+import { CTABanner } from './_components/CTABanner';
+import { SiteFooter } from './_components/SiteFooter';
 
 /**
- * Landing page (P1-11-FE-12) — pixel-perfect to
- * `design-system/screenshots/web/01-landing.png`.
- *
- * Layout: a fixed dark top nav, then a two-column hero (copy + CTAs on the
- * left, decorative phone mockup with floating reward chips on the right), then
- * minimal below-the-fold section stubs that the nav anchors target. All colour
- * / type / radius / spacing values come from the design-system `--lx-*` tokens
- * (see `globals.css`); all copy comes from `lib/copy.ts`.
+ * Landing page (P1-11-FE-12) — pixel-aligned to
+ * `design-system/screenshots/web/01-landing.png` and the canonical preview
+ * cards (web-nav / web-hero-phonemock / web-feature-card / web-subject-band /
+ * web-cta-banner / web-footer). A frosted top nav, a two-column hero (copy +
+ * CTAs left, decorative phone mockup right), then the below-the-fold sections:
+ * "Why Learnexia" feature grid, the four-subject band, a gradient CTA banner
+ * and the footer. All colour / type / radius / spacing values come from the
+ * design-system `--lx-*` tokens (see `globals.css`); all copy from
+ * `lib/copy.ts`.
  */
 export default function LandingPage() {
   return (
@@ -34,7 +39,7 @@ export default function LandingPage() {
           <nav className={styles.navLinks} aria-label={C.brand}>
             <a href="#how-it-works">{C.nav.howItWorks}</a>
             <a href="#subjects">{C.nav.subjects}</a>
-            <a href="#for-schools">{C.nav.forSchools}</a>
+            <a href="#how-it-works">{C.nav.forSchools}</a>
             <a href="#pricing">{C.nav.pricing}</a>
           </nav>
 
@@ -54,12 +59,7 @@ export default function LandingPage() {
         <div className={styles.heroGlow} aria-hidden="true" />
 
         <section className={styles.heroCopy}>
-          <span className={styles.pill}>
-            <span className={styles.pillSpark} aria-hidden="true">
-              ✦
-            </span>
-            {C.hero.pill}
-          </span>
+          <span className={styles.pill}>{C.hero.pill}</span>
 
           <h1 className={styles.headline}>
             {C.hero.headlineLead}
@@ -87,21 +87,15 @@ export default function LandingPage() {
 
           <ul className={styles.trustRow}>
             <li>
-              <span className={styles.trustIcon} aria-hidden="true">
-                ⭐
-              </span>
+              <span aria-hidden="true">⭐</span>
               {C.hero.trustRating}
             </li>
             <li>
-              <span className={styles.trustIcon} aria-hidden="true">
-                🛡
-              </span>
+              <span aria-hidden="true">🛡</span>
               {C.hero.trustCoppa}
             </li>
             <li>
-              <span className={styles.trustIcon} aria-hidden="true">
-                👨‍👩‍👧
-              </span>
+              <span aria-hidden="true">👨‍👩‍👧</span>
               {C.hero.trustFirstChild}
             </li>
           </ul>
@@ -112,31 +106,11 @@ export default function LandingPage() {
         </section>
       </main>
 
-      {/* ----------------- Below-the-fold section stubs ------------------- */}
-      <section id="how-it-works" className={styles.section}>
-        <h2 className={styles.sectionTitle}>{C.sections.howItWorksTitle}</h2>
-        <p className={styles.sectionBody}>{C.sections.howItWorksBody}</p>
-      </section>
-
-      <section id="subjects" className={styles.section}>
-        <h2 className={styles.sectionTitle}>{C.sections.subjectsTitle}</h2>
-        <p className={styles.sectionBody}>{C.sections.subjectsBody}</p>
-      </section>
-
-      <section id="for-schools" className={styles.section}>
-        <h2 className={styles.sectionTitle}>{C.sections.forSchoolsTitle}</h2>
-        <p className={styles.sectionBody}>{C.sections.forSchoolsBody}</p>
-      </section>
-
-      <section id="pricing" className={styles.section}>
-        <h2 className={styles.sectionTitle}>{C.sections.pricingTitle}</h2>
-        <p className={styles.sectionBody}>{C.sections.pricingBody}</p>
-        <a className={styles.ctaPrimary} href={REGISTER_URL}>
-          {C.nav.startFree}
-        </a>
-      </section>
-
-      <footer className={styles.footer}>{C.footer.rights}</footer>
+      {/* ----------------------- Below-the-fold sections ------------------- */}
+      <FeaturesSection />
+      <SubjectsBand />
+      <CTABanner />
+      <SiteFooter />
     </div>
   );
 }

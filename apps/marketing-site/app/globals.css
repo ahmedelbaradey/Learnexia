@@ -28,6 +28,7 @@
   /* Surfaces */
   --lx-bg: #0f172a;
   --lx-bg-elevated: #111b33;
+  --lx-bg-deep: #0b1020; /* local: feature/subject section bg (Design Gap #6) */
   --lx-card: #1e293b;
   --lx-card-soft: #334155;
 
@@ -43,6 +44,8 @@
   --lx-accent: #f59e0b;
   --lx-danger: #ef4444;
   --lx-purple: #a855f7;
+  --lx-purple-soft: rgba(168, 85, 247, 0.18); /* local: purple-tinted pill (M-4) */
+  --lx-purple-glow: rgba(168, 85, 247, 0.45); /* local: marketing hero glow (Design Gap #3) */
   --lx-xp: #facc15;
   --lx-xp-glow: rgba(250, 204, 21, 0.45);
   --lx-streak: #fb923c;
@@ -57,10 +60,12 @@
   --lx-fg1: #f8fafc;
   --lx-fg2: #cbd5e1;
   --lx-fg3: #94a3b8;
+  --lx-fg4: #64748b; /* local: footer/caption (slate-500, Design Gap #2) */
   --lx-fg-inverse: #0f172a;
 
   /* Borders */
   --lx-border: rgba(255, 255, 255, 0.08);
+  --lx-border-soft: rgba(255, 255, 255, 0.05); /* local: nav/footer hairline (web-nav/web-footer) */
   --lx-border-strong: rgba(255, 255, 255, 0.16);
 
   /* Radii */
@@ -69,6 +74,8 @@
   --lx-radius-card: 20px;
   --lx-radius-modal: 24px;
   --lx-radius-pill: 9999px;
+  --lx-radius-device: 36px; /* local: phone frame (Design Gap #1) */
+  --lx-radius-screen: 28px; /* local: phone inner screen (Design Gap #1) */
 
   /* Elevation */
   --lx-shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -127,6 +134,19 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+/* Decorative star pulse (phone mock + CTA banner). */
+@keyframes lxpulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.85;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

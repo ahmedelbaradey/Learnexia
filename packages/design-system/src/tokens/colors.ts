@@ -5,11 +5,13 @@
  * Tamagui does NOT evaluate CSS `var()` references, so every value that the CSS
  * authors via `var(--other)` is resolved to its concrete hex/rgba value here.
  *
- * Gap-fill tokens (NOT present in colors_and_type.css) are flagged inline:
- *   - `fg4` (#64748B) — disabled/locked muted text (Design Gap 2 / 4)
- *   - `primaryLight` (#A5B4FC) — AITutorBubble chip text (Design Gap 4)
- *   - `purpleLight` (#E9D5FF) — Legendary badge label (Design Gap 4)
- * These three are required by the component previews but have no `--lx-*` var.
+ * Formerly TS-only gap-fills, now promoted into colors_and_type.css too (the
+ * pixel-alignment pass requires CSS↔TS parity):
+ *   - `fg4` (#64748B) — disabled/locked/inactive muted text
+ *   - `primaryLight` (#A5B4FC) — active nav/tab label, eyebrow, grade pills
+ *   - `purpleLight` (#E9D5FF) — Legendary badge label
+ * Plus the alignment-pass additions: `xpSoft`/`streakSoft` (0.13 KPI tints),
+ * `borderInput` (0.10), `borderSubtle` (0.06), `fg2Alpha` (0.70 white).
  */
 
 export const colors = {
@@ -39,8 +41,12 @@ export const colors = {
   // ---- Gamification accents ----
   xp: '#FACC15',
   xpGlow: 'rgba(250, 204, 21, 0.45)',
+  /** ~0.13 alpha XP tint for KPI icon chips (align-overview GAP-02). */
+  xpSoft: 'rgba(250, 204, 21, 0.13)',
   streak: '#FB923C',
   streakGlow: 'rgba(251, 146, 60, 0.45)',
+  /** ~0.13 alpha streak tint for KPI icon chips (align-overview GAP-02). */
+  streakSoft: 'rgba(251, 146, 60, 0.13)',
   heart: '#FB7185',
   heartGlow: 'rgba(251, 113, 133, 0.45)',
   gold: '#FBBF24',
@@ -59,13 +65,19 @@ export const colors = {
   fg2: '#CBD5E1',
   fg3: '#94A3B8',
   fgInverse: '#0F172A',
-  /** GAP-FILL (not in CSS): disabled-button + locked-badge muted text. Design Gap 2/4. */
+  /** Disabled-button + locked-badge + inactive-status muted text. */
   fg4: '#64748B',
+  /** 70%-alpha white for splash/overlay text on the purple bg (align-splash M5/M6/M9). */
+  fg2Alpha: 'rgba(255, 255, 255, 0.70)',
 
   // ---- Borders ----
   border: 'rgba(255, 255, 255, 0.08)',
   borderStrong: 'rgba(255, 255, 255, 0.16)',
   borderFocus: '#4F46E5', // var(--lx-primary)
+  /** Input resting border at 0.10 alpha (components-input.html — align-login GAP-C). */
+  borderInput: 'rgba(255, 255, 255, 0.10)',
+  /** Subtle 0.06-alpha hairline (sidebar/header dividers — align-my-children DG-5). */
+  borderSubtle: 'rgba(255, 255, 255, 0.06)',
 
   // ---- Gap-fill inline accent shades (Design Gap 4) ----
   /** GAP-FILL (not in CSS): indigo-300 for AITutorBubble chip text. */

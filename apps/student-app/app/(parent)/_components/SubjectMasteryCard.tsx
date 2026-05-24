@@ -47,7 +47,7 @@ export function SubjectMasteryCard({ childId, direction }: SubjectMasteryCardPro
       backgroundColor="$card"
       borderWidth={1}
       borderColor="$border"
-      padding="$6"
+      padding={22}
       gap="$5"
       height="100%"
     >
@@ -55,7 +55,7 @@ export function SubjectMasteryCard({ childId, direction }: SubjectMasteryCardPro
       <Stack flexDirection="column" gap="$1">
         <Text
           color="$fg1"
-          fontSize={18}
+          fontSize={16}
           fontWeight="800"
           fontFamily="$heading"
           accessibilityRole="header"
@@ -63,13 +63,13 @@ export function SubjectMasteryCard({ childId, direction }: SubjectMasteryCardPro
         >
           {t('parent.overview.subjectMastery.title')}
         </Text>
-        <Text color="$fg3" fontSize={13} fontFamily="$body" writingDirection={direction}>
+        <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction}>
           {t('parent.overview.subjectMastery.subtitle')}
         </Text>
       </Stack>
 
       {/* Rows — MasteryBar renders the subject label + % caption above its bar. */}
-      <Stack flexDirection="column" gap="$4">
+      <Stack flexDirection="column" gap={14}>
         {rows.map((row) => {
           const label = t(SUBJECT_LABEL_KEY[row.subject]);
           return (

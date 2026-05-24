@@ -4,7 +4,8 @@
  *
  * Universal (Expo + RN Web). Built on RN's `TextInput` (RN Web maps it to a DOM
  * input) wrapped in token-driven Tamagui stacks. Token-only styling, logical
- * RTL props, password visibility toggle, inline error slot.
+ * RTL props, password visibility toggle, inline error slot. Input height 48px,
+ * resting border `$borderInput` (0.10). `forceLtr` keeps email/phone values LTR.
  *
  * `inputRadius = 14` is a LOCAL constant per Design Spec Gap 9 (it falls between
  * `$sm` 8px and `$card` 20px and is single-use — no new global token).
@@ -12,6 +13,7 @@
  * A11y: label drives `accessibilityLabel`; error string is announced via
  * `accessibilityLiveRegion="polite"`; the password toggle is a 48px button.
  */
+import { colors } from '@learnexia/design-system';
 import { directionForLocale, type Direction } from '@learnexia/shared/i18n';
 import { Stack } from '@tamagui/core';
 import React, { useState } from 'react';
@@ -41,6 +43,12 @@ export interface TextFieldProps {
   /** Layout direction; pass `useDirection(locale)` result, or a locale string. */
   direction?: Direction;
   locale?: string;
+  /**
+   * Force the input VALUE to render left-to-right regardless of locale — for
+   * technical strings (email, phone, URLs) that must stay Latin + LTR per
+   * SKILL.md, even inside an RTL form. The label still follows `direction`.
+   */
+  forceLtr?: boolean;
 }
 
 /**
@@ -68,6 +76,7 @@ export function TextField({
   accessibilityLabel,
   direction,
   locale,
+  forceLtr = false,
 }: TextFieldProps) {
   const dir = resolveDirection(direction, locale);
   const [focused, setFocused] = useState(false);
@@ -76,6 +85,10 @@ export function TextField({
   const hasError = Boolean(error);
   const filled = value.length > 0;
 
+  // Email/phone/url values stay Latin + LTR even in an RTL form (SKILL.md).
+  const valueDir: Direction = forceLtr ? 'ltr' : dir;
+  const valueAlign = forceLtr ? 'left' : dir === 'rtl' ? 'right' : 'left';
+
   // Border / shadow per state (Design Spec §2.1 States table).
   const borderColor = hasError
     ? '$danger'
@@ -83,7 +96,7 @@ export function TextField({
       ? '$borderFocus'
       : filled
         ? '$borderStrong'
-        : '$border';
+        : '$borderInput';
 
   const glowColor = hasError
     ? 'rgba(239,68,68,0.20)'
@@ -100,7 +113,7 @@ export function TextField({
         fontFamily="$heading"
         textTransform="uppercase"
         letterSpacing={0.6}
-        textAlign="left"
+        textAlign={dir === 'rtl' ? 'right' : 'left'}
         writingDirection={dir}
       >
         {label}
@@ -108,7 +121,7 @@ export function TextField({
 
       <Stack
         position="relative"
-        height={52}
+        height={48}
         borderRadius={inputRadius}
         borderWidth={1}
         borderColor={borderColor}
@@ -124,7 +137,7 @@ export function TextField({
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor={colors.fg3}
           secureTextEntry={secureTextEntry && !revealed}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
@@ -134,13 +147,13 @@ export function TextField({
           onBlur={() => setFocused(false)}
           accessibilityLabel={accessibilityLabel ?? label}
           style={{
-            height: 52,
+            height: 48,
             paddingStart: 14,
             paddingEnd: secureTextEntry ? 48 : 14,
-            color: '#F8FAFC',
+            color: colors.fg1,
             fontSize: 15,
-            textAlign: dir === 'rtl' ? 'right' : 'left',
-            writingDirection: dir,
+            textAlign: valueAlign,
+            writingDirection: valueDir,
           }}
         />
 
@@ -175,7 +188,7 @@ export function TextField({
           accessibilityLiveRegion="polite"
           flexDirection={dir === 'rtl' ? 'row-reverse' : 'row'}
         >
-          <Text color="$danger" fontSize={12} fontFamily="$body" textAlign="left" writingDirection={dir}>
+          <Text color="$danger" fontSize={12} fontFamily="$body" textAlign={dir === 'rtl' ? 'right' : 'left'} writingDirection={dir}>
             {error}
           </Text>
         </XStack>
