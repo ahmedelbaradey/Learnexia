@@ -1518,6 +1518,15 @@
   <data name="AvatarRemovedSuccessfully" xml:space="preserve">
     <value>تم حذف الصورة الرمزية بنجاح.</value>
   </data>
+  <data name="ForgotPasswordGenericResponse" xml:space="preserve">
+    <value>في حال وجود حساب مرتبط بهذا البريد الإلكتروني، فقد تم إرسال رابط إعادة تعيين كلمة المرور.</value>
+  </data>
+  <data name="ResetPasswordInvalidLink" xml:space="preserve">
+    <value>رابط إعادة تعيين كلمة المرور غير صالح أو منتهي الصلاحية. يرجى طلب رابط جديد.</value>
+  </data>
+  <data name="ResetPasswordSuccessful" xml:space="preserve">
+    <value>تمت إعادة تعيين كلمة المرور بنجاح. يرجى تسجيل الدخول بكلمة المرور الجديدة.</value>
+  </data>
   <data name="GoogleIdTokenRequired" xml:space="preserve">
     <value>رمز تعريف Google مطلوب.</value>
   </data>
