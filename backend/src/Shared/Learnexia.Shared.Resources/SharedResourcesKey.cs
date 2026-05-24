@@ -704,6 +704,9 @@
         // Register consent (P1-12 BE-9): registration requires accepting the terms of service.
         public const string TermsConsentRequired = "TermsConsentRequired";
 
+        // Anti-automation CAPTCHA on register (P1-13 BE-4): token missing or failed server-side verification.
+        public const string CaptchaVerificationFailed = "CaptchaVerificationFailed";
+
         // Edit-Child family scope (P1-12 BE-8): parent may only edit a child in their own family.
         public const string CannotEditChildNotInFamily = "CannotEditChildNotInFamily";
 

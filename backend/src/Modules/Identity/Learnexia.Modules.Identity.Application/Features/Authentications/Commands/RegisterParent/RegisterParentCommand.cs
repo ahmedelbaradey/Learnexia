@@ -20,4 +20,9 @@ public record RegisterParentCommand : ICommand<BaseResponse<JwtAuthResponse>>
     // Terms-of-service consent (BE-9, COPPA audit). Must be true; the handler stamps
     // User.AcceptedTermsAtUtc = UtcNow when accepted (presence of that timestamp IS the consent).
     public bool AcceptedTerms { get; set; }
+
+    // Anti-automation CAPTCHA token (P1-13 BE-4). Optional on the contract: the handler verifies it
+    // via ICaptchaVerifier before creating the user. When Captcha:Enabled=false (the default) the
+    // verifier is a no-op pass-through, so this may be null/absent without affecting registration.
+    public string? CaptchaToken { get; set; }
 }

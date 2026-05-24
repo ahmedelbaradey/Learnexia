@@ -62,6 +62,19 @@ public static class DependencyInjection
         services.Configure<Application.Configurations.GoogleAuthSettings>(configuration.GetSection("GoogleAuth"));
         services.AddSingleton<IGoogleTokenValidator, Services.GoogleTokenValidator>();
 
+        // Anti-automation CAPTCHA on register (P1-13 BE-4). Bind the "Captcha" section (Enabled +
+        // SecretKey; the secret is supplied via Captcha__SecretKey env in real environments) and
+        // register the Turnstile verifier behind a typed HttpClient. Config-gated: when
+        // Captcha:Enabled=false (the committed default) VerifyAsync is a no-op that returns true,
+        // so dev/tests register with no token; when enabled it fails closed.
+        services.Configure<Application.Configurations.CaptchaSettings>(configuration.GetSection("Captcha"));
+        services.AddHttpClient<ICaptchaVerifier, Services.TurnstileCaptchaVerifier>();
+        // Fail fast on a misconfigured CAPTCHA: if it's enabled but no secret is supplied, every
+        // register would silently fail-closed. Reject at startup (mirrors GuardJwtSecret).
+        var captchaSettings = configuration.GetSection("Captcha").Get<Application.Configurations.CaptchaSettings>();
+        if (captchaSettings is { Enabled: true } && string.IsNullOrWhiteSpace(captchaSettings.SecretKey))
+            throw new InvalidOperationException("Captcha:Enabled is true but Captcha:SecretKey is not configured. Set Captcha__SecretKey (env) or disable Captcha.");
+
         // P1-04: family-scope resource authorization handler (consumed by P1-05). Scoped because it
         // injects the scoped IdentityModuleDbContext. Minimal single-line addition — see merge note.
         services.AddScoped<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, Authorization.FamilyScopeAuthorizationHandler>();
