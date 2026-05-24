@@ -23,32 +23,6 @@ namespace Learnexia.Modules.Identity.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Learnexia.Modules.Identity.Domain.Entities.ParentStudent", b =>
-                {
-                    b.Property<int>("ParentId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("StudentId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("now()")
-                        .HasComment("UTC timestamp when the parent-student link was created");
-
-                    b.Property<int?>("CreatedBy")
-                        .HasColumnType("integer")
-                        .HasComment("Id of the user who created the link (plain int, no FK constraint)");
-
-                    b.HasKey("ParentId", "StudentId");
-
-                    b.HasIndex("StudentId")
-                        .HasDatabaseName("IX_ParentStudents_StudentId");
-
-                    b.ToTable("ParentStudents", "identity");
-                });
-
             modelBuilder.Entity("Learnexia.Modules.Identity.Domain.Entities.Role", b =>
                 {
                     b.Property<int>("Id")
@@ -438,25 +412,6 @@ namespace Learnexia.Modules.Identity.Infrastructure.Migrations
                     b.ToTable("AspNetUserTokens", "identity");
                 });
 
-            modelBuilder.Entity("Learnexia.Modules.Identity.Domain.Entities.ParentStudent", b =>
-                {
-                    b.HasOne("Learnexia.Modules.Identity.Domain.Entities.User", "Parent")
-                        .WithMany("LinksAsParent")
-                        .HasForeignKey("ParentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Learnexia.Modules.Identity.Domain.Entities.User", "Student")
-                        .WithMany("LinksAsStudent")
-                        .HasForeignKey("StudentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Parent");
-
-                    b.Navigation("Student");
-                });
-
             modelBuilder.Entity("Learnexia.Modules.Identity.Domain.Entities.User", b =>
                 {
                     b.HasOne("Learnexia.Modules.Identity.Domain.Entities.User", "CreatedByUser")
@@ -541,13 +496,6 @@ namespace Learnexia.Modules.Identity.Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("Learnexia.Modules.Identity.Domain.Entities.User", b =>
-                {
-                    b.Navigation("LinksAsParent");
-
-                    b.Navigation("LinksAsStudent");
                 });
 #pragma warning restore 612, 618
         }

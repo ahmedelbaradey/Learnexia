@@ -54,7 +54,6 @@ public static class DependencyInjection
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<ISessionManagementService, SessionManagementService>();
         services.AddScoped<IIdentityServiceManager, IdentityServiceManager>();
-        services.AddScoped<ILinkParentStudentService, LinkParentStudentService>();
 
         // Google social sign-in (P1-12 BE-5). Bind the "GoogleAuth" section (ClientId is the OAuth
         // audience; supplied via GoogleAuth__ClientId env in real environments) and register the
@@ -75,9 +74,10 @@ public static class DependencyInjection
         if (captchaSettings is { Enabled: true } && string.IsNullOrWhiteSpace(captchaSettings.SecretKey))
             throw new InvalidOperationException("Captcha:Enabled is true but Captcha:SecretKey is not configured. Set Captcha__SecretKey (env) or disable Captcha.");
 
-        // P1-04: family-scope resource authorization handler (consumed by P1-05). Scoped because it
-        // injects the scoped IdentityModuleDbContext. Minimal single-line addition — see merge note.
-        services.AddScoped<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, Authorization.FamilyScopeAuthorizationHandler>();
+        // (P2-12) The P1-04 FamilyScope resource-authorization handler was removed: it read the
+        // ParentStudent link table that moved to the Parent module, and FamilyScopeRequirement was never
+        // wired into any policy/AuthorizeAsync call (dead code). Family-scope is enforced per handler in
+        // the Parent module via the link-row check.
 
         // Cross-module seams (stubs until the real adapters are provided)
         services.AddScoped<Learnexia.Shared.Contracts.Notifications.IUserNotificationService, Services.Stubs.NoOpUserNotificationService>();
@@ -86,6 +86,11 @@ public static class DependencyInjection
         // Identity-side implementation of the IUserLookup seam: lets Notifications (welcome-email)
         // and password-reset resolve a user's email by id. Real implementation, not a stub.
         services.AddScoped<Learnexia.Shared.Contracts.Identity.IUserLookup, Services.UserLookup>();
+
+        // Identity-side implementation of the IChildAccountService seam (P2-12): lets the Parent module
+        // create/read/update child User accounts without referencing Identity. Scoped — UserManager is
+        // scoped. Mirrors the IUserLookup registration pattern.
+        services.AddScoped<Learnexia.Shared.Contracts.Identity.IChildAccountService, Services.IdentityChildAccountService>();
 
         return services;
     }

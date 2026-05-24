@@ -1,9 +1,14 @@
 using Learnexia.Modules.Identity.Api.Bases;
 using Learnexia.Modules.Identity.Application.Features.Account.Commands.RemoveAvatar;
+using Learnexia.Modules.Identity.Application.Features.Account.Commands.SignOutOthers;
 using Learnexia.Modules.Identity.Application.Features.Account.Commands.UpdateMyProfile;
 using Learnexia.Modules.Identity.Application.Features.Account.Commands.UploadAvatar;
 using Learnexia.Modules.Identity.Application.Features.Account.Dtos;
+using Learnexia.Modules.Identity.Application.Features.Account.Queries.GetMyPlan;
+using Learnexia.Modules.Identity.Application.Features.Account.Queries.GetMySessions;
 using Learnexia.Modules.Identity.Application.Features.Account.Queries.GetMyProfile;
+using Learnexia.Modules.Identity.Application.Features.Users.Commands.ChangePassword;
+using Learnexia.Modules.Identity.Domain.Helpers;
 using Learnexia.Shared.Kernel.Responses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -54,4 +59,38 @@ public class AccountController : AppControllerBase
     [ProducesResponseType(typeof(BaseResponse<AvatarUploadResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> RemoveAvatar()
         => NewResult(await Mediator.Send(new RemoveAvatarCommand()));
+
+    // Changes the authenticated user's own password. After a successful change the handler invalidates
+    // all OTHER sessions and revokes the refresh-token cache (P2-12 SEC-1). Self only — UserId is
+    // resolved from the JWT inside the handler; any UserId in the body is ignored.
+    [Authorize]
+    [HttpPost("ChangePassword")]
+    [ProducesResponseType(typeof(BaseResponse<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(BaseResponse<string>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordCommand command)
+        => NewResult(await Mediator.Send(command));
+
+    // Returns the authenticated user's current active sessions (P2-12 SEC-2). Self-scoped.
+    [Authorize]
+    [HttpGet("Sessions")]
+    [ProducesResponseType(typeof(BaseResponse<List<SessionInfo>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMySessions()
+        => NewResult(await Mediator.Send(new GetMySessionsQuery()));
+
+    // Terminates all sessions for the authenticated user EXCEPT the current one (P2-12 SEC-2). The
+    // refresh token is NOT revoked — the caller stays logged in on the current device. Self-scoped.
+    [Authorize]
+    [HttpPost("Sessions/SignOutOthers")]
+    [ProducesResponseType(typeof(BaseResponse<string>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SignOutOthers()
+        => NewResult(await Mediator.Send(new SignOutOthersCommand()));
+
+    // Returns the authenticated user's current subscription plan (P2-12 PLAN). Stub returning Free tier;
+    // no DB hit. Self-scoped.
+    // TODO P2-12-PAYMENTS: replace stub with a real plan lookup once the payments module exists.
+    [Authorize]
+    [HttpGet("Plan")]
+    [ProducesResponseType(typeof(BaseResponse<CurrentPlanResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMyPlan()
+        => NewResult(await Mediator.Send(new GetMyPlanQuery()));
 }

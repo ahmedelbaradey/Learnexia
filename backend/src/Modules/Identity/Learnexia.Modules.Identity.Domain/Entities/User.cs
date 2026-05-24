@@ -48,7 +48,6 @@ public class User : IdentityUser<int>
 
     public virtual ICollection<Role> Roles { get; set; } = new List<Role>();
 
-    // Navigation properties for the parent↔student linkage (P1-04).
-    public virtual ICollection<ParentStudent> LinksAsParent { get; set; } = new List<ParentStudent>();
-    public virtual ICollection<ParentStudent> LinksAsStudent { get; set; } = new List<ParentStudent>();
+    // The parent↔student linkage (ParentStudent) moved to the Parent module (schema "parent") in P2-12.
+    // Identity no longer maps it; child account operations cross the IChildAccountService Shared.Contracts seam.
 }

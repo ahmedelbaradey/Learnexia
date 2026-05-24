@@ -1,6 +1,6 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-24 (Phase-1 backend leftover **DONE & merged**: P1-13a email, IUserLookup, P1-13 hardening, P1-12 BE-1..BE-9 incl. MinIO avatar + Google sign-in + password reset; only P1-13 BE-4 CAPTCHA remains).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-24 (Phase-1 backend leftover **DONE & merged**: P1-13a email, IUserLookup, P1-13 hardening, P1-12 BE-1..BE-9 incl. MinIO avatar + Google sign-in + password reset; only P1-13 BE-4 CAPTCHA remains; **P2-12** account-settings 3-module refactor committed on feat/P2-12-account-settings-apis, pending Wave-6 PR).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
 
 ## TL;DR
@@ -8,6 +8,30 @@
 - The Expo **student-app web** now boots, translates (ar/en), and talks to the backend end-to-end (register/login → 200 + JWT).
 - **P1-11** (parent web pages, pixel-perfect from `design-system/screenshots/`) is planned + two screens built: **Login** and **Register**.
 - All **new backend** the design implies is deferred to **P1-12 "Batch 2"** (Identity-scoped, parallel-safe with the Phase 2 BE lead) — see "For the backend lead".
+
+
+## P2-12 — Account settings (3-module refactor)
+> Committed on `feat/P2-12-account-settings-apis`; pending Wave-6 PR. Build green, 39/39 integration tests pass, security-auditor 2 High findings remediated.
+
+**Architecture:** the original Identity-only plan was restructured (lead decision) into **3 modules + a Shared.Contracts seam**:
+
+- **NEW `Parent` module** (schema `parent`) — owns ALL parent↔child family code: `AddChild`, `LinkChild`, `UpdateChild`, `ListMyChildren`, plus new `UnlinkChild`. Identity's `Family/` handlers, `FamilyScope` authz handler, `ParentController`, and `ParentStudents` entity are **fully removed** from Identity. Route base changed from `/api/Users/Parent/*` to **`/api/Parent/*`**.
+- **`Shared.Contracts` seams** — `IChildAccountService` (implemented in `Identity.Infrastructure`) is the ONLY cross-module bridge for child-account create/read/update (mirrors `IUserLookup`). `IParentChildQuery` (implemented in `Parent`) is the reverse seam so Identity `GetMe` can still return `HasChildren`.
+- **`Notifications` module** — gained `NotificationPreference` entity (schema `notifications`) + `GET /api/Notifications/Preferences` and `PUT /api/Notifications/Preferences`. Categories: `WeeklyReport`, `StreakAtRisk`, `ProductAnnouncement`, `Achievement` x `Email`/`Push`. First `GET` returns defaults (not persisted until first `PUT`).
+- **`Identity` module** — kept account-security endpoints: `POST /api/Users/Account/ChangePassword` (now invalidates OTHER sessions + revokes refresh token; rate-limited 5/15m), `GET /api/Users/Account/Sessions`, `POST /api/Users/Account/Sessions/SignOutOthers`, `GET /api/Users/Account/Plan` (STUB returning `{planName:"Free",status:"Active"}` — replace when payments module lands, **TODO P2-12-PAYMENTS**).
+
+**Migrations applied locally (3 total):**
+- `InitialParent` — creates `parent` schema + `ParentStudent` table in the Parent module.
+- `AddNotificationPreferences` — creates `notifications.NotificationPreferences` table.
+- `DropParentStudent` — drops `identity.ParentStudents` table from Identity.
+
+**Production follow-up:** `identity."ParentStudents"` rows are **NOT** copied to `parent."ParentStudent"` (dev rows are disposable; lead-accepted). A data-copy migration **must** be written before applying `DropParentStudent` to any environment with real link data.
+
+**Known gaps (non-blocking):**
+- `Notifications.Application` does not register `ValidationBehavior` per-module (masked by global registration — functionally OK).
+- MSB3277 EF version-conflict warning on `Parent.Api` / `Learning.Api` (track in `Directory.Packages.props` alignment).
+- `RequireHttpsMetadata` + MinIO default creds deferred to **P6-06**.
+
 
 ## ⚠️ Load-bearing config — do NOT "clean up"
 These exist because the WSL clean install drifts dependencies past the Expo SDK 52 pins. Removing them reintroduces a hard crash.

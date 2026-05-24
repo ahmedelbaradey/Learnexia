@@ -1,4 +1,5 @@
 using Learnexia.Modules.Identity.Application.Abstractions;
+using Learnexia.Shared.Contracts.Parent;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Abstractions.Storage;
 using Learnexia.Shared.Kernel.Storage;
@@ -15,6 +16,7 @@ public class GetMeQueryHandler : BaseResponseHandler, IQueryHandler<GetMeQuery, 
     private readonly IIdentityServiceManager _service;
     private readonly ICurrentUserService _currentUserService;
     private readonly IStorageService _storageService;
+    private readonly IParentChildQuery _parentChildQuery;
     private readonly MinIOConfiguration _config;
     private readonly IStringLocalizer<SharedResources> _localizer;
     private readonly ILoggerManager _logger;
@@ -23,6 +25,7 @@ public class GetMeQueryHandler : BaseResponseHandler, IQueryHandler<GetMeQuery, 
         IIdentityServiceManager service,
         ICurrentUserService currentUserService,
         IStorageService storageService,
+        IParentChildQuery parentChildQuery,
         IOptions<MinIOConfiguration> config,
         IStringLocalizer<SharedResources> localizer,
         ILoggerManager logger)
@@ -30,6 +33,7 @@ public class GetMeQueryHandler : BaseResponseHandler, IQueryHandler<GetMeQuery, 
         _service = service;
         _currentUserService = currentUserService;
         _storageService = storageService;
+        _parentChildQuery = parentChildQuery;
         _config = config.Value;
         _localizer = localizer;
         _logger = logger;
@@ -53,7 +57,9 @@ public class GetMeQueryHandler : BaseResponseHandler, IQueryHandler<GetMeQuery, 
             var roles = await _service.UserManagmentService.GetUserRolesAsync(user);
 
             // HasChildren is scoped strictly to this parent's id (no IDOR; non-parents simply have no rows).
-            var hasChildren = await _service.LinkParentStudentService.ParentHasAnyChildAsync(user.Id, cancellationToken);
+            // The ParentStudent link table moved to the Parent module in P2-12; read it via the
+            // IParentChildQuery Shared.Contracts seam so Identity does not reference the Parent module.
+            var hasChildren = await _parentChildQuery.ParentHasAnyChildAsync(user.Id, cancellationToken);
 
             var response = new MeResponse
             {

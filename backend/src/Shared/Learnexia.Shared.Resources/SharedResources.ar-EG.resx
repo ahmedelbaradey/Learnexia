@@ -1500,6 +1500,9 @@
   <data name="CaptchaVerificationFailed" xml:space="preserve">
     <value>فشل التحقق من اختبار CAPTCHA. يرجى المحاولة مرة أخرى.</value>
   </data>
+  <data name="CannotUnlinkLastParent" xml:space="preserve">
+    <value>لا يمكن إزالة ولي الأمر الوحيد المرتبط بهذا الطفل. يرجى ربط ولي أمر آخر أولاً.</value>
+  </data>
   <data name="CannotEditChildNotInFamily" xml:space="preserve">
     <value>غير مسموح لك بتعديل بيانات هذا الطفل.</value>
   </data>
@@ -1538,5 +1541,26 @@
   </data>
   <data name="GoogleEmailNotVerified" xml:space="preserve">
     <value>يجب أن يكون بريدك الإلكتروني في Google موثّقًا لتسجيل الدخول.</value>
+  </data>
+  <data name="NotificationPreferencesUpdatedSuccessfully" xml:space="preserve">
+    <value>تم تحديث تفضيلات الإشعارات بنجاح.</value>
+  </data>
+  <data name="OtherSessionsSignedOutSuccessfully" xml:space="preserve">
+    <value>تم تسجيل الخروج من جميع الجلسات الأخرى بنجاح.</value>
+  </data>
+  <data name="NotificationPreferencesRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد تفضيلات الإشعارات بنجاح.</value>
+  </data>
+  <data name="NotificationPreferenceInvalidCategory" xml:space="preserve">
+    <value>فئة إشعار واحدة أو أكثر غير صالحة.</value>
+  </data>
+  <data name="NotificationPreferenceDuplicateCategory" xml:space="preserve">
+    <value>لا يُسمح بتكرار فئات الإشعارات.</value>
+  </data>
+  <data name="SessionsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد الجلسات بنجاح.</value>
+  </data>
+  <data name="PlanRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد الخطة بنجاح.</value>
   </data>
 </root>

@@ -5,6 +5,7 @@ using Learnexia.Modules.Identity.Infrastructure.Persistence;
 using Learnexia.Modules.Identity.Infrastructure.Persistence.Seed;
 using Learnexia.Modules.Learning.Infrastructure.Persistence;
 using Learnexia.Modules.Notifications.Infrastructure.Persistence;
+using Learnexia.Modules.Parent.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
 using AspNetCoreRateLimit;
 using Microsoft.AspNetCore.Hosting;
@@ -52,6 +53,7 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
             ReplaceDbContext<CatalogDbContext>(services, connectionString, "catalog");
             ReplaceDbContext<NotificationsDbContext>(services, connectionString, "notifications");
             ReplaceDbContext<LearningDbContext>(services, connectionString, "learning");
+            ReplaceDbContext<ParentDbContext>(services, connectionString, "parent");
 
             // Testing-host only: neutralise the IP rate limiter so the combined integration suite
             // (~250+ requests in well under a minute) never trips the production 200 req/min cap and
@@ -97,6 +99,10 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
         // Learning: InitialLearning migration creates the learning schema/tables.
         var learningDb = sp.GetRequiredService<LearningDbContext>();
         await learningDb.Database.MigrateAsync();
+
+        // Parent: InitialParent migration creates the parent schema/tables (P2-12).
+        var parentDb = sp.GetRequiredService<ParentDbContext>();
+        await parentDb.Database.MigrateAsync();
 
         // Seed roles + superadmin (idempotent).
         await IdentityModule.SeedAsync(sp);
