@@ -9,7 +9,9 @@
  * info banner · the RegisterForm (full name, country, email, password, Terms,
  * Continue → Add Children). RTL-aware; all copy via i18n.
  */
+import { gradientStops } from '@learnexia/design-system';
 import { type Direction } from '@learnexia/shared';
+import { GradientBox } from '@learnexia/ui';
 import { Stack, Text } from '@tamagui/core';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -40,8 +42,8 @@ export default function RegisterScreen() {
       }
     >
       <Stack gap="$6">
-        {/* Logo + wordmark */}
-        <Stack flexDirection={rowDir} alignItems="center" gap="$3">
+        {/* Logo + wordmark — always LTR mark→wordmark order (brand mark not mirrored). */}
+        <Stack flexDirection="row" alignItems="center" gap="$3">
           <Stack
             width={40}
             height={40}
@@ -54,38 +56,46 @@ export default function RegisterScreen() {
               ✦
             </Text>
           </Stack>
-          <Text color="$fg1" fontSize={22} fontWeight="800" fontFamily="$heading" writingDirection={direction}>
+          <Text color="$fg1" fontSize={22} fontWeight="900" fontFamily="$heading" writingDirection="ltr">
             {t('common.appName')}
           </Text>
         </Stack>
 
-        {/* Step eyebrow + progress bar (~50% = step 1 of 2) */}
-        <Stack gap="$2">
+        {/* Step eyebrow + progress bar on ONE row (eyebrow left, bar flex:1). */}
+        <Stack flexDirection={rowDir} alignItems="center" gap="$3">
           <Text
-            color="$primary"
+            color="$primaryLight"
             fontSize={12}
-            fontWeight="700"
+            fontWeight="800"
             fontFamily="$heading"
-            textTransform="uppercase"
-            letterSpacing={1.5}
+            textTransform={direction === 'rtl' ? 'none' : 'uppercase'}
+            letterSpacing={1.44}
             textAlign={align}
             writingDirection={direction}
           >
             {t('auth.register.step')}
           </Text>
           <Stack
-            height={6}
+            flex={1}
+            height={4}
             borderRadius="$pill"
             backgroundColor="$card"
             overflow="hidden"
-            flexDirection={rowDir}
+            // Progress fills L→R universally; keep the bar LTR even in RTL (SKILL.md).
+            flexDirection="row"
             accessibilityRole="progressbar"
             accessible
             accessibilityValue={{ min: 1, max: 2, now: 1 }}
             accessibilityLabel={t('auth.register.progressA11y')}
             aria-label={t('auth.register.progressA11y')}
           >
-            <Stack width="50%" height={6} borderRadius="$pill" backgroundColor="$primary" />
+            <GradientBox
+              width="50%"
+              height={4}
+              borderRadius="$pill"
+              stops={gradientStops.gradLevelup.colors}
+              angle={90}
+            />
           </Stack>
         </Stack>
 
@@ -131,15 +141,15 @@ function ParentOnlyBanner({ direction }: { direction: Direction }) {
       padding="$4"
       borderRadius="$card"
       borderWidth={1}
-      borderColor="$primary"
-      backgroundColor="$primarySoft"
+      borderColor="rgba(168,85,247,0.3)"
+      backgroundColor="$purpleSoft"
     >
       <Text fontSize={22} accessibilityElementsHidden>
         👨‍👩‍👧
       </Text>
       <Stack flex={1} gap="$1">
         <Text
-          color="$primaryLight"
+          color="$purple"
           fontSize={13}
           fontWeight="700"
           fontFamily="$heading"

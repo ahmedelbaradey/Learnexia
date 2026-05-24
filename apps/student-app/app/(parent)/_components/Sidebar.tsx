@@ -48,7 +48,7 @@ interface NavDef {
 }
 
 const NAV: readonly NavDef[] = [
-  { key: NAV_ITEM.MyChildren, icon: '👧', route: '/(parent)/children' },
+  { key: NAV_ITEM.MyChildren, icon: '👨‍👩‍👦', route: '/(parent)/children' },
   { key: NAV_ITEM.Overview, icon: '📊', route: '/(parent)/overview' },
   { key: NAV_ITEM.Reports, icon: '📝', route: '/(parent)/reports' },
   // TODO(P2+): wire activity/subjects to their own routes.
@@ -82,17 +82,17 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
       flexDirection="column"
       width={240}
       height="100%"
-      backgroundColor="$bgElevated"
+      backgroundColor="$bg"
       borderEndWidth={1}
-      borderEndColor="$border"
+      borderEndColor="$borderSubtle"
       paddingHorizontal="$4"
       paddingVertical="$6"
       gap="$6"
     >
-      {/* Brand */}
+      {/* Brand — "Learnexia" stays Latin + LTR in every locale (SKILL.md). */}
       <Stack flexDirection={rowDir} alignItems="center" gap="$2" paddingHorizontal="$2">
-        <Image source={assets.logoMark} style={{ width: 32, height: 32, resizeMode: 'contain' }} accessibilityElementsHidden />
-        <Text color="$fg1" fontSize={20} fontWeight="800" fontFamily="$heading">
+        <Image source={assets.logoMark} style={{ width: 36, height: 36, resizeMode: 'contain' }} accessibilityElementsHidden />
+        <Text color="$fg1" fontSize={18} fontWeight="800" fontFamily="$heading" writingDirection="ltr">
           {t('common.appName')}
         </Text>
       </Stack>
@@ -100,13 +100,13 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
       {/* Child-selector card */}
       {activeChild ? (
         <Stack
-          borderRadius="$card"
+          borderRadius="$cardInner"
           backgroundColor="$card"
           borderWidth={1}
-          borderColor="$borderStrong"
-          padding="$3"
+          borderColor="$border"
+          padding={10}
           cursor="pointer"
-          pressStyle={{ scale: 0.98 }}
+          pressStyle={{ scale: 0.95 }}
           onPress={() => router.push('/(parent)/children')}
           accessibilityRole="button"
           accessible
@@ -116,15 +116,15 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
           <Stack flexDirection={rowDir} alignItems="center" gap="$3">
             <Avatar name={activeChild.fullName} size="sm" />
             <Stack flexDirection="column" flex={1}>
-              <Text color="$fg1" fontSize={15} fontWeight="700" fontFamily="$heading" writingDirection={direction}>
+              <Text color="$fg1" fontSize={13} fontWeight="700" fontFamily="$heading" writingDirection={direction}>
                 {activeChild.fullName}
               </Text>
-              <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction}>
+              <Text color="$fg3" fontSize={11} fontFamily="$body" writingDirection={direction}>
                 {t('parent.childSelector.meta', { grade: activeChild.grade, level: activeChild.level })}
               </Text>
             </Stack>
-            <Text color="$fg3" fontSize={16} accessibilityElementsHidden scaleX={isRtl ? -1 : 1}>
-              {'›'}
+            <Text color="$fg3" fontSize={16} accessibilityElementsHidden>
+              {isRtl ? '‹' : '›'}
             </Text>
           </Stack>
         </Stack>
@@ -141,15 +141,15 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
               flexDirection={rowDir}
               alignItems="center"
               gap="$3"
-              minHeight={48}
-              paddingHorizontal="$3"
-              borderRadius="$button"
+              minHeight={40}
+              paddingVertical={10}
+              paddingHorizontal={12}
+              hitSlop={{ top: 4, bottom: 4 }}
+              borderRadius="$nav"
               backgroundColor={isActive ? '$primarySoft' : 'transparent'}
-              borderStartWidth={isActive ? 3 : 0}
-              borderStartColor={isActive ? '$primary' : 'transparent'}
-              hoverStyle={{ backgroundColor: isActive ? '$primarySoft' : '$card' }}
+              hoverStyle={{ backgroundColor: isActive ? '$primarySoft' : '$cardSoft' }}
               cursor="pointer"
-              pressStyle={{ scale: 0.98 }}
+              pressStyle={{ scale: 0.95 }}
               onPress={() => router.push(item.route)}
               accessibilityRole="menuitem"
               accessible
@@ -162,9 +162,9 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
               </Text>
               <Text
                 flex={1}
-                color={isActive ? '$fg1' : '$fg2'}
-                fontSize={15}
-                fontWeight={isActive ? '700' : '500'}
+                color={isActive ? '$primaryLight' : '$fg3'}
+                fontSize={14}
+                fontWeight={isActive ? '700' : '600'}
                 fontFamily="$heading"
                 writingDirection={direction}
               >
@@ -199,30 +199,30 @@ function SidebarXpWidget({ direction }: { direction: Direction }) {
   return (
     <Stack
       marginTop="auto"
-      borderRadius="$card"
+      borderRadius="$button"
       backgroundColor="$card"
       borderWidth={1}
       borderColor="$border"
-      padding="$4"
+      padding={14}
       gap="$1"
       accessible
       accessibilityLabel={`${t('parent.nav.xpWidget.eyebrow')} ${t('parent.nav.xpWidget.value', { xp: STUB_XP })} ${t('parent.nav.xpWidget.delta', { percent: STUB_DELTA_PERCENT })}`}
     >
       <Text
         color="$xp"
-        fontSize={10}
+        fontSize={11}
         fontWeight="800"
         fontFamily="$heading"
         textTransform="uppercase"
-        letterSpacing={1}
+        letterSpacing={0.8}
         writingDirection={direction}
       >
         {t('parent.nav.xpWidget.eyebrow')}
       </Text>
-      <Text color="$fg1" fontSize={24} fontWeight="800" fontFamily="$heading" writingDirection={direction}>
+      <Text color="$fg1" fontSize={20} fontWeight="800" fontFamily="$heading" writingDirection={direction}>
         {t('parent.nav.xpWidget.value', { xp: STUB_XP })}
       </Text>
-      <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction}>
+      <Text color="$fg3" fontSize={11} fontFamily="$body" writingDirection={direction}>
         {t('parent.nav.xpWidget.delta', { percent: STUB_DELTA_PERCENT })}
       </Text>
     </Stack>

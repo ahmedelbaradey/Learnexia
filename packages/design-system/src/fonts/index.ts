@@ -29,6 +29,8 @@ const sizeScale = {
   5: fontSize[5],
   6: fontSize[6],
   7: fontSize[7],
+  // Splash wordmark step (36px) — align-splash M1. Lives between h1 (7) and display (8).
+  wordmark: fontSize.wordmark,
   8: fontSize[8],
   true: fontSize[4],
 } as const;
@@ -40,7 +42,10 @@ const lineHeightScale = {
   4: 24,
   5: 27,
   6: 32,
-  7: 40,
+  // H1 (32px) at --lx-lh-tight 1.15 = 36.8 ≈ 37 (was 40) — align-login GAP-A.
+  7: 37,
+  // wordmark (36px) at 1.15 ≈ 41.
+  wordmark: 41,
   8: 58,
   true: 24,
 } as const;
@@ -59,6 +64,8 @@ const letterSpacingScale = {
   4: 0,
   6: -0.02 * 24,
   7: -0.02 * 32,
+  // wordmark (36px) at --lx-tracking-tight -0.02em = -0.72.
+  wordmark: -0.02 * 36,
   8: -0.02 * 48,
   true: 0,
 } as const;

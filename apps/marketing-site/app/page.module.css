@@ -1,5 +1,5 @@
-/* Landing page layout — pixel-perfect to 01-landing.png. All colour/type/
-   radius/spacing values resolve to the design-system --lx-* tokens. */
+/* Landing page layout — pixel-aligned to 01-landing.png + preview cards.
+   All colour/type/radius/spacing values resolve to design-system --lx-* tokens. */
 
 .root {
   min-height: 100vh;
@@ -9,18 +9,21 @@
 }
 
 /* ------------------------------- Top nav ------------------------------- */
+/* Frosted glass nav (B-1) — web-nav.html. */
 .nav {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: var(--lx-bg);
-  border-bottom: 1px solid var(--lx-border);
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--lx-border-soft);
 }
 
 .navInner {
-  max-width: 1180px;
+  max-width: none;
   margin: 0 auto;
-  padding: var(--lx-space-4) var(--lx-space-6);
+  padding: 18px var(--lx-space-12);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -37,13 +40,17 @@
   display: flex;
   align-items: center;
   gap: var(--lx-space-8);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--lx-fg1);
+  color: var(--lx-fg2);
+}
+
+.navLinks a {
+  transition: color var(--lx-dur-fast) var(--lx-ease-out);
 }
 
 .navLinks a:hover {
-  color: var(--lx-fg2);
+  color: var(--lx-fg1);
 }
 
 .navActions {
@@ -53,34 +60,39 @@
   flex-shrink: 0;
 }
 
+/* "Log in" ghost button (B-2, M-3) — outlined pill, 36px high. */
 .btnOutline {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 10px var(--lx-space-5);
+  height: 36px;
+  padding: 0 14px;
   border-radius: var(--lx-radius-button);
-  border: none;
+  border: 1px solid var(--lx-border-strong);
   background: transparent;
-  color: var(--lx-fg1);
+  color: var(--lx-fg2);
   font-weight: 600;
-  font-size: 15px;
-  transition: color var(--lx-dur-fast) var(--lx-ease-out);
+  font-size: 13px;
+  transition: color var(--lx-dur-fast) var(--lx-ease-out),
+    border-color var(--lx-dur-fast) var(--lx-ease-out);
 }
 
 .btnOutline:hover {
-  color: var(--lx-fg3);
+  color: var(--lx-fg1);
+  border-color: var(--lx-fg2);
 }
 
 .btnPrimary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 10px var(--lx-space-5);
+  height: 36px;
+  padding: 0 14px;
   border-radius: var(--lx-radius-button);
   background: var(--lx-primary);
   color: var(--lx-fg1);
   font-weight: 700;
-  font-size: 15px;
+  font-size: 13px;
   box-shadow: var(--lx-shadow-primary-glow);
   transition: background var(--lx-dur-fast) var(--lx-ease-out);
 }
@@ -92,30 +104,25 @@
 /* -------------------------------- Hero --------------------------------- */
 .hero {
   position: relative;
-  max-width: 1180px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: var(--lx-space-16) var(--lx-space-6);
+  padding: 72px var(--lx-space-12) 96px;
   display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
+  grid-template-columns: 1.1fr 1fr;
   align-items: center;
   gap: var(--lx-space-12);
   overflow: hidden;
 }
 
-/* Soft radial glow behind the hero copy (matches the capture). */
+/* Purple radial glow behind the hero copy (B-4) — LTR origin. */
 .heroGlow {
   position: absolute;
-  top: -120px;
-  inset-inline-start: -80px;
-  width: 620px;
-  height: 620px;
+  top: -80px;
+  left: -80px;
+  width: 480px;
+  height: 480px;
   border-radius: var(--lx-radius-pill);
-  background: radial-gradient(
-    circle,
-    var(--lx-primary-soft) 0%,
-    rgba(168, 85, 247, 0.06) 45%,
-    transparent 70%
-  );
+  background: radial-gradient(circle, var(--lx-purple-glow) 0%, transparent 65%);
   pointer-events: none;
 }
 
@@ -125,42 +132,46 @@
   max-width: 560px;
 }
 
+/* Purple-tinted "✨ POWERED BY AI" pill (M-4, M-5). */
 .pill {
   display: inline-flex;
   align-items: center;
   gap: var(--lx-space-2);
   padding: 6px var(--lx-space-3);
   border-radius: var(--lx-radius-pill);
-  border: 1px solid var(--lx-border-strong);
-  background: var(--lx-primary-soft);
-  color: var(--lx-primary-hover);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  background: var(--lx-purple-soft);
+  color: var(--lx-purple);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.08em;
 }
 
-.pillSpark {
-  color: var(--lx-purple);
-}
-
+/* Display headline (B-3, M-6, m-10). */
 .headline {
   margin: var(--lx-space-6) 0 0;
   font-family: var(--lx-font-display);
-  font-size: clamp(40px, 5.2vw, 68px);
+  font-size: clamp(48px, 5.5vw, 68px);
   font-weight: 800;
   line-height: 1.05;
   letter-spacing: -0.02em;
   color: var(--lx-fg1);
+  word-break: keep-all;
 }
 
+/* Yellow→orange gradient text on "adventure game" (B-3). */
 .headlineAccent {
-  color: var(--lx-accent);
+  background: linear-gradient(90deg, var(--lx-xp), var(--lx-streak));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
 .paragraph {
   margin: var(--lx-space-6) 0 0;
   max-width: 520px;
-  font-size: 19px;
+  font-size: 18px;
   line-height: 1.55;
   color: var(--lx-fg2);
 }
@@ -189,11 +200,17 @@
   font-weight: 700;
   font-size: 17px;
   box-shadow: var(--lx-shadow-primary-glow);
-  transition: background var(--lx-dur-fast) var(--lx-ease-out);
+  transition: background var(--lx-dur-fast) var(--lx-ease-out),
+    transform var(--lx-dur-fast) var(--lx-ease-out);
 }
 
 .ctaPrimary:hover {
   background: var(--lx-primary-hover);
+}
+
+.ctaPrimary:active {
+  transform: scale(0.95);
+  transition-duration: 80ms;
 }
 
 .ctaSecondary {
@@ -207,16 +224,13 @@
   color: var(--lx-fg1);
   font-weight: 600;
   font-size: 17px;
-  transition: border-color var(--lx-dur-fast) var(--lx-ease-out);
+  transition: border-color var(--lx-dur-fast) var(--lx-ease-out),
+    background var(--lx-dur-fast) var(--lx-ease-out);
 }
 
 .ctaSecondary:hover {
-  border-color: var(--lx-fg3);
-}
-
-.playIcon {
-  font-size: 12px;
-  color: var(--lx-fg1);
+  border-color: var(--lx-fg2);
+  background: var(--lx-card-soft);
 }
 
 .trustRow {
@@ -225,7 +239,7 @@
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--lx-space-6);
+  gap: 28px;
   font-size: 14px;
   font-weight: 600;
   color: var(--lx-fg2);
@@ -237,10 +251,6 @@
   gap: var(--lx-space-2);
 }
 
-.trustIcon {
-  font-size: 15px;
-}
-
 /* ------------------------------ Hero art ------------------------------- */
 .heroArt {
   position: relative;
@@ -250,48 +260,38 @@
   justify-content: center;
 }
 
-/* ----------------------- Below-the-fold sections ----------------------- */
-.section {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: var(--lx-space-12) var(--lx-space-6);
-  border-top: 1px solid var(--lx-border);
-}
-
-.sectionTitle {
-  margin: 0 0 var(--lx-space-4);
-  font-family: var(--lx-font-display);
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--lx-fg1);
-}
-
-.sectionBody {
-  margin: 0 0 var(--lx-space-6);
-  font-size: 17px;
-  line-height: 1.6;
-  color: var(--lx-fg2);
-}
-
-.footer {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: var(--lx-space-8) var(--lx-space-6) var(--lx-space-12);
-  border-top: 1px solid var(--lx-border);
-  color: var(--lx-fg3);
-  font-size: 14px;
-}
-
 /* ------------------------------ Responsive ----------------------------- */
 @media (max-width: 900px) {
   .hero {
     grid-template-columns: 1fr;
-    padding-top: var(--lx-space-12);
+    padding: var(--lx-space-12) var(--lx-space-8) 72px;
   }
   .heroArt {
     order: -1;
   }
   .navLinks {
     display: none;
+  }
+  .navInner {
+    padding: 18px var(--lx-space-8);
+  }
+}
+
+@media (max-width: 600px) {
+  .hero {
+    padding: var(--lx-space-10) var(--lx-space-6) 56px;
+  }
+  .navInner {
+    padding: 16px var(--lx-space-6);
+  }
+  .btnOutline {
+    display: none;
+  }
+  .ctaRow {
+    flex-direction: column;
+  }
+  .ctaPrimary,
+  .ctaSecondary {
+    width: 100%;
   }
 }

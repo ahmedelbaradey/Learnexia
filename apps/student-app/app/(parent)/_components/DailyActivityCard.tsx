@@ -9,7 +9,6 @@
  *
  * "Export CSV" is a no-op stub (Phase 5 — analytics). RTL + ar/en; tokens only.
  */
-import { Button } from '@learnexia/ui';
 import { Stack, Text } from '@tamagui/core';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -22,7 +21,7 @@ export interface DailyActivityCardProps {
 }
 
 /** Matches the chart-area height in the capture so the card keeps its size. */
-const CHART_AREA_HEIGHT = 260;
+const CHART_AREA_HEIGHT = 200;
 
 export function DailyActivityCard({ direction, rowDir }: DailyActivityCardProps) {
   const { t } = useTranslation();
@@ -33,7 +32,7 @@ export function DailyActivityCard({ direction, rowDir }: DailyActivityCardProps)
       backgroundColor="$card"
       borderWidth={1}
       borderColor="$border"
-      padding="$6"
+      padding={22}
       gap="$5"
       height="100%"
     >
@@ -54,17 +53,39 @@ export function DailyActivityCard({ direction, rowDir }: DailyActivityCardProps)
             {t('parent.overview.dailyActivity.subtitle')}
           </Text>
         </Stack>
-        {/* Export CSV — Phase-5 stub (no-op until analytics ship). */}
-        <Button
-          variant="secondary"
-          size="sm"
-          accessibilityLabel={t('parent.overview.dailyActivity.exportCsv')}
+        {/* Export CSV — card-level ghost pill (B-18): transparent + thin border,
+            radius 9999, $primaryLight label. Phase-5 stub (no-op for now). */}
+        <Stack
+          minHeight={36}
+          paddingHorizontal="$4"
+          alignItems="center"
+          justifyContent="center"
+          borderRadius={9999}
+          borderWidth={1}
+          borderColor="$borderStrong"
+          backgroundColor="transparent"
+          cursor="pointer"
+          hoverStyle={{ backgroundColor: '$cardSoft' }}
+          pressStyle={{ scale: 0.98 }}
           onPress={() => {
             /* TODO(P5-05): export the daily-activity series to CSV. */
           }}
+          accessibilityRole="button"
+          accessible
+          accessibilityLabel={t('parent.overview.dailyActivity.exportCsv')}
+          aria-label={t('parent.overview.dailyActivity.exportCsv')}
         >
-          {t('parent.overview.dailyActivity.exportCsv')}
-        </Button>
+          {/* "CSV" stays Latin; rendered LTR within the localized label. */}
+          <Text
+            color="$primaryLight"
+            fontSize={14}
+            fontWeight="700"
+            fontFamily="$heading"
+            writingDirection={direction}
+          >
+            {t('parent.overview.dailyActivity.exportCsv')}
+          </Text>
+        </Stack>
       </Stack>
 
       {/* TODO(P5-05-FE): daily-activity bar chart — deferred to Phase 5.
@@ -75,7 +96,6 @@ export function DailyActivityCard({ direction, rowDir }: DailyActivityCardProps)
         backgroundColor="$bg"
         borderWidth={1}
         borderColor="$border"
-        borderStyle="dashed"
         alignItems="center"
         justifyContent="center"
         accessible

@@ -1,19 +1,23 @@
 /**
  * ChildDashboardCard — the rich per-child card in the parent dashboard grid
- * (capture `web/04-my-children.png`). Header row (avatar, name, grade pill,
- * language, active/inactive status dot), a 3-tile stat row (Level / XP / Streak),
- * a mastery bar, the weakest-topic line, and a "View dashboard →" action that
- * routes to that child's overview.
+ * (captures `web/04-my-children.png` + `web-ar/04`). Header row (avatar, name,
+ * grade pill, language, active/inactive status dot), a 3-tile stat row
+ * (Level / XP / Streak), a mastery bar, the weakest-topic line, and a
+ * "View dashboard →" action that routes to that child's overview.
  *
  * Real child identity comes from `useMyChildren` (P1-04); the stats are Phase-5
- * stubs (`ChildStatsStub`, TODO(P5)). Built from existing primitives + the new
- * Avatar / KPIStatCard / MasteryBar — no new design pattern.
+ * stubs (`ChildStatsStub`, TODO(P5)). Built from existing primitives — no new
+ * design pattern.
  *
- * RTL: rows reverse, text uses logical direction, the action arrow mirrors.
- * i18n: every label is a translation key.
+ * RTL: rows reverse, text uses logical direction. The mastery bar (SKILL rule 6)
+ * stays LTR; its percent uses the Arabic percent sign `٪` + Eastern-Arabic
+ * numerals in AR, wrapped in a dir=ltr span so bidi doesn't reorder it (C-36).
+ * The "View dashboard" arrow lives in the i18n copy (EN →, AR ←) — never
+ * mirrored programmatically. i18n: every label is a translation key.
  */
-import { Avatar, KPIStatCard, MasteryBar } from '@learnexia/ui';
-import { Stack, Text } from '@tamagui/core';
+import { gradientStops } from '@learnexia/design-system';
+import { Avatar, GradientBox, KPIStatCard } from '@learnexia/ui';
+import { Stack, Text, type StackProps } from '@tamagui/core';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -28,6 +32,17 @@ export interface ChildDashboardCardProps {
 
 function formatNumber(value: number, locale: string): string {
   return new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US').format(value);
+}
+
+/**
+ * Mastery percent readout (DEFERRED FORMATTER — C-36). EN: "72%" (Latin digit +
+ * Latin %). AR: "٧٢٪" — Eastern-Arabic digit + Arabic percent sign U+066A. Both
+ * are rendered inside a dir=ltr span so the RTL bidi algorithm doesn't flip the
+ * digit/sign order.
+ */
+function formatPercent(value: number, locale: string): string {
+  const digits = formatNumber(value, locale);
+  return locale === 'ar' ? `${digits}٪` : `${digits}%`;
 }
 
 export function ChildDashboardCard({
@@ -46,25 +61,45 @@ export function ChildDashboardCard({
   const weakestLabel = t(`parent.myChildren.topics.${stats.weakestTopicKey}`);
   const xpValue = formatNumber(stats.xp, locale);
 
+  // Level KPI value differs by locale (C-27/C-28): EN "Lv 12", AR "المستوى ١٢".
+  const levelValue = `${t('parent.myChildren.statLevelShort')} ${formatNumber(stats.level, locale)}`;
+  // Streak KPI value (C-29/C-30): EN "7d", AR "٧ أيام".
+  const streakValue = t('parent.myChildren.statStreakValue', {
+    n: formatNumber(stats.streakDays, locale),
+  });
+
+  const masteryPct = Math.max(0, Math.min(100, stats.masteryPercent));
+  const masteryReadout = formatPercent(masteryPct, locale);
+
   return (
     <Stack
       flexDirection="column"
-      gap="$4"
+      gap={18}
       flex={1}
       minWidth={300}
-      minHeight={300}
-      borderRadius="$card"
+      borderRadius="$modal"
       borderWidth={1}
-      borderColor="$border"
+      borderColor="rgba(255,255,255,0.06)"
       backgroundColor="$card"
-      padding="$5"
+      padding={22}
+      // Soft drop-shadow (C-5) + hover lift (C-6).
+      shadowColor="#000"
+      shadowOpacity={0.15}
+      shadowRadius={12}
+      shadowOffset={{ width: 0, height: 4 }}
+      hoverStyle={{
+        scale: 1.02,
+        shadowOpacity: 0.25,
+        shadowRadius: 24,
+        shadowOffset: { width: 0, height: 8 },
+      }}
     >
       {/* Header */}
       <Stack flexDirection={rowDir} alignItems="flex-start" gap="$3">
         <Avatar name={fullName} size="lg" />
         <Stack flexDirection="column" flex={1} gap="$2">
           <Stack flexDirection={rowDir} alignItems="center" gap="$3" flexWrap="wrap">
-            <Text color="$fg1" fontSize={20} fontWeight="800" fontFamily="$heading" writingDirection={direction}>
+            <Text color="$fg1" fontSize={22} fontWeight="900" fontFamily="$heading" writingDirection={direction}>
               {fullName}
             </Text>
             {/* Active/inactive status */}
@@ -74,6 +109,14 @@ export function ChildDashboardCard({
                 height={8}
                 borderRadius={9999}
                 backgroundColor={stats.activeToday ? '$success' : '$fg4'}
+                {...(stats.activeToday
+                  ? {
+                      shadowColor: '#22C55E',
+                      shadowOpacity: 0.6,
+                      shadowRadius: 6,
+                      shadowOffset: { width: 0, height: 0 },
+                    }
+                  : null)}
                 accessibilityElementsHidden
               />
               <Text color={stats.activeToday ? '$success' : '$fg3'} fontSize={12} fontWeight="600" fontFamily="$body">
@@ -94,7 +137,13 @@ export function ChildDashboardCard({
                 {t(`onboarding.grade.${stats.grade}`)}
               </Text>
             </Stack>
-            <Text color="$fg3" fontSize={13} fontFamily="$body" writingDirection={direction}>
+            {/* Flag + language label kept LTR so the flag glyph stays leading. */}
+            <Text
+              color="$fg3"
+              fontSize={13}
+              fontFamily="$body"
+              writingDirection="ltr"
+            >
               {langLabel}
             </Text>
           </Stack>
@@ -105,11 +154,11 @@ export function ChildDashboardCard({
       <Stack flexDirection={rowDir} gap="$3">
         <KPIStatCard
           icon="🧠"
-          value={`${t('parent.myChildren.statLevelShort')} ${stats.level}`}
+          value={levelValue}
           label={t('parent.myChildren.statLevel')}
           accent="$primaryLight"
           direction={direction}
-          accessibilityLabel={`${t('parent.myChildren.statLevel')} ${stats.level}`}
+          accessibilityLabel={`${t('parent.myChildren.statLevel')} ${formatNumber(stats.level, locale)}`}
         />
         <KPIStatCard
           icon="⭐"
@@ -121,25 +170,69 @@ export function ChildDashboardCard({
         />
         <KPIStatCard
           icon="🔥"
-          value={`${formatNumber(stats.streakDays, locale)}d`}
+          value={streakValue}
           label={t('parent.myChildren.statStreak')}
           accent="$streak"
           direction={direction}
-          accessibilityLabel={`${t('parent.myChildren.statStreak')} ${stats.streakDays}`}
+          accessibilityLabel={`${t('parent.myChildren.statStreak')} ${streakValue}`}
         />
       </Stack>
 
-      {/* Mastery */}
-      <MasteryBar
-        value={stats.masteryPercent}
-        asPercent
-        label={t('parent.myChildren.mastery')}
-        direction={direction}
-        accessibilityLabel={`${t('parent.myChildren.mastery')} ${stats.masteryPercent}%`}
-      />
+      {/*
+       * Mastery (C-31..C-36, R-2). The bar fill always grows from the visual
+       * left (SKILL rule 6). The label + percent caption reverses with the
+       * locale, but the percent itself is a dir=ltr span (Eastern-Arabic + ٪).
+       */}
+      <Stack
+        gap="$2"
+        width="100%"
+        accessibilityRole="progressbar"
+        accessible
+        accessibilityLabel={`${t('parent.myChildren.mastery')} ${masteryReadout}`}
+        aria-label={`${t('parent.myChildren.mastery')} ${masteryReadout}`}
+        accessibilityValue={{ min: 0, max: 100, now: masteryPct }}
+      >
+        <Stack flexDirection={rowDir} justifyContent="space-between" alignItems="center">
+          <Text
+            color="$fg1"
+            fontSize={11}
+            fontWeight="700"
+            fontFamily="$heading"
+            textTransform="uppercase"
+            letterSpacing={0.66}
+            writingDirection={direction}
+          >
+            {t('parent.myChildren.mastery')}
+          </Text>
+          <Text
+            color="$fg1"
+            fontSize={11}
+            fontWeight="800"
+            fontFamily="$heading"
+            writingDirection="ltr"
+            style={{ fontVariant: ['tabular-nums'] }}
+          >
+            {masteryReadout}
+          </Text>
+        </Stack>
+        <Stack height={8} borderRadius={9999} backgroundColor="$bg" overflow="hidden" flexDirection="row">
+          <Stack width={`${masteryPct}%` as StackProps['width']} height="100%" borderRadius={9999} overflow="hidden">
+            <GradientBox stops={gradientStops.gradXp.colors} angle={90} height="100%" width="100%" />
+          </Stack>
+        </Stack>
+      </Stack>
 
       {/* Footer: weakest topic + view dashboard */}
-      <Stack flexDirection={rowDir} alignItems="center" justifyContent="space-between" gap="$2" flexWrap="wrap">
+      <Stack
+        flexDirection={rowDir}
+        alignItems="center"
+        justifyContent="space-between"
+        gap="$2"
+        flexWrap="wrap"
+        paddingTop={14}
+        borderTopWidth={1}
+        borderTopColor="rgba(255,255,255,0.05)"
+      >
         <Text color="$fg3" fontSize={13} fontFamily="$body" writingDirection={direction}>
           {`${t('parent.myChildren.weakest')} `}
           <Text color="$fg2" fontSize={13} fontWeight="700" fontFamily="$body">
@@ -150,14 +243,14 @@ export function ChildDashboardCard({
           minHeight={40}
           justifyContent="center"
           cursor="pointer"
-          pressStyle={{ scale: 0.97 }}
+          pressStyle={{ scale: 0.95 }}
           onPress={() => onViewDashboard()}
           accessibilityRole="button"
           accessible
           accessibilityLabel={`${t('parent.myChildren.viewDashboard')} ${fullName}`}
           aria-label={`${t('parent.myChildren.viewDashboard')} ${fullName}`}
         >
-          <Text color="$primaryLight" fontSize={14} fontWeight="700" fontFamily="$heading" writingDirection={direction}>
+          <Text color="$primaryLight" fontSize={12} fontWeight="800" fontFamily="$heading" writingDirection={direction}>
             {t('parent.myChildren.viewDashboard')}
           </Text>
         </Stack>

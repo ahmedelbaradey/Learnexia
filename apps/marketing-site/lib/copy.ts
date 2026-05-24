@@ -22,7 +22,7 @@ export const LANDING_COPY = {
   },
 
   hero: {
-    pill: 'POWERED BY AI',
+    pill: '✨ POWERED BY AI',
     // The headline is split so "adventure game" can be accent-coloured.
     headlineLead: 'An ',
     headlineAccent: 'adventure game',
@@ -49,30 +49,87 @@ export const LANDING_COPY = {
     subjectMath: 'Math',
     subjectScience: 'Science',
     subjectArabic: 'Arabic',
-    subjectEnglish: 'GB',
+    subjectEnglishLabel: 'English',
+    subjectEnglish: '🇬🇧',
   },
 
   // Floating reward chips.
   chips: {
-    xp: '+50 XP',
+    xp: '+50 XP ⭐',
     badge: 'New badge!',
   },
 
-  // Below-the-fold section stubs (nav anchor targets — kept minimal).
-  sections: {
-    howItWorksTitle: 'How it works',
-    howItWorksBody:
-      'Parents create an account and add their children. Each child gets a personal AI tutor that adapts to how they learn — turning Math, Science, English and Arabic into a game of hearts, streaks, XP and badges.',
-    subjectsTitle: 'Subjects',
-    subjectsBody: 'Four core subjects, one adventure: Math, Science, English and Arabic.',
-    forSchoolsTitle: 'For schools',
-    forSchoolsBody:
-      'Bring Learnexia to your classroom. Get in touch to learn about school plans and dashboards for teachers and administrators.',
-    pricingTitle: 'Pricing',
-    pricingBody: 'Free for your first child. Simple family pricing as you add more learners.',
+  // "Why Learnexia" feature grid (web-feature-card.html).
+  features: {
+    eyebrow: 'Why Learnexia',
+    title: 'Learning that feels like play',
+    cards: [
+      {
+        icon: '🤖',
+        tone: 'purple',
+        title: 'AI tutor that explains',
+        body: "Stuck on a problem? Lexi explains it with pictures, examples and patient follow-ups — adapted to your child's grade.",
+      },
+      {
+        icon: '🎮',
+        tone: 'orange',
+        title: 'Gamified, not gimmicky',
+        body: 'Streaks, XP, badges and weekly leagues turn practice into a game your child wants to come back to.',
+      },
+      {
+        icon: '📊',
+        tone: 'green',
+        title: 'Parents stay in the loop',
+        body: 'A simple dashboard shows what each child is learning, where they shine and where they need a hand.',
+      },
+      {
+        icon: '🌍',
+        tone: 'purple',
+        title: 'Arabic and English, side by side',
+        body: 'Switch language any time. Lessons, hints and feedback all speak your child’s language.',
+      },
+      {
+        icon: '🛡',
+        tone: 'green',
+        title: 'Safe by design',
+        body: 'No ads, no chat with strangers, COPPA-aligned. Parents create accounts and add their own children.',
+      },
+      {
+        icon: '⏱',
+        tone: 'orange',
+        title: 'Five minutes a day',
+        body: 'Short, focused sessions build a daily habit — no marathon homework, just steady progress.',
+      },
+    ],
+  },
+
+  // Subjects band (web-subject-band.html). Math/Science/Arabic/English only.
+  subjects: {
+    title: 'Four subjects. One adventure.',
+    grade: 'Grade 1–6 →',
+    items: [
+      { icon: '🧮', tone: 'indigo', name: 'Math', topics: 'Numbers · Fractions · Geometry' },
+      { icon: '🧪', tone: 'green', name: 'Science', topics: 'Plants · States · Space' },
+      { icon: '📖', tone: 'orange', name: 'Arabic', topics: 'Reading · Grammar · Poetry' },
+      { icon: '🇬🇧', tone: 'purple', name: 'English', topics: 'Phonics · Verbs · Stories' },
+    ],
+  },
+
+  // Gradient CTA banner (web-cta-banner.html).
+  cta: {
+    title: 'Ready to start the adventure?',
+    subtitle: 'Free for your first child · No credit card required',
+    button: 'Create parent account →',
+    star: '🌟',
   },
 
   footer: {
-    rights: '© Learnexia. Learning, leveled up.',
+    rights: '© 2026 Learnexia · Made for curious kids',
+    links: {
+      privacy: 'Privacy',
+      terms: 'Terms',
+      support: 'Support',
+      arabic: 'العربية',
+    },
   },
 } as const;

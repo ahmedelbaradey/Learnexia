@@ -22,7 +22,16 @@ import {
   type Locale,
   type RegisterParentFormValues,
 } from '@learnexia/shared';
-import { Button, CheckboxField, Select, TextField, type SelectOption } from '@learnexia/ui';
+import {
+  Button,
+  CheckboxField,
+  PasswordStrengthMeter,
+  PASSWORD_STRENGTH,
+  Select,
+  TextField,
+  type PasswordStrength,
+  type SelectOption,
+} from '@learnexia/ui';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Stack, Text } from '@tamagui/core';
 import { useRouter } from 'expo-router';
@@ -33,6 +42,27 @@ import { useTranslation } from 'react-i18next';
 import { ServerErrorBanner } from '../../../src/components/ServerErrorBanner';
 import { useLocale } from '../../../src/hooks/useLocale';
 import { useServerError } from '../../../src/hooks/useServerError';
+
+/**
+ * Cumulative password-strength score (0..4) for the PasswordStrengthMeter
+ * (align-register B-1). Length ≥6 unlocks segment 2; lower/upper/digit mix
+ * unlocks 3; a special char unlocks 4. Empty password scores 0.
+ */
+function scorePassword(password: string): PasswordStrength {
+  if (!password) return PASSWORD_STRENGTH.Empty;
+  let score = 1;
+  if (password.length >= 6) score = 2;
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password) && /\d/.test(password)) score = 3;
+  if (score >= 3 && /[^a-zA-Z\d]/.test(password)) score = 4;
+  return score as PasswordStrength;
+}
+
+const STRENGTH_LABEL_KEY: Record<Exclude<PasswordStrength, 0>, string> = {
+  1: 'auth.register.strength.weak',
+  2: 'auth.register.strength.fair',
+  3: 'auth.register.strength.good',
+  4: 'auth.register.strength.strong',
+};
 
 export function RegisterForm() {
   const { t, i18n } = useTranslation();
@@ -140,6 +170,7 @@ export function RegisterForm() {
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
+            forceLtr
             error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
             direction={direction}
             disabled={disabled}
@@ -150,46 +181,71 @@ export function RegisterForm() {
       <Controller
         control={control}
         name="password"
-        render={({ field, fieldState }) => (
-          <Stack gap="$1">
-            <TextField
-              label={t('auth.register.labelPassword')}
-              value={field.value}
-              onChangeText={field.onChange}
-              secureTextEntry
-              error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
-              direction={direction}
-              disabled={disabled}
-            />
-            {!fieldState.error ? (
-              <Text
-                color="$fg3"
-                fontSize={12}
-                fontFamily="$body"
-                textAlign={direction === 'rtl' ? 'right' : 'left'}
-                writingDirection={direction}
-              >
-                {t('auth.register.passwordHelper')}
-              </Text>
-            ) : null}
-          </Stack>
-        )}
+        render={({ field, fieldState }) => {
+          const score = scorePassword(field.value ?? '');
+          const strengthLabel = score > 0 ? t(STRENGTH_LABEL_KEY[score as Exclude<PasswordStrength, 0>]) : '';
+          return (
+            <Stack gap="$2">
+              <TextField
+                label={t('auth.register.labelPassword')}
+                value={field.value}
+                onChangeText={field.onChange}
+                secureTextEntry
+                error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
+                direction={direction}
+                disabled={disabled}
+              />
+              {field.value ? (
+                <PasswordStrengthMeter
+                  score={score}
+                  label={strengthLabel}
+                  direction={direction}
+                  accessibilityLabel={t('auth.register.strength.a11y', { label: strengthLabel })}
+                />
+              ) : !fieldState.error ? (
+                <Text
+                  color="$fg3"
+                  fontSize={12}
+                  fontFamily="$body"
+                  textAlign={direction === 'rtl' ? 'right' : 'left'}
+                  writingDirection={direction}
+                >
+                  {t('auth.register.passwordHelper')}
+                </Text>
+              ) : null}
+            </Stack>
+          );
+        }}
       />
 
       <Controller
         control={control}
         name="acceptedTerms"
-        render={({ field, fieldState }) => (
-          <CheckboxField
-            checked={field.value === true}
-            onChange={field.onChange}
-            label={<TermsLabel direction={direction} />}
-            accessibilityLabel={t('auth.register.termsA11y')}
-            error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
-            direction={direction}
-            disabled={disabled}
-          />
-        )}
+        render={({ field, fieldState }) => {
+          const checked = field.value === true;
+          return (
+            // Card-frame wrapper around the consent checkbox (align-register m-3):
+            // `$card` resting; subtle green success tint + border when accepted.
+            <Stack
+              paddingVertical="$3"
+              paddingHorizontal="$4"
+              borderRadius={14}
+              borderWidth={1}
+              borderColor={checked ? 'rgba(34,197,94,0.3)' : '$border'}
+              backgroundColor={checked ? 'rgba(34,197,94,0.06)' : '$card'}
+            >
+              <CheckboxField
+                checked={checked}
+                onChange={field.onChange}
+                label={<TermsLabel direction={direction} />}
+                accessibilityLabel={t('auth.register.termsA11y')}
+                error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
+                direction={direction}
+                disabled={disabled}
+              />
+            </Stack>
+          );
+        }}
       />
 
       <ServerErrorBanner message={serverMessage} direction={direction} />
@@ -205,14 +261,14 @@ export function RegisterForm() {
         {t('auth.register.submitButton')}
       </Button>
 
-      <Stack flexDirection={direction === 'rtl' ? 'row-reverse' : 'row'} justifyContent="center" gap="$1" marginTop="$2">
+      <Stack flexDirection={direction === 'rtl' ? 'row-reverse' : 'row'} justifyContent="center" gap="$1" marginTop="$5">
         <Text color="$fg3" fontSize={14} fontFamily="$body">
           {t('auth.register.haveAccount')}
         </Text>
         <Text
           color="$primaryLight"
           fontSize={14}
-          fontWeight="600"
+          fontWeight="800"
           fontFamily="$body"
           cursor="pointer"
           onPress={() => router.replace('/(auth)/login')}

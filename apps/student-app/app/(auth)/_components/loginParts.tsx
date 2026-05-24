@@ -8,6 +8,13 @@ import { type Direction } from '@learnexia/shared';
 import { Stack, Text } from '@tamagui/core';
 import type { ReactNode } from 'react';
 
+/**
+ * Social-button + checkbox-box radii are LOCAL single-use constants (they fall
+ * between `$sm` 8px and `$button` 16px — no exact global token; align-login M-10/m-10).
+ */
+const socialButtonRadius = 14;
+const checkboxBoxRadius = 6;
+
 /* ------------------------------------------------------------------ */
 /* Checkbox (Remember me)                                              */
 /* ------------------------------------------------------------------ */
@@ -38,9 +45,9 @@ export function Checkbox({ checked, onChange, label, direction = 'ltr', disabled
       pointerEvents={disabled ? 'none' : 'auto'}
     >
       <Stack
-        width={20}
-        height={20}
-        borderRadius="$sm"
+        width={22}
+        height={22}
+        borderRadius={checkboxBoxRadius}
         borderWidth={2}
         borderColor={checked ? '$primary' : '$borderStrong'}
         backgroundColor={checked ? '$primary' : 'transparent'}
@@ -53,7 +60,7 @@ export function Checkbox({ checked, onChange, label, direction = 'ltr', disabled
           </Text>
         ) : null}
       </Stack>
-      <Text color="$fg3" fontSize={14} fontFamily="$body" writingDirection={direction}>
+      <Text color="$fg2" fontSize={13} fontFamily="$body" writingDirection={direction}>
         {label}
       </Text>
     </Stack>
@@ -79,12 +86,12 @@ export function OrDivider({ label, direction = 'ltr' }: OrDividerProps) {
     >
       <Stack flex={1} height={1} backgroundColor="$border" />
       <Text
-        color="$fg3"
+        color="$fg4"
         fontSize={12}
         fontWeight="600"
         fontFamily="$heading"
         textTransform="uppercase"
-        letterSpacing={1}
+        letterSpacing={0.48}
         writingDirection={direction}
       >
         {label}
@@ -116,12 +123,12 @@ export function SocialButton({ label, icon, onPress, direction = 'ltr' }: Social
       justifyContent="center"
       gap="$2"
       backgroundColor="$card"
-      borderRadius="$button"
+      borderRadius={socialButtonRadius}
       borderWidth={1}
       borderColor="$border"
       cursor="pointer"
       hoverStyle={{ backgroundColor: '$cardSoft' }}
-      pressStyle={{ scale: 0.97 }}
+      pressStyle={{ scale: 0.95 }}
       onPress={onPress}
       accessibilityRole="button"
       accessible

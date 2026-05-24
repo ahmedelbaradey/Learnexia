@@ -60,12 +60,16 @@ export function PhoneMockup() {
               </span>
             </div>
             <div className={styles.subjectTile}>
-              <span className={styles.subjectText}>{phone.subjectEnglish}</span>
+              <span className={styles.subjectIcon} role="img" aria-label={phone.subjectEnglishLabel}>
+                {phone.subjectEnglish}
+              </span>
             </div>
           </div>
 
-          {/* Decorative star near the bottom */}
-          <span className={styles.star}>✦</span>
+          {/* Decorative animated star near the bottom */}
+          <span className={styles.star} role="img" aria-hidden="true">
+            🌟
+          </span>
         </div>
       </div>
     </div>

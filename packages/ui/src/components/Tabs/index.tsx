@@ -4,12 +4,12 @@
  *
  * Mirrors the existing component shapes (Sidebar nav rows, Select option rows):
  * a token-driven list of pressable rows with an active-state pill
- * (`$primarySoftStrong` background + bold `$fg1` label) and a logical START accent border, like the
- * Sidebar's active nav item. Each item carries an icon glyph + an already-i18n-
- * resolved label (labels are NOT hardcoded here — the caller injects them).
+ * (`$primarySoftStrong` background + `$primaryLight` label, `$nav` 12px radius,
+ * no border stripe). Each item carries an icon glyph + an already-i18n-resolved
+ * label (labels are NOT hardcoded here — the caller injects them).
  *
  * Controlled: the caller owns `value` + `onChange` and decides which panel to
- * render beside the rail. RTL via `direction` (logical row + START accent).
+ * render beside the rail. RTL via `direction` (logical row).
  *
  * A11y: `tablist` / `tab` roles, `accessibilityState.selected`, required label.
  */
@@ -67,14 +67,15 @@ export function Tabs({
             flexDirection={rowDir}
             alignItems="center"
             gap="$3"
-            minHeight={48}
-            paddingHorizontal="$3"
-            borderRadius="$button"
+            minHeight={40}
+            paddingVertical={10}
+            paddingHorizontal={14}
+            // Keep the 48px touch target via hitSlop while the visual height is ~40px.
+            hitSlop={{ top: 4, bottom: 4 }}
+            borderRadius="$nav"
             backgroundColor={isActive ? '$primarySoftStrong' : 'transparent'}
-            borderStartWidth={isActive ? 3 : 0}
-            borderStartColor={isActive ? '$primary' : 'transparent'}
-            hoverStyle={{ backgroundColor: isActive ? '$primarySoftStrong' : '$card' }}
-            pressStyle={{ scale: 0.98 }}
+            hoverStyle={{ backgroundColor: isActive ? '$primarySoftStrong' : '$cardSoft' }}
+            pressStyle={{ scale: 0.95 }}
             cursor="pointer"
             onPress={() => onChange(item.value)}
             accessibilityRole="tab"
@@ -90,9 +91,9 @@ export function Tabs({
             ) : null}
             <Text
               flex={1}
-              color={isActive ? '$fg1' : '$fg2'}
-              fontSize={15}
-              fontWeight={isActive ? '700' : '500'}
+              color={isActive ? '$primaryLight' : '$fg3'}
+              fontSize={14}
+              fontWeight={isActive ? '800' : '600'}
               fontFamily="$heading"
               writingDirection={direction}
             >

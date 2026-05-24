@@ -57,10 +57,10 @@ const REPORTING_PERIOD = {
 const TAB_ICON: Record<SettingsTabKey, string> = {
   [SETTINGS_TAB.Profile]: '👤',
   [SETTINGS_TAB.Notifications]: '🔔',
-  [SETTINGS_TAB.LinkedChildren]: '👨‍👧',
+  [SETTINGS_TAB.LinkedChildren]: '👨‍👩‍👦',
   [SETTINGS_TAB.Security]: '🛡️',
   [SETTINGS_TAB.Billing]: '💎',
-  [SETTINGS_TAB.Language]: '🌐',
+  [SETTINGS_TAB.Language]: '🌍',
 };
 
 const TAB_LABEL_KEY: Record<SettingsTabKey, string> = {
@@ -95,13 +95,23 @@ export function SettingsWeb() {
   }));
 
   return (
-    <Stack flexDirection="column" gap="$6" padding="$6" maxWidth={1200} width="100%" alignSelf="center">
-      {/* Header */}
-      <Stack flexDirection={rowDir} alignItems="flex-start" justifyContent="space-between" gap="$4" flexWrap="wrap">
+    <Stack flexDirection="column" maxWidth={1200} width="100%" alignSelf="center">
+      {/* Header — own padding + a 1px bottom rule (web-page-header card). */}
+      <Stack
+        flexDirection={rowDir}
+        alignItems="flex-start"
+        justifyContent="space-between"
+        gap="$4"
+        flexWrap="wrap"
+        paddingVertical={20}
+        paddingHorizontal={28}
+        borderBottomWidth={1}
+        borderBottomColor="rgba(255,255,255,0.06)"
+      >
         <Stack flexDirection="column" gap="$1">
           <Text
             color="$fg1"
-            fontSize={26}
+            fontSize={24}
             fontWeight="800"
             fontFamily="$heading"
             accessibilityRole="header"
@@ -109,13 +119,13 @@ export function SettingsWeb() {
           >
             {t('parent.settings.title')}
           </Text>
-          <Text color="$fg3" fontSize={14} fontFamily="$body" writingDirection={direction}>
+          <Text color="$fg3" fontSize={13} fontFamily="$body" writingDirection={direction}>
             {t('parent.settings.subtitle')}
           </Text>
         </Stack>
 
         <Stack flexDirection={rowDir} alignItems="center" gap="$3">
-          <Stack width={150}>
+          <Stack width={130}>
             <Select
               label={t('parent.overview.periodLabel')}
               hideLabel
@@ -126,10 +136,11 @@ export function SettingsWeb() {
               accessibilityLabel={t('parent.overview.periodLabel')}
             />
           </Stack>
-          {/* Send Report — Phase-5 stub (no-op until analytics ship). */}
+          {/* Send Report — Phase-5 stub (no-op until analytics ship). md height +
+              primary glow are foundation (Button primary variant). */}
           <Button
             variant="primary"
-            size="sm"
+            size="md"
             accessibilityLabel={t('parent.overview.sendReport')}
             onPress={() => {
               /* TODO(P5-05): wire to the reports endpoint. */
@@ -141,8 +152,8 @@ export function SettingsWeb() {
       </Stack>
 
       {/* Tab rail + active panel */}
-      <Stack flexDirection={rowDir} gap="$5" flexWrap="wrap" alignItems="flex-start">
-        <Stack width={210} minWidth={180}>
+      <Stack flexDirection={rowDir} gap="$5" flexWrap="wrap" alignItems="flex-start" padding="$6">
+        <Stack width={220} minWidth={180}>
           <Tabs
             items={tabItems}
             value={activeTab}
@@ -186,12 +197,12 @@ function PanelSurface({ children }: { children: React.ReactNode }) {
   return (
     <Stack
       flexDirection="column"
-      gap="$5"
-      borderRadius="$card"
+      gap={18}
+      borderRadius="$modal"
       backgroundColor="$card"
       borderWidth={1}
-      borderColor="$border"
-      padding="$6"
+      borderColor="rgba(255,255,255,0.06)"
+      padding={22}
     >
       {children}
     </Stack>
@@ -201,10 +212,10 @@ function PanelSurface({ children }: { children: React.ReactNode }) {
 function PanelHeader({ title, subtitle, direction }: { title: string; subtitle: string; direction: 'ltr' | 'rtl' }) {
   return (
     <Stack flexDirection="column" gap="$1">
-      <Text color="$fg1" fontSize={18} fontWeight="800" fontFamily="$heading" writingDirection={direction}>
+      <Text color="$fg1" fontSize={16} fontWeight="800" fontFamily="$heading" writingDirection={direction}>
         {title}
       </Text>
-      <Text color="$fg3" fontSize={13} fontFamily="$body" writingDirection={direction}>
+      <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction}>
         {subtitle}
       </Text>
     </Stack>
@@ -254,6 +265,12 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
     setCountry(toCountryCode(profile?.country));
   }, [profile]);
 
+  // Email is display-only. The current `AccountProfileResponse` contract does
+  // NOT include `email` yet (backend dependency — see report). Read it
+  // defensively so the field populates automatically once BE adds it, without
+  // a type error in the meantime.
+  const profileEmail = (profile as { email?: string } | undefined)?.email ?? '';
+
   const countryOptions = COUNTRIES.map((c) => ({ value: c.code, label: locale === 'ar' ? c.ar : c.en }));
 
   const serverMessage = updateProfile.isError
@@ -296,7 +313,7 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
       />
 
       {/* Avatar (image from avatarUrl, else initials) + upload/remove stubs */}
-      <Stack flexDirection={rowDir} alignItems="center" gap="$4">
+      <Stack flexDirection={rowDir} alignItems="center" gap={18}>
         <Avatar
           name={name || profile?.fullName || 'A'}
           uri={profile?.avatarUrl || undefined}
@@ -331,7 +348,7 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
       </Stack>
 
       {/* Two-column field grid (full name / email, phone / country) */}
-      <Stack flexDirection={rowDir} gap="$4" flexWrap="wrap">
+      <Stack flexDirection={rowDir} gap={14} flexWrap="wrap">
         <Stack flex={1} minWidth={240}>
           <TextField
             label={t('parent.settings.profile.fullName')}
@@ -343,21 +360,25 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
           />
         </Stack>
         <Stack flex={1} minWidth={240}>
-          {/* Email is display-only — not part of the profile-update contract. */}
+          {/* Email is display-only — not part of the profile-update contract.
+              Value comes from the loaded profile; forced LTR (Latin technical
+              string) even in an RTL form per SKILL.md. */}
           <TextField
             label={t('parent.settings.profile.email')}
-            value={''}
+            value={profileEmail}
             onChangeText={() => undefined}
             keyboardType="email-address"
             autoComplete="email"
             direction={direction}
+            forceLtr
             disabled
           />
         </Stack>
       </Stack>
 
-      <Stack flexDirection={rowDir} gap="$4" flexWrap="wrap">
+      <Stack flexDirection={rowDir} gap={14} flexWrap="wrap">
         <Stack flex={1} minWidth={240}>
+          {/* Phone numbers stay Latin + LTR even in an RTL form (SKILL.md). */}
           <TextField
             label={t('parent.settings.profile.phone')}
             value={phone}
@@ -365,6 +386,7 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
             keyboardType="phone-pad"
             autoComplete="tel"
             direction={direction}
+            forceLtr
             disabled={updateProfile.isPending}
           />
         </Stack>
@@ -397,11 +419,12 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
         </Stack>
       ) : null}
 
-      {/* Cancel resets to loaded values; Save persists via useUpdateProfile. */}
-      <Stack flexDirection={rowDir} justifyContent="flex-end" gap="$3">
+      {/* Cancel resets to loaded values; Save persists via useUpdateProfile.
+          md height (~52px) + primary glow are foundation (Button variant). */}
+      <Stack flexDirection={rowDir} justifyContent="flex-end" gap={10} paddingTop={6}>
         <Button
           variant="ghost"
-          size="sm"
+          size="md"
           disabled={updateProfile.isPending}
           accessibilityLabel={t('parent.settings.profile.cancel')}
           onPress={resetToLoaded}
@@ -410,7 +433,7 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
         </Button>
         <Button
           variant="primary"
-          size="sm"
+          size="md"
           loading={updateProfile.isPending}
           disabled={updateProfile.isPending}
           accessibilityLabel={t('parent.settings.profile.save')}
@@ -459,7 +482,7 @@ function LanguagePanel({ direction, rowDir, locale }: LanguagePanelProps) {
         direction={direction}
       />
 
-      <Stack flexDirection={rowDir} gap="$4" flexWrap="wrap">
+      <Stack flexDirection={rowDir} gap={14} flexWrap="wrap">
         <Stack flex={1} minWidth={240}>
           <Select
             label={t('parent.settings.language.languageLabel')}

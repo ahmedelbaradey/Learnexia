@@ -117,6 +117,7 @@ export function LoginForm() {
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="username"
+            forceLtr
             error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
             direction={direction}
             disabled={disabled}
@@ -157,7 +158,7 @@ export function LoginForm() {
         />
         <Text
           color="$primaryLight"
-          fontSize={14}
+          fontSize={12}
           fontWeight="600"
           fontFamily="$body"
           cursor="pointer"

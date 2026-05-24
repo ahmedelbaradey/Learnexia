@@ -28,17 +28,17 @@ export function RegisterFeaturePanel({ direction = 'ltr' }: RegisterFeaturePanel
 
   return (
     <Stack flex={1} justifyContent="center" gap="$8">
-      {/* Game-controller icon chip */}
+      {/* Game-controller icon — bare emoji with a glow drop-shadow (no chip). */}
       <Stack
-        width={80}
-        height={80}
-        borderRadius="$pill"
-        backgroundColor="$primaryHover"
+        alignSelf="flex-start"
         alignItems="center"
         justifyContent="center"
-        alignSelf={direction === 'rtl' ? 'flex-end' : 'flex-start'}
       >
-        <Text fontSize={40} accessibilityElementsHidden>
+        <Text
+          fontSize={80}
+          accessibilityElementsHidden
+          style={{ filter: 'drop-shadow(0 0 20px rgba(250,204,21,0.5))' } as object}
+        >
           🎮
         </Text>
       </Stack>
@@ -47,9 +47,10 @@ export function RegisterFeaturePanel({ direction = 'ltr' }: RegisterFeaturePanel
       <Text
         color="$fg1"
         fontSize={40}
-        fontWeight="800"
+        fontWeight="900"
         fontFamily="$heading"
         lineHeight={46}
+        letterSpacing={-0.8}
         maxWidth={460}
         textAlign={align}
         writingDirection={direction}
@@ -59,13 +60,13 @@ export function RegisterFeaturePanel({ direction = 'ltr' }: RegisterFeaturePanel
       </Text>
 
       {/* Feature bullets */}
-      <Stack gap="$5" maxWidth={520}>
+      <Stack gap="$4" maxWidth={460}>
         {BULLETS.map((bullet) => (
           <Stack key={bullet.key} flexDirection={rowDir} alignItems="center" gap="$3">
             <Stack
               width={40}
               height={40}
-              borderRadius="$button"
+              borderRadius={12}
               backgroundColor="$primaryHover"
               alignItems="center"
               justifyContent="center"
@@ -76,7 +77,8 @@ export function RegisterFeaturePanel({ direction = 'ltr' }: RegisterFeaturePanel
             </Stack>
             <Text
               flex={1}
-              color="$fg2"
+              color="$fg1"
+              opacity={0.92}
               fontSize={16}
               fontFamily="$body"
               lineHeight={22}

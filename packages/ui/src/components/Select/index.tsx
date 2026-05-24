@@ -44,8 +44,16 @@ export interface SelectProps {
    * page-header period picker) — the label still feeds the a11y name. GAP-05.
    */
   hideLabel?: boolean;
+  /**
+   * Trigger height: `md` (48px, default form size) or `sm` (40px, compact
+   * page-header period picker — align-settings DG-03). `sm` keeps a 48px touch
+   * target via hitSlop.
+   */
+  size?: 'sm' | 'md';
   testID?: string;
 }
+
+const TRIGGER_HEIGHT = { sm: 40, md: 48 } as const;
 
 function resolveDirection(direction?: Direction, locale?: string): Direction {
   if (direction) return direction;
@@ -65,12 +73,16 @@ export function Select({
   locale,
   accessibilityLabel,
   hideLabel = false,
+  size = 'md',
   testID,
 }: SelectProps) {
   const dir = resolveDirection(direction, locale);
   const [open, setOpen] = useState(false);
   const hasError = Boolean(error);
   const selected = options.find((o) => o.value === value) ?? null;
+  const isRtl = dir === 'rtl';
+  const textAlign = isRtl ? 'right' : 'left';
+  const triggerHeight = TRIGGER_HEIGHT[size];
 
   const borderColor = hasError
     ? '$danger'
@@ -90,7 +102,7 @@ export function Select({
           fontFamily="$heading"
           textTransform="uppercase"
           letterSpacing={0.6}
-          textAlign="left"
+          textAlign={textAlign}
           writingDirection={dir}
         >
           {label}
@@ -100,7 +112,8 @@ export function Select({
       <Stack position="relative">
         <XStack
           testID={testID}
-          height={52}
+          height={triggerHeight}
+          hitSlop={size === 'sm' ? { top: 4, bottom: 4 } : undefined}
           alignItems="center"
           justifyContent="space-between"
           flexDirection={dir === 'rtl' ? 'row-reverse' : 'row'}
@@ -125,7 +138,7 @@ export function Select({
             color={selected ? '$fg1' : '$fg3'}
             fontSize={15}
             fontFamily="$body"
-            textAlign="left"
+            textAlign={textAlign}
             writingDirection={dir}
           >
             {selected ? selected.label : (placeholder ?? '')}
@@ -138,12 +151,12 @@ export function Select({
         {open ? (
           <YStack
             position="absolute"
-            top={56}
+            top={triggerHeight + 4}
             start={0}
             end={0}
             zIndex={1000}
             backgroundColor="$card"
-            borderRadius={inputRadius}
+            borderRadius="$sm"
             borderWidth={1}
             borderColor="$borderStrong"
             shadowColor="#000"
@@ -181,7 +194,7 @@ export function Select({
                     fontSize={15}
                     fontWeight="500"
                     fontFamily="$body"
-                    textAlign="left"
+                    textAlign={textAlign}
                     writingDirection={dir}
                   >
                     {opt.label}
@@ -204,7 +217,7 @@ export function Select({
           fontSize={12}
           fontFamily="$body"
           marginTop={2}
-          textAlign="left"
+          textAlign={textAlign}
           writingDirection={dir}
           accessibilityLiveRegion="polite"
         >

@@ -35,7 +35,7 @@ export interface MasteryBarProps {
   accessibilityLabel: string;
 }
 
-const TRACK_HEIGHT = 8;
+const TRACK_HEIGHT = 10;
 
 export function MasteryBar({
   value,
@@ -54,18 +54,16 @@ export function MasteryBar({
     <YStack gap="$2" width="100%">
       <XStack justifyContent="space-between" flexDirection={rowDir}>
         <Text
-          color="$fg3"
-          fontSize={11}
+          color="$fg1"
+          fontSize={13}
           fontWeight="700"
           fontFamily="$heading"
-          textTransform="uppercase"
-          letterSpacing={0.6}
           writingDirection={direction}
         >
           {label}
         </Text>
         <Text
-          color="$fg1"
+          color={accent ?? '$fg1'}
           fontSize={13}
           fontWeight="800"
           fontFamily="$heading"
@@ -75,12 +73,17 @@ export function MasteryBar({
         </Text>
       </XStack>
 
+      {/*
+       * Progress bars stay LTR regardless of locale (SKILL.md rule 6): force the
+       * track + fill row to `flexDirection="row"` so the fill always grows from
+       * the visual left, even in RTL.
+       */}
       <Stack
         height={TRACK_HEIGHT}
         borderRadius={9999}
         backgroundColor="$bg"
         overflow="hidden"
-        flexDirection={rowDir}
+        flexDirection="row"
         accessibilityRole="progressbar"
         accessible
         accessibilityLabel={accessibilityLabel}
@@ -95,7 +98,7 @@ export function MasteryBar({
           backgroundColor={accent}
         >
           {accent ? null : (
-            <GradientFill stops={gradientStops.gradXp.colors} angle={isRtl ? 270 : 90} height="100%" width="100%" />
+            <GradientFill stops={gradientStops.gradXp.colors} angle={90} height="100%" width="100%" />
           )}
         </Stack>
       </Stack>

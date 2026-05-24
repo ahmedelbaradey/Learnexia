@@ -46,10 +46,13 @@
   --lx-primary-soft-strong: rgba(79, 70, 229, 0.28); /* active-pill tint (Tabs/Sidebar) */
   --lx-primary-glow:   rgba(99, 102, 241, 0.45);
 
+  --lx-primary-light:  #A5B4FC;   /* indigo-300 — active nav/tab label, eyebrow, grade pills */
+
   --lx-secondary:      #22C55E;   /* Success states */
   --lx-accent:         #F59E0B;   /* Rewards & highlights */
   --lx-danger:         #EF4444;   /* Errors & heart loss */
   --lx-purple:         #A855F7;   /* Badges & achievements */
+  --lx-purple-light:   #E9D5FF;   /* purple-200 — Legendary badge label */
 
   /* Semantic aliases (same colors, conventional names) */
   --lx-success:        var(--lx-secondary);
@@ -62,8 +65,10 @@
   /* Gamification accents (added — spec referenced by name only) */
   --lx-xp:             #FACC15;   /* yellow — XP / stars */
   --lx-xp-glow:        rgba(250, 204, 21, 0.45);
+  --lx-xp-soft:        rgba(250, 204, 21, 0.13); /* KPI icon-chip tint */
   --lx-streak:         #FB923C;   /* orange — streak / fire */
   --lx-streak-glow:    rgba(251, 146, 60, 0.45);
+  --lx-streak-soft:    rgba(251, 146, 60, 0.13); /* KPI icon-chip tint */
   --lx-heart:          #FB7185;   /* rose — hearts / life */
   --lx-heart-glow:     rgba(251, 113, 133, 0.45);
   --lx-gold:           #FBBF24;   /* league gold */
@@ -83,17 +88,24 @@
   --lx-grad-xp:        linear-gradient(90deg, #22C55E, #4F46E5);  /* green → indigo */
   --lx-grad-reward:    linear-gradient(90deg, #F59E0B, #EF4444);  /* orange → red */
   --lx-grad-levelup:   linear-gradient(135deg, #A855F7, #6366F1); /* purple → indigo */
+  --lx-grad-brand-panel: linear-gradient(165deg, #4F3FB0 0%, #3B2C8F 50%, #1E1B4B 100%); /* auth split panel */
+  --lx-grad-splash-bg:   radial-gradient(circle at 50% 45%, #4F3FB0 0%, #3B2C8F 40%, #241B6A 100%); /* splash bg */
+  --lx-grad-splash-progress: linear-gradient(90deg, #C4B5FD, #818CF8); /* splash progress fill */
 
   /* Text */
   --lx-fg1:            #F8FAFC;   /* primary text / headings */
   --lx-fg2:            #CBD5E1;   /* body */
   --lx-fg3:            #94A3B8;   /* muted / captions */
+  --lx-fg4:            #64748B;   /* disabled / locked / inactive */
+  --lx-fg2-alpha:      rgba(255, 255, 255, 0.70); /* splash/overlay text on purple bg */
   --lx-fg-inverse:     #0F172A;   /* on light buttons (rare) */
 
   /* Borders */
   --lx-border:         rgba(255, 255, 255, 0.08);
   --lx-border-strong:  rgba(255, 255, 255, 0.16);
   --lx-border-focus:   var(--lx-primary);
+  --lx-border-input:   rgba(255, 255, 255, 0.10); /* input resting border */
+  --lx-border-subtle:  rgba(255, 255, 255, 0.06); /* sidebar/header hairline */
 
   /* ------------------------------------------------------------------
      TYPOGRAPHY
@@ -105,6 +117,7 @@
   --lx-font-mono:      ui-monospace, 'SF Mono', Menlo, monospace;
 
   --lx-size-h1:        32px;
+  --lx-size-wordmark:  36px; /* splash wordmark (between h1 and display) */
   --lx-size-h2:        24px;
   --lx-size-h3:        18px;
   --lx-size-body:      16px;
@@ -145,6 +158,8 @@
      RADII — per spec
      ------------------------------------------------------------------ */
   --lx-radius-sm:     8px;    /* small elements: chips, inputs */
+  --lx-radius-nav:    12px;   /* nav items, settings tabs */
+  --lx-radius-card-inner: 14px; /* nested cards, inputs, focus rows */
   --lx-radius-button: 16px;   /* BUTTONS (per spec, not pill) */
   --lx-radius-card:   20px;   /* cards */
   --lx-radius-modal:  24px;   /* modals / popups */

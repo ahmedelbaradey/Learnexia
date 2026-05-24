@@ -1,0 +1,99 @@
+/* Gradient CTA banner — web-cta-banner.html. Tokens only. */
+
+.section {
+  background: var(--lx-bg-deep);
+  padding: 0 var(--lx-space-12) 96px;
+}
+
+.banner {
+  position: relative;
+  max-width: 1180px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lx-space-6);
+  overflow: hidden;
+  padding: 56px var(--lx-space-12);
+  border-radius: var(--lx-radius-screen); /* 28px */
+  background: linear-gradient(135deg, var(--lx-primary) 0%, var(--lx-purple) 100%);
+  box-shadow: 0 24px 60px rgba(99, 102, 241, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  font-family: var(--lx-font-display);
+}
+
+.decoStar {
+  position: absolute;
+  right: 40px;
+  bottom: -40px;
+  font-size: 280px;
+  line-height: 1;
+  opacity: 0.15;
+  pointer-events: none;
+  animation: lxpulse 2s ease-in-out infinite;
+}
+
+.copy {
+  position: relative;
+  z-index: 1;
+}
+
+.title {
+  margin: 0;
+  font-size: 36px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: #ffffff;
+}
+
+.subtitle {
+  margin: var(--lx-space-2) 0 0;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.button {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 60px;
+  padding: 0 var(--lx-space-8);
+  border-radius: var(--lx-radius-button);
+  background: #ffffff;
+  color: var(--lx-primary);
+  font-weight: 900;
+  font-size: 17px;
+  white-space: nowrap;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+  transition: transform var(--lx-dur-fast) var(--lx-ease-out);
+}
+
+.button:active {
+  transform: scale(0.95);
+  transition-duration: 80ms;
+}
+
+@media (max-width: 900px) {
+  .section {
+    padding: 0 var(--lx-space-8) 72px;
+  }
+  .banner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: var(--lx-space-10) var(--lx-space-8);
+  }
+  .title {
+    font-size: 30px;
+  }
+}
+
+@media (max-width: 600px) {
+  .section {
+    padding: 0 var(--lx-space-6) 56px;
+  }
+  .button {
+    width: 100%;
+  }
+}
