@@ -433,6 +433,9 @@
         public const string ProfileUpdatedSuccessfully = "ProfileUpdatedSuccessfully"; // MSG-PROFILE-007
         public const string ProfileSystemErrorSavingData = "ProfileSystemErrorSavingData"; // MSG-PROFILE-008
         public const string ProfileInvalidPhotoFile = "ProfileInvalidPhotoFile"; // MSG-PROFILE-009
+        public const string ProfileFullNameTooLong = "ProfileFullNameTooLong"; // P1-12 BE-1
+        public const string ProfileInvalidPhoneFormat = "ProfileInvalidPhoneFormat"; // P1-12 BE-1
+        public const string ProfileCountryTooLong = "ProfileCountryTooLong"; // P1-12 BE-1
 
         // User Login Messages (MSG-LOGIN-001 to MSG-LOGIN-004)
         public const string LoginUserNotFound = "LoginUserNotFound"; // MSG-LOGIN-001

@@ -55,6 +55,11 @@ public class GetMeQueryHandler : BaseResponseHandler, IQueryHandler<GetMeQuery, 
                 // Mirror SignIn: first login until registration/onboarding is completed.
                 IsFirstLogin = !user.RegistrationIsCompleted,
                 HasChildren = hasChildren,
+                // Account-profile fields (BE-2). Phone is the inherited Identity PhoneNumber;
+                // Country echoes Nationality; AvatarUrl is null until the avatar-upload endpoint sets it.
+                Phone = user.PhoneNumber,
+                Country = user.Nationality,
+                AvatarUrl = user.AvatarUrl,
             };
 
             return Success(response);
