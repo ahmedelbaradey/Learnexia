@@ -710,6 +710,9 @@
         // Edit-Child family scope (P1-12 BE-8): parent may only edit a child in their own family.
         public const string CannotEditChildNotInFamily = "CannotEditChildNotInFamily";
 
+        // Unlink-Child last-parent guard (P2-12): cannot remove the only parent linked to a child.
+        public const string CannotUnlinkLastParent = "CannotUnlinkLastParent";
+
         // Avatar upload/remove (P1-12 BE-4).
         public const string AvatarFileRequired = "AvatarFileRequired";
         public const string AvatarFileTooLarge = "AvatarFileTooLarge";
@@ -723,6 +726,19 @@
         public const string ForgotPasswordGenericResponse = "ForgotPasswordGenericResponse";
         public const string ResetPasswordInvalidLink = "ResetPasswordInvalidLink";
         public const string ResetPasswordSuccessful = "ResetPasswordSuccessful";
+
+        // Account settings — notification preferences (P2-12 BE-1).
+        public const string NotificationPreferencesUpdatedSuccessfully = "NotificationPreferencesUpdatedSuccessfully";
+        public const string NotificationPreferencesRetrievedSuccessfully = "NotificationPreferencesRetrievedSuccessfully";
+        public const string NotificationPreferenceInvalidCategory = "NotificationPreferenceInvalidCategory";
+        public const string NotificationPreferenceDuplicateCategory = "NotificationPreferenceDuplicateCategory";
+
+        // Account settings — security/sessions (P2-12 BE-3).
+        public const string OtherSessionsSignedOutSuccessfully = "OtherSessionsSignedOutSuccessfully";
+        public const string SessionsRetrievedSuccessfully = "SessionsRetrievedSuccessfully";
+
+        // Account settings — plan stub (P2-12 PLAN).
+        public const string PlanRetrievedSuccessfully = "PlanRetrievedSuccessfully";
 
     }
 }

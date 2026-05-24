@@ -13,7 +13,6 @@ public class IdentityServiceManager : IIdentityServiceManager
     private readonly Lazy<IAuthenticationService> _authenticationService;
     private readonly Lazy<IAuthorizationService> _authorizationService;
     private readonly Lazy<IUserManagmentService> _userManagmentService;
-    private readonly Lazy<ILinkParentStudentService> _linkParentStudentService;
 
     public IdentityServiceManager(ILoggerManager logger, RoleManager<Role> roleManager, UserManager<User> userManager, JwtSettings jwtSettings, IDistributedCache distributedCache, IdentityModuleDbContext dbContext, ICurrentUserService currentUserService)
     {
@@ -23,12 +22,9 @@ public class IdentityServiceManager : IIdentityServiceManager
             new AuthorizationIdentityService(roleManager, userManager, logger));
         _userManagmentService = new Lazy<IUserManagmentService>(() =>
             new UserManagmentIdentityService(userManager, logger));
-        _linkParentStudentService = new Lazy<ILinkParentStudentService>(() =>
-            new LinkParentStudentService(dbContext, currentUserService, logger));
     }
 
     public IAuthenticationService AuthenticationService => _authenticationService.Value;
     public IAuthorizationService AuthorizationService => _authorizationService.Value;
     public IUserManagmentService UserManagmentService => _userManagmentService.Value;
-    public ILinkParentStudentService LinkParentStudentService => _linkParentStudentService.Value;
 }

@@ -260,10 +260,11 @@ public sealed class P1_04_LinkParentChild_Tests : IAsyncLifetime
         var childUser = db.Users.SingleOrDefault(u => u.Email == childEmail);
         childUser.Should().NotBeNull("the student user must exist in the DB; email: {0}", childEmail);
 
-        var linkCount = db.ParentStudents.Count(ps => ps.StudentId == childUser!.Id);
-        linkCount.Should().BeLessOrEqualTo(1,
-            "composite PK must prevent duplicate (ParentId, StudentId) rows; found {0} rows for studentId {1}",
-            linkCount, childUser!.Id);
+        // P2-12: the ParentStudent link table moved out of Identity into the Parent module (schema
+        // "parent"); this Identity-DbContext duplicate-row assertion no longer applies. Idempotency is
+        // still asserted at the HTTP level above (re-link returns 200/Successed) and via the My-Children
+        // single-entry test below. The Parent-module composite-PK guarantee is revalidated by the P2-12
+        // api-tester batch against the new /api/Parent routes.
     }
 
     /// <summary>

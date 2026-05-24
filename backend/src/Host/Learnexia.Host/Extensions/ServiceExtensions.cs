@@ -37,6 +37,8 @@ public static class ServiceExtensions
             new() { Endpoint = "post:/api/users/authentication/google-signin", Limit = 100, Period = "1s" },
             new() { Endpoint = "post:/api/users/authentication/forgot-password", Limit = 100, Period = "1s" },
             new() { Endpoint = "post:/api/users/authentication/reset-password", Limit = 100, Period = "1s" },
+            // P2-12: tight limit on password-change (brute-force / oracle hardening). 5 attempts per 15 min per IP.
+            new() { Endpoint = "post:/api/users/account/changepassword", Limit = 5, Period = "15m" },
         };
         services.Configure<IpRateLimitOptions>(opt =>
         {

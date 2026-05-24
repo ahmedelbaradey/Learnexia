@@ -6,6 +6,7 @@ public static partial class Claims
     {
         "Catalog",
         "Learning",
+        "Parent",
 
     };
 
