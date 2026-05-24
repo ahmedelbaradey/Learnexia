@@ -1519,6 +1519,15 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="AvatarRemovedSuccessfully" xml:space="preserve">
     <value>Avatar removed successfully.</value>
   </data>
+  <data name="ForgotPasswordGenericResponse" xml:space="preserve">
+    <value>If an account exists for that email, a password reset link has been sent.</value>
+  </data>
+  <data name="ResetPasswordInvalidLink" xml:space="preserve">
+    <value>This password reset link is invalid or has expired. Please request a new one.</value>
+  </data>
+  <data name="ResetPasswordSuccessful" xml:space="preserve">
+    <value>Your password has been reset. Please sign in with your new password.</value>
+  </data>
   <data name="GoogleIdTokenRequired" xml:space="preserve">
     <value>A Google ID token is required.</value>
   </data>

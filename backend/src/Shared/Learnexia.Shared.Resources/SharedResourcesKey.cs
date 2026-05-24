@@ -715,5 +715,11 @@
         public const string AvatarUploadedSuccessfully = "AvatarUploadedSuccessfully";
         public const string AvatarRemovedSuccessfully = "AvatarRemovedSuccessfully";
 
+        // Self-service password reset (P1-12 BE-6). The forgot-password response is intentionally generic
+        // (no enumeration); the invalid-link message covers BOTH unknown-account and bad/expired-token.
+        public const string ForgotPasswordGenericResponse = "ForgotPasswordGenericResponse";
+        public const string ResetPasswordInvalidLink = "ResetPasswordInvalidLink";
+        public const string ResetPasswordSuccessful = "ResetPasswordSuccessful";
+
     }
 }

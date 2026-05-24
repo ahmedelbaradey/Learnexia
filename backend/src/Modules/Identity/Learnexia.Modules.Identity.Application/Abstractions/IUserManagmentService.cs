@@ -16,6 +16,11 @@ public interface IUserManagmentService
     Task<IdentityResult> AddLoginAsync(User user, UserLoginInfo login);
     Task<User?> FindByIdAsync(string id);
     Task<IdentityResult> ChangePasswordAsync(User user, string currentPassword, string newPassword);
+    // Self-service password reset (P1-12 BE-6). GeneratePasswordResetTokenAsync mints a single-use,
+    // time-limited token; ResetPasswordAsync validates that token and enforces the configured password
+    // policy. Both wrap UserManager directly — no token is ever logged.
+    Task<string> GeneratePasswordResetTokenAsync(User user);
+    Task<IdentityResult> ResetPasswordAsync(User user, string token, string newPassword);
     Task<IdentityResult> DeleteAsync(User user);
     Task<IdentityResult> UpdateAsync(User user);
     Task<IdentityResult> AddToRoleAsync(User user, string role);
