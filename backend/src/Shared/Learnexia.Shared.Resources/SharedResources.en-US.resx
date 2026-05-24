@@ -1498,6 +1498,9 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="TermsConsentRequired" xml:space="preserve">
     <value>You must accept the terms of service to register.</value>
   </data>
+  <data name="CaptchaVerificationFailed" xml:space="preserve">
+    <value>CAPTCHA verification failed. Please try again.</value>
+  </data>
   <data name="CannotEditChildNotInFamily" xml:space="preserve">
     <value>You are not allowed to edit this child.</value>
   </data>

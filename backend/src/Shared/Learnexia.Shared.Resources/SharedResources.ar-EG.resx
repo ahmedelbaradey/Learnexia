@@ -1497,6 +1497,9 @@
   <data name="TermsConsentRequired" xml:space="preserve">
     <value>يجب الموافقة على شروط الخدمة لإتمام التسجيل.</value>
   </data>
+  <data name="CaptchaVerificationFailed" xml:space="preserve">
+    <value>فشل التحقق من اختبار CAPTCHA. يرجى المحاولة مرة أخرى.</value>
+  </data>
   <data name="CannotEditChildNotInFamily" xml:space="preserve">
     <value>غير مسموح لك بتعديل بيانات هذا الطفل.</value>
   </data>

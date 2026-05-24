@@ -9,6 +9,7 @@ using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -21,25 +22,41 @@ public class RegisterParentCommandHandler : BaseResponseHandler, ICommandHandler
     private readonly IStringLocalizer<SharedResources> _localizer;
     private readonly ILoggerManager _logger;
     private readonly IPublisher _publisher;
+    private readonly ICaptchaVerifier _captchaVerifier;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public RegisterParentCommandHandler(
         IIdentityServiceManager service,
         ISessionManagementService sessionManagementService,
         IStringLocalizer<SharedResources> localizer,
         ILoggerManager logger,
-        IPublisher publisher)
+        IPublisher publisher,
+        ICaptchaVerifier captchaVerifier,
+        IHttpContextAccessor httpContextAccessor)
     {
         _service = service;
         _sessionManagementService = sessionManagementService;
         _localizer = localizer;
         _logger = logger;
         _publisher = publisher;
+        _captchaVerifier = captchaVerifier;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<BaseResponse<JwtAuthResponse>> Handle(RegisterParentCommand request, CancellationToken cancellationToken)
     {
         try
         {
+            // Anti-automation gate (P1-13 BE-4): verify the CAPTCHA token before touching the data store,
+            // so a bot can't probe for duplicate emails or spam account creation. When Captcha:Enabled=false
+            // (the default) the verifier is a no-op that returns true, so this is transparent in dev/tests;
+            // when enabled it fails closed. The check lives here (not the validator) because it is async I/O
+            // and config-gated. remoteIp is best-effort from the request context (siteverify works without it).
+            var remoteIp = _httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
+            var captchaOk = await _captchaVerifier.VerifyAsync(request.CaptchaToken, remoteIp, cancellationToken);
+            if (!captchaOk)
+                return BadRequest<JwtAuthResponse>(_localizer[SharedResourcesKey.CaptchaVerificationFailed]);
+
             // Race-safe backstop. The async validator already rejects duplicates with a 422; this guards
             // the window between validation and creation. UserName == Email for parent registration.
             var existingUser = await _service.UserManagmentService.FindByEmailAsync(request.Email);
