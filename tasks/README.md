@@ -66,7 +66,8 @@ tasks/
 | P1-11 | Web app pages — pixel-perfect from screenshots | [FE](Frontend/student-app/Phase-1-Foundation/P1-11-FE.md) *(epic; Landing in marketing-site)* | — |
 | P1-12 | Web account backend — profile/avatar/OAuth/reset/edit-child *(**Batch 2**, deferred)* | [FE](Frontend/student-app/Phase-1-Foundation/P1-12-FE.md) | [BE](Backend/Phase-1-Foundation/P1-12-BE.md) |
 | P1-13a | Notifications email delivery *(enabler — built first; unblocks P1-12d & P5-04)* | — | [BE](Backend/Phase-1-Foundation/P1-13a-BE.md) |
-| P1-13 | Backend hardening — lockout/sign-in safety/admin seed *(post-Batch-2 gap analysis)* | — | [BE](Backend/Phase-1-Foundation/P1-13-BE.md) |
+| P1-13 | Backend hardening — lockout/sign-in safety/admin seed/CAPTCHA *(post-Batch-2 gap analysis)* | — | [BE](Backend/Phase-1-Foundation/P1-13-BE.md) |
+| P1-13b | Backend hardening pass — rate-limit/timing-oracle/email-locale/secrets *(bundled audit follow-ups)* | — | [BE](Backend/Phase-1-Foundation/P1-13b-BE.md) |
 | P2-01 | Model curriculum hierarchy | — | [BE](Backend/Phase-2-Learning-Core/P2-01-BE.md) |
 | P2-02 | Browse subjects & lessons | [FE](Frontend/student-app/Phase-2-Learning-Core/P2-02-FE.md) | [BE](Backend/Phase-2-Learning-Core/P2-02-BE.md) |
 | P2-03 | Navigate the skill tree | [FE](Frontend/student-app/Phase-2-Learning-Core/P2-03-FE.md) | [BE](Backend/Phase-2-Learning-Core/P2-03-BE.md) |
