@@ -1,6 +1,6 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-24 (split email delivery into P1-13a built-first; recorded email-verification-bypass + COPPA-deferred decisions; earlier: Phase 1 backend gap analysis + P1-13, Phase 7 Admin Console, P1-12 Batch-2).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-24 (Phase-1 backend leftover **DONE & merged**: P1-13a email, IUserLookup, P1-13 hardening, P1-12 BE-1..BE-9 incl. MinIO avatar + Google sign-in + password reset; only P1-13 BE-4 CAPTCHA remains).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
 
 ## TL;DR
@@ -44,10 +44,11 @@ These exist because the WSL clean install drifts dependencies past the Expo SDK 
 - **Pixel-perfect to `design-system/screenshots/`** is the bar. The `designer` agent has a rule: when a capture exists it's the highest-priority target (cite it, match it, express in `--lx-*` tokens). See `.claude/agents/designer.md`.
 - **Subjects = Math / Science / Arabic / English** everywhere (the dashboard/reports captures show "Reading"/"Art" — that's mock data; use the 4 product subjects).
 - **Scope trims:** Child Home → **P2-09** (not P1-11); secondary Settings tabs (Notifications/Linked/Security/Plan) → **P2-12** (back + front).
-- **All new backend → P1-12 "Batch 2"** (deferred): profile/`Me` enrichment, avatar upload, OAuth, password reset, **update-child**, **register country + terms-consent**. FE ships these surfaces **UI-first** (placeholder/disabled) and lights them up when the backend lands.
+- **All new backend → P1-12 "Batch 2" + P1-13 hardening: ✅ BUILT & MERGED** (profile/`Me`, avatar upload [MinIO], Google OAuth, password reset, update-child, register country+consent; lockout, sign-in anti-enumeration, admin seed). See the "Backend — … DONE" section below. FE can now light up the UI-first surfaces (regenerate the api-client).
 - Per CLAUDE.md: **ask before adding any design pattern**; mirror existing shapes (Catalog backend, existing component/hook shapes frontend).
 
-## For the backend lead (P1-12, Batch 2)
+## For the backend lead (P1-12, Batch 2) — ✅ DONE (retained for traceability)
+> All items below are **built & merged** — see the "Backend — … DONE" section for PRs/details. Kept here as the original gap list.
 All Identity-module-scoped, parallel-safe with your Phase 2 BE work. Stories + tasks:
 - `user-stories/Phase-1-Foundation/P1-12-web-account-backend-batch2.md` + `tasks/Backend/Phase-1-Foundation/P1-12-BE.md`.
 - Gaps found while building the UI: **profile read/update + enriched `/Me`** (no `Phone` column today), **avatar upload** (no storage/`AvatarUrl`), **OAuth** (Google/Apple/Microsoft), **password reset**, **update-child** (no UpdateChild command exists), **register country + terms-consent** (`RegisterParentCommand` takes only `{email,password,fullName}`).
@@ -59,19 +60,26 @@ All Identity-module-scoped, parallel-safe with your Phase 2 BE work. Stories + t
 - Remaining shared primitives (`P1-11-FE-14`): **Switch**, **PasswordStrengthMeter** (Avatar, KPIStatCard, Sidebar, MasteryBar, GradientBox, CheckboxField, **Tabs** now built).
 - Per-child/family analytics stats are stubbed (`(parent)/_components/parentDashboardStubs.ts`) until **Phase 5** (P5-01/P5-05) lands real data.
 
-## What's next (backend — P1-12 "Batch 2", my pickup)
-> Owner: backend lead (me). Identity-module-scoped → **parallel-safe with the Phase 2 BE work**. Story: [P1-12](../../user-stories/Phase-1-Foundation/P1-12-web-account-backend-batch2.md) · Tasks: [P1-12-BE](../../tasks/Backend/Phase-1-Foundation/P1-12-BE.md) · Source: [phase-1-design-gap-analysis.md](../briefs/phase-1-design-gap-analysis.md). Mirror **Catalog**; `BaseResponse<T>`/`Successed`; no cross-module FK.
-- **Not started yet.** Planned order: (1) **BE-3** migration — add `Phone` (+ `Country`, `AvatarUrl`) to Identity `User`; (2) **BE-1/BE-2** profile read/update + enriched `/Me`; (3) **BE-9** register `country` + terms-consent record (COPPA); (4) **BE-8** update/edit-child with family-scope authz (unblocks P1-11 edit-child); then the heavier, security-gated items: (5) **BE-4** avatar upload + storage abstraction, (6) **BE-5** OAuth (Google/Apple/Microsoft), (7) **BE-6** password reset.
-- **`security-auditor` (BE-7)** gates upload/OAuth/reset before the reviewer — Critical/High block.
-- **Two design-pattern decisions to raise with the lead first** (CLAUDE.md rule #8): the **file-storage abstraction** (BE-4, dev-local vs object-store) and the **OAuth provider abstraction** (BE-5) — name the pattern and wait for approval; don't introduce unilaterally.
-- FE (P1-11) ships these surfaces **UI-first** (placeholder avatar, disabled social/forgot) and lights them up as each task merges; regenerate the `api-client` after BE-8/BE-9.
+## Backend — P1-12 Batch 2 + P1-13 hardening: ✅ DONE (merged to main)
+> The Phase-1 backend leftover is complete and on `main` (all Identity-module-scoped, parallel-safe). Every story ran **security-auditor + api-tester + reviewer**; the integration suite is green (**334 tests**, incl. real PostgreSQL + MinIO containers). Source: [phase-1-design-gap-analysis.md](../briefs/phase-1-design-gap-analysis.md) + [phase-1-backend-gap-analysis.md](../briefs/phase-1-backend-gap-analysis.md).
+- **P1-13a** (PR #33) — Notifications email delivery: `IEmailSender` + SMTP adapter + dev log-sink; `UserRegistered` → best-effort welcome email.
+- **IUserLookup** (PR #35) — Identity seam in `Shared.Contracts` so Notifications can resolve a recipient email.
+- **P1-13** (PR #39) — hardening: account **lockout** engaged; sign-in **anti-enumeration** + no `ex.Message` leak (⚠️ sign-in errors are now **uniform** — FE must NOT branch on not-found vs wrong-password); config/env-driven **Admin seed** (legacy `superadmin`/`basicuser` dev-only). **BE-4 CAPTCHA NOT built** — see "Still open".
+- **P1-12** (PRs #40, #43, #44, #45, #46): BE-3 migration (reused `PhoneNumber`/`Nationality`, added `AvatarUrl` + `AcceptedTermsAtUtc`); BE-1/2 profile read/update + enriched `/Me`; BE-9 register `country`+terms-consent; BE-8 edit-child (family-scope, 403 on non-own); BE-4 **avatar via self-hosted MinIO** (`HttpClient` + hand-rolled **AWS SigV4**, **NO MinIO SDK** — "AWS SigV4" is just the S3 signing algo, no AWS dependency; storage lives in **`Shared.Kernel`** as `IStorageService`, stream-based, registered at the Host → reuse it for ANY future upload e.g. BL-01); BE-5 **Google** social sign-in (`Google.Apis.Auth`, ID-token flow); BE-6 password reset (anti-enumeration + session invalidation, email via the `Shared.Contracts` event seam).
 
-### P1-13 — Phase 1 backend hardening (new, from the backend gap analysis)
-> A code-grounded **backend-only gap analysis of all Phase 1** (excluding P1-12) is at [docs/briefs/phase-1-backend-gap-analysis.md](../briefs/phase-1-backend-gap-analysis.md). It confirmed most suspected gaps are **already covered** (refresh rotation, sign-out revocation, RBAC `[Authorize]` + family/self-scope, JWT secret from env) and found **6 real gaps**, now broken down as **[P1-13a](../../tasks/Backend/Phase-1-Foundation/P1-13a-BE.md)** (email delivery, built first) + **[P1-13](../../tasks/Backend/Phase-1-Foundation/P1-13-BE.md)** ([story](../../user-stories/Phase-1-Foundation/P1-13-backend-hardening.md)). Not started.
-- **Gaps:** account lockout configured but never engaged (`SignInCommandHandler` passes `lockoutOnFailure:false`); sign-in leaks `ex.Message` + allows email enumeration; **Notifications can't send email** (`SendNotificationCommandHandler` throws — this is the only piece of the P1-12d reset chain P1-12 doesn't build); no env-driven Admin seed (only `superadmin@gmail.com` with committed `123Pa$$word!`); no CAPTCHA on register (tracked debt); no working registration-message send.
-- **Decisions made (2026-05-24):** (1) **email verification at registration → BYPASSED for now** (no `RequireConfirmedEmail`); (2) **COPPA under-13 consent → deferred to a compliance pass** (no entity now); (3) **email delivery → split into [P1-13a](../../user-stories/Phase-1-Foundation/P1-13a-notifications-email-delivery.md) ([P1-13a-BE](../../tasks/Backend/Phase-1-Foundation/P1-13a-BE.md)) and built first.**
-- **Build order:** **P1-13a first** (email infra → unblocks P1-12d & P5-04), then **P1-13** = lockout (#1), sign-in safety/anti-enumeration (#2), config-driven admin seed (#5), CAPTCHA (#3, may defer to P6). P1-13's lockout/sign-in/admin-seed don't depend on email and can run in parallel with P1-13a.
-- **Ask-first before coding P1-13a:** the `IEmailSender` Adapter pattern + the staging/prod email-provider choice (SMTP relay vs SendGrid/SES) need lead approval (CLAUDE.md rule #8).
+### ⚠️ Load-bearing backend config — set via ENV in staging/prod (do NOT commit real values)
+- **MinIO:** `MinIOConfiguration__AccessKey` / `__SecretKey` (self-hosted `minio` container in `docker/docker-compose.yaml`; dev defaults `minioadmin`; private `avatars` bucket; presigned URLs).
+- **Google:** `GoogleAuth__ClientId` (sign-in audience; inert/fail-closed if unset).
+- **Admin seed:** `AdminSeed__Email` / `__Password` (no-op if unset; no committed credential).
+- **Password reset:** `ClientAppBaseUrl` (reset-link origin; dev default `http://localhost:3000`).
+- **Email:** `Email__Provider=Smtp` + `Email__Host/__UserName/__Password` for real delivery (dev = `None`/log sink).
+
+### Still open (backend)
+- **P1-13 BE-4 — CAPTCHA on register** (confirmed in P1 scope): NOT built — pending a **provider choice** (reCAPTCHA / Cloudflare Turnstile / hCaptcha) + `ICaptchaVerifier` ask-first approval. FE consumer `P1-11-FE-16`.
+- **Hardening follow-ups** (non-blocking; in the per-PR security briefs): per-IP throttle on the auth endpoints; forgot-password **timing-oracle** decouple (email send is synchronous in-request); **localize** the reset + welcome emails (English-only today); MinIO presign TTL = 60m.
+
+### FE now unblocked (regenerate the `api-client`)
+Profile save (`/Account/Profile`), avatar upload/remove (`/Account/Avatar`), Google button (`/Authentication/Google-SignIn`), forgot/reset (`/Authentication/Forgot-Password` + `Reset-Password`), edit-child (`/Parent/Update-Child`), register `country`+`acceptedTerms`. Sign-in errors are uniform now (`P1-11-FE-15` / `P1-10-FE-6`).
 
 ### Backend → Frontend coverage gap analysis (new, 2026-05-24)
 > The reverse of the FE-design gap analysis: starting from every Phase-1 **backend capability**, does a FE story/task consume it? Brief: [docs/briefs/phase-1-frontend-coverage-gap-analysis.md](../briefs/phase-1-frontend-coverage-gap-analysis.md) (grounded in the real Identity/Notifications controllers).
