@@ -1,6 +1,6 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-24 (Phase-1 backend leftover **DONE & merged**: P1-13a email, IUserLookup, P1-13 hardening, P1-12 BE-1..BE-9 incl. MinIO avatar + Google sign-in + password reset; only P1-13 BE-4 CAPTCHA remains; **P2-12** account-settings 3-module refactor committed on feat/P2-12-account-settings-apis, pending Wave-6 PR; **P2-10** demo curriculum seeder committed on feat/P2-10-seed-demo-data, pending Wave-6 PR).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-25 (Phase-1 backend leftover **DONE & merged**: P1-13a email, IUserLookup, P1-13 hardening, P1-12 BE-1..BE-9 incl. MinIO avatar + Google sign-in + password reset; only P1-13 BE-4 CAPTCHA remains; **P2-06** take-a-quiz (StartAttempt) committed on feat/P2-06-assessment-quiz, pending Wave-6 PR; **P2-12** account-settings 3-module refactor committed on feat/P2-12-account-settings-apis, pending Wave-6 PR; **P2-10** demo curriculum seeder committed on feat/P2-10-seed-demo-data, pending Wave-6 PR).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
 
 ## TL;DR
@@ -9,6 +9,38 @@
 - **P1-11** (parent web pages, pixel-perfect from `design-system/screenshots/`) is planned + two screens built: **Login** and **Register**.
 - All **new backend** the design implies is deferred to **P1-12 "Batch 2"** (Identity-scoped, parallel-safe with the Phase 2 BE lead) — see "For the backend lead".
 
+
+## P2-06 — Take a quiz (folded into Learning module)
+> Committed on `feat/P2-06-assessment-quiz`; pending Wave-6 PR. Build green, integration + unit tests pass, reviewer PASS.
+
+**Lead decision:** quiz/assessment functionality lives in the **Learning** module (schema `learning`), NOT a separate Assessment module. A separate Assessment module was scaffolded then deleted per lead instruction. **Ask before creating new modules** — all quiz work goes in Learning going forward.
+
+**New domain entities (Learning.Domain):**
+- `QuizQuestion` — polymorphic question record with `QuestionType` (MCQ/TrueFalse/Matching/FillInBlank), `Content` (JSON blob), `CorrectAnswer`, `Order`, and `GeneratedBy` (Human/AI). Linked to a `Lesson`.
+- `Attempt` — student quiz attempt record; status `AttemptStatus` (NotStarted/InProgress/Completed/Abandoned); links to a `Lesson` and `StudentId`.
+- `StudentAnswer` — per-question answer record inside an attempt.
+
+**Migration:** `AddQuizTables` (learning schema) — creates `quiz_questions`, `attempts`, `student_answers` tables in the `learning` schema.
+
+**New endpoint:**
+- `POST /api/Learning/Quizzes/{lessonId}/Attempt` — `[Authorize(Roles="Student")]` — creates a new `InProgress` attempt (or resumes an existing one) and returns the lesson's questions **without** the `CorrectAnswer` field. Enforces: lesson-existence check (404), Student-role-only (403), no-answer-leak.
+
+**4 question types modeled** (MCQ / TrueFalse / Matching / FillInBlank) with a per-type content validator (`QuizQuestionContentValidator` helper) and unit tests in `Modules.Learning.UnitTests/QuizQuestionTypeValidationTests.cs`.
+
+**`AttemptService.StartNewAsync` explicit SaveChangesAsync:** calls `LearningDbContext.SaveChangesAsync` directly (not waiting for UoW) to obtain the DB-generated `AttemptId` before returning questions — mirrors the `LinkParentStudentService` precedent. UoW's later save is a no-op.
+
+**Secret hygiene (no new secrets introduced):**
+- Remote dev DB connection string lives ONLY in gitignored `appsettings.Development.local.json`.
+- `Program.cs` now loads optional `appsettings.{Environment}.local.json` at startup (before other config, optional:true so the app runs without it).
+- Tracked `appsettings.Development.json` keeps the localhost default only. **Never commit the .local.json file.**
+- Remote DB (75.119.158.102:5346/learnexia): all 5 module schemas migrated; NOT seeded yet. To seed, run `dotnet run --project backend/src/Host/Learnexia.Host -- --environment Development --MinIOConfiguration:Enabled false` (or add a `Bash(dotnet run:*)` allow-rule for the seeding agent).
+
+**P6-06 pre-existing deferrals (NOT introduced by P2-06):**
+- F2: JWT `CHANGE_ME` secret in `appsettings.json` should be env-driven + startup-guarded.
+- F6: `RequireHttpsMetadata=false` should be Development-only.
+- F9: `DbContext` audit stamp uses `DateTime.Now` (should be `UtcNow`).
+- F11: MinIO default credentials should be env-driven.
+- MSB3277: EF 10.0.0/10.0.8 version conflict to resolve in `Directory.Packages.props`.
 
 ## P2-10 — Seed demo subjects & skill trees
 > Committed on `feat/P2-10-seed-demo-data`; pending Wave-6 PR. Dev-only idempotent seeder; unit tests green.

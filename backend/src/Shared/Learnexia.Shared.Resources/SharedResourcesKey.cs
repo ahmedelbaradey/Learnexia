@@ -740,5 +740,18 @@
         // Account settings — plan stub (P2-12 PLAN).
         public const string PlanRetrievedSuccessfully = "PlanRetrievedSuccessfully";
 
+        // Quiz/Assessment — start-attempt (P2-06 BE-3/BE-4).
+        public const string AttemptStartedSuccessfully = "AttemptStartedSuccessfully";
+        public const string AttemptResumedSuccessfully = "AttemptResumedSuccessfully";
+        public const string LessonNotFound = "LessonNotFound";
+        public const string LessonIdMustBePositive = "LessonIdMustBePositive";
+
+        // Quiz/Assessment — per-type question content validation (P2-06 BE-3).
+        public const string McqRequiresAtLeastTwoOptions = "McqRequiresAtLeastTwoOptions";
+        public const string McqCorrectAnswerMustBeValidOption = "McqCorrectAnswerMustBeValidOption";
+        public const string TrueFalseCorrectAnswerInvalid = "TrueFalseCorrectAnswerInvalid";
+        public const string MatchingOptionsMustBePaired = "MatchingOptionsMustBePaired";
+        public const string FillInBlankCorrectAnswerRequired = "FillInBlankCorrectAnswerRequired";
+
     }
 }

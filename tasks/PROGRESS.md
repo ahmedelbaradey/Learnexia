@@ -12,6 +12,7 @@
 - `—` — no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
+- **Wave 6:** P2-06-BE (take-a-quiz / StartAttempt, folded into Learning module — quiz entities + migration + endpoint + unit tests) — committed on feat/P2-06-assessment-quiz
 - **Wave 6:** P2-10-BE (seed demo subjects & skill trees — 6 grades × 4 subjects, Math deepest, idempotent) — committed on feat/P2-10-seed-demo-data
 - **Wave 6:** P2-12-BE (account settings — Parent module + Notifications prefs + Identity security) — committed on feat/P2-12-account-settings-apis
 - **Wave 5:** P2-01-BE (model curriculum hierarchy, 6 entities, CQRS vertical slices, 30 endpoints) — committed
@@ -54,7 +55,7 @@
 | P2-03 | Navigate the skill tree | 🔲 | 🔲 |
 | P2-04 | Unlock lessons by prerequisite/mastery | 🔲 | — |
 | P2-05 | Open and complete a lesson | 🔲 | 🔲 |
-| P2-06 | Take a quiz (4 question types) | 🔲 | 🔲 |
+| P2-06 | Take a quiz (4 question types) | 🟡 | 🔲 |
 | P2-07 | Get instant answer feedback | 🔲 | 🔲 |
 | P2-08 | Record granular per-question answers | 🔲 | — |
 | P2-09 | See the home dashboard | 🔲 | 🔲 |
