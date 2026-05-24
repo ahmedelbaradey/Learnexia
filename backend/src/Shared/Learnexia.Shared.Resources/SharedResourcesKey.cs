@@ -696,5 +696,11 @@
         public const string GradeOutOfRange = "GradeOutOfRange";
         public const string InvalidLanguageCode = "InvalidLanguageCode";
 
+        // Register consent (P1-12 BE-9): registration requires accepting the terms of service.
+        public const string TermsConsentRequired = "TermsConsentRequired";
+
+        // Edit-Child family scope (P1-12 BE-8): parent may only edit a child in their own family.
+        public const string CannotEditChildNotInFamily = "CannotEditChildNotInFamily";
+
     }
 }

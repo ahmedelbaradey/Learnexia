@@ -129,7 +129,7 @@ public sealed class P1_03_AddChild_Tests : IAsyncLifetime
     private async Task<string> RegisterParentAndGetTokenAsync(string email, string password = "Str0ng@Pass")
     {
         var (resp, root, body) = await SendAsync(_client, HttpMethod.Post, RegisterParentUrl,
-            new { Email = email, Password = password });
+            new { Email = email, Password = password, AcceptedTerms = true });
         resp.StatusCode.Should().Be(HttpStatusCode.OK,
             "parent registration must succeed; body: {0}", body);
         TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);

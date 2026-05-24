@@ -1,6 +1,7 @@
 using Learnexia.Modules.Identity.Api.Bases;
 using Learnexia.Modules.Identity.Application.Features.Family.Commands.AddChild;
 using Learnexia.Modules.Identity.Application.Features.Family.Commands.LinkChild;
+using Learnexia.Modules.Identity.Application.Features.Family.Commands.UpdateChild;
 using Learnexia.Modules.Identity.Application.Features.Family.Queries.ListMyChildren;
 using Learnexia.Shared.Kernel.Responses;
 using Microsoft.AspNetCore.Authorization;
@@ -31,6 +32,14 @@ public class ParentController : AppControllerBase
     [HttpPost("Link-Child")]
     [ProducesResponseType(typeof(BaseResponse<LinkedChildResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> LinkChild([FromBody] LinkChildCommand command)
+        => NewResult(await Mediator.Send(command));
+
+    // Parent edits one of THEIR OWN children (BE-8). Family scope is enforced in the handler from the
+    // JWT-resolved parent id + ParentStudent link check — there is no ParentId on the command. A parent
+    // editing a non-linked child gets 403.
+    [HttpPut("Update-Child")]
+    [ProducesResponseType(typeof(BaseResponse<UpdatedChildResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> UpdateChild([FromBody] UpdateChildCommand command)
         => NewResult(await Mediator.Send(command));
 
     [HttpGet("My-Children")]

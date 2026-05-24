@@ -127,8 +127,8 @@ public sealed class P1_09_Me_Tests : IAsyncLifetime
         string email, string password = "Str0ng@Pass", string? fullName = null)
     {
         var payload = fullName is not null
-            ? (object)new { Email = email, Password = password, FullName = fullName }
-            : new { Email = email, Password = password };
+            ? (object)new { Email = email, Password = password, FullName = fullName, AcceptedTerms = true }
+            : new { Email = email, Password = password, AcceptedTerms = true };
 
         var (resp, root, body) = await SendAsync(_client, HttpMethod.Post, RegisterParentUrl, payload);
         resp.StatusCode.Should().Be(HttpStatusCode.OK,

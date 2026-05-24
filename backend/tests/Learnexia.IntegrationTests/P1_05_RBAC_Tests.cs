@@ -141,7 +141,7 @@ public sealed class P1_05_RBAC_Tests : IAsyncLifetime
     {
         var parentEmail = email ?? UniqueEmail("parent");
         var (resp, root, body) = await SendAsync(_client, HttpMethod.Post, RegisterParentUrl,
-            new { Email = parentEmail, Password = "Str0ng@Pass" });
+            new { Email = parentEmail, Password = "Str0ng@Pass", AcceptedTerms = true });
         resp.StatusCode.Should().Be(HttpStatusCode.OK,
             "parent registration prerequisite must succeed; body: {0}", body);
         TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);
@@ -512,7 +512,7 @@ public sealed class P1_05_RBAC_Tests : IAsyncLifetime
     {
         // A valid registration body — should succeed anonymously.
         var (resp, _, body) = await SendAsync(_client, HttpMethod.Post, RegisterParentUrl,
-            new { Email = UniqueEmail("ac8"), Password = "Str0ng@Pass" });
+            new { Email = UniqueEmail("ac8"), Password = "Str0ng@Pass", AcceptedTerms = true });
 
         ((int)resp.StatusCode).Should().NotBe(401,
             "Register-Parent must be [AllowAnonymous]; anonymous call must not return 401. " +

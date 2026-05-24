@@ -57,6 +57,13 @@ public class BaseResponseHandler
         Message = message ?? "UnAuthorized",
     };
 
+    public BaseResponse<T> Forbidden<T>(string? message = null) => new()
+    {
+        StatusCode = HttpStatusCode.Forbidden,
+        Successed = false,
+        Message = message ?? "Forbidden",
+    };
+
     public BaseResponse<T> BusinessValidation<T>(string? message = null) => new()
     {
         StatusCode = HttpStatusCode.FailedDependency,

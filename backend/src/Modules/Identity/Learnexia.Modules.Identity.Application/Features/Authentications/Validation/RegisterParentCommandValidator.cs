@@ -35,6 +35,15 @@ public class RegisterParentCommandValidator : AbstractValidator<RegisterParentCo
         RuleFor(x => x.Password)
             .NotEmpty().WithMessage(_localizer[SharedResourcesKey.LoginPasswordRequired])
             .Matches(PasswordPolicyPattern).WithMessage(_localizer[SharedResourcesKey.PasswordComplexityError]);
+
+        // BE-9: terms consent is mandatory — reject registration when not accepted.
+        RuleFor(x => x.AcceptedTerms)
+            .Equal(true).WithMessage(_localizer[SharedResourcesKey.TermsConsentRequired]);
+
+        // BE-9: country is optional (stored on Nationality) but length-bounded when supplied.
+        RuleFor(x => x.Country)
+            .MaximumLength(100).WithMessage(_localizer[SharedResourcesKey.ProfileCountryTooLong])
+            .When(x => !string.IsNullOrWhiteSpace(x.Country));
     }
 
     private async Task<bool> BeUniqueEmail(string email, CancellationToken cancellationToken)

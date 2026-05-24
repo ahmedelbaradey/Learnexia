@@ -18,6 +18,12 @@ public class User : IdentityUser<int>
     /// Null until the user uploads an avatar.
     /// </summary>
     public string? AvatarUrl { get; set; }
+    /// <summary>
+    /// UTC timestamp at which the parent accepted the platform terms at registration (BE-9, COPPA audit).
+    /// Non-null means consent was recorded; null means consent was not yet captured.
+    /// No separate boolean — presence of this value is the boolean.
+    /// </summary>
+    public DateTime? AcceptedTermsAtUtc { get; set; }
     public bool RegistrationMessageIsSent { get; set; } = false;
     public bool RegistrationIsCompleted { get; set; } = false;
     public bool IsActive { get; set; } = true;
