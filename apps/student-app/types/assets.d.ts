@@ -17,3 +17,9 @@ declare module '*.jpg' {
   const content: number;
   export default content;
 }
+declare module '*.ttf' {
+  // URL string on web, numeric module id on native (the design-system font
+  // loaders narrow per platform). Must match the package's own `*.ttf` decl.
+  const content: string | number;
+  export default content;
+}

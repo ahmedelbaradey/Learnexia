@@ -20,6 +20,7 @@
 import { createFont } from '@tamagui/core';
 
 import { fontSize } from '../tokens';
+import { nativeFaceFor } from './faces.native';
 
 const sizeScale = {
   1: fontSize[1],
@@ -77,22 +78,32 @@ const common = {
   letterSpacing: letterSpacingScale,
 } as const;
 
+/**
+ * The `face` map lets Tamagui resolve a numeric weight to the physical font face
+ * registered with expo-font on NATIVE (`{ [weight]: { normal: faceKey } }`). On
+ * WEB it's inert (weights resolve through the injected `@font-face` rules), so
+ * attaching it on both platforms is safe.
+ */
+
 /** Poppins — English display + body. */
 export const poppinsFont = createFont({
   family: 'Poppins',
   ...common,
+  face: nativeFaceFor('Poppins'),
 });
 
 /** Cairo — Arabic display (headings). */
 export const cairoFont = createFont({
   family: 'Cairo',
   ...common,
+  face: nativeFaceFor('Cairo'),
 });
 
 /** Tajawal — Arabic body. */
 export const tajawalFont = createFont({
   family: 'Tajawal',
   ...common,
+  face: nativeFaceFor('Tajawal'),
 });
 
 /**
@@ -116,3 +127,9 @@ export const fontFamilyForLocale = (locale: string) =>
     : { display: 'Poppins', body: 'Poppins' };
 
 export type Fonts = typeof fonts;
+
+// Font asset loaders. WEB injects `@font-face`; NATIVE loads via expo-font.
+export { loadWebFonts } from './webFontFace';
+export { nativeFontMap, nativeFaceFor } from './faces.native';
+export { fontFaces } from './assets';
+export type { FontFaceDescriptor } from './assets';

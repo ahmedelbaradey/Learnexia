@@ -15,7 +15,7 @@
  * runs inside the provider tree.
  */
 import { createApiClient, ApiClientProvider, createQueryClient } from '@learnexia/api-client';
-import { LearnexiaProvider } from '@learnexia/design-system';
+import { LearnexiaProvider, loadWebFonts, nativeFontMap } from '@learnexia/design-system';
 import {
   initI18n,
   changeLocale,
@@ -24,9 +24,11 @@ import {
   type Locale,
 } from '@learnexia/shared';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { useFonts } from 'expo-font';
 import { Slot } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useRef } from 'react';
+import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { resolveApiBaseUrl } from '../src/providers/apiBaseUrl';
@@ -41,7 +43,17 @@ import { createPlatformTokenStorage } from '../src/providers/tokenStorage';
 // crashes ("Should have a queue"). The active locale is applied via changeLocale.
 initI18n();
 
+// WEB: inject the brand `@font-face` rules at module load so the typeface is
+// available as early as possible (Poppins / Cairo / Tajawal, per weight). No-op
+// on native (no DOM). Native loads the same faces via `useFonts` below.
+loadWebFonts();
+
 export default function RootLayout() {
+  // Load the brand `.ttf` faces on NATIVE via expo-font. On web this resolves
+  // immediately (the faces are wired through the injected `@font-face` CSS), so
+  // it never blocks the web render. Declared first so the hook order is stable.
+  const [fontsLoaded] = useFonts(nativeFontMap);
+
   const locale = useLocaleStore((s) => s.locale);
   const theme = useThemeStore((s) => s.theme);
 
@@ -73,6 +85,13 @@ export default function RootLayout() {
   useEffect(() => {
     void changeLocale(locale as Locale);
   }, [locale]);
+
+  // NATIVE: hold the first render until the brand faces are loaded so text never
+  // flashes in a fallback face. WEB renders immediately — `@font-face`/`swap`
+  // handles progressive loading, and `useFonts` is effectively instant there.
+  if (Platform.OS !== 'web' && !fontsLoaded) {
+    return null;
+  }
 
   return (
     <SafeAreaProvider>
