@@ -1,6 +1,6 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-24 (Phase-1 backend leftover **DONE & merged**: P1-13a email, IUserLookup, P1-13 hardening, P1-12 BE-1..BE-9 incl. MinIO avatar + Google sign-in + password reset; only P1-13 BE-4 CAPTCHA remains; **P2-12** account-settings 3-module refactor committed on feat/P2-12-account-settings-apis, pending Wave-6 PR).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-24 (Phase-1 backend leftover **DONE & merged**: P1-13a email, IUserLookup, P1-13 hardening, P1-12 BE-1..BE-9 incl. MinIO avatar + Google sign-in + password reset; only P1-13 BE-4 CAPTCHA remains; **P2-12** account-settings 3-module refactor committed on feat/P2-12-account-settings-apis, pending Wave-6 PR; **P2-10** demo curriculum seeder committed on feat/P2-10-seed-demo-data, pending Wave-6 PR).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
 
 ## TL;DR
@@ -9,6 +9,17 @@
 - **P1-11** (parent web pages, pixel-perfect from `design-system/screenshots/`) is planned + two screens built: **Login** and **Register**.
 - All **new backend** the design implies is deferred to **P1-12 "Batch 2"** (Identity-scoped, parallel-safe with the Phase 2 BE lead) — see "For the backend lead".
 
+
+## P2-10 — Seed demo subjects & skill trees
+> Committed on `feat/P2-10-seed-demo-data`; pending Wave-6 PR. Dev-only idempotent seeder; unit tests green.
+
+- **Seeder location:** `backend/src/Modules/Learning/Learnexia.Modules.Learning.Infrastructure/Persistence/Seed/LearningSeeder.cs`
+- **Activation:** runs at startup ONLY in Development, via `IHostEnvironment.IsDevelopment()` inside `LearningModule.InitializeAsync`. The environment check lives in `LearningModule` (not in the seeder) so the seeder is environment-neutral and unit tests can call it directly.
+- **Coverage:** all **6 grades × 4 subjects** (Math, Science, Arabic, English; **NO Social Studies**). Math is the deepest tree: 5 units / 15 lessons / 5 concepts / 15 skills per grade; the other three subjects use 2 units / 4 lessons / 2 concepts / 4 skills per grade.
+- **Idempotent:** natural-key checks on Subject.Name + Grade; re-running the seeder in an already-seeded DB adds zero rows.
+- **`SystemUserId = 0`** convention for all seed-authored rows (matches the broader platform convention for system-generated data).
+- **P2-11 extension seam:** Skill `Name` strings are stable lookup keys — P2-11 (skill dependency graph) will use them to attach prerequisite edges. **Do NOT rename skill name strings** after the seeder ships.
+- **Demo-ready:** P2-02 (browse subjects/lessons) and P2-03 (navigate skill tree) can now be demoed against a populated DB. Run the backend in `Development` mode to auto-seed.
 
 ## P2-12 — Account settings (3-module refactor)
 > Committed on `feat/P2-12-account-settings-apis`; pending Wave-6 PR. Build green, 39/39 integration tests pass, security-auditor 2 High findings remediated.
