@@ -2,11 +2,13 @@ using Learnexia.Modules.Learning.Api.Controllers;
 using Learnexia.Modules.Learning.Application;
 using Learnexia.Modules.Learning.Infrastructure;
 using Learnexia.Modules.Learning.Infrastructure.Persistence;
+using Learnexia.Modules.Learning.Infrastructure.Persistence.Seed;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Learnexia.Modules.Learning.Api;
 
@@ -36,5 +38,12 @@ public static class LearningModule
     {
         var dbContext = serviceProvider.GetRequiredService<LearningDbContext>();
         await dbContext.Database.MigrateAsync();
+
+        // Seed demo curriculum data in Development only — mirrors the IdentitySeeder dev-only gate.
+        // The environment check lives here (not in LearningSeeder itself) so the seeder stays
+        // environment-neutral and unit tests can call it directly without a host environment.
+        var env = serviceProvider.GetRequiredService<IHostEnvironment>();
+        if (env.IsDevelopment())
+            await LearningSeeder.SeedAsync(serviceProvider);
     }
 }

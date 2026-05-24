@@ -12,6 +12,7 @@
 - `—` — no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
+- **Wave 6:** P2-10-BE (seed demo subjects & skill trees — 6 grades × 4 subjects, Math deepest, idempotent) — committed on feat/P2-10-seed-demo-data
 - **Wave 6:** P2-12-BE (account settings — Parent module + Notifications prefs + Identity security) — committed on feat/P2-12-account-settings-apis
 - **Wave 5:** P2-01-BE (model curriculum hierarchy, 6 entities, CQRS vertical slices, 30 endpoints) — committed
 - **Wave 4:** P1-09 (auth & onboarding screens, Expo + NSwag client + shared Tamagui UI primitives + Me endpoint), P1-10 (admin dashboard sign-in on shared Tamagui UI) — PR open
@@ -57,7 +58,7 @@
 | P2-07 | Get instant answer feedback | 🔲 | 🔲 |
 | P2-08 | Record granular per-question answers | 🔲 | — |
 | P2-09 | See the home dashboard | 🔲 | 🔲 |
-| P2-10 | Seed demo subjects & skill trees | 🔲 | — |
+| P2-10 | Seed demo subjects & skill trees | 🟡 | — |
 | P2-12 | Account settings APIs (Parent module + Notifications prefs + Identity security) | 🟡 | 🔲 |
 
 ## Phase 3 — Gamification *(story IDs `P4-xx`)*
