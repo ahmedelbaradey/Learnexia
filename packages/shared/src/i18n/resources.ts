@@ -327,6 +327,9 @@ export const en = {
         countryPlaceholder: 'Select country',
         cancel: 'Cancel',
         save: 'Save changes',
+        loading: 'Loading your profile…',
+        saveSuccess: 'Your profile has been saved.',
+        saveError: "Couldn't save your profile. Please try again.",
       },
       language: {
         title: 'Language & region',
@@ -677,6 +680,9 @@ export const ar = {
         countryPlaceholder: 'اختر الدولة',
         cancel: 'إلغاء',
         save: 'حفظ التغييرات',
+        loading: 'جارٍ تحميل ملفك الشخصي…',
+        saveSuccess: 'تم حفظ ملفك الشخصي.',
+        saveError: 'تعذّر حفظ ملفك الشخصي. يرجى المحاولة مجدداً.',
       },
       language: {
         title: 'اللغة والمنطقة',

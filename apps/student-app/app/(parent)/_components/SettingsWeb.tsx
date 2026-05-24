@@ -5,11 +5,13 @@
  * and the active tab's panel.
  *
  * Functional tabs:
- *  - Profile: avatar (initials) + Upload photo / Remove, Full name, Email, Phone,
- *    Country select, Cancel / Save changes. Save + avatar upload have NO backend
- *    yet (P1-12) → wired UI-first: Save is a disabled no-op stub (TODO(P1-12));
- *    no fake API call. Full name is prefilled from `useMe`; email/phone/country
- *    are local UI state (those columns land in P1-12).
+ *  - Profile: avatar (image from `avatarUrl`, else initials) + Upload photo /
+ *    Remove, Full name, Phone, Country select, Cancel / Save changes. Initial
+ *    values load from `useMyProfile` (P1-12 backend); Save persists fullName /
+ *    phone / country via `useUpdateProfile` with success + error feedback; Cancel
+ *    resets to the loaded values. Email is display-only (not in the profile
+ *    contract). Avatar upload/remove stay UI-only stubs — the avatar-upload
+ *    backend (P1-12 BE-4) isn't built yet (TODO(P1-12 avatar upload)).
  *  - Language & region: switches the app language (en↔ar) app-wide + persists via
  *    the locale store (reused from the Login locale switch); region is UI-only.
  * Placeholder tabs (P2-12): Notifications / Linked children / Security /
@@ -18,14 +20,20 @@
  * RTL + ar/en throughout; tokens only (no raw hex); reuses `@learnexia/ui`
  * primitives (Tabs, Avatar, Button, TextField, Select) — no new design pattern.
  */
-import { useMe } from '@learnexia/api-client';
+import {
+  useMyProfile,
+  useUpdateProfile,
+  type AccountProfileResponse,
+} from '@learnexia/api-client';
 import { COUNTRIES, LOCALES, type CountryCode, type Locale } from '@learnexia/shared';
 import { Avatar, Button, Select, Tabs, TextField, type TabItem } from '@learnexia/ui';
 import { Stack, Text } from '@tamagui/core';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ServerErrorBanner } from '../../../src/components/ServerErrorBanner';
 import { useLocale } from '../../../src/hooks/useLocale';
+import { useServerError } from '../../../src/hooks/useServerError';
 import { useLocaleStore } from '../../../src/providers/localeStore';
 
 /** Fixed set of settings sections (enum-style const, never raw literals). */
@@ -74,7 +82,7 @@ const REGION = {
 export function SettingsWeb() {
   const { t } = useTranslation();
   const { direction, isRtl, locale } = useLocale();
-  const me = useMe();
+  const profile = useMyProfile();
   const [period, setPeriod] = useState<string>(REPORTING_PERIOD.ThisWeek);
   const [activeTab, setActiveTab] = useState<SettingsTabKey>(SETTINGS_TAB.Profile);
 
@@ -149,7 +157,8 @@ export function SettingsWeb() {
             <ProfilePanel
               direction={direction}
               rowDir={rowDir}
-              fullName={me.data?.fullName ?? ''}
+              profile={profile.data}
+              isLoading={profile.isPending}
             />
           ) : activeTab === SETTINGS_TAB.Language ? (
             <LanguagePanel direction={direction} rowDir={rowDir} locale={locale} />
@@ -203,26 +212,80 @@ function PanelHeader({ title, subtitle, direction }: { title: string; subtitle: 
 }
 
 /* ------------------------------------------------------------------ */
-/* Profile panel — functional UI; Save is a disabled stub (P1-12)      */
+/* Profile panel — loads via useMyProfile, saves via useUpdateProfile   */
 /* ------------------------------------------------------------------ */
 
 interface ProfilePanelProps extends PanelProps {
   rowDir: 'row' | 'row-reverse';
-  fullName: string;
+  /** Loaded profile (fullName / phone / country / avatarUrl) — undefined while fetching. */
+  profile: AccountProfileResponse | undefined;
+  isLoading: boolean;
 }
 
-function ProfilePanel({ direction, rowDir, fullName }: ProfilePanelProps) {
+/** Resolve a profile `country` string to a known `CountryCode`, else null. */
+function toCountryCode(country: string | undefined): CountryCode | null {
+  if (!country) return null;
+  const match = COUNTRIES.find((c) => c.code === country);
+  return match ? (match.code as CountryCode) : null;
+}
+
+function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelProps) {
   const { t } = useTranslation();
   const { locale } = useLocale();
+  const updateProfile = useUpdateProfile();
+  const resolveError = useServerError();
 
-  // UI-first local form state. `fullName` is prefilled from `useMe`; email /
-  // phone / country are placeholder-only until the P1-12 profile API lands.
-  const [name, setName] = useState(fullName);
-  const [email, setEmail] = useState('');
+  // Form state seeded from the loaded profile. `email` is display-only (not part
+  // of the profile contract). Re-sync whenever the loaded profile changes.
+  const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [country, setCountry] = useState<CountryCode | null>(null);
 
+  const resetToLoaded = React.useCallback(() => {
+    setName(profile?.fullName ?? '');
+    setPhone(profile?.phone ?? '');
+    setCountry(toCountryCode(profile?.country));
+    updateProfile.reset();
+  }, [profile, updateProfile]);
+
+  useEffect(() => {
+    setName(profile?.fullName ?? '');
+    setPhone(profile?.phone ?? '');
+    setCountry(toCountryCode(profile?.country));
+  }, [profile]);
+
   const countryOptions = COUNTRIES.map((c) => ({ value: c.code, label: locale === 'ar' ? c.ar : c.en }));
+
+  const serverMessage = updateProfile.isError
+    ? resolveError(updateProfile.error, {
+        byStatus: { 400: 'parent.settings.profile.saveError', 422: 'parent.settings.profile.saveError' },
+      })
+    : null;
+
+  const onSave = () => {
+    updateProfile.mutate({
+      fullName: name.trim(),
+      phone: phone.trim() || undefined,
+      country: country ?? undefined,
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <PanelSurface>
+        <PanelHeader
+          title={t('parent.settings.profile.title')}
+          subtitle={t('parent.settings.profile.subtitle')}
+          direction={direction}
+        />
+        <Stack alignItems="center" paddingVertical="$8">
+          <Text color="$fg3" fontSize={14} fontFamily="$body" writingDirection={direction}>
+            {t('parent.settings.profile.loading')}
+          </Text>
+        </Stack>
+      </PanelSurface>
+    );
+  }
 
   return (
     <PanelSurface>
@@ -232,18 +295,23 @@ function ProfilePanel({ direction, rowDir, fullName }: ProfilePanelProps) {
         direction={direction}
       />
 
-      {/* Avatar + upload/remove (P1-12 stubs — no backend yet) */}
+      {/* Avatar (image from avatarUrl, else initials) + upload/remove stubs */}
       <Stack flexDirection={rowDir} alignItems="center" gap="$4">
-        <Avatar name={name || fullName || 'A'} size="xl" accessibilityLabel={t('parent.settings.profile.title')} />
+        <Avatar
+          name={name || profile?.fullName || 'A'}
+          uri={profile?.avatarUrl || undefined}
+          size="xl"
+          accessibilityLabel={t('parent.settings.profile.title')}
+        />
         <Stack flexDirection={rowDir} alignItems="center" gap="$3">
-          {/* TODO(P1-12): avatar upload — no storage/AvatarUrl backend yet. */}
+          {/* TODO(P1-12 avatar upload): avatar upload/remove backend (BE-4) not built yet. */}
           <Button
             variant="primary"
             size="sm"
             disabled
             accessibilityLabel={t('parent.settings.profile.uploadPhoto')}
             onPress={() => {
-              /* TODO(P1-12): wire avatar upload. */
+              /* TODO(P1-12 avatar upload): wire avatar upload once BE-4 lands. */
             }}
           >
             {t('parent.settings.profile.uploadPhoto')}
@@ -254,7 +322,7 @@ function ProfilePanel({ direction, rowDir, fullName }: ProfilePanelProps) {
             disabled
             accessibilityLabel={t('parent.settings.profile.removePhoto')}
             onPress={() => {
-              /* TODO(P1-12): wire avatar removal. */
+              /* TODO(P1-12 avatar upload): wire avatar removal once BE-4 lands. */
             }}
           >
             {t('parent.settings.profile.removePhoto')}
@@ -271,16 +339,19 @@ function ProfilePanel({ direction, rowDir, fullName }: ProfilePanelProps) {
             onChangeText={setName}
             autoCapitalize="words"
             direction={direction}
+            disabled={updateProfile.isPending}
           />
         </Stack>
         <Stack flex={1} minWidth={240}>
+          {/* Email is display-only — not part of the profile-update contract. */}
           <TextField
             label={t('parent.settings.profile.email')}
-            value={email}
-            onChangeText={setEmail}
+            value={''}
+            onChangeText={() => undefined}
             keyboardType="email-address"
             autoComplete="email"
             direction={direction}
+            disabled
           />
         </Stack>
       </Stack>
@@ -294,6 +365,7 @@ function ProfilePanel({ direction, rowDir, fullName }: ProfilePanelProps) {
             keyboardType="phone-pad"
             autoComplete="tel"
             direction={direction}
+            disabled={updateProfile.isPending}
           />
         </Stack>
         <Stack flex={1} minWidth={240}>
@@ -309,30 +381,40 @@ function ProfilePanel({ direction, rowDir, fullName }: ProfilePanelProps) {
         </Stack>
       </Stack>
 
-      {/* Cancel / Save — Save disabled until the P1-12 profile-update API lands */}
+      {/* Save feedback — error banner + success confirmation. */}
+      <ServerErrorBanner message={serverMessage} direction={direction} />
+      {updateProfile.isSuccess ? (
+        <Stack backgroundColor="$successSoft" borderRadius="$sm" padding="$3" accessibilityLiveRegion="polite">
+          <Text
+            color="$success"
+            fontSize={14}
+            fontFamily="$body"
+            textAlign={direction === 'rtl' ? 'right' : 'left'}
+            writingDirection={direction}
+          >
+            {t('parent.settings.profile.saveSuccess')}
+          </Text>
+        </Stack>
+      ) : null}
+
+      {/* Cancel resets to loaded values; Save persists via useUpdateProfile. */}
       <Stack flexDirection={rowDir} justifyContent="flex-end" gap="$3">
         <Button
           variant="ghost"
           size="sm"
+          disabled={updateProfile.isPending}
           accessibilityLabel={t('parent.settings.profile.cancel')}
-          onPress={() => {
-            setName(fullName);
-            setEmail('');
-            setPhone('');
-            setCountry(null);
-          }}
+          onPress={resetToLoaded}
         >
           {t('parent.settings.profile.cancel')}
         </Button>
-        {/* TODO(P1-12): wire profile save — no profile-update endpoint yet. */}
         <Button
           variant="primary"
           size="sm"
-          disabled
+          loading={updateProfile.isPending}
+          disabled={updateProfile.isPending}
           accessibilityLabel={t('parent.settings.profile.save')}
-          onPress={() => {
-            /* TODO(P1-12): no-op until the profile-update API lands. */
-          }}
+          onPress={onSave}
         >
           {t('parent.settings.profile.save')}
         </Button>

@@ -38,6 +38,10 @@ export type {
   // Current user
   MeResponse,
   MeResponseBaseResponse,
+  // Account profile (P1-12 — profile read/update)
+  AccountProfileResponse,
+  AccountProfileResponseBaseResponse,
+  UpdateMyProfileCommand,
   // Admin / user-management (consumed by legacy example hooks)
   UserProfileResponseDto,
   UserProfileResponseDtoBaseResponse,

@@ -29,3 +29,7 @@ export { useAddChild } from './useAddChild';
 export { useLinkChild } from './useLinkChild';
 export { useMe } from './useMe';
 export { useMyChildren } from './useMyChildren';
+
+// P1-12 account-profile hooks.
+export { useMyProfile } from './useMyProfile';
+export { useUpdateProfile } from './useUpdateProfile';
