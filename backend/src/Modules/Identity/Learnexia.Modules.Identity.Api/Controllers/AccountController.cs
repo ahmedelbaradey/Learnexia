@@ -1,5 +1,7 @@
 using Learnexia.Modules.Identity.Api.Bases;
+using Learnexia.Modules.Identity.Application.Features.Account.Commands.RemoveAvatar;
 using Learnexia.Modules.Identity.Application.Features.Account.Commands.UpdateMyProfile;
+using Learnexia.Modules.Identity.Application.Features.Account.Commands.UploadAvatar;
 using Learnexia.Modules.Identity.Application.Features.Account.Dtos;
 using Learnexia.Modules.Identity.Application.Features.Account.Queries.GetMyProfile;
 using Learnexia.Shared.Kernel.Responses;
@@ -30,4 +32,26 @@ public class AccountController : AppControllerBase
     [ProducesResponseType(typeof(BaseResponse<AccountProfileResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateMyProfileCommand command)
         => NewResult(await Mediator.Send(command));
+
+    // Uploads the authenticated user's avatar (multipart/form-data). The handler validates content-type
+    // (png/jpeg/webp), size (<= configurable MaxFileSize), and the actual magic-byte signature, then
+    // stores the object in the PRIVATE avatars bucket under a GUID object key (with the detected
+    // content-type) and saves THAT KEY in AvatarUrl. Reads presign the key into a short-lived GET URL.
+    // Invalid-file rejections return 422 (UnprocessableEntity).
+    [Authorize]
+    [HttpPost("Avatar")]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(typeof(BaseResponse<AvatarUploadResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(BaseResponse<AvatarUploadResponse>), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> UploadAvatar(IFormFile file)
+        => NewResult(await Mediator.Send(new UploadAvatarCommand(file)));
+
+    // Removes the authenticated user's avatar: clears AvatarUrl (the stored object key). The backing
+    // object is intentionally LEFT in storage — object DELETE is not part of the MVP storage contract
+    // (orphan accepted; follow-up: delete + sweep). Self only.
+    [Authorize]
+    [HttpDelete("Avatar")]
+    [ProducesResponseType(typeof(BaseResponse<AvatarUploadResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> RemoveAvatar()
+        => NewResult(await Mediator.Send(new RemoveAvatarCommand()));
 }

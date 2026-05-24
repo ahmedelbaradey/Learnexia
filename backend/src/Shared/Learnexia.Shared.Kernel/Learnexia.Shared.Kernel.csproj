@@ -2,6 +2,16 @@
   <PropertyGroup>
     <RootNamespace>Learnexia.Shared.Kernel</RootNamespace>
   </PropertyGroup>
+  <!--
+    The MinIO storage adapter (Storage/) needs Microsoft.Extensions.{Configuration,Options,DependencyInjection,Http}
+    for its DI registration (AddHttpClient / Configure<MinIOConfiguration> / IOptions). Those live in the ASP.NET
+    shared framework, so a FrameworkReference satisfies them with ZERO added NuGet packages. The public
+    IStorageService contract is stream-based (no IFormFile), so consuming modules need NOTHING extra to call it —
+    this framework ref is purely an implementation detail of the adapter.
+  -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
   <ItemGroup>
   	<PackageReference Include="NLog" />
     <PackageReference Include="MediatR" />

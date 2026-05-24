@@ -1,8 +1,11 @@
 using Learnexia.Modules.Identity.Application.Abstractions;
 using Learnexia.Shared.Kernel.Abstractions;
+using Learnexia.Shared.Kernel.Abstractions.Storage;
+using Learnexia.Shared.Kernel.Storage;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Options;
 using Resources;
 
 namespace Learnexia.Modules.Identity.Application.Features.Authentications.Queries.GetMe;
@@ -11,17 +14,23 @@ public class GetMeQueryHandler : BaseResponseHandler, IQueryHandler<GetMeQuery, 
 {
     private readonly IIdentityServiceManager _service;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IStorageService _storageService;
+    private readonly MinIOConfiguration _config;
     private readonly IStringLocalizer<SharedResources> _localizer;
     private readonly ILoggerManager _logger;
 
     public GetMeQueryHandler(
         IIdentityServiceManager service,
         ICurrentUserService currentUserService,
+        IStorageService storageService,
+        IOptions<MinIOConfiguration> config,
         IStringLocalizer<SharedResources> localizer,
         ILoggerManager logger)
     {
         _service = service;
         _currentUserService = currentUserService;
+        _storageService = storageService;
+        _config = config.Value;
         _localizer = localizer;
         _logger = logger;
     }
@@ -59,7 +68,10 @@ public class GetMeQueryHandler : BaseResponseHandler, IQueryHandler<GetMeQuery, 
                 // Country echoes Nationality; AvatarUrl is null until the avatar-upload endpoint sets it.
                 Phone = user.PhoneNumber,
                 Country = user.Nationality,
-                AvatarUrl = user.AvatarUrl,
+                // AvatarUrl stores the storage OBJECT KEY; presign it into a GET URL (pure compute).
+                AvatarUrl = string.IsNullOrWhiteSpace(user.AvatarUrl)
+                    ? null
+                    : await _storageService.GetPreviewUrlAsync(user.AvatarUrl, _config.DefaultBucket, _config.DefaultUrlExpiryMinutes, cancellationToken),
             };
 
             return Success(response);

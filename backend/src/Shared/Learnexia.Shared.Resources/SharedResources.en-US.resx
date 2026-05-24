@@ -1501,4 +1501,22 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="CannotEditChildNotInFamily" xml:space="preserve">
     <value>You are not allowed to edit this child.</value>
   </data>
+  <data name="AvatarFileRequired" xml:space="preserve">
+    <value>Please choose an image file to upload.</value>
+  </data>
+  <data name="AvatarFileTooLarge" xml:space="preserve">
+    <value>The image is too large. Please upload a smaller file.</value>
+  </data>
+  <data name="AvatarFileInvalidType" xml:space="preserve">
+    <value>Unsupported image type. Please upload a PNG, JPEG, or WEBP image.</value>
+  </data>
+  <data name="AvatarUploadFailed" xml:space="preserve">
+    <value>We couldn't upload your avatar. Please try again.</value>
+  </data>
+  <data name="AvatarUploadedSuccessfully" xml:space="preserve">
+    <value>Avatar updated successfully.</value>
+  </data>
+  <data name="AvatarRemovedSuccessfully" xml:space="preserve">
+    <value>Avatar removed successfully.</value>
+  </data>
 </root>

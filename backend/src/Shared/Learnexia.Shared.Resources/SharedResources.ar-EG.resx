@@ -1500,4 +1500,22 @@
   <data name="CannotEditChildNotInFamily" xml:space="preserve">
     <value>غير مسموح لك بتعديل بيانات هذا الطفل.</value>
   </data>
+  <data name="AvatarFileRequired" xml:space="preserve">
+    <value>يرجى اختيار ملف صورة للرفع.</value>
+  </data>
+  <data name="AvatarFileTooLarge" xml:space="preserve">
+    <value>حجم الصورة كبير جدًا. يرجى رفع ملف أصغر.</value>
+  </data>
+  <data name="AvatarFileInvalidType" xml:space="preserve">
+    <value>نوع الصورة غير مدعوم. يرجى رفع صورة بصيغة PNG أو JPEG أو WEBP.</value>
+  </data>
+  <data name="AvatarUploadFailed" xml:space="preserve">
+    <value>تعذّر رفع الصورة الرمزية. يرجى المحاولة مرة أخرى.</value>
+  </data>
+  <data name="AvatarUploadedSuccessfully" xml:space="preserve">
+    <value>تم تحديث الصورة الرمزية بنجاح.</value>
+  </data>
+  <data name="AvatarRemovedSuccessfully" xml:space="preserve">
+    <value>تم حذف الصورة الرمزية بنجاح.</value>
+  </data>
 </root>
