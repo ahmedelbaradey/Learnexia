@@ -18,6 +18,8 @@
 
     <!-- Storage / external services -->
     <PackageVersion Include="Minio" Version="6.0.5" />
+    <!-- Google ID-token verification (P1-12 BE-5 — social sign-in; SDK validates the Google ID token) -->
+    <PackageVersion Include="Google.Apis.Auth" Version="1.69.0" />
     <PackageVersion Include="FirebaseAdmin" Version="3.5.0" />
     <PackageVersion Include="ClosedXML" Version="0.105.0" />
 

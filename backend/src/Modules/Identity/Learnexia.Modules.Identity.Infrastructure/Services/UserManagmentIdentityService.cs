@@ -25,6 +25,12 @@ public class UserManagmentIdentityService : IUserManagmentService
 
     public async Task<IdentityResult> CreateAsync(User user, string password) => await _userManager.CreateAsync(user, password);
 
+    public async Task<IdentityResult> CreateAsync(User user) => await _userManager.CreateAsync(user);
+
+    public async Task<IList<UserLoginInfo>> GetLoginsAsync(User user) => await _userManager.GetLoginsAsync(user);
+
+    public async Task<IdentityResult> AddLoginAsync(User user, UserLoginInfo login) => await _userManager.AddLoginAsync(user, login);
+
     public async Task<IdentityResult> DeleteAsync(User user) => await _userManager.DeleteAsync(user);
 
     public async Task<User?> FindByEmailAsync(string email) => await _userManager.FindByEmailAsync(email);

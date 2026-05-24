@@ -9,6 +9,11 @@ public interface IUserManagmentService
     Task<User?> FindByEmailAsync(string email);
     Task<User?> FindByNameAsync(string userName);
     Task<IdentityResult> CreateAsync(User user, string password);
+    // External-only account creation (no password) — used by social sign-in (P1-12 BE-5).
+    Task<IdentityResult> CreateAsync(User user);
+    // External-login (e.g. Google) management for social sign-in (P1-12 BE-5).
+    Task<IList<UserLoginInfo>> GetLoginsAsync(User user);
+    Task<IdentityResult> AddLoginAsync(User user, UserLoginInfo login);
     Task<User?> FindByIdAsync(string id);
     Task<IdentityResult> ChangePasswordAsync(User user, string currentPassword, string newPassword);
     Task<IdentityResult> DeleteAsync(User user);
