@@ -81,12 +81,14 @@ const REGION = {
 
 export function SettingsWeb() {
   const { t } = useTranslation();
-  const { direction, isRtl, locale } = useLocale();
+  const { direction, locale } = useLocale();
   const profile = useMyProfile();
   const [period, setPeriod] = useState<string>(REPORTING_PERIOD.ThisWeek);
   const [activeTab, setActiveTab] = useState<SettingsTabKey>(SETTINGS_TAB.Profile);
 
-  const rowDir = isRtl ? 'row-reverse' : 'row';
+  // Always `row` — the document `dir="rtl"` flips the layout once (rail on the
+  // right in Arabic). An explicit `row-reverse` for RTL would double-flip it.
+  const rowDir = 'row' as const;
 
   const tabItems: TabItem[] = (Object.values(SETTINGS_TAB) as SettingsTabKey[]).map((key) => ({
     value: key,
@@ -95,7 +97,7 @@ export function SettingsWeb() {
   }));
 
   return (
-    <Stack flexDirection="column" maxWidth={1200} width="100%" alignSelf="center">
+    <Stack flexDirection="column" width="100%">
       {/* Header — own padding + a 1px bottom rule (web-page-header card). */}
       <Stack
         flexDirection={rowDir}

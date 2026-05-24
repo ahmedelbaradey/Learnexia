@@ -18,6 +18,7 @@
  * P1-09. The web/SSR path needs only the family name, which is always present.
  */
 import { createFont } from '@tamagui/core';
+import { Platform } from 'react-native';
 
 import { fontSize } from '../tokens';
 import { nativeFaceFor } from './faces.native';
@@ -92,6 +93,27 @@ export const poppinsFont = createFont({
   face: nativeFaceFor('Poppins'),
 });
 
+/**
+ * WEB font-family STACKS for the default heading/body tokens. Poppins has no
+ * Arabic glyphs, so on Arabic screens (`dir=rtl`, `lang=ar`) the browser falls
+ * through to the next family — Cairo (headings) / Tajawal (body) — for Arabic
+ * characters, while Latin (numbers, the brand name, emails) stays Poppins. This
+ * is how `$heading`/`$body` render Arabic in the brand typeface without a
+ * per-component swap. NATIVE keeps a single family ('Poppins') because RN does
+ * not support comma font stacks; native Arabic font selection is a follow-up.
+ */
+const isWeb = Platform.OS === 'web';
+export const headingFont = createFont({
+  family: isWeb ? 'Poppins, Cairo' : 'Poppins',
+  ...common,
+  face: nativeFaceFor('Poppins'),
+});
+export const bodyFont = createFont({
+  family: isWeb ? 'Poppins, Tajawal' : 'Poppins',
+  ...common,
+  face: nativeFaceFor('Poppins'),
+});
+
 /** Cairo — Arabic display (headings). */
 export const cairoFont = createFont({
   family: 'Cairo',
@@ -113,8 +135,8 @@ export const tajawalFont = createFont({
  * keys so components / the provider can address them.
  */
 export const fonts = {
-  heading: poppinsFont,
-  body: poppinsFont,
+  heading: headingFont,
+  body: bodyFont,
   poppins: poppinsFont,
   cairo: cairoFont,
   tajawal: tajawalFont,
