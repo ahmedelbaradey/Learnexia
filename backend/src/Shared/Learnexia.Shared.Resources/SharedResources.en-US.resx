@@ -1591,4 +1591,10 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="FillInBlankCorrectAnswerRequired" xml:space="preserve">
     <value>Fill-in-the-blank questions require a non-empty correct answer.</value>
   </data>
+  <data name="GradeNotFound" xml:space="preserve">
+    <value>The requested grade was not found.</value>
+  </data>
+  <data name="SubjectNotFound" xml:space="preserve">
+    <value>The requested subject was not found.</value>
+  </data>
 </root>

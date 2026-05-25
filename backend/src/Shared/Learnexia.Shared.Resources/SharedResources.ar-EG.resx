@@ -1590,4 +1590,10 @@
   <data name="FillInBlankCorrectAnswerRequired" xml:space="preserve">
     <value>تتطلب أسئلة ملء الفراغ إجابة صحيحة غير فارغة.</value>
   </data>
+  <data name="GradeNotFound" xml:space="preserve">
+    <value>الصف الدراسي المطلوب غير موجود.</value>
+  </data>
+  <data name="SubjectNotFound" xml:space="preserve">
+    <value>المادة الدراسية المطلوبة غير موجودة.</value>
+  </data>
 </root>
