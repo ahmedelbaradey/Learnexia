@@ -51,5 +51,9 @@ public class AttemptConfig : IEntityTypeConfiguration<Attempt>
 
         builder.HasIndex(x => x.LessonId)
             .HasDatabaseName("IX_Attempts_LessonId");
+
+        // Composite index for per-student + status filter (P2-08 perf — speeds up GetStudentAttempts).
+        builder.HasIndex(x => new { x.StudentId, x.Status })
+            .HasDatabaseName("IX_Attempts_StudentId_Status");
     }
 }

@@ -47,5 +47,9 @@ public class StudentAnswerConfig : IEntityTypeConfiguration<StudentAnswer>
 
         builder.HasIndex(x => x.QuestionId)
             .HasDatabaseName("IX_StudentAnswers_QuestionId");
+
+        // Composite index for per-attempt + question lookup (P2-08 perf — speeds up GetSkillStats and re-answer guard).
+        builder.HasIndex(x => new { x.AttemptId, x.QuestionId })
+            .HasDatabaseName("IX_StudentAnswers_AttemptId_QuestionId");
     }
 }
