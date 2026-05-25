@@ -1,7 +1,55 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-25 (Phase-1 backend leftover **DONE & merged**: P1-13a email, IUserLookup, P1-13 hardening, P1-12 BE-1..BE-9 incl. MinIO avatar + Google sign-in + password reset; only P1-13 BE-4 CAPTCHA remains; **P2-06** take-a-quiz (StartAttempt) committed on feat/P2-06-assessment-quiz, pending Wave-6 PR; **P2-12** account-settings 3-module refactor committed on feat/P2-12-account-settings-apis, pending Wave-6 PR; **P2-10** demo curriculum seeder committed on feat/P2-10-seed-demo-data, pending Wave-6 PR).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-25 (**Wave 6 PR #54 + #55 merged; Wave 7 Batch 1s merged to main via PRs #56/57/58; remaining Wave 7 batches pending**).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
+
+## Wave 7 — Phase 2 backend (in progress, Batch 1s merged to main)
+
+### P2-11 — Skill dependency graph ✅ Batch 1 merged (PR #56), Batches 2–3 pending
+
+**What's on main:**
+- `KnowledgeNode` entity — wraps `Skill` via nullable `SkillId?` FK (filtered unique index `UX_KnowledgeNodes_SkillId WHERE SkillId IS NOT NULL`). Fields: Name, NodeType (Skill/Concept/Review enum), SubjectId FK, GradeId FK, Difficulty (int 1–5).
+- `KnowledgeEdge` entity — self-referential directed edge. Fields: SourceNodeId, TargetNodeId, RelationshipType (Prerequisite/Related enum), Strength (decimal 0–1, default 1.0). Both FKs `DeleteBehavior.Restrict`; SkillId FK `SetNull`.
+- Migration `AddSkillGraphTables` (learning schema).
+
+**Still pending (story branch `feat/P2-11-skill-dependency-graph` worktree `/home/user/Learnexia.worktrees/P2-11`):**
+- **BE-3:** `SkillGraphValidator.AssertAcyclic` — DFS over Prerequisite edges only; unit tests (acyclic / cycle / self-loop / related-excluded)
+- **BE-5:** `GetPrerequisitesOf(nodeId)` + `GetUnlockedBy(nodeId)` CQRS queries; `KnowledgeGraphController`; `GET /api/Learning/KnowledgeGraph/Prerequisites/{nodeId}` + `/UnlockedBy/{nodeId}` (both `[Authorize]`)
+- **BE-4:** extend `LearningSeeder.SeedSkillGraphAsync` — map Skill rows → KnowledgeNode rows by SkillId; Math G1–G6 within-subject Prerequisite edges; run cycle check before save
+- **BE-6 DESCOPED** — no wiring to P2-04/P3-08/P3-10; the query API is the integration seam; P2-04 consumes it when built (Wave 8)
+- api-tester → reviewer gate
+
+**Key decisions:** KnowledgeNode wraps (not replaces) Skill; within-subject edges only in demo seed; BE-6 seam only. **Skill Name strings must not be renamed** (P2-10 seeder + P2-11 use them as lookup keys).
+
+### P2-08 — Record granular answers ✅ Batch 1 merged (PR #58), command/query batches pending
+
+**What's on main:**
+- Migration `AddAttemptQueryIndexes` — composite `(StudentId, Status)` on `learning.Attempts`; `(AttemptId, QuestionId)` on `learning.StudentAnswers`. Schema from P2-06 already had all needed columns (zero gaps).
+- `AttemptStatus` has `Abandoned=3`.
+
+**Still pending (worktree `/home/user/Learnexia.worktrees/P2-08`):**
+- **BE-1:** `SubmitAnswerCommand` → `POST /api/Learning/Quizzes/{attemptId}/Answers` `[Authorize(Roles="Student")]` — persist StudentAnswer; ownership guard; reject duplicate QuestionId
+- **BE-2/3:** `CompleteAttemptCommand` → `POST …/Complete` (aggregate AccuracyPercentage/DurationSeconds/HintsUsedCount, set Completed); `AbandonAttemptCommand` → `POST …/Abandon` (partial save, set Abandoned)
+- **BE-4:** `GetStudentAttemptsQuery` → `GET /api/Learning/Students/{studentId}/Attempts`; `GetSkillStatsQuery` → `GET /api/Learning/Skills/{skillId}/Stats?studentId=`
+- api-tester → security-auditor (IDOR/ownership) → reviewer gate
+
+**Key decisions:** P2-08 owns `SubmitAnswerCommand`; P2-07 (Wave 8) extends it with feedback. DurationSeconds = server-side `UtcNow - StartedAt`; per-answer TimeSpentSeconds advisory (validate ≥0, ≤3600). Reject duplicate QuestionId in same attempt.
+
+### P2-02 — Browse subjects & lessons ✅ Batch 1 merged (PR #57), api-tester + reviewer pending
+
+**What's on main:**
+- `NodeState` enum at `Domain/Enums/NodeState.cs` — `Locked=0`, `Available=1`, `Completed=2` (placeholder from `Lesson.IsLocked`; P2-03/P2-04 replace the logic)
+- `GET /api/learning/Subjects/ForGrade?grade={1-6}` → `GetSubjectsForGradeQuery`
+- `GET /api/learning/Subjects/{id}/Lessons` → `GetSubjectLessonsQuery` (nested Units→Lessons, SequenceOrder)
+- `GET /api/learning/Subjects/{id}/SkillTree` → `GetSubjectSkillTreeQuery` (Concepts+Skills with placeholder NodeState)
+- No migration — P2-01 schema + P2-10 seed already in place
+
+**Still pending:** api-tester → reviewer gate
+
+**Deferred follow-ups:** Grade JWT claim seam (P6-06); `Concept/Skill.SequenceOrder` columns (P2-11 follow-up; currently ordered by Id); `[Authorize]` on new actions (hardening wave).
+
+### Cloud-env worktree note
+Worktrees at `/home/user/Learnexia.worktrees/{P2-11,P2-08,P2-02}` (branches off `claude/phase2-backend-wave7-U48WT`). **Direct `git commit` from the main session's Bash tool fails inside worktrees** (signing server 400 "missing source"). Workaround: dispatch a background `committer` subagent — background agents sign successfully. Main checkout commits without issue.
 
 ## TL;DR
 - The repo now runs natively in **WSL2** (`~/projects/learnexia`). Clean install + `dotnet build` + Expo web/native bundling are validated.
