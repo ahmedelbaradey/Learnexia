@@ -1,7 +1,64 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-25 (Phase-1 backend leftover **DONE & merged**: P1-13a email, IUserLookup, P1-13 hardening, P1-12 BE-1..BE-9 incl. MinIO avatar + Google sign-in + password reset; only P1-13 BE-4 CAPTCHA remains; **P2-06** take-a-quiz (StartAttempt) committed on feat/P2-06-assessment-quiz, pending Wave-6 PR; **P2-12** account-settings 3-module refactor committed on feat/P2-12-account-settings-apis, pending Wave-6 PR; **P2-10** demo curriculum seeder committed on feat/P2-10-seed-demo-data, pending Wave-6 PR).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-25 (**Wave 6 PR #54 merged**; **Wave 7 in progress** — P2-11/P2-08/P2-02 Batch 1s done on story branches off `claude/phase2-backend-wave7-U48WT`).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
+
+## P2-11 — Skill dependency graph (Wave 7, in progress)
+> Batch 1 (BE-1/BE-2) committed on `feat/P2-11-skill-dependency-graph`. Batch 2 (BE-3+BE-5) + Batch 3 (BE-4 seeder) pending.
+
+**Lead decisions:**
+- **KnowledgeNode wraps Skill** (Q1): new `KnowledgeNode` entity with nullable `SkillId?` FK + filtered unique index (`UX_KnowledgeNodes_SkillId WHERE SkillId IS NOT NULL`). `Skill` is unchanged.
+- **BE-6 descoped** (Q2): no wiring to P2-04/P3-08/P3-10 (P2-04 not built yet). The `GetPrerequisitesOf`/`GetUnlockedBy` query API *is* the integration seam; P2-04 consumes it when built in Wave 8.
+- **Demo seed = within-subject edges only** (Q3): e.g. Math Grade 3: "Fractions → depends on Division". No cross-subject edges.
+
+**New domain entities (Learning.Domain):**
+- `KnowledgeNode`: Id, Name, NodeType (enum: Skill/Concept/Review), SubjectId (FK), GradeId (FK), Difficulty (int 1–5), SkillId? (nullable FK → Skill)
+- `KnowledgeEdge`: Id, SourceNodeId (FK → KnowledgeNode), TargetNodeId (FK → KnowledgeNode), RelationshipType (enum: Prerequisite/Related), Strength (decimal, default 1.0)
+- Both FKs on KnowledgeEdge: `DeleteBehavior.Restrict`; `SkillId` FK: `DeleteBehavior.SetNull`
+
+**Migration:** `AddSkillGraphTables` (learning schema) — creates `KnowledgeNodes` + `KnowledgeEdges` tables.
+
+**Remaining batches:**
+- BE-3: `SkillGraphValidator.AssertAcyclic` (DFS over Prerequisite edges only); unit tests (acyclic / cycle / self-loop / related-edges excluded)
+- BE-5: `GetPrerequisitesOf(nodeId)` + `GetUnlockedBy(nodeId)` queries; `KnowledgeGraphController`; endpoints `GET /api/Learning/KnowledgeGraph/Prerequisites/{nodeId}` and `/UnlockedBy/{nodeId}`
+- BE-4: extend `LearningSeeder.SeedSkillGraphAsync` — map `Skill` rows → `KnowledgeNode` rows by SkillId; add Math G1–G6 within-subject Prerequisite edges; run cycle check before save
+
+**P2-10 seeder contract:** Skill `Name` strings are stable lookup keys used by the seeder to attach edges. **Do NOT rename skill name strings.**
+
+**P2-04 seam:** once P2-04 (Wave 8) is built, it reads prerequisites via `GetPrerequisitesOf`; no changes needed to P2-11 at that point.
+
+## P2-08 — Record granular answers (Wave 7, in progress)
+> Batch 1 (perf-index migration) committed on `feat/P2-08-record-granular-answers`. Command/query batches pending.
+
+**Schema confirmed (from P2-06 AddQuizTables):** `StudentAnswer` already has `IsCorrect`, `TimeSpentSeconds`, `HintUsed`; `Attempt` already has `AccuracyPercentage`, `DurationSeconds`, `HintsUsedCount`, `CompletedAt`; `AttemptStatus` already has `Abandoned=3`. Zero schema gaps.
+
+**Migration added:** `AddAttemptQueryIndexes` — composite `(StudentId, Status)` on `Attempts`; `(AttemptId, QuestionId)` on `StudentAnswers`.
+
+**Remaining batches:**
+- BE-1: `SubmitAnswerCommand` + `POST /api/Learning/Quizzes/{attemptId}/Answers` — persist per-question answer; ownership guard (attempt must belong to JWT student); reject duplicate QuestionId in same attempt
+- BE-2/3: `CompleteAttemptCommand` (`POST …/Complete`) — aggregate AccuracyPercentage/DurationSeconds/HintsUsedCount + set Completed; `AbandonAttemptCommand` (`POST …/Abandon`) — partial save + Abandoned status
+- BE-4: `GetStudentAttemptsQuery` (`GET /api/Learning/Students/{studentId}/Attempts`) + `GetSkillStatsQuery` (`GET /api/Learning/Skills/{skillId}/Stats?studentId=`)
+
+**Key decisions:**
+- P2-08 owns `SubmitAnswerCommand`. P2-07 (Wave 8) extends it with the feedback response. **Do not build a competing SubmitAnswer handler in P2-07.**
+- `DurationSeconds` = server-side elapsed (`UtcNow - Attempt.StartedAt`) is authoritative; per-answer `TimeSpentSeconds` is client-reported/advisory (validate ≥0, bound ≤3600).
+- Re-answer idempotency: reject duplicate `QuestionId` in the same attempt.
+
+## P2-02 — Browse subjects & lessons (Wave 7, in progress)
+> Batch 1 (backend-feature, all queries) committed on `feat/P2-02-browse-subjects-lessons`. api-tester pending.
+
+**No migration needed** — P2-01 schema + P2-10 seed already in place.
+
+**New queries + endpoints:**
+- `GET /api/learning/Subjects/ForGrade?grade={1-6}` → `GetSubjectsForGradeQuery` — grade-filtered subject list (resolves Grade by Number internally; 404 if grade not found)
+- `GET /api/learning/Subjects/{id}/Lessons` → `GetSubjectLessonsQuery` — nested Units→Lessons in SequenceOrder
+- `GET /api/learning/Subjects/{id}/SkillTree` → `GetSubjectSkillTreeQuery` — Concept+Skill tree with placeholder `NodeState` (Locked/Available/Completed) derived from `Lesson.IsLocked`
+- `NodeState` enum at `Domain/Enums/NodeState.cs`
+
+**Deferred follow-ups recorded in plan:**
+- Grade JWT claim + server-side grade-scope enforcement → P6-06 / hardening wave
+- `Concept.SequenceOrder` + `Skill.SequenceOrder` columns → P2-11 follow-up
+- `[Authorize]` on the three new actions → auth hardening wave
 
 ## TL;DR
 - The repo now runs natively in **WSL2** (`~/projects/learnexia`). Clean install + `dotnet build` + Expo web/native bundling are validated.
