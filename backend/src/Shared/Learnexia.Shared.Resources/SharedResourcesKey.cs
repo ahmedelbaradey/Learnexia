@@ -740,6 +740,10 @@
         // Account settings — plan stub (P2-12 PLAN).
         public const string PlanRetrievedSuccessfully = "PlanRetrievedSuccessfully";
 
+        // Browse subjects/lessons — student-facing queries (P2-02).
+        public const string GradeNotFound = "GradeNotFound";
+        public const string SubjectNotFound = "SubjectNotFound";
+
         // Quiz/Assessment — start-attempt (P2-06 BE-3/BE-4).
         public const string AttemptStartedSuccessfully = "AttemptStartedSuccessfully";
         public const string AttemptResumedSuccessfully = "AttemptResumedSuccessfully";
