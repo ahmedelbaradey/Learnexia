@@ -32,6 +32,10 @@ public class LearningDbContext : DbContext
     public DbSet<Concept> Concepts => Set<Concept>();
     public DbSet<Skill> Skills => Set<Skill>();
 
+    // Skill dependency graph (P2-11)
+    public DbSet<KnowledgeNode> KnowledgeNodes => Set<KnowledgeNode>();
+    public DbSet<KnowledgeEdge> KnowledgeEdges => Set<KnowledgeEdge>();
+
     // Quiz entities (P2-06 folded into Learning from Assessment)
     public DbSet<QuizQuestion> QuizQuestions => Set<QuizQuestion>();
     public DbSet<Attempt> Attempts => Set<Attempt>();
