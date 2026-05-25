@@ -1,7 +1,7 @@
 # Session State — Phase 2 Backend build (resume pointer)
 
 > **Purpose:** hand off an in-flight multi-wave build to a fresh Claude Code session on another device (web/mobile). Local auto-memory + the conversation transcript do **not** sync across machines — this file + `CLAUDE.md` + `docs/dev/HANDOFF.md` + the committed `docs/briefs/*` & `docs/plans/*` are what travel. Read those first.
-> Last updated: 2026-05-25.
+> Last updated: 2026-05-25 (Wave 7 Batch 1s merged to main; remaining batches in progress).
 
 ## Where we are
 Driving the **Phase 2 (Learning Core) backend** to completion, wave by wave, through the full agent pipeline (analyzer → planner → implementers → security-auditor/api-tester → reviewer → committer). One PR per wave.
@@ -9,24 +9,28 @@ Driving the **Phase 2 (Learning Core) backend** to completion, wave by wave, thr
 ### Wave plan (dependency-ordered)
 | Wave | Stories | Status |
 |---|---|---|
-| **6** | P2-12 (account settings, 3-module refactor), P2-10 (seed), P2-06 (take-a-quiz, folded into Learning) | ✅ done → **PR #54** (open, awaiting merge) |
-| **7** | P2-11 (skill dependency graph), P2-08 (record granular answers), P2-02 (browse subjects/lessons queries) | ⏭️ next |
+| **6** | P2-12 (account settings), P2-10 (seed), P2-06 (take-a-quiz) | ✅ merged (PR #54) |
+| **7** | P2-11 (skill dependency graph), P2-08 (record granular answers), P2-02 (browse subjects/lessons) | 🟡 **in progress** — Batch 1s merged (#56/#57/#58); Batches 2+ pending |
 | **8** | P2-04 (Learning Path unlock engine), P2-07 (instant answer feedback) | pending |
 | **9** | P2-05 (open/complete lesson), P2-03 (skill-tree node state), P2-09 (home dashboard) | pending |
 
 P2-01 (curriculum model) was already done pre-session.
 
 ## Open PRs
-- **#54** `feat/wave-6` → main — Wave 6 backend. Full integration suite **417/417 green**. Merge this first.
-- **#55** `chore/agent-model-tiers` → main — per-agent model frontmatter (execution→sonnet, designer→opus).
+- **#56** `feat/P2-11-skill-dependency-graph` — Draft, Batch 1 merged; continuing Batches 2–3
+- **#57** `feat/P2-02-browse-subjects-lessons` — Draft, Batch 1 merged; api-tester + reviewer pending
+- **#58** `feat/P2-08-record-granular-answers` — Draft, Batch 1 merged; command/query batches pending
 
-## Immediate next action (after #54 merges)
-1. `git fetch && git checkout main && git merge --ff-only origin/main` (sync local main).
-2. Create `feat/wave-7` off main; per story cut a branch off the wave branch.
-3. Run analyzer → planner for **P2-11, P2-08, P2-02** (briefs/plans not yet written for these). Then implement.
-   - **P2-11 depends on** P2-10 seed (stable Skill names are the prerequisite-edge seam) + wires into P2-04 (Wave 8).
-   - **P2-08 depends on** the quiz entities from P2-06 (already in the Learning module).
-   - **P2-02** = query endpoints over the P2-01 curriculum model + P2-10 seed.
+## Wave 7 — immediate next actions
+Dispatch all three Batch 2s in parallel (disjoint files, Mode B worktrees ready):
+
+1. **P2-11 Batch 2** (parallel BE-3 + BE-5 in worktree `/home/user/Learnexia.worktrees/P2-11`):
+   - BE-3: `SkillGraphValidator.AssertAcyclic` DFS + unit tests
+   - BE-5: `GetPrerequisitesOf`/`GetUnlockedBy` queries + `KnowledgeGraphController`
+2. **P2-08 Batch 2** (worktree `/home/user/Learnexia.worktrees/P2-08`): BE-1 `SubmitAnswerCommand`
+3. **P2-02 Batch 2** (worktree `/home/user/Learnexia.worktrees/P2-02`): api-tester
+
+Then: P2-11 Batch 3 (BE-4 seeder); P2-08 Batches 3+4; reviewer gates; update PRs #56/#57/#58.
 
 ## Environment / build (works natively on Windows here)
 - Repo: `E:\Wrokspace\Learnexia` (Windows). .NET 10 (`dotnet 10.0.201`). Local Postgres = Docker `pgvector` on `localhost:5432`, DB `Learnexia`, `postgres/admin`.
@@ -37,18 +41,20 @@ P2-01 (curriculum model) was already done pre-session.
 - Remote Postgres `learnexia` at **`75.119.158.102:5344`** (port moved from 5346 → **5344**). Now runs the **`pgvector/pgvector:pg15`** image (PG 15.18 Debian) so the `vector` extension is available.
 - **Why pgvector matters:** the **Catalog** module migration `DEMO_PgvectorProof` runs `CREATE EXTENSION vector`; on a plain `postgres` image it fails with `0A000: extension "vector" is not available`. Fixed by swapping the server container to the pgvector image (kept the data). The repo's `docker/docker-compose.yaml` postgres service is pinned to `pgvector/pgvector:pg15` to match.
 - **State verified:** all 5 module schemas migrated (incl. `catalog.EmbeddingDemos` + extension), and **seeded** — `learning.Subjects`=24 (4 subjects × 6 grades), `Lessons`=162, `Skills`=162, `identity.AspNetRoles`=13.
-- **Connection (incl. credentials) is intentionally NOT in the repo.** It lives only in the gitignored `backend/src/Host/Learnexia.Host/appsettings.Development.local.json` (loaded via the optional `appsettings.{Environment}.local.json` line in `Program.cs`) — currently points at `:5344`. To use the remote DB elsewhere, re-add that file or set `ConnectionStrings__Default` (credentials held by the user).
+- **Pending DB migrations** (apply after pulling main): `AddAttemptQueryIndexes` + `AddSkillGraphTables` — run `dotnet ef database update --context LearningDbContext` from `backend/`.
+- **Connection (incl. credentials) is intentionally NOT in the repo.** It lives only in the gitignored `backend/src/Host/Learnexia.Host/appsettings.Development.local.json` — currently points at `:5344`.
 
 ## Working agreements (distilled from session memory — these are how the user wants the build run)
 - **Cadence:** wave by wave; **PAUSE for user check-in after each wave** before starting the next. User reviews & merges PRs on GitHub (don't self-merge unless told).
-- **One PR per wave:** `feat/wave-<N>` off main; cut each story's branch off the wave branch; merge reviewed story branches into the wave branch with `--no-ff` + a real multi-line body; build/test the wave branch; then the wave PR → main. Every commit has a multi-line body; every PR a full description (write to `docs/pr/wave-<N>.md`).
-- **Ask before creating any new backend module** (mirror existing modules instead; quiz/assessment lives in the **Learning** module, not a separate one). Ask before introducing any **design pattern**.
-- **Module isolation (CLAUDE.md rule 1):** cross-module only via `Shared.Contracts` seams (e.g. `IUserLookup`, `IChildAccountService`, `IParentChildQuery`) or integration events — no cross-module project refs or FKs.
-- **Complexity-aware model tiers:** architecture/domain-boundary reasoning → Opus; feature/CRUD/tests/migrations/verification → Sonnet; trivial/localized → Haiku. (PR #55 sets the subagent defaults.)
+- **Story PRs go directly to main** (Wave 7 pattern — user merges each story PR individually rather than via a wave branch).
+- **Ask before creating any new backend module** (mirror existing modules instead; all quiz/assessment/graph work in the **Learning** module). Ask before introducing any **design pattern**.
+- **Module isolation (CLAUDE.md rule 1):** cross-module only via `Shared.Contracts` seams — no cross-module project refs or FKs.
+- **Complexity-aware model tiers:** architecture/domain-boundary reasoning → Opus; feature/CRUD/tests/migrations → Sonnet; trivial → Haiku.
 - **Secrets:** never commit real credentials; use gitignored `appsettings.*.local.json` or env vars.
+- **Worktree commit signing:** direct `git commit` from the main session's Bash tool fails in worktrees (signing server 400 "missing source"). Use a background `committer` subagent instead.
 
-## Deferred hardening → P6-06 (pre-existing, not from Wave 6)
-JWT `CHANGE_ME` default secret (env-drive + startup guard), `RequireHttpsMetadata=false` (make Development-only), DbContext audit stamp `DateTime.Now`→`UtcNow`, MinIO default creds, and the MSB3277 EF 10.0.0/10.0.8 version conflict in `Directory.Packages.props`.
+## Deferred hardening → P6-06 (pre-existing)
+JWT `CHANGE_ME` default secret, `RequireHttpsMetadata=false` (make Development-only), DbContext audit stamp `DateTime.Now`→`UtcNow`, MinIO default creds, MSB3277 EF version conflict in `Directory.Packages.props`.
 
 ## Key docs to read on resume
-`CLAUDE.md` (rulebook) · `docs/dev/HANDOFF.md` (shared memory, updated with P2-12/P2-10/P2-06) · `tasks/PROGRESS.md` (status board) · `docs/briefs/P2-*.md` + `docs/plans/P2-*.md` (per-story specs, written for P2-01/06/10/12) · `user-stories/Phase-2-Learning-Core/` + `tasks/Backend/Phase-2-Learning-Core/` (source of truth for scope).
+`CLAUDE.md` (rulebook) · `docs/dev/HANDOFF.md` (shared memory, Wave 7 section at top) · `tasks/PROGRESS.md` (status board) · `docs/briefs/P2-{02,08,11}.md` + `docs/plans/P2-{02,08,11}.md` (Wave 7 specs) · `user-stories/Phase-2-Learning-Core/` + `tasks/Backend/Phase-2-Learning-Core/` (source of truth).
