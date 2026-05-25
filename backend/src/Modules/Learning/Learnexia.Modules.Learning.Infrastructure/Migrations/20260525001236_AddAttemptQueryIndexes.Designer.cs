@@ -3,6 +3,7 @@ using System;
 using Learnexia.Modules.Learning.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Learnexia.Modules.Learning.Infrastructure.Migrations
 {
     [DbContext(typeof(LearningDbContext))]
-    partial class LearningDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260525001236_AddAttemptQueryIndexes")]
+    partial class AddAttemptQueryIndexes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -185,130 +188,6 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Grades", "learning");
-                });
-
-            modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.KnowledgeEdge", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("CreatedBy")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("DeletedBy")
-                        .HasColumnType("integer");
-
-                    b.Property<bool?>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("RelationshipType")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("SourceNodeId")
-                        .HasColumnType("integer");
-
-                    b.Property<decimal>("Strength")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(5, 4)
-                        .HasColumnType("numeric(5,4)")
-                        .HasDefaultValue(1.0m);
-
-                    b.Property<int>("TargetNodeId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("UpdatedBy")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SourceNodeId")
-                        .HasDatabaseName("IX_KnowledgeEdges_SourceNodeId");
-
-                    b.HasIndex("TargetNodeId")
-                        .HasDatabaseName("IX_KnowledgeEdges_TargetNodeId");
-
-                    b.HasIndex("SourceNodeId", "TargetNodeId", "RelationshipType")
-                        .IsUnique()
-                        .HasDatabaseName("UX_KnowledgeEdges_SourceTarget_Type");
-
-                    b.ToTable("KnowledgeEdges", "learning");
-                });
-
-            modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.KnowledgeNode", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("CreatedBy")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("DeletedBy")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Difficulty")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("GradeId")
-                        .HasColumnType("integer");
-
-                    b.Property<bool?>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<int>("NodeType")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("SkillId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("SubjectId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("UpdatedBy")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GradeId")
-                        .HasDatabaseName("IX_KnowledgeNodes_GradeId");
-
-                    b.HasIndex("SkillId")
-                        .IsUnique()
-                        .HasDatabaseName("UX_KnowledgeNodes_SkillId")
-                        .HasFilter("\"learning\".\"KnowledgeNodes\".\"SkillId\" IS NOT NULL");
-
-                    b.HasIndex("SubjectId")
-                        .HasDatabaseName("IX_KnowledgeNodes_SubjectId");
-
-                    b.ToTable("KnowledgeNodes", "learning");
                 });
 
             modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.Lesson", b =>
@@ -664,47 +543,6 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
                     b.Navigation("Subject");
                 });
 
-            modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.KnowledgeEdge", b =>
-                {
-                    b.HasOne("Learnexia.Modules.Learning.Domain.Entities.KnowledgeNode", "SourceNode")
-                        .WithMany("SourceEdges")
-                        .HasForeignKey("SourceNodeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Learnexia.Modules.Learning.Domain.Entities.KnowledgeNode", "TargetNode")
-                        .WithMany("TargetEdges")
-                        .HasForeignKey("TargetNodeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("SourceNode");
-
-                    b.Navigation("TargetNode");
-                });
-
-            modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.KnowledgeNode", b =>
-                {
-                    b.HasOne("Learnexia.Modules.Learning.Domain.Entities.Grade", null)
-                        .WithMany()
-                        .HasForeignKey("GradeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Learnexia.Modules.Learning.Domain.Entities.Skill", "Skill")
-                        .WithMany()
-                        .HasForeignKey("SkillId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("Learnexia.Modules.Learning.Domain.Entities.Subject", null)
-                        .WithMany()
-                        .HasForeignKey("SubjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Skill");
-                });
-
             modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.Lesson", b =>
                 {
                     b.HasOne("Learnexia.Modules.Learning.Domain.Entities.Skill", "Skill")
@@ -788,13 +626,6 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
             modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.Grade", b =>
                 {
                     b.Navigation("Subjects");
-                });
-
-            modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.KnowledgeNode", b =>
-                {
-                    b.Navigation("SourceEdges");
-
-                    b.Navigation("TargetEdges");
                 });
 
             modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.QuizQuestion", b =>
