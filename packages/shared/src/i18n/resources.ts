@@ -102,6 +102,8 @@ export const en = {
       haveAccount: 'Already have an account?',
       signInLink: 'Sign in',
       backToSignIn: 'Back to Sign in',
+      captchaRequired: 'Please complete the security check to continue.',
+      captchaError: 'Security check failed. Please try again.',
       errors: {
         duplicateEmail: 'An account with this email already exists.',
         weakPassword:
@@ -130,6 +132,8 @@ export const en = {
       socialGoogle: 'Google',
       socialApple: 'Apple',
       socialMicrosoft: 'Microsoft',
+      continueWithGoogle: 'Continue with Google',
+      googleComingSoon: 'Google (coming soon)',
       newParent: 'New to Learnexia?',
       createAccount: 'Create parent account',
       brand: {
@@ -138,9 +142,31 @@ export const en = {
         socialProof: '240,000+ kids learning today',
       },
       errors: {
-        invalidCredentials: 'Incorrect username or password.',
-        notFound: 'No account found with this email.',
+        invalidCredentials: 'Invalid email or password.',
+        lockout: 'Your account is temporarily locked. Please try again later.',
+        notFound: 'Invalid email or password.',
       },
+    },
+    forgotPassword: {
+      title: 'Forgot password?',
+      subtitle: "Enter your email and we'll send you a reset link.",
+      labelEmail: 'Email address',
+      submitButton: 'Send reset link',
+      backToLogin: 'Back to sign in',
+      confirmation: 'If an account exists for that email, we sent a reset link. Check your inbox.',
+    },
+    resetPassword: {
+      title: 'Reset password',
+      subtitle: 'Enter your new password below.',
+      labelNew: 'New password',
+      labelConfirm: 'Confirm password',
+      submitButton: 'Set new password',
+      successTitle: 'Password updated!',
+      successBody: 'Your password has been reset. You can now sign in with your new password.',
+      invalidLink: 'This reset link is invalid or has expired. Please request a new one.',
+      passwordTooShort: 'Password must be at least 6 characters.',
+      confirmRequired: 'Please confirm your new password.',
+      passwordMismatch: 'Passwords do not match.',
     },
   },
   onboarding: {
@@ -242,6 +268,7 @@ export const en = {
       mastery: 'Mastery',
       weakest: 'Weakest:',
       viewDashboard: 'View dashboard →',
+      editChild: 'Edit',
       addCardTitle: 'Add a child',
       addCardSubtitle: 'Set their grade, language, and login email',
       topics: {
@@ -328,6 +355,7 @@ export const en = {
         subtitle: 'This is how Learnexia knows you',
         uploadPhoto: 'Upload photo',
         removePhoto: 'Remove',
+        mobileSoon: 'Upload (desktop only)',
         fullName: 'Full name',
         email: 'Email',
         phone: 'Phone',
@@ -338,6 +366,8 @@ export const en = {
         loading: 'Loading your profile…',
         saveSuccess: 'Your profile has been saved.',
         saveError: "Couldn't save your profile. Please try again.",
+        avatarUploadError: "Couldn't upload the photo. Please try again.",
+        avatarRemoveError: "Couldn't remove the photo. Please try again.",
       },
       language: {
         title: 'Language & region',
@@ -351,6 +381,12 @@ export const en = {
         title: 'Coming soon',
         body: 'This section is on its way. Check back soon.',
       },
+    },
+    editChild: {
+      title: 'Edit Child',
+      save: 'Save changes',
+      successToast: 'Child details updated.',
+      saveError: "Couldn't update child details. Please try again.",
     },
     linkChild: {
       title: 'Link a Child',
@@ -464,6 +500,8 @@ export const ar = {
       haveAccount: 'لديك حساب بالفعل؟',
       signInLink: 'تسجيل الدخول',
       backToSignIn: 'العودة لتسجيل الدخول',
+      captchaRequired: 'يرجى إتمام التحقق الأمني للمتابعة.',
+      captchaError: 'فشل التحقق الأمني. يرجى المحاولة مجدداً.',
       errors: {
         duplicateEmail: 'يوجد حساب بهذا البريد الإلكتروني بالفعل.',
         weakPassword:
@@ -492,6 +530,8 @@ export const ar = {
       socialGoogle: 'جوجل',
       socialApple: 'آبل',
       socialMicrosoft: 'مايكروسوفت',
+      continueWithGoogle: 'المتابعة عبر Google',
+      googleComingSoon: 'Google (قريباً)',
       newParent: 'جديد على Learnexia؟',
       createAccount: 'إنشاء حساب ولي أمر',
       brand: {
@@ -500,9 +540,31 @@ export const ar = {
         socialProof: 'أكثر من ٢٤٠٬٠٠٠ طفل يتعلمون اليوم',
       },
       errors: {
-        invalidCredentials: 'اسم المستخدم أو كلمة المرور غير صحيحة.',
-        notFound: 'لا يوجد حساب بهذا البريد الإلكتروني.',
+        invalidCredentials: 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+        lockout: 'حسابك مؤقتاً موقوف. يرجى المحاولة مجدداً لاحقاً.',
+        notFound: 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
       },
+    },
+    forgotPassword: {
+      title: 'هل نسيت كلمة المرور؟',
+      subtitle: 'أدخل بريدك الإلكتروني وسنرسل لك رابط إعادة التعيين.',
+      labelEmail: 'البريد الإلكتروني',
+      submitButton: 'إرسال رابط الإعادة',
+      backToLogin: 'العودة لتسجيل الدخول',
+      confirmation: 'إذا كان ثمة حساب بهذا البريد الإلكتروني، فقد أرسلنا رابط الإعادة. تحقق من صندوق الوارد.',
+    },
+    resetPassword: {
+      title: 'إعادة تعيين كلمة المرور',
+      subtitle: 'أدخل كلمة المرور الجديدة أدناه.',
+      labelNew: 'كلمة المرور الجديدة',
+      labelConfirm: 'تأكيد كلمة المرور',
+      submitButton: 'تعيين كلمة المرور الجديدة',
+      successTitle: 'تم تحديث كلمة المرور!',
+      successBody: 'تمت إعادة تعيين كلمة مرورك. يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.',
+      invalidLink: 'رابط الإعادة غير صالح أو منتهي الصلاحية. يرجى طلب رابط جديد.',
+      passwordTooShort: 'يجب أن تتضمن كلمة المرور ٦ أحرف على الأقل.',
+      confirmRequired: 'يرجى تأكيد كلمة المرور الجديدة.',
+      passwordMismatch: 'كلمتا المرور غير متطابقتين.',
     },
   },
   onboarding: {
@@ -603,6 +665,7 @@ export const ar = {
       mastery: 'الإتقان',
       weakest: 'الأضعف:',
       viewDashboard: 'عرض اللوحة ←',
+      editChild: 'تعديل',
       addCardTitle: 'أضف طفلاً',
       addCardSubtitle: 'حدّد صفه ولغته وبريد دخوله',
       topics: {
@@ -689,6 +752,7 @@ export const ar = {
         subtitle: 'هكذا يعرفك Learnexia',
         uploadPhoto: 'رفع صورة',
         removePhoto: 'إزالة',
+        mobileSoon: 'الرفع (سطح المكتب فقط)',
         fullName: 'الاسم الكامل',
         email: 'البريد الإلكتروني',
         phone: 'الهاتف',
@@ -699,6 +763,8 @@ export const ar = {
         loading: 'جارٍ تحميل ملفك الشخصي…',
         saveSuccess: 'تم حفظ ملفك الشخصي.',
         saveError: 'تعذّر حفظ ملفك الشخصي. يرجى المحاولة مجدداً.',
+        avatarUploadError: 'تعذّر رفع الصورة. يرجى المحاولة مجدداً.',
+        avatarRemoveError: 'تعذّر حذف الصورة. يرجى المحاولة مجدداً.',
       },
       language: {
         title: 'اللغة والمنطقة',
@@ -712,6 +778,12 @@ export const ar = {
         title: 'قريباً',
         body: 'هذا القسم في الطريق. عُد قريباً للاطلاع عليه.',
       },
+    },
+    editChild: {
+      title: 'تعديل بيانات الطفل',
+      save: 'حفظ التغييرات',
+      successToast: 'تم تحديث بيانات الطفل.',
+      saveError: 'تعذّر تحديث بيانات الطفل. يرجى المحاولة مجدداً.',
     },
     linkChild: {
       title: 'ربط طفل',

@@ -10,8 +10,8 @@
  *    values load from `useMyProfile` (P1-12 backend); Save persists fullName /
  *    phone / country via `useUpdateProfile` with success + error feedback; Cancel
  *    resets to the loaded values. Email is display-only (not in the profile
- *    contract). Avatar upload/remove stay UI-only stubs — the avatar-upload
- *    backend (P1-12 BE-4) isn't built yet (TODO(P1-12 avatar upload)).
+ *    contract). Avatar upload wired on web via a hidden <input type="file">
+ *    (P1-12 BE-4); native shows a "Mobile soon" disabled state.
  *  - Language & region: switches the app language (en↔ar) app-wide + persists via
  *    the locale store (reused from the Login locale switch); region is UI-only.
  * Placeholder tabs (P2-12): Notifications / Linked children / Security /
@@ -23,12 +23,15 @@
 import {
   useMyProfile,
   useUpdateProfile,
+  useUploadAvatar,
+  useRemoveAvatar,
   type AccountProfileResponse,
 } from '@learnexia/api-client';
 import { COUNTRIES, LOCALES, type CountryCode, type Locale } from '@learnexia/shared';
 import { Avatar, Button, Select, Tabs, TextField, type TabItem } from '@learnexia/ui';
 import { Stack, Text } from '@tamagui/core';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ServerErrorBanner } from '../../../src/components/ServerErrorBanner';
@@ -246,7 +249,10 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
   const { t } = useTranslation();
   const { locale } = useLocale();
   const updateProfile = useUpdateProfile();
+  const uploadAvatar = useUploadAvatar();
+  const removeAvatar = useRemoveAvatar();
   const resolveError = useServerError();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Form state seeded from the loaded profile. `email` is display-only (not part
   // of the profile contract). Re-sync whenever the loaded profile changes.
@@ -281,6 +287,18 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
       })
     : null;
 
+  const avatarUploadError = uploadAvatar.isError
+    ? resolveError(uploadAvatar.error, {
+        byStatus: { 400: 'parent.settings.profile.avatarUploadError', 413: 'parent.settings.profile.avatarUploadError' },
+      })
+    : null;
+
+  const avatarRemoveError = removeAvatar.isError
+    ? resolveError(removeAvatar.error, {
+        byStatus: { 400: 'parent.settings.profile.avatarRemoveError' },
+      })
+    : null;
+
   const onSave = () => {
     updateProfile.mutate({
       fullName: name.trim(),
@@ -288,6 +306,26 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
       country: country ?? undefined,
     });
   };
+
+  // Web: trigger the hidden file input when the Upload button is pressed.
+  const handleUploadPress = () => {
+    if (Platform.OS === 'web' && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+    // Native: expo-image-picker is not a dep — disabled below.
+  };
+
+  // Web: file input onChange handler.
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    uploadAvatar.mutate({ data: file, fileName: file.name });
+    // Reset the input so picking the same file again fires onChange.
+    e.target.value = '';
+  };
+
+  const isAvatarBusy = uploadAvatar.isPending || removeAvatar.isPending;
+  const isWeb = Platform.OS === 'web';
 
   if (isLoading) {
     return (
@@ -314,7 +352,19 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
         direction={direction}
       />
 
-      {/* Avatar (image from avatarUrl, else initials) + upload/remove stubs */}
+      {/* Hidden file input (web only) — triggered by the Upload button. */}
+      {isWeb ? (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+          aria-hidden="true"
+        />
+      ) : null}
+
+      {/* Avatar (image from avatarUrl, else initials) + upload/remove */}
       <Stack flexDirection={rowDir} alignItems="center" gap={18}>
         <Avatar
           name={name || profile?.fullName || 'A'}
@@ -322,30 +372,46 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
           size="xl"
           accessibilityLabel={t('parent.settings.profile.title')}
         />
-        <Stack flexDirection={rowDir} alignItems="center" gap="$3">
-          {/* TODO(P1-12 avatar upload): avatar upload/remove backend (BE-4) not built yet. */}
-          <Button
-            variant="primary"
-            size="sm"
-            disabled
-            accessibilityLabel={t('parent.settings.profile.uploadPhoto')}
-            onPress={() => {
-              /* TODO(P1-12 avatar upload): wire avatar upload once BE-4 lands. */
-            }}
-          >
-            {t('parent.settings.profile.uploadPhoto')}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled
-            accessibilityLabel={t('parent.settings.profile.removePhoto')}
-            onPress={() => {
-              /* TODO(P1-12 avatar upload): wire avatar removal once BE-4 lands. */
-            }}
-          >
-            {t('parent.settings.profile.removePhoto')}
-          </Button>
+        <Stack flexDirection="column" gap="$2">
+          <Stack flexDirection={rowDir} alignItems="center" gap="$3">
+            <Button
+              variant="primary"
+              size="sm"
+              loading={uploadAvatar.isPending}
+              disabled={isAvatarBusy || !isWeb}
+              accessibilityLabel={
+                isWeb
+                  ? t('parent.settings.profile.uploadPhoto')
+                  : t('parent.settings.profile.mobileSoon')
+              }
+              onPress={handleUploadPress}
+            >
+              {isWeb
+                ? t('parent.settings.profile.uploadPhoto')
+                : t('parent.settings.profile.mobileSoon')}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              loading={removeAvatar.isPending}
+              disabled={isAvatarBusy || !profile?.avatarUrl}
+              accessibilityLabel={t('parent.settings.profile.removePhoto')}
+              onPress={() => removeAvatar.mutate()}
+            >
+              {t('parent.settings.profile.removePhoto')}
+            </Button>
+          </Stack>
+          {/* Avatar mutation errors inline below the buttons. */}
+          {avatarUploadError ? (
+            <Text color="$danger" fontSize={12} fontFamily="$body" writingDirection={direction}>
+              {avatarUploadError}
+            </Text>
+          ) : null}
+          {avatarRemoveError ? (
+            <Text color="$danger" fontSize={12} fontFamily="$body" writingDirection={direction}>
+              {avatarRemoveError}
+            </Text>
+          ) : null}
         </Stack>
       </Stack>
 

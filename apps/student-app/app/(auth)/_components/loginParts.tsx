@@ -111,9 +111,11 @@ export interface SocialButtonProps {
   icon: ReactNode;
   onPress: () => void;
   direction?: Direction;
+  /** When true: opacity 0.4, no press/hover, pointer-events none. */
+  disabled?: boolean;
 }
 
-export function SocialButton({ label, icon, onPress, direction = 'ltr' }: SocialButtonProps) {
+export function SocialButton({ label, icon, onPress, direction = 'ltr', disabled = false }: SocialButtonProps) {
   return (
     <Stack
       flex={1}
@@ -126,14 +128,18 @@ export function SocialButton({ label, icon, onPress, direction = 'ltr' }: Social
       borderRadius={socialButtonRadius}
       borderWidth={1}
       borderColor="$border"
-      cursor="pointer"
-      hoverStyle={{ backgroundColor: '$cardSoft' }}
-      pressStyle={{ scale: 0.95 }}
-      onPress={onPress}
+      cursor={disabled ? 'not-allowed' : 'pointer'}
+      opacity={disabled ? 0.4 : 1}
+      hoverStyle={disabled ? undefined : { backgroundColor: '$cardSoft' }}
+      pressStyle={disabled ? undefined : { scale: 0.95 }}
+      onPress={disabled ? undefined : onPress}
+      pointerEvents={disabled ? 'none' : 'auto'}
       accessibilityRole="button"
       accessible
+      accessibilityState={{ disabled }}
       accessibilityLabel={label}
       aria-label={label}
+      aria-disabled={disabled}
     >
       <Stack accessibilityElementsHidden aria-hidden>
         {icon}

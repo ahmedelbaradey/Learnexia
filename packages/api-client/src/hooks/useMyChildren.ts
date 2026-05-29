@@ -1,5 +1,5 @@
 /**
- * useMyChildren — GET /api/Users/Parent/My-Children (authenticated).
+ * useMyChildren — GET /api/Parent/My-Children (authenticated).
  *
  * Wraps the NSwag `myChildren` method and unwraps to the typed
  * `LinkedChildResponse[]`. Scoped server-side to the JWT user — no parent id

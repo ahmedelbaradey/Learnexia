@@ -5,17 +5,18 @@
  * persists tokens then routes to `/` (splash), where the routing guard reads
  * `Me` and redirects by role (parent → onboarding/dashboard; student → child
  * home in the child's language). Invalid credentials show a generic banner (no
- * field-level reveal). RTL-aware.
+ * field-level reveal — P1-13 anti-enumeration: sign-in errors are now uniform,
+ * all 400/401 → invalidCredentials, no branching on not-found vs wrong-password).
+ * RTL-aware.
  *
  * P1-11 additions (re-skin around the same wiring): a Parent/Student persona
  * toggle (UI-only hint — does NOT enable student self-register), a "Remember me"
- * checkbox, a "Forgot password?" link, an "OR CONTINUE WITH" divider, and
- * Google/Apple/Microsoft social buttons. The persona, remember-me, and social
- * buttons are UI-only placeholders wired to no-op TODO handlers (no faked auth)
- * until the corresponding backend stories land. The auth mutation, error
- * mapping, token persistence and routing are unchanged.
+ * checkbox, a "Forgot password?" link (→ /forgot-password), an "OR CONTINUE WITH"
+ * divider, and Google/Apple/Microsoft social buttons. Google is wired to
+ * `useGoogleSignIn` when EXPO_PUBLIC_GOOGLE_CLIENT_ID is set (web: Google
+ * Identity Services); Apple/Microsoft remain UI-only stubs.
  */
-import { useSignIn } from '@learnexia/api-client';
+import { useSignIn, useGoogleSignIn } from '@learnexia/api-client';
 import {
   LOGIN_PERSONAS,
   signInSchema,
@@ -27,7 +28,8 @@ import { Button, TextField } from '@learnexia/ui';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Stack, Text } from '@tamagui/core';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
@@ -38,12 +40,74 @@ import { Checkbox, OrDivider, SocialButton, SocialRow } from './loginParts';
 import { PersonaToggle } from './PersonaToggle';
 import { AppleIcon, GoogleIcon, MicrosoftIcon } from './SocialIcons';
 
+/** EXPO_PUBLIC_ env vars are inlined at build time (string or undefined). */
+const GOOGLE_CLIENT_ID =
+  typeof process !== 'undefined'
+    ? (process.env['EXPO_PUBLIC_GOOGLE_CLIENT_ID'] ?? '')
+    : '';
+
+/** True only when the Google client ID env var is set. */
+const GOOGLE_ENABLED = Boolean(GOOGLE_CLIENT_ID);
+
+/**
+ * Load the Google Identity Services script (web only, once). The script
+ * auto-initializes from the meta client_id or programmatic init call. We call
+ * `google.accounts.id.initialize` after it loads. Called at module level so
+ * subsequent renders skip the script injection.
+ */
+let gisScriptLoaded = false;
+function ensureGisScript(clientId: string, callback: (idToken: string) => void): void {
+  if (Platform.OS !== 'web' || !clientId) return;
+  if (gisScriptLoaded) {
+    initializeGis(clientId, callback);
+    return;
+  }
+  const existingScript = document.getElementById('google-gis-script');
+  if (existingScript) {
+    // Script tag already injected by a previous render cycle.
+    gisScriptLoaded = true;
+    initializeGis(clientId, callback);
+    return;
+  }
+  const script = document.createElement('script');
+  script.id = 'google-gis-script';
+  script.src = 'https://accounts.google.com/gsi/client';
+  script.async = true;
+  script.defer = true;
+  script.onload = () => {
+    gisScriptLoaded = true;
+    initializeGis(clientId, callback);
+  };
+  document.head.appendChild(script);
+}
+
+function initializeGis(clientId: string, callback: (idToken: string) => void): void {
+  const g = (window as unknown as { google?: { accounts?: { id?: { initialize?: (o: object) => void; prompt?: () => void } } } }).google;
+  if (g?.accounts?.id?.initialize) {
+    g.accounts.id.initialize({
+      client_id: clientId,
+      callback: (response: { credential?: string }) => {
+        if (response.credential) {
+          callback(response.credential);
+        }
+      },
+      auto_select: false,
+    });
+  }
+}
+
+function promptGoogleSignIn(): void {
+  const g = (window as unknown as { google?: { accounts?: { id?: { prompt?: () => void } } } }).google;
+  g?.accounts?.id?.prompt?.();
+}
+
 export function LoginForm() {
   const { t } = useTranslation();
   const { direction } = useLocale();
   const router = useRouter();
   const setTokens = useAuthStore((s) => s.setTokens);
   const signIn = useSignIn();
+  const googleSignIn = useGoogleSignIn();
   const resolveError = useServerError();
 
   // UI-only client state (NOT server data → local component state, not Zustand).
@@ -56,13 +120,25 @@ export function LoginForm() {
     mode: 'onTouched',
   });
 
+  // P1-13 anti-enumeration: ALL sign-in errors collapse to one message.
+  // No branching on not-found vs wrong-password — server now returns uniform responses.
   const serverMessage = signIn.isError
     ? resolveError(signIn.error, {
-        hints: [{ contains: ['not found', 'no account'], key: 'auth.login.errors.notFound' }],
         byStatus: {
           400: 'auth.login.errors.invalidCredentials',
           401: 'auth.login.errors.invalidCredentials',
-          404: 'auth.login.errors.notFound',
+          403: 'auth.login.errors.lockout',
+          404: 'auth.login.errors.invalidCredentials',
+          423: 'auth.login.errors.lockout',
+        },
+      })
+    : null;
+
+  const googleErrorMessage = googleSignIn.isError
+    ? resolveError(googleSignIn.error, {
+        byStatus: {
+          400: 'auth.login.errors.invalidCredentials',
+          401: 'auth.login.errors.invalidCredentials',
         },
       })
     : null;
@@ -81,17 +157,48 @@ export function LoginForm() {
     }
   });
 
-  const disabled = signIn.isPending;
+  // Handle the Google ID token once GIS fires the callback.
+  const handleGoogleIdToken = async (idToken: string) => {
+    try {
+      const res = await googleSignIn.mutateAsync({ idToken });
+      if (res.accessToken && res.refreshToken?.tokenString) {
+        await setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken.tokenString });
+        router.replace('/');
+      }
+    } catch {
+      // Error surfaced inline via googleErrorMessage.
+    }
+  };
 
-  // Social auth is UI-only until the OAuth story lands — no faked auth.
-  const handleSocial = (provider: string) => {
-    // TODO(P-OAuth): wire `provider` to the OAuth flow once the backend exists.
-    void provider;
+  // Initialize GIS script on web when GOOGLE_ENABLED. handleGoogleIdToken is
+  // intentionally not in the dep array — GIS callbacks are registered once and
+  // the identity of the callback is stable across renders (refs would add
+  // unnecessary complexity; GIS itself does not re-initialize).
+  useEffect(() => {
+    if (GOOGLE_ENABLED) {
+      ensureGisScript(GOOGLE_CLIENT_ID, handleGoogleIdToken);
+    }
+  }, []);
+
+  const handleGooglePress = () => {
+    if (!GOOGLE_ENABLED) return;
+    if (Platform.OS === 'web') {
+      promptGoogleSignIn();
+    }
+    // Native: no expo-image-picker dep — button stays disabled below.
   };
 
   const handleForgotPassword = () => {
-    // TODO(P-ForgotPassword): route to the forgot-password screen once it exists.
+    router.push('/(auth)/forgot-password');
   };
+
+  // Apple/Microsoft remain UI-only stubs.
+  const handleSocial = (provider: string) => {
+    // TODO(P-OAuth): wire Apple/Microsoft OAuth when BE stories land.
+    void provider;
+  };
+
+  const disabled = signIn.isPending || googleSignIn.isPending;
 
   return (
     <Stack gap="$4">
@@ -173,6 +280,7 @@ export function LoginForm() {
       </Stack>
 
       <ServerErrorBanner message={serverMessage} direction={direction} />
+      <ServerErrorBanner message={googleErrorMessage} direction={direction} />
 
       <Button
         variant="primary"
@@ -195,10 +303,17 @@ export function LoginForm() {
 
       {/* Social buttons — Google + Apple on all sizes; Microsoft on tablet+. */}
       <SocialRow direction={direction}>
+        {/* Google: wired when EXPO_PUBLIC_GOOGLE_CLIENT_ID is set; disabled with
+            a "Coming soon" note otherwise. Native always disabled (no GIS on RN). */}
         <SocialButton
-          label={t('auth.login.socialGoogle')}
+          label={
+            GOOGLE_ENABLED && Platform.OS === 'web'
+              ? t('auth.login.continueWithGoogle')
+              : t('auth.login.googleComingSoon')
+          }
           icon={<GoogleIcon />}
-          onPress={() => handleSocial(SOCIAL_GOOGLE)}
+          onPress={handleGooglePress}
+          disabled={!GOOGLE_ENABLED || Platform.OS !== 'web' || googleSignIn.isPending}
           direction={direction}
         />
         <SocialButton
@@ -221,6 +336,5 @@ export function LoginForm() {
 }
 
 // Non-user-facing technical identifiers for the no-op social handlers.
-const SOCIAL_GOOGLE = 'google';
 const SOCIAL_APPLE = 'apple';
 const SOCIAL_MICROSOFT = 'microsoft';

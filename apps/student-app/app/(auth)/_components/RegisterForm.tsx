@@ -7,10 +7,12 @@
  * `useRegisterParent`; on success persists tokens (`authStore.setTokens`) and
  * routes to onboarding. Maps `BaseResponse.errors` to localized banner copy.
  *
- * Client-only fields NOT posted:
- *  - `country` — collected for UX; backend `RegisterParentCommand` has no country
- *    field yet. TODO(P1-12): country-on-register needs a Batch-2 BE field.
- *  - `acceptedTerms` — consent gate; no backend flag exists yet (UI-only).
+ * P1-12 BE-9: `country` and `acceptedTerms` are now posted to the backend
+ * (`RegisterParentCommand` accepts them). `captchaToken` is included when
+ * `EXPO_PUBLIC_TURNSTILE_SITE_KEY` is set (Cloudflare Turnstile widget on web);
+ * without the key the widget is not rendered and the token is omitted (dev
+ * backend verifier returns true unconditionally in that case). Native always
+ * skips the widget.
  *
  * RTL-aware via `useLocale`.
  */
@@ -35,13 +37,24 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Stack, Text } from '@tamagui/core';
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import { ServerErrorBanner } from '../../../src/components/ServerErrorBanner';
 import { useLocale } from '../../../src/hooks/useLocale';
 import { useServerError } from '../../../src/hooks/useServerError';
+
+/** Turnstile site key — inlined at build time; absent in dev. */
+const TURNSTILE_SITE_KEY =
+  typeof process !== 'undefined'
+    ? (process.env['EXPO_PUBLIC_TURNSTILE_SITE_KEY'] ?? '')
+    : '';
+const TURNSTILE_ENABLED = Boolean(TURNSTILE_SITE_KEY) && Platform.OS === 'web';
+
+/** Unique widget container ID per page instance. */
+const TURNSTILE_CONTAINER_ID = 'cf-turnstile-register';
 
 /**
  * Cumulative password-strength score (0..4) for the PasswordStrengthMeter
@@ -72,6 +85,11 @@ export function RegisterForm() {
   const register = useRegisterParent();
   const resolveError = useServerError();
 
+  // Turnstile CAPTCHA token — only tracked when TURNSTILE_ENABLED.
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaError, setCaptchaError] = useState<string | null>(null);
+  const turnstileWidgetRef = useRef<number | null>(null);
+
   const locale = (i18n.language?.startsWith('ar') ? 'ar' : 'en') as Locale;
   const countryOptions: SelectOption[] = useMemo(
     () => COUNTRIES.map((c) => ({ value: c.code, label: c[locale] })),
@@ -84,6 +102,51 @@ export function RegisterForm() {
     mode: 'onTouched',
   });
 
+  // Load the Turnstile script and render the widget when the key is configured.
+  useEffect(() => {
+    if (!TURNSTILE_ENABLED) return;
+    const container = document.getElementById(TURNSTILE_CONTAINER_ID);
+    if (!container) return;
+
+    const initWidget = () => {
+      const ts = (window as unknown as { turnstile?: {
+        render: (el: HTMLElement | string, opts: object) => number;
+        reset: (id: number) => void;
+      } }).turnstile;
+      if (!ts) return;
+      turnstileWidgetRef.current = ts.render(`#${TURNSTILE_CONTAINER_ID}`, {
+        sitekey: TURNSTILE_SITE_KEY,
+        theme: 'dark',
+        callback: (token: string) => {
+          setCaptchaToken(token);
+          setCaptchaError(null);
+        },
+        'expired-callback': () => {
+          setCaptchaToken(null);
+        },
+        'error-callback': () => {
+          setCaptchaToken(null);
+          setCaptchaError(t('auth.register.captchaError'));
+        },
+      });
+    };
+
+    // Script may already be loaded (e.g. hot-reload).
+    const existing = document.getElementById('cf-turnstile-script');
+    if (existing) {
+      initWidget();
+      return;
+    }
+    const script = document.createElement('script');
+    script.id = 'cf-turnstile-script';
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+    script.async = true;
+    script.defer = true;
+    script.onload = initWidget;
+    document.head.appendChild(script);
+    // The t() function is stable across renders. The widget is mounted once.
+  }, []);
+
   const serverMessage = register.isError
     ? resolveError(register.error, {
         hints: [
@@ -95,14 +158,21 @@ export function RegisterForm() {
     : null;
 
   const onSubmit = handleSubmit(async (values) => {
+    // CAPTCHA gate — only enforced when Turnstile is configured.
+    if (TURNSTILE_ENABLED && !captchaToken) {
+      setCaptchaError(t('auth.register.captchaRequired'));
+      return;
+    }
     try {
-      // NOTE: `country` + `acceptedTerms` are intentionally NOT sent — the BE
-      // RegisterParentCommand only accepts { email, password, fullName }.
-      // TODO(P1-12): country-on-register needs a Batch-2 BE field.
       const res = await register.mutateAsync({
         email: values.email.trim(),
         password: values.password,
         fullName: values.fullName?.trim() || undefined,
+        // P1-12 BE-9: country + acceptedTerms are now persisted by the backend.
+        country: values.country || undefined,
+        acceptedTerms: values.acceptedTerms === true,
+        // Include captchaToken only when Turnstile is active (dev = omit).
+        captchaToken: TURNSTILE_ENABLED ? (captchaToken ?? undefined) : undefined,
       });
       if (res.accessToken && res.refreshToken?.tokenString) {
         await setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken.tokenString });
@@ -249,6 +319,19 @@ export function RegisterForm() {
       />
 
       <ServerErrorBanner message={serverMessage} direction={direction} />
+
+      {/* Cloudflare Turnstile widget — web only, gated on EXPO_PUBLIC_TURNSTILE_SITE_KEY. */}
+      {TURNSTILE_ENABLED ? (
+        <Stack gap="$1">
+          {/* The div is the Turnstile mount point; Tamagui Stack cannot host DOM children. */}
+          <div id={TURNSTILE_CONTAINER_ID} />
+          {captchaError ? (
+            <Text color="$danger" fontSize={12} fontFamily="$body" writingDirection={direction}>
+              {captchaError}
+            </Text>
+          ) : null}
+        </Stack>
+      ) : null}
 
       <Button
         variant="primary"

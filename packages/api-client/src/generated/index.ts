@@ -25,6 +25,11 @@ export type {
   RefreshTokenCommand,
   AccessTokenQuery,
   SignOutCommand,
+  // Social sign-in + password reset (P1-12)
+  GoogleSignInCommand,
+  ForgotPasswordCommand,
+  ResetPasswordCommand,
+  // Parent / family
   AddChildCommand,
   AddedChildResponse,
   AddedChildResponseBaseResponse,
@@ -32,13 +37,23 @@ export type {
   LinkedChildResponse,
   LinkedChildResponseBaseResponse,
   LinkedChildResponseIEnumerableBaseResponse,
+  UpdateChildCommand,
+  UpdatedChildResponse,
+  UpdatedChildResponseBaseResponse,
+  UnlinkChildCommand,
+  // Current user
   MeResponse,
   MeResponseBaseResponse,
+  // Account profile + avatar (P1-12)
   AccountProfileResponse,
   AccountProfileResponseBaseResponse,
   UpdateMyProfileCommand,
+  AvatarUploadResponse,
+  AvatarUploadResponseBaseResponse,
+  FileParameter,
   JwtAuthResponse,
   JwtAuthResponseBaseResponse,
+  // Admin / user-management
   UserProfileResponseDto,
   UserProfileResponseDtoBaseResponse,
   GetUserListResponse,

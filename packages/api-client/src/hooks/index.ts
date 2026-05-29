@@ -33,3 +33,16 @@ export { useMyChildren } from './useMyChildren';
 // P1-12 account-profile hooks.
 export { useMyProfile } from './useMyProfile';
 export { useUpdateProfile } from './useUpdateProfile';
+
+// P1-12 avatar hooks.
+export { useUploadAvatar } from './useUploadAvatar';
+export { useRemoveAvatar } from './useRemoveAvatar';
+
+// P1-12 social sign-in + password reset hooks.
+export { useGoogleSignIn } from './useGoogleSignIn';
+export { useForgotPassword } from './useForgotPassword';
+export { useResetPassword } from './useResetPassword';
+
+// P1-12 edit/unlink child hooks.
+export { useUpdateChild } from './useUpdateChild';
+export { useUnlinkChild } from './useUnlinkChild';

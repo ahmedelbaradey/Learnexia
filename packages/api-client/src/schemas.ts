@@ -27,6 +27,10 @@ export type {
   SignOutCommand,
   JwtAuthResponse,
   JwtAuthResponseBaseResponse,
+  // Social / password reset (P1-12)
+  GoogleSignInCommand,
+  ForgotPasswordCommand,
+  ResetPasswordCommand,
   // Parent / family
   AddChildCommand,
   AddedChildResponse,
@@ -35,13 +39,20 @@ export type {
   LinkedChildResponse,
   LinkedChildResponseBaseResponse,
   LinkedChildResponseIEnumerableBaseResponse,
+  UpdateChildCommand,
+  UpdatedChildResponse,
+  UpdatedChildResponseBaseResponse,
+  UnlinkChildCommand,
   // Current user
   MeResponse,
   MeResponseBaseResponse,
-  // Account profile (P1-12 — profile read/update)
+  // Account profile (P1-12 — profile read/update + avatar)
   AccountProfileResponse,
   AccountProfileResponseBaseResponse,
   UpdateMyProfileCommand,
+  AvatarUploadResponse,
+  AvatarUploadResponseBaseResponse,
+  FileParameter,
   // Admin / user-management (consumed by legacy example hooks)
   UserProfileResponseDto,
   UserProfileResponseDtoBaseResponse,

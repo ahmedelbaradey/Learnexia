@@ -26,6 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocale } from '../../../src/hooks/useLocale';
 import { AddChildCard } from './AddChildCard';
 import { ChildDashboardCard } from './ChildDashboardCard';
+import { EditLinkedChildSheet } from './EditLinkedChildSheet';
 import { FamilySummaryStrip } from './FamilySummaryStrip';
 import { getChildStatsStub, getFamilyTotalsStub } from './parentDashboardStubs';
 
@@ -55,6 +56,9 @@ export function MyChildrenWeb() {
   const router = useRouter();
   const query = useMyChildren();
   const [period, setPeriod] = useState<string>(REPORTING_PERIOD.ThisWeek);
+
+  // Edit-child sheet state.
+  const [editTarget, setEditTarget] = useState<{ id: number; fullName: string } | null>(null);
 
   const rowDir = isRtl ? 'row-reverse' : 'row';
   const children = query.data ?? [];
@@ -171,9 +175,11 @@ export function MyChildrenWeb() {
                   return (
                     <ChildDashboardCard
                       key={id}
+                      childId={child.id}
                       fullName={child.fullName ?? ''}
                       stats={getChildStatsStub(id)}
                       onViewDashboard={() => router.push('/(parent)')}
+                      onEdit={() => setEditTarget({ id: child.id ?? 0, fullName: child.fullName ?? '' })}
                     />
                   );
                 })}
@@ -183,6 +189,17 @@ export function MyChildrenWeb() {
           </Stack>
         )}
       </Stack>
+
+      {/* Edit-child bottom sheet — mounts once, toggles visibility per editTarget. */}
+      {editTarget ? (
+        <EditLinkedChildSheet
+          visible={Boolean(editTarget)}
+          childId={editTarget.id}
+          initialFullName={editTarget.fullName}
+          onClose={() => setEditTarget(null)}
+          onSaved={() => setEditTarget(null)}
+        />
+      ) : null}
     </Stack>
   );
 }

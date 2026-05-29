@@ -1,10 +1,10 @@
 /**
- * (auth) route group — guest-facing screens (login, register).
+ * (auth) route group — guest-facing screens (login, register, forgot-password,
+ * reset-password).
  *
- * Only two routes exist here: `login` and `register`. There is intentionally NO
- * student self-register route (parent-driven onboarding) — children are added
- * by a parent via the onboarding flow, never self-registered (AC: no anonymous
- * student self-registration path).
+ * There is intentionally NO student self-register route (parent-driven
+ * onboarding) — children are added by a parent via the onboarding flow, never
+ * self-registered (AC: no anonymous student self-registration path).
  */
 import { Stack } from 'expo-router';
 
@@ -13,6 +13,8 @@ export default function AuthLayout() {
     <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
       <Stack.Screen name="login" />
       <Stack.Screen name="register" />
+      <Stack.Screen name="forgot-password" />
+      <Stack.Screen name="reset-password" />
     </Stack>
   );
 }

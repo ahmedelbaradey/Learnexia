@@ -25,9 +25,13 @@ import { useLocale } from '../../../src/hooks/useLocale';
 import type { ChildStatsStub } from './parentDashboardStubs';
 
 export interface ChildDashboardCardProps {
+  /** Backend child id — used by the edit affordance. */
+  childId?: number;
   fullName: string;
   stats: ChildStatsStub;
   onViewDashboard: () => void;
+  /** Called when the user taps the Edit affordance. */
+  onEdit?: () => void;
 }
 
 function formatNumber(value: number, locale: string): string {
@@ -49,6 +53,7 @@ export function ChildDashboardCard({
   fullName,
   stats,
   onViewDashboard,
+  onEdit,
 }: ChildDashboardCardProps) {
   const { t } = useTranslation();
   const { direction, isRtl, locale } = useLocale();
@@ -222,7 +227,7 @@ export function ChildDashboardCard({
         </Stack>
       </Stack>
 
-      {/* Footer: weakest topic + view dashboard */}
+      {/* Footer: weakest topic + edit + view dashboard */}
       <Stack
         flexDirection={rowDir}
         alignItems="center"
@@ -239,20 +244,40 @@ export function ChildDashboardCard({
             {weakestLabel}
           </Text>
         </Text>
-        <Stack
-          minHeight={40}
-          justifyContent="center"
-          cursor="pointer"
-          pressStyle={{ scale: 0.95 }}
-          onPress={() => onViewDashboard()}
-          accessibilityRole="button"
-          accessible
-          accessibilityLabel={`${t('parent.myChildren.viewDashboard')} ${fullName}`}
-          aria-label={`${t('parent.myChildren.viewDashboard')} ${fullName}`}
-        >
-          <Text color="$primaryLight" fontSize={12} fontWeight="800" fontFamily="$heading" writingDirection={direction}>
-            {t('parent.myChildren.viewDashboard')}
-          </Text>
+        <Stack flexDirection={rowDir} alignItems="center" gap="$3">
+          {/* Edit affordance — shown when onEdit is provided. */}
+          {onEdit ? (
+            <Stack
+              minHeight={40}
+              justifyContent="center"
+              cursor="pointer"
+              pressStyle={{ scale: 0.95 }}
+              onPress={onEdit}
+              accessibilityRole="button"
+              accessible
+              accessibilityLabel={`${t('parent.myChildren.editChild')} ${fullName}`}
+              aria-label={`${t('parent.myChildren.editChild')} ${fullName}`}
+            >
+              <Text color="$fg3" fontSize={12} fontWeight="700" fontFamily="$heading" writingDirection={direction}>
+                {t('parent.myChildren.editChild')}
+              </Text>
+            </Stack>
+          ) : null}
+          <Stack
+            minHeight={40}
+            justifyContent="center"
+            cursor="pointer"
+            pressStyle={{ scale: 0.95 }}
+            onPress={() => onViewDashboard()}
+            accessibilityRole="button"
+            accessible
+            accessibilityLabel={`${t('parent.myChildren.viewDashboard')} ${fullName}`}
+            aria-label={`${t('parent.myChildren.viewDashboard')} ${fullName}`}
+          >
+            <Text color="$primaryLight" fontSize={12} fontWeight="800" fontFamily="$heading" writingDirection={direction}>
+              {t('parent.myChildren.viewDashboard')}
+            </Text>
+          </Stack>
         </Stack>
       </Stack>
     </Stack>
