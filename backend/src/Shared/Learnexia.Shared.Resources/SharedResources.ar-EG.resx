@@ -1653,4 +1653,10 @@
   <data name="KnowledgeNodeNotFound" xml:space="preserve">
     <value>عقدة المعرفة المطلوبة غير موجودة.</value>
   </data>
+  <data name="LearningPathSubjectNotFound" xml:space="preserve">
+    <value>المادة غير موجودة.</value>
+  </data>
+  <data name="LearningPathUnauthorized" xml:space="preserve">
+    <value>يلزم تسجيل الدخول لعرض مسار التعلم.</value>
+  </data>
 </root>

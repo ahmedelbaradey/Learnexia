@@ -12,7 +12,8 @@
 - `—` — no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
-- **Wave 7:** P2-02-BE Batch 1 + api-tester (browse subjects/lessons/skill-tree queries + 12 integration tests) — Batch 1 merged via PR #57; tests + docs on PR #62 (pending merge)
+- **Wave 8:** P2-04-BE (Learning Path Engine — static `LearningPathEngine` + 5 repo methods + JWT-aware wiring into `GetSubjectSkillTree`/`GetSubjectLessons` + `[Authorize]` on 2 endpoints + 12 unit tests + 12 integration tests + 7 P2-02 regression updates) — ready for PR on feat/P2-04-unlock-rules-learning-path-engine
+- **Wave 7:** P2-02-BE Batch 1 + api-tester (browse subjects/lessons/skill-tree queries + 12 integration tests) — Batch 1 merged via PR #57; api-tester merged via PR #62
 - **Wave 7:** P2-08-BE Batches 1–4 (granular answers: SubmitAnswer + CompleteAttempt + AbandonAttempt + GetStudentAttempts + GetSkillStats + StudentsController + 17 integration tests + security PASS) — Batch 1 merged via PR #58; Batches 2–4 merged via PR #61
 - **Wave 7:** P2-11-BE Batches 1–4 (skill dependency graph) — Batch 1 merged via PR #56; Batches 2–4 merged via PR #60
 - **Wave 6:** P2-06-BE (take-a-quiz / StartAttempt, folded into Learning module — quiz entities + migration + endpoint + unit tests) — merged via PR #54
@@ -56,7 +57,7 @@
 | P2-01 | Model the curriculum hierarchy | ✅ | — |
 | P2-02 | Browse subjects and lessons | 🟡 | 🔲 |
 | P2-03 | Navigate the skill tree | 🔲 | 🔲 |
-| P2-04 | Unlock lessons by prerequisite/mastery | 🔲 | — |
+| P2-04 | Unlock lessons by prerequisite/mastery | 🟡 | — |
 | P2-05 | Open and complete a lesson | 🔲 | 🔲 |
 | P2-06 | Take a quiz (4 question types) | ✅ | 🔲 |
 | P2-07 | Get instant answer feedback | 🔲 | 🔲 |
