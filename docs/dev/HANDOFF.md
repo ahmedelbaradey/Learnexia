@@ -1,6 +1,6 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-29 (**Wave 6 merged; Wave 7 fully merged; Wave 8 in progress — P2-04 merged via PR #63; P2-07 ready for PR**).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-29 (**Wave 6 merged; Wave 7 fully merged; Wave 8 in progress — P2-04 merged via PR #63; P2-07 ready for PR. Side-track: Phase-1 security follow-up audit — B1 CAPTCHA prod-guard + G1/B2 auth rate-limit tightening on branch `audit/phase-1` → PR #65; remaining P1 follow-ups + G2 token-revocation routed to P6-06**).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
 
 ## Wave 8 — Phase 2 backend (in progress)
@@ -237,8 +237,14 @@ All Identity-module-scoped, parallel-safe with your Phase 2 BE work. Stories + t
 - **Email:** `Email__Provider=Smtp` + `Email__Host/__UserName/__Password` for real delivery (dev = `None`/log sink).
 
 ### Still open (backend)
-- **P1-13 BE-4 — CAPTCHA on register** (confirmed in P1 scope): NOT built — pending a **provider choice** (reCAPTCHA / Cloudflare Turnstile / hCaptcha) + `ICaptchaVerifier` ask-first approval. FE consumer `P1-11-FE-16`.
-- **Hardening follow-ups** (non-blocking; in the per-PR security briefs): per-IP throttle on the auth endpoints; forgot-password **timing-oracle** decouple (email send is synchronous in-request); **localize** the reset + welcome emails (English-only today); MinIO presign TTL = 60m.
+- **P1-13 BE-4 — CAPTCHA on register**: ✅ BUILT (Cloudflare Turnstile `TurnstileCaptchaVerifier` + `ICaptchaVerifier`; config-gated, fail-closed). Ships `Captcha:Enabled=false` by default; **PR #65 now fail-fasts in Production/Staging** unless enabled + secret set. FE consumer `P1-11-FE-16`.
+- **Hardening follow-ups** (non-blocking; in the per-PR security briefs): **per-IP throttle on auth endpoints ✅ tightened in PR #65** (env-gated; prod/staging: sign-in 50/5m, register 10/15m, forgot 5/15m, reset 10/15m); forgot-password **timing-oracle** decouple (email send still synchronous in-request) — ⏳ P6-06 AC-5; **localize** reset + welcome emails (English-only) — ⏳ P6-06; MinIO presign TTL ✅ already 60m.
+
+### Phase-1 security follow-up audit (2026-05-29) — branch `audit/phase-1` → PR #65
+Verified every Phase-1 security-audit follow-up against `main` (all original audits were PASS / PASS-WITH-FOLLOWUPS — **zero Critical/High**). ~10 of ~18 follow-ups already applied (timing-oracle dummy-hash, CRLF guard, email PII masking, SMTP fail-fast, MinIO no-`ex.Message`/TTL→60m/detected-Content-Type, no raw-Identity-error concat on register, per-endpoint rate limits, GuardJwtSecret).
+- **Fixed in PR #65:** **B1** CAPTCHA prod-guard (`GuardCaptcha` in Identity `DependencyInjection.cs`); **G1/B2** env-gated auth rate limits (`Host/Extensions/ServiceExtensions.cs` `ConfigureRateLimitingOptions(IConfiguration)`; Dev/Testing keep the prior 100/s rules verbatim so the integration suite is unaffected). Build green; Testcontainers suite NOT run this session (no Docker) — reviewer/api-tester to run before merge.
+- **Routed to P6-06** (`user-stories/Phase-6-Stabilization/P6-06-...md`, new AC-7): **G2** — JWT bearer does NOT validate any per-request server state, so an already-issued access token survives sign-out/password-reset until expiry (only the refresh-token cache + sessions are dropped). Chosen design: **SessionId per-request validation** via `JwtBearerEvents.OnTokenValidated` against `ISessionManagementService` (preserves P2-12 "ChangePassword keeps current session"); explicitly NOT security-stamp validation. Load-bearing auth → full pipeline.
+- **Still outstanding (Low/Info, mostly P6-06):** `RequireHttpsMetadata=false` not env-gated; DB password default in `appsettings.json` no fail-fast; no `[RequestSizeLimit]` on avatar upload; child `Email` echoed in Added/Updated/LinkedChildResponse DTOs; Google auto-link w/o confirmation + auto-stamped consent; CORS `?? "*"` + `AllowCredentials()` fallback unguarded.
 
 ### FE now unblocked (regenerate the `api-client`)
 Profile save (`/Account/Profile`), avatar upload/remove (`/Account/Avatar`), Google button (`/Authentication/Google-SignIn`), forgot/reset (`/Authentication/Forgot-Password` + `Reset-Password`), edit-child (`/Parent/Update-Child`), register `country`+`acceptedTerms`. Sign-in errors are uniform now (`P1-11-FE-15` / `P1-10-FE-6`).

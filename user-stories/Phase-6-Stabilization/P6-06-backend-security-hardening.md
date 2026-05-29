@@ -20,6 +20,34 @@ As the platform owner, I want the remaining backend security follow-ups from the
 - **Transport/secret hygiene:** `RequireHttpsMetadata=false` is gated to Development only; the DB connection secret is read from env in non-Development; the required prod env vars are documented (HANDOFF).
 - **Rate-limit store is multi-instance-safe:** the auth rate-limiting (shipped in Phase-1 as in-memory) uses a **Redis-backed** counter/policy store so limits hold across horizontally-scaled instances.
 - The changes pass a **security-auditor** review (Critical/High block).
+- **Revoke live access tokens on password reset / sign-out (audit finding G2):** access tokens (JWT)
+  currently have **no per-request server-side check** — sign-out and password reset only drop the
+  refresh-token cache entry (`userrefreshtoken-{userId}`) and session records, so an already-issued
+  access token stays valid until expiry. **Chosen design (lead, 2026-05-29): SessionId per-request
+  validation** — wire `JwtBearerEvents.OnTokenValidated` in the Identity JWT bearer config to validate
+  the token's `"SessionId"` claim against `ISessionManagementService` (reject when the session is
+  terminated/absent). This preserves the existing P2-12 model where `ChangePassword` keeps the caller's
+  current session. **Prereqs:** verify sign-in/registration persists a `UserSession` with the same
+  `SessionId` that `AuthenticationIdentityService.GetClaims` mints (else every token is rejected);
+  password reset (anonymous) must terminate **all** the user's sessions; do **not** use ASP.NET
+  security-stamp validation (`UserManager.ChangePasswordAsync` bumps the stamp and would also kill the
+  caller's current session, breaking documented P2-12 behavior + its tests); mind per-request lookup
+  cost. Load-bearing auth → run the full pipeline (analyzer → planner → security-auditor → reviewer).
+
+## Progress (2026-05-29 — branch `audit/phase-1`, build-green, NOT committed)
+Two quick refinements of the Phase-1 rate-limit/CAPTCHA work were applied on this branch (full Phase-1
+follow-up audit done this session):
+- **Auth rate limits tightened (was the loose P1-13b 100/s):** `AddRateLimiting`
+  (`Host/Extensions/ServiceExtensions.cs`) is now environment-gated — Production/Staging tightens
+  register-parent 10/15m, forgot-password 5/15m, reset-password 10/15m, sign-in 50/5m; Development/Testing
+  keep the prior generous limits verbatim so the integration suite (env "Testing") is unaffected.
+- **CAPTCHA prod guard:** `GuardCaptcha` (Identity `DependencyInjection.cs`) now fails fast at startup in
+  Production/Staging unless CAPTCHA is enabled **with** a secret; dev/Testing keep only the prior
+  "enabled-without-secret is invalid" check. Mirrors `GuardJwtSecret`.
+
+Still open in this story: forgot-password timing-oracle decouple, email localization, transport/secret
+hygiene (`RequireHttpsMetadata` env-gating + DB secret from env), Redis-backed rate-limit store, and the
+**G2 token-revocation** above.
 
 ## Notes
 - **Identity + Notifications + Host scoped**, parallel-safe; cross-module only via `Shared.Contracts` (email-locale may add a `Locale` field to the existing welcome/reset events). No cross-module FK. No Unit of Work.

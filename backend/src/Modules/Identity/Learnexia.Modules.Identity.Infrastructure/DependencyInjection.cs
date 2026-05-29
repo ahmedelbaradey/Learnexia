@@ -68,11 +68,13 @@ public static class DependencyInjection
         // so dev/tests register with no token; when enabled it fails closed.
         services.Configure<Application.Configurations.CaptchaSettings>(configuration.GetSection("Captcha"));
         services.AddHttpClient<ICaptchaVerifier, Services.TurnstileCaptchaVerifier>();
-        // Fail fast on a misconfigured CAPTCHA: if it's enabled but no secret is supplied, every
-        // register would silently fail-closed. Reject at startup (mirrors GuardJwtSecret).
+        // Fail fast on a misconfigured CAPTCHA (mirrors GuardJwtSecret). In Production/Staging the
+        // CAPTCHA is the primary anti-automation control on the anonymous register endpoint, so it MUST
+        // be enabled with a secret — otherwise a deploy that forgets Captcha__Enabled=true silently runs
+        // with bot protection off (audit finding B1). In Development/Testing we don't force it on
+        // (dev/CI register with no token), but still reject the inconsistent "enabled, no secret" case.
         var captchaSettings = configuration.GetSection("Captcha").Get<Application.Configurations.CaptchaSettings>();
-        if (captchaSettings is { Enabled: true } && string.IsNullOrWhiteSpace(captchaSettings.SecretKey))
-            throw new InvalidOperationException("Captcha:Enabled is true but Captcha:SecretKey is not configured. Set Captcha__SecretKey (env) or disable Captcha.");
+        GuardCaptcha(captchaSettings, configuration);
 
         // (P2-12) The P1-04 FamilyScope resource-authorization handler was removed: it read the
         // ParentStudent link table that moved to the Parent module, and FamilyScopeRequirement was never
@@ -231,6 +233,46 @@ public static class DependencyInjection
                 "Provide a strong, unique signing key via the JwtSettings__Secret environment variable " +
                 "(or a secret store). The committed default placeholder is rejected in Production/Staging.");
         }
+    }
+
+    /// <summary>
+    /// Rejects a CAPTCHA misconfiguration at startup (audit finding B1). In Production/Staging the
+    /// register endpoint's bot protection MUST be enabled with a configured secret — a deploy must not
+    /// silently run with CAPTCHA off. In other environments only the inconsistent "enabled without a
+    /// secret" combination is rejected (dev/CI register with no token).
+    /// </summary>
+    private static void GuardCaptcha(Application.Configurations.CaptchaSettings? settings, IConfiguration configuration)
+    {
+        if (IsProtectedEnvironment(configuration))
+        {
+            if (settings is null || !settings.Enabled || string.IsNullOrWhiteSpace(settings.SecretKey))
+                throw new InvalidOperationException(
+                    "CAPTCHA must be enabled with a configured Captcha:SecretKey in Production/Staging. " +
+                    "Set Captcha__Enabled=true and Captcha__SecretKey (env) — the register endpoint's bot " +
+                    "protection cannot ship disabled.");
+        }
+        else if (settings is { Enabled: true } && string.IsNullOrWhiteSpace(settings.SecretKey))
+        {
+            throw new InvalidOperationException(
+                "Captcha:Enabled is true but Captcha:SecretKey is not configured. " +
+                "Set Captcha__SecretKey (env) or disable Captcha.");
+        }
+    }
+
+    /// <summary>
+    /// Resolves whether the app is running in a protected (Production/Staging) environment, defaulting
+    /// to Production (fail-closed) when the environment can't be resolved. Mirrors GuardJwtSecret's logic.
+    /// </summary>
+    private static bool IsProtectedEnvironment(IConfiguration configuration)
+    {
+        var environment = configuration[Microsoft.Extensions.Hosting.HostDefaults.EnvironmentKey]
+            ?? configuration["ASPNETCORE_ENVIRONMENT"]
+            ?? configuration["DOTNET_ENVIRONMENT"]
+            ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+            ?? "Production";
+
+        return environment.Equals("Production", StringComparison.OrdinalIgnoreCase) ||
+               environment.Equals("Staging", StringComparison.OrdinalIgnoreCase);
     }
 
 }

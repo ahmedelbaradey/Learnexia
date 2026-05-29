@@ -36,7 +36,7 @@ builder.Services.AddSwaggerService();
 
 // Cross-cutting host services (ported from backend/src/apis/Main)
 builder.Services.ConfigureCors(builder.Configuration);
-builder.Services.ConfigureRateLimitingOptions();
+builder.Services.ConfigureRateLimitingOptions(builder.Configuration);
 builder.Services.ConfigureIISIntegration();
 builder.Services.ConfigureVersioning();
 builder.Services.ConfigureResponseCaching();

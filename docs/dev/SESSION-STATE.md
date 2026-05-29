@@ -1,7 +1,7 @@
 # Session State — Phase 2 Backend build (resume pointer)
 
 > **Purpose:** hand off an in-flight multi-wave build to a fresh Claude Code session on another device (web/mobile). Local auto-memory + the conversation transcript do **not** sync across machines — this file + `CLAUDE.md` + `docs/dev/HANDOFF.md` + the committed `docs/briefs/*` & `docs/plans/*` are what travel. Read those first.
-> Last updated: 2026-05-25 (Wave 7 Batch 1s merged to main; remaining batches in progress).
+> Last updated: 2026-05-29 (side-track: Phase-1 security follow-up audit → PR #65; Wave 7 Batches 2–4 still in flight in the parallel session).
 
 ## Where we are
 Driving the **Phase 2 (Learning Core) backend** to completion, wave by wave, through the full agent pipeline (analyzer → planner → implementers → security-auditor/api-tester → reviewer → committer). One PR per wave.
@@ -55,6 +55,16 @@ Then: P2-11 Batch 3 (BE-4 seeder); P2-08 Batches 3+4; reviewer gates; update PRs
 
 ## Deferred hardening → P6-06 (pre-existing)
 JWT `CHANGE_ME` default secret, `RequireHttpsMetadata=false` (make Development-only), DbContext audit stamp `DateTime.Now`→`UtcNow`, MinIO default creds, MSB3277 EF version conflict in `Directory.Packages.props`.
+
+## Side-track — Phase-1 security follow-up audit (2026-05-29) — separate from the wave build above
+Standalone hardening off the wave plan, own branch **`audit/phase-1`** (own worktree). **PR #65 open** (base `main`). Does NOT touch the Wave-7 worktrees/branches.
+- Audited every Phase-1 security-audit follow-up vs `main` (all originally PASS / PASS-WITH-FOLLOWUPS; zero Critical/High). ~10/18 already applied.
+- **PR #65 (build green; integration suite NOT run — no Docker this session):**
+  - **B1** — CAPTCHA prod-guard: `GuardCaptcha` in Identity `DependencyInjection.cs` fail-fasts in Production/Staging unless CAPTCHA enabled + secret set.
+  - **G1/B2** — env-gated auth rate limits in `Host/Extensions/ServiceExtensions.cs` (`ConfigureRateLimitingOptions(IConfiguration)`): prod/staging tightened (sign-in 50/5m, register 10/15m, forgot 5/15m, reset 10/15m, google-signin 50/5m); Dev/Testing keep the prior 100/s rules verbatim so integration tests are unaffected.
+- **Routed to P6-06 (new AC-7):** **G2** — revoke live access tokens on sign-out/reset via **SessionId per-request validation** (`JwtBearerEvents.OnTokenValidated` against `ISessionManagementService`; NOT security-stamp, which would break P2-12 "keep current session"). Load-bearing auth → full pipeline.
+- **Still outstanding (Low/Info, mostly P6-06):** `RequireHttpsMetadata` env-gating, DB-secret fail-fast, avatar `[RequestSizeLimit]`, child-`Email` in Added/Updated/LinkedChildResponse DTOs, Google auto-link/consent, CORS `*`+credentials fallback.
+- Full detail: `docs/dev/HANDOFF.md` → "Phase-1 security follow-up audit" section.
 
 ## Key docs to read on resume
 `CLAUDE.md` (rulebook) · `docs/dev/HANDOFF.md` (shared memory, Wave 7 section at top) · `tasks/PROGRESS.md` (status board) · `docs/briefs/P2-{02,08,11}.md` + `docs/plans/P2-{02,08,11}.md` (Wave 7 specs) · `user-stories/Phase-2-Learning-Core/` + `tasks/Backend/Phase-2-Learning-Core/` (source of truth).
