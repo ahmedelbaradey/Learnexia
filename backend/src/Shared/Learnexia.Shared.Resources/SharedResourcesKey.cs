@@ -781,5 +781,8 @@
         public const string AttemptsRetrievedSuccessfully = "AttemptsRetrievedSuccessfully";
         public const string SkillStatsRetrievedSuccessfully = "SkillStatsRetrievedSuccessfully";
 
+        // Skill dependency graph — node queries (P2-11 BE-5).
+        public const string KnowledgeNodeNotFound = "KnowledgeNodeNotFound";
+
     }
 }

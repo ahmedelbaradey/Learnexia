@@ -5,21 +5,21 @@
 
 ## Wave 7 — Phase 2 backend (in progress, Batch 1s merged to main)
 
-### P2-11 — Skill dependency graph ✅ Batch 1 merged (PR #56), Batches 2–3 pending
+### P2-11 — Skill dependency graph ✅ Batches 1–4 complete, PR pending
 
-**What's on main:**
+**What's on main (PR #56):**
 - `KnowledgeNode` entity — wraps `Skill` via nullable `SkillId?` FK (filtered unique index `UX_KnowledgeNodes_SkillId WHERE SkillId IS NOT NULL`). Fields: Name, NodeType (Skill/Concept/Review enum), SubjectId FK, GradeId FK, Difficulty (int 1–5).
 - `KnowledgeEdge` entity — self-referential directed edge. Fields: SourceNodeId, TargetNodeId, RelationshipType (Prerequisite/Related enum), Strength (decimal 0–1, default 1.0). Both FKs `DeleteBehavior.Restrict`; SkillId FK `SetNull`.
 - Migration `AddSkillGraphTables` (learning schema).
 
-**Still pending (story branch `feat/P2-11-skill-dependency-graph` worktree `/home/user/Learnexia.worktrees/P2-11`):**
-- **BE-3:** `SkillGraphValidator.AssertAcyclic` — DFS over Prerequisite edges only; unit tests (acyclic / cycle / self-loop / related-excluded)
-- **BE-5:** `GetPrerequisitesOf(nodeId)` + `GetUnlockedBy(nodeId)` CQRS queries; `KnowledgeGraphController`; `GET /api/Learning/KnowledgeGraph/Prerequisites/{nodeId}` + `/UnlockedBy/{nodeId}` (both `[Authorize]`)
-- **BE-4:** extend `LearningSeeder.SeedSkillGraphAsync` — map Skill rows → KnowledgeNode rows by SkillId; Math G1–G6 within-subject Prerequisite edges; run cycle check before save
-- **BE-6 DESCOPED** — no wiring to P2-04/P3-08/P3-10; the query API is the integration seam; P2-04 consumes it when built (Wave 8)
-- api-tester → reviewer gate
+**What's on branch `feat/P2-11-skill-dependency-graph` (ready for PR):**
+- **BE-3** ✅ `SkillGraphValidator.AssertAcyclic` (static, three-color DFS over Prerequisite edges only) at `Learning.Domain/Services/SkillGraphValidator.cs` + 6 unit tests (acyclic / cycle / self-loop / related-excluded / empty / mixed) — all green.
+- **BE-5** ✅ `GetPrerequisitesQuery` + `GetUnlockedByQuery` CQRS handlers under `Learning.Application/Features/KnowledgeGraph/` + `KnowledgeNodeDto` + `KnowledgeGraphProfile` (placed in `Application/Mapping/` to match the existing convention, not under `Features/`); `KnowledgeGraphController` exposing `GET /api/Learning/KnowledgeGraph/Prerequisites/{nodeId}` + `/UnlockedBy/{nodeId}` (both `[Authorize]`). Repository extended on `ILearningRepository` with `GetPrerequisiteNodesAsync`, `GetUnlockedByNodeAsync`, `KnowledgeNodeExistsAsync`. Localized `KnowledgeNodeNotFound` key added in en-US + ar-EG resources.
+- **BE-4** ✅ `LearningSeeder.SeedSkillGraphAsync` — maps every seeded `Skill` → `KnowledgeNode` (idempotent on `SkillId`, Difficulty=3 default); authors 7 Prerequisite edges across Math G1→G6 (skipped chains where a P2-10 skill name doesn't exist, e.g. "Place Value", "Division" — documented inline). Calls `SkillGraphValidator.AssertAcyclic(existing.Concat(@new))` before save; on cycle detection logs error + skips save (does NOT crash startup). Uses `GetService<ILoggerManager>()` (null-tolerant) so existing seeder unit tests keep working with a minimal service provider.
+- **BE-6 DESCOPED** — no wiring to P2-04/P3-08/P3-10; the query API IS the integration seam; P2-04 consumes it when built (Wave 8).
+- **Integration tests** ✅ `backend/tests/Learnexia.IntegrationTests/P2_11_KnowledgeGraph_Tests.cs` — 6 tests (Prerequisites happy path, UnlockedBy happy path, unknown nodeId ≠ 500, unauthenticated → 401, seed smoke check, `"successed":` envelope literal) all green against Testcontainers PostgreSQL.
 
-**Key decisions:** KnowledgeNode wraps (not replaces) Skill; within-subject edges only in demo seed; BE-6 seam only. **Skill Name strings must not be renamed** (P2-10 seeder + P2-11 use them as lookup keys).
+**Key decisions:** KnowledgeNode wraps (not replaces) Skill; within-subject edges only in demo seed; BE-6 seam only. **Skill Name strings must not be renamed** (P2-10 seeder + P2-11 use them as lookup keys). Math prereq chain skips Division (no Division skill seeded in P2-10) — jumps G3 Multiplication → G5 Fractions; revisit when P2-10 fills out Division skills. BL-01..05 deferral now recorded in `user-stories/README.md` (AC-7).
 
 ### P2-08 — Record granular answers ✅ Batches 1–4 complete, security PASS, PR pending
 

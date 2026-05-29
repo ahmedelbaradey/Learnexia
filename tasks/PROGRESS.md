@@ -12,9 +12,9 @@
 - `—` — no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
-- **Wave 7:** P2-08-BE Batches 1–4 (granular answers: SubmitAnswer + CompleteAttempt + AbandonAttempt commands + GetStudentAttempts + GetSkillStats queries + StudentsController + 17 integration tests + security-auditor PASS) — Batch 1 merged via PR #58; Batches 2–4 ready for PR on feat/P2-08-record-granular-answers
-- **Wave 7:** P2-11-BE Batches 1–4 (skill dependency graph) — Batch 1 merged via PR #56; Batches 2–4 on PR #60 (validator, query API, seeder edges, 6 integration tests)
-- **Wave 7:** P2-02-BE Batch 1 (browse subjects/lessons/skill-tree queries) — merged via PR #57; api-tester + reviewer pending
+- **Wave 7:** P2-08-BE Batches 1–4 (granular answers: SubmitAnswer + CompleteAttempt + AbandonAttempt commands + GetStudentAttempts + GetSkillStats queries + StudentsController + 17 integration tests + security-auditor PASS) — Batch 1 merged via PR #58; Batches 2–4 on PR #61 (pending merge)
+- **Wave 7:** P2-11-BE Batches 1–4 (skill dependency graph: KnowledgeNode/Edge entities + migration + acyclic DFS validator + GetPrerequisites/UnlockedBy CQRS queries + KnowledgeGraphController + seeder extension + 6 integration tests) — Batch 1 merged via PR #56; Batches 2–4 merged via PR #60
+- **Wave 7:** P2-02-BE Batch 1 (browse subjects/lessons/skill-tree queries) — merged via PR #57; api-tester + reviewer on PR #62 (pending merge)
 - **Wave 6:** P2-06-BE (take-a-quiz / StartAttempt, folded into Learning module — quiz entities + migration + endpoint + unit tests) — merged via PR #54
 - **Wave 6:** P2-10-BE (seed demo subjects & skill trees — 6 grades × 4 subjects, Math deepest, idempotent) — merged via PR #54
 - **Wave 6:** P2-12-BE (account settings — Parent module + Notifications prefs + Identity security) — merged via PR #54
