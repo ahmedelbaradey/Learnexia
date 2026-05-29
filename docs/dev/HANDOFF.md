@@ -1,9 +1,43 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-29 (**Wave 6 merged; Wave 7 fully merged; Wave 8 in progress — P2-04 merged via PR #63; P2-07 ready for PR. Side-track: Phase-1 security follow-up audit — B1 CAPTCHA prod-guard + G1/B2 auth rate-limit tightening on branch `audit/phase-1` → PR #65; remaining P1 follow-ups + G2 token-revocation routed to P6-06**).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-30 (**Wave 6 merged; Wave 7 fully merged; Wave 8 fully merged via #63 + #64; Wave 9 in progress — P2-05 ready for PR #66; P2-09 ready for PR; P2-03 pending P2-05 merge. Side-track: P1 security follow-up audit merged via PR #65; remaining P1 follow-ups + G2 token-revocation routed to P6-06**).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
 
-## Wave 8 — Phase 2 backend (in progress)
+## Wave 9 — Phase 2 backend (in progress)
+
+### P2-09 — Home dashboard ✅ Batches 1–2 complete, PR pending
+
+**What's on branch `feat/P2-09-home-dashboard` (ready for PR):**
+- **`DashboardController`** ✅ new `GET /api/Learning/Dashboard` `[Authorize]` (any role; per-student via `_currentUser.UserId` — no studentId param, IDOR-proof by construction).
+- **`GetDashboardQuery` + Handler** ✅ parameterless query → `DashboardDto { Xp:int=0, Streak:int=0, DailyMission:DailyMissionDto?=null, LeaguePreview:LeaguePreviewDto?=null, Continue:ContinueTargetDto? }`. Continue resolution: most-recent-Attempt subject → engine → first Available lesson (SequenceOrder ASC then Id ASC); if no Available, cross-subject fallback Math/Science/Arabic/English; falls back to Grade 1 Math when student has no attempts. Returns `Continue=null` if nothing Available anywhere.
+- **`DTOs`** ✅ at `Application/Features/Dashboard/Dtos/` — `DashboardDto`, `ContinueTargetDto (SubjectId, SubjectName, LessonId, LessonName, UnitName, SkillId?, SkillName?, NodeState)`, `DailyMissionDto (Type, Target?, Progress?)`, `LeaguePreviewDto (TierName?, Rank?, TotalPlayers?, XpThisWeek?)` — Mission + League are nullable wrappers; Phase-4 owners (P4-06/P4-07) will populate.
+- **`ILearningRepository`** ✅ extended with `GetMostRecentActivitySubjectIdAsync(int studentId, CT) → Task<int?>` (AsNoTracking; correlated subquery `Attempts → Lessons → Unit.SubjectId`). Reuses the 5 P2-04 repo methods for the engine inputs.
+- **No new migration.** Read-only aggregation over existing P2-01/P2-08/P2-10/P2-11 schema.
+- **Integration tests** ✅ `backend/tests/Learnexia.IntegrationTests/P2_09_HomeDashboard_Tests.cs` — 11 cases: anonymous 401, fresh-student happy path, continue shape, XP/Streak/Mission/League null-state, most-recent-attempt drives Continue (Math + Science), cross-student IDOR isolation, idempotency, seeder smoke, envelope `"successed":` camelCase. All 11 PASS. **Full Wave-7+8+9 regression (excl. P2-05): 71/71 PASS** (~1m44s, Testcontainers Postgres pg16).
+
+**Key decisions:**
+- **Q3 → Option A (most-recent activity)** — query `Attempts` for student, order by `StartedAt DESC`, take first, join `Lesson → Unit → SubjectId`. Fallback Grade 1 Math when no attempts.
+- **Q5 — XP/Streak = 0** with `TODO P4-02 / P4-03` comments. Phase-2 zero-state by design.
+- **Q6 — Mission/League = null** (typed nullable wrappers, NOT "ComingSoon" shells). FE renders "Coming soon" conditionally.
+- **Q9 — No caching.** ~5 DB queries per request worst case. Flagged for P6-06 perf pass (Redis with short TTL keyed on `(studentId, subjectId)`).
+- **Q11 — Added one repo method** (`GetMostRecentActivitySubjectIdAsync`) for clean separation; alternative was inline LINQ in handler.
+
+**Non-blocking follow-ups** (carry forward):
+- Phase-2 zero-state for XP/Streak/Mission/League will become live in P4-02/P4-03/P4-06/P4-07.
+- Dashboard performance — Redis cache per `(studentId, subjectId)` in P6-06.
+- File overlap with P2-05 (PR #66): both add methods to `ILearningRepository.cs`. Additive merge — git auto-handles when both PRs land.
+
+### P2-05 — Open and complete a lesson 🟡 PR #66 open
+
+Wave-9 story 1. See PR #66 + `docs/briefs/P2-05.md` + `docs/plans/P2-05.md` for full details. Adds `Lesson.Explanation` + `Lesson.Visual` columns, `GET /api/Learning/Lessons/{id}` `[Authorize]` route, 4 seeded demo lessons + 4 MCQ quick-checks, full e2e completion-flow integration test.
+
+### P2-03 — Navigate the skill tree ⏸️ Pending P2-05 merge
+
+Wave-9 story 3. BE-1 + BE-2 may already be substantially done by P2-04 (engine surfaces `MissingPrerequisites`); BE-3 (boss-node flag) needs a `Lesson` schema change which would conflict with PR #66's migration. Start after #66 merges.
+
+## Wave 8 — Phase 2 backend ✅ Fully merged
+
+All Wave-8 work is merged to main (P2-04 via PR #63, P2-07 via PR #64). Original Wave-8 briefs preserved below for historical reference.
 
 ### P2-07 — Instant answer feedback ✅ Batches 1–5 complete, PR pending
 
