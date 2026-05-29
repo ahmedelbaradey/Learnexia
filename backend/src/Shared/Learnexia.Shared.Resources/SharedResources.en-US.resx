@@ -1597,4 +1597,7 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="SubjectNotFound" xml:space="preserve">
     <value>The requested subject was not found.</value>
   </data>
+  <data name="KnowledgeNodeNotFound" xml:space="preserve">
+    <value>The requested knowledge node was not found.</value>
+  </data>
 </root>
