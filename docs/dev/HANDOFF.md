@@ -35,16 +35,19 @@
 
 **Key decisions:** P2-08 owns `SubmitAnswerCommand`; P2-07 (Wave 8) extends it with feedback. DurationSeconds = server-side `UtcNow - StartedAt`; per-answer TimeSpentSeconds advisory (validate ≥0, ≤3600). Reject duplicate QuestionId in same attempt.
 
-### P2-02 — Browse subjects & lessons ✅ Batch 1 merged (PR #57), api-tester + reviewer pending
+### P2-02 — Browse subjects & lessons ✅ Batch 1 merged (PR #57), api-tester PR pending
 
-**What's on main:**
+**What's on main (PR #57):**
 - `NodeState` enum at `Domain/Enums/NodeState.cs` — `Locked=0`, `Available=1`, `Completed=2` (placeholder from `Lesson.IsLocked`; P2-03/P2-04 replace the logic)
 - `GET /api/learning/Subjects/ForGrade?grade={1-6}` → `GetSubjectsForGradeQuery`
 - `GET /api/learning/Subjects/{id}/Lessons` → `GetSubjectLessonsQuery` (nested Units→Lessons, SequenceOrder)
 - `GET /api/learning/Subjects/{id}/SkillTree` → `GetSubjectSkillTreeQuery` (Concepts+Skills with placeholder NodeState)
 - No migration — P2-01 schema + P2-10 seed already in place
 
-**Still pending:** api-tester → reviewer gate
+**What's on branch `feat/P2-02-browse-subjects-lessons` (ready for PR):**
+- **Integration tests** ✅ `backend/tests/Learnexia.IntegrationTests/P2_02_BrowseSubjectsAndLessons_Tests.cs` — 12 cases: ForGrade happy paths (G1 + G6) returning 4 subjects each, out-of-range grade=99 → 400 (handler guards 1..6), missing param → 400, item shape (id/name/gradeNumber); Lessons happy path (5 units × 3 lessons for Math G1), order-by-SequenceOrder, unknown subject → 404; SkillTree happy path (5 concepts × 3 skills for Math G1), `state` field present + value ∈ {0,1,2}, unknown subject → 404; envelope `"successed":` camelCase check. All green (~55s, Testcontainers Postgres).
+
+**Confirmed contract:** `grade` query param validated 1..6 in handler (out-of-range → 400, not empty list). `NodeState` serializes as int (no `JsonStringEnumConverter` registered). `SkillNodeDto.State` JSON key is `"state":` (not `"nodeState":`). Endpoints are anonymous-callable today — no `[Authorize]` yet.
 
 **Deferred follow-ups:** Grade JWT claim seam (P6-06); `Concept/Skill.SequenceOrder` columns (P2-11 follow-up; currently ordered by Id); `[Authorize]` on new actions (hardening wave).
 
