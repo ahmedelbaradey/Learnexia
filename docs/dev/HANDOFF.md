@@ -1,6 +1,6 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-30 (**Wave 6 merged; Wave 7 fully merged; Wave 8 fully merged via #63 + #64; Wave 9 in progress — P2-05 ready for PR #66; P2-09 ready for PR; P2-03 pending P2-05 merge. Side-track: P1 security follow-up audit merged via PR #65; remaining P1 follow-ups + G2 token-revocation routed to P6-06**).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-30 (**Wave 6 merged; Wave 7 fully merged; Wave 8 fully merged via #63 + #64; Wave 9 in progress — P2-05 merged via PR #66; P2-09 on PR #67; P2-03 pending. Side-track: P1 security follow-up audit merged via PR #65; remaining P1 follow-ups + G2 token-revocation routed to P6-06**).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
 
 ## Wave 9 — Phase 2 backend (in progress)
@@ -27,13 +27,20 @@
 - Dashboard performance — Redis cache per `(studentId, subjectId)` in P6-06.
 - File overlap with P2-05 (PR #66): both add methods to `ILearningRepository.cs`. Additive merge — git auto-handles when both PRs land.
 
-### P2-05 — Open and complete a lesson 🟡 PR #66 open
+### P2-05 — Open and complete a lesson ✅ Merged via PR #66
 
-Wave-9 story 1. See PR #66 + `docs/briefs/P2-05.md` + `docs/plans/P2-05.md` for full details. Adds `Lesson.Explanation` + `Lesson.Visual` columns, `GET /api/Learning/Lessons/{id}` `[Authorize]` route, 4 seeded demo lessons + 4 MCQ quick-checks, full e2e completion-flow integration test.
+Wave-9 story 1, now on main. Added `Lesson.Explanation` + `Lesson.Visual` columns (migration `AddLessonContent`), `GET /api/Learning/Lessons/{id}` `[Authorize]` route with `QuickCheck` field, `LearningSeeder.SeedDemoLessonContentAsync` for 4 Grade-1 root lessons (Math/Science/Arabic/English) with hand-authored content + 1 MCQ each, full e2e completion-flow integration test, `ex.Message` leak fix in `GetLessonQueryHandler` (Q12). See `docs/briefs/P2-05.md` + `docs/plans/P2-05.md` for the full record.
 
-### P2-03 — Navigate the skill tree ⏸️ Pending P2-05 merge
+**P2-05 carry-forwards still open** (filed on main but not fixed in #66):
+- Remove the old `GET /api/Learning/Lessons?id={id}` back-compat action in a future hardening wave.
+- Fix `ex.Message` leak in `GetSubjectLessonsQueryHandler` (sibling to the one fixed) → P6-06.
+- `QuizQuestion` has no `Order` column — "first by `Id ASC`" is the quick-check selection rule. Fragile when P3-05 generates multiple questions per lesson.
+- `StartAttempt` lock-enforcement gap (R3) — `StartAttempt` does NOT currently enforce `LearningPathEngine`-derived `Locked` state → hardening wave.
+- `LessonsController` does NOT have a `[Route(...)]` attribute today — current convention works; verify if routing convention changes.
 
-Wave-9 story 3. BE-1 + BE-2 may already be substantially done by P2-04 (engine surfaces `MissingPrerequisites`); BE-3 (boss-node flag) needs a `Lesson` schema change which would conflict with PR #66's migration. Start after #66 merges.
+### P2-03 — Navigate the skill tree ⏸️ Pending start
+
+Wave-9 story 3. BE-1 + BE-2 may already be substantially done by P2-04 (engine surfaces `MissingPrerequisites`); BE-3 (boss-node flag) needs a `Lesson` schema change. P2-05's migration is now on main, so the schema base is clear — P2-03 can start whenever the lead is ready.
 
 ## Wave 8 — Phase 2 backend ✅ Fully merged
 

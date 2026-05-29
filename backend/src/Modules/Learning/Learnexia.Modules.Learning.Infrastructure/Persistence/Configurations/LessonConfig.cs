@@ -51,5 +51,14 @@ public class LessonConfig : IEntityTypeConfiguration<Lesson>
         // Composite index for ordered reads within a unit.
         builder.HasIndex(x => new { x.UnitId, x.SequenceOrder })
             .HasDatabaseName("IX_Lessons_UnitId_SequenceOrder");
+
+        // P2-05: lesson content columns — nullable; no index needed (never a filter target).
+        builder.Property(x => x.Explanation)
+            .HasColumnType("text")
+            .IsRequired(false);
+
+        builder.Property(x => x.Visual)
+            .HasMaxLength(1024)
+            .IsRequired(false);
     }
 }

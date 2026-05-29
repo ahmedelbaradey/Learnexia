@@ -12,6 +12,10 @@ public class LessonsProfile : Profile
     {
         CreateMap<AddLessonCommand, Lesson>();
         CreateMap<EditLessonCommand, Lesson>();
-        CreateMap<Lesson, SingleLessonResponse>();
+        // Lesson → SingleLessonResponse: Explanation + Visual auto-map by name (P2-05 new columns).
+        // QuickCheck is filled manually in GetLessonQueryHandler — NOT by AutoMapper from Lesson
+        // (Lesson has no QuickCheck nav property). CorrectAnswer exclusion is in QuizProfile.
+        CreateMap<Lesson, SingleLessonResponse>()
+            .ForMember(dest => dest.QuickCheck, opt => opt.Ignore());
     }
 }
