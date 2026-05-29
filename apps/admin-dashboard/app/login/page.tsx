@@ -110,9 +110,19 @@ export default function LoginPage() {
       router.replace('/dashboard');
     } catch (err) {
       setGating(false);
-      // 400/401/403 → invalid credentials. Anything else (network/5xx) → generic.
-      if (isApiError(err) && (err.status === 400 || err.status === 401 || err.status === 403)) {
-        setBanner({ variant: 'error', message: strings.errInvalidCredentials });
+      // Sign-in error mapping per P1-13 anti-enumeration:
+      //   423 / 403 → distinct "account locked" (lockout engaged after N attempts).
+      //   400 / 401 / 404 → uniform "invalid credentials" (NEVER branch on
+      //     user-not-found vs wrong-password — that would leak whether an account exists).
+      //   anything else (network / 5xx) → generic.
+      if (isApiError(err)) {
+        if (err.status === 423 || err.status === 403) {
+          setBanner({ variant: 'error', message: strings.errAccountLocked });
+        } else if (err.status === 400 || err.status === 401 || err.status === 404) {
+          setBanner({ variant: 'error', message: strings.errInvalidCredentials });
+        } else {
+          setBanner({ variant: 'warning', message: strings.errNetwork });
+        }
       } else {
         setBanner({ variant: 'warning', message: strings.errNetwork });
       }

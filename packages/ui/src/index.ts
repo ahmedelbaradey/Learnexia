@@ -48,6 +48,9 @@ export type { ProgressStepsProps } from './components/ProgressSteps';
 export { CheckboxField } from './components/CheckboxField';
 export type { CheckboxFieldProps } from './components/CheckboxField';
 
+export { Switch } from './components/Switch';
+export type { SwitchProps } from './components/Switch';
+
 export { PasswordStrengthMeter, PASSWORD_STRENGTH } from './components/PasswordStrengthMeter';
 export type {
   PasswordStrengthMeterProps,

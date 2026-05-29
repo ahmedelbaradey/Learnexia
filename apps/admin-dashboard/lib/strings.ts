@@ -20,6 +20,8 @@ export interface AdminStrings {
   signInButton: string;
   signingInButton: string;
   errInvalidCredentials: string;
+  /** Distinct localized message when the account is locked (P1-13 lockout). */
+  errAccountLocked: string;
   errForbidden: string;
   errNetwork: string;
   finePrint: string;
@@ -52,6 +54,8 @@ const en: AdminStrings = {
   signInButton: 'Sign In',
   signingInButton: 'Signing In…',
   errInvalidCredentials: 'Incorrect username or password.',
+  errAccountLocked:
+    'This account is temporarily locked due to too many sign-in attempts. Please try again later.',
   errForbidden: 'Access denied. This portal is for administrators only.',
   errNetwork: 'Something went wrong. Please try again.',
   finePrint: 'Authorised personnel only. No self-registration.',
@@ -82,6 +86,8 @@ const ar: AdminStrings = {
   signInButton: 'تسجيل الدخول',
   signingInButton: 'جارٍ تسجيل الدخول…',
   errInvalidCredentials: 'اسم المستخدم أو كلمة المرور غير صحيحة.',
+  errAccountLocked:
+    'تم قفل هذا الحساب مؤقتاً بسبب محاولات تسجيل دخول متكررة. يرجى المحاولة لاحقاً.',
   errForbidden: 'الوصول مرفوض. هذه البوابة مخصصة للمسؤولين فقط.',
   errNetwork: 'حدث خطأ ما. يرجى المحاولة مرة أخرى.',
   finePrint: 'للموظفين المعتمدين فقط. لا يوجد تسجيل ذاتي.',
