@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Modules.Learning.Domain.Services;
@@ -41,6 +42,7 @@ public static class LearningSeeder
         // ILoggerManager may be absent in minimal unit-test providers; fall back to no-op.
         var logger = serviceProvider.GetService<ILoggerManager>();
         await SeedSkillGraphAsync(db, logger);
+        await SeedDemoLessonContentAsync(db, logger);
     }
 
     // -------------------------------------------------------------------------
@@ -215,6 +217,122 @@ public static class LearningSeeder
 
         await EnsureLessonAsync(db, $"Nouns and Verbs (G{gradeNumber})", DifficultyLevel.Easy, 1, false, unitIds[1], skillId_C1_S0);
         await EnsureLessonAsync(db, $"Simple Sentences (G{gradeNumber})", DifficultyLevel.Medium, 2, true, unitIds[1], skillId_C1_S1);
+    }
+
+    // -------------------------------------------------------------------------
+    // Demo lesson content + quick-check questions (P2-05)
+    // Seeds Explanation + Visual + one MCQ QuizQuestion for the Grade-1 root
+    // lesson of each subject.  Fully idempotent: re-running adds zero rows.
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Seeds static <see cref="Lesson.Explanation"/>, <see cref="Lesson.Visual"/>, and one
+    /// MCQ <see cref="QuizQuestion"/> for the four Grade-1 root lessons (one per subject).
+    ///
+    /// Idempotency:
+    /// - Lesson content is updated only when <c>Explanation IS NULL</c> (first run only).
+    /// - A <see cref="QuizQuestion"/> is inserted only when none already exists for the lesson.
+    ///
+    /// Lesson names are the stable P2-10 seeder keys.  If a name is not found (environment
+    /// missing P2-10 seed), the lesson is skipped with a warning and no exception is thrown.
+    ///
+    /// <c>CorrectAnswer</c> and <c>Options</c> are stored as jsonb — values are JSON-encoded
+    /// via <see cref="JsonSerializer.Serialize{T}(T)"/>.
+    /// </summary>
+    private static async Task SeedDemoLessonContentAsync(LearningDbContext db, ILoggerManager? logger)
+    {
+        // Ordered: Math, Science, Arabic, English — Grade-1 root lessons per P2-10 seed.
+        var demoContent = new[]
+        {
+            new
+            {
+                LessonName  = "Introduction to Counting (G1)",
+                Explanation = "Counting is how we tell **how many** of something we have. We start at **1** and say each number in order.",
+                Visual      = "https://learnexia-demo.local/visuals/math-g1-counting.png",
+                QuestionText = "What number comes after 5?",
+                Options      = new[] { "4", "5", "6", "7" },
+                CorrectAnswer = "6",
+            },
+            new
+            {
+                LessonName  = "What Are Living Things? (G1)",
+                Explanation = "Living things **grow**, **breathe**, and **respond** to their environment. Plants and animals are living things; rocks and water are not.",
+                Visual      = "https://learnexia-demo.local/visuals/science-g1-living-things.png",
+                QuestionText = "Which of these is a living thing?",
+                Options      = new[] { "Rock", "Water", "Tree", "Cloud" },
+                CorrectAnswer = "Tree",
+            },
+            new
+            {
+                LessonName  = "Arabic Alphabet Review (G1)",
+                Explanation = "اللغة العربية تُكتب من **اليمين إلى اليسار**. الأبجدية العربية تحتوي على **28 حرفاً**.",
+                Visual      = "https://learnexia-demo.local/visuals/arabic-g1-alphabet.png",
+                QuestionText = "كم عدد حروف الأبجدية العربية؟",
+                Options      = new[] { "24", "26", "28", "30" },
+                CorrectAnswer = "28",
+            },
+            new
+            {
+                LessonName  = "Sight Words and Fluency (G1)",
+                Explanation = "Sight words are common words we **recognize by sight** without sounding them out. Examples: *the*, *and*, *is*, *are*.",
+                Visual      = "https://learnexia-demo.local/visuals/english-g1-sight-words.png",
+                QuestionText = "Which word is a sight word?",
+                Options      = new[] { "elephant", "the", "banana", "purple" },
+                CorrectAnswer = "the",
+            },
+        };
+
+        var updatedLessons  = 0;
+        var addedQuestions  = 0;
+
+        foreach (var demo in demoContent)
+        {
+            // Look up the lesson by name — not by hard-coded id (names are P2-10 stable keys).
+            var lesson = await db.Lessons.FirstOrDefaultAsync(l => l.Name == demo.LessonName);
+            if (lesson is null)
+            {
+                logger?.LogWarn($"P2-05 seed: lesson '{demo.LessonName}' not found; skipping.");
+                continue;
+            }
+
+            // ── Step 1: seed Explanation + Visual (only when not yet set) ─────────────────
+            if (lesson.Explanation is null && lesson.Visual is null)
+            {
+                lesson.Explanation = demo.Explanation;
+                lesson.Visual      = demo.Visual;
+                db.Lessons.Update(lesson);
+                updatedLessons++;
+            }
+
+            // ── Step 2: seed one MCQ QuizQuestion (idempotent) ───────────────────────────
+            var hasQuestion = await db.QuizQuestions.AnyAsync(q => q.LessonId == lesson.Id);
+            if (!hasQuestion)
+            {
+                // Options is stored as jsonb — serialize the string array to a JSON array.
+                // CorrectAnswer is stored as jsonb — serialize the string value to a JSON string
+                // (e.g. "6" → "\"6\"") so it is valid JSON in the jsonb column.
+                var question = new QuizQuestion
+                {
+                    LessonId      = lesson.Id,
+                    SkillId       = lesson.SkillId,
+                    QuestionType  = QuestionType.MCQ,
+                    QuestionText  = demo.QuestionText,
+                    Options       = JsonSerializer.Serialize(demo.Options),
+                    CorrectAnswer = JsonSerializer.Serialize(demo.CorrectAnswer),
+                    Difficulty    = DifficultyLevel.Easy,
+                    GeneratedBy   = GeneratedBy.Curated,
+                };
+                await db.QuizQuestions.AddAsync(question);
+                addedQuestions++;
+            }
+        }
+
+        if (updatedLessons > 0 || addedQuestions > 0)
+        {
+            await db.SaveChangesAsync(SystemUserId);
+        }
+
+        logger?.LogInfo($"P2-05 seed: SeedDemoLessonContent inserted {addedQuestions} quiz question(s) and updated {updatedLessons} lesson(s) with content.");
     }
 
     // -------------------------------------------------------------------------

@@ -1,9 +1,38 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-29 (**Wave 6 merged; Wave 7 fully merged; Wave 8 in progress — P2-04 merged via PR #63; P2-07 ready for PR. Side-track: Phase-1 security follow-up audit — B1 CAPTCHA prod-guard + G1/B2 auth rate-limit tightening on branch `audit/phase-1` → PR #65; remaining P1 follow-ups + G2 token-revocation routed to P6-06**).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-29 (**Wave 6 merged; Wave 7 fully merged; Wave 8 fully merged (#63 P2-04, #64 P2-07); Wave 9 in progress — P2-05 ready for PR; P2-03 + P2-09 pending. Side-track: P1 security follow-up audit merged via PR #65; remaining P1 follow-ups + G2 token-revocation routed to P6-06**).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
 
-## Wave 8 — Phase 2 backend (in progress)
+## Wave 9 — Phase 2 backend (in progress)
+
+### P2-05 — Open and complete a lesson ✅ Batches 1–3 complete, PR pending
+
+**What's on branch `feat/P2-05-open-and-complete-lesson` (ready for PR):**
+- **Schema** ✅ `Lesson` entity got 2 new nullable columns: `Explanation : string?` (Npgsql `text`, markdown), `Visual : string?` (max 1024, URL or asset key). Migration `20260529193810_AddLessonContent` in `learning` schema (single `AddColumn` × 2). `Lesson.IsLocked` `[Obsolete]` stays as-is from P2-04.
+- **`GetLessonQueryHandler`** ✅ rewritten as a hand-rolled handler using `_repository.Learning.GetByCondition` (replaces the old `ILearningServiceManager`-delegated stub). Loads the lesson + the first `QuizQuestion` for it by `Id ASC`. Returns 404 on missing lesson. **Fixes the `ex.Message` leak** in the old handler (Q12 — `ServerError<SingleLessonResponse>()` with no message argument). Mirrors P2-04 / P2-08 handler shape.
+- **`SingleLessonResponse`** ✅ extended with `Explanation : string?`, `Visual : string?`, `QuickCheck : QuizQuestionDto?`. `QuizQuestionDto` is the same DTO P2-06 already returns (excludes `CorrectAnswer` via `QuizProfile.ForSourceMember(...DoNotValidate())` at line 26).
+- **`LessonsProfile.Lesson → SingleLessonResponse`** map extended: `Explanation` + `Visual` mapped by-name; `QuickCheck` `.ForMember(opt.Ignore())` (handler fills it manually).
+- **`LessonsController`** ✅ NEW `[HttpGet("{id:int}")] [Authorize]` action. Old `GET ?id=` action kept anonymous for back-compat with an XML `<remarks>` deprecation note (to be removed in a hardening wave).
+- **`LearningSeeder.SeedDemoLessonContentAsync`** ✅ called from `SeedAsync` after `SeedSkillGraphAsync`. Idempotently seeds the 4 Grade-1 root lessons (`"Introduction to Counting (G1)"`, `"What Are Living Things? (G1)"`, `"Arabic Alphabet Review (G1)"`, `"Sight Words and Fluency (G1)"`) with `Explanation` + `Visual` + 1 MCQ `QuizQuestion` each (4 options, JSON-encoded `Options` array, JSON-encoded `CorrectAnswer` string, `GeneratedBy.Curated`, inherits `Lesson.SkillId` if non-null so `AnswerSubmittedIntegrationEvent` per P2-07 can publish for it).
+- **Integration tests** ✅ `backend/tests/Learnexia.IntegrationTests/P2_05_OpenAndCompleteLesson_Tests.cs` — 11 cases: anonymous 401 on new route, full content on seeded demo, no-`correctAnswer` leak, 404 on unknown id, null-content on non-demo lesson, `successed` envelope, back-compat `?id=` route, full e2e (Open → StartAttempt → SubmitAnswer correct → CompleteAttempt → verify Attempt.Status=Completed + LearningPathEngine GetCompletedLessonIds), `LessonCompletedIntegrationEvent` fires (via `WithWebHostBuilder` in-test handler capture), wrong-answer path, seeder smoke (4 lessons + 4 questions seeded). All 11 PASS. **Full Wave-7+8+9 regression: 71/71 PASS** (~2m41s, Testcontainers Postgres).
+
+**Key decisions:**
+- **Q1 → 2 nullable columns** on `Lesson`, not a separate `LessonContent` table. Cheapest MVP; P3-04 (AI explanations) may evolve later.
+- **Q3 → NO new `CompleteLessonCommand`.** The existing P2-06 + P2-08 + P2-07 flow (Start → Submit → Complete) already records lesson progress; `LearningPathEngine` reads `Attempt.Status=Completed` for completion. P2-05 BE-3 collapsed to "verify the existing flow handles single-question lessons" (covered by the e2e integration test).
+- **Q6 → Lock not enforced at lesson-open** (200 always). Lock is enforced at `StartAttempt` (existing P2-06 contract). **R3 follow-up**: `StartAttempt` does NOT currently enforce `LearningPathEngine`-derived `Locked` state — fix scheduled for a hardening wave.
+- **Q7 → Lesson-open does NOT auto-create an Attempt.** Keeps read separate from write.
+- **Q12 → `ex.Message` leak fixed in `GetLessonQueryHandler` only** (touched file). The sibling leak in `GetSubjectLessonsQueryHandler` is logged here as a P6-06 TODO and NOT fixed in this PR.
+
+**Non-blocking follow-ups** (carry forward):
+- Remove the old `GET /api/Learning/Lessons?id={id}` back-compat action in a future hardening wave.
+- Fix `ex.Message` leak in `GetSubjectLessonsQueryHandler` (sibling to the one fixed here) → P6-06.
+- `QuizQuestion` has no `Order` column — "first by `Id ASC`" is the quick-check selection rule. Fragile when P3-05 generates multiple questions per lesson.
+- `StartAttempt` lock-enforcement gap (R3) → hardening wave.
+- `LessonsController` does NOT have a `[Route(...)]` attribute today — verify the routes resolve correctly under whatever convention is in play (current convention works).
+
+## Wave 8 — Phase 2 backend ✅ Fully merged
+
+Both stories merged to main (P2-04 via PR #63, P2-07 via PR #64). Original Wave 8 brief preserved below for historical reference.
 
 ### P2-07 — Instant answer feedback ✅ Batches 1–5 complete, PR pending
 
