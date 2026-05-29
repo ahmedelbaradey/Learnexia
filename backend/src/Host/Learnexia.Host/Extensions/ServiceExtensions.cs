@@ -25,21 +25,45 @@ public static class ServiceExtensions
 
     public static void ConfigureResponseCaching(this IServiceCollection services) => services.AddResponseCaching();
 
-    public static void ConfigureRateLimitingOptions(this IServiceCollection services)
+    public static void ConfigureRateLimitingOptions(this IServiceCollection services, IConfiguration configuration)
     {
-        var rateLimitRules = new List<RateLimitRule>
-        {
-            new() { Endpoint = "*", Limit = 200, Period = "1m" },
-            // P1-13b BE-1: per-endpoint abuse/DoS ceiling on the anonymous auth endpoints (100 req/s per IP).
-            // Endpoint rules use the lowercased "{verb}:{path}" form and require EnableEndpointRateLimiting.
-            new() { Endpoint = "post:/api/users/authentication/sign-in", Limit = 100, Period = "1s" },
-            new() { Endpoint = "post:/api/users/authentication/register-parent", Limit = 100, Period = "1s" },
-            new() { Endpoint = "post:/api/users/authentication/google-signin", Limit = 100, Period = "1s" },
-            new() { Endpoint = "post:/api/users/authentication/forgot-password", Limit = 100, Period = "1s" },
-            new() { Endpoint = "post:/api/users/authentication/reset-password", Limit = 100, Period = "1s" },
-            // P2-12: tight limit on password-change (brute-force / oracle hardening). 5 attempts per 15 min per IP.
-            new() { Endpoint = "post:/api/users/account/changepassword", Limit = 5, Period = "15m" },
-        };
+        // Per-endpoint abuse/DoS ceilings on the anonymous auth endpoints. TIGHTENED in Production/Staging
+        // (audit findings G1/B2: forgot/reset/register/sign-in shipped at a loose 100 req/s, which is a DoS
+        // ceiling rather than a brute-force / enumeration limit). Development and Testing keep the prior
+        // generous limits verbatim so local iteration and the integration suite (env "Testing") behave
+        // exactly as before. Endpoint rules use the lowercased "{verb}:{path}" form and require
+        // EnableEndpointRateLimiting. Environment resolution mirrors the Identity module's GuardJwtSecret.
+        var environment = configuration[Microsoft.Extensions.Hosting.HostDefaults.EnvironmentKey]
+            ?? configuration["ASPNETCORE_ENVIRONMENT"]
+            ?? configuration["DOTNET_ENVIRONMENT"]
+            ?? "Production";
+        var isProtected = environment.Equals("Production", StringComparison.OrdinalIgnoreCase)
+            || environment.Equals("Staging", StringComparison.OrdinalIgnoreCase);
+
+        var rateLimitRules = isProtected
+            ? new List<RateLimitRule>
+            {
+                new() { Endpoint = "*", Limit = 200, Period = "1m" },
+                // Tight brute-force / enumeration / anti-spam limits for Production/Staging.
+                new() { Endpoint = "post:/api/users/authentication/sign-in", Limit = 50, Period = "5m" },
+                new() { Endpoint = "post:/api/users/authentication/register-parent", Limit = 10, Period = "15m" },
+                new() { Endpoint = "post:/api/users/authentication/google-signin", Limit = 50, Period = "5m" },
+                new() { Endpoint = "post:/api/users/authentication/forgot-password", Limit = 5, Period = "15m" },
+                new() { Endpoint = "post:/api/users/authentication/reset-password", Limit = 10, Period = "15m" },
+                new() { Endpoint = "post:/api/users/account/changepassword", Limit = 5, Period = "15m" },
+            }
+            : new List<RateLimitRule>
+            {
+                new() { Endpoint = "*", Limit = 200, Period = "1m" },
+                // P1-13b BE-1: per-endpoint abuse/DoS ceiling on the anonymous auth endpoints (100 req/s per IP).
+                new() { Endpoint = "post:/api/users/authentication/sign-in", Limit = 100, Period = "1s" },
+                new() { Endpoint = "post:/api/users/authentication/register-parent", Limit = 100, Period = "1s" },
+                new() { Endpoint = "post:/api/users/authentication/google-signin", Limit = 100, Period = "1s" },
+                new() { Endpoint = "post:/api/users/authentication/forgot-password", Limit = 100, Period = "1s" },
+                new() { Endpoint = "post:/api/users/authentication/reset-password", Limit = 100, Period = "1s" },
+                // P2-12: tight limit on password-change (brute-force / oracle hardening). 5 attempts per 15 min per IP.
+                new() { Endpoint = "post:/api/users/account/changepassword", Limit = 5, Period = "15m" },
+            };
         services.Configure<IpRateLimitOptions>(opt =>
         {
             // Required so the "{verb}:{path}" rules above are counted per-endpoint (not folded into the global "*").
