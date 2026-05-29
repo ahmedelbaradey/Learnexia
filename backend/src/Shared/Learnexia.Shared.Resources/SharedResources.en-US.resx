@@ -1597,6 +1597,60 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="SubjectNotFound" xml:space="preserve">
     <value>The requested subject was not found.</value>
   </data>
+  <data name="AttemptNotFound" xml:space="preserve">
+    <value>The requested quiz attempt was not found.</value>
+  </data>
+  <data name="AttemptNotInProgress" xml:space="preserve">
+    <value>The attempt is not in progress and cannot accept new answers.</value>
+  </data>
+  <data name="QuestionNotFound" xml:space="preserve">
+    <value>The requested question was not found in this attempt's lesson.</value>
+  </data>
+  <data name="QuestionAlreadyAnswered" xml:space="preserve">
+    <value>This question has already been answered in the current attempt.</value>
+  </data>
+  <data name="AnswerSubmittedSuccessfully" xml:space="preserve">
+    <value>Answer submitted successfully.</value>
+  </data>
+  <data name="AttemptIdMustBePositive" xml:space="preserve">
+    <value>Attempt ID must be a positive integer.</value>
+  </data>
+  <data name="QuestionIdMustBePositive" xml:space="preserve">
+    <value>Question ID must be a positive integer.</value>
+  </data>
+  <data name="AnswerPayloadRequired" xml:space="preserve">
+    <value>Answer payload is required.</value>
+  </data>
+  <data name="TimeSpentSecondsMustBeNonNegative" xml:space="preserve">
+    <value>Time spent must be zero or greater.</value>
+  </data>
+  <data name="TimeSpentSecondsExceedsMaximum" xml:space="preserve">
+    <value>Time spent per question cannot exceed 3600 seconds (1 hour).</value>
+  </data>
+  <data name="AttemptCompletedSuccessfully" xml:space="preserve">
+    <value>Quiz attempt completed successfully.</value>
+  </data>
+  <data name="AttemptAbandonedSuccessfully" xml:space="preserve">
+    <value>Quiz attempt abandoned successfully.</value>
+  </data>
+  <data name="AttemptAlreadyAbandoned" xml:space="preserve">
+    <value>This attempt has already been abandoned and cannot be completed.</value>
+  </data>
+  <data name="AttemptAlreadyCompleted" xml:space="preserve">
+    <value>This attempt has already been completed and cannot be abandoned.</value>
+  </data>
+  <data name="StudentIdMustBePositive" xml:space="preserve">
+    <value>Student ID must be a positive integer.</value>
+  </data>
+  <data name="SkillIdMustBePositive" xml:space="preserve">
+    <value>Skill ID must be a positive integer.</value>
+  </data>
+  <data name="AttemptsRetrievedSuccessfully" xml:space="preserve">
+    <value>Attempts retrieved successfully.</value>
+  </data>
+  <data name="SkillStatsRetrievedSuccessfully" xml:space="preserve">
+    <value>Skill statistics retrieved successfully.</value>
+  </data>
   <data name="KnowledgeNodeNotFound" xml:space="preserve">
     <value>The requested knowledge node was not found.</value>
   </data>

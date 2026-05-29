@@ -21,19 +21,21 @@
 
 **Key decisions:** KnowledgeNode wraps (not replaces) Skill; within-subject edges only in demo seed; BE-6 seam only. **Skill Name strings must not be renamed** (P2-10 seeder + P2-11 use them as lookup keys). Math prereq chain skips Division (no Division skill seeded in P2-10) — jumps G3 Multiplication → G5 Fractions; revisit when P2-10 fills out Division skills. BL-01..05 deferral now recorded in `user-stories/README.md` (AC-7).
 
-### P2-08 — Record granular answers ✅ Batch 1 merged (PR #58), command/query batches pending
+### P2-08 — Record granular answers ✅ Batches 1–4 complete, security PASS, PR pending
 
-**What's on main:**
+**What's on main (PR #58):**
 - Migration `AddAttemptQueryIndexes` — composite `(StudentId, Status)` on `learning.Attempts`; `(AttemptId, QuestionId)` on `learning.StudentAnswers`. Schema from P2-06 already had all needed columns (zero gaps).
 - `AttemptStatus` has `Abandoned=3`.
 
-**Still pending (worktree `/home/user/Learnexia.worktrees/P2-08`):**
-- **BE-1:** `SubmitAnswerCommand` → `POST /api/Learning/Quizzes/{attemptId}/Answers` `[Authorize(Roles="Student")]` — persist StudentAnswer; ownership guard; reject duplicate QuestionId
-- **BE-2/3:** `CompleteAttemptCommand` → `POST …/Complete` (aggregate AccuracyPercentage/DurationSeconds/HintsUsedCount, set Completed); `AbandonAttemptCommand` → `POST …/Abandon` (partial save, set Abandoned)
-- **BE-4:** `GetStudentAttemptsQuery` → `GET /api/Learning/Students/{studentId}/Attempts`; `GetSkillStatsQuery` → `GET /api/Learning/Skills/{skillId}/Stats?studentId=`
-- api-tester → security-auditor (IDOR/ownership) → reviewer gate
+**What's on branch `feat/P2-08-record-granular-answers` (ready for PR):**
+- **BE-1** ✅ `SubmitAnswerCommand` → `POST /api/Learning/Quizzes/{attemptId}/Answers` `[Authorize(Roles="Student")]`. Cross-lesson injection guard (`question.LessonId == attempt.LessonId`), re-answer guard (duplicate `(AttemptId, QuestionId)` → 424), case-insensitive correctness check, returns `{isCorrect, correctAnswer:null-when-correct, hintAvailable:false}`. TODO comment for P2-07 `AnswerSubmittedIntegrationEvent`.
+- **BE-2/3** ✅ `CompleteAttemptCommand` + `AbandonAttemptCommand` → `POST …/Complete` and `POST …/Abandon` `[Authorize(Roles="Student")]`. Both idempotent on terminal state (re-call returns current snapshot); cross-terminal rejected (Complete on Abandoned → 424 and vice versa). `RecomputeAggregates` private helper duplicated in both handlers (plan-authorized; not a shared service). Returns `AttemptSummaryDto`. TODO comment for P2-07 `LessonCompletedIntegrationEvent`.
+- **BE-4** ✅ `GetStudentAttemptsQuery` → `GET /api/Learning/Students/{studentId}/Attempts` `[Authorize]` (new `StudentsController`) + `GetSkillStatsQuery` → `GET /api/Learning/Skills/{skillId}/Stats?studentId=` `[Authorize]` (appended to existing `SkillsController`). Both enforce per-student IDOR guard (`studentId == _currentUser.UserId`). `AttemptListItemDto` and `SkillStatsDto` both omit `CorrectAnswer` entirely. Skill-stats zero-data case returns zeroed DTO (not 404/500); questions with null `SkillId` silently excluded (correct behavior).
+- **Integration tests** ✅ `backend/tests/Learnexia.IntegrationTests/P2_08_RecordGranularAnswers_Tests.cs` — 17 test cases (all 6 SubmitAnswer + 3 Complete + 3 Abandon + 2 GetStudentAttempts + 3 GetSkillStats per plan Batch 5) — all green (~30s, Testcontainers Postgres + Student-role JWT via parent→child onboarding flow).
+- **Security audit** ✅ `docs/briefs/P2-08-security-audit.md` — 0 Critical/High; all 7 focus areas PASS (JWT-derived StudentId, ownership, IDOR, no `CorrectAnswer` leak, no `ex.Message` leak, `TimeSpentSeconds ≤ 3600`, cross-lesson guard). 2 Low + 4 Info findings documented, none blocking.
+- **Bug fix surfaced + applied:** `RecomputeAggregates` was computing negative `DurationSeconds` because Npgsql returns `timestamp with time zone` columns with `Kind == Local`. Fixed by normalizing `attempt.StartedAt.ToUniversalTime()` before subtracting `DateTime.UtcNow` (+ `Math.Max(0, …)` belt-and-suspenders). Comment in both handlers explains the Kind=Local rationale.
 
-**Key decisions:** P2-08 owns `SubmitAnswerCommand`; P2-07 (Wave 8) extends it with feedback. DurationSeconds = server-side `UtcNow - StartedAt`; per-answer TimeSpentSeconds advisory (validate ≥0, ≤3600). Reject duplicate QuestionId in same attempt.
+**Key decisions:** P2-08 owns `SubmitAnswerCommand`; P2-07 (Wave 8) extends it with feedback. DurationSeconds = server-side `UtcNow - StartedAt.ToUniversalTime()`; per-answer TimeSpentSeconds advisory (validated ≥0, ≤3600). Reject duplicate QuestionId in same attempt. Validators: Submit/Complete/Abandon all enforce `AttemptId > 0`; SubmitAnswer also enforces `AnswerPayload` not-empty + `TimeSpentSeconds` 0..3600 range. 14 new localized message keys (en-US + ar-EG).
 
 ### P2-02 — Browse subjects & lessons ✅ Batch 1 merged (PR #57), api-tester + reviewer pending
 
