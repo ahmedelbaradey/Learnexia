@@ -1,10 +1,6 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-<<<<<<< HEAD
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-29 (**Wave 6 merged; Wave 7 fully merged; Wave 8 in progress — P2-04 merged via PR #63; P2-07 ready for PR**).
-=======
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-29 (**Phase-1 security follow-up audit done; B1 CAPTCHA prod-guard + G1/B2 auth rate-limit tightening on branch `audit/phase-1` → PR #65; remaining P1 follow-ups + G2 token-revocation routed to P6-06**). Prior: 2026-05-25 (Wave 6 PRs #54/#55 merged; Wave 7 Batch 1s via PRs #56/57/58).
->>>>>>> f270772 (docs: record Phase-1 security follow-up audit (PR #65) in HANDOFF + SESSION-STATE)
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-29 (**Wave 6 merged; Wave 7 fully merged; Wave 8 in progress — P2-04 merged via PR #63; P2-07 ready for PR. Side-track: Phase-1 security follow-up audit — B1 CAPTCHA prod-guard + G1/B2 auth rate-limit tightening on branch `audit/phase-1` → PR #65; remaining P1 follow-ups + G2 token-revocation routed to P6-06**).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
 
 ## Wave 8 — Phase 2 backend (in progress)
