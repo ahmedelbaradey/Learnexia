@@ -1654,4 +1654,10 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="KnowledgeNodeNotFound" xml:space="preserve">
     <value>The requested knowledge node was not found.</value>
   </data>
+  <data name="LearningPathSubjectNotFound" xml:space="preserve">
+    <value>Subject not found.</value>
+  </data>
+  <data name="LearningPathUnauthorized" xml:space="preserve">
+    <value>Authentication required to view learning path.</value>
+  </data>
 </root>

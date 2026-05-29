@@ -784,5 +784,9 @@
         // Skill dependency graph — node queries (P2-11 BE-5).
         public const string KnowledgeNodeNotFound = "KnowledgeNodeNotFound";
 
+        // Learning Path Engine — P2-04
+        public const string LearningPathSubjectNotFound = "LearningPathSubjectNotFound";
+        public const string LearningPathUnauthorized = "LearningPathUnauthorized";
+
     }
 }

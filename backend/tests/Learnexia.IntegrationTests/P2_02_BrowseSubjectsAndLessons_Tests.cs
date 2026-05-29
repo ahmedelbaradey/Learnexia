@@ -1,4 +1,6 @@
 using System.Net;
+using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using FluentAssertions;
 using Learnexia.Modules.Learning.Infrastructure.Persistence;
@@ -13,12 +15,14 @@ namespace Learnexia.IntegrationTests;
 /// P2-02 integration tests — Browse Subjects and Lessons (student-facing read endpoints).
 ///
 /// Endpoints under test:
-///   GET /api/learning/Subjects/ForGrade?grade={1-6}
-///   GET /api/learning/Subjects/{id}/Lessons
-///   GET /api/learning/Subjects/{id}/SkillTree
+///   GET /api/learning/Subjects/ForGrade?grade={1-6}    (anonymous — unchanged)
+///   GET /api/learning/Subjects/{id}/Lessons            [Authorize] since P2-04 (was anonymous)
+///   GET /api/learning/Subjects/{id}/SkillTree          [Authorize] since P2-04 (was anonymous)
 ///
-/// All three endpoints have NO [Authorize] attribute in the current production code (SubjectsController.cs).
-/// Therefore they are accessible without a JWT, and these tests assert anonymous access throughout.
+/// P2-04 BREAKING CHANGE (Q7 decision): SubjectsController.GetLessons and GetSkillTree now require
+/// [Authorize]. TC-6 through TC-12 (which call those endpoints) have been updated to pass a valid
+/// Student JWT obtained via the parent→add-child→sign-in flow (mirrors P2-08 pattern).
+/// TC-1 through TC-5 (ForGrade only) remain anonymous — ForGrade is not auth-gated.
 ///
 /// Seed shape (from LearningSeeder.cs):
 ///   Math    G1 : 5 units × 3 lessons = 15 lessons;  5 concepts × 3 skills = 15 skills
@@ -37,22 +41,35 @@ namespace Learnexia.IntegrationTests;
 ///   TC-3  ForGrade out-of-range grade=99       → ForGrade_OutOfRange_Grade99_Returns400_NotServerError
 ///   TC-4  ForGrade missing param (grade=0)     → ForGrade_MissingParam_Returns400_NotServerError
 ///   TC-5  ForGrade item shape                  → ForGrade_ItemShape_HasRequiredFields
-///   TC-6  Lessons happy path                   → Lessons_HappyPath_Returns200_WithUnitsAndLessons
-///   TC-7  Lessons ordered by SequenceOrder     → Lessons_UnitsAndLessonsOrderedBySequenceOrder
-///   TC-8  Lessons unknown subject id           → Lessons_UnknownSubjectId_Returns404_NotServerError
-///   TC-9  SkillTree happy path                 → SkillTree_HappyPath_Returns200_WithConceptsAndSkills
-///   TC-10 SkillTree NodeState field present    → SkillTree_NodeState_FieldPresentAndValidValue
-///   TC-11 SkillTree unknown subject id         → SkillTree_UnknownSubjectId_Returns404_NotServerError
-///   TC-12 Envelope successed casing            → Envelope_SuccessedCamelCase_IsPresent
+///   TC-6  Lessons happy path (now with JWT)    → Lessons_HappyPath_Returns200_WithUnitsAndLessons
+///   TC-7  Lessons ordered by SequenceOrder (JWT) → Lessons_UnitsAndLessonsOrderedBySequenceOrder
+///   TC-8  Lessons unknown subject id (JWT)     → Lessons_UnknownSubjectId_Returns404_NotServerError
+///   TC-9  SkillTree happy path (now with JWT)  → SkillTree_HappyPath_Returns200_WithConceptsAndSkills
+///   TC-10 SkillTree NodeState field (JWT)      → SkillTree_NodeState_FieldPresentAndValidValue
+///   TC-11 SkillTree unknown subject id (JWT)   → SkillTree_UnknownSubjectId_Returns404_NotServerError
+///   TC-12 Envelope successed casing (JWT)      → Envelope_SuccessedCamelCase_IsPresent
 /// </summary>
 [Collection("IntegrationTests")]
 public sealed class P2_02_BrowseSubjectsAndLessons_Tests : IAsyncLifetime
 {
+    // -------------------------------------------------------------------------
+    // Auth constants (P2-04 regression fix — TC-6..TC-12 need a Student JWT)
+    // -------------------------------------------------------------------------
+    private const string RegisterParentUrl  = "api/Users/Authentication/Register-Parent";
+    private const string SignInUrl          = "api/Users/Authentication/Sign-In";
+    private const string AddChildUrl        = "api/Parent/Add-Child";
+    private const string ValidChildPassword = "Child@Pass1";
+
     private readonly LearnexiaWebAppFactory _factory;
     private readonly HttpClient _client;
 
     // Seeded Math G1 subject id — resolved in InitializeAsync so all test methods can use it.
     private int _mathG1SubjectId;
+
+    // A shared Student JWT for TC-6..TC-12 (created once in InitializeAsync for efficiency).
+    // A fresh student with no answers is fine for the legacy P2-02 assertions which only check
+    // shape / ordering / status codes — not engine-derived NodeState values.
+    private string _sharedStudentToken = null!;
 
     public P2_02_BrowseSubjectsAndLessons_Tests(LearnexiaWebAppFactory factory)
     {
@@ -75,6 +92,12 @@ public sealed class P2_02_BrowseSubjectsAndLessons_Tests : IAsyncLifetime
             .Include(s => s.Grade)
             .FirstAsync(s => s.Name == "Math" && s.Grade.Number == 1);
         _mathG1SubjectId = subject.Id;
+
+        // P2-04 regression fix: create a shared Student JWT for TC-6..TC-12.
+        // SubjectsController.GetLessons and GetSkillTree now require [Authorize].
+        // A fresh student with no answers is sufficient — TC-6..TC-12 assert shape/ordering/status,
+        // not specific engine-derived NodeState values.
+        _sharedStudentToken = await CreateStudentJwtAsync();
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
@@ -82,6 +105,9 @@ public sealed class P2_02_BrowseSubjectsAndLessons_Tests : IAsyncLifetime
     // =========================================================================
     // Helpers
     // =========================================================================
+
+    private static string UniqueEmail(string tag = "")
+        => $"p202_{tag}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}_{Guid.NewGuid():N}@test.local";
 
     /// <summary>Case-insensitive JSON property lookup (handles camelCase and PascalCase).</summary>
     private static bool TryProp(JsonElement element, string name, out JsonElement value)
@@ -100,6 +126,27 @@ public sealed class P2_02_BrowseSubjectsAndLessons_Tests : IAsyncLifetime
         return false;
     }
 
+    private static async Task<(HttpResponseMessage Response, JsonElement Root, string Body)>
+        SendRawAsync(HttpClient client, HttpMethod method, string url, object? body = null, string? bearerToken = null)
+    {
+        var request = new HttpRequestMessage(method, url);
+        if (body is not null)
+            request.Content = new StringContent(
+                JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+        if (bearerToken is not null)
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+        var response = await client.SendAsync(request);
+        var bodyStr  = await response.Content.ReadAsStringAsync();
+        JsonElement root = default;
+        if (!string.IsNullOrWhiteSpace(bodyStr))
+        {
+            try { root = JsonDocument.Parse(bodyStr).RootElement; }
+            catch { /* non-JSON */ }
+        }
+        return (response, root, bodyStr);
+    }
+
+    /// <summary>Anonymous GET (for TC-1..TC-5 that don't need auth).</summary>
     private async Task<(HttpResponseMessage Response, JsonElement Root, string Body)> GetAsync(string url)
     {
         var response = await _client.GetAsync(url);
@@ -108,6 +155,58 @@ public sealed class P2_02_BrowseSubjectsAndLessons_Tests : IAsyncLifetime
         if (!string.IsNullOrWhiteSpace(body))
             root = JsonDocument.Parse(body).RootElement;
         return (response, root, body);
+    }
+
+    /// <summary>
+    /// Authenticated GET (for TC-6..TC-12 that need a Student JWT after P2-04 auth tightening).
+    /// </summary>
+    private async Task<(HttpResponseMessage Response, JsonElement Root, string Body)>
+        GetAuthenticatedAsync(string url, string bearerToken)
+        => await SendRawAsync(_client, HttpMethod.Get, url, null, bearerToken);
+
+    /// <summary>
+    /// P2-04 regression helper: registers a parent, adds a child, signs in as the child.
+    /// Returns the Student JWT. Used in InitializeAsync to create <see cref="_sharedStudentToken"/>.
+    /// Mirrors CreateStudentViaParentFlowAsync from P2-08 exactly.
+    /// </summary>
+    private async Task<string> CreateStudentJwtAsync()
+    {
+        var tag = Guid.NewGuid().ToString("N")[..6];
+
+        // Register parent.
+        var parentEmail = UniqueEmail($"parent_{tag}");
+        var (regResp, regRoot, regBody) = await SendRawAsync(_client, HttpMethod.Post, RegisterParentUrl,
+            new { Email = parentEmail, Password = "Str0ng@Pass", AcceptedTerms = true });
+        ((int)regResp.StatusCode).Should().BeOneOf(new[] { 200, 201 },
+            $"P2-02 regression helper — parent registration must succeed; body: {regBody}");
+        TryProp(regRoot, "data", out var regData).Should().BeTrue("body: {0}", regBody);
+        TryProp(regData, "accessToken", out var parentTokProp).Should().BeTrue("body: {0}", regBody);
+        var parentToken = parentTokProp.GetString()!;
+
+        // Add child.
+        var childEmail = UniqueEmail($"child_{tag}");
+        var (addResp, addRoot, addBody) = await SendRawAsync(_client, HttpMethod.Post, AddChildUrl,
+            new
+            {
+                FullName = "P202 Regression Student",
+                Email    = childEmail,
+                Password = ValidChildPassword,
+                Grade    = 1,
+                Language = "ar",
+                Country  = "EG",
+            },
+            parentToken);
+        ((int)addResp.StatusCode).Should().BeOneOf(new[] { 200, 201 },
+            $"P2-02 regression helper — Add-Child must succeed; body: {addBody}");
+
+        // Sign in as child.
+        var (signInResp, signInRoot, signInBody) = await SendRawAsync(_client, HttpMethod.Post, SignInUrl,
+            new { UserName = childEmail, Password = ValidChildPassword });
+        signInResp.StatusCode.Should().Be(HttpStatusCode.OK,
+            $"P2-02 regression helper — child sign-in must succeed; body: {signInBody}");
+        TryProp(signInRoot, "data", out var signInData).Should().BeTrue("body: {0}", signInBody);
+        TryProp(signInData, "accessToken", out var studentTokProp).Should().BeTrue("body: {0}", signInBody);
+        return studentTokProp.GetString()!;
     }
 
     // =========================================================================
@@ -235,12 +334,14 @@ public sealed class P2_02_BrowseSubjectsAndLessons_Tests : IAsyncLifetime
 
     // =========================================================================
     // TC-6: Lessons happy path — 5 units, each with 3 lessons (Math G1)
+    //       P2-04 regression fix: endpoint now requires [Authorize] — pass Student JWT.
     // =========================================================================
 
-    [Fact(DisplayName = "TC-6: GET /{mathG1Id}/Lessons returns 200 with 5 units each containing 3 lessons")]
+    [Fact(DisplayName = "TC-6: GET /{mathG1Id}/Lessons (with JWT) returns 200 with 5 units each containing 3 lessons")]
     public async Task Lessons_HappyPath_Returns200_WithUnitsAndLessons()
     {
-        var (response, root, body) = await GetAsync($"/api/learning/Subjects/{_mathG1SubjectId}/Lessons");
+        var (response, root, body) = await GetAuthenticatedAsync(
+            $"/api/learning/Subjects/{_mathG1SubjectId}/Lessons", _sharedStudentToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK,
             "Lessons for Math G1 must return 200; body: {0}", body);
@@ -279,12 +380,14 @@ public sealed class P2_02_BrowseSubjectsAndLessons_Tests : IAsyncLifetime
 
     // =========================================================================
     // TC-7: Lessons ordered by SequenceOrder
+    //       P2-04 regression fix: endpoint now requires [Authorize] — pass Student JWT.
     // =========================================================================
 
-    [Fact(DisplayName = "TC-7: GET /{mathG1Id}/Lessons — units and lessons within first unit are in SequenceOrder ascending")]
+    [Fact(DisplayName = "TC-7: GET /{mathG1Id}/Lessons (with JWT) — units and lessons ordered by SequenceOrder ascending")]
     public async Task Lessons_UnitsAndLessonsOrderedBySequenceOrder()
     {
-        var (response, root, body) = await GetAsync($"/api/learning/Subjects/{_mathG1SubjectId}/Lessons");
+        var (response, root, body) = await GetAuthenticatedAsync(
+            $"/api/learning/Subjects/{_mathG1SubjectId}/Lessons", _sharedStudentToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", body);
         TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);
@@ -324,12 +427,14 @@ public sealed class P2_02_BrowseSubjectsAndLessons_Tests : IAsyncLifetime
 
     // =========================================================================
     // TC-8: Lessons unknown subject id → 404, not 500
+    //       P2-04 regression fix: endpoint now requires [Authorize] — pass Student JWT.
     // =========================================================================
 
-    [Fact(DisplayName = "TC-8: GET /Subjects/999999/Lessons returns 404 (not found), NOT 500")]
+    [Fact(DisplayName = "TC-8: GET /Subjects/999999/Lessons (with JWT) returns 404 (not found), NOT 500")]
     public async Task Lessons_UnknownSubjectId_Returns404_NotServerError()
     {
-        var (response, root, body) = await GetAsync("/api/learning/Subjects/999999/Lessons");
+        var (response, root, body) = await GetAuthenticatedAsync(
+            "/api/learning/Subjects/999999/Lessons", _sharedStudentToken);
 
         ((int)response.StatusCode).Should().NotBe(500,
             "unknown subject id must never produce 500; body: {0}", body);
@@ -343,12 +448,14 @@ public sealed class P2_02_BrowseSubjectsAndLessons_Tests : IAsyncLifetime
 
     // =========================================================================
     // TC-9: SkillTree happy path — 5 concepts each with 3 skills (Math G1)
+    //       P2-04 regression fix: endpoint now requires [Authorize] — pass Student JWT.
     // =========================================================================
 
-    [Fact(DisplayName = "TC-9: GET /{mathG1Id}/SkillTree returns 200 with 5 concepts each containing 3 skills")]
+    [Fact(DisplayName = "TC-9: GET /{mathG1Id}/SkillTree (with JWT) returns 200 with 5 concepts each containing 3 skills")]
     public async Task SkillTree_HappyPath_Returns200_WithConceptsAndSkills()
     {
-        var (response, root, body) = await GetAsync($"/api/learning/Subjects/{_mathG1SubjectId}/SkillTree");
+        var (response, root, body) = await GetAuthenticatedAsync(
+            $"/api/learning/Subjects/{_mathG1SubjectId}/SkillTree", _sharedStudentToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK,
             "SkillTree for Math G1 must return 200; body: {0}", body);
@@ -408,12 +515,16 @@ public sealed class P2_02_BrowseSubjectsAndLessons_Tests : IAsyncLifetime
 
     // =========================================================================
     // TC-10: SkillTree NodeState field present and valid value
+    //        P2-04 regression fix: endpoint now requires [Authorize] — pass Student JWT.
+    //        With the engine now active, the state value could differ from the P2-02 placeholder.
+    //        We only assert that the field is PRESENT and the value is in {0,1,2}.
     // =========================================================================
 
-    [Fact(DisplayName = "TC-10: GET /{mathG1Id}/SkillTree — each skill has 'state' field with valid NodeState value (int 0/1/2)")]
+    [Fact(DisplayName = "TC-10: GET /{mathG1Id}/SkillTree (with JWT) — each skill has 'state' field with valid NodeState value (int 0/1/2)")]
     public async Task SkillTree_NodeState_FieldPresentAndValidValue()
     {
-        var (response, root, body) = await GetAsync($"/api/learning/Subjects/{_mathG1SubjectId}/SkillTree");
+        var (response, root, body) = await GetAuthenticatedAsync(
+            $"/api/learning/Subjects/{_mathG1SubjectId}/SkillTree", _sharedStudentToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", body);
         TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);
@@ -461,12 +572,14 @@ public sealed class P2_02_BrowseSubjectsAndLessons_Tests : IAsyncLifetime
 
     // =========================================================================
     // TC-11: SkillTree unknown subject id → 404, not 500
+    //        P2-04 regression fix: endpoint now requires [Authorize] — pass Student JWT.
     // =========================================================================
 
-    [Fact(DisplayName = "TC-11: GET /Subjects/999999/SkillTree returns 404 (not found), NOT 500")]
+    [Fact(DisplayName = "TC-11: GET /Subjects/999999/SkillTree (with JWT) returns 404 (not found), NOT 500")]
     public async Task SkillTree_UnknownSubjectId_Returns404_NotServerError()
     {
-        var (response, root, body) = await GetAsync("/api/learning/Subjects/999999/SkillTree");
+        var (response, root, body) = await GetAuthenticatedAsync(
+            "/api/learning/Subjects/999999/SkillTree", _sharedStudentToken);
 
         ((int)response.StatusCode).Should().NotBe(500,
             "unknown subject id must never produce 500; body: {0}", body);

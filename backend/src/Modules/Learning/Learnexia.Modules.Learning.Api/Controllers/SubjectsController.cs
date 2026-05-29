@@ -7,6 +7,7 @@ using Learnexia.Modules.Learning.Application.Features.Subjects.Queries.GetSubjec
 using Learnexia.Modules.Learning.Application.Features.Subjects.Queries.GetSubjectsForGrade;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Queries.GetSubjectSkillTree;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Queries.List;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Learnexia.Modules.Learning.Api.Controllers;
@@ -38,14 +39,16 @@ public class SubjectsController : AppControllerBase
     /// GET /api/learning/Subjects/{id}/Lessons
     /// </summary>
     [HttpGet("{id:int}/Lessons")]
+    [Authorize]   // P2-04: tightened from anonymous. BREAKING CHANGE: unauthenticated callers now get 401.
     public async Task<IActionResult> GetLessons(int id)
         => NewResult(await Mediator.Send(new GetSubjectLessonsQuery { SubjectId = id }));
 
     /// <summary>
-    /// Returns a subject's concept-and-skill tree with placeholder NodeState values.
+    /// Returns a subject's concept-and-skill tree with engine-derived per-student NodeState values.
     /// GET /api/learning/Subjects/{id}/SkillTree
     /// </summary>
     [HttpGet("{id:int}/SkillTree")]
+    [Authorize]   // P2-04: tightened from anonymous. BREAKING CHANGE: unauthenticated callers now get 401.
     public async Task<IActionResult> GetSkillTree(int id)
         => NewResult(await Mediator.Send(new GetSubjectSkillTreeQuery { SubjectId = id }));
 

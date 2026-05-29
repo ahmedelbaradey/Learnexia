@@ -1,9 +1,29 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-25 (**Wave 6 PR #54 + #55 merged; Wave 7 Batch 1s merged to main via PRs #56/57/58; remaining Wave 7 batches pending**).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-29 (**Wave 6 merged; Wave 7 fully merged via PRs #56/#57/#58/#60/#61/#62; Wave 8 in progress — P2-04 ready for PR**).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
 
-## Wave 7 — Phase 2 backend (in progress, Batch 1s merged to main)
+## Wave 8 — Phase 2 backend (in progress)
+
+### P2-04 — Unlock rules / Learning Path Engine ✅ Batches 1–4 complete, PR pending
+
+**What's on branch `feat/P2-04-unlock-rules-learning-path-engine` (ready for PR):**
+- **Engine** ✅ `Learning.Domain/Services/LearningPathEngine.cs` — pure static, three-color memoized DFS over Prerequisite edges. Caller pre-fetches inputs (no DI, no DB). Inputs: `IReadOnlyList<Lesson>`, `IReadOnlyList<KnowledgeNode>`, `IReadOnlyList<KnowledgeEdge>`, `IReadOnlyDictionary<int, SkillMastery> mastery`, `IReadOnlySet<int> completedLessonIds`, `IReadOnlyDictionary<int, Skill> skillsById` (separate from `SkillMastery` so the 3-param mastery record stays tiny). Returns `IReadOnlyDictionary<int, LessonUnlockStateDto>` keyed by `Lesson.Id`. 12 unit tests cover acyclic / cycle / self-loop / null-SkillId / no-prereqs / partial-mastery / exact-threshold / cross-grade / completed-lesson.
+- **DTOs at `Domain/Services/`** (next to engine — not under `Application/Features/.../Dtos/`): `SkillMastery (SkillId, AccuracyPercentage:double, TotalAnswers)`, `LessonUnlockStateDto (LessonId, NodeState, IReadOnlyList<MissingPrerequisiteDto>)`, `MissingPrerequisiteDto (PrereqSkillId, PrereqSkillName, PrereqNodeId, RequiredAccuracy:int, CurrentAccuracy:decimal)`.
+- **Repository extension** ✅ `ILearningRepository` + `LearningRepository` got 5 new AsNoTracking methods: `GetSubjectKnowledgeNodesAsync`, `GetSubjectKnowledgeEdgesAsync` (returns edges whose both endpoints are in the subject), `GetSkillMasteryForStudentInSubjectAsync` (returns mastery rows for EVERY skill in the subject — zero-row skills get `TotalAnswers=0` so the engine has the threshold), `GetCompletedLessonIdsForStudentInSubjectAsync`, `GetSubjectLessonsAsync`.
+- **Wired into 2 existing P2-02 handlers** ✅ `GetSubjectSkillTreeQueryHandler` + `GetSubjectLessonsQueryHandler` now branch on `_currentUser.UserId.HasValue`: authenticated → run engine + project real `NodeState` + `MissingPrerequisites`; anonymous → fall back to existing placeholder (now never reached after Batch 4). Skill-level `NodeState` aggregated from its lessons (Completed > Available > Locked); Concept-level aggregated from its skills.
+- **DTOs extended** ✅ `LessonInUnitDto` got `State : NodeState` (new) + `MissingPrerequisites : IReadOnlyList<MissingPrerequisiteDto>` (defaults to empty). `IsLocked` kept for back-compat, marked `[Obsolete("Replaced by LearningPathEngine in P2-04. Will be removed in P2-09 or P6-06.")]`. `SkillNodeDto.MissingPrerequisites` added as nullable (null when anonymous).
+- **Auth tightening** ✅ `[Authorize]` added to `GET /api/learning/Subjects/{id}/SkillTree` AND `GET /api/learning/Subjects/{id}/Lessons`. `GET /api/learning/Subjects/ForGrade` stays anonymous. **BREAKING CHANGE:** any client currently calling the two gated endpoints without a JWT will start getting 401. FE wiring already uses auth.
+- **Integration tests** ✅ `backend/tests/Learnexia.IntegrationTests/P2_04_LearningPath_Tests.cs` — 12 cases (anonymous 401 gate × 2; fresh-student root-Available/downstream-Locked × 2; root-mastery unlocks next-skill; `MissingPrerequisites` shape; completed-lesson state; cross-student isolation; anonymous ForGrade still 200; unknown-subject 404; null-SkillId lesson Available; envelope camelCase). P2-02 tests updated to pass Student JWT on the 7 now-gated cases. All 24 green (~66s, Testcontainers Postgres).
+- **2 new localized message keys** in `SharedResources*.resx` + `SharedResourcesKey.cs`: `LearningPathSubjectNotFound`, `LearningPathUnauthorized`.
+
+**Key decisions:** Mastery = `AccuracyPercentage >= MasteryThreshold` (int 0..100) AND `TotalAnswers >= 1`. Completion = ≥1 `Attempt.Status=Completed` for that `(student, lesson)`. Lessons with `SkillId IS NULL` → `Available`. Skills with no prereq edges → `Available` (root nodes). `MissingPrerequisites` = immediate prereqs only (no transitive closure). `Strength` ignored in v1 (kept on schema). Edge of next concern: `Lesson.IsLocked` boolean is deprecated but still in the DB and DTO — removal scheduled for P2-09 or P6-06. P2-07 (sibling Wave-8 story) also touches `ILearningRepository.cs` — ship P2-04 first, rebase P2-07 on top.
+
+## Wave 7 — Phase 2 backend ✅ Fully merged
+
+All 3 stories merged to main (P2-11 via PR #60, P2-08 via PR #61, P2-02 via PR #62). See git log for full details. Original Wave 7 brief and decisions preserved below for historical reference.
+
+### P2-11 — Skill dependency graph ✅ Batches 1–4 complete, PR pending
 
 ### P2-11 — Skill dependency graph ✅ Batches 1–4 complete, PR pending
 

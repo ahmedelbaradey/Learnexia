@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
+using Learnexia.Modules.Learning.Domain.Services;
 using Learnexia.Modules.Learning.Infrastructure.Persistence;
 using Learnexia.Shared.Kernel.Abstractions;
 using Microsoft.EntityFrameworkCore;
@@ -117,4 +118,112 @@ public class LearningRepository : ILearningRepository
         => await RepositoryContext.KnowledgeNodes
             .AsNoTracking()
             .AnyAsync(n => n.Id == nodeId, ct);
+
+    // ── Learning Path Engine (P2-04) ──────────────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<KnowledgeNode>> GetSubjectKnowledgeNodesAsync(
+        int subjectId, CancellationToken ct = default)
+        => await RepositoryContext.KnowledgeNodes
+            .AsNoTracking()
+            .Where(n => n.SubjectId == subjectId)
+            .ToListAsync(ct);
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<KnowledgeEdge>> GetSubjectKnowledgeEdgesAsync(
+        int subjectId, CancellationToken ct = default)
+    {
+        // Collect the node IDs that belong to this subject first, then filter edges
+        // whose both endpoints are within that set. Mirrors the two-step pattern used by
+        // GetPrerequisiteNodesAsync / GetUnlockedByNodeAsync (P2-11) where we traverse edges
+        // via navigation rather than doing a cross-joined subquery.
+        var nodeIds = await RepositoryContext.KnowledgeNodes
+            .AsNoTracking()
+            .Where(n => n.SubjectId == subjectId)
+            .Select(n => n.Id)
+            .ToListAsync(ct);
+
+        var nodeIdSet = nodeIds.ToHashSet();
+
+        return await RepositoryContext.KnowledgeEdges
+            .AsNoTracking()
+            .Where(e => nodeIdSet.Contains(e.SourceNodeId) && nodeIdSet.Contains(e.TargetNodeId))
+            .ToListAsync(ct);
+    }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyDictionary<int, SkillMastery>> GetSkillMasteryForStudentInSubjectAsync(
+        int studentId, int subjectId, CancellationToken ct = default)
+    {
+        // Step 1 — Collect all skills in the subject (via Concept → Subject chain).
+        var skills = await RepositoryContext.Skills
+            .AsNoTracking()
+            .Include(s => s.Concept)
+            .Where(s => s.Concept.SubjectId == subjectId)
+            .Select(s => new { s.Id, s.MasteryThreshold })
+            .ToListAsync(ct);
+
+        var skillIds = skills.Select(s => s.Id).ToHashSet();
+
+        // Step 2 — Aggregate StudentAnswers for this student where the question has a skill in this subject.
+        // Math mirrors GetSkillStatsQueryHandler: accuracy = Math.Round(correct/total*100, 2). (P2-08)
+        var aggregates = await RepositoryContext.StudentAnswers
+            .AsNoTracking()
+            .Where(sa => sa.Attempt.StudentId == studentId
+                      && sa.Question.SkillId.HasValue
+                      && skillIds.Contains(sa.Question.SkillId!.Value))
+            .GroupBy(sa => sa.Question.SkillId!.Value)
+            .Select(g => new
+            {
+                SkillId = g.Key,
+                Total   = g.Count(),
+                Correct = g.Count(sa => sa.IsCorrect)
+            })
+            .ToListAsync(ct);
+
+        var aggById = aggregates.ToDictionary(a => a.SkillId);
+
+        // Step 3 — Build the result dictionary: every skill in the subject gets an entry.
+        // Skills with no answers receive TotalAnswers = 0 and AccuracyPercentage = 0 (Q2 guard).
+        var result = new Dictionary<int, SkillMastery>(skills.Count);
+        foreach (var skill in skills)
+        {
+            var (total, correct) = aggById.TryGetValue(skill.Id, out var a)
+                ? (a.Total, a.Correct)
+                : (0, 0);
+
+            var accuracy = total == 0
+                ? 0.0
+                : Math.Round((double)correct / total * 100, 2);
+
+            result[skill.Id] = new SkillMastery(skill.Id, accuracy, total);
+        }
+
+        return result;
+    }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlySet<int>> GetCompletedLessonIdsForStudentInSubjectAsync(
+        int studentId, int subjectId, CancellationToken ct = default)
+    {
+        var ids = await RepositoryContext.Attempts
+            .AsNoTracking()
+            .Where(a => a.StudentId == studentId
+                     && a.Status == AttemptStatus.Completed
+                     && RepositoryContext.Lessons.Any(l => l.Id == a.LessonId
+                                                        && l.Unit.SubjectId == subjectId))
+            .Select(a => a.LessonId)
+            .Distinct()
+            .ToListAsync(ct);
+
+        return ids.ToHashSet();
+    }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<Lesson>> GetSubjectLessonsAsync(
+        int subjectId, CancellationToken ct = default)
+        => await RepositoryContext.Lessons
+            .AsNoTracking()
+            .Where(l => l.Unit.SubjectId == subjectId)
+            .ToListAsync(ct);
 }
