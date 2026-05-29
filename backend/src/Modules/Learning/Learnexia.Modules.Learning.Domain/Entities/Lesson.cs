@@ -19,4 +19,16 @@ public class Lesson : AggregateRoot
 
     public int? SkillId { get; set; }
     public Skill? Skill { get; set; }
+
+    /// <summary>
+    /// Optional seeded/static explanation (Markdown). Phase 2: populated by seeder.
+    /// Phase 3: source will be the AI tutor (P3-04). NULL-allowed.
+    /// </summary>
+    public string? Explanation { get; set; }
+
+    /// <summary>
+    /// Optional visual example — a URL or short asset key rendered by the FE.
+    /// Max 1024 characters. NULL-allowed.
+    /// </summary>
+    public string? Visual { get; set; }
 }
