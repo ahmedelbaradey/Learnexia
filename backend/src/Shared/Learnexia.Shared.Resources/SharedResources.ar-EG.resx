@@ -1596,4 +1596,7 @@
   <data name="SubjectNotFound" xml:space="preserve">
     <value>المادة الدراسية المطلوبة غير موجودة.</value>
   </data>
+  <data name="KnowledgeNodeNotFound" xml:space="preserve">
+    <value>عقدة المعرفة المطلوبة غير موجودة.</value>
+  </data>
 </root>

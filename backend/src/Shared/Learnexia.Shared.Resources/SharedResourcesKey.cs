@@ -757,5 +757,8 @@
         public const string MatchingOptionsMustBePaired = "MatchingOptionsMustBePaired";
         public const string FillInBlankCorrectAnswerRequired = "FillInBlankCorrectAnswerRequired";
 
+        // Skill dependency graph — node queries (P2-11 BE-5).
+        public const string KnowledgeNodeNotFound = "KnowledgeNodeNotFound";
+
     }
 }

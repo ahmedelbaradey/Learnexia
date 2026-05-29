@@ -71,7 +71,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P2-08 Record granular per-question answers
 - P2-09 See the home dashboard
 - P2-10 Seed demo subjects & skill trees
-- P2-11 Author the skill dependency graph (relational, hand-authored) *(barrier-to-entry: BE1)*
+- P2-11 Author the skill dependency graph (relational, hand-authored) *(barrier-to-entry: BE1; MVP launch-bridge — full OCR-driven Curriculum Intelligence pipeline `BL-01..05` stays post-MVP per the strategic deferral)*
 - P2-12 Parent account settings — notifications, linked children, security, plan & billing *(back + front; carved out of P1-11 Settings)*
 
 ### Phase 3 — Gamification *(story IDs `P4-xx`)*
@@ -136,8 +136,9 @@ These intentional decisions diverge from the source docs; each affected story re
 
 ### Backlog (Phase 2+) — Curriculum Intelligence
 *Three-stage pipeline: Multimodal Parsing (BL-02) → Curriculum Ingestion (BL-05) → Knowledge Graph (BL-03).*
+**Status: deferred post-MVP.** P2-11 ships an MVP launch-bridge — a hand-authored relational knowledge graph (`KnowledgeNode`/`KnowledgeEdge`) modeled as a forward-compatible superset of `BL-04`, with **no OCR / Azure Document Intelligence dependency**. When BL-01..05 is built, the BL-04 schema extends the P2-11 tables rather than replacing them.
 - BL-01 Upload curriculum documents with metadata
 - BL-02 Parse curriculum files into structured content (Multimodal Parsing)
 - BL-03 Build & query the knowledge graph
-- BL-04 Curriculum, knowledge-graph & vector schema
+- BL-04 Curriculum, knowledge-graph & vector schema *(P2-11's `KnowledgeNode`/`KnowledgeEdge` are the MVP slice of this)*
 - BL-05 Ingest parsed content into the curriculum hierarchy (Curriculum Ingestion)
