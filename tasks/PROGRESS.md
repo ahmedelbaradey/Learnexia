@@ -13,7 +13,7 @@
 
 ## Recently completed (newest first)
 - **Wave 7:** P2-02-BE Batch 1 + api-tester (browse subjects/lessons/skill-tree queries + 12 integration tests) — Batch 1 merged via PR #57; tests + docs on PR #62 (pending merge)
-- **Wave 7:** P2-08-BE Batches 1–4 (granular answers: SubmitAnswer + CompleteAttempt + AbandonAttempt + GetStudentAttempts + GetSkillStats + StudentsController + 17 integration tests + security PASS) — Batch 1 merged via PR #58; Batches 2–4 on PR #61 (pending merge)
+- **Wave 7:** P2-08-BE Batches 1–4 (granular answers: SubmitAnswer + CompleteAttempt + AbandonAttempt + GetStudentAttempts + GetSkillStats + StudentsController + 17 integration tests + security PASS) — Batch 1 merged via PR #58; Batches 2–4 merged via PR #61
 - **Wave 7:** P2-11-BE Batches 1–4 (skill dependency graph) — Batch 1 merged via PR #56; Batches 2–4 merged via PR #60
 - **Wave 6:** P2-06-BE (take-a-quiz / StartAttempt, folded into Learning module — quiz entities + migration + endpoint + unit tests) — merged via PR #54
 - **Wave 6:** P2-10-BE (seed demo subjects & skill trees — 6 grades × 4 subjects, Math deepest, idempotent) — merged via PR #54
