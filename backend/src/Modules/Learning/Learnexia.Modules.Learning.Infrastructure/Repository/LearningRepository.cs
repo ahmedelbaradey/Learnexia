@@ -1,5 +1,7 @@
 using System.Linq.Expressions;
 using Learnexia.Modules.Learning.Application.Abstractions;
+using Learnexia.Modules.Learning.Domain.Entities;
+using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Modules.Learning.Infrastructure.Persistence;
 using Learnexia.Shared.Kernel.Abstractions;
 using Microsoft.EntityFrameworkCore;
@@ -91,4 +93,28 @@ public class LearningRepository : ILearningRepository
         RepositoryContext.Set<T>().RemoveRange(entities);
         return Task.CompletedTask;
     }
+
+    // ── Skill dependency graph (P2-11 BE-5) ──────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public async Task<List<KnowledgeNode>> GetPrerequisiteNodesAsync(int nodeId, CancellationToken ct = default)
+        => await RepositoryContext.KnowledgeEdges
+            .AsNoTracking()
+            .Where(e => e.RelationshipType == EdgeRelationshipType.Prerequisite && e.TargetNodeId == nodeId)
+            .Select(e => e.SourceNode)
+            .ToListAsync(ct);
+
+    /// <inheritdoc/>
+    public async Task<List<KnowledgeNode>> GetUnlockedByNodeAsync(int nodeId, CancellationToken ct = default)
+        => await RepositoryContext.KnowledgeEdges
+            .AsNoTracking()
+            .Where(e => e.RelationshipType == EdgeRelationshipType.Prerequisite && e.SourceNodeId == nodeId)
+            .Select(e => e.TargetNode)
+            .ToListAsync(ct);
+
+    /// <inheritdoc/>
+    public async Task<bool> KnowledgeNodeExistsAsync(int nodeId, CancellationToken ct = default)
+        => await RepositoryContext.KnowledgeNodes
+            .AsNoTracking()
+            .AnyAsync(n => n.Id == nodeId, ct);
 }
