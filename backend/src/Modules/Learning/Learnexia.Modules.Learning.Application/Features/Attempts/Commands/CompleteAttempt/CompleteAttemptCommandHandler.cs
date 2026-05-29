@@ -3,9 +3,11 @@ using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Features.Attempts.Dtos;
 using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
+using Learnexia.Shared.Contracts.Learning;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
+using MediatR;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -36,19 +38,22 @@ public class CompleteAttemptCommandHandler : BaseResponseHandler,
     private readonly IMapper _mapper;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
+    private readonly IPublisher _publisher;
 
     public CompleteAttemptCommandHandler(
         ILearningRepositoryManager repository,
         ICurrentUserService currentUser,
         IMapper mapper,
         ILoggerManager logger,
-        IStringLocalizer<SharedResources> localizer)
+        IStringLocalizer<SharedResources> localizer,
+        IPublisher publisher)
     {
         _repository = repository;
         _currentUser = currentUser;
         _mapper = mapper;
         _logger = logger;
         _localizer = localizer;
+        _publisher = publisher;
     }
 
     public async Task<BaseResponse<AttemptSummaryDto>> Handle(
@@ -108,7 +113,36 @@ public class CompleteAttemptCommandHandler : BaseResponseHandler,
             // Step 8 — Stage update. UnitOfWorkBehavior commits atomically; do NOT call SaveChangesAsync.
             await _repository.Learning.UpdateAsync(attempt);
 
-            // TODO P2-07: publish LessonCompletedIntegrationEvent here
+            // Publish LessonCompletedIntegrationEvent (Option B — direct publish per lead decision).
+            // Lesson.SkillId is nullable; the integration event requires SkillId, so skip when absent.
+            // TODO P3-09: track no-skill lesson completions separately.
+            var lessonSkillId = await _repository.Learning.GetLessonSkillIdAsync(attempt.LessonId, cancellationToken);
+            if (lessonSkillId.HasValue)
+            {
+                try
+                {
+                    var integrationEvent = new LessonCompletedIntegrationEvent(
+                        EventId: Guid.NewGuid(),
+                        OccurredOnUtc: DateTime.UtcNow,
+                        StudentId: studentId.Value,
+                        LessonId: attempt.LessonId,
+                        SkillId: lessonSkillId.Value,
+                        AccuracyPercentage: (int)Math.Round(attempt.AccuracyPercentage),
+                        CorrectAnswerCount: answers.Count(a => a.IsCorrect));
+
+                    await _publisher.Publish(integrationEvent, cancellationToken);
+                }
+                catch (Exception publishEx)
+                {
+                    // Fail-soft: log + continue. We do NOT fail the user request because of a publisher failure.
+                    // Ghost-event-on-rollback risk is accepted per ADR 0002; outbox is a future hardening story.
+                    _logger.LogError(publishEx, $"P2-07: LessonCompletedIntegrationEvent publish failed for AttemptId={attempt.Id}, LessonId={attempt.LessonId}, StudentId={studentId.Value}");
+                }
+            }
+            else
+            {
+                _logger.LogWarn($"P2-07: LessonCompletedIntegrationEvent skipped — LessonId={attempt.LessonId} has no SkillId (TODO P3-09 will track no-skill completions separately).");
+            }
 
             // Step 9 — Map and return summary DTO. TotalAnswers/CorrectAnswers filled explicitly
             // (AutoMapper ignores those two members — see QuizProfile).

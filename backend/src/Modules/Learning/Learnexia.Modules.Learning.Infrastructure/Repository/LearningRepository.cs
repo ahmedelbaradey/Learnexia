@@ -226,4 +226,14 @@ public class LearningRepository : ILearningRepository
             .AsNoTracking()
             .Where(l => l.Unit.SubjectId == subjectId)
             .ToListAsync(ct);
+
+    /// <inheritdoc/>
+    public async Task<int?> GetLessonSkillIdAsync(int lessonId, CancellationToken ct = default)
+    {
+        return await RepositoryContext.Lessons
+            .AsNoTracking()
+            .Where(l => l.Id == lessonId)
+            .Select(l => l.SkillId)
+            .FirstOrDefaultAsync(ct);
+    }
 }

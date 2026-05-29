@@ -1,9 +1,27 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-29 (**Wave 6 merged; Wave 7 fully merged via PRs #56/#57/#58/#60/#61/#62; Wave 8 in progress — P2-04 ready for PR**).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-29 (**Wave 6 merged; Wave 7 fully merged; Wave 8 in progress — P2-04 merged via PR #63; P2-07 ready for PR**).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
 
 ## Wave 8 — Phase 2 backend (in progress)
+
+### P2-07 — Instant answer feedback ✅ Batches 1–5 complete, PR pending
+
+**What's on branch `feat/P2-07-instant-answer-feedback` (ready for PR):**
+- **`AnswerComparator`** ✅ pure static at `Learning.Domain/Services/AnswerComparator.cs` — plain `switch` on `QuestionType` (no design pattern). MCQ: `OrdinalIgnoreCase` (preserves P2-08 behavior); TrueFalse: `bool.TryParse` both sides + equality; FillInBlank: trim + `OrdinalIgnoreCase`; Matching: string-compare fallthrough with `TODO P2-07.b` (no matching questions seeded today). Null/whitespace inputs return `false` (no throw). 12 unit tests in `AnswerComparatorTests.cs`.
+- **`SubmitAnswerCommandHandler`** ✅ uses `AnswerComparator.AreEqual(...)` for correctness; injects `IPublisher`; publishes `AnswerSubmittedIntegrationEvent` after `AddAsync` and before return (direct publish per ADR 0002 Option B, NOT outbox). Guarded on `question.SkillId.HasValue` — null skips with `_logger.LogWarn` + `TODO P3-09`. Try/catch around `Publish` is fail-soft (publisher exception is logged via `_logger.LogError(ex, msg)`; user request still succeeds).
+- **`CompleteAttemptCommandHandler`** ✅ same pattern. Loads `Lesson.SkillId` via the new `GetLessonSkillIdAsync` repo method; publishes `LessonCompletedIntegrationEvent` (7 fields: `EventId, OccurredOnUtc, StudentId, LessonId, SkillId, AccuracyPercentage:int (rounded from double), CorrectAnswerCount`). Same null-skip + fail-soft pattern. `AbandonAttemptCommandHandler` is **NOT** touched — abandonment is not a completion event.
+- **`ILearningRepository` extended** ✅ `GetLessonSkillIdAsync(int lessonId, CT) → Task<int?>` (AsNoTracking, single projection).
+- **Integration tests** ✅ `backend/tests/Learnexia.IntegrationTests/P2_07_InstantAnswerFeedback_Tests.cs` — 13 cases via in-test `INotificationHandler<T>` capture (factory layered with `WithWebHostBuilder` — `LearnexiaWebAppFactory` not modified). Covers MCQ/TrueFalse/FillInBlank correctness, event-captured-on-success-with-SkillId, NO event on null-SkillId, NO event on rejection paths (duplicate/IDOR/state guards), `LessonCompletedIntegrationEvent` happy + null-SkillId, idempotent Complete doesn't re-fire, handler isolation (throwing subscriber doesn't fail the API), envelope still `"successed":` camelCase, Abandon doesn't publish. Full Wave-7+Wave-8 regression suite: 60/60 PASS.
+- **Security audit** ✅ `docs/briefs/P2-07-security-audit.md` — PASS, 0 Critical/High. Event payloads carry IDs only (no `CorrectAnswer`/`AnswerPayload`/PII). `ex.Message` not leaked. Log lines contain IDs only. Ghost-event-on-rollback documented as accepted Phase-2 trade-off per ADR 0002.
+
+**Key decisions:** Per-type correctness via plain `switch` (no Strategy). Direct `IPublisher.Publish` inside the UoW transaction (Option B), matching the Identity precedent. Skip event when `SkillId IS NULL` (don't extend the cross-module event contract with a sentinel). Fail-soft try/catch around publish (publisher failure must NOT fail the user request). `CorrectAnswerCount` on `LessonCompletedIntegrationEvent` is the 7th field — initially missed by Batch 3 spec, corrected in implementation. Adjusted FillInBlank integration test to use JSON-encoded strings (`CorrectAnswer` is `jsonb`; bare words are invalid JSON) — whitespace-trim still covered by unit tests.
+
+**Non-blocking follow-ups** (carry forward): switch the 4 new log lines to structured-logging placeholder syntax (`"... {AttemptId}"` instead of `$"...AttemptId={attempt.Id}"`) for observability — security-audit F-01 Low. P2-08 inherited: still no `MaximumLength` validator on `AnswerPayload` (recommended for Phase 3 scale-up).
+
+### P2-04 — Unlock rules / Learning Path Engine ✅ Merged via PR #63
+
+Wave-8 story 1 — `LearningPathEngine` (pure static memoized DFS) + 5 AsNoTracking repo methods + JWT-aware wiring into P2-02 handlers + `[Authorize]` tightening on `Subjects/{id}/{Lessons,SkillTree}`. See git log + `docs/briefs/P2-04.md` + `docs/plans/P2-04.md` for full details. **Breaking change**: those two endpoints now return 401 to unauthenticated callers.
 
 ### P2-04 — Unlock rules / Learning Path Engine ✅ Batches 1–4 complete, PR pending
 
