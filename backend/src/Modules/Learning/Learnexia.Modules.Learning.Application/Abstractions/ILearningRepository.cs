@@ -73,4 +73,10 @@ public interface ILearningRepository : IGenericRepository
     /// AsNoTracking.
     /// </summary>
     Task<IReadOnlyList<Lesson>> GetSubjectLessonsAsync(int subjectId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the SkillId of the given lesson, or null if the lesson has no skill assigned
+    /// (or does not exist). AsNoTracking.
+    /// </summary>
+    Task<int?> GetLessonSkillIdAsync(int lessonId, CancellationToken ct = default);
 }

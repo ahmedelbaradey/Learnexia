@@ -3,9 +3,12 @@ using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Features.Attempts.Dtos;
 using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
+using Learnexia.Modules.Learning.Domain.Services;
+using Learnexia.Shared.Contracts.Learning;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
+using MediatR;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -18,8 +21,10 @@ namespace Learnexia.Modules.Learning.Application.Features.Attempts.Commands.Subm
 /// StudentAnswer row. UnitOfWorkBehavior owns the commit — do NOT call SaveChangesAsync here.
 ///
 /// StudentId is resolved from the JWT (ICurrentUserService) — never from the client request.
-/// IsCorrect is computed server-side via case-insensitive string equality on the raw JSON values.
-/// P2-07 will refine the correctness check per QuestionType and wire the hint availability stub.
+/// IsCorrect is computed server-side via AnswerComparator.AreEqual, dispatching per QuestionType
+/// (MCQ/TrueFalse/FillInBlank/Matching).
+/// HintAvailable is a stub (false) today; P3-04 will wire AI-tutor hint availability.
+/// On success, publishes AnswerSubmittedIntegrationEvent (skipped when QuizQuestion.SkillId is null).
 /// </summary>
 public class SubmitAnswerCommandHandler : BaseResponseHandler,
     ICommandHandler<SubmitAnswerCommand, BaseResponse<SubmitAnswerResponse>>
@@ -29,19 +34,22 @@ public class SubmitAnswerCommandHandler : BaseResponseHandler,
     private readonly IMapper _mapper;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
+    private readonly IPublisher _publisher;
 
     public SubmitAnswerCommandHandler(
         ILearningRepositoryManager repository,
         ICurrentUserService currentUser,
         IMapper mapper,
         ILoggerManager logger,
-        IStringLocalizer<SharedResources> localizer)
+        IStringLocalizer<SharedResources> localizer,
+        IPublisher publisher)
     {
         _repository = repository;
         _currentUser = currentUser;
         _mapper = mapper;
         _logger = logger;
         _localizer = localizer;
+        _publisher = publisher;
     }
 
     public async Task<BaseResponse<SubmitAnswerResponse>> Handle(
@@ -90,12 +98,13 @@ public class SubmitAnswerCommandHandler : BaseResponseHandler,
                 return BusinessValidation<SubmitAnswerResponse>(
                     _localizer[SharedResourcesKey.QuestionAlreadyAnswered]);
 
-            // Step 7 — Correctness check: case-insensitive string equality on raw JSON values.
-            // P2-07 will refine this per QuestionType.
-            var isCorrect = string.Equals(
-                request.AnswerPayload.Trim(),
-                question.CorrectAnswer.Trim(),
-                StringComparison.OrdinalIgnoreCase);
+            // Step 7 — Correctness check: per-QuestionType comparison via AnswerComparator.
+            // P2-07 introduced per-type semantics (bool.TryParse for TrueFalse, trim+OrdinalIgnoreCase
+            // for FillInBlank, MCQ unchanged). Matching defers to string compare (TODO P2-07.b).
+            var isCorrect = AnswerComparator.AreEqual(
+                question.QuestionType,
+                request.AnswerPayload,
+                question.CorrectAnswer);
 
             // Step 8 — Stage the new StudentAnswer via AutoMapper (IsCorrect is computed here, not from command).
             // UnitOfWorkBehavior commits atomically — do NOT call SaveChangesAsync.
@@ -103,7 +112,34 @@ public class SubmitAnswerCommandHandler : BaseResponseHandler,
             studentAnswer.IsCorrect = isCorrect;
             await _repository.Learning.AddAsync(studentAnswer, cancellationToken);
 
-            // TODO P2-07: publish AnswerSubmittedIntegrationEvent here
+            // Publish AnswerSubmittedIntegrationEvent (Option B — direct publish per lead decision).
+            // Skip when QuestionType has no SkillId; the integration event requires SkillId.
+            // TODO P3-09: track no-skill answers separately for analytics.
+            if (question.SkillId.HasValue)
+            {
+                try
+                {
+                    var integrationEvent = new AnswerSubmittedIntegrationEvent(
+                        EventId: Guid.NewGuid(),
+                        OccurredOnUtc: DateTime.UtcNow,
+                        StudentId: studentId.Value,
+                        LessonId: attempt.LessonId,
+                        SkillId: question.SkillId.Value,
+                        CorrectAnswerCount: isCorrect ? 1 : 0);
+
+                    await _publisher.Publish(integrationEvent, cancellationToken);
+                }
+                catch (Exception publishEx)
+                {
+                    // Fail-soft: log + continue. We do NOT fail the user request because of a publisher failure.
+                    // Ghost-event-on-rollback risk is accepted per ADR 0002; outbox is a future hardening story.
+                    _logger.LogError(publishEx, $"P2-07: AnswerSubmittedIntegrationEvent publish failed for AttemptId={attempt.Id}, QuestionId={question.Id}, StudentId={studentId.Value}");
+                }
+            }
+            else
+            {
+                _logger.LogWarn($"P2-07: AnswerSubmittedIntegrationEvent skipped — QuestionId={question.Id} has no SkillId (TODO P3-09 will track no-skill answers separately).");
+            }
 
             // Step 9 — Return feedback response.
             var response = new SubmitAnswerResponse
@@ -111,7 +147,7 @@ public class SubmitAnswerCommandHandler : BaseResponseHandler,
                 IsCorrect = isCorrect,
                 // CorrectAnswer is returned only when wrong — never give it away for free.
                 CorrectAnswer = isCorrect ? null : question.CorrectAnswer,
-                HintAvailable = false, // stub; P2-07 will wire hint availability
+                HintAvailable = false, // TODO P3-04: AI-tutor hint availability — wire to AI tutor surface
             };
 
             var result = Success(response);
