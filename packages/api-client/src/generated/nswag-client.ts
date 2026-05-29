@@ -21,6 +21,38 @@ export interface IClient {
     profilePUT(body: UpdateMyProfileCommand | undefined): Promise<AccountProfileResponseBaseResponse>;
 
     /**
+     * @param file (optional) 
+     * @return OK
+     */
+    avatarPOST(file: FileParameter | undefined): Promise<AvatarUploadResponseBaseResponse>;
+
+    /**
+     * @return OK
+     */
+    avatarDELETE(): Promise<AvatarUploadResponseBaseResponse>;
+
+    /**
+     * @param body (optional) 
+     * @return OK
+     */
+    changePassword(body: ChangePasswordCommand | undefined): Promise<StringBaseResponse>;
+
+    /**
+     * @return OK
+     */
+    sessions(): Promise<SessionInfoListBaseResponse>;
+
+    /**
+     * @return OK
+     */
+    signOutOthers(): Promise<StringBaseResponse>;
+
+    /**
+     * @return OK
+     */
+    plan(): Promise<CurrentPlanResponseBaseResponse>;
+
+    /**
      * @param body (optional) 
      * @return OK
      */
@@ -36,6 +68,12 @@ export interface IClient {
      * @param body (optional) 
      * @return OK
      */
+    googleSignIn(body: GoogleSignInCommand | undefined): Promise<JwtAuthResponseBaseResponse>;
+
+    /**
+     * @param body (optional) 
+     * @return OK
+     */
     validateToken(body: AccessTokenQuery | undefined): Promise<StringBaseResponse>;
 
     /**
@@ -43,6 +81,18 @@ export interface IClient {
      * @return OK
      */
     refreshToken(body: RefreshTokenCommand | undefined): Promise<JwtAuthResponseBaseResponse>;
+
+    /**
+     * @param body (optional) 
+     * @return OK
+     */
+    forgotPassword(body: ForgotPasswordCommand | undefined): Promise<StringBaseResponse>;
+
+    /**
+     * @param body (optional) 
+     * @return OK
+     */
+    resetPassword(body: ResetPasswordCommand | undefined): Promise<StringBaseResponse>;
 
     /**
      * @param body (optional) 
@@ -121,9 +171,32 @@ export interface IClient {
     linkChild(body: LinkChildCommand | undefined): Promise<LinkedChildResponseBaseResponse>;
 
     /**
+     * @param body (optional) 
+     * @return OK
+     */
+    updateChild(body: UpdateChildCommand | undefined): Promise<UpdatedChildResponseBaseResponse>;
+
+    /**
      * @return OK
      */
     myChildren(): Promise<LinkedChildResponseIEnumerableBaseResponse>;
+
+    /**
+     * @param body (optional) 
+     * @return OK
+     */
+    unlinkChild(body: UnlinkChildCommand | undefined): Promise<BooleanBaseResponse>;
+
+    /**
+     * @return OK
+     */
+    preferencesGET(): Promise<NotificationPreferencesResponseBaseResponse>;
+
+    /**
+     * @param body (optional) 
+     * @return OK
+     */
+    preferencesPUT(body: UpdateMyNotificationPreferencesCommand | undefined): Promise<StringBaseResponse>;
 
     list6(pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void>;
 
@@ -134,6 +207,8 @@ export interface IClient {
     create6(body: AddProductCommand | undefined): Promise<void>;
 
     update5(body: EditProductCommand | undefined): Promise<void>;
+
+    attempt(lessonId: number): Promise<void>;
 
     list7(conceptId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void>;
 
@@ -410,6 +485,409 @@ export class Client implements IClient {
     }
 
     /**
+     * @param file (optional) 
+     * @return OK
+     */
+    avatarPOST(file: FileParameter | undefined): Promise<AvatarUploadResponseBaseResponse> {
+        let url_ = this.baseUrl + "/api/Users/Account/Avatar";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = new FormData();
+        if (file === null || file === undefined)
+            throw new globalThis.Error("The parameter 'file' cannot be null.");
+        else
+            content_.append("file", file.data, file.fileName ? file.fileName : "file");
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processAvatarPOST(_response);
+        });
+    }
+
+    protected processAvatarPOST(response: Response): Promise<AvatarUploadResponseBaseResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AvatarUploadResponseBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 401) {
+            return response.text().then((_responseText) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Forbidden", status, _responseText, _headers, result403);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 422) {
+            return response.text().then((_responseText) => {
+            let result422: any = null;
+            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AvatarUploadResponseBaseResponse;
+            return throwException("Unprocessable Content", status, _responseText, _headers, result422);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<AvatarUploadResponseBaseResponse>(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    avatarDELETE(): Promise<AvatarUploadResponseBaseResponse> {
+        let url_ = this.baseUrl + "/api/Users/Account/Avatar";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "DELETE",
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processAvatarDELETE(_response);
+        });
+    }
+
+    protected processAvatarDELETE(response: Response): Promise<AvatarUploadResponseBaseResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AvatarUploadResponseBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 401) {
+            return response.text().then((_responseText) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Forbidden", status, _responseText, _headers, result403);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<AvatarUploadResponseBaseResponse>(null as any);
+    }
+
+    /**
+     * @param body (optional) 
+     * @return OK
+     */
+    changePassword(body: ChangePasswordCommand | undefined): Promise<StringBaseResponse> {
+        let url_ = this.baseUrl + "/api/Users/Account/ChangePassword";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json-patch+json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processChangePassword(_response);
+        });
+    }
+
+    protected processChangePassword(response: Response): Promise<StringBaseResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StringBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StringBaseResponse;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 401) {
+            return response.text().then((_responseText) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Forbidden", status, _responseText, _headers, result403);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<StringBaseResponse>(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    sessions(): Promise<SessionInfoListBaseResponse> {
+        let url_ = this.baseUrl + "/api/Users/Account/Sessions";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processSessions(_response);
+        });
+    }
+
+    protected processSessions(response: Response): Promise<SessionInfoListBaseResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as SessionInfoListBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 401) {
+            return response.text().then((_responseText) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Forbidden", status, _responseText, _headers, result403);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<SessionInfoListBaseResponse>(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    signOutOthers(): Promise<StringBaseResponse> {
+        let url_ = this.baseUrl + "/api/Users/Account/Sessions/SignOutOthers";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "POST",
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processSignOutOthers(_response);
+        });
+    }
+
+    protected processSignOutOthers(response: Response): Promise<StringBaseResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StringBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 401) {
+            return response.text().then((_responseText) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Forbidden", status, _responseText, _headers, result403);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<StringBaseResponse>(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    plan(): Promise<CurrentPlanResponseBaseResponse> {
+        let url_ = this.baseUrl + "/api/Users/Account/Plan";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processPlan(_response);
+        });
+    }
+
+    protected processPlan(response: Response): Promise<CurrentPlanResponseBaseResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as CurrentPlanResponseBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 401) {
+            return response.text().then((_responseText) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Forbidden", status, _responseText, _headers, result403);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<CurrentPlanResponseBaseResponse>(null as any);
+    }
+
+    /**
      * @param body (optional) 
      * @return OK
      */
@@ -503,6 +981,75 @@ export class Client implements IClient {
     }
 
     protected processSignIn(response: Response): Promise<JwtAuthResponseBaseResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as JwtAuthResponseBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 401) {
+            return response.text().then((_responseText) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Forbidden", status, _responseText, _headers, result403);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<JwtAuthResponseBaseResponse>(null as any);
+    }
+
+    /**
+     * @param body (optional) 
+     * @return OK
+     */
+    googleSignIn(body: GoogleSignInCommand | undefined): Promise<JwtAuthResponseBaseResponse> {
+        let url_ = this.baseUrl + "/api/Users/Authentication/Google-SignIn";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json-patch+json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGoogleSignIn(_response);
+        });
+    }
+
+    protected processGoogleSignIn(response: Response): Promise<JwtAuthResponseBaseResponse> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {
@@ -683,6 +1230,144 @@ export class Client implements IClient {
             });
         }
         return Promise.resolve<JwtAuthResponseBaseResponse>(null as any);
+    }
+
+    /**
+     * @param body (optional) 
+     * @return OK
+     */
+    forgotPassword(body: ForgotPasswordCommand | undefined): Promise<StringBaseResponse> {
+        let url_ = this.baseUrl + "/api/Users/Authentication/Forgot-Password";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json-patch+json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processForgotPassword(_response);
+        });
+    }
+
+    protected processForgotPassword(response: Response): Promise<StringBaseResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StringBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 401) {
+            return response.text().then((_responseText) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Forbidden", status, _responseText, _headers, result403);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<StringBaseResponse>(null as any);
+    }
+
+    /**
+     * @param body (optional) 
+     * @return OK
+     */
+    resetPassword(body: ResetPasswordCommand | undefined): Promise<StringBaseResponse> {
+        let url_ = this.baseUrl + "/api/Users/Authentication/Reset-Password";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json-patch+json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processResetPassword(_response);
+        });
+    }
+
+    protected processResetPassword(response: Response): Promise<StringBaseResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StringBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 401) {
+            return response.text().then((_responseText) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Forbidden", status, _responseText, _headers, result403);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<StringBaseResponse>(null as any);
     }
 
     /**
@@ -2076,7 +2761,7 @@ export class Client implements IClient {
      * @return OK
      */
     addChild(body: AddChildCommand | undefined): Promise<AddedChildResponseBaseResponse> {
-        let url_ = this.baseUrl + "/api/Users/Parent/Add-Child";
+        let url_ = this.baseUrl + "/api/Parent/Add-Child";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(body);
@@ -2110,18 +2795,6 @@ export class Client implements IClient {
             result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
             return throwException("Bad Request", status, _responseText, _headers, result400);
             });
-        } else if (status === 401) {
-            return response.text().then((_responseText) => {
-            let result401: any = null;
-            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("Unauthorized", status, _responseText, _headers, result401);
-            });
-        } else if (status === 403) {
-            return response.text().then((_responseText) => {
-            let result403: any = null;
-            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("Forbidden", status, _responseText, _headers, result403);
-            });
         } else if (status === 404) {
             return response.text().then((_responseText) => {
             let result404: any = null;
@@ -2145,7 +2818,7 @@ export class Client implements IClient {
      * @return OK
      */
     linkChild(body: LinkChildCommand | undefined): Promise<LinkedChildResponseBaseResponse> {
-        let url_ = this.baseUrl + "/api/Users/Parent/Link-Child";
+        let url_ = this.baseUrl + "/api/Parent/Link-Child";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(body);
@@ -2179,18 +2852,6 @@ export class Client implements IClient {
             result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
             return throwException("Bad Request", status, _responseText, _headers, result400);
             });
-        } else if (status === 401) {
-            return response.text().then((_responseText) => {
-            let result401: any = null;
-            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("Unauthorized", status, _responseText, _headers, result401);
-            });
-        } else if (status === 403) {
-            return response.text().then((_responseText) => {
-            let result403: any = null;
-            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("Forbidden", status, _responseText, _headers, result403);
-            });
         } else if (status === 404) {
             return response.text().then((_responseText) => {
             let result404: any = null;
@@ -2210,10 +2871,67 @@ export class Client implements IClient {
     }
 
     /**
+     * @param body (optional) 
+     * @return OK
+     */
+    updateChild(body: UpdateChildCommand | undefined): Promise<UpdatedChildResponseBaseResponse> {
+        let url_ = this.baseUrl + "/api/Parent/Update-Child";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json-patch+json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processUpdateChild(_response);
+        });
+    }
+
+    protected processUpdateChild(response: Response): Promise<UpdatedChildResponseBaseResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UpdatedChildResponseBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<UpdatedChildResponseBaseResponse>(null as any);
+    }
+
+    /**
      * @return OK
      */
     myChildren(): Promise<LinkedChildResponseIEnumerableBaseResponse> {
-        let url_ = this.baseUrl + "/api/Users/Parent/My-Children";
+        let url_ = this.baseUrl + "/api/Parent/My-Children";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
@@ -2243,18 +2961,6 @@ export class Client implements IClient {
             result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
             return throwException("Bad Request", status, _responseText, _headers, result400);
             });
-        } else if (status === 401) {
-            return response.text().then((_responseText) => {
-            let result401: any = null;
-            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("Unauthorized", status, _responseText, _headers, result401);
-            });
-        } else if (status === 403) {
-            return response.text().then((_responseText) => {
-            let result403: any = null;
-            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("Forbidden", status, _responseText, _headers, result403);
-            });
         } else if (status === 404) {
             return response.text().then((_responseText) => {
             let result404: any = null;
@@ -2271,6 +2977,184 @@ export class Client implements IClient {
             });
         }
         return Promise.resolve<LinkedChildResponseIEnumerableBaseResponse>(null as any);
+    }
+
+    /**
+     * @param body (optional) 
+     * @return OK
+     */
+    unlinkChild(body: UnlinkChildCommand | undefined): Promise<BooleanBaseResponse> {
+        let url_ = this.baseUrl + "/api/Parent/Unlink-Child";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json-patch+json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processUnlinkChild(_response);
+        });
+    }
+
+    protected processUnlinkChild(response: Response): Promise<BooleanBaseResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BooleanBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<BooleanBaseResponse>(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    preferencesGET(): Promise<NotificationPreferencesResponseBaseResponse> {
+        let url_ = this.baseUrl + "/api/Notifications/Preferences";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processPreferencesGET(_response);
+        });
+    }
+
+    protected processPreferencesGET(response: Response): Promise<NotificationPreferencesResponseBaseResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NotificationPreferencesResponseBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 401) {
+            return response.text().then((_responseText) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<NotificationPreferencesResponseBaseResponse>(null as any);
+    }
+
+    /**
+     * @param body (optional) 
+     * @return OK
+     */
+    preferencesPUT(body: UpdateMyNotificationPreferencesCommand | undefined): Promise<StringBaseResponse> {
+        let url_ = this.baseUrl + "/api/Notifications/Preferences";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json-patch+json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processPreferencesPUT(_response);
+        });
+    }
+
+    protected processPreferencesPUT(response: Response): Promise<StringBaseResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StringBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 401) {
+            return response.text().then((_responseText) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<StringBaseResponse>(null as any);
     }
 
     list6(pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void> {
@@ -2489,6 +3373,51 @@ export class Client implements IClient {
     }
 
     protected processUpdate5(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
+    attempt(lessonId: number): Promise<void> {
+        let url_ = this.baseUrl + "/api/Learning/Quizzes/{lessonId}/Attempt";
+        if (lessonId === undefined || lessonId === null)
+            throw new globalThis.Error("The parameter 'lessonId' must be defined.");
+        url_ = url_.replace("{lessonId}", encodeURIComponent("" + lessonId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "POST",
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processAttempt(_response);
+        });
+    }
+
+    protected processAttempt(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 400) {
@@ -4755,11 +5684,43 @@ export interface AdminResetPasswordCommand {
     userId?: number;
 }
 
+export interface AvatarUploadResponse {
+    avatarUrl?: string | undefined;
+}
+
+export interface AvatarUploadResponseBaseResponse {
+    statusCode?: HttpStatusCode;
+    successed?: boolean;
+    message?: string | undefined;
+    data?: AvatarUploadResponse;
+    errors?: any[] | undefined;
+}
+
+export interface BooleanBaseResponse {
+    statusCode?: HttpStatusCode;
+    successed?: boolean;
+    message?: string | undefined;
+    data?: boolean;
+    errors?: any[] | undefined;
+}
+
 export interface ChangePasswordCommand {
-    userId?: number;
     currentPassword?: string | undefined;
     newPassword?: string | undefined;
     confirmPassword?: string | undefined;
+}
+
+export interface CurrentPlanResponse {
+    planName?: string | undefined;
+    status?: string | undefined;
+}
+
+export interface CurrentPlanResponseBaseResponse {
+    statusCode?: HttpStatusCode;
+    successed?: boolean;
+    message?: string | undefined;
+    data?: CurrentPlanResponse;
+    errors?: any[] | undefined;
 }
 
 export enum DifficultyLevel {
@@ -4852,6 +5813,10 @@ export interface EditUserRolesCommand {
     userRoles?: UserRoles[] | undefined;
 }
 
+export interface ForgotPasswordCommand {
+    email?: string | undefined;
+}
+
 export interface GetRoleListResponse {
     id?: number;
     roleName?: string | undefined;
@@ -4892,6 +5857,10 @@ export interface GetUserListResponsePaginatedResult {
     pageSize?: number;
     readonly hasPreviousPage?: boolean;
     readonly hasNextPage?: boolean;
+}
+
+export interface GoogleSignInCommand {
+    idToken?: string | undefined;
 }
 
 export enum HttpStatusCode {
@@ -5021,6 +5990,31 @@ export interface MeResponseBaseResponse {
     errors?: any[] | undefined;
 }
 
+export enum NotificationCategory {
+    _0 = 0,
+    _1 = 1,
+    _2 = 2,
+    _3 = 3,
+}
+
+export interface NotificationPreferenceItemDto {
+    category?: NotificationCategory;
+    emailEnabled?: boolean;
+    pushEnabled?: boolean;
+}
+
+export interface NotificationPreferencesResponse {
+    preferences?: NotificationPreferenceItemDto[] | undefined;
+}
+
+export interface NotificationPreferencesResponseBaseResponse {
+    statusCode?: HttpStatusCode;
+    successed?: boolean;
+    message?: string | undefined;
+    data?: NotificationPreferencesResponse;
+    errors?: any[] | undefined;
+}
+
 export interface ProblemDetails {
     type?: string | undefined;
     title?: string | undefined;
@@ -5046,10 +6040,19 @@ export interface RegisterParentCommand {
     email?: string | undefined;
     password?: string | undefined;
     fullName?: string | undefined;
+    country?: string | undefined;
+    acceptedTerms?: boolean;
+    captchaToken?: string | undefined;
 }
 
 export interface ResendRegistrationMessageCommand {
     userId?: number;
+}
+
+export interface ResetPasswordCommand {
+    email?: string | undefined;
+    token?: string | undefined;
+    newPassword?: string | undefined;
 }
 
 export interface RoleClaims {
@@ -5065,6 +6068,24 @@ export interface SendNotificationCommand {
     notificationTypeId?: string;
     notificationModuleId?: string | undefined;
     recipientEmail?: string | undefined;
+}
+
+export interface SessionInfo {
+    sessionId?: string | undefined;
+    isActive?: boolean;
+    isExpired?: boolean;
+    expiresAt?: Date;
+    remainingSeconds?: number;
+    lastActivityAt?: Date;
+    createdAt?: Date;
+}
+
+export interface SessionInfoListBaseResponse {
+    statusCode?: HttpStatusCode;
+    successed?: boolean;
+    message?: string | undefined;
+    data?: SessionInfo[] | undefined;
+    errors?: any[] | undefined;
 }
 
 export interface SessionTimeoutInfo {
@@ -5110,10 +6131,43 @@ export interface StringBaseResponse {
     errors?: any[] | undefined;
 }
 
+export interface UnlinkChildCommand {
+    childId?: number;
+}
+
+export interface UpdateChildCommand {
+    childId?: number;
+    fullName?: string | undefined;
+    grade?: number;
+    language?: string | undefined;
+    country?: string | undefined;
+}
+
+export interface UpdateMyNotificationPreferencesCommand {
+    preferences?: NotificationPreferenceItemDto[] | undefined;
+}
+
 export interface UpdateMyProfileCommand {
     fullName?: string | undefined;
     phone?: string | undefined;
     country?: string | undefined;
+}
+
+export interface UpdatedChildResponse {
+    id?: number;
+    fullName?: string | undefined;
+    email?: string | undefined;
+    grade?: number | undefined;
+    language?: string | undefined;
+    country?: string | undefined;
+}
+
+export interface UpdatedChildResponseBaseResponse {
+    statusCode?: HttpStatusCode;
+    successed?: boolean;
+    message?: string | undefined;
+    data?: UpdatedChildResponse;
+    errors?: any[] | undefined;
 }
 
 export interface UserProfileResponseDto {
