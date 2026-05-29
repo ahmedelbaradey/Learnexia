@@ -79,4 +79,13 @@ public interface ILearningRepository : IGenericRepository
     /// (or does not exist). AsNoTracking.
     /// </summary>
     Task<int?> GetLessonSkillIdAsync(int lessonId, CancellationToken ct = default);
+
+    // ── Dashboard (P2-09) ──────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns the SubjectId for the most-recently-started <see cref="Attempt"/> by the given student,
+    /// resolved via the join: Attempt.LessonId → Lesson.Unit.SubjectId.
+    /// Returns null if the student has no Attempt rows. AsNoTracking.
+    /// </summary>
+    Task<int?> GetMostRecentActivitySubjectIdAsync(int studentId, CancellationToken ct = default);
 }

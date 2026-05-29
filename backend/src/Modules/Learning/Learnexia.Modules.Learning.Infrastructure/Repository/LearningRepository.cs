@@ -236,4 +236,26 @@ public class LearningRepository : ILearningRepository
             .Select(l => l.SkillId)
             .FirstOrDefaultAsync(ct);
     }
+
+    // ── Dashboard (P2-09) ──────────────────────────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public async Task<int?> GetMostRecentActivitySubjectIdAsync(
+        int studentId, CancellationToken ct = default)
+    {
+        // Attempt.LessonId is a plain int (no EF FK / navigation property — module isolation).
+        // Use a join via a sub-select: for each Attempt (most recent first), look up the
+        // SubjectId via the Lesson → Unit chain and return the first non-null result.
+        // Mirrors the sub-query pattern in GetCompletedLessonIdsForStudentInSubjectAsync.
+        return await RepositoryContext.Attempts
+            .AsNoTracking()
+            .Where(a => a.StudentId == studentId)
+            .OrderByDescending(a => a.StartedAt)
+            .Select(a => RepositoryContext.Lessons
+                .AsNoTracking()
+                .Where(l => l.Id == a.LessonId)
+                .Select(l => (int?)l.Unit.SubjectId)
+                .FirstOrDefault())
+            .FirstOrDefaultAsync(ct);
+    }
 }

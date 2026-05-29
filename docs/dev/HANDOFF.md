@@ -1,38 +1,50 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-29 (**Wave 6 merged; Wave 7 fully merged; Wave 8 fully merged (#63 P2-04, #64 P2-07); Wave 9 in progress — P2-05 ready for PR; P2-03 + P2-09 pending. Side-track: P1 security follow-up audit merged via PR #65; remaining P1 follow-ups + G2 token-revocation routed to P6-06**).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-30 (**Wave 6 merged; Wave 7 fully merged; Wave 8 fully merged via #63 + #64; Wave 9 in progress — P2-05 merged via PR #66; P2-09 on PR #67; P2-03 pending. Side-track: P1 security follow-up audit merged via PR #65; remaining P1 follow-ups + G2 token-revocation routed to P6-06**).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
 
 ## Wave 9 — Phase 2 backend (in progress)
 
-### P2-05 — Open and complete a lesson ✅ Batches 1–3 complete, PR pending
+### P2-09 — Home dashboard ✅ Batches 1–2 complete, PR pending
 
-**What's on branch `feat/P2-05-open-and-complete-lesson` (ready for PR):**
-- **Schema** ✅ `Lesson` entity got 2 new nullable columns: `Explanation : string?` (Npgsql `text`, markdown), `Visual : string?` (max 1024, URL or asset key). Migration `20260529193810_AddLessonContent` in `learning` schema (single `AddColumn` × 2). `Lesson.IsLocked` `[Obsolete]` stays as-is from P2-04.
-- **`GetLessonQueryHandler`** ✅ rewritten as a hand-rolled handler using `_repository.Learning.GetByCondition` (replaces the old `ILearningServiceManager`-delegated stub). Loads the lesson + the first `QuizQuestion` for it by `Id ASC`. Returns 404 on missing lesson. **Fixes the `ex.Message` leak** in the old handler (Q12 — `ServerError<SingleLessonResponse>()` with no message argument). Mirrors P2-04 / P2-08 handler shape.
-- **`SingleLessonResponse`** ✅ extended with `Explanation : string?`, `Visual : string?`, `QuickCheck : QuizQuestionDto?`. `QuizQuestionDto` is the same DTO P2-06 already returns (excludes `CorrectAnswer` via `QuizProfile.ForSourceMember(...DoNotValidate())` at line 26).
-- **`LessonsProfile.Lesson → SingleLessonResponse`** map extended: `Explanation` + `Visual` mapped by-name; `QuickCheck` `.ForMember(opt.Ignore())` (handler fills it manually).
-- **`LessonsController`** ✅ NEW `[HttpGet("{id:int}")] [Authorize]` action. Old `GET ?id=` action kept anonymous for back-compat with an XML `<remarks>` deprecation note (to be removed in a hardening wave).
-- **`LearningSeeder.SeedDemoLessonContentAsync`** ✅ called from `SeedAsync` after `SeedSkillGraphAsync`. Idempotently seeds the 4 Grade-1 root lessons (`"Introduction to Counting (G1)"`, `"What Are Living Things? (G1)"`, `"Arabic Alphabet Review (G1)"`, `"Sight Words and Fluency (G1)"`) with `Explanation` + `Visual` + 1 MCQ `QuizQuestion` each (4 options, JSON-encoded `Options` array, JSON-encoded `CorrectAnswer` string, `GeneratedBy.Curated`, inherits `Lesson.SkillId` if non-null so `AnswerSubmittedIntegrationEvent` per P2-07 can publish for it).
-- **Integration tests** ✅ `backend/tests/Learnexia.IntegrationTests/P2_05_OpenAndCompleteLesson_Tests.cs` — 11 cases: anonymous 401 on new route, full content on seeded demo, no-`correctAnswer` leak, 404 on unknown id, null-content on non-demo lesson, `successed` envelope, back-compat `?id=` route, full e2e (Open → StartAttempt → SubmitAnswer correct → CompleteAttempt → verify Attempt.Status=Completed + LearningPathEngine GetCompletedLessonIds), `LessonCompletedIntegrationEvent` fires (via `WithWebHostBuilder` in-test handler capture), wrong-answer path, seeder smoke (4 lessons + 4 questions seeded). All 11 PASS. **Full Wave-7+8+9 regression: 71/71 PASS** (~2m41s, Testcontainers Postgres).
+**What's on branch `feat/P2-09-home-dashboard` (ready for PR):**
+- **`DashboardController`** ✅ new `GET /api/Learning/Dashboard` `[Authorize]` (any role; per-student via `_currentUser.UserId` — no studentId param, IDOR-proof by construction).
+- **`GetDashboardQuery` + Handler** ✅ parameterless query → `DashboardDto { Xp:int=0, Streak:int=0, DailyMission:DailyMissionDto?=null, LeaguePreview:LeaguePreviewDto?=null, Continue:ContinueTargetDto? }`. Continue resolution: most-recent-Attempt subject → engine → first Available lesson (SequenceOrder ASC then Id ASC); if no Available, cross-subject fallback Math/Science/Arabic/English; falls back to Grade 1 Math when student has no attempts. Returns `Continue=null` if nothing Available anywhere.
+- **`DTOs`** ✅ at `Application/Features/Dashboard/Dtos/` — `DashboardDto`, `ContinueTargetDto (SubjectId, SubjectName, LessonId, LessonName, UnitName, SkillId?, SkillName?, NodeState)`, `DailyMissionDto (Type, Target?, Progress?)`, `LeaguePreviewDto (TierName?, Rank?, TotalPlayers?, XpThisWeek?)` — Mission + League are nullable wrappers; Phase-4 owners (P4-06/P4-07) will populate.
+- **`ILearningRepository`** ✅ extended with `GetMostRecentActivitySubjectIdAsync(int studentId, CT) → Task<int?>` (AsNoTracking; correlated subquery `Attempts → Lessons → Unit.SubjectId`). Reuses the 5 P2-04 repo methods for the engine inputs.
+- **No new migration.** Read-only aggregation over existing P2-01/P2-08/P2-10/P2-11 schema.
+- **Integration tests** ✅ `backend/tests/Learnexia.IntegrationTests/P2_09_HomeDashboard_Tests.cs` — 11 cases: anonymous 401, fresh-student happy path, continue shape, XP/Streak/Mission/League null-state, most-recent-attempt drives Continue (Math + Science), cross-student IDOR isolation, idempotency, seeder smoke, envelope `"successed":` camelCase. All 11 PASS. **Full Wave-7+8+9 regression (excl. P2-05): 71/71 PASS** (~1m44s, Testcontainers Postgres pg16).
 
 **Key decisions:**
-- **Q1 → 2 nullable columns** on `Lesson`, not a separate `LessonContent` table. Cheapest MVP; P3-04 (AI explanations) may evolve later.
-- **Q3 → NO new `CompleteLessonCommand`.** The existing P2-06 + P2-08 + P2-07 flow (Start → Submit → Complete) already records lesson progress; `LearningPathEngine` reads `Attempt.Status=Completed` for completion. P2-05 BE-3 collapsed to "verify the existing flow handles single-question lessons" (covered by the e2e integration test).
-- **Q6 → Lock not enforced at lesson-open** (200 always). Lock is enforced at `StartAttempt` (existing P2-06 contract). **R3 follow-up**: `StartAttempt` does NOT currently enforce `LearningPathEngine`-derived `Locked` state — fix scheduled for a hardening wave.
-- **Q7 → Lesson-open does NOT auto-create an Attempt.** Keeps read separate from write.
-- **Q12 → `ex.Message` leak fixed in `GetLessonQueryHandler` only** (touched file). The sibling leak in `GetSubjectLessonsQueryHandler` is logged here as a P6-06 TODO and NOT fixed in this PR.
+- **Q3 → Option A (most-recent activity)** — query `Attempts` for student, order by `StartedAt DESC`, take first, join `Lesson → Unit → SubjectId`. Fallback Grade 1 Math when no attempts.
+- **Q5 — XP/Streak = 0** with `TODO P4-02 / P4-03` comments. Phase-2 zero-state by design.
+- **Q6 — Mission/League = null** (typed nullable wrappers, NOT "ComingSoon" shells). FE renders "Coming soon" conditionally.
+- **Q9 — No caching.** ~5 DB queries per request worst case. Flagged for P6-06 perf pass (Redis with short TTL keyed on `(studentId, subjectId)`).
+- **Q11 — Added one repo method** (`GetMostRecentActivitySubjectIdAsync`) for clean separation; alternative was inline LINQ in handler.
 
 **Non-blocking follow-ups** (carry forward):
+- Phase-2 zero-state for XP/Streak/Mission/League will become live in P4-02/P4-03/P4-06/P4-07.
+- Dashboard performance — Redis cache per `(studentId, subjectId)` in P6-06.
+- File overlap with P2-05 (PR #66): both add methods to `ILearningRepository.cs`. Additive merge — git auto-handles when both PRs land.
+
+### P2-05 — Open and complete a lesson ✅ Merged via PR #66
+
+Wave-9 story 1, now on main. Added `Lesson.Explanation` + `Lesson.Visual` columns (migration `AddLessonContent`), `GET /api/Learning/Lessons/{id}` `[Authorize]` route with `QuickCheck` field, `LearningSeeder.SeedDemoLessonContentAsync` for 4 Grade-1 root lessons (Math/Science/Arabic/English) with hand-authored content + 1 MCQ each, full e2e completion-flow integration test, `ex.Message` leak fix in `GetLessonQueryHandler` (Q12). See `docs/briefs/P2-05.md` + `docs/plans/P2-05.md` for the full record.
+
+**P2-05 carry-forwards still open** (filed on main but not fixed in #66):
 - Remove the old `GET /api/Learning/Lessons?id={id}` back-compat action in a future hardening wave.
-- Fix `ex.Message` leak in `GetSubjectLessonsQueryHandler` (sibling to the one fixed here) → P6-06.
+- Fix `ex.Message` leak in `GetSubjectLessonsQueryHandler` (sibling to the one fixed) → P6-06.
 - `QuizQuestion` has no `Order` column — "first by `Id ASC`" is the quick-check selection rule. Fragile when P3-05 generates multiple questions per lesson.
-- `StartAttempt` lock-enforcement gap (R3) → hardening wave.
-- `LessonsController` does NOT have a `[Route(...)]` attribute today — verify the routes resolve correctly under whatever convention is in play (current convention works).
+- `StartAttempt` lock-enforcement gap (R3) — `StartAttempt` does NOT currently enforce `LearningPathEngine`-derived `Locked` state → hardening wave.
+- `LessonsController` does NOT have a `[Route(...)]` attribute today — current convention works; verify if routing convention changes.
+
+### P2-03 — Navigate the skill tree ⏸️ Pending start
+
+Wave-9 story 3. BE-1 + BE-2 may already be substantially done by P2-04 (engine surfaces `MissingPrerequisites`); BE-3 (boss-node flag) needs a `Lesson` schema change. P2-05's migration is now on main, so the schema base is clear — P2-03 can start whenever the lead is ready.
 
 ## Wave 8 — Phase 2 backend ✅ Fully merged
 
-Both stories merged to main (P2-04 via PR #63, P2-07 via PR #64). Original Wave 8 brief preserved below for historical reference.
+All Wave-8 work is merged to main (P2-04 via PR #63, P2-07 via PR #64). Original Wave-8 briefs preserved below for historical reference.
 
 ### P2-07 — Instant answer feedback ✅ Batches 1–5 complete, PR pending
 

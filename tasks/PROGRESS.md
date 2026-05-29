@@ -12,7 +12,8 @@
 - `—` — no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
-- **Wave 9:** P2-05-BE (open + complete a lesson — `AddLessonContent` migration adding `Explanation`/`Visual` to `Lesson` + rewritten `GetLessonQueryHandler` with `QuickCheck` + new `[HttpGet("{id:int}")] [Authorize]` route + `LearningSeeder.SeedDemoLessonContentAsync` for 4 Grade-1 root lessons + 11 integration tests including full e2e Start→Submit→Complete + `ex.Message` leak fix) — ready for PR on feat/P2-05-open-and-complete-lesson
+- **Wave 9:** P2-09-BE (home dashboard — `GET /api/Learning/Dashboard` + `GetDashboardQuery` + `DashboardController` + 4 DTOs + new `GetMostRecentActivitySubjectIdAsync` repo method + 11 integration tests; Phase-2 zero-state for XP/Streak/Mission/League) — on PR #67 (pending merge)
+- **Wave 9:** P2-05-BE (open + complete a lesson — `AddLessonContent` migration adding `Explanation`/`Visual` to `Lesson` + rewritten `GetLessonQueryHandler` with `QuickCheck` + new `[HttpGet("{id:int}")] [Authorize]` route + `LearningSeeder.SeedDemoLessonContentAsync` for 4 Grade-1 root lessons + 11 integration tests including full e2e Start→Submit→Complete + `ex.Message` leak fix) — merged via PR #66
 - **Wave 8:** P2-07-BE (instant answer feedback — `AnswerComparator` per-type correctness + `AnswerSubmittedIntegrationEvent`/`LessonCompletedIntegrationEvent` published via direct `IPublisher.Publish` Option B + new `GetLessonSkillIdAsync` repo method + 12 unit tests + 13 integration tests + security audit PASS) — merged via PR #64
 - **Wave 8:** P2-04-BE (Learning Path Engine — static `LearningPathEngine` + 5 repo methods + JWT-aware wiring into `GetSubjectSkillTree`/`GetSubjectLessons` + `[Authorize]` on 2 endpoints + 12 unit tests + 12 integration tests + 7 P2-02 regression updates) — merged via PR #63
 - **Wave 7:** P2-02-BE Batch 1 + api-tester (browse subjects/lessons/skill-tree queries + 12 integration tests) — Batch 1 merged via PR #57; api-tester merged via PR #62
@@ -60,11 +61,11 @@
 | P2-02 | Browse subjects and lessons | 🟡 | 🔲 |
 | P2-03 | Navigate the skill tree | 🔲 | 🔲 |
 | P2-04 | Unlock lessons by prerequisite/mastery | 🟡 | — |
-| P2-05 | Open and complete a lesson | 🟡 | 🔲 |
+| P2-05 | Open and complete a lesson | ✅ | 🔲 |
 | P2-06 | Take a quiz (4 question types) | ✅ | 🔲 |
 | P2-07 | Get instant answer feedback | 🟡 | 🔲 |
 | P2-08 | Record granular per-question answers | 🟡 | — |
-| P2-09 | See the home dashboard | 🔲 | 🔲 |
+| P2-09 | See the home dashboard | 🟡 | 🔲 |
 | P2-10 | Seed demo subjects & skill trees | ✅ | — |
 | P2-11 | Author the skill dependency graph (relational, hand-authored) | 🟡 | — |
 | P2-12 | Account settings APIs (Parent module + Notifications prefs + Identity security) | ✅ | 🔲 |
