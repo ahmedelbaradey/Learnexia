@@ -1596,4 +1596,58 @@
   <data name="SubjectNotFound" xml:space="preserve">
     <value>المادة الدراسية المطلوبة غير موجودة.</value>
   </data>
+  <data name="AttemptNotFound" xml:space="preserve">
+    <value>محاولة الاختبار المطلوبة غير موجودة.</value>
+  </data>
+  <data name="AttemptNotInProgress" xml:space="preserve">
+    <value>المحاولة ليست قيد التقدم ولا يمكنها قبول إجابات جديدة.</value>
+  </data>
+  <data name="QuestionNotFound" xml:space="preserve">
+    <value>السؤال المطلوب غير موجود في درس هذه المحاولة.</value>
+  </data>
+  <data name="QuestionAlreadyAnswered" xml:space="preserve">
+    <value>تمت الإجابة على هذا السؤال بالفعل في المحاولة الحالية.</value>
+  </data>
+  <data name="AnswerSubmittedSuccessfully" xml:space="preserve">
+    <value>تم تسليم الإجابة بنجاح.</value>
+  </data>
+  <data name="AttemptIdMustBePositive" xml:space="preserve">
+    <value>معرّف المحاولة يجب أن يكون عدداً صحيحاً موجباً.</value>
+  </data>
+  <data name="QuestionIdMustBePositive" xml:space="preserve">
+    <value>معرّف السؤال يجب أن يكون عدداً صحيحاً موجباً.</value>
+  </data>
+  <data name="AnswerPayloadRequired" xml:space="preserve">
+    <value>محتوى الإجابة مطلوب.</value>
+  </data>
+  <data name="TimeSpentSecondsMustBeNonNegative" xml:space="preserve">
+    <value>يجب أن يكون الوقت المستغرق صفراً أو أكثر.</value>
+  </data>
+  <data name="TimeSpentSecondsExceedsMaximum" xml:space="preserve">
+    <value>لا يمكن أن يتجاوز الوقت المستغرق لكل سؤال 3600 ثانية (ساعة واحدة).</value>
+  </data>
+  <data name="AttemptCompletedSuccessfully" xml:space="preserve">
+    <value>تم إكمال محاولة الاختبار بنجاح.</value>
+  </data>
+  <data name="AttemptAbandonedSuccessfully" xml:space="preserve">
+    <value>تم التخلي عن محاولة الاختبار بنجاح.</value>
+  </data>
+  <data name="AttemptAlreadyAbandoned" xml:space="preserve">
+    <value>تم التخلي عن هذه المحاولة بالفعل ولا يمكن إكمالها.</value>
+  </data>
+  <data name="AttemptAlreadyCompleted" xml:space="preserve">
+    <value>تم إكمال هذه المحاولة بالفعل ولا يمكن التخلي عنها.</value>
+  </data>
+  <data name="StudentIdMustBePositive" xml:space="preserve">
+    <value>معرّف الطالب يجب أن يكون عدداً صحيحاً موجباً.</value>
+  </data>
+  <data name="SkillIdMustBePositive" xml:space="preserve">
+    <value>معرّف المهارة يجب أن يكون عدداً صحيحاً موجباً.</value>
+  </data>
+  <data name="AttemptsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد المحاولات بنجاح.</value>
+  </data>
+  <data name="SkillStatsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد إحصائيات المهارة بنجاح.</value>
+  </data>
 </root>

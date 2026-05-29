@@ -757,5 +757,29 @@
         public const string MatchingOptionsMustBePaired = "MatchingOptionsMustBePaired";
         public const string FillInBlankCorrectAnswerRequired = "FillInBlankCorrectAnswerRequired";
 
+        // Quiz/Assessment — submit answer (P2-08 BE-1).
+        public const string AttemptNotFound = "AttemptNotFound";
+        public const string AttemptNotInProgress = "AttemptNotInProgress";
+        public const string QuestionNotFound = "QuestionNotFound";
+        public const string QuestionAlreadyAnswered = "QuestionAlreadyAnswered";
+        public const string AnswerSubmittedSuccessfully = "AnswerSubmittedSuccessfully";
+        public const string AttemptIdMustBePositive = "AttemptIdMustBePositive";
+        public const string QuestionIdMustBePositive = "QuestionIdMustBePositive";
+        public const string AnswerPayloadRequired = "AnswerPayloadRequired";
+        public const string TimeSpentSecondsMustBeNonNegative = "TimeSpentSecondsMustBeNonNegative";
+        public const string TimeSpentSecondsExceedsMaximum = "TimeSpentSecondsExceedsMaximum";
+
+        // Quiz/Assessment — complete/abandon attempt (P2-08 BE-2 + BE-3).
+        public const string AttemptCompletedSuccessfully = "AttemptCompletedSuccessfully";
+        public const string AttemptAbandonedSuccessfully = "AttemptAbandonedSuccessfully";
+        public const string AttemptAlreadyAbandoned = "AttemptAlreadyAbandoned";
+        public const string AttemptAlreadyCompleted = "AttemptAlreadyCompleted";
+
+        // Quiz/Assessment — read queries (P2-08 BE-4).
+        public const string StudentIdMustBePositive = "StudentIdMustBePositive";
+        public const string SkillIdMustBePositive = "SkillIdMustBePositive";
+        public const string AttemptsRetrievedSuccessfully = "AttemptsRetrievedSuccessfully";
+        public const string SkillStatsRetrievedSuccessfully = "SkillStatsRetrievedSuccessfully";
+
     }
 }
