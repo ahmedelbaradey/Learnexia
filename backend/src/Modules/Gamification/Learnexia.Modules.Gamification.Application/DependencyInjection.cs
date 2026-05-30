@@ -1,14 +1,18 @@
 using System.Reflection;
 using FluentValidation;
+using Learnexia.Modules.Gamification.Application.Configuration;
 using Learnexia.Shared.Kernel.Behaviors;
 using MediatR;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Learnexia.Modules.Gamification.Application;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddGamificationApplication(this IServiceCollection services)
+    public static IServiceCollection AddGamificationApplication(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
         var assembly = Assembly.GetExecutingAssembly();
         // MediatR is registered ONCE at the Host across ALL module Application assemblies (ADR 0002 §4)
@@ -18,6 +22,10 @@ public static class DependencyInjection
         services.AddValidatorsFromAssembly(assembly);
         services.AddAutoMapper(cfg => cfg.AddMaps(assembly));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+
+        // Streak options (P4-03-B2-8): bound from appsettings.json:Gamification:Streak.
+        services.Configure<StreakOptions>(configuration.GetSection(StreakOptions.SectionName));
+
         return services;
     }
 }

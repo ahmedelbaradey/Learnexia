@@ -1,6 +1,6 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-30 (**Wave 10 — two parallel tracks: (BE) Phase 3 Gamification kickoff — P4-02-BE open as PR #73; (FE) Phase 2 FE start — P2-12-FE merged via PR #69. Phase 2 backend feature-complete**).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-30 (**Wave 10 — two parallel tracks: (BE) Phase 3 Gamification Batches 1-2 complete (P4-02 PR #73, P4-03 ready for PR); (FE) Phase 2 FE start — P2-12-FE merged via PR #69. Phase 2 backend feature-complete**).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
 
 ## Wave 10 (BE track) — Phase 3 Gamification kickoff
@@ -59,6 +59,47 @@
 
 **Pre-existing test failures (tracked separately, not regressions):**
 - P2-02 TC-1, P2-04 TC-09, P2-09 C11 — logged; not blocking Phase 3.
+
+### P4-03 — Maintain a daily streak ✅ Batches 1–7 complete, merged via PR (pending)
+
+**What's on branch `feat/P4-03-daily-streak` (ready for PR):**
+
+- **Schema:** `AddStreakColumns` migration adds `CurrentStreak`, `LongestStreak`, `LastActivityDateUtc : DateOnly?` to `gamification.StudentXpProfiles`. Migration timestamp `20260530091454`.
+- **`ISystemClock` abstraction** in `Shared.Kernel/Abstractions/` (universal date-testability primitive; UTC impl `SystemClock` in Gamification.Infrastructure).
+- **`StreakDayCalculator`** pure static service with `Transition` enum (`NoOp | FirstActivity | Advance | Reset | OutOfOrder`) — total function, no exceptions. `Classify(lastActivityDate, today)` is the single source of truth for the day-boundary decision.
+- **Domain mutation methods** on `StudentXpProfile`: `AdvanceStreak(today)` + `ResetStreakAndStart(today)`. Streak setters narrowed to `internal set`.
+- **`AdvanceStreakCommand` + handler** — handler calls `StreakDayCalculator.Classify` and switches on `Transition`. Idempotency via `HasXpAwardAsync` pre-check + narrowed `DbUpdateException when constraintName` catch (F2 fix).
+- **`LessonCompletedIntegrationEventHandler` extended** — `AwardLessonCompletedXpCommand` and `AdvanceStreakCommand` each sent in their own try/catch (failure isolation per ADR 0002 §3).
+- **StreakBonus +30 XP** rides via existing `XpAward` ledger with `Reason = XpReason.StreakBonus = 4`. Same `UX_XpAwards_OriginEventId_Reason` unique index covers idempotency.
+- **`StreakSweepJob`** Hangfire recurring at `5 0 * * *` UTC (00:05 daily UTC). Bulk `ExecuteUpdateAsync` resets `CurrentStreak=0` for `LastActivityDateUtc < today - 1 day`. Registered Transient, uses `IServiceScopeFactory.CreateAsyncScope` for fresh DbContext per run. **Does NOT raise `StreakBrokenDomainEvent`** — bypass of EF change tracker is intentional, deferred to P4-09.
+- **`IStudentStreakQuery` cross-module seam** in `Shared.Contracts/Gamification/` (mirrors P4-02's `IStudentXpQuery`). Returns `StudentStreakSnapshot(CurrentStreak, LongestStreak, LastActivityDateUtc)` — no StudentId field (F8 cleanup applied from start).
+- **Learning dashboard wiring**: `GetDashboardQueryHandler` injects `IStudentStreakQuery`, dashboard `Streak` field now real. Brand-new students still see `Streak=0` via null mapping.
+- **`StreakOptions` config** (`Gamification:Streak` in appsettings) with `TimeZoneId="UTC"` + `DailyJobCron="5 0 * * *"`. TZ-aware calculator means future per-user TZ is a config swap.
+
+**Test results:**
+- `StreakDayCalculatorTests`: 13/13 unit tests
+- `P4_03_DailyStreak_Tests`: 15/15 integration tests (advance / reset / same-day no-op / idempotency / sweep job / dashboard wiring / cross-student isolation / AnswerSubmitted no-advance)
+- `P4_02_EarnXpAndLevelUp_Tests` regression: 16/16 (T3/T4 updated to include +30 StreakBonus in expected totals — correct behavioral change)
+- Full integration suite: **532/535** (3 pre-existing failures unchanged)
+
+**Lead-approved decisions:**
+- **D1:** Day-boundary = **UTC** (Identity has no TimeZoneId yet; defer per-user TZ).
+- **D2:** Activity trigger = **lesson completion only** (`AnswerSubmittedIntegrationEvent` is XP-only, doesn't touch streak).
+- **D3:** StreakBonus +30 XP fires **every day the streak advances** (including day-1 brand-new and post-reset day-1).
+- **D4:** Sweep job **ships in P4-03** — handler is source of truth (lazy advance/reset on next activity); Hangfire is defensive observability.
+
+**Security follow-ups applied in this PR:**
+- **F1 (Medium):** `AdvanceStreakCommandHandler` now calls `StreakDayCalculator.Classify` and switches on `Transition` (was inline if/else duplicating the calculator's logic). Calculator is now total via new `OutOfOrder` transition.
+- **F2 (Medium):** `catch (DbUpdateException)` narrowed via `when` clause checking constraint name — unrelated DB errors no longer silently swallowed.
+- **F3 (Low):** `StreakSweepJob` registration changed Scoped → Transient.
+
+**Not in scope (future stories):**
+- Streak freeze / weekly challenges → P4-11
+- `StreakBrokenDomainEvent` consumer + sweep-time domain dispatch → P4-09
+- Redis hot-path read model → P4-10
+- Per-user TZ (requires Identity schema change) → no story yet
+- Hearts (P4-04), Badges (P4-05), Missions (P4-06), Leagues (P4-07)
+- Gamification UI motion (P4-08), Re-engagement notifications (P4-09)
 
 ## Wave 10 (FE track) — Phase 2 FE start (P2-12-FE, merged via PR #69)
 

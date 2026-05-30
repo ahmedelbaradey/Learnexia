@@ -16,6 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Testcontainers.PostgreSql;
 using Xunit;
+using Learnexia.Shared.Kernel.Abstractions;
 
 namespace Learnexia.IntegrationTests;
 
@@ -70,6 +71,12 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
                     new() { Endpoint = "*", Limit = int.MaxValue, Period = "1m" }
                 };
             });
+
+            // P4-03 clock seam: replace the production SystemClock singleton with our TestClock so
+            // StreakDayCalculator.Today and StreakSweepJob use the settable clock in tests. The
+            // TestClock defaults to DateTime.UtcNow unless a test calls factory.TestClock.SetUtcNow().
+            services.RemoveAll<ISystemClock>();
+            services.AddSingleton<ISystemClock>(TestClock);
         });
 
         builder.ConfigureAppConfiguration((_, config) =>
@@ -127,6 +134,27 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
     {
         await _postgres.StopAsync();
     }
+
+    // -------------------------------------------------------------------------
+    // Test clock seam (P4-03): lets streak and sweep tests control "today".
+    // Access via factory.TestClock and set TestClock.UtcNow before the action.
+    // The TestClock replaces ISystemClock (Singleton) in ConfigureServices so
+    // StreakDayCalculator.Today + StreakSweepJob both read from it.
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Settable <see cref="ISystemClock"/> for deterministic streak/sweep tests.
+    /// Defaults to the real <see cref="DateTime.UtcNow"/> so tests that don't touch it are unaffected.
+    /// </summary>
+    public sealed class TestSystemClock : ISystemClock
+    {
+        private DateTime? _override;
+        public void SetUtcNow(DateTime utcNow) => _override = utcNow;
+        public void Reset() => _override = null;
+        public DateTime UtcNow => _override ?? DateTime.UtcNow;
+    }
+
+    public TestSystemClock TestClock { get; } = new TestSystemClock();
 
     // -------------------------------------------------------------------------
     // Helpers

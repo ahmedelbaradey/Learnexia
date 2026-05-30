@@ -12,7 +12,8 @@
 - `—` — no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
-- **Wave 10:** P4-02-BE (earn XP and level up — Phase 3 Gamification kickoff: woke up Gamification module + new `gamification` schema (`StudentXpProfiles` + `XpAwards`) + `LevelCurve` static service + 2 integration-event handlers consuming `AnswerSubmitted`/`LessonCompleted` + `GET /api/Gamification/Profile` + `IStudentXpQuery` cross-module seam wired into Learning dashboard + UoW assembly-filter guard added to all 4 module behaviors + 32 unit tests + 16 integration tests; SRS XP values 10/50/20 + table-based level curve approved by lead) — open as PR #73 on feat/P4-02-earn-xp-level-up
+- **Wave 10:** P4-03-BE (maintain a daily streak — Phase 3 Gamification Batch 2: AddStreakColumns migration on StudentXpProfiles (CurrentStreak/LongestStreak/LastActivityDateUtc DateOnly) + ISystemClock abstraction seam in Shared.Kernel + StreakDayCalculator pure static (Classify with NoOp/FirstActivity/Advance/Reset/OutOfOrder Transition) + AdvanceStreakCommand + handler (calls Classify, switches on Transition; idempotency via XpAward unique index + narrowed DbUpdateException when constraint-name catch) + LessonCompletedIntegrationEventHandler extended (XP + streak in separate try/catch per ADR 0002) + StreakSweepJob Hangfire @ 5 0 * * * UTC bulk ExecuteUpdateAsync (registered Transient, scoped DbContext per run) + IStudentStreakQuery cross-module seam wired into Learning dashboard + 13 unit tests + 15 integration tests; SRS-recommended UTC day-boundary + lesson-completion-only trigger + +30 every-advance-day bonus + handler-as-source-of-truth + defensive sweep) — open as PR on feat/P4-03-daily-streak
+- **Wave 10:** P4-02-BE (earn XP and level up — Phase 3 Gamification kickoff: woke up Gamification module + new `gamification` schema (`StudentXpProfiles` + `XpAwards`) + `LevelCurve` static service + 2 integration-event handlers consuming `AnswerSubmitted`/`LessonCompleted` + `GET /api/Gamification/Profile` + `IStudentXpQuery` cross-module seam wired into Learning dashboard + UoW assembly-filter guard added to all 4 module behaviors + 32 unit tests + 16 integration tests; SRS XP values 10/50/20 + table-based level curve approved by lead) — merged via PR #73
 - **Wave 10:** P2-12-FE (parent settings tabs — Notifications / Linked children / Security / Plan & billing; 4 panels + Switch primitive + 8 hooks + api-client regen + i18n keys) — committed
 - **Wave 9:** P2-03-BE (skill-tree node-state — most BE-1/BE-2 shipped earlier via P2-04; this story adds the `Lesson.IsBoss` flag + `AddLessonIsBoss` migration + `LearningSeeder.MarkBossLessonsAsync` (one boss per Unit) + `IsBoss` on `LessonInUnitDto`/`SingleLessonResponse`/`ContinueTargetDto` + 5 integration tests; Wave 9 closer, Phase 2 BE feature-complete) — ready for PR on feat/P2-03-navigate-skill-tree
 - **Wave 9:** P2-09-BE (home dashboard — `GET /api/Learning/Dashboard` + `GetDashboardQuery` + `DashboardController` + 4 DTOs + new `GetMostRecentActivitySubjectIdAsync` repo method + 11 integration tests; Phase-2 zero-state for XP/Streak/Mission/League) — merged via PR #67
@@ -78,7 +79,7 @@
 |---|---|:--:|
 | P4-01 | Emit learning domain events | ✅ |
 | P4-02 | Earn XP and level up | 🟡 |
-| P4-03 | Maintain a daily streak | 🔲 |
+| P4-03 | Maintain a daily streak | ✅ |
 | P4-04 | Lose hearts and enter Practice Mode | 🔲 |
 | P4-05 | Earn badges | 🔲 |
 | P4-06 | Complete daily/weekly missions | 🔲 |

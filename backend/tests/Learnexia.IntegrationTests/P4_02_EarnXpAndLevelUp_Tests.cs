@@ -507,18 +507,18 @@ public sealed class P4_02_EarnXpAndLevelUp_Tests : IAsyncLifetime
         complResp.StatusCode.Should().Be(HttpStatusCode.OK,
             "CompleteAttempt must succeed; body: {0}", complBody);
 
-        // Assert total XP = 4*10 + 50 + 20 = 110.
+        // Assert total XP = 4*10 + 50 + 20 + 30 (StreakBonus, P4-03) = 140.
         var (profResp, profRoot, profBody) = await GetProfileAsync(token);
         profResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", profBody);
         TryProp(profRoot, "data", out var profData).Should().BeTrue("body: {0}", profBody);
         TryProp(profData, "totalXp", out var totalXp).Should().BeTrue("body: {0}", profBody);
-        totalXp.GetInt32().Should().Be(110,
-            "4 correct answers (40 XP) + LessonCompleted (50 XP) + QuizPass (20 XP) = 110 XP; body: {0}", profBody);
+        totalXp.GetInt32().Should().Be(140,
+            "4 correct answers (40 XP) + LessonCompleted (50 XP) + QuizPass (20 XP) + StreakBonus (30 XP, P4-03) = 140 XP; body: {0}", profBody);
 
-        // Assert 6 XpAward rows.
+        // Assert 7 XpAward rows (P4-03 adds 1 StreakBonus row).
         var awards = await GetXpAwardsForStudentAsync(studentId);
-        awards.Should().HaveCount(6,
-            "4 CorrectAnswer awards + 1 LessonCompleted award + 1 QuizPass award = 6 rows");
+        awards.Should().HaveCount(7,
+            "4 CorrectAnswer + 1 LessonCompleted + 1 QuizPass + 1 StreakBonus (P4-03) = 7 rows");
 
         var correctAwards = awards.Where(a => a.Reason == XpReason.CorrectAnswer).ToList();
         correctAwards.Should().HaveCount(4, "4 correct answers → 4 CorrectAnswer award rows");
@@ -534,6 +534,12 @@ public sealed class P4_02_EarnXpAndLevelUp_Tests : IAsyncLifetime
             "exactly 1 QuizPass (QuizCompleted) award row for 100% accuracy (≥70% threshold)");
         awards.Single(a => a.Reason == XpReason.QuizCompleted).XpAmount
             .Should().Be(20, "QuizPass awards +20 XP");
+
+        // P4-03: StreakBonus is now awarded on the first lesson completion (first-ever activity = day-1 streak).
+        awards.Should().ContainSingle(a => a.Reason == XpReason.StreakBonus,
+            "exactly 1 StreakBonus award row (first-ever activity advances streak to 1, P4-03)");
+        awards.Single(a => a.Reason == XpReason.StreakBonus).XpAmount
+            .Should().Be(30, "StreakBonus awards +30 XP");
     }
 
     // =========================================================================
@@ -576,18 +582,18 @@ public sealed class P4_02_EarnXpAndLevelUp_Tests : IAsyncLifetime
         var (complResp, _, complBody) = await CompleteAttemptAsync(attemptId, token);
         complResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", complBody);
 
-        // Assert total XP = 2*10 + 50 = 70.
+        // Assert total XP = 2*10 + 50 + 30 (StreakBonus, P4-03) = 100.
         var (profResp, profRoot, profBody) = await GetProfileAsync(token);
         profResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", profBody);
         TryProp(profRoot, "data", out var profData).Should().BeTrue("body: {0}", profBody);
         TryProp(profData, "totalXp", out var totalXp).Should().BeTrue("body: {0}", profBody);
-        totalXp.GetInt32().Should().Be(70,
-            "2 correct (20 XP) + LessonCompleted (50 XP) = 70 XP; body: {0}", profBody);
+        totalXp.GetInt32().Should().Be(100,
+            "2 correct (20 XP) + LessonCompleted (50 XP) + StreakBonus (30 XP, P4-03) = 100 XP; body: {0}", profBody);
 
-        // Assert 3 XpAward rows (2 CorrectAnswer + 1 LessonCompleted, NO QuizCompleted).
+        // Assert 4 XpAward rows (P4-03 adds 1 StreakBonus row): 2 CorrectAnswer + 1 LessonCompleted + 1 StreakBonus.
         var awards = await GetXpAwardsForStudentAsync(studentId);
-        awards.Should().HaveCount(3,
-            "2 CorrectAnswer + 1 LessonCompleted = 3 rows; 50% accuracy is below 70% QuizPass threshold");
+        awards.Should().HaveCount(4,
+            "2 CorrectAnswer + 1 LessonCompleted + 1 StreakBonus (P4-03) = 4 rows; 50% accuracy is below 70% QuizPass threshold");
 
         awards.Count(a => a.Reason == XpReason.CorrectAnswer).Should().Be(2,
             "2 correct answers → 2 CorrectAnswer award rows");
@@ -595,6 +601,12 @@ public sealed class P4_02_EarnXpAndLevelUp_Tests : IAsyncLifetime
             "1 LessonCompleted award row (unconditional on completion)");
         awards.Any(a => a.Reason == XpReason.QuizCompleted).Should().BeFalse(
             "50% accuracy is below the 70% QuizPass threshold — no QuizPass award");
+
+        // P4-03: StreakBonus is now awarded on the first lesson completion (first-ever activity = day-1 streak).
+        awards.Should().ContainSingle(a => a.Reason == XpReason.StreakBonus,
+            "exactly 1 StreakBonus award row (first-ever activity advances streak to 1, P4-03)");
+        awards.Single(a => a.Reason == XpReason.StreakBonus).XpAmount
+            .Should().Be(30, "StreakBonus awards +30 XP");
     }
 
     // =========================================================================
