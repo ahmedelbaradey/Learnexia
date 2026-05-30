@@ -25,6 +25,10 @@ import {
   useUpdateProfile,
   type AccountProfileResponse,
 } from '@learnexia/api-client';
+import { LinkedChildrenPanel } from './settings/LinkedChildrenPanel';
+import { NotificationsPanel } from './settings/NotificationsPanel';
+import { PlanPanel } from './settings/PlanPanel';
+import { SecurityPanel } from './settings/SecurityPanel';
 import { COUNTRIES, LOCALES, type CountryCode, type Locale } from '@learnexia/shared';
 import { Avatar, Button, Select, Tabs, TextField, type TabItem } from '@learnexia/ui';
 import { Stack, Text } from '@tamagui/core';
@@ -164,18 +168,31 @@ export function SettingsWeb() {
         </Stack>
 
         <Stack flex={1} minWidth={320}>
-          {activeTab === SETTINGS_TAB.Profile ? (
-            <ProfilePanel
-              direction={direction}
-              rowDir={rowDir}
-              profile={profile.data}
-              isLoading={profile.isPending}
-            />
-          ) : activeTab === SETTINGS_TAB.Language ? (
-            <LanguagePanel direction={direction} rowDir={rowDir} locale={locale} />
-          ) : (
-            <ComingSoonPanel direction={direction} />
-          )}
+          {(() => {
+            switch (activeTab) {
+              case SETTINGS_TAB.Profile:
+                return (
+                  <ProfilePanel
+                    direction={direction}
+                    rowDir={rowDir}
+                    profile={profile.data}
+                    isLoading={profile.isPending}
+                  />
+                );
+              case SETTINGS_TAB.Language:
+                return <LanguagePanel direction={direction} rowDir={rowDir} locale={locale} />;
+              case SETTINGS_TAB.Notifications:
+                return <NotificationsPanel direction={direction} rowDir={rowDir} />;
+              case SETTINGS_TAB.LinkedChildren:
+                return <LinkedChildrenPanel direction={direction} rowDir={rowDir} />;
+              case SETTINGS_TAB.Security:
+                return <SecurityPanel direction={direction} rowDir={rowDir} />;
+              case SETTINGS_TAB.Billing:
+                return <PlanPanel direction={direction} rowDir={rowDir} />;
+              default:
+                return <ComingSoonPanel direction={direction} />;
+            }
+          })()}
         </Stack>
       </Stack>
     </Stack>

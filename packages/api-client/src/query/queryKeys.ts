@@ -18,10 +18,19 @@ export const queryKeys = {
   account: {
     all: ['account'] as const,
     profile: () => [...queryKeys.account.all, 'profile'] as const,
+    // P2-12 — Security tab
+    sessions: () => [...queryKeys.account.all, 'sessions'] as const,
+    // P2-12 — Plan & billing tab
+    plan: () => [...queryKeys.account.all, 'plan'] as const,
   },
   family: {
     all: ['family'] as const,
     myChildren: () => [...queryKeys.family.all, 'my-children'] as const,
+  },
+  // P2-12 — Notifications tab
+  notifications: {
+    all: ['notifications'] as const,
+    preferences: () => [...queryKeys.notifications.all, 'preferences'] as const,
   },
   users: {
     all: ['users'] as const,

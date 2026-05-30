@@ -12,6 +12,7 @@
 - `—` — no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
+- **Wave 10:** P2-12-FE (parent settings tabs — Notifications / Linked children / Security / Plan & billing; 4 panels + Switch primitive + 8 hooks + api-client regen + i18n keys) — committed
 - **Wave 9:** P2-03-BE (skill-tree node-state — most BE-1/BE-2 shipped earlier via P2-04; this story adds the `Lesson.IsBoss` flag + `AddLessonIsBoss` migration + `LearningSeeder.MarkBossLessonsAsync` (one boss per Unit) + `IsBoss` on `LessonInUnitDto`/`SingleLessonResponse`/`ContinueTargetDto` + 5 integration tests; Wave 9 closer, Phase 2 BE feature-complete) — ready for PR on feat/P2-03-navigate-skill-tree
 - **Wave 9:** P2-09-BE (home dashboard — `GET /api/Learning/Dashboard` + `GetDashboardQuery` + `DashboardController` + 4 DTOs + new `GetMostRecentActivitySubjectIdAsync` repo method + 11 integration tests; Phase-2 zero-state for XP/Streak/Mission/League) — merged via PR #67
 - **Wave 9:** P2-05-BE (open + complete a lesson — `AddLessonContent` migration adding `Explanation`/`Visual` to `Lesson` + rewritten `GetLessonQueryHandler` with `QuickCheck` + new `[HttpGet("{id:int}")] [Authorize]` route + `LearningSeeder.SeedDemoLessonContentAsync` for 4 Grade-1 root lessons + 11 integration tests including full e2e Start→Submit→Complete + `ex.Message` leak fix) — merged via PR #66
@@ -69,7 +70,7 @@
 | P2-09 | See the home dashboard | ✅ | 🔲 |
 | P2-10 | Seed demo subjects & skill trees | ✅ | — |
 | P2-11 | Author the skill dependency graph (relational, hand-authored) | 🟡 | — |
-| P2-12 | Account settings APIs (Parent module + Notifications prefs + Identity security) | ✅ | 🔲 |
+| P2-12 | Account settings APIs (Parent module + Notifications prefs + Identity security) | ✅ | ✅ |
 
 ## Phase 3 — Gamification *(story IDs `P4-xx`)*
 | Story | Title | Status |

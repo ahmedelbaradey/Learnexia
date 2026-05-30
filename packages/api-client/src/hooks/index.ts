@@ -33,3 +33,13 @@ export { useMyChildren } from './useMyChildren';
 // P1-12 account-profile hooks.
 export { useMyProfile } from './useMyProfile';
 export { useUpdateProfile } from './useUpdateProfile';
+
+// P2-12 settings-tab hooks.
+export { useNotificationPreferences } from './useNotificationPreferences';
+export { useUpdateNotificationPreferences } from './useUpdateNotificationPreferences';
+export { useUpdateChild } from './useUpdateChild';
+export { useUnlinkChild } from './useUnlinkChild';
+export { useChangePassword } from './useChangePassword';
+export { useMySessions } from './useMySessions';
+export { useSignOutOtherSessions } from './useSignOutOtherSessions';
+export { useMyPlan } from './useMyPlan';
