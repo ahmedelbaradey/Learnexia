@@ -30,4 +30,8 @@ public class MeResponse
     public string? Country { get; set; }
 
     public string? AvatarUrl { get; set; }
+
+    // Numeric grade (1–6) for Student accounts; null for parents, admins, and any user whose
+    // grade was never set. The FE uses this to scope the Subjects browse list (P2-02-FE).
+    public int? Grade { get; set; }
 }

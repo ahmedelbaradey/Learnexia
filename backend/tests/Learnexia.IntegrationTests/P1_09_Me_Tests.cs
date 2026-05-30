@@ -154,7 +154,7 @@ public sealed class P1_09_Me_Tests : IAsyncLifetime
         GetMeAsync(string bearerToken)
         => SendAsync(_client, HttpMethod.Get, MeUrl, null, bearerToken);
 
-    private async Task AddChildAsync(string parentToken, string childEmail)
+    private async Task AddChildAsync(string parentToken, string childEmail, int grade = 3)
     {
         var (resp, _, body) = await SendAsync(_client, HttpMethod.Post, AddChildUrl,
             new
@@ -162,7 +162,7 @@ public sealed class P1_09_Me_Tests : IAsyncLifetime
                 FullName = "Test Child P109",
                 Email = childEmail,
                 Password = "Child@Pass1",
-                Grade = 3,
+                Grade = grade,
                 Language = "ar",
                 Country = "EG"
             },
@@ -534,6 +534,61 @@ public sealed class P1_09_Me_Tests : IAsyncLifetime
 
         adminId.GetInt32().Should().NotBe(parentId,
             "the superadmin's Me must return the admin's id, not the parent's id; body: {0}", adminBody);
+    }
+
+    // ===========================================================================
+    // W11-Batch-0a: Grade field — child has the grade set at Add-Child; parent has null grade
+    // ===========================================================================
+
+    [Fact(DisplayName = "W11-Grade: child Me.grade equals the grade set at Add-Child")]
+    public async Task Grade_ChildMe_ReturnsGradeSetAtAddChild()
+    {
+        // Arrange: parent registers, then adds a child with Grade = 3
+        var (parentToken, _) = await RegisterParentAsync(UniqueEmail("gradeParent"));
+        var childEmail = UniqueEmail("gradeChild");
+        const int expectedGrade = 3;
+
+        await AddChildAsync(parentToken, childEmail, grade: expectedGrade);
+
+        // Act: sign in as the child and call /Me
+        var (childResp, childRoot, childBody) = await SendAsync(
+            _client, HttpMethod.Post, SignInUrl,
+            new { UserName = childEmail, Password = "Child@Pass1" });
+        childResp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "child sign-in must succeed; body: {0}", childBody);
+        TryProp(childRoot, "data", out var signInData).Should().BeTrue("body: {0}", childBody);
+        TryProp(signInData, "accessToken", out var childTokenProp).Should().BeTrue("body: {0}", childBody);
+        var childToken = childTokenProp.GetString()!;
+
+        var (meResp, meRoot, meBody) = await GetMeAsync(childToken);
+
+        // Assert
+        meResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", meBody);
+        TryProp(meRoot, "data", out var meData).Should().BeTrue("body: {0}", meBody);
+        TryProp(meData, "grade", out var gradeProp).Should().BeTrue(
+            "Me response for a child must contain the 'grade' field; body: {0}", meBody);
+        gradeProp.ValueKind.Should().Be(JsonValueKind.Number,
+            "grade must be a number for a student; body: {0}", meBody);
+        gradeProp.GetInt32().Should().Be(expectedGrade,
+            "grade must equal the value set at Add-Child ({0}); body: {1}", expectedGrade, meBody);
+    }
+
+    [Fact(DisplayName = "W11-Grade: parent Me.grade is null (parents have no grade)")]
+    public async Task Grade_ParentMe_IsNull()
+    {
+        // Arrange: register a plain parent (no grade assigned at registration)
+        var (parentToken, _) = await RegisterParentAsync(UniqueEmail("gradeParentNull"));
+
+        // Act
+        var (resp, root, body) = await GetMeAsync(parentToken);
+
+        // Assert
+        resp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", body);
+        TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);
+        TryProp(data, "grade", out var gradeProp).Should().BeTrue(
+            "Me response must contain the 'grade' field even when null; body: {0}", body);
+        gradeProp.ValueKind.Should().Be(JsonValueKind.Null,
+            "grade must be null for a parent (no grade is assigned at registration); body: {0}", body);
     }
 
     // ===========================================================================

@@ -78,6 +78,9 @@ public class GetMeQueryHandler : BaseResponseHandler, IQueryHandler<GetMeQuery, 
                 AvatarUrl = string.IsNullOrWhiteSpace(user.AvatarUrl)
                     ? null
                     : await _storageService.GetPreviewUrlAsync(user.AvatarUrl, _config.DefaultBucket, _config.DefaultUrlExpiryMinutes, cancellationToken),
+                // Grade is set by the parent at Add-Child time (students) and is null for parents/admins.
+                // The FE (P2-02-FE) reads this to scope the Subjects browse list without a separate call.
+                Grade = user.Grade,
             };
 
             return Success(response);

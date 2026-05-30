@@ -34,7 +34,7 @@ export { useMyChildren } from './useMyChildren';
 export { useMyProfile } from './useMyProfile';
 export { useUpdateProfile } from './useUpdateProfile';
 
-// P2-12 settings-tab hooks.
+// W10 / P2-12 settings-tab hooks.
 export { useNotificationPreferences } from './useNotificationPreferences';
 export { useUpdateNotificationPreferences } from './useUpdateNotificationPreferences';
 export { useUpdateChild } from './useUpdateChild';
@@ -43,3 +43,21 @@ export { useChangePassword } from './useChangePassword';
 export { useMySessions } from './useMySessions';
 export { useSignOutOtherSessions } from './useSignOutOtherSessions';
 export { useMyPlan } from './useMyPlan';
+
+// W11 learning hooks (P2-02-FE + P2-03-FE).
+export { useSubjectsForGrade } from './useSubjectsForGrade';
+export { useSubjectLessons } from './useSubjectLessons';
+export { useSubjectSkillTree } from './useSubjectSkillTree';
+
+// --- W13 dashboard hook (P2-09-FE) ---
+export { useDashboard } from './useDashboard';
+
+// --- W12 quiz hooks (P2-05-FE + P2-06-FE + P2-07-FE) ---
+export { useLesson } from './useLesson';
+export { useStartAttempt } from './useStartAttempt';
+export type { StartAttemptInput } from './useStartAttempt';
+export { useSubmitAnswer } from './useSubmitAnswer';
+export { useCompleteAttempt } from './useCompleteAttempt';
+export type { CompleteAttemptInput } from './useCompleteAttempt';
+export { useAbandonAttempt } from './useAbandonAttempt';
+export type { AbandonAttemptInput } from './useAbandonAttempt';

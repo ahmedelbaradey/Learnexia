@@ -1,13 +1,124 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-30 (**Wave 10 — two parallel tracks: (BE) Phase 3 Gamification Batches 1-2 complete (P4-02 PR #73, P4-03 ready for PR); (FE) Phase 2 FE start — P2-12-FE merged via PR #69. Phase 2 backend feature-complete**).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-30 (**Two parallel tracks merged + one BE PR open: (BE) Phase 3 Gamification — P4-02 merged via PR #73, P4-03 open as PR #75; (FE) Phase 2 student-app — W10 P2-12-FE merged via PR #69, W11 P2-02+P2-03-FE merged via PR #70, W12 P2-05/06/07-FE merged via PR #72, W13 P2-09-FE merged via PR #74. Phase 2 backend feature-complete; Phase 2 FE feature-complete**).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
 
-## Wave 10 (BE track) — Phase 3 Gamification kickoff
+## Wave 13 — Phase 2 FE closer: student home dashboard (P2-09-FE, ready for PR)
 
-### P4-02 — Earn XP and level up ✅ Batches 1–7 complete, ready for PR
+**Branch:** `feat/W13-P2-09-FE` (based off `feat/W12-P2-05-06-07-FE`, PR pending).
 
-**What's on branch `feat/P4-02-earn-xp-level-up` (ready for PR):**
+**What's on the branch:**
+- **BE annotations** — `DashboardController.Get` + `StudentsController.studentAttempts(studentId)` got `[ProducesResponseType(typeof(BaseResponse<TDto>), 200)]`. Behavior unchanged; NSwag now emits typed clients.
+- **api-client regenerated** — `dashboard()` returns `DashboardDtoBaseResponse`; `attempts(studentId)` returns `AttemptListItemDtoListBaseResponse`. New type re-exports: `DashboardDto`, `ContinueTargetDto`, `DailyMissionDto`, `LeaguePreviewDto`.
+- **1 new `@learnexia/api-client` hook**: `useDashboard()` — single endpoint, BE composes Continue/streak/XP/etc. server-side (we don't compose client-side).
+- **3 new `@learnexia/ui` primitives**:
+  - `DashboardHeader` — greeting + grade caption + stats strip (Hearts/StreakFlame/XPBar). `childName` is informational-only (optional); `greetingText` is the rendered string the caller composes.
+  - `ContinueCard` — tap-to-resume; renders subject icon + lesson title + chevron CTA; logical `end={14}` boss badge; hidden when `continue=null`.
+  - `MissionBanner` — built but **never rendered in Phase 2** (`dashboardQuery.data.dailyMission` is always `null`; Phase 4 wires it).
+- **`SubjectsListSection`** extracted from W11 `(child)/index.tsx` into `apps/student-app/app/(child)/_components/SubjectsListSection.tsx` (W11 logic intact: defensive 4-subject filter, shimmer/error/empty, RTL). Helper moved to `(child)/_components/subjects.ts`.
+- **`apps/student-app/app/(child)/index.tsx`** rewritten as dashboard composition: TopBar → DashboardHeader → ContinueCard (conditional) → SubjectsListSection. Hearts fixed `3` (TODO P4-04); streak/XP default `0` (TODO P4-02/03). Loading state composes `meQuery.isLoading || dashboardQuery.isLoading` for both header AND subjects section.
+- **i18n** — expanded `child.home.*` namespace with 18 new EN+AR keys (greeting, gradeCaption, continueTitle, continueCta, yourSubjects, welcomeEmpty, errorRetry, statsA11y, etc.). No fork — extends existing namespace.
+- **Reviewer FAIL → fixes applied** — 3 blockers cleared: dropped dead required `childName` from `DashboardHeader` (now optional), replaced ContinueCard physical `right`/`left` with logical `end={14}`, added Wave 13 section to HANDOFF (this).
+
+**Key decisions:**
+- **Single dashboard endpoint, no client-side composition.** BE resolves Continue (most-recent-attempt → engine → first Available lesson → cross-subject fallback). Avoids client-side races + duplicate heuristics.
+- **All Phase-4 features stub-only** (hearts decrement / streak increment / XP / mission / league) — display surfaces, no endpoint calls, TODO comments with story IDs.
+- **`MissionBanner` built but not rendered** — Phase 4 will mount it when BE returns non-null `dailyMission`.
+- **`SubjectsListSection`** is a new local component (not promoted to `@learnexia/ui`) since only one consumer.
+
+**Non-blocking follow-ups** (chore PR / next wave):
+- `ContinueCard` could swap `Pressable` → Tamagui `Stack` w/ `hoverStyle`/`pressStyle` for web hover lift (mirroring `LessonCard` pattern).
+- Stats strip `accessibilityRole="summary"` should be `"group"` via `Platform.OS === 'web' ?` gate (W12 carry-forward).
+- Dashboard mount fade-in (240ms `opacity 0→1`, reduced-motion gated) per design spec §5.
+- Append boss suffix to `continueA11y` when `continueTarget.isBoss`.
+- Consolidate `SubjectKey` type (duplicated in `SubjectRow` + `ContinueCard`).
+- `useDashboard` invalidation seam on `LessonCompletedIntegrationEvent` will be wired in P4-02 wave when XP/streak/hearts go live.
+
+---
+
+## Wave 12 — Phase 2 FE lesson + quiz + feedback (P2-05/06/07-FE, ready for PR)
+
+**Branch:** `feat/W12-P2-05-06-07-FE` (based off `feat/W11-P2-02-P2-03-FE`, PR pending).
+
+**What's on the branch:**
+- **BE annotations** — `LessonsController` + `QuizzesController` got `[ProducesResponseType(typeof(BaseResponse<TDto>), 200)]` on the 5 student-facing endpoints (single-lesson GET, Attempt, Answers, Complete, Abandon). Behavior unchanged; NSwag now emits typed clients (was `Promise<void>`).
+- **api-client regenerated** — new typed methods `lessonsGET(id)`, `attempt(lessonId)`, `answers(attemptId,body)`, `complete(attemptId)`, `abandon(attemptId)`. New types: `SingleLessonResponse`, `StartAttemptResponse`, `SubmitAnswerCommand`, `SubmitAnswerResponse`, `AttemptSummaryDto`, `QuestionType` enum.
+- **5 new `@learnexia/api-client` hooks**: `useLesson(lessonId)`, `useStartAttempt()`, `useSubmitAnswer(attemptId)`, `useCompleteAttempt()`, `useAbandonAttempt()`. Extended `queryKeys.learning.lesson(id)` + `learning.dashboard()` (forward-compat for W13).
+- **8 new `@learnexia/ui` primitives**: `QuestionCard`, `MCQOption`, `TrueFalseChoice`, `FillInBlank`, `MatchingPanel` (stub — BE has no Matching seed), `AnswerFeedbackStrip` (alert + live region), `AttemptSummaryCard`, `ProgressDots` (progressbar role).
+- **Lesson Player** at `apps/student-app/app/(child)/lessons/[lessonId].tsx` — single route, 3-stage state machine (`intro → quiz → summary`):
+  - **Intro**: `useLesson(lessonId)`, hearts widget (fixed 3 — Wave 3 wires decrement), Start CTA.
+  - **Quiz**: `useStartAttempt` on Start; one question at a time via plain `switch(questionType)` (NOT Strategy); locked-after-submit; correct → 800ms auto-advance, incorrect → "Next" CTA.
+  - **Summary**: `useCompleteAttempt` on last advance; `AttemptSummaryCard` with score/accuracy/duration + "+10 XP" stub (TODO P4-02 — no XP endpoint). "Back to subject" navigates to `/(child)/subjects/{?subjectId}`; "Try again" re-fires `useStartAttempt`.
+  - Abandon called fire-and-forget on unmount mid-quiz (idempotent).
+  - Hint button visible-disabled with "Hint coming in v2" helper (TODO P3-05 — no hint endpoint).
+- **Navigation seam** — `apps/student-app/app/(child)/subjects/[subjectId]/index.tsx` now passes `?subjectId=` on lesson tap-Available so Summary can route back cleanly.
+- **i18n** — added 37 EN+AR keys under `child.lessons.intro.*`, `child.quiz.*`, `child.feedback.*`, `child.summary.*`, `child.lessons.a11y.*`. Deleted obsolete `child.lessons.stub.*`.
+- **Reviewer PASS** → `docs/briefs/W12-P2-05-06-07-FE-review.md`. 0 blockers. Polish applied inline: removed dead constants/variables (nit-1, nit-2), added `maxWidth=720` + centering to all 3 stages (should-fix #2). Carry-forward: reduced-motion gate (should-fix #1) and a11y region/group roles (nits 3+4 — RN's `AccessibilityRole` union doesn't include those web ARIA values; defer to a web-only polish PR).
+
+**Key decisions:**
+- **Switch-on-questionType, not Strategy** — plain JSX switch in render. Adheres to rule #8.
+- **Single-route view-state machine** over multi-route (cleaner back-stack; spec recommended).
+- **Hearts/XP/Hint slots are display-only** — Wave 3 (Gamification) and Wave 4 (AI Tutor) own the real wiring.
+- **MatchingPanel = stub** because BE has zero Matching questions seeded (P2-08 brief).
+- **Abandon = fire-and-forget mutation** (BE is idempotent on terminal).
+
+**Non-blocking follow-ups** (chore PR):
+- Wire `AccessibilityInfo.isReduceMotionEnabled()` into `AnswerFeedbackStrip` translate + lesson screen 1200ms timer (currently always 800ms).
+- `AttemptSummaryCard` + `QuestionCard` web ARIA roles (`region`/`group`) need a web-only Platform.OS gate or a custom `aria-*` prop bypass since RN's TS union rejects them.
+- Replace `xpStub` "+10 XP" when Wave 3 XP service lands.
+- Implement real Matching renderer when BE seeds Matching questions.
+- Confetti / mascot illustration on Summary (deferred to W14 polish).
+- Markdown-rendering in question stem (currently plain text).
+
+---
+
+## Wave 11 — Phase 2 FE student-facing browse (P2-02-FE + P2-03-FE, ready for PR)
+
+**Branch:** `feat/W11-P2-02-P2-03-FE` (off main, PR pending).
+
+**What's on the branch:**
+- **BE `MeResponse.Grade : int?`** — Identity `MeResponse` DTO + `GetMeQueryHandler` populate `Grade` from `User.Grade` (already on the entity). 2 new integration tests in `P1_09_Me_Tests.cs` (child Grade returned, parent null). All 18 P1-09 tests green.
+- **BE `[ProducesResponseType]` on `SubjectsController`** — the 3 student-facing endpoints (`ForGrade`, `{id}/Lessons`, `{id}/SkillTree`) gained `[ProducesResponseType(typeof(BaseResponse<List<...Dto>>), 200)]` so NSwag emits typed clients (previously `Promise<void>`). Pattern matches Identity's `UsersController.Me`.
+- **api-client regenerated** — new methods `forGrade`, `lessons`, `skillTree`; new types `StudentSubjectDto`, `UnitWithLessonsDto`, `LessonInUnitDto`, `ConceptNodeDto`, `SkillNodeDto`, `MissingPrerequisiteDto`, `NodeState` enum (int: 0=Locked, 1=Available, 2=Completed); `MeResponse.grade?: number`.
+- **3 new `@learnexia/api-client` hooks**: `useSubjectsForGrade(grade)`, `useSubjectLessons(subjectId)`, `useSubjectSkillTree(subjectId)`. New `queryKeys.learning.*` namespace.
+- **4 new `@learnexia/ui` primitives** + 1 Badge variant:
+  - `SubjectRow` — student-facing subject card.
+  - `LessonCard` — vertical card; state pill via `NodeState`; logical `end={14}` lock + Boss badges.
+  - `SkillTreeNode` — 72px disc + state visuals + `hasMissingPrereqs` + `isBoss` overlay.
+  - `Badge variant="boss"` — 👑 Boss pill.
+  - `SegmentedTabs` — horizontal segmented control (sibling of `Tabs`).
+- **New tokens** in `colors.ts`: per-subject tint + 3 glow shadow tokens.
+- **i18n** — EN + AR under `child.subjects.*`, `child.skillTree.*`, `child.lessons.stub.*`.
+- **Student-app screens:**
+  - `(child)/index.tsx` — Subjects list (grade from `useMe`, defensive 4-subject filter, shimmer skeletons gated on `meQuery.isLoading || subjectsQuery.isLoading` so no empty-state flash).
+  - `(child)/subjects/[subjectId]/_layout.tsx` + `index.tsx` (Lessons) + `tree.tsx` (Skill Tree) — `SegmentedTabs` shell + Unit-grouped lessons + concept-grouped skill nodes. In-memory boss derivation by joining lessons + tree on `skillId`.
+  - `(child)/lessons/[lessonId].tsx` — STUB (Wave 12 replaces).
+  - `(child)/_components/WhyLockedSheet.tsx` — inline (NOT in `@learnexia/ui`); web modal / native bottom sheet; tokens via `colors` import.
+- **Reviewer PASS after fixes** → `docs/briefs/W11-P2-02-P2-03-FE-review.md`. Fixed: 3 raw-hex/physical-position blockers (`WhyLockedSheet` CTA + overlay + card bg via tokens; `LessonCard` `end={14}` logical pos), should-fix Me loading flash, should-fix RTL chevron in lesson stub.
+
+**Key decisions:**
+- `SegmentedTabs` shipped as a **sibling primitive** to `Tabs` (not a refactor) per design spec "smaller diff" guidance.
+- Boss derivation is **in-memory** (not BE join) — both queries already fire on the screen.
+- Lesson screen is a stub until Wave 12.
+- No `api-tester`/`security-auditor` (no new BE endpoints with new risk surface; covered by existing P1-09 + P2-02 BE tests).
+
+**Non-blocking follow-ups** (chore PR):
+- `SkillTreeNode` still has 3 raw-hex disc colors + shadow strings (tokens added but not yet wired). Wire next pass.
+- `WhyLockedSheet.lockedItemName` prop declared but not rendered.
+- Native pulse animation on `SkillTreeNode` Available state = web-only CSS keyframe (no native pulse this wave).
+- `useSubjectsForGrade` empty-state copy when BE returns zero subjects for a valid grade (currently identical to no-grade state).
+
+---
+
+## Wave 10 — Phase 2 FE start (P2-12-FE, merged via PR #69)
+
+---
+
+## Wave 10 (BE track) — Phase 3 Gamification kickoff (P4-02-BE, merged via PR #73)
+
+### P4-02 — Earn XP and level up ✅ Merged via PR #73
+
+**What's on main (PR #73):**
 
 **Phase 3 Gamification kickoff — waking up the Gamification module skeleton and landing the first real business feature: XP engine + ledger + level computation.**
 
@@ -60,7 +171,7 @@
 **Pre-existing test failures (tracked separately, not regressions):**
 - P2-02 TC-1, P2-04 TC-09, P2-09 C11 — logged; not blocking Phase 3.
 
-### P4-03 — Maintain a daily streak ✅ Batches 1–7 complete, merged via PR (pending)
+### P4-03 — Maintain a daily streak ✅ Batches 1–7 complete, open as PR #75
 
 **What's on branch `feat/P4-03-daily-streak` (ready for PR):**
 
@@ -101,11 +212,13 @@
 - Hearts (P4-04), Badges (P4-05), Missions (P4-06), Leagues (P4-07)
 - Gamification UI motion (P4-08), Re-engagement notifications (P4-09)
 
+---
+
 ## Wave 10 (FE track) — Phase 2 FE start (P2-12-FE, merged via PR #69)
 
 ### P2-12-FE — Parent Settings tabs (Notifications / Linked children / Security / Plan)
 
-**Branch:** `feat/W10-P2-12-FE-settings-tabs` (off main, PR pending).
+**Branch:** `feat/W10-P2-12-FE-settings-tabs` — merged to main.
 
 **What's on the branch:**
 - **`Switch` primitive** added to `@learnexia/ui` — 44×24 track + 20px thumb, on=`$primary` w/ `$primaryGlow`, off=`$cardSoft`, thumb=`$fg1`, 160ms `cubic-bezier(0.16,1,0.3,1)`, logical-RTL thumb via `insetInlineStart`, `accessibilityRole="switch"` + `accessibilityState={checked,disabled}`, 44px min touch target, focus outline 2px `$primary`. Mirrors `CheckboxField` prop shape.

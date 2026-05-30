@@ -80,6 +80,55 @@ export type { GradientBoxProps } from './components/GradientBox';
 export { Tabs } from './components/Tabs';
 export type { TabsProps, TabItem, TabValue } from './components/Tabs';
 
-// --- P2-12 settings tab primitives --------------------------------------
+// --- W10 / P2-12 settings tab primitives --------------------------------
 export { Switch } from './components/Switch';
 export type { SwitchProps } from './components/Switch';
+
+// --- W11 learning primitives (P2-02-FE + P2-03-FE) ----------------------
+export { SubjectRow } from './components/SubjectRow';
+export type { SubjectRowProps, SubjectKey } from './components/SubjectRow';
+
+export { LessonCard } from './components/LessonCard';
+export type { LessonCardProps, LessonState } from './components/LessonCard';
+
+export { SkillTreeNode } from './components/SkillTreeNode';
+export type { SkillTreeNodeProps, SkillNodeState } from './components/SkillTreeNode';
+
+export { SegmentedTabs } from './components/SegmentedTabs';
+export type { SegmentedTabsProps, SegmentItem, SegmentValue } from './components/SegmentedTabs';
+
+// --- W12 quiz primitives (P2-05-FE + P2-06-FE + P2-07-FE) ---
+export { QuestionCard } from './components/QuestionCard';
+export type { QuestionCardProps } from './components/QuestionCard';
+
+export { MCQOption } from './components/MCQOption';
+export type { MCQOptionProps, MCQOptionState } from './components/MCQOption';
+
+export { TrueFalseChoice } from './components/TrueFalseChoice';
+export type { TrueFalseChoiceProps } from './components/TrueFalseChoice';
+
+export { FillInBlank } from './components/FillInBlank';
+export type { FillInBlankProps, FillInBlankState } from './components/FillInBlank';
+
+export { MatchingPanel } from './components/MatchingPanel';
+export type { MatchingPanelProps } from './components/MatchingPanel';
+
+export { AnswerFeedbackStrip } from './components/AnswerFeedbackStrip';
+export type { AnswerFeedbackStripProps } from './components/AnswerFeedbackStrip';
+
+export { AttemptSummaryCard } from './components/AttemptSummaryCard';
+export type { AttemptSummaryCardProps } from './components/AttemptSummaryCard';
+
+export { ProgressDots } from './components/ProgressDots';
+export type { ProgressDotsProps } from './components/ProgressDots';
+
+// --- W13 home dashboard primitives (P2-09-FE) ---
+export { DashboardHeader } from './components/DashboardHeader';
+export type { DashboardHeaderProps } from './components/DashboardHeader';
+
+export { ContinueCard } from './components/ContinueCard';
+export type { ContinueCardProps } from './components/ContinueCard';
+export type { SubjectKey as ContinueCardSubjectKey } from './components/ContinueCard';
+
+export { MissionBanner } from './components/MissionBanner';
+export type { MissionBannerProps } from './components/MissionBanner';
