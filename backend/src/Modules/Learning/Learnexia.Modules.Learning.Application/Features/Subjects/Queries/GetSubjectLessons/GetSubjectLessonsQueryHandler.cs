@@ -118,6 +118,7 @@ public class GetSubjectLessonsQueryHandler
                                                  SequenceOrder        = l.SequenceOrder,
                                                  IsLocked             = l.IsLocked,
                                                  SkillId              = l.SkillId,
+                                                 IsBoss               = l.IsBoss,
                                                  State                = NodeState.Available,
                                                  MissingPrerequisites = Array.Empty<MissingPrerequisiteDto>()
                                              };
@@ -131,6 +132,7 @@ public class GetSubjectLessonsQueryHandler
                                              SequenceOrder        = l.SequenceOrder,
                                              IsLocked             = l.IsLocked,
                                              SkillId              = l.SkillId,
+                                             IsBoss               = l.IsBoss,
                                              State                = unlockState.State,
                                              MissingPrerequisites = unlockState.MissingPrerequisites
                                          };
@@ -161,6 +163,7 @@ public class GetSubjectLessonsQueryHandler
                                          SequenceOrder = l.SequenceOrder,
                                          IsLocked      = l.IsLocked,
                                          SkillId       = l.SkillId,
+                                         IsBoss        = l.IsBoss,
                                          State         = l.IsLocked ? NodeState.Locked : NodeState.Available,
                                          MissingPrerequisites = Array.Empty<MissingPrerequisiteDto>()
                                      }).ToList()

@@ -16,5 +16,6 @@ public record ContinueTargetDto(
     string LessonName,
     int? SkillId,
     string? SkillName,
-    NodeState NodeState       // always NodeState.Available
+    NodeState NodeState,       // always NodeState.Available
+    bool IsBoss                // true when the Continue target is a boss lesson (P2-03)
 );

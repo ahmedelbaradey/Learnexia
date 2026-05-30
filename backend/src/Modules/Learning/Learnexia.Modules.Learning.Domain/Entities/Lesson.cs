@@ -31,4 +31,16 @@ public class Lesson : AggregateRoot
     /// Max 1024 characters. NULL-allowed.
     /// </summary>
     public string? Visual { get; set; }
+
+    /// <summary>
+    /// Marks this lesson as the end-of-unit boss / challenge (FR-LR-2 "boss" node category).
+    /// Curriculum-authored — derived in <see cref="LearningSeeder"/> as the highest-SequenceOrder
+    /// lesson per <see cref="Unit"/>. Orthogonal to <see cref="NodeState"/>: a boss can be
+    /// Locked, Available, or Completed.
+    /// Default: false. Phase 7 admin tooling (P7-03) will allow manual override.
+    /// Seeded as true for the highest-SequenceOrder lesson in each Unit (per P2-03).
+    /// FE renders a boss icon / different CTA when true; orthogonal to NodeState
+    /// (a boss lesson can still be Locked, Available, or Completed).
+    /// </summary>
+    public bool IsBoss { get; set; }
 }

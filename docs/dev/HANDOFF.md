@@ -1,9 +1,38 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-30 (**Wave 6 merged; Wave 7 fully merged; Wave 8 fully merged via #63 + #64; Wave 9 in progress — P2-05 merged via PR #66; P2-09 on PR #67; P2-03 pending. Side-track: P1 security follow-up audit merged via PR #65; remaining P1 follow-ups + G2 token-revocation routed to P6-06**).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-30 (**Wave 6 merged; Wave 7 fully merged; Wave 8 fully merged via #63 + #64; Wave 9: P2-05 merged #66, P2-09 merged #67, P2-03 ready for PR. **Phase 2 backend is now feature-complete.** Side-track: P1 security follow-up audit merged via PR #65; remaining P1 follow-ups + G2 token-revocation routed to P6-06**).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
 
 ## Wave 9 — Phase 2 backend (in progress)
+
+### P2-03 — Navigate the skill tree (boss flag) ✅ Batches 1–3 complete, PR pending
+
+**What's on branch `feat/P2-03-navigate-skill-tree` (ready for PR):**
+- **Schema** ✅ `Lesson.IsBoss : bool` non-nullable with `defaultValue: false`. Migration `20260529231653_AddLessonIsBoss` in `learning` schema (single `AddColumn` op).
+- **`LearningSeeder.MarkBossLessonsAsync`** ✅ called from `SeedAsync` after `SeedDemoLessonContentAsync`. Marks the highest-`SequenceOrder` lesson in each Unit as boss (one per Unit). Idempotent + drift-prevention (also resets `IsBoss = false` if the wrong lesson got marked). 66 boss rows / 162 total / 66 units (one per unit, confirmed in tests).
+- **3 DTOs extended** ✅ `LessonInUnitDto.IsBoss` (`{ get; init; }`), `SingleLessonResponse.IsBoss` (`{ get; set; }` matching parent `LessonDto` style), `ContinueTargetDto.IsBoss` (positional record member, appended last).
+- **2 handlers populate `IsBoss`** ✅ `GetSubjectLessonsQueryHandler` in 3 construction sites (authenticated happy path, authenticated defensive fallback, anonymous fallback); `GetDashboardQueryHandler` in `TryResolveContinueForSubjectAsync`.
+- **AutoMapper profiles** — verified: `Lesson → SingleLessonResponse` flows `IsBoss` by-name (no `ForMember` needed); `LessonInUnitDto` and `ContinueTargetDto` are hand-projected.
+- **Integration tests** ✅ `backend/tests/Learnexia.IntegrationTests/P2_03_SkillTreeBoss_Tests.cs` — 5 cases: seeder boss-count == unit-count, Math G1 Lessons endpoint per-unit boss invariant, boss-lesson GET returns `isBoss=true`, non-boss GET returns `false`, seeder idempotency. **One-line edit** to `P2_09_HomeDashboard_Tests.cs` C03 — asserts `continue.isBoss == false` for the fresh-student case (root lesson is `SequenceOrder=1`, not a boss). **Full Wave-7+8+9 regression: 87/87 PASS** (~3m, Testcontainers Postgres pg16).
+
+**Key decisions:**
+- **Q1 → `Lesson.IsBoss` (NOT `Skill.IsBoss`)** — story says "end-of-unit challenge"; units own lessons.
+- **Q4 — `NodeState` enum unchanged** at Locked/Available/Completed. Boss is orthogonal (a boss lesson can be in any of the 3 states).
+- **Q3 — Seeder rule:** highest-`SequenceOrder` lesson per Unit.
+- **Q8 — Skip `HasBoss` rollup** on `SkillNodeDto`/`ConceptNodeDto` — FE renders boss on lesson cards only.
+- **Q11 — No admin endpoint** to toggle `IsBoss` — deferred to P7-03.
+
+**Status check — BE-1 and BE-2 were ALREADY DONE via P2-04:**
+- **BE-1 (per-node state):** `LearningPathEngine` + `GetSubjectSkillTreeQueryHandler` already compute `Locked/Available/Completed` for skills + concepts + lessons. 95% shipped via PR #63.
+- **BE-2 (why-locked):** `SkillNodeDto.MissingPrerequisites` and `LessonInUnitDto.MissingPrerequisites` already populated. 100% shipped.
+- **BE-3 (boss flag):** the only real new work in P2-03. Done.
+
+**Non-blocking follow-ups** (carry forward):
+- P7-03 admin curriculum console: provide UI to toggle `IsBoss` per lesson.
+
+### P2-09 — Home dashboard ✅ Merged via PR #67
+
+Wave-9 story 2, now on main. `GET /api/Learning/Dashboard` returns XP/Streak (= 0 in Phase 2; TODOs for P4-02/P4-03), Mission/League (= null; TODOs for P4-06/P4-07), and `Continue` (most-recent-Attempt subject → engine → first Available lesson; cross-subject fallback Math/Science/Arabic/English; default Grade-1 Math when no attempts). New repo method `GetMostRecentActivitySubjectIdAsync`. 11 integration tests including cross-student IDOR isolation. See `docs/briefs/P2-09.md` + `docs/plans/P2-09.md`.
 
 ### P2-09 — Home dashboard ✅ Batches 1–2 complete, PR pending
 

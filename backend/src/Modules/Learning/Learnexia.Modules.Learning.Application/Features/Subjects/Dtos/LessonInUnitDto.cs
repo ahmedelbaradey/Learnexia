@@ -26,6 +26,12 @@ public record LessonInUnitDto
     public NodeState State { get; init; }
 
     /// <summary>
+    /// True when this lesson is the end-of-unit boss/challenge (FR-LR-2 fourth node category).
+    /// Orthogonal to <see cref="State"/> — a boss can be Locked, Available, or Completed.
+    /// </summary>
+    public bool IsBoss { get; init; }
+
+    /// <summary>
     /// Explains unmet prerequisites when <see cref="State"/> is <see cref="NodeState.Locked"/>.
     /// Empty when Available or Completed.
     /// </summary>
