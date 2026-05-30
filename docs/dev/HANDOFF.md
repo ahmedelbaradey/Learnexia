@@ -1,7 +1,66 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-30 (**Wave 6 merged; Wave 7 fully merged; Wave 8 fully merged via #63 + #64; Wave 9: P2-05 merged #66, P2-09 merged #67, P2-03 ready for PR. **Phase 2 backend is now feature-complete.** Side-track: P1 security follow-up audit merged via PR #65; remaining P1 follow-ups + G2 token-revocation routed to P6-06**).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-30 (**Wave 10 — Phase 3 Gamification kickoff (P4-02) committed and ready for PR; Phase 2 backend feature-complete. P2-03 also ready for PR (Wave 9 closer)**).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
+
+## Wave 10 — Phase 3 Gamification kickoff
+
+### P4-02 — Earn XP and level up ✅ Batches 1–7 complete, ready for PR
+
+**What's on branch `feat/P4-02-earn-xp-level-up` (ready for PR):**
+
+**Phase 3 Gamification kickoff — waking up the Gamification module skeleton and landing the first real business feature: XP engine + ledger + level computation.**
+
+- **Module wake-up** ✅ Added 4 Gamification csproj (Domain/Application/Infrastructure/Api) to `Learnexia.Modular.sln` + `Modules\Gamification` solution folder. Added `using Learnexia.Modules.Gamification.Api` + `builder.Services.AddGamificationModule(builder.Configuration)` to `Program.cs`. Added Gamification's `AssemblyReference` to the cross-module MediatR scan in `AddCrossModuleMediatR()`.
+
+- **New `gamification` schema** ✅ `StudentXpProfiles` table: `Id (int)`, `StudentId (int, unique)`, `XpTotal (int, default 0)`, `Level (int, default 1)`, `UpdatedAt (DateTime)` + FullAuditedEntity columns. `XpAwards` table (append-only ledger): `Id (int)`, `StudentId (int)`, `Amount (int)`, `Reason (XpReason enum, int)`, `OriginEventId (uuid)`, `OriginLessonId (int?, nullable)`, `OriginSkillId (int?, nullable)` + FullAuditedEntity columns. Migration `20260530042656_InitGamification`. **Idempotency at DB layer:** unique index `UX_XpAwards_OriginEventId_Reason` on `(OriginEventId, Reason)` — prevents double-award for duplicate event delivery.
+
+- **XP rules (lead-approved SRS examples)** ✅ `GamificationConstants.XpRewards`: `CorrectAnswer = 10`, `LessonCompleted = 50`, `QuizCompleted = 20` (stub — no quiz boundary yet), `StreakBonus = 30` (stub — P4-03 owns streak engine). Stored in static class at `Domain/Constants/GamificationConstants.cs`.
+
+- **Level curve (lead-approved table-based ramp)** ✅ `LevelCurve` pure static service at `Domain/Services/LevelCurve.cs`. Table: `[0, 100, 250, 500, 1000, 2000, 4000, 7000, 11000, 16000]` cumulative XP thresholds for L1–L10. L11+ formula: `10 + ((xp - 16000) / 5000)` (floor). 32 unit tests in `LevelCurveTests.cs`. Testable in isolation — no DB access.
+
+- **Integration-event handlers** ✅ `LessonCompletedIntegrationEventHandler` + `AnswerSubmittedIntegrationEventHandler` at `Application/IntegrationEventHandlers/`. Both subscribe to cross-module events from Learning (P2-07 producers) via `INotificationHandler<T>`. Each handler sends an internal `ICommand` via `IMediator` (Pattern A — runs through Gamification's `UnitOfWorkBehavior` for clean commit boundary and audit stamping). Idempotency: pre-check + catch on unique-constraint violation (AC4).
+
+- **New `GET /api/Gamification/Profile`** ✅ JWT-only endpoint (no studentId param; IDOR-proof by construction). Returns `StudentProfileDto { XpTotal: int, Level: int, XpToNextLevel: int }`. Fresh students (no `StudentXpProfile` row yet) see clean L1 + 0 XP, not 404.
+
+- **`IStudentXpQuery` cross-module read seam** ✅ Defined in `Shared.Contracts/Gamification/IStudentXpQuery.cs` (returns `StudentXpSnapshot? { XpTotal: int, Level: int }`). Implemented in `Gamification.Infrastructure/Queries/StudentXpQuery.cs` against `GamificationDbContext`. Learning's `GetDashboardQueryHandler` now injects `IStudentXpQuery` and reads real XP + Level instead of the P2-09 zero-state placeholders `(Xp: 0, Streak: 0)`. Brand-new students still see `(0, 1)` via null mapping. **New field:** `DashboardDto.Level : int = 1` added to positional record (appended last, maintains compat).
+
+- **Cross-module UoW assembly-filter guard (bug fix)** ✅ **Critical fix discovered during P4-02 implementation.** All 4 module `UnitOfWorkBehavior` implementations (Identity/Learning/Parent/Gamification) now early-return if the command's assembly isn't theirs. **Without this guard, nested `mediator.Send` across modules causes `BeginTransaction on already-in-transaction` failures.** This latent bug was never triggered before P4-02 because no cross-module command dispatch existed. Applied retroactively to Identity, Learning, and Parent modules in this PR.
+
+- **Security follow-ups (per security-auditor PASS)** ✅ Applied 3 findings from this PR's security audit:
+  - **F1 (Medium):** Row-lock strategy changed from `FOR UPDATE SKIP LOCKED` to `FOR UPDATE` (block-and-wait prevents lost-update race on `StudentXpProfile.XpTotal`).
+  - **F2 (Medium):** Removed child accuracy% from Info logs (child-privacy minimization).
+  - **F3 (Low):** Removed dead `CorrectAnswerCount` field from `AwardLessonCompletedXpCommand`.
+
+**Test results:**
+- LevelCurve unit tests: **32/32** ✅
+- P4-02 integration tests: **16/16** ✅ (T1 correct-answer award, T2 wrong-answer no-award, T3 100% lesson, T4 50% lesson, T5/T6 idempotency, T7/T8 level-up, T9 zero-state, T10 real values, T11 IDOR, T11b sibling-handler isolation, T12 dashboard real XP, T13 dashboard zero-state, envelope + auth sanity)
+- Full integration suite: **517/520** (only 3 pre-existing failures, same as `main`: P2-02 TC-1, P2-04 TC-09, P2-09 C11)
+
+**Key decisions locked (all lead-approved):**
+- **Q1:** NEW Gamification module — wake up the existing skeleton (approved to add to `.sln` + DI + MediatR).
+- **Q2:** `IStudentXpQuery` via `Shared.Contracts/Gamification/` — mirrors `IParentChildQuery` pattern. Learning injects it; future P4-10 swaps implementation for Redis without changing dashboard handler.
+- **Q3:** XP values from SRS FR-GM-1 examples: `+10/+50/+20/+30`; table-based level curve approved (L1–L10 via table, L11+ formula).
+- **Q4:** Ship `GET /api/Gamification/Profile` endpoint.
+- **Q5:** Pattern A — notification handler → `ICommand` → UoW (decoupled from producer's UoW).
+- **Q6:** Add `Level` to `DashboardDto` positional record.
+- **Q7:** `SELECT ... FOR UPDATE` row-lock on `StudentXpProfile` in command handler.
+- **Q3.bis:** `LessonCompleted` XP fires unconditionally on completion (regardless of correct-answer count).
+
+**New conventions to carry forward:**
+- **UoW assembly-filter guard is now mandatory** for all modules' `UnitOfWorkBehavior`. Future modules must early-return if the command assembly doesn't match theirs — prevents cross-module transaction interference.
+- **Cross-module event handler pattern:** send an `ICommand` via `IMediator` (Pattern A), not direct DbContext writes (decouples commits, enables audit stamping and domain-event dispatch).
+
+**Not in scope (next stories):**
+- Streak (P4-03), Hearts (P4-04), Badges (P4-05), Missions (P4-06), Leagues (P4-07).
+- XP bar UI animations / confetti (P4-08).
+- Redis hot-path read model (P4-10).
+- Frontend dashboard render of `Level` field (folded into P2-09-FE or separate FE story).
+
+**Pre-existing test failures (tracked separately, not regressions):**
+- P2-02 TC-1, P2-04 TC-09, P2-09 C11 — logged; not blocking Phase 3.
+
+---
 
 ## Wave 9 — Phase 2 backend (in progress)
 
