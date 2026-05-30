@@ -31,6 +31,7 @@ public static class MediatRExtensions
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Learning.Application.AssemblyReference>();
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Parent.Application.AssemblyReference>();
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Notifications.Application.AssemblyReference>();
+            cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Gamification.Application.AssemblyReference>();
 
             // Independent fan-out: every handler runs, per-handler failures are caught + logged
             // (ADR 0002 §4). Replaces MediatR's default throw-on-first-failure publisher.
