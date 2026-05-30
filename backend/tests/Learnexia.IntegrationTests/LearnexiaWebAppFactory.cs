@@ -1,4 +1,5 @@
 using Learnexia.Modules.Catalog.Infrastructure.Persistence;
+using Learnexia.Modules.Gamification.Infrastructure.Persistence;
 using Learnexia.Modules.Identity.Api;
 using Learnexia.Modules.Identity.Domain.Entities;
 using Learnexia.Modules.Identity.Infrastructure.Persistence;
@@ -54,6 +55,7 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
             ReplaceDbContext<NotificationsDbContext>(services, connectionString, "notifications");
             ReplaceDbContext<LearningDbContext>(services, connectionString, "learning");
             ReplaceDbContext<ParentDbContext>(services, connectionString, "parent");
+            ReplaceDbContext<GamificationDbContext>(services, connectionString, "gamification");
 
             // Testing-host only: neutralise the IP rate limiter so the combined integration suite
             // (~250+ requests in well under a minute) never trips the production 200 req/min cap and
@@ -103,6 +105,10 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
         // Parent: InitialParent migration creates the parent schema/tables (P2-12).
         var parentDb = sp.GetRequiredService<ParentDbContext>();
         await parentDb.Database.MigrateAsync();
+
+        // Gamification: InitGamification migration creates gamification schema/tables (P4-02).
+        var gamificationDb = sp.GetRequiredService<GamificationDbContext>();
+        await gamificationDb.Database.MigrateAsync();
 
         // Seed roles + superadmin (idempotent).
         await IdentityModule.SeedAsync(sp);
