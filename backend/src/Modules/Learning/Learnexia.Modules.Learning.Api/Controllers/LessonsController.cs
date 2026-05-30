@@ -2,9 +2,12 @@ using Learnexia.Modules.Learning.Api.Bases;
 using Learnexia.Modules.Learning.Application.Features.Lessons.Commands.Add;
 using Learnexia.Modules.Learning.Application.Features.Lessons.Commands.Delete;
 using Learnexia.Modules.Learning.Application.Features.Lessons.Commands.Edit;
+using Learnexia.Modules.Learning.Application.Features.Lessons.Dtos;
 using Learnexia.Modules.Learning.Application.Features.Lessons.Queries.Get;
 using Learnexia.Modules.Learning.Application.Features.Lessons.Queries.List;
+using Learnexia.Shared.Kernel.Responses;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Learnexia.Modules.Learning.Api.Controllers;
@@ -24,6 +27,7 @@ public class LessonsController : AppControllerBase
     /// </summary>
     [HttpGet("{id:int}")]
     [Authorize]
+    [ProducesResponseType(typeof(BaseResponse<SingleLessonResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByIdRoute(int id)
         => NewResult(await Mediator.Send(new GetLessonQuery { Id = id }));
 

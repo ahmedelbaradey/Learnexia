@@ -48,3 +48,13 @@ export { useMyPlan } from './useMyPlan';
 export { useSubjectsForGrade } from './useSubjectsForGrade';
 export { useSubjectLessons } from './useSubjectLessons';
 export { useSubjectSkillTree } from './useSubjectSkillTree';
+
+// --- W12 quiz hooks (P2-05-FE + P2-06-FE + P2-07-FE) ---
+export { useLesson } from './useLesson';
+export { useStartAttempt } from './useStartAttempt';
+export type { StartAttemptInput } from './useStartAttempt';
+export { useSubmitAnswer } from './useSubmitAnswer';
+export { useCompleteAttempt } from './useCompleteAttempt';
+export type { CompleteAttemptInput } from './useCompleteAttempt';
+export { useAbandonAttempt } from './useAbandonAttempt';
+export type { AbandonAttemptInput } from './useAbandonAttempt';

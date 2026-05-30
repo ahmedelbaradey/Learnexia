@@ -3,7 +3,10 @@ using Learnexia.Modules.Learning.Application.Features.Attempts.Commands.AbandonA
 using Learnexia.Modules.Learning.Application.Features.Attempts.Commands.CompleteAttempt;
 using Learnexia.Modules.Learning.Application.Features.Attempts.Commands.StartAttempt;
 using Learnexia.Modules.Learning.Application.Features.Attempts.Commands.SubmitAnswer;
+using Learnexia.Modules.Learning.Application.Features.Attempts.Dtos;
+using Learnexia.Shared.Kernel.Responses;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Learnexia.Modules.Learning.Api.Controllers;
@@ -23,6 +26,7 @@ public class QuizzesController : AppControllerBase
     /// <param name="lessonId">The lesson whose question set forms this quiz.</param>
     [HttpPost("{lessonId}/Attempt")]
     [Authorize(Roles = "Student")]
+    [ProducesResponseType(typeof(BaseResponse<StartAttemptResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> StartAttempt([FromRoute] int lessonId)
         => NewResult(await Mediator.Send(new StartAttemptCommand { LessonId = lessonId }));
 
@@ -35,6 +39,7 @@ public class QuizzesController : AppControllerBase
     /// <param name="command">The answer payload (QuestionId, AnswerPayload, TimeSpentSeconds, HintUsed).</param>
     [HttpPost("{attemptId}/Answers")]
     [Authorize(Roles = "Student")]
+    [ProducesResponseType(typeof(BaseResponse<SubmitAnswerResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> SubmitAnswer([FromRoute] int attemptId, [FromBody] SubmitAnswerCommand command)
     {
         command = command with { AttemptId = attemptId };
@@ -50,6 +55,7 @@ public class QuizzesController : AppControllerBase
     /// <param name="attemptId">The in-progress attempt to complete.</param>
     [HttpPost("{attemptId}/Complete")]
     [Authorize(Roles = "Student")]
+    [ProducesResponseType(typeof(BaseResponse<AttemptSummaryDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> CompleteAttempt([FromRoute] int attemptId)
         => NewResult(await Mediator.Send(new CompleteAttemptCommand { AttemptId = attemptId }));
 
@@ -61,6 +67,7 @@ public class QuizzesController : AppControllerBase
     /// <param name="attemptId">The in-progress attempt to abandon.</param>
     [HttpPost("{attemptId}/Abandon")]
     [Authorize(Roles = "Student")]
+    [ProducesResponseType(typeof(BaseResponse<AttemptSummaryDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> AbandonAttempt([FromRoute] int attemptId)
         => NewResult(await Mediator.Send(new AbandonAttemptCommand { AttemptId = attemptId }));
 }

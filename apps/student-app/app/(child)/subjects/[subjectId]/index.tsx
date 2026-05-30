@@ -271,7 +271,7 @@ export default function LessonsTab() {
                             onPress={() => {
                               if (lesson.lessonId) {
                                 router.push(
-                                  `/(child)/lessons/${lesson.lessonId}` as `/${string}`,
+                                  `/(child)/lessons/${lesson.lessonId}?subjectId=${subjectId}` as `/${string}`,
                                 );
                               }
                             }}

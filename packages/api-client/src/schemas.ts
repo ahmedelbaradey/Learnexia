@@ -20,6 +20,17 @@
  */
 
 export type {
+  // W12 quiz + lesson types
+  SingleLessonResponse,
+  SingleLessonResponseBaseResponse,
+  StartAttemptResponse,
+  StartAttemptResponseBaseResponse,
+  SubmitAnswerCommand,
+  SubmitAnswerResponse,
+  SubmitAnswerResponseBaseResponse,
+  AttemptSummaryDto,
+  AttemptSummaryDtoBaseResponse,
+  QuizQuestionDto,
   // Auth
   SignInCommand,
   RegisterParentCommand,
@@ -81,6 +92,8 @@ export {
   // W11 / Learning enums
   NodeState,
   DifficultyLevel,
+  // W12 quiz enum
+  QuestionType,
 } from './generated';
 
 // NotificationCategory is an enum value (not just a type) — must be re-exported as a value.
