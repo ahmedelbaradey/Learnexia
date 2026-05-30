@@ -34,6 +34,16 @@ export { useMyChildren } from './useMyChildren';
 export { useMyProfile } from './useMyProfile';
 export { useUpdateProfile } from './useUpdateProfile';
 
+// W10 / P2-12 settings-tab hooks.
+export { useNotificationPreferences } from './useNotificationPreferences';
+export { useUpdateNotificationPreferences } from './useUpdateNotificationPreferences';
+export { useUpdateChild } from './useUpdateChild';
+export { useUnlinkChild } from './useUnlinkChild';
+export { useChangePassword } from './useChangePassword';
+export { useMySessions } from './useMySessions';
+export { useSignOutOtherSessions } from './useSignOutOtherSessions';
+export { useMyPlan } from './useMyPlan';
+
 // W11 learning hooks (P2-02-FE + P2-03-FE).
 export { useSubjectsForGrade } from './useSubjectsForGrade';
 export { useSubjectLessons } from './useSubjectLessons';
