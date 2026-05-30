@@ -1,24 +1,31 @@
 /**
- * Child Subjects list screen — replaces the P1-09 mascot placeholder.
+ * Child Home Dashboard — W13 P2-09-FE
  *
- * Design Spec §1 Surface 1. The signed-in student sees exactly 4 grade-scoped
- * subject rows (Math / Science / Arabic / English). Social Studies never renders.
+ * Replaces the W11 bare Subjects list with a personalized dashboard:
+ *   TopBar (logo + sign-out, preserved from W11)
+ *   → DashboardHeader (greeting + Hearts/Streak/XP strip)
+ *   → ContinueCard (conditional — only when dashboardQuery.data?.continue is non-null)
+ *   → MissionBanner (always null in Phase 2 → never rendered per AC6)
+ *   → SubjectsListSection (W11 logic preserved, extracted to _components)
  *
- * Grade is read from `useMe().data?.grade`. When null/undefined:
- *   - `useSubjectsForGrade` is disabled (enabled: false).
- *   - The header omits the "Grade {n}" caption.
- *   - A neutral empty-state is shown (not an error).
+ * Phase-2 stubs (all carry inline TODO comments pointing to the Phase-4 story):
+ *   Hearts: hard-coded 3 (TODO P4-05)
+ *   StreakDays: dashboardQuery.data?.streak ?? 0 (TODO P4-03)
+ *   WeeklyXp: dashboardQuery.data?.xp ?? 0 (TODO P4-02)
+ *   WeeklyXpTarget: 100 (TODO P4-02)
+ *   WeeklyLevel: 1 (TODO P4-02)
+ *   DailyMission: always null → MissionBanner never mounts (TODO P4-06)
+ *   LeaguePreview: always null → not rendered (TODO P4-07)
  *
- * Sign-out and `childName` derivation from `authStore` are preserved.
- * All four product subjects are filtered defensively on the FE even if the
- * BE returns more rows.
+ * Acceptance criteria reference: AC1–AC13 in docs/briefs/W13-P2-09-FE.md.
+ * Design Spec: design-system/ui_kits/student-mobile/W13-home-dashboard.md.
  */
+
 import React, { useMemo } from 'react';
 import { ScrollView, Image } from 'react-native';
 import { Stack as TamStack, Text as TamText, styled } from '@tamagui/core';
-import { useAuthStore } from '@learnexia/shared';
-import { useMe, useSubjectsForGrade, type StudentSubjectDto } from '@learnexia/api-client';
-import { SubjectRow } from '@learnexia/ui';
+import { useMe, useDashboard } from '@learnexia/api-client';
+import { DashboardHeader, ContinueCard } from '@learnexia/ui';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
@@ -26,78 +33,92 @@ import { useRouter } from 'expo-router';
 import { assets } from '../../src/assets';
 import { useLocale } from '../../src/hooks/useLocale';
 import { useSignOutAction } from '../../src/hooks/useSignOutAction';
-import type { SubjectKey } from '@learnexia/ui';
+import { resolveSubjectKey } from './_components/subjects';
+import { SubjectsListSection } from './_components/SubjectsListSection';
 
-const YStack = styled(TamStack, { flexDirection: 'column' });
 const XStack = styled(TamStack, { flexDirection: 'row' });
 const Text = styled(TamText, { fontFamily: '$body', color: '$fg2' });
 
-// Defensive filter: normalize the API subject name to a known SubjectKey.
-// Matches case-insensitively against canonical English + Arabic names from seeder.
-const SUBJECT_NAME_MAP: Record<string, SubjectKey> = {
-  math: 'math',
-  mathematics: 'math',
-  الرياضيات: 'math',
-  science: 'science',
-  العلوم: 'science',
-  arabic: 'arabic',
-  العربية: 'arabic',
-  english: 'english',
-  الإنجليزية: 'english',
-};
-
-const ALLOWED_KEYS: Set<SubjectKey> = new Set(['math', 'science', 'arabic', 'english']);
-
-function resolveSubjectKey(name: string | undefined): SubjectKey | null {
-  if (!name) return null;
-  const normalized = name.trim().toLowerCase();
-  const key = SUBJECT_NAME_MAP[normalized];
-  return key && ALLOWED_KEYS.has(key) ? key : null;
-}
-
-function filterSubjects(subjects: StudentSubjectDto[]): Array<{ dto: StudentSubjectDto; key: SubjectKey }> {
-  const result: Array<{ dto: StudentSubjectDto; key: SubjectKey }> = [];
-  const seen = new Set<SubjectKey>();
-  for (const dto of subjects) {
-    const key = resolveSubjectKey(dto.name);
-    if (key && !seen.has(key)) {
-      seen.add(key);
-      result.push({ dto, key });
-    }
-  }
-  // Sort by canonical order: Math, Science, Arabic, English
-  const ORDER: SubjectKey[] = ['math', 'science', 'arabic', 'english'];
-  result.sort((a, b) => ORDER.indexOf(a.key) - ORDER.indexOf(b.key));
-  return result;
-}
-
-export default function ChildSubjectsScreen() {
+export default function ChildHomeScreen() {
   const { t } = useTranslation();
-  const { isRtl, direction } = useLocale();
+  const { isRtl, direction, locale } = useLocale();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const fullName = useAuthStore((s) => s.user?.fullName);
   const { signOut, isPending } = useSignOutAction();
-
-  const childName = (fullName ?? '').split(/\s+/)[0] || '';
-
-  // Grade from /api/Users/Me (additive field — grade?: number | undefined)
-  const meQuery = useMe();
-  const grade = meQuery.data?.grade ?? null;
-  const gradeKnown = grade !== null && grade !== undefined && grade >= 1 && grade <= 6;
-
-  const subjectsQuery = useSubjectsForGrade(gradeKnown ? grade : undefined);
-
-  const filteredSubjects = useMemo(
-    () => filterSubjects(subjectsQuery.data ?? []),
-    [subjectsQuery.data],
-  );
 
   const rowDir = isRtl ? 'row-reverse' : 'row';
 
+  // --- Data queries ---
+  const meQuery = useMe();
+  const dashboardQuery = useDashboard(); // AC1, AC9, AC10
+
+  // Derive child name (first token of full name — AC8)
+  const childName = useMemo(
+    () => (meQuery.data?.fullName ?? '').split(/\s+/)[0] || '',
+    [meQuery.data?.fullName],
+  );
+  const grade = meQuery.data?.grade ?? null;
+  const gradeKnown = grade !== null && grade !== undefined && grade >= 1 && grade <= 6;
+
+  // Continue target from dashboard (AC2, AC3)
+  const continueTarget = dashboardQuery.data?.continue ?? null;
+
+  // --- Derived strings ---
+  const greetingText = childName
+    ? t('child.home.greeting', { childName })
+    : t('child.home.welcomeBack');
+
+  const gradeCaption = gradeKnown
+    ? t('child.home.gradeCaption', { grade })
+    : null;
+
+  // Stats a11y label (AC11, design spec §7)
+  const statsA11y = t('child.home.statsA11y', {
+    hearts: 3,           // TODO P4-05 — wire to /api/Gamification/Hearts
+    streak: dashboardQuery.data?.streak ?? 0, // TODO P4-03
+    xp: dashboardQuery.data?.xp ?? 0,         // TODO P4-02
+  });
+
+  // ContinueCard — derive state + press handler (AC2, AC3)
+  const continueNodeState = (continueTarget?.nodeState ?? 1) as 1 | 2;
+  const continueSubjectKey = continueTarget
+    ? (resolveSubjectKey(continueTarget.subjectName) ?? 'math')
+    : 'math';
+
+  const isAvailableState = continueNodeState !== 2;
+  const continueEyebrow = isAvailableState
+    ? t('child.home.continue.eyebrow')
+    : t('child.home.continue.eyebrowReplay');
+  const continueCta = isAvailableState
+    ? t('child.home.continue.cta')
+    : t('child.home.continue.replayCta');
+
+  const continueA11y = continueTarget
+    ? t('child.home.continueA11y', { lesson: continueTarget.lessonName ?? '' })
+    : '';
+  const continueHintA11y = t('child.home.continueHintA11y');
+  const bossLabel = t('child.home.boss');
+
+  const handleContinuePress = () => {
+    if (!continueTarget?.lessonId || !continueTarget?.subjectId) return;
+    // AC3: navigate to W12 lesson player with subjectId back-stack seam
+    router.push(
+      `/(child)/lessons/${continueTarget.lessonId}?subjectId=${continueTarget.subjectId}` as `/${string}`,
+    );
+  };
+
+  // Loading union (AC9) — shimmer while either me or dashboard is loading
+  const isHeaderLoading = meQuery.isLoading || dashboardQuery.isLoading;
+
   return (
-    <TamStack flex={1} backgroundColor="$bg" paddingTop={insets.top}>
-      {/* Header bar */}
+    <TamStack
+      flex={1}
+      backgroundColor="$bg"
+      paddingTop={insets.top}
+    >
+      {/* ------------------------------------------------------------------ */}
+      {/* TopBar — logo + sign-out (preserved from W11, AC12)                  */}
+      {/* ------------------------------------------------------------------ */}
       <XStack
         flexDirection={rowDir}
         height={56}
@@ -110,7 +131,7 @@ export default function ChildSubjectsScreen() {
           style={{ width: 32, height: 32, resizeMode: 'contain' }}
           accessibilityElementsHidden
         />
-        {/* Sign out — ghost/icon-button styling (not a primary action) */}
+        {/* Sign-out — ghost CTA, not a primary action (AC12) */}
         <TamStack
           minHeight={48}
           justifyContent="center"
@@ -121,131 +142,184 @@ export default function ChildSubjectsScreen() {
           accessibilityLabel={t('child.subjects.signOut')}
           aria-label={t('child.subjects.signOut')}
         >
-          <Text color="$fg3" fontSize={13} fontFamily="$body">
+          <Text color="$fg3" fontSize={13} fontFamily="$body" writingDirection={direction}>
             {t('child.subjects.signOut')}
           </Text>
         </TamStack>
       </XStack>
 
+      {/* ------------------------------------------------------------------ */}
+      {/* Scrollable body                                                      */}
+      {/* ------------------------------------------------------------------ */}
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: insets.bottom + 24 }}
+        contentContainerStyle={{
+          paddingHorizontal: 24,
+          paddingBottom: insets.bottom + 24,
+          paddingTop: 16,
+          // Web max-width 720 centered (design spec §1 — matches W12 lesson pattern)
+          maxWidth: 720,
+          width: '100%',
+          alignSelf: 'center',
+        }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Screen header block */}
-        <YStack gap={4} marginTop="$6" marginBottom="$6">
-          <Text
-            color="$fg1"
-            fontSize={32}
-            fontWeight="800"
-            fontFamily="$heading"
-            lineHeight={37}
-            letterSpacing={-0.02 * 32}
-            writingDirection={direction}
-            accessibilityRole="header"
-          >
-            {t('child.subjects.title')}
-          </Text>
-          {gradeKnown ? (
-            <Text
-              color="$fg3"
-              fontSize={14}
-              fontWeight="500"
-              fontFamily="$body"
-              writingDirection={direction}
-            >
-              {t('child.subjects.gradeLabel', { grade })}
-            </Text>
-          ) : childName ? (
-            <Text
-              color="$fg3"
-              fontSize={14}
-              fontWeight="500"
-              fontFamily="$body"
-              writingDirection={direction}
-            >
-              {childName}
-            </Text>
-          ) : null}
-        </YStack>
+        {/* AC1, AC9: DashboardHeader with loading state */}
+        <DashboardHeader
+          childName={childName}
+          greetingText={greetingText}
+          gradeCaption={gradeCaption}
+          hearts={3}                                        // TODO P4-05 — wire to /api/Gamification/Hearts
+          heartsMax={3}
+          streakDays={dashboardQuery.data?.streak ?? 0}    // TODO P4-03 — BE returns 0 in Phase 2
+          weeklyXp={dashboardQuery.data?.xp ?? 0}          // TODO P4-02 — BE returns 0 in Phase 2
+          weeklyXpTarget={100}                              // TODO P4-02 — weekly aggregation target
+          weeklyLevel={1}                                   // TODO P4-02 — level concept deferred
+          mascotSrc={assets.logoMark}
+          statsAccessibilityLabel={statsA11y}
+          heartsAccessibilityLabel={t('child.home.stats.hearts')}
+          streakAccessibilityLabel={t('child.home.stats.streak')}
+          xpAccessibilityLabel={t('child.home.stats.xp')}
+          direction={direction}
+          locale={locale}
+          loading={isHeaderLoading}
+          testID="dashboard-header"
+        />
 
-        {/* Loading state — shimmer placeholders. Includes the brief pre-/Me window
-            so the empty-state never flashes before the grade resolves. */}
-        {meQuery.isLoading || subjectsQuery.isLoading ? (
-          <YStack gap={10}>
-            {[0, 1, 2, 3].map((i) => (
-              <SubjectRow
-                key={i}
-                subjectId={i}
-                name=""
-                subjectKey="math"
-                onPress={() => {}}
-                accessibilityLabel=""
-                loading
-              />
-            ))}
-          </YStack>
-        ) : subjectsQuery.isError ? (
-          /* Error state */
-          <YStack gap="$4" alignItems="center" paddingVertical="$8">
-            <Text
-              color="$fg2"
-              fontSize={16}
-              fontWeight="600"
-              fontFamily="$body"
-              textAlign="center"
-              writingDirection={direction}
-            >
-              {t('child.subjects.errorRetry')}
-            </Text>
+        {/* ---------------------------------------------------------------- */}
+        {/* Dashboard error strip (AC10)                                      */}
+        {/* Renders between header and ContinueCard when dashboardQuery fails  */}
+        {/* SubjectsListSection beneath still renders normally (AC10).         */}
+        {/* ---------------------------------------------------------------- */}
+        {dashboardQuery.isError ? (
+          <XStack
+            flexDirection={rowDir}
+            marginTop={24}
+            padding={12}
+            paddingHorizontal={16}
+            gap={12}
+            borderRadius="$card"
+            backgroundColor="$dangerSoft"
+            borderStartWidth={3}
+            borderStartColor="$danger"
+            alignItems="center"
+            accessibilityRole="alert"
+            accessibilityLiveRegion="polite"
+          >
+            {/* Warning glyph disc */}
             <TamStack
-              paddingHorizontal="$6"
-              paddingVertical="$3"
-              borderRadius="$button"
-              backgroundColor="$primary"
-              cursor="pointer"
-              onPress={() => subjectsQuery.refetch()}
-              accessibilityRole="button"
-              accessibilityLabel={t('child.subjects.errorRetry')}
-              minHeight={48}
+              width={32}
+              height={32}
+              borderRadius={9999}
+              backgroundColor="$dangerSoft"
+              alignItems="center"
               justifyContent="center"
+              flexShrink={0}
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
             >
-              <Text color="$fg1" fontSize={15} fontWeight="700" fontFamily="$heading">
-                {t('common.retry')}
-              </Text>
+              <Text fontSize={18} accessibilityElementsHidden>{'⚠️'}</Text>
             </TamStack>
-          </YStack>
-        ) : !gradeKnown || filteredSubjects.length === 0 ? (
-          /* Empty state — grade null or no subjects returned */
-          <YStack gap="$3" alignItems="center" paddingVertical="$8">
+
+            {/* Error message */}
             <Text
-              color="$fg2"
-              fontSize={18}
+              flex={1}
+              color="$fg1"
+              fontSize={14}
               fontWeight="700"
               fontFamily="$heading"
-              textAlign="center"
               writingDirection={direction}
             >
-              {t('child.subjects.empty')}
+              {t('child.home.errorRetry')}
             </Text>
-          </YStack>
-        ) : (
-          /* Subject rows — exactly 4 product subjects, defensively filtered */
-          <YStack gap={10}>
-            {filteredSubjects.map(({ dto, key }) => (
-              <SubjectRow
-                key={dto.id}
-                subjectId={dto.id ?? 0}
-                name={dto.name ?? ''}
-                subjectKey={key}
-                onPress={() =>
-                  router.push(`/(child)/subjects/${dto.id}` as `/${string}`)
-                }
-                direction={direction}
-                accessibilityLabel={`${dto.name ?? ''}`}
-              />
-            ))}
-          </YStack>
-        )}
+
+            {/* Retry button (AC10) */}
+            <TamStack
+              minHeight={36}
+              paddingHorizontal={12}
+              paddingVertical={6}
+              borderRadius="$button"
+              cursor="pointer"
+              onPress={() => dashboardQuery.refetch()}
+              accessibilityRole="button"
+              accessible
+              accessibilityLabel={t('child.home.errorRetryCta')}
+              aria-label={t('child.home.errorRetryCta')}
+              justifyContent="center"
+            >
+              <Text color="$fg2" fontSize={13} fontWeight="500" fontFamily="$body" writingDirection={direction}>
+                {t('child.home.errorRetryCta')}
+              </Text>
+            </TamStack>
+          </XStack>
+        ) : null}
+
+        {/* ---------------------------------------------------------------- */}
+        {/* ContinueCard (AC2, AC3, AC5, AC9)                                 */}
+        {/* Shown only when dashboardQuery has data AND continue is non-null   */}
+        {/* Loading: skeleton placeholder rendered by conditional below.        */}
+        {/* ---------------------------------------------------------------- */}
+        {isHeaderLoading ? (
+          /* Loading placeholder for the ContinueCard area (AC9) */
+          <TamStack
+            marginTop={24}
+            height={96}
+            borderRadius="$modal"
+            backgroundColor="$cardSoft"
+            opacity={0.7}
+          />
+        ) : continueTarget ? (
+          /* AC2: rendered only when continue is non-null */
+          <TamStack marginTop={24}>
+            <ContinueCard
+              subjectName={continueTarget.subjectName ?? ''}
+              subjectKey={continueSubjectKey}
+              lessonName={continueTarget.lessonName ?? ''}
+              unitName={continueTarget.unitName ?? undefined}
+              skillName={continueTarget.skillName ?? undefined}
+              isBoss={continueTarget.isBoss ?? false}
+              nodeState={continueNodeState}
+              onPress={handleContinuePress}
+              eyebrowText={continueEyebrow}
+              ctaLabel={continueCta}
+              bossLabel={bossLabel}
+              accessibilityLabel={continueA11y}
+              accessibilityHint={continueHintA11y}
+              direction={direction}
+              locale={locale}
+              testID="continue-card"
+            />
+          </TamStack>
+        ) : null}
+
+        {/* ---------------------------------------------------------------- */}
+        {/* MissionBanner — NEVER rendered in Phase 2 (AC6)                   */}
+        {/* dashboardQuery.data?.dailyMission is always null in Phase 2.       */}
+        {/* P4-06 deletes this comment and passes real DailyMissionDto data.   */}
+        {/* TODO P4-06 — wire dailyMission when Phase 4 ships the mission engine. */}
+        {/* ---------------------------------------------------------------- */}
+
+        {/* ---------------------------------------------------------------- */}
+        {/* LeaguePreview — NEVER rendered in Phase 2 (AC7)                   */}
+        {/* dashboardQuery.data?.leaguePreview is always null in Phase 2.      */}
+        {/* TODO P4-07 — wire leaguePreview when Phase 4 ships league standings. */}
+        {/* ---------------------------------------------------------------- */}
+
+        {/* ---------------------------------------------------------------- */}
+        {/* SubjectsListSection (AC4, AC13)                                   */}
+        {/* W11 grade/empty/error/loading paths preserved.                     */}
+        {/* Defensive 4-subject filter still wins — Social Studies never shows. */}
+        {/* ---------------------------------------------------------------- */}
+        {/* SubjectsListSection — AC4, AC13 (W11 behaviour preserved)
+            Always rendered. SubjectsListSection owns its own loading/error/empty
+            states. Social Studies defensive filter lives in subjects.ts → still wins. */}
+        <TamStack marginTop={24}>
+          <SubjectsListSection
+            grade={grade}
+            direction={direction}
+            loading={meQuery.isLoading || dashboardQuery.isLoading}
+            testID="subjects-list-section"
+          />
+        </TamStack>
       </ScrollView>
     </TamStack>
   );

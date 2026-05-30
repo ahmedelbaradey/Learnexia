@@ -131,7 +131,10 @@ export interface IClient {
 
     update2(body: EditConceptCommand | undefined): Promise<void>;
 
-    dashboard(): Promise<void>;
+    /**
+     * @return OK
+     */
+    dashboard(): Promise<DashboardDtoBaseResponse>;
 
     list3(pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void>;
 
@@ -252,7 +255,10 @@ export interface IClient {
 
     stats(skillId: number, studentId: number | undefined): Promise<void>;
 
-    attempts(studentId: number): Promise<void>;
+    /**
+     * @return OK
+     */
+    attempts(studentId: number): Promise<AttemptListItemDtoListBaseResponse>;
 
     list8(gradeId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void>;
 
@@ -2235,13 +2241,17 @@ export class Client implements IClient {
         return Promise.resolve<void>(null as any);
     }
 
-    dashboard(): Promise<void> {
+    /**
+     * @return OK
+     */
+    dashboard(): Promise<DashboardDtoBaseResponse> {
         let url_ = this.baseUrl + "/api/Learning/Dashboard";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
             method: "GET",
             headers: {
+                "Accept": "application/json"
             }
         };
 
@@ -2250,10 +2260,16 @@ export class Client implements IClient {
         });
     }
 
-    protected processDashboard(response: Response): Promise<void> {
+    protected processDashboard(response: Response): Promise<DashboardDtoBaseResponse> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 400) {
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as DashboardDtoBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
             return response.text().then((_responseText) => {
             let result400: any = null;
             result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
@@ -2274,7 +2290,7 @@ export class Client implements IClient {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<void>(null as any);
+        return Promise.resolve<DashboardDtoBaseResponse>(null as any);
     }
 
     list3(pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void> {
@@ -4156,7 +4172,10 @@ export class Client implements IClient {
         return Promise.resolve<void>(null as any);
     }
 
-    attempts(studentId: number): Promise<void> {
+    /**
+     * @return OK
+     */
+    attempts(studentId: number): Promise<AttemptListItemDtoListBaseResponse> {
         let url_ = this.baseUrl + "/api/Learning/Students/{studentId}/Attempts";
         if (studentId === undefined || studentId === null)
             throw new globalThis.Error("The parameter 'studentId' must be defined.");
@@ -4166,6 +4185,7 @@ export class Client implements IClient {
         let options_: RequestInit = {
             method: "GET",
             headers: {
+                "Accept": "application/json"
             }
         };
 
@@ -4174,10 +4194,16 @@ export class Client implements IClient {
         });
     }
 
-    protected processAttempts(response: Response): Promise<void> {
+    protected processAttempts(response: Response): Promise<AttemptListItemDtoListBaseResponse> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 400) {
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AttemptListItemDtoListBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
             return response.text().then((_responseText) => {
             let result400: any = null;
             result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
@@ -4198,7 +4224,7 @@ export class Client implements IClient {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<void>(null as any);
+        return Promise.resolve<AttemptListItemDtoListBaseResponse>(null as any);
     }
 
     list8(gradeId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void> {
@@ -6362,6 +6388,25 @@ export interface AdminResetPasswordCommand {
     userId?: number;
 }
 
+export interface AttemptListItemDto {
+    id?: number;
+    lessonId?: number;
+    status?: string | undefined;
+    accuracyPercentage?: number;
+    durationSeconds?: number;
+    hintsUsedCount?: number;
+    startedAt?: Date;
+    completedAt?: Date | undefined;
+}
+
+export interface AttemptListItemDtoListBaseResponse {
+    statusCode?: HttpStatusCode;
+    successed?: boolean;
+    message?: string | undefined;
+    data?: AttemptListItemDto[] | undefined;
+    errors?: any[] | undefined;
+}
+
 export interface AttemptSummaryDto {
     attemptId?: number;
     studentId?: number;
@@ -6424,6 +6469,19 @@ export interface ConceptNodeDtoListBaseResponse {
     errors?: any[] | undefined;
 }
 
+export interface ContinueTargetDto {
+    subjectId?: number;
+    subjectName?: string | undefined;
+    unitId?: number;
+    unitName?: string | undefined;
+    lessonId?: number;
+    lessonName?: string | undefined;
+    skillId?: number | undefined;
+    skillName?: string | undefined;
+    nodeState?: NodeState;
+    isBoss?: boolean;
+}
+
 export interface CurrentPlanResponse {
     planName?: string | undefined;
     status?: string | undefined;
@@ -6434,6 +6492,28 @@ export interface CurrentPlanResponseBaseResponse {
     successed?: boolean;
     message?: string | undefined;
     data?: CurrentPlanResponse;
+    errors?: any[] | undefined;
+}
+
+export interface DailyMissionDto {
+    type?: string | undefined;
+    target?: number | undefined;
+    progress?: number | undefined;
+}
+
+export interface DashboardDto {
+    xp?: number;
+    streak?: number;
+    dailyMission?: DailyMissionDto;
+    leaguePreview?: LeaguePreviewDto;
+    continue?: ContinueTargetDto;
+}
+
+export interface DashboardDtoBaseResponse {
+    statusCode?: HttpStatusCode;
+    successed?: boolean;
+    message?: string | undefined;
+    data?: DashboardDto;
     errors?: any[] | undefined;
 }
 
@@ -6656,6 +6736,13 @@ export interface JwtAuthResponseBaseResponse {
     message?: string | undefined;
     data?: JwtAuthResponse;
     errors?: any[] | undefined;
+}
+
+export interface LeaguePreviewDto {
+    tierName?: string | undefined;
+    rank?: number | undefined;
+    totalPlayers?: number | undefined;
+    xpThisWeek?: number | undefined;
 }
 
 export interface LessonInUnitDto {

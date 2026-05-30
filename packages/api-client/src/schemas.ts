@@ -20,6 +20,12 @@
  */
 
 export type {
+  // W13 dashboard types (P2-09-FE)
+  DashboardDto,
+  DashboardDtoBaseResponse,
+  ContinueTargetDto,
+  DailyMissionDto,
+  LeaguePreviewDto,
   // W12 quiz + lesson types
   SingleLessonResponse,
   SingleLessonResponseBaseResponse,

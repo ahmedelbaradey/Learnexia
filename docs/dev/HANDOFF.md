@@ -1,7 +1,40 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-30 (**Phase 2 backend feature-complete; Wave 10 = P2-12-FE (PR #69 open); Wave 11 = P2-02-FE + P2-03-FE (PR #70 open); Wave 12 = P2-05-FE + P2-06-FE + P2-07-FE student lesson/quiz/feedback on branch `feat/W12-P2-05-06-07-FE` based on W11, ready for PR**).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-30 (**Phase 2 FE chain complete: W10 PR #69, W11 PR #70, W12 PR #71, W13 = P2-09-FE student home dashboard on branch `feat/W13-P2-09-FE` based on W12, ready for PR. Phase 2 FE feature-complete with this wave**).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
+
+## Wave 13 — Phase 2 FE closer: student home dashboard (P2-09-FE, ready for PR)
+
+**Branch:** `feat/W13-P2-09-FE` (based off `feat/W12-P2-05-06-07-FE`, PR pending).
+
+**What's on the branch:**
+- **BE annotations** — `DashboardController.Get` + `StudentsController.studentAttempts(studentId)` got `[ProducesResponseType(typeof(BaseResponse<TDto>), 200)]`. Behavior unchanged; NSwag now emits typed clients.
+- **api-client regenerated** — `dashboard()` returns `DashboardDtoBaseResponse`; `attempts(studentId)` returns `AttemptListItemDtoListBaseResponse`. New type re-exports: `DashboardDto`, `ContinueTargetDto`, `DailyMissionDto`, `LeaguePreviewDto`.
+- **1 new `@learnexia/api-client` hook**: `useDashboard()` — single endpoint, BE composes Continue/streak/XP/etc. server-side (we don't compose client-side).
+- **3 new `@learnexia/ui` primitives**:
+  - `DashboardHeader` — greeting + grade caption + stats strip (Hearts/StreakFlame/XPBar). `childName` is informational-only (optional); `greetingText` is the rendered string the caller composes.
+  - `ContinueCard` — tap-to-resume; renders subject icon + lesson title + chevron CTA; logical `end={14}` boss badge; hidden when `continue=null`.
+  - `MissionBanner` — built but **never rendered in Phase 2** (`dashboardQuery.data.dailyMission` is always `null`; Phase 4 wires it).
+- **`SubjectsListSection`** extracted from W11 `(child)/index.tsx` into `apps/student-app/app/(child)/_components/SubjectsListSection.tsx` (W11 logic intact: defensive 4-subject filter, shimmer/error/empty, RTL). Helper moved to `(child)/_components/subjects.ts`.
+- **`apps/student-app/app/(child)/index.tsx`** rewritten as dashboard composition: TopBar → DashboardHeader → ContinueCard (conditional) → SubjectsListSection. Hearts fixed `3` (TODO P4-04); streak/XP default `0` (TODO P4-02/03). Loading state composes `meQuery.isLoading || dashboardQuery.isLoading` for both header AND subjects section.
+- **i18n** — expanded `child.home.*` namespace with 18 new EN+AR keys (greeting, gradeCaption, continueTitle, continueCta, yourSubjects, welcomeEmpty, errorRetry, statsA11y, etc.). No fork — extends existing namespace.
+- **Reviewer FAIL → fixes applied** — 3 blockers cleared: dropped dead required `childName` from `DashboardHeader` (now optional), replaced ContinueCard physical `right`/`left` with logical `end={14}`, added Wave 13 section to HANDOFF (this).
+
+**Key decisions:**
+- **Single dashboard endpoint, no client-side composition.** BE resolves Continue (most-recent-attempt → engine → first Available lesson → cross-subject fallback). Avoids client-side races + duplicate heuristics.
+- **All Phase-4 features stub-only** (hearts decrement / streak increment / XP / mission / league) — display surfaces, no endpoint calls, TODO comments with story IDs.
+- **`MissionBanner` built but not rendered** — Phase 4 will mount it when BE returns non-null `dailyMission`.
+- **`SubjectsListSection`** is a new local component (not promoted to `@learnexia/ui`) since only one consumer.
+
+**Non-blocking follow-ups** (chore PR / next wave):
+- `ContinueCard` could swap `Pressable` → Tamagui `Stack` w/ `hoverStyle`/`pressStyle` for web hover lift (mirroring `LessonCard` pattern).
+- Stats strip `accessibilityRole="summary"` should be `"group"` via `Platform.OS === 'web' ?` gate (W12 carry-forward).
+- Dashboard mount fade-in (240ms `opacity 0→1`, reduced-motion gated) per design spec §5.
+- Append boss suffix to `continueA11y` when `continueTarget.isBoss`.
+- Consolidate `SubjectKey` type (duplicated in `SubjectRow` + `ContinueCard`).
+- `useDashboard` invalidation seam on `LessonCompletedIntegrationEvent` will be wired in P4-02 wave when XP/streak/hearts go live.
+
+---
 
 ## Wave 12 — Phase 2 FE lesson + quiz + feedback (P2-05/06/07-FE, ready for PR)
 

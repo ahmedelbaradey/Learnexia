@@ -374,9 +374,34 @@ export const en = {
   child: {
     home: {
       greeting: 'Hi, {{childName}}!',
+      welcomeBack: 'Welcome back',
+      gradeCaption: 'Grade {{grade}}',
       subtitle: 'Your adventure is coming soon!',
       mascotMessage: "I'm Lexi! I'll be your learning guide.",
       mascotSender: 'Lexi · Guide',
+      continue: {
+        eyebrow: 'Pick up where you left off',
+        eyebrowReplay: 'Replay last lesson',
+        cta: 'Continue',
+        replayCta: 'Replay',
+      },
+      continueA11y: 'Continue lesson {{lesson}}',
+      continueHintA11y: 'Opens the lesson player',
+      mission: {
+        eyebrow: "Today's mission",
+        startCta: 'Start Mission',
+      },
+      yourSubjects: 'Your subjects',
+      welcomeEmpty: 'Welcome! Tap a subject to start.',
+      errorRetry: "Couldn't load your dashboard. Try again",
+      errorRetryCta: 'Retry',
+      statsA11y: '{{hearts}} hearts, {{streak}} day streak, {{xp}} XP',
+      stats: {
+        hearts: 'Hearts',
+        streak: 'Streak',
+        xp: 'XP this week',
+      },
+      boss: 'Boss',
     },
     subjects: {
       title: 'Subjects',
@@ -836,10 +861,35 @@ export const ar = {
   },
   child: {
     home: {
-      greeting: 'مرحباً، {{childName}}!',
+      greeting: 'مرحبا {{childName}}!',
+      welcomeBack: 'أهلاً بعودتك',
+      gradeCaption: 'الصف {{grade}}',
       subtitle: 'مغامرتك قادمة قريباً!',
       mascotMessage: 'أنا ليكسي! سأكون دليلك في رحلة التعلم.',
       mascotSender: 'ليكسي · الدليل',
+      continue: {
+        eyebrow: 'أكمل من حيث توقفت',
+        eyebrowReplay: 'أعد آخر درس',
+        cta: 'متابعة',
+        replayCta: 'إعادة',
+      },
+      continueA11y: 'متابعة درس {{lesson}}',
+      continueHintA11y: 'يفتح مشغّل الدروس',
+      mission: {
+        eyebrow: 'مهمة اليوم',
+        startCta: 'ابدأ المهمة',
+      },
+      yourSubjects: 'موادك',
+      welcomeEmpty: 'أهلاً! اختر مادة لتبدأ.',
+      errorRetry: 'تعذّر تحميل لوحتك. أعد المحاولة',
+      errorRetryCta: 'أعد المحاولة',
+      statsA11y: '{{hearts}} قلوب، سلسلة {{streak}} أيام، {{xp}} نقطة',
+      stats: {
+        hearts: 'قلوب',
+        streak: 'سلسلة',
+        xp: 'نقاط الخبرة هذا الأسبوع',
+      },
+      boss: 'بوس',
     },
     subjects: {
       title: 'المواد',
