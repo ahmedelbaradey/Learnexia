@@ -47,7 +47,28 @@ export type {
   UserProfileResponseDtoBaseResponse,
   GetUserListResponse,
   GetUserListResponsePaginatedResult,
+  // P2-12 — Notifications tab (interfaces/types)
+  NotificationPreferenceItemDto,
+  NotificationPreferencesResponse,
+  NotificationPreferencesResponseBaseResponse,
+  UpdateMyNotificationPreferencesCommand,
+  // P2-12 — Linked children tab
+  UpdateChildCommand,
+  UpdatedChildResponse,
+  UpdatedChildResponseBaseResponse,
+  UnlinkChildCommand,
+  BooleanBaseResponse,
+  // P2-12 — Security tab
+  ChangePasswordCommand,
+  SessionInfo,
+  SessionInfoListBaseResponse,
+  // P2-12 — Plan & billing tab
+  CurrentPlanResponse,
+  CurrentPlanResponseBaseResponse,
 } from './generated';
+
+// NotificationCategory is an enum value (not just a type) — must be re-exported as a value.
+export { NotificationCategory } from './generated';
 
 // Re-export the generated typed client + its exception for advanced callers.
 export {

@@ -1,9 +1,9 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-30 (**Wave 10 — Phase 3 Gamification kickoff (P4-02) committed and ready for PR; Phase 2 backend feature-complete. P2-03 also ready for PR (Wave 9 closer)**).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-30 (**Wave 10 — two parallel tracks: (BE) Phase 3 Gamification kickoff — P4-02-BE open as PR #73; (FE) Phase 2 FE start — P2-12-FE merged via PR #69. Phase 2 backend feature-complete**).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
 
-## Wave 10 — Phase 3 Gamification kickoff
+## Wave 10 (BE track) — Phase 3 Gamification kickoff
 
 ### P4-02 — Earn XP and level up ✅ Batches 1–7 complete, ready for PR
 
@@ -59,6 +59,40 @@
 
 **Pre-existing test failures (tracked separately, not regressions):**
 - P2-02 TC-1, P2-04 TC-09, P2-09 C11 — logged; not blocking Phase 3.
+
+## Wave 10 (FE track) — Phase 2 FE start (P2-12-FE, merged via PR #69)
+
+### P2-12-FE — Parent Settings tabs (Notifications / Linked children / Security / Plan)
+
+**Branch:** `feat/W10-P2-12-FE-settings-tabs` (off main, PR pending).
+
+**What's on the branch:**
+- **`Switch` primitive** added to `@learnexia/ui` — 44×24 track + 20px thumb, on=`$primary` w/ `$primaryGlow`, off=`$cardSoft`, thumb=`$fg1`, 160ms `cubic-bezier(0.16,1,0.3,1)`, logical-RTL thumb via `insetInlineStart`, `accessibilityRole="switch"` + `accessibilityState={checked,disabled}`, 44px min touch target, focus outline 2px `$primary`. Mirrors `CheckboxField` prop shape.
+- **8 new `@learnexia/api-client` hooks** + new `queryKeys`: `useNotificationPreferences`, `useUpdateNotificationPreferences` (optimistic w/ rollback), `useUpdateChild`, `useUnlinkChild`, `useChangePassword` (targets `/api/Users/Account/ChangePassword` — NOT the stale admin `changePasswordForUser`), `useMySessions`, `useSignOutOtherSessions` (invalidates sessions), `useMyPlan`.
+- **api-client regenerated** against running BE — `myChildren` route moved to `/api/Parent/My-Children` (the legacy `/api/Users/Parent/*` shape is gone). All P2-12 endpoints present.
+- **4 Settings panels** under `apps/student-app/app/(parent)/_components/settings/`:
+  - `NotificationsPanel.tsx` — 4-row × 2-toggle (Email/Push) grid for the 4 BE categories (WeeklyReport / StreakAtRisk / ProductAnnouncement / Achievement). Optimistic toggle with rollback. Full-array PUT body (BE validator requires all 4 categories distinct).
+  - `LinkedChildrenPanel.tsx` — `ChildCard` per child + inline Edit form (fullName/grade/language/country) + **inline Unlink confirm strip** (NOT a Dialog, per rule #8). Add Child CTA → `/(onboarding)/add-child`. Empty state when no children.
+  - `SecurityPanel.tsx` — Change-password form (current/new/confirm + `PasswordStrengthMeter`, `forceLtr`, correct `autoComplete` attrs) + Sessions list (truncated 8-char id in `dir="ltr"`, locale-formatted `expiresAt`, Active/Expired pill) + Sign-out-others CTA (success strip counts other sessions captured pre-mutation).
+  - `PlanPanel.tsx` — read-only plan name + status badge; "Manage subscription" disabled with `TODO(P2-12-PAYMENTS)` until a payments BE lands.
+- **i18n** — every new copy slot keyed in EN + AR under `parent.settings.{notifications,linkedChildren,security,billing}.*`.
+- **`SettingsWeb.tsx`** — `renderActivePanel()` switch replaces the 4 `ComingSoonPanel` stubs; Profile + Language untouched.
+- **Security audit** ✅ PASS-WITH-FOLLOWUPS — `docs/briefs/W10-P2-12-FE-security-audit.md`. 0 Critical/High. Fixed inline: F-01 (i18n key for "No active sessions"), F-02 (`refetch()` → `invalidateQueries`), F-04 (stale `sessions.length - 1` count captured pre-mutation). Carry-forward: F-03 (missing `Stack.Screen name="settings"` in `(parent)/_layout.tsx` — pre-existing gap), F-04 (toolchain `tar` advisory — not bundled to runtime).
+- **Reviewer** ✅ PASS conditional — `docs/briefs/W10-P2-12-FE-review.md`. All blockers (i18n, security gate, HANDOFF) cleared. Build/type-check/lint clean across `@learnexia/{api-client,ui,shared}` + `student-app`.
+
+**Key decisions:**
+- **No Dialog primitive** — Unlink uses inline confirm strip inside `ChildCard` per rule #8 (no design-pattern unilateral additions).
+- **No `Badge` variant extension** — plan/session status pills are inline `Stack`+`Text` w/ same tokens (`$successSoft`/`$success`, `$dangerSoft`/`$danger`, `$cardSoft`/`$fg3`) since `Badge` only ships achievement-disc variants today.
+- **No payments integration** — Plan tab is read-only; Manage CTA disabled.
+- **Edit-child form opens with empty grade/language/country** because `LinkedChildResponse` only exposes `{id, fullName, email}` — the BE seam doesn't return grade/language/country on parent's My-Children list (carry-forward to BE if product wants pre-fill).
+- **Sessions list shows truncated id only** — BE `SessionInfo` has no device/IP/UA metadata. Carry-forward if richer audit UI needed (P6-06).
+- **Brand new Switch primitive added directly on this branch** (rather than cherry-picking from the un-merged `feat/design-system-pixel-align`).
+
+**Non-blocking follow-ups** (recorded above; route to a chore PR):
+- F-03: declare `<Stack.Screen name="settings" />` in `(parent)/_layout.tsx` (pre-existing gap, not introduced by W10).
+- F-04: track `tar` upgrade via `expo` release cadence (toolchain only, not bundled).
+- Extract panel `PanelSurface`/`PanelHeader` to `settings/shared.tsx` when convenient (currently duplicated across 4 panels + `SettingsWeb`).
+- `Switch.hideLabel` uses `opacity: 0` (keeps label in layout flow); design spec suggested `clip` — fine for now since Notifications never passes `hideLabel`.
 
 ---
 
