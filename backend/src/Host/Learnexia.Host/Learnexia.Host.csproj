@@ -26,5 +26,6 @@
     <ProjectReference Include="..\..\Modules\Learning\Learnexia.Modules.Learning.Api\Learnexia.Modules.Learning.Api.csproj" />
     <ProjectReference Include="..\..\Modules\Parent\Learnexia.Modules.Parent.Api\Learnexia.Modules.Parent.Api.csproj" />
     <ProjectReference Include="..\..\Modules\Notifications\Learnexia.Modules.Notifications.Api\Learnexia.Modules.Notifications.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Gamification\Learnexia.Modules.Gamification.Api\Learnexia.Modules.Gamification.Api.csproj" />
   </ItemGroup>
 </Project>

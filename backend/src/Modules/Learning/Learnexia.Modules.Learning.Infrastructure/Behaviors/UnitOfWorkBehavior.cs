@@ -47,6 +47,15 @@ public sealed class UnitOfWorkBehavior<TRequest, TResponse> : IPipelineBehavior<
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
+        // Cross-module guard: this behavior must only run for commands from THIS module's Application assembly.
+        // All modules register their UoW as open-generic IPipelineBehavior<,> with constraint
+        // `TRequest : ICommand<TResponse>`, but ICommand<> lives in Shared.Kernel, so without this guard
+        // every UoW fires on every command — opening empty transactions on every module's DbContext and
+        // (critically) failing when a command flows through here while its originator's DbContext is in
+        // an active transaction. See P4-02 Bug 4.
+        if (typeof(TRequest).Assembly != typeof(Learnexia.Modules.Learning.Application.AssemblyReference).Assembly)
+            return await next();
+
         await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
 
         var response = await next();                                  // handler stages changes only

@@ -64,7 +64,25 @@ export type {
   UserProfileResponseDtoBaseResponse,
   GetUserListResponse,
   GetUserListResponsePaginatedResult,
-  // Learning — W11 (P2-02-FE + P2-03-FE)
+  // W10 / P2-12 — Notifications tab (interfaces/types)
+  NotificationPreferenceItemDto,
+  NotificationPreferencesResponse,
+  NotificationPreferencesResponseBaseResponse,
+  UpdateMyNotificationPreferencesCommand,
+  // W10 / P2-12 — Linked children tab
+  UpdateChildCommand,
+  UpdatedChildResponse,
+  UpdatedChildResponseBaseResponse,
+  UnlinkChildCommand,
+  BooleanBaseResponse,
+  // W10 / P2-12 — Security tab
+  ChangePasswordCommand,
+  SessionInfo,
+  SessionInfoListBaseResponse,
+  // W10 / P2-12 — Plan & billing tab
+  CurrentPlanResponse,
+  CurrentPlanResponseBaseResponse,
+  // W11 / Learning (P2-02-FE + P2-03-FE)
   StudentSubjectDto,
   StudentSubjectDtoListBaseResponse,
   UnitWithLessonsDto,
@@ -77,12 +95,15 @@ export type {
 } from './generated';
 
 export {
-  // Learning enums — W11
+  // W11 / Learning enums
   NodeState,
   DifficultyLevel,
   // W12 quiz enum
   QuestionType,
 } from './generated';
+
+// NotificationCategory is an enum value (not just a type) — must be re-exported as a value.
+export { NotificationCategory } from './generated';
 
 // Re-export the generated typed client + its exception for advanced callers.
 export {

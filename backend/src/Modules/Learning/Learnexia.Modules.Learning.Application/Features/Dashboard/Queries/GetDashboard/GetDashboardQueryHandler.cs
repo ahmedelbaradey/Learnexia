@@ -3,6 +3,7 @@ using Learnexia.Modules.Learning.Application.Features.Dashboard.Dtos;
 using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Modules.Learning.Domain.Services;
+using Learnexia.Shared.Contracts.Gamification;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
@@ -35,6 +36,7 @@ public class GetDashboardQueryHandler
     private readonly ICurrentUserService _currentUser;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
+    private readonly IStudentXpQuery _xpQuery;
 
     // Deterministic cross-subject fallback order (Q3 Option A step 5).
     private static readonly string[] FallbackSubjectOrder =
@@ -44,12 +46,14 @@ public class GetDashboardQueryHandler
         ILearningRepositoryManager repository,
         ICurrentUserService currentUser,
         ILoggerManager logger,
-        IStringLocalizer<SharedResources> localizer)
+        IStringLocalizer<SharedResources> localizer,
+        IStudentXpQuery xpQuery)
     {
         _repository = repository;
         _currentUser = currentUser;
         _logger = logger;
         _localizer = localizer;
+        _xpQuery = xpQuery;
     }
 
     public async Task<BaseResponse<DashboardDto>> Handle(
@@ -115,13 +119,21 @@ public class GetDashboardQueryHandler
                 }
             }
 
-            // ── Step 8: Assemble DashboardDto ──────────────────────────────────────────────────
+            // ── Step 8: Read XP snapshot via cross-module seam (P4-02) ────────────────────────
+            // IStudentXpQuery is implemented by Gamification.Infrastructure — no direct DbContext
+            // reference from Learning (module isolation rule 1). Returns null for brand-new students.
+            var xpSnapshot = await _xpQuery.GetByStudentIdAsync(studentId, cancellationToken);
+            var xp = xpSnapshot?.TotalXp ?? 0;
+            var level = xpSnapshot?.CurrentLevel ?? 1;
+
+            // ── Step 9: Assemble DashboardDto ──────────────────────────────────────────────────
             var dto = new DashboardDto(
-                Xp: 0,                    // TODO P4-02 — wire real XP from gamification module
+                Xp: xp,
                 Streak: 0,                // TODO P4-03 — wire real streak from gamification module
                 DailyMission: null,       // TODO P4-06 — wire daily mission engine
                 LeaguePreview: null,      // TODO P4-07 — wire leagues engine
-                Continue: continueTarget
+                Continue: continueTarget,
+                Level: level
             );
 
             return Success(dto);

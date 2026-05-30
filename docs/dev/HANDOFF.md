@@ -1,6 +1,6 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-30 (**Phase 2 FE chain complete: W10 PR #69, W11 PR #70, W12 PR #71, W13 = P2-09-FE student home dashboard on branch `feat/W13-P2-09-FE` based on W12, ready for PR. Phase 2 FE feature-complete with this wave**).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-30 (**Phase 2 FE chain complete and rebased: W10 merged via PR #69, P4-02-BE merged via PR #73, W11 PR #70 MERGEABLE, W12 PR #71 MERGEABLE, W13 PR #72 MERGEABLE — Phase 2 FE feature-complete pending merges**).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
 
 ## Wave 13 — Phase 2 FE closer: student home dashboard (P2-09-FE, ready for PR)
@@ -110,9 +110,102 @@
 
 ---
 
-## Wave 10 — Phase 2 FE start (P2-12-FE, PR #69 open against main)
+## Wave 10 — Phase 2 FE start (P2-12-FE, merged via PR #69)
 
-> See PR #69 / `feat/W10-P2-12-FE-settings-tabs` for the parent Settings 4 tabs (Notifications/Linked children/Security/Plan) + `Switch` primitive + 8 new api-client hooks. PR ready, awaiting merge.
+---
+
+## Wave 10 (BE track) — Phase 3 Gamification kickoff (P4-02-BE, merged via PR #73)
+
+### P4-02 — Earn XP and level up ✅ Merged via PR #73
+
+**What's on main (PR #73):**
+
+**Phase 3 Gamification kickoff — waking up the Gamification module skeleton and landing the first real business feature: XP engine + ledger + level computation.**
+
+- **Module wake-up** ✅ Added 4 Gamification csproj (Domain/Application/Infrastructure/Api) to `Learnexia.Modular.sln` + `Modules\Gamification` solution folder. Added `using Learnexia.Modules.Gamification.Api` + `builder.Services.AddGamificationModule(builder.Configuration)` to `Program.cs`. Added Gamification's `AssemblyReference` to the cross-module MediatR scan in `AddCrossModuleMediatR()`.
+
+- **New `gamification` schema** ✅ `StudentXpProfiles` table: `Id (int)`, `StudentId (int, unique)`, `XpTotal (int, default 0)`, `Level (int, default 1)`, `UpdatedAt (DateTime)` + FullAuditedEntity columns. `XpAwards` table (append-only ledger): `Id (int)`, `StudentId (int)`, `Amount (int)`, `Reason (XpReason enum, int)`, `OriginEventId (uuid)`, `OriginLessonId (int?, nullable)`, `OriginSkillId (int?, nullable)` + FullAuditedEntity columns. Migration `20260530042656_InitGamification`. **Idempotency at DB layer:** unique index `UX_XpAwards_OriginEventId_Reason` on `(OriginEventId, Reason)` — prevents double-award for duplicate event delivery.
+
+- **XP rules (lead-approved SRS examples)** ✅ `GamificationConstants.XpRewards`: `CorrectAnswer = 10`, `LessonCompleted = 50`, `QuizCompleted = 20` (stub — no quiz boundary yet), `StreakBonus = 30` (stub — P4-03 owns streak engine). Stored in static class at `Domain/Constants/GamificationConstants.cs`.
+
+- **Level curve (lead-approved table-based ramp)** ✅ `LevelCurve` pure static service at `Domain/Services/LevelCurve.cs`. Table: `[0, 100, 250, 500, 1000, 2000, 4000, 7000, 11000, 16000]` cumulative XP thresholds for L1–L10. L11+ formula: `10 + ((xp - 16000) / 5000)` (floor). 32 unit tests in `LevelCurveTests.cs`. Testable in isolation — no DB access.
+
+- **Integration-event handlers** ✅ `LessonCompletedIntegrationEventHandler` + `AnswerSubmittedIntegrationEventHandler` at `Application/IntegrationEventHandlers/`. Both subscribe to cross-module events from Learning (P2-07 producers) via `INotificationHandler<T>`. Each handler sends an internal `ICommand` via `IMediator` (Pattern A — runs through Gamification's `UnitOfWorkBehavior` for clean commit boundary and audit stamping). Idempotency: pre-check + catch on unique-constraint violation (AC4).
+
+- **New `GET /api/Gamification/Profile`** ✅ JWT-only endpoint (no studentId param; IDOR-proof by construction). Returns `StudentProfileDto { XpTotal: int, Level: int, XpToNextLevel: int }`. Fresh students (no `StudentXpProfile` row yet) see clean L1 + 0 XP, not 404.
+
+- **`IStudentXpQuery` cross-module read seam** ✅ Defined in `Shared.Contracts/Gamification/IStudentXpQuery.cs` (returns `StudentXpSnapshot? { XpTotal: int, Level: int }`). Implemented in `Gamification.Infrastructure/Queries/StudentXpQuery.cs` against `GamificationDbContext`. Learning's `GetDashboardQueryHandler` now injects `IStudentXpQuery` and reads real XP + Level instead of the P2-09 zero-state placeholders `(Xp: 0, Streak: 0)`. Brand-new students still see `(0, 1)` via null mapping. **New field:** `DashboardDto.Level : int = 1` added to positional record (appended last, maintains compat).
+
+- **Cross-module UoW assembly-filter guard (bug fix)** ✅ **Critical fix discovered during P4-02 implementation.** All 4 module `UnitOfWorkBehavior` implementations (Identity/Learning/Parent/Gamification) now early-return if the command's assembly isn't theirs. **Without this guard, nested `mediator.Send` across modules causes `BeginTransaction on already-in-transaction` failures.** This latent bug was never triggered before P4-02 because no cross-module command dispatch existed. Applied retroactively to Identity, Learning, and Parent modules in this PR.
+
+- **Security follow-ups (per security-auditor PASS)** ✅ Applied 3 findings from this PR's security audit:
+  - **F1 (Medium):** Row-lock strategy changed from `FOR UPDATE SKIP LOCKED` to `FOR UPDATE` (block-and-wait prevents lost-update race on `StudentXpProfile.XpTotal`).
+  - **F2 (Medium):** Removed child accuracy% from Info logs (child-privacy minimization).
+  - **F3 (Low):** Removed dead `CorrectAnswerCount` field from `AwardLessonCompletedXpCommand`.
+
+**Test results:**
+- LevelCurve unit tests: **32/32** ✅
+- P4-02 integration tests: **16/16** ✅ (T1 correct-answer award, T2 wrong-answer no-award, T3 100% lesson, T4 50% lesson, T5/T6 idempotency, T7/T8 level-up, T9 zero-state, T10 real values, T11 IDOR, T11b sibling-handler isolation, T12 dashboard real XP, T13 dashboard zero-state, envelope + auth sanity)
+- Full integration suite: **517/520** (only 3 pre-existing failures, same as `main`: P2-02 TC-1, P2-04 TC-09, P2-09 C11)
+
+**Key decisions locked (all lead-approved):**
+- **Q1:** NEW Gamification module — wake up the existing skeleton (approved to add to `.sln` + DI + MediatR).
+- **Q2:** `IStudentXpQuery` via `Shared.Contracts/Gamification/` — mirrors `IParentChildQuery` pattern. Learning injects it; future P4-10 swaps implementation for Redis without changing dashboard handler.
+- **Q3:** XP values from SRS FR-GM-1 examples: `+10/+50/+20/+30`; table-based level curve approved (L1–L10 via table, L11+ formula).
+- **Q4:** Ship `GET /api/Gamification/Profile` endpoint.
+- **Q5:** Pattern A — notification handler → `ICommand` → UoW (decoupled from producer's UoW).
+- **Q6:** Add `Level` to `DashboardDto` positional record.
+- **Q7:** `SELECT ... FOR UPDATE` row-lock on `StudentXpProfile` in command handler.
+- **Q3.bis:** `LessonCompleted` XP fires unconditionally on completion (regardless of correct-answer count).
+
+**New conventions to carry forward:**
+- **UoW assembly-filter guard is now mandatory** for all modules' `UnitOfWorkBehavior`. Future modules must early-return if the command assembly doesn't match theirs — prevents cross-module transaction interference.
+- **Cross-module event handler pattern:** send an `ICommand` via `IMediator` (Pattern A), not direct DbContext writes (decouples commits, enables audit stamping and domain-event dispatch).
+
+**Not in scope (next stories):**
+- Streak (P4-03), Hearts (P4-04), Badges (P4-05), Missions (P4-06), Leagues (P4-07).
+- XP bar UI animations / confetti (P4-08).
+- Redis hot-path read model (P4-10).
+- Frontend dashboard render of `Level` field (folded into P2-09-FE or separate FE story).
+
+**Pre-existing test failures (tracked separately, not regressions):**
+- P2-02 TC-1, P2-04 TC-09, P2-09 C11 — logged; not blocking Phase 3.
+
+---
+
+## Wave 10 (FE track) — Phase 2 FE start (P2-12-FE, merged via PR #69)
+
+### P2-12-FE — Parent Settings tabs (Notifications / Linked children / Security / Plan)
+
+**Branch:** `feat/W10-P2-12-FE-settings-tabs` — merged to main.
+
+**What's on the branch:**
+- **`Switch` primitive** added to `@learnexia/ui` — 44×24 track + 20px thumb, on=`$primary` w/ `$primaryGlow`, off=`$cardSoft`, thumb=`$fg1`, 160ms `cubic-bezier(0.16,1,0.3,1)`, logical-RTL thumb via `insetInlineStart`, `accessibilityRole="switch"` + `accessibilityState={checked,disabled}`, 44px min touch target, focus outline 2px `$primary`. Mirrors `CheckboxField` prop shape.
+- **8 new `@learnexia/api-client` hooks** + new `queryKeys`: `useNotificationPreferences`, `useUpdateNotificationPreferences` (optimistic w/ rollback), `useUpdateChild`, `useUnlinkChild`, `useChangePassword` (targets `/api/Users/Account/ChangePassword` — NOT the stale admin `changePasswordForUser`), `useMySessions`, `useSignOutOtherSessions` (invalidates sessions), `useMyPlan`.
+- **api-client regenerated** against running BE — `myChildren` route moved to `/api/Parent/My-Children` (the legacy `/api/Users/Parent/*` shape is gone). All P2-12 endpoints present.
+- **4 Settings panels** under `apps/student-app/app/(parent)/_components/settings/`:
+  - `NotificationsPanel.tsx` — 4-row × 2-toggle (Email/Push) grid for the 4 BE categories (WeeklyReport / StreakAtRisk / ProductAnnouncement / Achievement). Optimistic toggle with rollback. Full-array PUT body (BE validator requires all 4 categories distinct).
+  - `LinkedChildrenPanel.tsx` — `ChildCard` per child + inline Edit form (fullName/grade/language/country) + **inline Unlink confirm strip** (NOT a Dialog, per rule #8). Add Child CTA → `/(onboarding)/add-child`. Empty state when no children.
+  - `SecurityPanel.tsx` — Change-password form (current/new/confirm + `PasswordStrengthMeter`, `forceLtr`, correct `autoComplete` attrs) + Sessions list (truncated 8-char id in `dir="ltr"`, locale-formatted `expiresAt`, Active/Expired pill) + Sign-out-others CTA (success strip counts other sessions captured pre-mutation).
+  - `PlanPanel.tsx` — read-only plan name + status badge; "Manage subscription" disabled with `TODO(P2-12-PAYMENTS)` until a payments BE lands.
+- **i18n** — every new copy slot keyed in EN + AR under `parent.settings.{notifications,linkedChildren,security,billing}.*`.
+- **`SettingsWeb.tsx`** — `renderActivePanel()` switch replaces the 4 `ComingSoonPanel` stubs; Profile + Language untouched.
+- **Security audit** ✅ PASS-WITH-FOLLOWUPS — `docs/briefs/W10-P2-12-FE-security-audit.md`. 0 Critical/High. Fixed inline: F-01 (i18n key for "No active sessions"), F-02 (`refetch()` → `invalidateQueries`), F-04 (stale `sessions.length - 1` count captured pre-mutation). Carry-forward: F-03 (missing `Stack.Screen name="settings"` in `(parent)/_layout.tsx` — pre-existing gap), F-04 (toolchain `tar` advisory — not bundled to runtime).
+- **Reviewer** ✅ PASS conditional — `docs/briefs/W10-P2-12-FE-review.md`. All blockers (i18n, security gate, HANDOFF) cleared. Build/type-check/lint clean across `@learnexia/{api-client,ui,shared}` + `student-app`.
+
+**Key decisions:**
+- **No Dialog primitive** — Unlink uses inline confirm strip inside `ChildCard` per rule #8 (no design-pattern unilateral additions).
+- **No `Badge` variant extension** — plan/session status pills are inline `Stack`+`Text` w/ same tokens (`$successSoft`/`$success`, `$dangerSoft`/`$danger`, `$cardSoft`/`$fg3`) since `Badge` only ships achievement-disc variants today.
+- **No payments integration** — Plan tab is read-only; Manage CTA disabled.
+- **Edit-child form opens with empty grade/language/country** because `LinkedChildResponse` only exposes `{id, fullName, email}` — the BE seam doesn't return grade/language/country on parent's My-Children list (carry-forward to BE if product wants pre-fill).
+- **Sessions list shows truncated id only** — BE `SessionInfo` has no device/IP/UA metadata. Carry-forward if richer audit UI needed (P6-06).
+- **Brand new Switch primitive added directly on this branch** (rather than cherry-picking from the un-merged `feat/design-system-pixel-align`).
+
+**Non-blocking follow-ups** (recorded above; route to a chore PR):
+- F-03: declare `<Stack.Screen name="settings" />` in `(parent)/_layout.tsx` (pre-existing gap, not introduced by W10).
+- F-04: track `tar` upgrade via `expo` release cadence (toolchain only, not bundled).
+- Extract panel `PanelSurface`/`PanelHeader` to `settings/shared.tsx` when convenient (currently duplicated across 4 panels + `SettingsWeb`).
+- `Switch.hideLabel` uses `opacity: 0` (keeps label in layout flow); design spec suggested `clip` — fine for now since Notifications never passes `hideLabel`.
 
 ---
 
