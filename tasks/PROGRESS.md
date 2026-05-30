@@ -12,7 +12,9 @@
 - `—` — no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
-- **Wave 11:** P2-02-FE + P2-03-FE (browse subjects/lessons + navigate skill tree — `MeResponse.Grade` inclusion + api-client regen + 4 new `@learnexia/ui` primitives (SubjectRow/LessonCard/SkillTreeNode/SegmentedTabs) + Badge boss variant + subject tint + 3 glow shadow tokens in `colors.ts` + i18n EN+AR + student-app child screens (subjects tabs/tree/lessons) + WhyLockedSheet + lesson stub; reviewer PASS with all 3 blocker fixes applied) — committed
+- **Wave 11:** P2-02-FE + P2-03-FE (browse subjects/lessons + navigate skill tree — `MeResponse.Grade` inclusion + api-client regen + 4 new `@learnexia/ui` primitives (SubjectRow/LessonCard/SkillTreeNode/SegmentedTabs) + Badge boss variant + subject tint + 3 glow shadow tokens in `colors.ts` + i18n EN+AR + student-app child screens (subjects tabs/tree/lessons) + WhyLockedSheet + lesson stub; reviewer PASS with all 3 blocker fixes applied) — PR #70 open
+- **Wave 10:** P4-02-BE (earn XP and level up — Phase 3 Gamification kickoff: woke up Gamification module + new `gamification` schema (`StudentXpProfiles` + `XpAwards`) + `LevelCurve` static service + 2 integration-event handlers consuming `AnswerSubmitted`/`LessonCompleted` + `GET /api/Gamification/Profile` + `IStudentXpQuery` cross-module seam wired into Learning dashboard + UoW assembly-filter guard added to all 4 module behaviors + 32 unit tests + 16 integration tests; SRS XP values 10/50/20 + table-based level curve approved by lead) — merged via PR #73
+- **Wave 10:** P2-12-FE (parent settings tabs — Notifications / Linked children / Security / Plan & billing; 4 panels + Switch primitive + 8 hooks + api-client regen + i18n keys) — merged via PR #69
 - **Wave 9:** P2-03-BE (skill-tree node-state — most BE-1/BE-2 shipped earlier via P2-04; this story adds the `Lesson.IsBoss` flag + `AddLessonIsBoss` migration + `LearningSeeder.MarkBossLessonsAsync` (one boss per Unit) + `IsBoss` on `LessonInUnitDto`/`SingleLessonResponse`/`ContinueTargetDto` + 5 integration tests; Wave 9 closer, Phase 2 BE feature-complete) — ready for PR on feat/P2-03-navigate-skill-tree
 - **Wave 9:** P2-09-BE (home dashboard — `GET /api/Learning/Dashboard` + `GetDashboardQuery` + `DashboardController` + 4 DTOs + new `GetMostRecentActivitySubjectIdAsync` repo method + 11 integration tests; Phase-2 zero-state for XP/Streak/Mission/League) — merged via PR #67
 - **Wave 9:** P2-05-BE (open + complete a lesson — `AddLessonContent` migration adding `Explanation`/`Visual` to `Lesson` + rewritten `GetLessonQueryHandler` with `QuickCheck` + new `[HttpGet("{id:int}")] [Authorize]` route + `LearningSeeder.SeedDemoLessonContentAsync` for 4 Grade-1 root lessons + 11 integration tests including full e2e Start→Submit→Complete + `ex.Message` leak fix) — merged via PR #66
@@ -70,13 +72,13 @@
 | P2-09 | See the home dashboard | ✅ | 🔲 |
 | P2-10 | Seed demo subjects & skill trees | ✅ | — |
 | P2-11 | Author the skill dependency graph (relational, hand-authored) | 🟡 | — |
-| P2-12 | Account settings APIs (Parent module + Notifications prefs + Identity security) | ✅ | 🔲 |
+| P2-12 | Account settings APIs (Parent module + Notifications prefs + Identity security) | ✅ | ✅ |
 
 ## Phase 3 — Gamification *(story IDs `P4-xx`)*
 | Story | Title | Status |
 |---|---|:--:|
 | P4-01 | Emit learning domain events | ✅ |
-| P4-02 | Earn XP and level up | 🔲 |
+| P4-02 | Earn XP and level up | 🟡 |
 | P4-03 | Maintain a daily streak | 🔲 |
 | P4-04 | Lose hearts and enter Practice Mode | 🔲 |
 | P4-05 | Earn badges | 🔲 |
