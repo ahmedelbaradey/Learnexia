@@ -31,6 +31,20 @@ public class StudentXpProfileConfig : IEntityTypeConfiguration<StudentXpProfile>
         builder.Property(x => x.LastAwardAtUtc)
             .IsRequired();
 
+        // Streak columns (P4-03-B1-1)
+        builder.Property(p => p.CurrentStreak)
+            .IsRequired()
+            .HasDefaultValue(0);
+
+        builder.Property(p => p.LongestStreak)
+            .IsRequired()
+            .HasDefaultValue(0);
+
+        builder.Property(p => p.LastActivityDateUtc)
+            .HasColumnName("LastActivityDateUtc")
+            .HasColumnType("date")
+            .IsRequired(false);
+
         // Unique index: one profile row per student. Also the primary read-path index.
         builder.HasIndex(x => x.StudentId)
             .IsUnique()

@@ -17,9 +17,9 @@ namespace Learnexia.Modules.Learning.Application.Features.Dashboard.Queries.GetD
 /// Handles <see cref="GetDashboardQuery"/>.
 /// Returns the home-screen dashboard for the JWT-resolved student.
 ///
-/// Phase-2 shape:
-///   Xp = 0       (TODO P4-02 — real XP from gamification module)
-///   Streak = 0   (TODO P4-03 — real streak from gamification module)
+/// Phase-2 shape (P4-03 updated):
+///   Xp     = real XP from gamification module via IStudentXpQuery (P4-02)
+///   Streak = real streak from gamification module via IStudentStreakQuery (P4-03)
 ///   DailyMission = null  (TODO P4-06 — daily mission engine)
 ///   LeaguePreview = null (TODO P4-07 — leagues engine)
 ///   Continue = the first Available lesson in the most-recently-active subject,
@@ -37,6 +37,7 @@ public class GetDashboardQueryHandler
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
     private readonly IStudentXpQuery _xpQuery;
+    private readonly IStudentStreakQuery _streakQuery;
 
     // Deterministic cross-subject fallback order (Q3 Option A step 5).
     private static readonly string[] FallbackSubjectOrder =
@@ -47,13 +48,15 @@ public class GetDashboardQueryHandler
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer,
-        IStudentXpQuery xpQuery)
+        IStudentXpQuery xpQuery,
+        IStudentStreakQuery streakQuery)
     {
         _repository = repository;
         _currentUser = currentUser;
         _logger = logger;
         _localizer = localizer;
         _xpQuery = xpQuery;
+        _streakQuery = streakQuery;
     }
 
     public async Task<BaseResponse<DashboardDto>> Handle(
@@ -119,17 +122,21 @@ public class GetDashboardQueryHandler
                 }
             }
 
-            // ── Step 8: Read XP snapshot via cross-module seam (P4-02) ────────────────────────
-            // IStudentXpQuery is implemented by Gamification.Infrastructure — no direct DbContext
-            // reference from Learning (module isolation rule 1). Returns null for brand-new students.
+            // ── Step 8: Read XP + Streak snapshots via cross-module seams ───────────────────────
+            // Both queries go to Gamification.Infrastructure through Shared.Contracts seams — no
+            // direct DbContext reference from Learning (module isolation rule 1). Returns null for
+            // brand-new students; callers default to 0 / level-1 on null.
             var xpSnapshot = await _xpQuery.GetByStudentIdAsync(studentId, cancellationToken);
             var xp = xpSnapshot?.TotalXp ?? 0;
             var level = xpSnapshot?.CurrentLevel ?? 1;
 
+            var streakSnapshot = await _streakQuery.GetByStudentIdAsync(studentId, cancellationToken);
+            var streak = streakSnapshot?.CurrentStreak ?? 0;  // P4-03 — real streak from gamification module
+
             // ── Step 9: Assemble DashboardDto ──────────────────────────────────────────────────
             var dto = new DashboardDto(
                 Xp: xp,
-                Streak: 0,                // TODO P4-03 — wire real streak from gamification module
+                Streak: streak,
                 DailyMission: null,       // TODO P4-06 — wire daily mission engine
                 LeaguePreview: null,      // TODO P4-07 — wire leagues engine
                 Continue: continueTarget,

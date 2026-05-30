@@ -8,6 +8,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MediatR" />
+    <PackageReference Include="Hangfire.Core" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Learnexia.Modules.Gamification.Application\Learnexia.Modules.Gamification.Application.csproj" />

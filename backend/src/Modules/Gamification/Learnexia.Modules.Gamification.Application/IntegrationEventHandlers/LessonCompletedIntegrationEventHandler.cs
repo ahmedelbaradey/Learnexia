@@ -1,3 +1,4 @@
+using Learnexia.Modules.Gamification.Application.Features.Streaks.Commands.AdvanceStreak;
 using Learnexia.Modules.Gamification.Application.Features.Xp.Commands.AwardLessonCompletedXp;
 using Learnexia.Shared.Contracts.Learning;
 using Learnexia.Shared.Kernel.Abstractions;
@@ -63,6 +64,26 @@ public sealed class LessonCompletedIntegrationEventHandler
             _logger.LogError(ex,
                 $"P4-02: Error handling LessonCompletedIntegrationEvent " +
                 $"(eventId={notification.EventId}, studentId={notification.StudentId}) — award may be missed.");
+        }
+
+        // Streak advance (P4-03, D6): separate try/catch — a streak crash must NOT roll back the
+        // already-committed XP award. Each _mediator.Send opens its own UnitOfWorkBehavior transaction.
+        try
+        {
+            await _mediator.Send(new AdvanceStreakCommand(
+                StudentId: notification.StudentId,
+                OriginEventId: notification.EventId,
+                OccurredAtUtc: notification.OccurredOnUtc,
+                LessonId: notification.LessonId,
+                SkillId: notification.SkillId),
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                $"P4-03: Error advancing streak " +
+                $"(eventId={notification.EventId}, studentId={notification.StudentId}) " +
+                $"— streak may be missed; XP award already succeeded.");
         }
     }
 }

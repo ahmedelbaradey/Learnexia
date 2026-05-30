@@ -47,8 +47,17 @@ public interface IGamificationRepository
     void UpsertXpProfile(StudentXpProfile profile);
 
     /// <summary>
-    /// Persists all staged changes. Called exclusively by <c>UnitOfWorkBehavior</c>.
+    /// Persists all staged changes. Called exclusively by <c>UnitOfWorkBehavior</c> (for commands)
+    /// and by <c>StreakSweepJob</c> (directly, since the job is not a MediatR command).
     /// Mirrors <c>ILearningRepository.SaveChangesAsync</c>.
     /// </summary>
     Task SaveChangesAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns up to 1 000 <see cref="StudentXpProfile"/> rows where
+    /// <c>CurrentStreak &gt; 0 AND LastActivityDateUtc &lt; threshold</c>.
+    /// Used exclusively by <c>StreakSweepJob</c> to identify students whose streaks have broken
+    /// while they were silent (lazy-detection complement). Batched — caller loops while count == 1000.
+    /// </summary>
+    Task<List<StudentXpProfile>> GetBrokenProfilesAsync(DateOnly threshold, CancellationToken ct = default);
 }

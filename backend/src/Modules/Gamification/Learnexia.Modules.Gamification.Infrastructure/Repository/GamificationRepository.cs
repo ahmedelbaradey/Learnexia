@@ -56,4 +56,12 @@ public sealed class GamificationRepository : IGamificationRepository
     /// <inheritdoc />
     public async Task SaveChangesAsync(CancellationToken ct = default)
         => await _context.SaveChangesAsync(ct);
+
+    /// <inheritdoc />
+    public async Task<List<StudentXpProfile>> GetBrokenProfilesAsync(
+        DateOnly threshold, CancellationToken ct = default)
+        => await _context.StudentXpProfiles
+            .Where(p => p.CurrentStreak > 0 && p.LastActivityDateUtc < threshold)
+            .Take(1000)
+            .ToListAsync(ct);
 }
