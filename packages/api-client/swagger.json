@@ -2321,6 +2321,16 @@
           "Dashboard"
         ],
         "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardDtoBaseResponse"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -4544,6 +4554,16 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttemptListItemDtoListBaseResponse"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -7387,6 +7407,73 @@
         },
         "additionalProperties": false
       },
+      "AttemptListItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lessonId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "accuracyPercentage": {
+            "type": "number",
+            "format": "double"
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hintsUsedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AttemptListItemDtoListBaseResponse": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "$ref": "#/components/schemas/HttpStatusCode"
+          },
+          "successed": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttemptListItemDto"
+            },
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {},
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "AttemptSummaryDto": {
         "type": "object",
         "properties": {
@@ -7587,6 +7674,51 @@
         },
         "additionalProperties": false
       },
+      "ContinueTargetDto": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "subjectName": {
+            "type": "string",
+            "nullable": true
+          },
+          "unitId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unitName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lessonId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lessonName": {
+            "type": "string",
+            "nullable": true
+          },
+          "skillId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "skillName": {
+            "type": "string",
+            "nullable": true
+          },
+          "nodeState": {
+            "$ref": "#/components/schemas/NodeState"
+          },
+          "isBoss": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "CurrentPlanResponse": {
         "type": "object",
         "properties": {
@@ -7616,6 +7748,73 @@
           },
           "data": {
             "$ref": "#/components/schemas/CurrentPlanResponse"
+          },
+          "errors": {
+            "type": "array",
+            "items": {},
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DailyMissionDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "target": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "progress": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardDto": {
+        "type": "object",
+        "properties": {
+          "xp": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "streak": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dailyMission": {
+            "$ref": "#/components/schemas/DailyMissionDto"
+          },
+          "leaguePreview": {
+            "$ref": "#/components/schemas/LeaguePreviewDto"
+          },
+          "continue": {
+            "$ref": "#/components/schemas/ContinueTargetDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardDtoBaseResponse": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "$ref": "#/components/schemas/HttpStatusCode"
+          },
+          "successed": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/DashboardDto"
           },
           "errors": {
             "type": "array",
@@ -8193,6 +8392,31 @@
           "errors": {
             "type": "array",
             "items": {},
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LeaguePreviewDto": {
+        "type": "object",
+        "properties": {
+          "tierName": {
+            "type": "string",
+            "nullable": true
+          },
+          "rank": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "totalPlayers": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "xpThisWeek": {
+            "type": "integer",
+            "format": "int32",
             "nullable": true
           }
         },

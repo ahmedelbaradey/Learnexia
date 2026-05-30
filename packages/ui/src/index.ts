@@ -121,3 +121,14 @@ export type { AttemptSummaryCardProps } from './components/AttemptSummaryCard';
 
 export { ProgressDots } from './components/ProgressDots';
 export type { ProgressDotsProps } from './components/ProgressDots';
+
+// --- W13 home dashboard primitives (P2-09-FE) ---
+export { DashboardHeader } from './components/DashboardHeader';
+export type { DashboardHeaderProps } from './components/DashboardHeader';
+
+export { ContinueCard } from './components/ContinueCard';
+export type { ContinueCardProps } from './components/ContinueCard';
+export type { SubjectKey as ContinueCardSubjectKey } from './components/ContinueCard';
+
+export { MissionBanner } from './components/MissionBanner';
+export type { MissionBannerProps } from './components/MissionBanner';
