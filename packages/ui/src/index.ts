@@ -79,3 +79,7 @@ export type { GradientBoxProps } from './components/GradientBox';
 
 export { Tabs } from './components/Tabs';
 export type { TabsProps, TabItem, TabValue } from './components/Tabs';
+
+// --- P2-12 settings tab primitives --------------------------------------
+export { Switch } from './components/Switch';
+export type { SwitchProps } from './components/Switch';
