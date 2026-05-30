@@ -1,6 +1,9 @@
 using Learnexia.Modules.Learning.Api.Bases;
+using Learnexia.Modules.Learning.Application.Features.Attempts.Dtos;
 using Learnexia.Modules.Learning.Application.Features.Attempts.Queries.GetStudentAttempts;
+using Learnexia.Shared.Kernel.Responses;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Learnexia.Modules.Learning.Api.Controllers;
@@ -21,6 +24,7 @@ public class StudentsController : AppControllerBase
     /// <param name="studentId">The identity user ID of the student whose attempts are requested.</param>
     [HttpGet("{studentId}/Attempts")]
     [Authorize]
+    [ProducesResponseType(typeof(BaseResponse<List<AttemptListItemDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAttempts([FromRoute] int studentId)
         => NewResult(await Mediator.Send(new GetStudentAttemptsQuery { StudentId = studentId }));
 }

@@ -71,12 +71,31 @@ export type {
   ConceptNodeDtoListBaseResponse,
   SkillNodeDto,
   MissingPrerequisiteDto,
+  // W12 — quiz + lesson types (P2-05-FE + P2-06-FE + P2-07-FE)
+  SingleLessonResponse,
+  SingleLessonResponseBaseResponse,
+  StartAttemptResponse,
+  StartAttemptResponseBaseResponse,
+  SubmitAnswerCommand,
+  SubmitAnswerResponse,
+  SubmitAnswerResponseBaseResponse,
+  AttemptSummaryDto,
+  AttemptSummaryDtoBaseResponse,
+  QuizQuestionDto,
+  // W13 — dashboard types (P2-09-FE)
+  DashboardDto,
+  DashboardDtoBaseResponse,
+  ContinueTargetDto,
+  DailyMissionDto,
+  LeaguePreviewDto,
 } from './nswag-client';
 
 export {
   // W11 — learning enums
   NodeState,
   DifficultyLevel,
+  // W12 — quiz enum
+  QuestionType,
 } from './nswag-client';
 
 // P2-12 — NotificationCategory is an enum (not a type); must be exported as a value.

@@ -1,6 +1,9 @@
 using Learnexia.Modules.Learning.Api.Bases;
+using Learnexia.Modules.Learning.Application.Features.Dashboard.Dtos;
 using Learnexia.Modules.Learning.Application.Features.Dashboard.Queries.GetDashboard;
+using Learnexia.Shared.Kernel.Responses;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Learnexia.Modules.Learning.Api.Controllers;
@@ -26,6 +29,7 @@ public class DashboardController : AppControllerBase
     /// </summary>
     [HttpGet]
     [Authorize]
+    [ProducesResponseType(typeof(BaseResponse<DashboardDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Get()
         => NewResult(await Mediator.Send(new GetDashboardQuery()));
 }
