@@ -2,12 +2,15 @@ using Learnexia.Modules.Learning.Api.Bases;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Commands.Add;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Commands.Delete;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Commands.Edit;
+using Learnexia.Modules.Learning.Application.Features.Subjects.Dtos;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Queries.Get;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Queries.GetSubjectLessons;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Queries.GetSubjectsForGrade;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Queries.GetSubjectSkillTree;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Queries.List;
+using Learnexia.Shared.Kernel.Responses;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Learnexia.Modules.Learning.Api.Controllers;
@@ -31,6 +34,7 @@ public class SubjectsController : AppControllerBase
     /// GET /api/learning/Subjects/ForGrade?grade={n}
     /// </summary>
     [HttpGet("ForGrade")]
+    [ProducesResponseType(typeof(BaseResponse<List<StudentSubjectDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetForGrade([FromQuery] int grade)
         => NewResult(await Mediator.Send(new GetSubjectsForGradeQuery { Grade = grade }));
 
@@ -40,6 +44,7 @@ public class SubjectsController : AppControllerBase
     /// </summary>
     [HttpGet("{id:int}/Lessons")]
     [Authorize]   // P2-04: tightened from anonymous. BREAKING CHANGE: unauthenticated callers now get 401.
+    [ProducesResponseType(typeof(BaseResponse<List<UnitWithLessonsDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetLessons(int id)
         => NewResult(await Mediator.Send(new GetSubjectLessonsQuery { SubjectId = id }));
 
@@ -49,6 +54,7 @@ public class SubjectsController : AppControllerBase
     /// </summary>
     [HttpGet("{id:int}/SkillTree")]
     [Authorize]   // P2-04: tightened from anonymous. BREAKING CHANGE: unauthenticated callers now get 401.
+    [ProducesResponseType(typeof(BaseResponse<List<ConceptNodeDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSkillTree(int id)
         => NewResult(await Mediator.Send(new GetSubjectSkillTreeQuery { SubjectId = id }));
 

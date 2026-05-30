@@ -4690,6 +4690,16 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentSubjectDtoListBaseResponse"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -4733,6 +4743,16 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitWithLessonsDtoListBaseResponse"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -4776,6 +4796,16 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConceptNodeDtoListBaseResponse"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -7383,6 +7413,55 @@
         },
         "additionalProperties": false
       },
+      "ConceptNodeDto": {
+        "type": "object",
+        "properties": {
+          "conceptId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SkillNodeDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ConceptNodeDtoListBaseResponse": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "$ref": "#/components/schemas/HttpStatusCode"
+          },
+          "successed": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConceptNodeDto"
+            },
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {},
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "CurrentPlanResponse": {
         "type": "object",
         "properties": {
@@ -7994,6 +8073,49 @@
         },
         "additionalProperties": false
       },
+      "LessonInUnitDto": {
+        "type": "object",
+        "properties": {
+          "lessonId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "difficulty": {
+            "$ref": "#/components/schemas/DifficultyLevel"
+          },
+          "sequenceOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isLocked": {
+            "type": "boolean",
+            "deprecated": true
+          },
+          "skillId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "state": {
+            "$ref": "#/components/schemas/NodeState"
+          },
+          "isBoss": {
+            "type": "boolean"
+          },
+          "missingPrerequisites": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MissingPrerequisiteDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "LinkChildCommand": {
         "type": "object",
         "properties": {
@@ -8113,6 +8235,11 @@
           "avatarUrl": {
             "type": "string",
             "nullable": true
+          },
+          "grade": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -8140,6 +8267,41 @@
           }
         },
         "additionalProperties": false
+      },
+      "MissingPrerequisiteDto": {
+        "type": "object",
+        "properties": {
+          "prereqSkillId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "prereqSkillName": {
+            "type": "string",
+            "nullable": true
+          },
+          "prereqNodeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "requiredAccuracy": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "currentAccuracy": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "NodeState": {
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "type": "integer",
+        "format": "int32"
       },
       "NotificationCategory": {
         "enum": [
@@ -8522,6 +8684,46 @@
         },
         "additionalProperties": false
       },
+      "SkillNodeDto": {
+        "type": "object",
+        "properties": {
+          "skillId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "masteryThreshold": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "estimatedTimeMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "state": {
+            "$ref": "#/components/schemas/NodeState"
+          },
+          "lessonIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "nullable": true
+          },
+          "missingPrerequisites": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MissingPrerequisiteDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "StringBaseResponse": {
         "type": "object",
         "properties": {
@@ -8537,6 +8739,52 @@
           },
           "data": {
             "type": "string",
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {},
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "StudentSubjectDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "gradeNumber": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "StudentSubjectDtoListBaseResponse": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "$ref": "#/components/schemas/HttpStatusCode"
+          },
+          "successed": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentSubjectDto"
+            },
             "nullable": true
           },
           "errors": {
@@ -8568,6 +8816,59 @@
           },
           "hintUsed": {
             "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UnitWithLessonsDto": {
+        "type": "object",
+        "properties": {
+          "unitId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "sequenceOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lessons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LessonInUnitDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UnitWithLessonsDtoListBaseResponse": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "$ref": "#/components/schemas/HttpStatusCode"
+          },
+          "successed": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnitWithLessonsDto"
+            },
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {},
+            "nullable": true
           }
         },
         "additionalProperties": false

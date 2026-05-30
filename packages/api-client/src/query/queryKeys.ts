@@ -39,6 +39,15 @@ export const queryKeys = {
     list: (filters?: object) =>
       [...queryKeys.users.all, 'list', filters ?? {}] as const,
   },
+  learning: {
+    all: ['learning'] as const,
+    subjectsForGrade: (grade: number | undefined) =>
+      [...queryKeys.learning.all, 'subjects-for-grade', grade] as const,
+    subjectLessons: (subjectId: number) =>
+      [...queryKeys.learning.all, 'subject-lessons', subjectId] as const,
+    subjectSkillTree: (subjectId: number) =>
+      [...queryKeys.learning.all, 'subject-skill-tree', subjectId] as const,
+  },
 } as const;
 
 export type QueryKeys = typeof queryKeys;

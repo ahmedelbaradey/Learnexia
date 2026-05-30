@@ -43,24 +43,40 @@ export type {
   UserProfileResponseDtoBaseResponse,
   GetUserListResponse,
   GetUserListResponsePaginatedResult,
-  // P2-12 — Notifications tab (interfaces/types)
+  // W10 / P2-12 — Notifications tab (interfaces/types)
   NotificationPreferenceItemDto,
   NotificationPreferencesResponse,
   NotificationPreferencesResponseBaseResponse,
   UpdateMyNotificationPreferencesCommand,
-  // P2-12 — Linked children tab
+  // W10 / P2-12 — Linked children tab
   UpdateChildCommand,
   UpdatedChildResponse,
   UpdatedChildResponseBaseResponse,
   UnlinkChildCommand,
   BooleanBaseResponse,
-  // P2-12 — Security tab
+  // W10 / P2-12 — Security tab
   ChangePasswordCommand,
   SessionInfo,
   SessionInfoListBaseResponse,
-  // P2-12 — Plan & billing tab
+  // W10 / P2-12 — Plan & billing tab
   CurrentPlanResponse,
   CurrentPlanResponseBaseResponse,
+  // W11 — learning types (P2-02-FE + P2-03-FE)
+  StudentSubjectDto,
+  StudentSubjectDtoListBaseResponse,
+  UnitWithLessonsDto,
+  UnitWithLessonsDtoListBaseResponse,
+  LessonInUnitDto,
+  ConceptNodeDto,
+  ConceptNodeDtoListBaseResponse,
+  SkillNodeDto,
+  MissingPrerequisiteDto,
+} from './nswag-client';
+
+export {
+  // W11 — learning enums
+  NodeState,
+  DifficultyLevel,
 } from './nswag-client';
 
 // P2-12 — NotificationCategory is an enum (not a type); must be exported as a value.

@@ -244,11 +244,21 @@ export interface IClient {
 
     subjectsDELETE(id: number | undefined): Promise<void>;
 
-    forGrade(grade: number | undefined): Promise<void>;
+    /**
+     * @param grade (optional) 
+     * @return OK
+     */
+    forGrade(grade: number | undefined): Promise<StudentSubjectDtoListBaseResponse>;
 
-    lessonsGET3(id: number): Promise<void>;
+    /**
+     * @return OK
+     */
+    lessonsGET3(id: number): Promise<UnitWithLessonsDtoListBaseResponse>;
 
-    skillTree(id: number): Promise<void>;
+    /**
+     * @return OK
+     */
+    skillTree(id: number): Promise<ConceptNodeDtoListBaseResponse>;
 
     create8(body: AddSubjectCommand | undefined): Promise<void>;
 
@@ -4278,7 +4288,11 @@ export class Client implements IClient {
         return Promise.resolve<void>(null as any);
     }
 
-    forGrade(grade: number | undefined): Promise<void> {
+    /**
+     * @param grade (optional) 
+     * @return OK
+     */
+    forGrade(grade: number | undefined): Promise<StudentSubjectDtoListBaseResponse> {
         let url_ = this.baseUrl + "/api/learning/Subjects/ForGrade?";
         if (grade === null)
             throw new globalThis.Error("The parameter 'grade' cannot be null.");
@@ -4289,6 +4303,7 @@ export class Client implements IClient {
         let options_: RequestInit = {
             method: "GET",
             headers: {
+                "Accept": "application/json"
             }
         };
 
@@ -4297,10 +4312,16 @@ export class Client implements IClient {
         });
     }
 
-    protected processForGrade(response: Response): Promise<void> {
+    protected processForGrade(response: Response): Promise<StudentSubjectDtoListBaseResponse> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 400) {
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StudentSubjectDtoListBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
             return response.text().then((_responseText) => {
             let result400: any = null;
             result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
@@ -4321,10 +4342,13 @@ export class Client implements IClient {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<void>(null as any);
+        return Promise.resolve<StudentSubjectDtoListBaseResponse>(null as any);
     }
 
-    lessonsGET3(id: number): Promise<void> {
+    /**
+     * @return OK
+     */
+    lessonsGET3(id: number): Promise<UnitWithLessonsDtoListBaseResponse> {
         let url_ = this.baseUrl + "/api/learning/Subjects/{id}/Lessons";
         if (id === undefined || id === null)
             throw new globalThis.Error("The parameter 'id' must be defined.");
@@ -4334,6 +4358,7 @@ export class Client implements IClient {
         let options_: RequestInit = {
             method: "GET",
             headers: {
+                "Accept": "application/json"
             }
         };
 
@@ -4342,10 +4367,16 @@ export class Client implements IClient {
         });
     }
 
-    protected processLessonsGET3(response: Response): Promise<void> {
+    protected processLessonsGET3(response: Response): Promise<UnitWithLessonsDtoListBaseResponse> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 400) {
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnitWithLessonsDtoListBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
             return response.text().then((_responseText) => {
             let result400: any = null;
             result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
@@ -4366,10 +4397,13 @@ export class Client implements IClient {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<void>(null as any);
+        return Promise.resolve<UnitWithLessonsDtoListBaseResponse>(null as any);
     }
 
-    skillTree(id: number): Promise<void> {
+    /**
+     * @return OK
+     */
+    skillTree(id: number): Promise<ConceptNodeDtoListBaseResponse> {
         let url_ = this.baseUrl + "/api/learning/Subjects/{id}/SkillTree";
         if (id === undefined || id === null)
             throw new globalThis.Error("The parameter 'id' must be defined.");
@@ -4379,6 +4413,7 @@ export class Client implements IClient {
         let options_: RequestInit = {
             method: "GET",
             headers: {
+                "Accept": "application/json"
             }
         };
 
@@ -4387,10 +4422,16 @@ export class Client implements IClient {
         });
     }
 
-    protected processSkillTree(response: Response): Promise<void> {
+    protected processSkillTree(response: Response): Promise<ConceptNodeDtoListBaseResponse> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 400) {
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ConceptNodeDtoListBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
             return response.text().then((_responseText) => {
             let result400: any = null;
             result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
@@ -4411,7 +4452,7 @@ export class Client implements IClient {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<void>(null as any);
+        return Promise.resolve<ConceptNodeDtoListBaseResponse>(null as any);
     }
 
     create8(body: AddSubjectCommand | undefined): Promise<void> {
@@ -6280,6 +6321,20 @@ export interface ChangePasswordCommand {
     confirmPassword?: string | undefined;
 }
 
+export interface ConceptNodeDto {
+    conceptId?: number;
+    name?: string | undefined;
+    skills?: SkillNodeDto[] | undefined;
+}
+
+export interface ConceptNodeDtoListBaseResponse {
+    statusCode?: HttpStatusCode;
+    successed?: boolean;
+    message?: string | undefined;
+    data?: ConceptNodeDto[] | undefined;
+    errors?: any[] | undefined;
+}
+
 export interface CurrentPlanResponse {
     planName?: string | undefined;
     status?: string | undefined;
@@ -6514,6 +6569,18 @@ export interface JwtAuthResponseBaseResponse {
     errors?: any[] | undefined;
 }
 
+export interface LessonInUnitDto {
+    lessonId?: number;
+    name?: string | undefined;
+    difficulty?: DifficultyLevel;
+    sequenceOrder?: number;
+    isLocked?: boolean;
+    skillId?: number | undefined;
+    state?: NodeState;
+    isBoss?: boolean;
+    missingPrerequisites?: MissingPrerequisiteDto[] | undefined;
+}
+
 export interface LinkChildCommand {
     childEmail?: string | undefined;
 }
@@ -6550,6 +6617,7 @@ export interface MeResponse {
     phone?: string | undefined;
     country?: string | undefined;
     avatarUrl?: string | undefined;
+    grade?: number | undefined;
 }
 
 export interface MeResponseBaseResponse {
@@ -6558,6 +6626,20 @@ export interface MeResponseBaseResponse {
     message?: string | undefined;
     data?: MeResponse;
     errors?: any[] | undefined;
+}
+
+export interface MissingPrerequisiteDto {
+    prereqSkillId?: number;
+    prereqSkillName?: string | undefined;
+    prereqNodeId?: number;
+    requiredAccuracy?: number;
+    currentAccuracy?: number;
+}
+
+export enum NodeState {
+    _0 = 0,
+    _1 = 1,
+    _2 = 2,
 }
 
 export enum NotificationCategory {
@@ -6693,11 +6775,35 @@ export interface SingleHolderRoleAvailabilityResponseBaseResponse {
     errors?: any[] | undefined;
 }
 
+export interface SkillNodeDto {
+    skillId?: number;
+    name?: string | undefined;
+    masteryThreshold?: number;
+    estimatedTimeMinutes?: number;
+    state?: NodeState;
+    lessonIds?: number[] | undefined;
+    missingPrerequisites?: MissingPrerequisiteDto[] | undefined;
+}
+
 export interface StringBaseResponse {
     statusCode?: HttpStatusCode;
     successed?: boolean;
     message?: string | undefined;
     data?: string | undefined;
+    errors?: any[] | undefined;
+}
+
+export interface StudentSubjectDto {
+    id?: number;
+    name?: string | undefined;
+    gradeNumber?: number;
+}
+
+export interface StudentSubjectDtoListBaseResponse {
+    statusCode?: HttpStatusCode;
+    successed?: boolean;
+    message?: string | undefined;
+    data?: StudentSubjectDto[] | undefined;
     errors?: any[] | undefined;
 }
 
@@ -6707,6 +6813,21 @@ export interface SubmitAnswerCommand {
     answerPayload?: string | undefined;
     timeSpentSeconds?: number;
     hintUsed?: boolean;
+}
+
+export interface UnitWithLessonsDto {
+    unitId?: number;
+    name?: string | undefined;
+    sequenceOrder?: number;
+    lessons?: LessonInUnitDto[] | undefined;
+}
+
+export interface UnitWithLessonsDtoListBaseResponse {
+    statusCode?: HttpStatusCode;
+    successed?: boolean;
+    message?: string | undefined;
+    data?: UnitWithLessonsDto[] | undefined;
+    errors?: any[] | undefined;
 }
 
 export interface UnlinkChildCommand {

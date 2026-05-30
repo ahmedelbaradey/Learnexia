@@ -1,13 +1,55 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-30 (**Wave 10 — two parallel tracks: (BE) Phase 3 Gamification kickoff — P4-02-BE open as PR #73; (FE) Phase 2 FE start — P2-12-FE merged via PR #69. Phase 2 backend feature-complete**).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-30 (**Phase 2 backend feature-complete; Wave 10 = P2-12-FE Settings tabs merged via PR #69 + P4-02-BE earn XP merged via PR #73 (Phase 3 Gamification kickoff); Wave 11 = P2-02-FE + P2-03-FE student-facing Subjects/Lessons/Skill-tree on branch `feat/W11-P2-02-P2-03-FE` (merged with main, includes W10 BE+FE), PR #70 open**).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
 
-## Wave 10 (BE track) — Phase 3 Gamification kickoff
+## Wave 11 — Phase 2 FE student-facing browse (P2-02-FE + P2-03-FE, ready for PR)
 
-### P4-02 — Earn XP and level up ✅ Batches 1–7 complete, ready for PR
+**Branch:** `feat/W11-P2-02-P2-03-FE` (off main, PR pending).
 
-**What's on branch `feat/P4-02-earn-xp-level-up` (ready for PR):**
+**What's on the branch:**
+- **BE `MeResponse.Grade : int?`** — Identity `MeResponse` DTO + `GetMeQueryHandler` populate `Grade` from `User.Grade` (already on the entity). 2 new integration tests in `P1_09_Me_Tests.cs` (child Grade returned, parent null). All 18 P1-09 tests green.
+- **BE `[ProducesResponseType]` on `SubjectsController`** — the 3 student-facing endpoints (`ForGrade`, `{id}/Lessons`, `{id}/SkillTree`) gained `[ProducesResponseType(typeof(BaseResponse<List<...Dto>>), 200)]` so NSwag emits typed clients (previously `Promise<void>`). Pattern matches Identity's `UsersController.Me`.
+- **api-client regenerated** — new methods `forGrade`, `lessons`, `skillTree`; new types `StudentSubjectDto`, `UnitWithLessonsDto`, `LessonInUnitDto`, `ConceptNodeDto`, `SkillNodeDto`, `MissingPrerequisiteDto`, `NodeState` enum (int: 0=Locked, 1=Available, 2=Completed); `MeResponse.grade?: number`.
+- **3 new `@learnexia/api-client` hooks**: `useSubjectsForGrade(grade)`, `useSubjectLessons(subjectId)`, `useSubjectSkillTree(subjectId)`. New `queryKeys.learning.*` namespace.
+- **4 new `@learnexia/ui` primitives** + 1 Badge variant:
+  - `SubjectRow` — student-facing subject card.
+  - `LessonCard` — vertical card; state pill via `NodeState`; logical `end={14}` lock + Boss badges.
+  - `SkillTreeNode` — 72px disc + state visuals + `hasMissingPrereqs` + `isBoss` overlay.
+  - `Badge variant="boss"` — 👑 Boss pill.
+  - `SegmentedTabs` — horizontal segmented control (sibling of `Tabs`).
+- **New tokens** in `colors.ts`: per-subject tint + 3 glow shadow tokens.
+- **i18n** — EN + AR under `child.subjects.*`, `child.skillTree.*`, `child.lessons.stub.*`.
+- **Student-app screens:**
+  - `(child)/index.tsx` — Subjects list (grade from `useMe`, defensive 4-subject filter, shimmer skeletons gated on `meQuery.isLoading || subjectsQuery.isLoading` so no empty-state flash).
+  - `(child)/subjects/[subjectId]/_layout.tsx` + `index.tsx` (Lessons) + `tree.tsx` (Skill Tree) — `SegmentedTabs` shell + Unit-grouped lessons + concept-grouped skill nodes. In-memory boss derivation by joining lessons + tree on `skillId`.
+  - `(child)/lessons/[lessonId].tsx` — STUB (Wave 12 replaces).
+  - `(child)/_components/WhyLockedSheet.tsx` — inline (NOT in `@learnexia/ui`); web modal / native bottom sheet; tokens via `colors` import.
+- **Reviewer PASS after fixes** → `docs/briefs/W11-P2-02-P2-03-FE-review.md`. Fixed: 3 raw-hex/physical-position blockers (`WhyLockedSheet` CTA + overlay + card bg via tokens; `LessonCard` `end={14}` logical pos), should-fix Me loading flash, should-fix RTL chevron in lesson stub.
+
+**Key decisions:**
+- `SegmentedTabs` shipped as a **sibling primitive** to `Tabs` (not a refactor) per design spec "smaller diff" guidance.
+- Boss derivation is **in-memory** (not BE join) — both queries already fire on the screen.
+- Lesson screen is a stub until Wave 12.
+- No `api-tester`/`security-auditor` (no new BE endpoints with new risk surface; covered by existing P1-09 + P2-02 BE tests).
+
+**Non-blocking follow-ups** (chore PR):
+- `SkillTreeNode` still has 3 raw-hex disc colors + shadow strings (tokens added but not yet wired). Wire next pass.
+- `WhyLockedSheet.lockedItemName` prop declared but not rendered.
+- Native pulse animation on `SkillTreeNode` Available state = web-only CSS keyframe (no native pulse this wave).
+- `useSubjectsForGrade` empty-state copy when BE returns zero subjects for a valid grade (currently identical to no-grade state).
+
+---
+
+## Wave 10 — Phase 2 FE start (P2-12-FE, merged via PR #69)
+
+---
+
+## Wave 10 (BE track) — Phase 3 Gamification kickoff (P4-02-BE, merged via PR #73)
+
+### P4-02 — Earn XP and level up ✅ Merged via PR #73
+
+**What's on main (PR #73):**
 
 **Phase 3 Gamification kickoff — waking up the Gamification module skeleton and landing the first real business feature: XP engine + ledger + level computation.**
 
@@ -60,11 +102,13 @@
 **Pre-existing test failures (tracked separately, not regressions):**
 - P2-02 TC-1, P2-04 TC-09, P2-09 C11 — logged; not blocking Phase 3.
 
+---
+
 ## Wave 10 (FE track) — Phase 2 FE start (P2-12-FE, merged via PR #69)
 
 ### P2-12-FE — Parent Settings tabs (Notifications / Linked children / Security / Plan)
 
-**Branch:** `feat/W10-P2-12-FE-settings-tabs` (off main, PR pending).
+**Branch:** `feat/W10-P2-12-FE-settings-tabs` — merged to main.
 
 **What's on the branch:**
 - **`Switch` primitive** added to `@learnexia/ui` — 44×24 track + 20px thumb, on=`$primary` w/ `$primaryGlow`, off=`$cardSoft`, thumb=`$fg1`, 160ms `cubic-bezier(0.16,1,0.3,1)`, logical-RTL thumb via `insetInlineStart`, `accessibilityRole="switch"` + `accessibilityState={checked,disabled}`, 44px min touch target, focus outline 2px `$primary`. Mirrors `CheckboxField` prop shape.

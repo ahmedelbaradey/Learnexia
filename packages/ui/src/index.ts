@@ -80,6 +80,19 @@ export type { GradientBoxProps } from './components/GradientBox';
 export { Tabs } from './components/Tabs';
 export type { TabsProps, TabItem, TabValue } from './components/Tabs';
 
-// --- P2-12 settings tab primitives --------------------------------------
+// --- W10 / P2-12 settings tab primitives --------------------------------
 export { Switch } from './components/Switch';
 export type { SwitchProps } from './components/Switch';
+
+// --- W11 learning primitives (P2-02-FE + P2-03-FE) ----------------------
+export { SubjectRow } from './components/SubjectRow';
+export type { SubjectRowProps, SubjectKey } from './components/SubjectRow';
+
+export { LessonCard } from './components/LessonCard';
+export type { LessonCardProps, LessonState } from './components/LessonCard';
+
+export { SkillTreeNode } from './components/SkillTreeNode';
+export type { SkillTreeNodeProps, SkillNodeState } from './components/SkillTreeNode';
+
+export { SegmentedTabs } from './components/SegmentedTabs';
+export type { SegmentedTabsProps, SegmentItem, SegmentValue } from './components/SegmentedTabs';
