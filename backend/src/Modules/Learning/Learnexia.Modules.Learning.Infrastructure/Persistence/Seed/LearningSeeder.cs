@@ -43,6 +43,7 @@ public static class LearningSeeder
         var logger = serviceProvider.GetService<ILoggerManager>();
         await SeedSkillGraphAsync(db, logger);
         await SeedDemoLessonContentAsync(db, logger);
+        await MarkBossLessonsAsync(db, logger);
     }
 
     // -------------------------------------------------------------------------
@@ -504,6 +505,78 @@ public static class LearningSeeder
         db.KnowledgeEdges.AddRange(newEdges);
         await db.SaveChangesAsync(SystemUserId);
         logger?.LogInfo($"P2-11 seed: created {newEdges.Count} new KnowledgeEdge(s).");
+    }
+
+    // -------------------------------------------------------------------------
+    // Boss-lesson marking (P2-03)
+    // Marks the highest-SequenceOrder lesson in each Unit as IsBoss = true.
+    // All other lessons in the unit are set to IsBoss = false (prevents drift).
+    // Idempotent: commits only when the change tracker detects a difference.
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Marks the highest-<see cref="Lesson.SequenceOrder"/> lesson of each <see cref="Unit"/>
+    /// as <see cref="Lesson.IsBoss"/> = <c>true</c>; sets all other lessons in the unit to
+    /// <c>false</c>. Idempotent: on subsequent runs the change tracker has no pending changes
+    /// and <see cref="LearningDbContext.SaveChangesAsync(int)"/> is not called.
+    /// Called at the end of <see cref="SeedAsync"/> after <c>SeedDemoLessonContentAsync</c>.
+    /// </summary>
+    private static async Task MarkBossLessonsAsync(LearningDbContext db, ILoggerManager? logger)
+    {
+        try
+        {
+            // Group lessons by UnitId, find the Id of the max-SequenceOrder lesson per group.
+            // Tie-break: lowest Id wins (defensive; seed invariant prevents ties).
+            var bossLessonIds = await db.Lessons
+                .GroupBy(l => l.UnitId)
+                .Select(g => g.OrderByDescending(l => l.SequenceOrder).ThenBy(l => l.Id).First().Id)
+                .ToListAsync();
+
+            // Load only the lessons that should be boss-marked (tracked — EF can update them).
+            var bossLessons = await db.Lessons
+                .Where(l => bossLessonIds.Contains(l.Id))
+                .ToListAsync();
+
+            // Load non-boss lessons (tracked — EF can update them if drift occurred).
+            var nonBossLessons = await db.Lessons
+                .Where(l => !bossLessonIds.Contains(l.Id))
+                .ToListAsync();
+
+            var updated = 0;
+
+            foreach (var lesson in bossLessons)
+            {
+                if (!lesson.IsBoss)
+                {
+                    lesson.IsBoss = true;
+                    updated++;
+                }
+            }
+
+            foreach (var lesson in nonBossLessons)
+            {
+                if (lesson.IsBoss)
+                {
+                    lesson.IsBoss = false;
+                    updated++;
+                }
+            }
+
+            if (db.ChangeTracker.HasChanges())
+            {
+                await db.SaveChangesAsync(SystemUserId);
+                logger?.LogInfo($"P2-03 seed: marked {bossLessons.Count(l => l.IsBoss)} lesson(s) as boss; {updated} row(s) updated.");
+            }
+            else
+            {
+                logger?.LogInfo("P2-03 seed: MarkBossLessonsAsync — all bosses already marked; nothing to do.");
+            }
+        }
+        catch (Exception ex)
+        {
+            logger?.LogError(ex, "P2-03: MarkBossLessonsAsync failed");
+            // Do NOT throw — keep startup tolerant per existing seeder pattern.
+        }
     }
 
     // -------------------------------------------------------------------------

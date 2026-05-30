@@ -26,6 +26,12 @@ public record SingleLessonResponse : LessonDto
     public string? Visual { get; set; }
 
     /// <summary>
+    /// True when this lesson is the end-of-unit boss/challenge (FR-LR-2 fourth node category).
+    /// Orthogonal to <see cref="NodeState"/> — a boss can be Locked, Available, or Completed.
+    /// </summary>
+    public bool IsBoss { get; set; }
+
+    /// <summary>
     /// First <see cref="QuizQuestionDto"/> for this lesson by Id ASC. Null if the lesson
     /// has no quiz questions yet. <c>CorrectAnswer</c> is never included in this DTO.
     /// </summary>

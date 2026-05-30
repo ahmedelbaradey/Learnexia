@@ -413,6 +413,13 @@ public sealed class P2_09_HomeDashboard_Tests : IAsyncLifetime
                 "continue.skillId when non-null must be > 0; body: {0}", body);
         }
         // skillName — nullable; allowed to be null when SkillId is null
+
+        // isBoss — P2-03: field must be present and false for a fresh Grade-1 student.
+        // The fresh-student fallback lands on "Introduction to Counting (G1)" (SequenceOrder=1),
+        // which is the FIRST lesson in Math G1 Unit 1 — NOT the highest-SequenceOrder lesson,
+        // so it is never marked as boss by LearningSeeder.MarkBossLessonsAsync.
+        TryProp(ct, "isBoss", out var isBoss).Should().BeTrue("isBoss field must be present on ContinueTargetDto; body: {0}", body);
+        isBoss.GetBoolean().Should().BeFalse("fresh Grade-1 student lands on Introduction to Counting (G1), which is SequenceOrder=1 — not a boss lesson; body: {0}", body);
     }
 
     // =========================================================================

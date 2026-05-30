@@ -224,7 +224,8 @@ public class GetDashboardQueryHandler
             LessonName: firstAvailable.Name,
             SkillId: firstAvailable.SkillId,
             SkillName: skillName,
-            NodeState: NodeState.Available    // Continue target is always Available
+            NodeState: NodeState.Available,    // Continue target is always Available
+            IsBoss: firstAvailable.IsBoss      // P2-03
         );
     }
 }

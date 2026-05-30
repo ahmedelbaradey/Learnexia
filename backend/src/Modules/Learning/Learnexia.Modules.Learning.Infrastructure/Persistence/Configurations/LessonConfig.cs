@@ -60,5 +60,9 @@ public class LessonConfig : IEntityTypeConfiguration<Lesson>
         builder.Property(x => x.Visual)
             .HasMaxLength(1024)
             .IsRequired(false);
+
+        // P2-03: boss flag — non-nullable; defaultValue:false is set in the migration.
+        builder.Property(x => x.IsBoss)
+            .IsRequired();
     }
 }
