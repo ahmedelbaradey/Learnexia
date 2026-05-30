@@ -70,6 +70,28 @@ export const colors = {
   /** 70%-alpha white for splash/overlay text on the purple bg (align-splash M5/M6/M9). */
   fg2Alpha: 'rgba(255, 255, 255, 0.70)',
 
+  // ---- Subject tints (W11 — SubjectRow icon tile) ----
+  /** Math: indigo/primary family. */
+  subjectMathFg: '#4F46E5',   // $primary
+  subjectMathSoft: 'rgba(79, 70, 229, 0.18)', // $primarySoft
+  /** Science: green/success family. */
+  subjectScienceFg: '#22C55E', // $success
+  subjectScienceSoft: 'rgba(34, 197, 94, 0.18)', // $successSoft
+  /** Arabic: warm orange accent (disambiguates from English purple). */
+  subjectArabicFg: '#F59E0B',  // $accent
+  subjectArabicSoft: 'rgba(245, 158, 11, 0.18)', // $warningSoft
+  /** English: purple family. */
+  subjectEnglishFg: '#A855F7', // $purple
+  subjectEnglishSoft: 'rgba(168, 85, 247, 0.18)', // $purpleSoft
+
+  // ---- Skill-tree glow shadows (W11 — SkillTreeNode, flagged in design spec §5.4) ----
+  /** Available skill-tree node stronger glow. */
+  shadowPrimaryGlowStrong: '0 0 28px rgba(99, 102, 241, 0.6)',
+  /** Completed skill-tree node glow. */
+  shadowSuccessGlow: '0 8px 20px rgba(34, 197, 94, 0.45)',
+  /** Boss skill-tree node glow. */
+  shadowDangerGlow: '0 0 28px rgba(239, 68, 68, 0.55)',
+
   // ---- Borders ----
   border: 'rgba(255, 255, 255, 0.08)',
   borderStrong: 'rgba(255, 255, 255, 0.16)',

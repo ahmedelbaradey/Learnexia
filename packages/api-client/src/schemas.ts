@@ -47,6 +47,22 @@ export type {
   UserProfileResponseDtoBaseResponse,
   GetUserListResponse,
   GetUserListResponsePaginatedResult,
+  // Learning — W11 (P2-02-FE + P2-03-FE)
+  StudentSubjectDto,
+  StudentSubjectDtoListBaseResponse,
+  UnitWithLessonsDto,
+  UnitWithLessonsDtoListBaseResponse,
+  LessonInUnitDto,
+  ConceptNodeDto,
+  ConceptNodeDtoListBaseResponse,
+  SkillNodeDto,
+  MissingPrerequisiteDto,
+} from './generated';
+
+export {
+  // Learning enums — W11
+  NodeState,
+  DifficultyLevel,
 } from './generated';
 
 // Re-export the generated typed client + its exception for advanced callers.

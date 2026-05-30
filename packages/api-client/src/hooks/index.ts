@@ -33,3 +33,8 @@ export { useMyChildren } from './useMyChildren';
 // P1-12 account-profile hooks.
 export { useMyProfile } from './useMyProfile';
 export { useUpdateProfile } from './useUpdateProfile';
+
+// W11 learning hooks (P2-02-FE + P2-03-FE).
+export { useSubjectsForGrade } from './useSubjectsForGrade';
+export { useSubjectLessons } from './useSubjectLessons';
+export { useSubjectSkillTree } from './useSubjectSkillTree';

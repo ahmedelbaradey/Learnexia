@@ -43,4 +43,20 @@ export type {
   UserProfileResponseDtoBaseResponse,
   GetUserListResponse,
   GetUserListResponsePaginatedResult,
+  // W11 — learning types (P2-02-FE + P2-03-FE)
+  StudentSubjectDto,
+  StudentSubjectDtoListBaseResponse,
+  UnitWithLessonsDto,
+  UnitWithLessonsDtoListBaseResponse,
+  LessonInUnitDto,
+  ConceptNodeDto,
+  ConceptNodeDtoListBaseResponse,
+  SkillNodeDto,
+  MissingPrerequisiteDto,
+} from './nswag-client';
+
+export {
+  // W11 — learning enums
+  NodeState,
+  DifficultyLevel,
 } from './nswag-client';

@@ -24,7 +24,7 @@ import { GradientFill } from '../../internal/GradientFill';
 import { tryLoadMoti } from '../../internal/moti';
 import { YStack, Text } from '../../internal/primitives';
 
-export type BadgeVariant = 'bronze' | 'silver' | 'gold' | 'legendary' | 'locked';
+export type BadgeVariant = 'bronze' | 'silver' | 'gold' | 'legendary' | 'locked' | 'boss';
 
 export interface BadgeProps {
   variant: BadgeVariant;
@@ -44,6 +44,7 @@ const ICONS: Record<BadgeVariant, string> = {
   gold: '🥇',
   legendary: '👑',
   locked: '🔒',
+  boss: '👑',
 };
 
 const DISC_STOPS = {
@@ -68,6 +69,40 @@ export function Badge({
   accessibilityLabel,
 }: BadgeProps) {
   const locked = variant === 'locked';
+
+  // Boss variant renders as a pill (design spec §3.4), not a disc.
+  if (variant === 'boss') {
+    return (
+      <Stack
+        flexDirection="row"
+        alignItems="center"
+        gap={4}
+        paddingHorizontal={10}
+        paddingVertical={4}
+        borderRadius={9999}
+        borderWidth={1}
+        borderColor="$streak"
+        backgroundColor="$streakSoft"
+        accessibilityRole="image"
+        accessible
+        accessibilityLabel={accessibilityLabel}
+        aria-label={accessibilityLabel}
+      >
+        <Text
+          fontSize={10}
+          fontWeight="800"
+          textTransform="uppercase"
+          letterSpacing={0.4}
+          color="$streak"
+          fontFamily="$heading"
+          style={{ fontVariant: ['tabular-nums'] }}
+        >
+          {`👑 ${label}`}
+        </Text>
+      </Stack>
+    );
+  }
+
   const labelColor = locked ? '$fg4' : variant === 'legendary' ? '$purpleLight' : '$fg2';
 
   const moti = tryLoadMoti();
