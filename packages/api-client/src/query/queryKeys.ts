@@ -38,6 +38,10 @@ export const queryKeys = {
       [...queryKeys.learning.all, 'subject-lessons', subjectId] as const,
     subjectSkillTree: (subjectId: number) =>
       [...queryKeys.learning.all, 'subject-skill-tree', subjectId] as const,
+    // W12 quiz hooks — lesson detail by id.
+    lesson: (lessonId: number) =>
+      [...queryKeys.learning.all, 'lesson', lessonId] as const,
+    dashboard: () => [...queryKeys.learning.all, 'dashboard'] as const,
   },
 } as const;
 

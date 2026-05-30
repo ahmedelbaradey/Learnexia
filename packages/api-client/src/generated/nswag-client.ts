@@ -149,7 +149,10 @@ export interface IClient {
 
     list4(unitId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void>;
 
-    lessonsGET(id: number): Promise<void>;
+    /**
+     * @return OK
+     */
+    lessonsGET(id: number): Promise<SingleLessonResponseBaseResponse>;
 
     lessonsGET2(id: number | undefined): Promise<void>;
 
@@ -216,13 +219,26 @@ export interface IClient {
 
     update5(body: EditProductCommand | undefined): Promise<void>;
 
-    attempt(lessonId: number): Promise<void>;
+    /**
+     * @return OK
+     */
+    attempt(lessonId: number): Promise<StartAttemptResponseBaseResponse>;
 
-    answers(attemptId: number, body: SubmitAnswerCommand | undefined): Promise<void>;
+    /**
+     * @param body (optional) 
+     * @return OK
+     */
+    answers(attemptId: number, body: SubmitAnswerCommand | undefined): Promise<SubmitAnswerResponseBaseResponse>;
 
-    complete(attemptId: number): Promise<void>;
+    /**
+     * @return OK
+     */
+    complete(attemptId: number): Promise<AttemptSummaryDtoBaseResponse>;
 
-    abandon(attemptId: number): Promise<void>;
+    /**
+     * @return OK
+     */
+    abandon(attemptId: number): Promise<AttemptSummaryDtoBaseResponse>;
 
     list7(conceptId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void>;
 
@@ -2655,7 +2671,10 @@ export class Client implements IClient {
         return Promise.resolve<void>(null as any);
     }
 
-    lessonsGET(id: number): Promise<void> {
+    /**
+     * @return OK
+     */
+    lessonsGET(id: number): Promise<SingleLessonResponseBaseResponse> {
         let url_ = this.baseUrl + "/api/learning/Lessons/{id}";
         if (id === undefined || id === null)
             throw new globalThis.Error("The parameter 'id' must be defined.");
@@ -2665,6 +2684,7 @@ export class Client implements IClient {
         let options_: RequestInit = {
             method: "GET",
             headers: {
+                "Accept": "application/json"
             }
         };
 
@@ -2673,10 +2693,16 @@ export class Client implements IClient {
         });
     }
 
-    protected processLessonsGET(response: Response): Promise<void> {
+    protected processLessonsGET(response: Response): Promise<SingleLessonResponseBaseResponse> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 400) {
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as SingleLessonResponseBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
             return response.text().then((_responseText) => {
             let result400: any = null;
             result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
@@ -2697,7 +2723,7 @@ export class Client implements IClient {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<void>(null as any);
+        return Promise.resolve<SingleLessonResponseBaseResponse>(null as any);
     }
 
     lessonsGET2(id: number | undefined): Promise<void> {
@@ -3610,7 +3636,10 @@ export class Client implements IClient {
         return Promise.resolve<void>(null as any);
     }
 
-    attempt(lessonId: number): Promise<void> {
+    /**
+     * @return OK
+     */
+    attempt(lessonId: number): Promise<StartAttemptResponseBaseResponse> {
         let url_ = this.baseUrl + "/api/Learning/Quizzes/{lessonId}/Attempt";
         if (lessonId === undefined || lessonId === null)
             throw new globalThis.Error("The parameter 'lessonId' must be defined.");
@@ -3620,6 +3649,7 @@ export class Client implements IClient {
         let options_: RequestInit = {
             method: "POST",
             headers: {
+                "Accept": "application/json"
             }
         };
 
@@ -3628,10 +3658,16 @@ export class Client implements IClient {
         });
     }
 
-    protected processAttempt(response: Response): Promise<void> {
+    protected processAttempt(response: Response): Promise<StartAttemptResponseBaseResponse> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 400) {
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StartAttemptResponseBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
             return response.text().then((_responseText) => {
             let result400: any = null;
             result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
@@ -3652,10 +3688,14 @@ export class Client implements IClient {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<void>(null as any);
+        return Promise.resolve<StartAttemptResponseBaseResponse>(null as any);
     }
 
-    answers(attemptId: number, body: SubmitAnswerCommand | undefined): Promise<void> {
+    /**
+     * @param body (optional) 
+     * @return OK
+     */
+    answers(attemptId: number, body: SubmitAnswerCommand | undefined): Promise<SubmitAnswerResponseBaseResponse> {
         let url_ = this.baseUrl + "/api/Learning/Quizzes/{attemptId}/Answers";
         if (attemptId === undefined || attemptId === null)
             throw new globalThis.Error("The parameter 'attemptId' must be defined.");
@@ -3669,6 +3709,7 @@ export class Client implements IClient {
             method: "POST",
             headers: {
                 "Content-Type": "application/json-patch+json",
+                "Accept": "application/json"
             }
         };
 
@@ -3677,10 +3718,16 @@ export class Client implements IClient {
         });
     }
 
-    protected processAnswers(response: Response): Promise<void> {
+    protected processAnswers(response: Response): Promise<SubmitAnswerResponseBaseResponse> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 400) {
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as SubmitAnswerResponseBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
             return response.text().then((_responseText) => {
             let result400: any = null;
             result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
@@ -3701,10 +3748,13 @@ export class Client implements IClient {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<void>(null as any);
+        return Promise.resolve<SubmitAnswerResponseBaseResponse>(null as any);
     }
 
-    complete(attemptId: number): Promise<void> {
+    /**
+     * @return OK
+     */
+    complete(attemptId: number): Promise<AttemptSummaryDtoBaseResponse> {
         let url_ = this.baseUrl + "/api/Learning/Quizzes/{attemptId}/Complete";
         if (attemptId === undefined || attemptId === null)
             throw new globalThis.Error("The parameter 'attemptId' must be defined.");
@@ -3714,6 +3764,7 @@ export class Client implements IClient {
         let options_: RequestInit = {
             method: "POST",
             headers: {
+                "Accept": "application/json"
             }
         };
 
@@ -3722,10 +3773,16 @@ export class Client implements IClient {
         });
     }
 
-    protected processComplete(response: Response): Promise<void> {
+    protected processComplete(response: Response): Promise<AttemptSummaryDtoBaseResponse> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 400) {
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AttemptSummaryDtoBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
             return response.text().then((_responseText) => {
             let result400: any = null;
             result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
@@ -3746,10 +3803,13 @@ export class Client implements IClient {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<void>(null as any);
+        return Promise.resolve<AttemptSummaryDtoBaseResponse>(null as any);
     }
 
-    abandon(attemptId: number): Promise<void> {
+    /**
+     * @return OK
+     */
+    abandon(attemptId: number): Promise<AttemptSummaryDtoBaseResponse> {
         let url_ = this.baseUrl + "/api/Learning/Quizzes/{attemptId}/Abandon";
         if (attemptId === undefined || attemptId === null)
             throw new globalThis.Error("The parameter 'attemptId' must be defined.");
@@ -3759,6 +3819,7 @@ export class Client implements IClient {
         let options_: RequestInit = {
             method: "POST",
             headers: {
+                "Accept": "application/json"
             }
         };
 
@@ -3767,10 +3828,16 @@ export class Client implements IClient {
         });
     }
 
-    protected processAbandon(response: Response): Promise<void> {
+    protected processAbandon(response: Response): Promise<AttemptSummaryDtoBaseResponse> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 400) {
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AttemptSummaryDtoBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
             return response.text().then((_responseText) => {
             let result400: any = null;
             result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
@@ -3791,7 +3858,7 @@ export class Client implements IClient {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<void>(null as any);
+        return Promise.resolve<AttemptSummaryDtoBaseResponse>(null as any);
     }
 
     list7(conceptId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void> {
@@ -6295,6 +6362,28 @@ export interface AdminResetPasswordCommand {
     userId?: number;
 }
 
+export interface AttemptSummaryDto {
+    attemptId?: number;
+    studentId?: number;
+    lessonId?: number;
+    status?: string | undefined;
+    accuracyPercentage?: number;
+    durationSeconds?: number;
+    hintsUsedCount?: number;
+    startedAt?: Date;
+    completedAt?: Date | undefined;
+    totalAnswers?: number;
+    correctAnswers?: number;
+}
+
+export interface AttemptSummaryDtoBaseResponse {
+    statusCode?: HttpStatusCode;
+    successed?: boolean;
+    message?: string | undefined;
+    data?: AttemptSummaryDto;
+    errors?: any[] | undefined;
+}
+
 export interface AvatarUploadResponse {
     avatarUrl?: string | undefined;
 }
@@ -6677,6 +6766,20 @@ export interface ProblemDetails {
     [key: string]: any;
 }
 
+export enum QuestionType {
+    _1 = 1,
+    _2 = 2,
+    _3 = 3,
+    _4 = 4,
+}
+
+export interface QuizQuestionDto {
+    id?: number;
+    questionType?: QuestionType;
+    questionText?: string | undefined;
+    options?: string | undefined;
+}
+
 export interface RefreshToken {
     userName?: string | undefined;
     expireAt?: Date;
@@ -6775,6 +6878,28 @@ export interface SingleHolderRoleAvailabilityResponseBaseResponse {
     errors?: any[] | undefined;
 }
 
+export interface SingleLessonResponse {
+    id?: number;
+    name?: string | undefined;
+    difficulty?: DifficultyLevel;
+    sequenceOrder?: number;
+    isLocked?: boolean;
+    unitId?: number;
+    skillId?: number | undefined;
+    explanation?: string | undefined;
+    visual?: string | undefined;
+    isBoss?: boolean;
+    quickCheck?: QuizQuestionDto;
+}
+
+export interface SingleLessonResponseBaseResponse {
+    statusCode?: HttpStatusCode;
+    successed?: boolean;
+    message?: string | undefined;
+    data?: SingleLessonResponse;
+    errors?: any[] | undefined;
+}
+
 export interface SkillNodeDto {
     skillId?: number;
     name?: string | undefined;
@@ -6783,6 +6908,19 @@ export interface SkillNodeDto {
     state?: NodeState;
     lessonIds?: number[] | undefined;
     missingPrerequisites?: MissingPrerequisiteDto[] | undefined;
+}
+
+export interface StartAttemptResponse {
+    attemptId?: number;
+    questions?: QuizQuestionDto[] | undefined;
+}
+
+export interface StartAttemptResponseBaseResponse {
+    statusCode?: HttpStatusCode;
+    successed?: boolean;
+    message?: string | undefined;
+    data?: StartAttemptResponse;
+    errors?: any[] | undefined;
 }
 
 export interface StringBaseResponse {
@@ -6813,6 +6951,20 @@ export interface SubmitAnswerCommand {
     answerPayload?: string | undefined;
     timeSpentSeconds?: number;
     hintUsed?: boolean;
+}
+
+export interface SubmitAnswerResponse {
+    isCorrect?: boolean;
+    correctAnswer?: string | undefined;
+    hintAvailable?: boolean;
+}
+
+export interface SubmitAnswerResponseBaseResponse {
+    statusCode?: HttpStatusCode;
+    successed?: boolean;
+    message?: string | undefined;
+    data?: SubmitAnswerResponse;
+    errors?: any[] | undefined;
 }
 
 export interface UnitWithLessonsDto {

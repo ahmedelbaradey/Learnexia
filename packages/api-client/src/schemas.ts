@@ -20,6 +20,17 @@
  */
 
 export type {
+  // W12 quiz + lesson types
+  SingleLessonResponse,
+  SingleLessonResponseBaseResponse,
+  StartAttemptResponse,
+  StartAttemptResponseBaseResponse,
+  SubmitAnswerCommand,
+  SubmitAnswerResponse,
+  SubmitAnswerResponseBaseResponse,
+  AttemptSummaryDto,
+  AttemptSummaryDtoBaseResponse,
+  QuizQuestionDto,
   // Auth
   SignInCommand,
   RegisterParentCommand,
@@ -63,6 +74,8 @@ export {
   // Learning enums — W11
   NodeState,
   DifficultyLevel,
+  // W12 quiz enum
+  QuestionType,
 } from './generated';
 
 // Re-export the generated typed client + its exception for advanced callers.

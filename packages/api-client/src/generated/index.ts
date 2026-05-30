@@ -53,10 +53,23 @@ export type {
   ConceptNodeDtoListBaseResponse,
   SkillNodeDto,
   MissingPrerequisiteDto,
+  // W12 — quiz + lesson types (P2-05-FE + P2-06-FE + P2-07-FE)
+  SingleLessonResponse,
+  SingleLessonResponseBaseResponse,
+  StartAttemptResponse,
+  StartAttemptResponseBaseResponse,
+  SubmitAnswerCommand,
+  SubmitAnswerResponse,
+  SubmitAnswerResponseBaseResponse,
+  AttemptSummaryDto,
+  AttemptSummaryDtoBaseResponse,
+  QuizQuestionDto,
 } from './nswag-client';
 
 export {
   // W11 — learning enums
   NodeState,
   DifficultyLevel,
+  // W12 — quiz enum
+  QuestionType,
 } from './nswag-client';

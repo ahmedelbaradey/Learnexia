@@ -92,3 +92,28 @@ export type { SkillTreeNodeProps, SkillNodeState } from './components/SkillTreeN
 
 export { SegmentedTabs } from './components/SegmentedTabs';
 export type { SegmentedTabsProps, SegmentItem, SegmentValue } from './components/SegmentedTabs';
+
+// --- W12 quiz primitives (P2-05-FE + P2-06-FE + P2-07-FE) ---
+export { QuestionCard } from './components/QuestionCard';
+export type { QuestionCardProps } from './components/QuestionCard';
+
+export { MCQOption } from './components/MCQOption';
+export type { MCQOptionProps, MCQOptionState } from './components/MCQOption';
+
+export { TrueFalseChoice } from './components/TrueFalseChoice';
+export type { TrueFalseChoiceProps } from './components/TrueFalseChoice';
+
+export { FillInBlank } from './components/FillInBlank';
+export type { FillInBlankProps, FillInBlankState } from './components/FillInBlank';
+
+export { MatchingPanel } from './components/MatchingPanel';
+export type { MatchingPanelProps } from './components/MatchingPanel';
+
+export { AnswerFeedbackStrip } from './components/AnswerFeedbackStrip';
+export type { AnswerFeedbackStripProps } from './components/AnswerFeedbackStrip';
+
+export { AttemptSummaryCard } from './components/AttemptSummaryCard';
+export type { AttemptSummaryCardProps } from './components/AttemptSummaryCard';
+
+export { ProgressDots } from './components/ProgressDots';
+export type { ProgressDotsProps } from './components/ProgressDots';
