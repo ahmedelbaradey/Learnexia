@@ -1,7 +1,56 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-31 (**P4-04 — commit + PR ready. P4-03 merged via PR #75. FE: P2-09-FE merged via PR #74.**).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-31 (**P4-05 — commit + PR ready. P4-04 ready for committer. P4-03 merged via PR #75. FE: P2-09-FE merged via PR #74.**).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
+
+## P4-05 — Earn badges (Batch 8 — commit + PR ready)
+
+**Branch:** `feat/P4-05-earn-badges` (ready for committer).
+
+**What shipped:**
+
+**Phase-3 Gamification fourth story — first consumer of the domain events that P4-02 (XP) + P4-03 (streak) + P4-04 (hearts) shipped. Adds the achievements layer on top of the XP/streak/hearts engines.**
+
+- **10-badge catalog** seeded idempotently at startup: FIRST_LESSON, STREAK_3/7/14/30, LEVEL_5/10/20, LEGENDARY_50, STREAK_100. `BadgeSeeder.SeedAsync` runs in `GamificationModule.InitializeAsync` after migrations in all environments.
+- **New schema:** `AddBadgeDefinitionAndStudentBadge` migration adds `BadgeDefinitions` table (catalog; unique on Code, FullAuditedEntity) + `StudentBadges` table (append-only ledger, CreationAuditedEntity, unique constraint `(StudentXpProfileId, BadgeDefinitionId)`, CASCADE delete from profile, RESTRICT from catalog). `XpReason.BadgeEarned = 5`. `BadgeTriggerType` enum (FirstLesson, Streak, Level).
+- **`BadgePredicateEvaluator`** pure static service (total function) — matches badge definitions against a trigger type + value, skipping already-earned ones. Mirrors `LazyHeartRefiller` / `StreakDayCalculator` / `LevelCurve` shape. 12 unit tests.
+- **`AwardBadgeCommand` + handler** — row-lock + dual-layer idempotency (HasBadgeAsync pre-check + UX_StudentBadges_* unique constraint). Writes ledger row + rarity-scaled XP bonus via `XpAward(Reason=BadgeEarned)`. Narrowed `DbUpdateException` catch for safer error handling. `AttachBadgeDefinition` graph-navigation fix (3rd instance — now documented convention for any new entity navigating an existing untracked aggregate).
+- **3 notification handlers** — `LessonCompletedBadgeHandler` (cross-module, Learning event), `StreakAdvancedBadgeHandler` (in-module domain event), `StudentLeveledUpBadgeHandler` (in-module). Each in own try/catch per ADR 0002 §3.
+- **Cascade chain semantics** — A badge XP bonus can push the student past a level threshold, raising `StudentLeveledUpDomainEvent`, which awards the LEVEL_* badge in turn. Bounded by `alreadyEarned` filter — terminates in ≤ N badges.
+- **Practice Mode by-construction** — STREAK_*/LEVEL_* badges cannot fire in Practice Mode (Hearts=0) because upstream `AdvanceStreakCommandHandler` + `AwardLessonCompletedXpCommandHandler` short-circuit at Hearts=0, never raising domain events. FIRST_LESSON CAN fire in PM since `LessonCompletedIntegrationEvent` fires regardless of Hearts.
+- **`IStudentBadgesQuery` cross-module read seam** — sentinel `StudentBadgesSnapshot(0, [])` for brand-new students. `BadgeRarityDto` re-declared in `Shared.Contracts.Gamification` with parity enum drift unit test.
+- **`DashboardDto` extended** — `BadgesCount: int` + `RecentBadges: IReadOnlyList<BadgeSummary>?` (positional appended, default-valued — non-breaking). Learning dashboard wiring updated.
+- **New endpoint `GET /api/Gamification/Badges/Me`** — JWT-only via `[Authorize]`. Returns all 10 catalog definitions annotated with `IsEarned: bool` + `AwardedAtUtc: DateTime?`. IDOR-proof (no studentId param).
+
+**Security follow-ups applied (security-auditor PASS-with-notes):**
+- **F1 (Medium):** `AwardBadgeCommand.OriginEventType` field added for audit-trail forensics. All 3 notification handlers pass the actual triggering event type name.
+- **F2 (Medium):** Confirmed `BadgeSeeder` already atomic (single `SaveChangesAsync` at end).
+- **F4 (Low):** XML comment on `StudentBadge` corrected (RESTRICT delete, not CASCADE).
+- **F5 (Low):** `AwardedAtUtc != default(DateTime)` validator rule added.
+
+**Lead-approved decisions:**
+- **D1:** All 10 badges (8 MVP + 2 Legendary stretch). Stretch ones appear locked from day 1.
+- **D2:** Both count + recent 3 on `DashboardDto`.
+- **D3:** XP bonus scaled by rarity: Common +20, Rare +50, Epic +100, Legendary +250 via `GamificationConstants.XpRewards.ForRarity`.
+- **D4:** `GET /api/Gamification/Badges/Me` endpoint shipped (not deferred to FE story).
+
+**Test results:**
+- BadgePredicateEvaluator unit tests: 12/12
+- BadgeRarityDto enum drift assertion in unit tests
+- P4-05 integration tests: 17/17 (catalog seeded, FIRST_LESSON award, idempotency, streak cascade, level up, recent DESC ordering, IDOR × 2, Practice Mode by-construction, badge XP chain, 3-concurrent stress, dashboard envelope, seeder idempotency)
+- P4-02/03/04 regression: 45/45 (T3/T4 + P403-T1/T13 + P404-H10 assertions updated for +20 FIRST_LESSON XP)
+- Full P4 suite: 62/62
+- Full integration suite: 560/568 (only 8 pre-existing failures unchanged — P2-02 TC-1, P2-04 TC-09, P2-09 C11, AC-DEF-2, AC-RL-6, AC-4 WeakPassword, AC-2c, TC-1/ForGrade)
+
+**New conventions to carry forward:**
+- **`[NotificationHandler<TDomainEvent>] → [mediator.Send(Command)] → [UoW commits]` pattern** — generalizes for ANY in-module domain event consumer. Future stories (e.g. P4-08+) can mirror this shape.
+- **Graph-navigation attach pattern** — now the third instance (XpAward → HeartLoss → StudentBadge). Established as documented convention: always `_repo.AttachEntity(existing)` before `Entity.Create()` when an entity navigates an existing untracked aggregate to prevent EF duplicate-INSERT.
+
+**Deferred items (next stories):**
+- P4-06 (missions), P4-07 (leagues), P4-08 (FE badge pop-in + collection screen), P4-09 (BadgeEarned nudge consumer), P4-10 (Redis), P7-03 (admin badge catalog editor).
+
+---
+
 
 ## P4-04 — Hearts + Practice Mode (Batch 3b FE — dashboard data flip)
 

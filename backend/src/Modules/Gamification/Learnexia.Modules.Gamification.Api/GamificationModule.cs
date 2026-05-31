@@ -5,6 +5,7 @@ using Learnexia.Modules.Gamification.Application.Configuration;
 using Learnexia.Modules.Gamification.Infrastructure;
 using Learnexia.Modules.Gamification.Infrastructure.Jobs;
 using Learnexia.Modules.Gamification.Infrastructure.Persistence;
+using Learnexia.Modules.Gamification.Infrastructure.Persistence.Seed;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
@@ -37,6 +38,15 @@ public static class GamificationModule
     {
         var dbContext = serviceProvider.GetRequiredService<GamificationDbContext>();
         await dbContext.Database.MigrateAsync();
+
+        // Seed badge definition catalog in ALL environments (P4-05 — product-as-code catalog, not demo data).
+        // Runs after migration so the BadgeDefinitions table is guaranteed to exist. Idempotent: checks by Code,
+        // inserts missing rows, drift-corrects changed metadata. Mirrors LearningModule.InitializeAsync seeder pattern.
+        using (var scope = serviceProvider.CreateScope())
+        {
+            var badgeSeeder = scope.ServiceProvider.GetRequiredService<BadgeSeeder>();
+            await badgeSeeder.SeedAsync();
+        }
 
         // Register the daily streak sweep recurring job (P4-03-B2-8, D4).
         // IRecurringJobManager is available because Hangfire.Core is wired by the Host (P1-07).

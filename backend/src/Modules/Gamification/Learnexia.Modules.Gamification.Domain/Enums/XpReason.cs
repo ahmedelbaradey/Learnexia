@@ -8,4 +8,5 @@ public enum XpReason
     QuizCompleted = 2,
     LessonCompleted = 3,
     StreakBonus = 4,
+    BadgeEarned = 5,    // P4-05 — rarity-scaled XP bonus awarded when a badge is earned
 }

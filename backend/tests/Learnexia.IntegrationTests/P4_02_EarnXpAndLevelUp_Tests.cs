@@ -514,18 +514,18 @@ public sealed class P4_02_EarnXpAndLevelUp_Tests : IAsyncLifetime
         complResp.StatusCode.Should().Be(HttpStatusCode.OK,
             "CompleteAttempt must succeed; body: {0}", complBody);
 
-        // Assert total XP = 4*10 + 50 + 20 + 30 (StreakBonus, P4-03) = 140.
+        // Assert total XP = 4*10 + 50 + 20 + 30 (StreakBonus, P4-03) + 20 (FIRST_LESSON badge, P4-05) = 160.
         var (profResp, profRoot, profBody) = await GetProfileAsync(token);
         profResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", profBody);
         TryProp(profRoot, "data", out var profData).Should().BeTrue("body: {0}", profBody);
         TryProp(profData, "totalXp", out var totalXp).Should().BeTrue("body: {0}", profBody);
-        totalXp.GetInt32().Should().Be(140,
-            "4 correct answers (40 XP) + LessonCompleted (50 XP) + QuizPass (20 XP) + StreakBonus (30 XP, P4-03) = 140 XP; body: {0}", profBody);
+        totalXp.GetInt32().Should().Be(160,
+            "4 correct answers (40 XP) + LessonCompleted (50 XP) + QuizPass (20 XP) + StreakBonus (30 XP, P4-03) + FIRST_LESSON badge (20 XP, P4-05) = 160 XP; body: {0}", profBody);
 
-        // Assert 7 XpAward rows (P4-03 adds 1 StreakBonus row).
+        // Assert 8 XpAward rows (P4-03 adds 1 StreakBonus row; P4-05 adds 1 BadgeEarned row for FIRST_LESSON).
         var awards = await GetXpAwardsForStudentAsync(studentId);
-        awards.Should().HaveCount(7,
-            "4 CorrectAnswer + 1 LessonCompleted + 1 QuizPass + 1 StreakBonus (P4-03) = 7 rows");
+        awards.Should().HaveCount(8,
+            "4 CorrectAnswer + 1 LessonCompleted + 1 QuizPass + 1 StreakBonus (P4-03) + 1 BadgeEarned/FIRST_LESSON (P4-05) = 8 rows");
 
         var correctAwards = awards.Where(a => a.Reason == XpReason.CorrectAnswer).ToList();
         correctAwards.Should().HaveCount(4, "4 correct answers → 4 CorrectAnswer award rows");
@@ -547,6 +547,12 @@ public sealed class P4_02_EarnXpAndLevelUp_Tests : IAsyncLifetime
             "exactly 1 StreakBonus award row (first-ever activity advances streak to 1, P4-03)");
         awards.Single(a => a.Reason == XpReason.StreakBonus).XpAmount
             .Should().Be(30, "StreakBonus awards +30 XP");
+
+        // P4-05: FIRST_LESSON badge is awarded on the first LessonCompleted event (Common rarity, +20 XP).
+        awards.Should().ContainSingle(a => a.Reason == XpReason.BadgeEarned,
+            "exactly 1 BadgeEarned award row for the FIRST_LESSON badge (P4-05)");
+        awards.Single(a => a.Reason == XpReason.BadgeEarned).XpAmount
+            .Should().Be(20, "FIRST_LESSON badge is Common rarity — awards +20 XP");
     }
 
     // =========================================================================
@@ -589,18 +595,18 @@ public sealed class P4_02_EarnXpAndLevelUp_Tests : IAsyncLifetime
         var (complResp, _, complBody) = await CompleteAttemptAsync(attemptId, token);
         complResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", complBody);
 
-        // Assert total XP = 2*10 + 50 + 30 (StreakBonus, P4-03) = 100.
+        // Assert total XP = 2*10 + 50 + 30 (StreakBonus, P4-03) + 20 (FIRST_LESSON badge, P4-05) = 120.
         var (profResp, profRoot, profBody) = await GetProfileAsync(token);
         profResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", profBody);
         TryProp(profRoot, "data", out var profData).Should().BeTrue("body: {0}", profBody);
         TryProp(profData, "totalXp", out var totalXp).Should().BeTrue("body: {0}", profBody);
-        totalXp.GetInt32().Should().Be(100,
-            "2 correct (20 XP) + LessonCompleted (50 XP) + StreakBonus (30 XP, P4-03) = 100 XP; body: {0}", profBody);
+        totalXp.GetInt32().Should().Be(120,
+            "2 correct (20 XP) + LessonCompleted (50 XP) + StreakBonus (30 XP, P4-03) + FIRST_LESSON badge (20 XP, P4-05) = 120 XP; body: {0}", profBody);
 
-        // Assert 4 XpAward rows (P4-03 adds 1 StreakBonus row): 2 CorrectAnswer + 1 LessonCompleted + 1 StreakBonus.
+        // Assert 5 XpAward rows (P4-03 adds 1 StreakBonus; P4-05 adds 1 BadgeEarned for FIRST_LESSON).
         var awards = await GetXpAwardsForStudentAsync(studentId);
-        awards.Should().HaveCount(4,
-            "2 CorrectAnswer + 1 LessonCompleted + 1 StreakBonus (P4-03) = 4 rows; 50% accuracy is below 70% QuizPass threshold");
+        awards.Should().HaveCount(5,
+            "2 CorrectAnswer + 1 LessonCompleted + 1 StreakBonus (P4-03) + 1 BadgeEarned/FIRST_LESSON (P4-05) = 5 rows; 50% accuracy is below 70% QuizPass threshold");
 
         awards.Count(a => a.Reason == XpReason.CorrectAnswer).Should().Be(2,
             "2 correct answers → 2 CorrectAnswer award rows");
@@ -614,6 +620,12 @@ public sealed class P4_02_EarnXpAndLevelUp_Tests : IAsyncLifetime
             "exactly 1 StreakBonus award row (first-ever activity advances streak to 1, P4-03)");
         awards.Single(a => a.Reason == XpReason.StreakBonus).XpAmount
             .Should().Be(30, "StreakBonus awards +30 XP");
+
+        // P4-05: FIRST_LESSON badge awarded on LessonCompleted regardless of accuracy.
+        awards.Should().ContainSingle(a => a.Reason == XpReason.BadgeEarned,
+            "exactly 1 BadgeEarned award row for the FIRST_LESSON badge (P4-05)");
+        awards.Single(a => a.Reason == XpReason.BadgeEarned).XpAmount
+            .Should().Be(20, "FIRST_LESSON badge is Common rarity — awards +20 XP");
     }
 
     // =========================================================================

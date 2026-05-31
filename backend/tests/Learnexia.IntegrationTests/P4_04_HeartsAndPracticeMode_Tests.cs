@@ -689,8 +689,11 @@ public sealed class P4_04_HeartsAndPracticeMode_Tests : IAsyncLifetime
 
         var profile = await GetProfileAsync(studentId);
         profile.Should().NotBeNull();
-        profile!.TotalXp.Should().Be(0,
-            "AwardLessonCompletedXpCommandHandler gate fires — no XP in Practice Mode");
+        // P4-05 D11: FIRST_LESSON badge CAN fire in Practice Mode (lesson completion is not blocked).
+        // The badge awards +20 XP (Common rarity). LessonCompleted / QuizPass / StreakBonus are still gated.
+        profile!.TotalXp.Should().Be(20,
+            "AwardLessonCompletedXpCommandHandler gate fires — no LessonCompleted XP in Practice Mode; " +
+            "but P4-05 FIRST_LESSON badge awards +20 XP (D11: badge fires regardless of Practice Mode)");
         profile.CurrentStreak.Should().Be(0,
             "AdvanceStreakCommandHandler gate fires — no streak advance in Practice Mode");
 
@@ -701,6 +704,11 @@ public sealed class P4_04_HeartsAndPracticeMode_Tests : IAsyncLifetime
             "StreakBonus XpAward must NOT be written in Practice Mode");
         awards.Should().NotContain(a => a.Reason == XpReason.QuizCompleted,
             "QuizPass XpAward must NOT be written in Practice Mode");
+        // P4-05: FIRST_LESSON badge fires even in Practice Mode (D11).
+        awards.Should().ContainSingle(a => a.Reason == XpReason.BadgeEarned,
+            "FIRST_LESSON badge XpAward must be written even in Practice Mode (P4-05 D11)");
+        awards.Single(a => a.Reason == XpReason.BadgeEarned).XpAmount
+            .Should().Be(20, "FIRST_LESSON badge is Common rarity — awards +20 XP");
     }
 
     // =========================================================================

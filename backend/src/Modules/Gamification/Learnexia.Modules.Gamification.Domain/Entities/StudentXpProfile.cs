@@ -1,3 +1,4 @@
+using Learnexia.Modules.Gamification.Domain.Enums;
 using Learnexia.Modules.Gamification.Domain.Events;
 using Learnexia.Modules.Gamification.Domain.Services;
 using Learnexia.Shared.Kernel.Entities;
@@ -253,5 +254,52 @@ public class StudentXpProfile : AggregateRoot
         }
 
         return result.Regenerated;
+    }
+
+    // ---------------------------------------------------------------------------
+    // Badge mutation (P4-05-B3-1)
+    // ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// Records that this student earned a badge. Adds the XP bonus to TotalXp, recomputes level,
+    /// and raises <see cref="BadgeEarnedDomainEvent"/> + <see cref="StudentLeveledUpDomainEvent"/>
+    /// if the bonus pushes them past a level threshold. Does NOT write the StudentBadge ledger row —
+    /// the handler does that explicitly.
+    ///
+    /// Domain-event chain implication: if the badge XP bonus levels the student up,
+    /// <see cref="StudentLeveledUpDomainEvent"/> is raised. That event will trigger
+    /// <c>StudentLeveledUpBadgeHandler</c>, which could award further LEVEL_* badges.
+    /// This is correct chain semantics. The <c>alreadyEarned</c> set inside the predicate
+    /// evaluator prevents infinite chains since each badge awards at most once.
+    ///
+    /// Practice Mode by-construction: badge awards are NOT gated by Practice Mode. A student
+    /// in Practice Mode who earns a badge via <c>LessonCompletedIntegrationEvent</c> still
+    /// receives the badge and its XP bonus. <c>StreakAdvancedDomainEvent</c> and
+    /// <c>StudentLeveledUpDomainEvent</c> are never raised in Practice Mode (upstream handlers
+    /// short-circuit), so STREAK_* and LEVEL_* badges cannot fire in Practice Mode by construction.
+    /// </summary>
+    public void RecordBadgeEarned(
+        int badgeDefinitionId,
+        string code,
+        BadgeRarity rarity,
+        int rewardXp,
+        int newLevel,
+        DateTime awardedAtUtc)
+    {
+        var oldLevel = CurrentLevel;
+        TotalXp += rewardXp;
+        CurrentLevel = newLevel;
+        LastAwardAtUtc = awardedAtUtc;
+
+        if (newLevel > oldLevel)
+            RaiseDomainEvent(new StudentLeveledUpDomainEvent(StudentId, oldLevel, newLevel));
+
+        RaiseDomainEvent(new BadgeEarnedDomainEvent(
+            StudentId,
+            badgeDefinitionId,
+            code,
+            rarity,
+            rewardXp,
+            awardedAtUtc));
     }
 }
