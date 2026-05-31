@@ -463,13 +463,20 @@ public sealed class P4_02_EarnXpAndLevelUp_Tests : IAsyncLifetime
         totalXp.GetInt32().Should().Be(0,
             "wrong answer must not award XP; body: {0}", profBody);
 
-        // Assert DB: no XpAward rows and no StudentXpProfile row.
+        // Assert DB: no XpAward rows.
         var awards = await GetXpAwardsForStudentAsync(studentId);
         awards.Should().BeEmpty("wrong answer must not create any XpAward rows");
 
+        // P4-04 behavioural change: a wrong answer creates a StudentXpProfile row to track heart loss.
+        // Before P4-04 the profile was absent for wrong-only students; now LoseHeartCommandHandler
+        // creates one on the first heart loss so hearts are persisted from the start.
         var profile = await GetXpProfileAsync(studentId);
-        profile.Should().BeNull(
-            "no StudentXpProfile should be created for a student with only wrong answers");
+        profile.Should().NotBeNull(
+            "P4-04: LoseHeartCommandHandler creates a profile on the first wrong answer to track heart loss");
+        profile!.TotalXp.Should().Be(0,
+            "wrong answer must not award XP");
+        profile.Hearts.Should().Be(4,
+            "P4-04: one heart is lost on a wrong answer; Hearts = 5 (default) - 1 = 4");
     }
 
     // =========================================================================

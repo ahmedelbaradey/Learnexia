@@ -1,3 +1,5 @@
+using Learnexia.Modules.Gamification.Application.Features.Hearts.Commands.LoseHeart;
+using Learnexia.Modules.Gamification.Application.Features.Hearts.Commands.RegainHeartFromPractice;
 using Learnexia.Modules.Gamification.Application.Features.Xp.Commands.AwardAnswerSubmittedXp;
 using Learnexia.Shared.Contracts.Learning;
 using Learnexia.Shared.Kernel.Abstractions;
@@ -9,12 +11,17 @@ namespace Learnexia.Modules.Gamification.Application.IntegrationEventHandlers;
 /// Cross-module consumer of <see cref="AnswerSubmittedIntegrationEvent"/> (produced by the Learning
 /// module's <c>SubmitAnswerCommandHandler</c>).
 ///
-/// Pattern A (Q5 lead-decision): sends <see cref="AwardAnswerSubmittedXpCommand"/> via MediatR
-/// only when <c>CorrectAnswerCount &gt; 0</c>. Wrong answers are short-circuited here before sending
-/// the command (cheaper than a round-trip through the pipeline for a no-op).
+/// Fan-out pattern (ADR 0002 §3):
+///   Wrong answer  → <see cref="LoseHeartCommand"/> (P4-04).
+///   Correct answer → <see cref="AwardAnswerSubmittedXpCommand"/> (P4-02) THEN
+///                    <see cref="RegainHeartFromPracticeCommand"/> (P4-04 — regen when in Practice Mode;
+///                    handler no-ops when Hearts &gt; 0).
 ///
-/// Fail-soft: exceptions are caught, logged, and swallowed — a failed award must not
-/// propagate back to the Learning module or block sibling handlers (ADR 0002 §3).
+/// Each Send is wrapped in its own try/catch — independent failure domains per ADR 0002 §3.
+/// A failed XP award does not roll back a successful heart regeneration, and vice versa.
+///
+/// Fail-soft: exceptions are caught, logged, and swallowed — a failure must not propagate back
+/// to the Learning module or block sibling handlers.
 /// </summary>
 public sealed class AnswerSubmittedIntegrationEventHandler
     : INotificationHandler<AnswerSubmittedIntegrationEvent>
@@ -32,22 +39,41 @@ public sealed class AnswerSubmittedIntegrationEventHandler
         AnswerSubmittedIntegrationEvent notification,
         CancellationToken cancellationToken)
     {
-        try
+        // ── Wrong answer → lose a heart (P4-04) ──────────────────────────────────────────────
+        if (notification.CorrectAnswerCount == 0)
         {
-            // Wrong answers earn no XP (FR-GM-1 "correct +10" — no award for incorrect).
-            if (notification.CorrectAnswerCount == 0)
+            try
             {
                 _logger.LogInfo(
-                    $"P4-02: AnswerSubmitted with CorrectAnswerCount=0 — no XP awarded " +
+                    $"P4-04: AnswerSubmitted wrong answer — sending LoseHeartCommand " +
                     $"(eventId={notification.EventId}, studentId={notification.StudentId}).");
-                return;
+
+                await _mediator.Send(new LoseHeartCommand(
+                    StudentId: notification.StudentId,
+                    OriginEventId: notification.EventId,
+                    OccurredAtUtc: notification.OccurredOnUtc,
+                    LessonId: notification.LessonId,
+                    SkillId: notification.SkillId),
+                    cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    $"P4-04: Error losing heart (eventId={notification.EventId}, " +
+                    $"studentId={notification.StudentId}) — heart may be missed.");
             }
 
-            _logger.LogInfo(
-                $"P4-02: AnswerSubmittedIntegrationEvent received (correct answer) " +
-                $"(eventId={notification.EventId}, studentId={notification.StudentId}, " +
-                $"lessonId={notification.LessonId}).");
+            return; // Wrong answer never earns XP.
+        }
 
+        // ── Correct answer → award XP (P4-02 — unchanged path) ──────────────────────────────
+        _logger.LogInfo(
+            $"P4-02: AnswerSubmittedIntegrationEvent received (correct answer) " +
+            $"(eventId={notification.EventId}, studentId={notification.StudentId}, " +
+            $"lessonId={notification.LessonId}).");
+
+        try
+        {
             await _mediator.Send(new AwardAnswerSubmittedXpCommand(
                 StudentId: notification.StudentId,
                 LessonId: notification.LessonId,
@@ -59,10 +85,26 @@ public sealed class AnswerSubmittedIntegrationEventHandler
         }
         catch (Exception ex)
         {
-            // Fail-soft: log + swallow.
             _logger.LogError(ex,
-                $"P4-02: Error handling AnswerSubmittedIntegrationEvent " +
+                $"P4-02: Error handling AnswerSubmittedIntegrationEvent (XP) " +
                 $"(eventId={notification.EventId}, studentId={notification.StudentId}) — award may be missed.");
+        }
+
+        // ── Correct answer → Practice Mode regen (P4-04) ────────────────────────────────────
+        // Sends RegainHeartFromPracticeCommand which no-ops if the student is NOT in Practice Mode
+        // (Hearts > 0). This ensures correct answers while at Hearts == 0 restore one heart.
+        try
+        {
+            await _mediator.Send(new RegainHeartFromPracticeCommand(
+                StudentId: notification.StudentId,
+                OriginEventId: notification.EventId),
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                $"P4-04: Error processing Practice Mode regen (eventId={notification.EventId}, " +
+                $"studentId={notification.StudentId}) — regen may be missed.");
         }
     }
 }

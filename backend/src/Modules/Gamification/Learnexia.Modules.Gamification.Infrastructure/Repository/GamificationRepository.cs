@@ -64,4 +64,18 @@ public sealed class GamificationRepository : IGamificationRepository
             .Where(p => p.CurrentStreak > 0 && p.LastActivityDateUtc < threshold)
             .Take(1000)
             .ToListAsync(ct);
+
+    // ---------------------------------------------------------------------------
+    // Hearts (P4-04-B2a-4)
+    // ---------------------------------------------------------------------------
+
+    /// <inheritdoc />
+    public async Task<bool> HasHeartLossAsync(Guid originEventId, CancellationToken ct = default)
+        => await _context.HeartLosses
+            .AsNoTracking()
+            .AnyAsync(h => h.OriginEventId == originEventId, ct);
+
+    /// <inheritdoc />
+    public async Task AddHeartLossAsync(HeartLoss heartLoss, CancellationToken ct = default)
+        => await _context.HeartLosses.AddAsync(heartLoss, ct);
 }

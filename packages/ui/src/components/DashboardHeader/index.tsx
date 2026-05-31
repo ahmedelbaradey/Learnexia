@@ -33,9 +33,9 @@ export interface DashboardHeaderProps {
   greetingText: string;
   /** Grade caption already resolved (e.g. "Grade 3" / "الصف ٣"), or null/undefined to omit. */
   gradeCaption?: string | null;
-  /** Hearts widget current count. Phase 2 = always 3. */
+  /** Hearts widget current count. P4-04: real value from dashboard. */
   hearts: number;
-  /** Hearts max — default 3 (matches W12 lesson intro precedent). */
+  /** Hearts max — caller-provided; P4-04 dashboard passes 5 (the cap). */
   heartsMax?: number;
   /** Streak days. Phase 2 = always 0. TODO P4-03 */
   streakDays: number;
@@ -57,6 +57,15 @@ export interface DashboardHeaderProps {
   xpAccessibilityLabel: string;
   direction?: 'ltr' | 'rtl';
   locale?: 'en' | 'ar';
+  /**
+   * When true, renders the Practice Mode pill next to the Hearts widget.
+   * P4-04: derived from `dashboard.inPracticeMode`. Hidden when false/undefined.
+   */
+  inPracticeMode?: boolean;
+  /** Localized label for the Practice Mode pill (e.g. "Practice Mode" / "وضع التدريب"). */
+  practiceModeLabel?: string;
+  /** A11y label for the Practice Mode pill. */
+  practiceModeAccessibilityLabel?: string;
   /** When true, renders shimmer skeleton instead of live content. */
   loading?: boolean;
   testID?: string;
@@ -79,7 +88,7 @@ export function DashboardHeader({
   greetingText,
   gradeCaption,
   hearts,
-  heartsMax = 3,
+  heartsMax = 5,
   streakDays,
   weeklyXp,
   weeklyXpTarget,
@@ -89,6 +98,9 @@ export function DashboardHeader({
   heartsAccessibilityLabel,
   streakAccessibilityLabel,
   xpAccessibilityLabel,
+  inPracticeMode = false,
+  practiceModeLabel,
+  practiceModeAccessibilityLabel,
   direction = 'ltr',
   locale = 'en',
   loading = false,
@@ -210,6 +222,30 @@ export function DashboardHeader({
           locale={locale}
           accessibilityLabel={heartsAccessibilityLabel}
         />
+        {/* Practice Mode pill — P4-04: shown only when inPracticeMode === true */}
+        {inPracticeMode && practiceModeLabel ? (
+          <XStack
+            paddingHorizontal={8}
+            paddingVertical={4}
+            borderRadius={9999}
+            backgroundColor="$warningSoft"
+            alignItems="center"
+            accessibilityRole="text"
+            accessible
+            accessibilityLabel={practiceModeAccessibilityLabel ?? practiceModeLabel}
+            aria-label={practiceModeAccessibilityLabel ?? practiceModeLabel}
+          >
+            <Text
+              color="$warning"
+              fontSize={11}
+              fontWeight="700"
+              fontFamily="$body"
+              writingDirection={direction}
+            >
+              {practiceModeLabel}
+            </Text>
+          </XStack>
+        ) : null}
         <StreakFlame
           days={streakDays}
           size="sm"

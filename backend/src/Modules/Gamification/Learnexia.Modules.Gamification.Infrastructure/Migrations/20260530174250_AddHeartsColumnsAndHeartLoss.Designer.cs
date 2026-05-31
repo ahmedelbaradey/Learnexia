@@ -3,6 +3,7 @@ using System;
 using Learnexia.Modules.Gamification.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Learnexia.Modules.Gamification.Infrastructure.Migrations
 {
     [DbContext(typeof(GamificationDbContext))]
-    partial class GamificationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260530174250_AddHeartsColumnsAndHeartLoss")]
+    partial class AddHeartsColumnsAndHeartLoss
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -37,11 +40,17 @@ namespace Learnexia.Modules.Gamification.Infrastructure.Migrations
                     b.Property<int>("CreatedBy")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer");
+
                     b.Property<int>("HeartsAfter")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("LessonId")
-                        .HasColumnType("integer");
+                    b.Property<bool?>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("OccurredAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -49,10 +58,13 @@ namespace Learnexia.Modules.Gamification.Infrastructure.Migrations
                     b.Property<Guid>("OriginEventId")
                         .HasColumnType("uuid");
 
-                    b.Property<int?>("SkillId")
+                    b.Property<int>("StudentXpProfileId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("StudentXpProfileId")
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("UpdatedBy")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");

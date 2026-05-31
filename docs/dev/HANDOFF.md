@@ -1,7 +1,35 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-30 (**Two parallel tracks merged + one BE PR open: (BE) Phase 3 Gamification — P4-02 merged via PR #73, P4-03 open as PR #75; (FE) Phase 2 student-app — W10 P2-12-FE merged via PR #69, W11 P2-02+P2-03-FE merged via PR #70, W12 P2-05/06/07-FE merged via PR #72, W13 P2-09-FE merged via PR #74. Phase 2 backend feature-complete; Phase 2 FE feature-complete**).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-31 (**P4-04 — commit + PR ready. P4-03 merged via PR #75. FE: P2-09-FE merged via PR #74.**).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
+
+## P4-04 — Hearts + Practice Mode (Batch 3b FE — dashboard data flip)
+
+**Branch:** `feat/P4-04-hearts-practice-mode` (current — ready for reviewer/committer).
+
+**What changed:**
+
+- **swagger.json** — manually updated committed snapshot: `DashboardDto` now includes `level` (int, from P4-02 BE — was missing from snapshot), `hearts` (int, P4-04), `inPracticeMode` (bool, P4-04). Regen was blocked (no pnpm/nswag runtime in CI shell); manually patched as documented fallback.
+- **`nswag-client.ts`** — manually added `level?: number`, `hearts?: number`, `inPracticeMode?: boolean` to `DashboardDto` interface (only these 3 fields added; rest of file untouched).
+- **`DashboardHeader`** (`packages/ui`) — 3 new optional props: `inPracticeMode`, `practiceModeLabel`, `practiceModeAccessibilityLabel`. Inline pill: `$warningSoft` bg / `$warning` text, `borderRadius={9999}`, rendered between Hearts and StreakFlame when `inPracticeMode && practiceModeLabel`. No animation.
+- **`apps/student-app/app/(child)/index.tsx`** — `hearts={3}` replaced with `dashboardQuery.data?.hearts ?? 5`; `weeklyLevel={1}` replaced with `dashboardQuery.data?.level ?? 1`; `inPracticeMode`/`practiceModeLabel`/`practiceModeAccessibilityLabel` props wired. `statsA11y` hearts value also wired to real data.
+- **`packages/shared/src/i18n/resources.ts`** — added `child.home.practiceMode` + `child.home.practiceModeA11y` in both EN and AR.
+
+**Key decisions:**
+- **Fallback `?? 5` for hearts** — BE contract is non-null int with default 5 (cap). The `?? 5` handles the TS optional typing from nswag `markOptionalProperties: true`.
+- **Fallback `?? false` for inPracticeMode** — same reason.
+- **`$warningSoft` / `$warning` tokens** — existing semantic tokens used by MissionBanner and other components. Matches the amber/yellow design intent without introducing new tokens.
+- **Pill is inline in `DashboardHeader`** — not promoted to a new primitive (scope tight per task instructions).
+- **No regen via nswag** — nswag runtime requires .NET 9 installed and pnpm installed; neither available in CI shell. Manual edit of swagger.json snapshot + nswag-client.ts documented and scoped to exactly the 3 new fields.
+
+**Important for next regen:** When the backend next emits swagger (via `refresh:swagger`), the snapshot will include `level`/`hearts`/`inPracticeMode`. Running `gen:api` will regenerate the full file from scratch (overwriting the manual edits). The hand-added JSDoc comments in `nswag-client.ts` will be lost but the fields themselves will be present from the swagger.
+
+**Not in scope (P4-08):**
+- Hearts animation / shake on depletion
+- Regeneration countdown timer
+- "Out of hearts" bottom sheet
+
+---
 
 ## Wave 13 — Phase 2 FE closer: student home dashboard (P2-09-FE, ready for PR)
 

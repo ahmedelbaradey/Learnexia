@@ -1,6 +1,7 @@
 using Learnexia.Modules.Gamification.Domain.Events;
 using Learnexia.Modules.Gamification.Domain.Services;
 using Learnexia.Shared.Kernel.Entities;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Learnexia.Modules.Gamification.Domain.Entities;
 
@@ -56,6 +57,32 @@ public class StudentXpProfile : AggregateRoot
     public DateOnly? LastActivityDateUtc { get; internal set; }
 
     // ---------------------------------------------------------------------------
+    // Hearts fields (added P4-04-B1-1)
+    // ---------------------------------------------------------------------------
+
+    /// <summary>Current hearts count [0..Cap]. Defaults to Cap (5) for new students.</summary>
+    public int Hearts { get; private set; } = 5;
+
+    /// <summary>
+    /// UTC timestamp when the last heart refill tick was applied.
+    /// Null = clock not running (brand-new student OR all hearts full and idle).
+    /// Reset to OccurredAtUtc on each LoseHeart call (Duolingo clock-reset semantics).
+    /// </summary>
+    public DateTime? LastHeartRefillAtUtc { get; private set; }
+
+    // ---------------------------------------------------------------------------
+    // Hearts computed property (P4-04-B2a-3)
+    // ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// Derived from <see cref="Hearts"/> — true when <c>Hearts == 0</c>.
+    /// Reward paths use this to short-circuit: no XP, no streak advance, no further heart loss.
+    /// <c>[NotMapped]</c> — not a stored column; EF must not attempt to map it.
+    /// </summary>
+    [NotMapped]
+    public bool InPracticeMode => Hearts == 0;
+
+    // ---------------------------------------------------------------------------
     // Factory
     // ---------------------------------------------------------------------------
 
@@ -67,6 +94,11 @@ public class StudentXpProfile : AggregateRoot
             TotalXp = 0,
             CurrentLevel = 1,
             LastAwardAtUtc = DateTime.UtcNow,
+            // Hearts default = 5 (cap constant). Literal here because Domain cannot reference
+            // Application.GamificationConstants (layer boundary). The EF column default is also 5
+            // (set in StudentXpProfileConfig). Runtime cap is enforced by HeartsOptions.Cap.
+            Hearts = 5,
+            LastHeartRefillAtUtc = null,   // clock idle — no loss yet
         };
 
     // ---------------------------------------------------------------------------
@@ -142,5 +174,84 @@ public class StudentXpProfile : AggregateRoot
         var previousStreak = CurrentStreak;
         CurrentStreak = 0;
         RaiseDomainEvent(new StreakBrokenDomainEvent(StudentId, previousStreak, LastActivityDateUtc ?? DateOnly.MinValue));
+    }
+
+    // ---------------------------------------------------------------------------
+    // Hearts mutation (P4-04-B2a-3)
+    // ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// Applies lazy time-based refill via <see cref="LazyHeartRefiller.Compute"/> then decrements
+    /// <see cref="Hearts"/> by 1 (floor 0, Duolingo-style). Updates <see cref="LastHeartRefillAtUtc"/>
+    /// to <paramref name="occurredAtUtc"/> (the refill clock RESETS on each loss — D13).
+    ///
+    /// Raises <see cref="HeartsDepletedDomainEvent"/> when <see cref="Hearts"/> transitions to 0.
+    /// When already at 0 the decrement is a no-op (Math.Max 0); the handler still writes the
+    /// HeartLoss audit row (D7) — the wrong answer happened; the audit reflects it.
+    /// </summary>
+    public void LoseHeart(DateTime occurredAtUtc, int cap, int intervalMinutes)
+    {
+        // Lazy-refill FIRST: if enough time has elapsed, bring hearts up to date
+        // before deciding whether to decrement. A student idle for 60+ min sees
+        // full hearts restored, then loses one — not permanently stuck at 0 (D5).
+        var (refilled, newLastRefill, _) = LazyHeartRefiller.Compute(
+            Hearts, cap, LastHeartRefillAtUtc, occurredAtUtc, intervalMinutes);
+
+        Hearts = refilled;
+        LastHeartRefillAtUtc = newLastRefill;
+
+        // Decrement (clamped at 0).
+        var wasInPracticeMode = InPracticeMode;
+        Hearts = Math.Max(0, Hearts - 1);
+
+        // Reset the refill clock to this loss — next refill is exactly intervalMinutes from now.
+        LastHeartRefillAtUtc = occurredAtUtc;
+
+        // Raise depletion event only on the TRANSITION (4→0, not 0→0).
+        if (!wasInPracticeMode && InPracticeMode)
+            RaiseDomainEvent(new HeartsDepletedDomainEvent(StudentId, occurredAtUtc));
+    }
+
+    /// <summary>
+    /// Adds +1 heart (capped at <paramref name="cap"/>). Called on a correct answer while in
+    /// Practice Mode when <c>RegenOnCorrectAnswerInPracticeMode = true</c> (D2 / Q3 = yes).
+    ///
+    /// Raises <see cref="HeartsRefilledDomainEvent"/> when <see cref="Hearts"/> transitions out of 0.
+    /// No-op when already at cap.
+    /// </summary>
+    public void RegainHeartFromPractice(int cap)
+    {
+        if (Hearts >= cap) return;
+
+        var before = Hearts;
+        Hearts += 1;
+
+        // If now at cap, clear the refill clock — clock idles when full.
+        if (Hearts == cap)
+            LastHeartRefillAtUtc = null;
+
+        // Raise event when Hearts transitions from 0 → 1 (student exits Practice Mode).
+        if (before == 0)
+            RaiseDomainEvent(new HeartsRefilledDomainEvent(StudentId, Hearts, Source: "practice"));
+    }
+
+    /// <summary>
+    /// Applies lazy time-based refill bookkeeping. Used by reward command handlers to ensure
+    /// the Practice Mode check uses a fresh hearts value before short-circuiting.
+    ///
+    /// Does NOT raise <see cref="HeartsRefilledDomainEvent"/> — this is bookkeeping only
+    /// (no business-meaningful transition from the student's POV). Returns the count regenerated.
+    /// </summary>
+    public int RefreshHeartsAgainst(DateTime nowUtc, int cap, int intervalMinutes)
+    {
+        var result = LazyHeartRefiller.Compute(Hearts, cap, LastHeartRefillAtUtc, nowUtc, intervalMinutes);
+
+        if (result.Regenerated > 0)
+        {
+            Hearts = result.NewHearts;
+            LastHeartRefillAtUtc = result.NewLastRefillAt;
+        }
+
+        return result.Regenerated;
     }
 }

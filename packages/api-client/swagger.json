@@ -7796,6 +7796,17 @@
           },
           "continue": {
             "$ref": "#/components/schemas/ContinueTargetDto"
+          },
+          "level": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hearts": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "inPracticeMode": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

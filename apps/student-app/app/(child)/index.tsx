@@ -8,12 +8,13 @@
  *   → MissionBanner (always null in Phase 2 → never rendered per AC6)
  *   → SubjectsListSection (W11 logic preserved, extracted to _components)
  *
- * Phase-2 stubs (all carry inline TODO comments pointing to the Phase-4 story):
- *   Hearts: hard-coded 3 (TODO P4-05)
- *   StreakDays: dashboardQuery.data?.streak ?? 0 (TODO P4-03)
- *   WeeklyXp: dashboardQuery.data?.xp ?? 0 (TODO P4-02)
- *   WeeklyXpTarget: 100 (TODO P4-02)
- *   WeeklyLevel: 1 (TODO P4-02)
+ * P4-04 data flip:
+ *   Hearts: dashboardQuery.data?.hearts ?? 5 (real from BE — was hard-coded 3)
+ *   InPracticeMode: dashboardQuery.data?.inPracticeMode (pill shown when true)
+ *   Level: dashboardQuery.data?.level ?? 1 (real from BE — was hard-coded 1)
+ *
+ * Remaining stubs (carry inline TODO comments pointing to Phase-4 story):
+ *   WeeklyXpTarget: 100 (TODO P4-02 — weekly aggregation target)
  *   DailyMission: always null → MissionBanner never mounts (TODO P4-06)
  *   LeaguePreview: always null → not rendered (TODO P4-07)
  *
@@ -73,10 +74,11 @@ export default function ChildHomeScreen() {
     : null;
 
   // Stats a11y label (AC11, design spec §7)
+  // P4-04: hearts now real from dashboardQuery; inPracticeMode from dashboard.
   const statsA11y = t('child.home.statsA11y', {
-    hearts: 3,           // TODO P4-05 — wire to /api/Gamification/Hearts
-    streak: dashboardQuery.data?.streak ?? 0, // TODO P4-03
-    xp: dashboardQuery.data?.xp ?? 0,         // TODO P4-02
+    hearts: dashboardQuery.data?.hearts ?? 5, // P4-04 — real from BE (default 5 cap for new students)
+    streak: dashboardQuery.data?.streak ?? 0, // P4-03
+    xp: dashboardQuery.data?.xp ?? 0,         // P4-02
   });
 
   // ContinueCard — derive state + press handler (AC2, AC3)
@@ -168,17 +170,20 @@ export default function ChildHomeScreen() {
           childName={childName}
           greetingText={greetingText}
           gradeCaption={gradeCaption}
-          hearts={3}                                        // TODO P4-05 — wire to /api/Gamification/Hearts
-          heartsMax={3}
-          streakDays={dashboardQuery.data?.streak ?? 0}    // TODO P4-03 — BE returns 0 in Phase 2
-          weeklyXp={dashboardQuery.data?.xp ?? 0}          // TODO P4-02 — BE returns 0 in Phase 2
+          hearts={dashboardQuery.data?.hearts ?? 5}         // P4-04 — real from BE (default 5 for new students)
+          heartsMax={5}
+          streakDays={dashboardQuery.data?.streak ?? 0}    // P4-03 — real from BE
+          weeklyXp={dashboardQuery.data?.xp ?? 0}          // P4-02 — real from BE
           weeklyXpTarget={100}                              // TODO P4-02 — weekly aggregation target
-          weeklyLevel={1}                                   // TODO P4-02 — level concept deferred
+          weeklyLevel={dashboardQuery.data?.level ?? 1}    // P4-02 — real level from BE
           mascotSrc={assets.logoMark}
           statsAccessibilityLabel={statsA11y}
           heartsAccessibilityLabel={t('child.home.stats.hearts')}
           streakAccessibilityLabel={t('child.home.stats.streak')}
           xpAccessibilityLabel={t('child.home.stats.xp')}
+          inPracticeMode={dashboardQuery.data?.inPracticeMode ?? false}  // P4-04
+          practiceModeLabel={t('child.home.practiceMode')}               // P4-04
+          practiceModeAccessibilityLabel={t('child.home.practiceModeA11y')} // P4-04
           direction={direction}
           locale={locale}
           loading={isHeaderLoading}

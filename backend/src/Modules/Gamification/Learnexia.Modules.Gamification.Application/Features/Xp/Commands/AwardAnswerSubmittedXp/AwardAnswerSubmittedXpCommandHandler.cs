@@ -1,5 +1,6 @@
 using Learnexia.Modules.Gamification.Application.Abstractions;
 using Learnexia.Modules.Gamification.Application.Common;
+using Learnexia.Modules.Gamification.Application.Configuration;
 using Learnexia.Modules.Gamification.Domain.Entities;
 using Learnexia.Modules.Gamification.Domain.Enums;
 using Learnexia.Modules.Gamification.Domain.Services;
@@ -8,6 +9,7 @@ using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Learnexia.Modules.Gamification.Application.Features.Xp.Commands.AwardAnswerSubmittedXp;
 
@@ -17,6 +19,11 @@ namespace Learnexia.Modules.Gamification.Application.Features.Xp.Commands.AwardA
 /// Awards CorrectAnswer XP (+10) when the student submitted a correct answer
 /// (<c>CorrectAnswerCount &gt; 0</c>). Belt-and-suspenders guard ensures no award on wrong answers
 /// even if the command is sent directly in tests.
+///
+/// P4-04 Practice Mode gate: if the student is in Practice Mode (<c>Hearts == 0</c>), XP is
+/// suspended — the gate short-circuits with Success(0) before writing the XpAward row.
+/// Hearts regen on correct answer is handled by the separate <c>RegainHeartFromPracticeCommand</c>
+/// sent by <c>AnswerSubmittedIntegrationEventHandler</c>.
 ///
 /// Idempotency: pre-checks (OriginEventId, CorrectAnswer) before inserting the <see cref="XpAward"/>
 /// row. DB unique constraint is the backstop for concurrent duplicates (AC4).
@@ -28,13 +35,19 @@ public class AwardAnswerSubmittedXpCommandHandler
     : BaseResponseHandler, ICommandHandler<AwardAnswerSubmittedXpCommand, BaseResponse<Unit>>
 {
     private readonly IGamificationRepository _repo;
+    private readonly IOptions<HeartsOptions> _heartsOptions;
+    private readonly ISystemClock _clock;
     private readonly ILoggerManager _logger;
 
     public AwardAnswerSubmittedXpCommandHandler(
         IGamificationRepository repo,
+        IOptions<HeartsOptions> heartsOptions,
+        ISystemClock clock,
         ILoggerManager logger)
     {
         _repo = repo;
+        _heartsOptions = heartsOptions;
+        _clock = clock;
         _logger = logger;
     }
 
@@ -68,6 +81,22 @@ public class AwardAnswerSubmittedXpCommandHandler
 
             // Ensure the profile is tracked (new or existing) so EF can resolve FK at SaveChanges.
             _repo.UpsertXpProfile(profile);
+
+            // ── P4-04 Practice-Mode gate ──────────────────────────────────────────────────────
+            // Lazy-refill first so a student whose hearts have ticked back up is not falsely gated.
+            var opts = _heartsOptions.Value;
+            profile.RefreshHeartsAgainst(_clock.UtcNow, opts.Cap, opts.RefillIntervalMinutes);
+
+            if (profile.InPracticeMode)
+            {
+                // XP is suspended in Practice Mode. Hearts regen on correct answer is handled by
+                // the RegainHeartFromPracticeCommand fan-out in AnswerSubmittedIntegrationEventHandler.
+                _logger.LogInfo(
+                    $"P4-04: Practice Mode — AnswerSubmittedXP suspended (studentId={request.StudentId}).");
+                return Success(Unit.Value);
+            }
+
+            // ─────────────────────────────────────────────────────────────────────────────────
 
             int amount = GamificationConstants.XpRewards.CorrectAnswer;
 
