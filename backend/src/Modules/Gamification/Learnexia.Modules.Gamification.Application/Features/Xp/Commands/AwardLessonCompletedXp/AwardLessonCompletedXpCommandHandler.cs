@@ -1,5 +1,6 @@
 using Learnexia.Modules.Gamification.Application.Abstractions;
 using Learnexia.Modules.Gamification.Application.Common;
+using Learnexia.Modules.Gamification.Application.Configuration;
 using Learnexia.Modules.Gamification.Domain.Entities;
 using Learnexia.Modules.Gamification.Domain.Enums;
 using Learnexia.Modules.Gamification.Domain.Services;
@@ -8,6 +9,7 @@ using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Learnexia.Modules.Gamification.Application.Features.Xp.Commands.AwardLessonCompletedXp;
 
@@ -17,6 +19,10 @@ namespace Learnexia.Modules.Gamification.Application.Features.Xp.Commands.AwardL
 /// Writes TWO <see cref="XpAward"/> rows in one transaction when accuracy ≥ threshold:
 ///   - One <c>LessonComplete</c> award (+50, always on completion)
 ///   - One <c>QuizPass</c> award (+20, only if accuracy ≥ <c>QuizPassAccuracyThreshold</c>)
+///
+/// P4-04 Practice Mode gate: if the student is in Practice Mode (<c>Hearts == 0</c>), XP is
+/// suspended — the gate short-circuits with Success(0) before writing any XpAward row.
+/// Lessons remain ATTEMPTABLE; only rewards are suspended (D3, AC2).
 ///
 /// Each award is idempotency-checked separately by (OriginEventId, Reason) — AC4.
 /// After writing, updates <see cref="StudentXpProfile"/> via <c>ApplyAward</c> and recomputes level
@@ -30,13 +36,19 @@ public class AwardLessonCompletedXpCommandHandler
     : BaseResponseHandler, ICommandHandler<AwardLessonCompletedXpCommand, BaseResponse<Unit>>
 {
     private readonly IGamificationRepository _repo;
+    private readonly IOptions<HeartsOptions> _heartsOptions;
+    private readonly ISystemClock _clock;
     private readonly ILoggerManager _logger;
 
     public AwardLessonCompletedXpCommandHandler(
         IGamificationRepository repo,
+        IOptions<HeartsOptions> heartsOptions,
+        ISystemClock clock,
         ILoggerManager logger)
     {
         _repo = repo;
+        _heartsOptions = heartsOptions;
+        _clock = clock;
         _logger = logger;
     }
 
@@ -66,6 +78,20 @@ public class AwardLessonCompletedXpCommandHandler
 
             // Ensure the profile is tracked (new or existing) so EF can resolve FK at SaveChanges.
             _repo.UpsertXpProfile(profile);
+
+            // ── P4-04 Practice-Mode gate ──────────────────────────────────────────────────────
+            // Lazy-refill first so a student whose hearts have ticked back up is not falsely gated.
+            var opts = _heartsOptions.Value;
+            profile.RefreshHeartsAgainst(_clock.UtcNow, opts.Cap, opts.RefillIntervalMinutes);
+
+            if (profile.InPracticeMode)
+            {
+                _logger.LogInfo(
+                    $"P4-04: Practice Mode — LessonCompletedXP suspended (studentId={request.StudentId}).");
+                return Success(Unit.Value);
+            }
+
+            // ─────────────────────────────────────────────────────────────────────────────────
 
             int lessonAmount = GamificationConstants.XpRewards.LessonComplete;
             var lessonAward = XpAward.Create(

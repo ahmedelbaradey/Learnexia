@@ -45,6 +45,15 @@ public class StudentXpProfileConfig : IEntityTypeConfiguration<StudentXpProfile>
             .HasColumnType("date")
             .IsRequired(false);
 
+        // Hearts columns (P4-04-B1-1)
+        builder.Property(p => p.Hearts)
+            .IsRequired()
+            .HasDefaultValue(5);
+
+        builder.Property(p => p.LastHeartRefillAtUtc)
+            .HasColumnType("timestamp with time zone")
+            .IsRequired(false);
+
         // Unique index: one profile row per student. Also the primary read-path index.
         builder.HasIndex(x => x.StudentId)
             .IsUnique()

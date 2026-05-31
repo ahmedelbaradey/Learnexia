@@ -18,4 +18,17 @@ public static class GamificationConstants
         public const int StreakBonus = 30;                 // stub — no producer this cycle
         public const int QuizPassAccuracyThreshold = 70;  // percent
     }
+
+    /// <summary>
+    /// Hearts engine constants (P4-04). Used to initialise <see cref="Configuration.HeartsOptions"/>
+    /// defaults and to seed brand-new <see cref="Domain.Entities.StudentXpProfile"/> rows.
+    /// </summary>
+    public static class Hearts
+    {
+        /// <summary>Maximum hearts a student may hold at once. Default = 5.</summary>
+        public const int Cap = 5;
+
+        /// <summary>Minutes required for one heart to regenerate. Default = 30.</summary>
+        public const int RefillIntervalMinutes = 30;
+    }
 }

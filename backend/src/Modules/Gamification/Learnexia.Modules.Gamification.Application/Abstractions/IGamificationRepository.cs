@@ -60,4 +60,20 @@ public interface IGamificationRepository
     /// while they were silent (lazy-detection complement). Batched — caller loops while count == 1000.
     /// </summary>
     Task<List<StudentXpProfile>> GetBrokenProfilesAsync(DateOnly threshold, CancellationToken ct = default);
+
+    // ---------------------------------------------------------------------------
+    // Hearts (P4-04-B2a-4)
+    // ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// Returns <c>true</c> when a <see cref="HeartLoss"/> with the given
+    /// <paramref name="originEventId"/> already exists (idempotency pre-check).
+    /// Fast check. Uses <c>AsNoTracking</c>.
+    /// </summary>
+    Task<bool> HasHeartLossAsync(Guid originEventId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Stages a new <see cref="HeartLoss"/> row for insertion. Does NOT save — UoW commits.
+    /// </summary>
+    Task AddHeartLossAsync(HeartLoss heartLoss, CancellationToken ct = default);
 }

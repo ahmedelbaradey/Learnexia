@@ -40,6 +40,11 @@ public static class DependencyInjection
         // streak state without referencing GamificationDbContext directly (module isolation rule 1).
         services.AddScoped<IStudentStreakQuery, StudentStreakQuery>();
 
+        // Cross-module hearts read seam (P4-04): Learning dashboard injects IStudentHeartsQuery to read
+        // hearts state without referencing GamificationDbContext directly (module isolation rule 1).
+        // Includes persist-on-read for lazy refill (D5 / Q1.bis).
+        services.AddScoped<IStudentHeartsQuery, StudentHeartsQuery>();
+
         // Clock seam (P4-03-B2-1): wraps DateTime.UtcNow for deterministic testing. Singleton — stateless.
         services.AddSingleton<ISystemClock, SystemClock>();
 

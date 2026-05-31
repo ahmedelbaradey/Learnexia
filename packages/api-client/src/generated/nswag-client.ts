@@ -6507,6 +6507,12 @@ export interface DashboardDto {
     dailyMission?: DailyMissionDto;
     leaguePreview?: LeaguePreviewDto;
     continue?: ContinueTargetDto;
+    /** P4-02: XP level computed via LevelCurve; default 1 for new students. */
+    level?: number;
+    /** P4-04: current hearts count; default 5 (cap) for new students. */
+    hearts?: number;
+    /** P4-04: true when hearts == 0 (practice mode — wrong answers cost no hearts). */
+    inPracticeMode?: boolean;
 }
 
 export interface DashboardDtoBaseResponse {

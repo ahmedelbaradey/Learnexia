@@ -26,6 +26,9 @@ public static class DependencyInjection
         // Streak options (P4-03-B2-8): bound from appsettings.json:Gamification:Streak.
         services.Configure<StreakOptions>(configuration.GetSection(StreakOptions.SectionName));
 
+        // Hearts options (P4-04-B2a-2): bound from appsettings.json:Gamification:Hearts.
+        services.Configure<HeartsOptions>(configuration.GetSection(HeartsOptions.SectionName));
+
         return services;
     }
 }

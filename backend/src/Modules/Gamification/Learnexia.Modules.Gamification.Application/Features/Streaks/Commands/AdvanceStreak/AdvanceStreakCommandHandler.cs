@@ -21,6 +21,7 @@ namespace Learnexia.Modules.Gamification.Application.Features.Streaks.Commands.A
 ///   2. Row-lock on the profile row (prevent concurrent advance race for the same student).
 ///   3. Compute day-bucket via <see cref="StreakDayCalculator.DayOf"/>.
 ///   4. Load or create profile.
+///   4b. P4-04 Practice-Mode gate: lazy-refill then early-return when in Practice Mode (D6).
 ///   5. Classify via <see cref="StreakDayCalculator.Classify"/> and switch on <see cref="StreakDayCalculator.Transition"/>:
 ///      - NoOp        → return Success (same calendar day; only first lesson of the day pays the bonus).
 ///      - OutOfOrder  → log warning, return Success without write (stale / out-of-order event).
@@ -39,17 +40,20 @@ public class AdvanceStreakCommandHandler
     private readonly IGamificationRepository _repo;
     private readonly ISystemClock _clock;
     private readonly IOptions<StreakOptions> _streakOptions;
+    private readonly IOptions<HeartsOptions> _heartsOptions;
     private readonly ILoggerManager _logger;
 
     public AdvanceStreakCommandHandler(
         IGamificationRepository repo,
         ISystemClock clock,
         IOptions<StreakOptions> streakOptions,
+        IOptions<HeartsOptions> heartsOptions,
         ILoggerManager logger)
     {
         _repo = repo;
         _clock = clock;
         _streakOptions = streakOptions;
+        _heartsOptions = heartsOptions;
         _logger = logger;
     }
 
@@ -83,6 +87,18 @@ public class AdvanceStreakCommandHandler
                           ?? StudentXpProfile.CreateFor(request.StudentId);
 
             _repo.UpsertXpProfile(profile);
+
+            // ── 4b. P4-04 Practice-Mode gate ─────────────────────────────────────────────────
+            // Lazy-refill first so a student whose hearts have ticked back up is not falsely gated.
+            var heartsOpts = _heartsOptions.Value;
+            profile.RefreshHeartsAgainst(_clock.UtcNow, heartsOpts.Cap, heartsOpts.RefillIntervalMinutes);
+
+            if (profile.InPracticeMode)
+            {
+                _logger.LogInfo(
+                    $"P4-04: Practice Mode — AdvanceStreak suspended (studentId={request.StudentId}).");
+                return Success(Unit.Value);
+            }
 
             // ── 5. Classify and branch ────────────────────────────────────────────────────────
             var transition = StreakDayCalculator.Classify(profile.LastActivityDateUtc, activityDate);

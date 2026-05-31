@@ -38,6 +38,7 @@ public class GetDashboardQueryHandler
     private readonly IStringLocalizer<SharedResources> _localizer;
     private readonly IStudentXpQuery _xpQuery;
     private readonly IStudentStreakQuery _streakQuery;
+    private readonly IStudentHeartsQuery _heartsQuery;
 
     // Deterministic cross-subject fallback order (Q3 Option A step 5).
     private static readonly string[] FallbackSubjectOrder =
@@ -49,7 +50,8 @@ public class GetDashboardQueryHandler
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer,
         IStudentXpQuery xpQuery,
-        IStudentStreakQuery streakQuery)
+        IStudentStreakQuery streakQuery,
+        IStudentHeartsQuery heartsQuery)
     {
         _repository = repository;
         _currentUser = currentUser;
@@ -57,6 +59,7 @@ public class GetDashboardQueryHandler
         _localizer = localizer;
         _xpQuery = xpQuery;
         _streakQuery = streakQuery;
+        _heartsQuery = heartsQuery;
     }
 
     public async Task<BaseResponse<DashboardDto>> Handle(
@@ -122,16 +125,22 @@ public class GetDashboardQueryHandler
                 }
             }
 
-            // ── Step 8: Read XP + Streak snapshots via cross-module seams ───────────────────────
-            // Both queries go to Gamification.Infrastructure through Shared.Contracts seams — no
-            // direct DbContext reference from Learning (module isolation rule 1). Returns null for
-            // brand-new students; callers default to 0 / level-1 on null.
+            // ── Step 8: Read XP + Streak + Hearts snapshots via cross-module seams ─────────────
+            // All three queries go to Gamification.Infrastructure through Shared.Contracts seams —
+            // no direct DbContext reference from Learning (module isolation rule 1).
             var xpSnapshot = await _xpQuery.GetByStudentIdAsync(studentId, cancellationToken);
             var xp = xpSnapshot?.TotalXp ?? 0;
             var level = xpSnapshot?.CurrentLevel ?? 1;
 
             var streakSnapshot = await _streakQuery.GetByStudentIdAsync(studentId, cancellationToken);
             var streak = streakSnapshot?.CurrentStreak ?? 0;  // P4-03 — real streak from gamification module
+
+            // P4-04 — IStudentHeartsQuery always returns a sentinel (never null) so brand-new students
+            // correctly see Hearts = Cap = 5 and InPracticeMode = false without leaking HeartsOptions.Cap
+            // into this module.
+            var heartsSnapshot = await _heartsQuery.GetByStudentIdAsync(studentId, cancellationToken);
+            var hearts = heartsSnapshot.Hearts;
+            var inPracticeMode = heartsSnapshot.InPracticeMode;
 
             // ── Step 9: Assemble DashboardDto ──────────────────────────────────────────────────
             var dto = new DashboardDto(
@@ -140,7 +149,9 @@ public class GetDashboardQueryHandler
                 DailyMission: null,       // TODO P4-06 — wire daily mission engine
                 LeaguePreview: null,      // TODO P4-07 — wire leagues engine
                 Continue: continueTarget,
-                Level: level
+                Level: level,
+                Hearts: hearts,           // P4-04 — real hearts from gamification module
+                InPracticeMode: inPracticeMode  // P4-04 — derived from Hearts == 0
             );
 
             return Success(dto);

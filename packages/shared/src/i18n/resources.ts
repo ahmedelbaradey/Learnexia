@@ -489,6 +489,8 @@ export const en = {
         streak: 'Streak',
         xp: 'XP this week',
       },
+      practiceMode: 'Practice Mode',
+      practiceModeA11y: 'Practice Mode active — wrong answers cost no hearts',
       boss: 'Boss',
     },
     subjects: {
@@ -1065,6 +1067,8 @@ export const ar = {
         streak: 'سلسلة',
         xp: 'نقاط الخبرة هذا الأسبوع',
       },
+      practiceMode: 'وضع التدريب',
+      practiceModeA11y: 'وضع التدريب مفعّل — الإجابات الخاطئة لا تُكلّف قلوباً',
       boss: 'بوس',
     },
     subjects: {
