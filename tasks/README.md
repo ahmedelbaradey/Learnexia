@@ -10,17 +10,21 @@ tasks/
 │   ├── packages/              PKG-FOUNDATION-FE (monorepo, api-client, shared), P1-08-FE (design-system + ui)
 │   ├── student-app/           Expo universal screens
 │   │   ├── Phase-1-Foundation/    P1-xx-FE.md
-│   │   └── Phase-2-Learning-Core/ P2-xx-FE.md
+│   │   ├── Phase-2-Learning-Core/ P2-xx-FE.md
+│   │   ├── Phase-3-Gamification/  P4-xx-FE.md   (XP/streak/hearts/badges/missions/leagues/motion)
+│   │   └── Phase-5-Parent-Analytics/ P5-xx-FE.md
 │   └── admin-dashboard/       Next.js admin screens
 │       ├── Phase-1-Foundation/    P1-10-FE.md   (admin sign-in & shell)
 │       └── Phase-7-Admin-Console/ P7-xx-FE.md   (admin feature screens)
 └── Backend/
     ├── Phase-1-Foundation/   P1-xx-BE.md
     ├── Phase-2-Learning-Core/ P2-xx-BE.md
+    ├── Phase-3-Gamification/ P4-xx-BE.md
+    ├── Phase-6-Stabilization/ P6-06-BE.md
     └── Phase-7-Admin-Console/ P7-xx-BE.md
 ```
 
-> **Scope:** this tree covers **Phase 1 & 2** stories, plus the **Phase 7 — Admin Console** feature breakdown (`P7-xx`), plus the **Phase 6 — `P6-06`** backend security-hardening pass (relocated from P1-13b). The barrier-to-entry stories added in Phase 3–5 — **P3-13** (adaptive student profile), **P4-09** (re-engagement notifications), **P4-10** (Redis realtime gamification), **P4-11** (streak freeze / timed events), **P5-07** (data feedback / calibration) — are **pending task breakdown** and will be decomposed when their phase trees are built. The Phase-2 story **P2-11** (skill dependency graph) is broken down here. See [../docs/briefs/barrier-to-entry-gap-analysis.md](../docs/briefs/barrier-to-entry-gap-analysis.md).
+> **Scope:** this tree covers **Phase 1 & 2** stories, the **Phase 3 — Gamification** breakdown (`P4-xx`, both stacks), the **Phase 7 — Admin Console** feature breakdown (`P7-xx`), plus the **Phase 6 — `P6-06`** backend security-hardening pass (relocated from P1-13b). The barrier-to-entry stories **P4-09** (re-engagement notifications), **P4-10** (Redis realtime gamification) and **P4-11** (streak freeze / timed events) are now decomposed in the Phase 3 tree below. The remaining barrier-to-entry stories — **P3-13** (adaptive student profile) and **P5-07** (data feedback / calibration) — are **pending task breakdown** and will be decomposed when their phase trees are built. The Phase-2 story **P2-11** (skill dependency graph) is broken down here. See [../docs/briefs/barrier-to-entry-gap-analysis.md](../docs/briefs/barrier-to-entry-gap-analysis.md).
 >
 > **Phase order (resequenced):** Phase 3 = **Gamification** (`P4-xx`), Phase 4 = **AI Tutor** (`P3-xx`) — Gamification builds before AI Tutor; story IDs were kept stable so the prefix no longer equals the phase number. See [../user-stories/README.md](../user-stories/README.md).
 
@@ -82,6 +86,24 @@ tasks/
 | P2-11 | Author the skill dependency graph *(barrier-to-entry BE1)* | — | [BE](Backend/Phase-2-Learning-Core/P2-11-BE.md) |
 | P2-12 | Parent account settings tabs *(carved from P1-11)* | [FE](Frontend/student-app/Phase-2-Learning-Core/P2-12-FE.md) | [BE](Backend/Phase-2-Learning-Core/P2-12-BE.md) |
 | P5-05 | Parent dashboard charts + wire real analytics *(charts carved from P1-11)* | [FE](Frontend/student-app/Phase-5-Parent-Analytics/P5-05-FE.md) | — |
+
+### Phase 3 — Gamification *(story IDs `P4-xx`)*
+
+The Gamification module (`gamification` schema) reacting to the P4-01 learning domain events. **Backend XP/streak/hearts/badges are merged to `main`; missions (P4-06) are in progress; the rest of BE and all gamification FE are not started.** FE lands in `apps/student-app` reusing the shared `packages/`; **P4-08** is the dedicated screens-&-motion epic that the per-story FE widgets feed into.
+
+| Story | Title | Frontend | Backend | Status |
+|---|---|---|---|---|
+| P4-01 | Emit learning domain events *(technical enabler)* | — | [BE](Backend/Phase-3-Gamification/P4-01-BE.md) | BE ✅ |
+| P4-02 | Earn XP and level up | [FE](Frontend/student-app/Phase-3-Gamification/P4-02-FE.md) | [BE](Backend/Phase-3-Gamification/P4-02-BE.md) | BE ✅ · FE 🔲 |
+| P4-03 | Maintain a daily streak | [FE](Frontend/student-app/Phase-3-Gamification/P4-03-FE.md) | [BE](Backend/Phase-3-Gamification/P4-03-BE.md) | BE ✅ · FE 🔲 |
+| P4-04 | Lose hearts and enter Practice Mode | [FE](Frontend/student-app/Phase-3-Gamification/P4-04-FE.md) | [BE](Backend/Phase-3-Gamification/P4-04-BE.md) | BE ✅ · FE 🔲 |
+| P4-05 | Earn badges | [FE](Frontend/student-app/Phase-3-Gamification/P4-05-FE.md) | [BE](Backend/Phase-3-Gamification/P4-05-BE.md) | BE ✅ · FE 🔲 |
+| P4-06 | Complete daily/weekly missions | [FE](Frontend/student-app/Phase-3-Gamification/P4-06-FE.md) | [BE](Backend/Phase-3-Gamification/P4-06-BE.md) | BE 🟡 · FE 🔲 |
+| P4-07 | Compete in weekly leagues | [FE](Frontend/student-app/Phase-3-Gamification/P4-07-FE.md) | [BE](Backend/Phase-3-Gamification/P4-07-BE.md) | 🔲 |
+| P4-08 | Gamification screens & motion *(FE-only epic)* | [FE](Frontend/student-app/Phase-3-Gamification/P4-08-FE.md) | — | FE 🔲 |
+| P4-09 | Re-engagement notifications *(barrier-to-entry BE4; child-data sensitive)* | [FE](Frontend/student-app/Phase-3-Gamification/P4-09-FE.md) | [BE](Backend/Phase-3-Gamification/P4-09-BE.md) | 🔲 |
+| P4-10 | Redis realtime gamification state *(barrier-to-entry BE3; enabler)* | — | [BE](Backend/Phase-3-Gamification/P4-10-BE.md) | 🔲 |
+| P4-11 | Streak freeze, timed events & weekly challenges *(barrier-to-entry)* | [FE](Frontend/student-app/Phase-3-Gamification/P4-11-FE.md) | [BE](Backend/Phase-3-Gamification/P4-11-BE.md) | 🔲 |
 
 ### Phase 7 — Admin Console *(post-MVP)*
 

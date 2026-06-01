@@ -2,6 +2,7 @@ using Hangfire;
 using Learnexia.Modules.Gamification.Api.Controllers;
 using Learnexia.Modules.Gamification.Application;
 using Learnexia.Modules.Gamification.Application.Configuration;
+using Learnexia.Modules.Gamification.Domain.Enums;
 using Learnexia.Modules.Gamification.Infrastructure;
 using Learnexia.Modules.Gamification.Infrastructure.Jobs;
 using Learnexia.Modules.Gamification.Infrastructure.Persistence;
@@ -48,6 +49,15 @@ public static class GamificationModule
             await badgeSeeder.SeedAsync();
         }
 
+        // Seed mission definition catalog in ALL environments (P4-06 — product-as-code catalog, not demo data).
+        // Runs after migration so the MissionDefinitions table is guaranteed to exist. Idempotent: checks by Code,
+        // inserts missing rows, drift-corrects changed metadata. Mirrors BadgeSeeder pattern.
+        using (var scope = serviceProvider.CreateScope())
+        {
+            var missionSeeder = scope.ServiceProvider.GetRequiredService<MissionSeeder>();
+            await missionSeeder.SeedAsync();
+        }
+
         // Register the daily streak sweep recurring job (P4-03-B2-8, D4).
         // IRecurringJobManager is available because Hangfire.Core is wired by the Host (P1-07).
         // AddOrUpdate is idempotent — safe to call on every startup (redeploys won't double-register).
@@ -58,6 +68,23 @@ public static class GamificationModule
             "gamification:streak-sweep",
             job => job.RunAsync(CancellationToken.None),
             streakOptions.DailyJobCron,
+            new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+        // Register daily + weekly mission-rollover recurring jobs (P4-06-B4-3).
+        // Daily job: expires all mission types whose PeriodEndUtc <= now (00:05 UTC every day).
+        // Weekly job: additional sweep for weekly missions at 00:10 UTC every Monday.
+        var missionOptions = serviceProvider.GetRequiredService<IOptions<MissionOptions>>().Value;
+
+        recurringJobs.AddOrUpdate<MissionRolloverJob>(
+            "gamification:mission-rollover-daily",
+            job => job.RunAsync(MissionType.Daily, CancellationToken.None),
+            missionOptions.DailyJobCron,
+            new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+        recurringJobs.AddOrUpdate<MissionRolloverJob>(
+            "gamification:mission-rollover-weekly",
+            job => job.RunAsync(MissionType.Weekly, CancellationToken.None),
+            missionOptions.WeeklyJobCron,
             new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
     }
 }

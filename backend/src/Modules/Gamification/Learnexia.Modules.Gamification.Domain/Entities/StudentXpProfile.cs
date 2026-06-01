@@ -302,4 +302,42 @@ public class StudentXpProfile : AggregateRoot
             rewardXp,
             awardedAtUtc));
     }
+
+    // ---------------------------------------------------------------------------
+    // Mission mutation (P4-06-B2-1)
+    // ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// Records that this student completed a mission. Adds the reward XP to TotalXp, recomputes
+    /// level, and raises <see cref="Events.MissionCompletedDomainEvent"/> + optionally
+    /// <see cref="StudentLeveledUpDomainEvent"/> if the XP bonus crosses a level threshold.
+    ///
+    /// Does NOT mutate the <c>StudentMission</c> row — the command handler does that explicitly
+    /// before calling this method.
+    ///
+    /// Mirrors <see cref="RecordBadgeEarned"/> line-for-line (same XP-award + level-up + event
+    /// raise pattern; different domain event type).
+    /// </summary>
+    public void RecordMissionCompleted(
+        int missionDefinitionId,
+        string code,
+        int rewardXp,
+        int newLevel,
+        DateTime completedAtUtc)
+    {
+        var oldLevel = CurrentLevel;
+        TotalXp += rewardXp;
+        CurrentLevel = newLevel;
+        LastAwardAtUtc = completedAtUtc;
+
+        if (newLevel > oldLevel)
+            RaiseDomainEvent(new StudentLeveledUpDomainEvent(StudentId, oldLevel, newLevel));
+
+        RaiseDomainEvent(new Events.MissionCompletedDomainEvent(
+            StudentId,
+            missionDefinitionId,
+            code,
+            rewardXp,
+            completedAtUtc));
+    }
 }

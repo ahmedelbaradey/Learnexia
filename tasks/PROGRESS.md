@@ -12,6 +12,7 @@
 - `—` — no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
+- **Wave 13 (BE):** P4-06 (daily/weekly missions — Phase 3 Gamification 5th story: AddMissionDefinitionStudentMissionProgressLog migration (MissionDefinitions catalog + StudentMissions per-period instance + MissionProgressLogs idempotency ledger) + XpReason.MissionCompleted=6 + MissionTargetType enum + MissionPeriodCalculator pure static UTC + ISO 8601 week math + StudentXpProfile.RecordMissionCompleted domain mutation raising MissionCompletedDomainEvent + StudentMission.ApplyProgress/MarkCompleted mutations + IncrementMissionProgressCommand (row-lock after probe, dual-layer idempotency, inline completion to avoid nested-tx) + 3 notification handlers (LessonCompletedMissionHandler/AnswerSubmittedMissionHandler/StreakAdvancedMissionHandler, each in own try/catch per ADR 0002 §3) + MissionSeeder idempotent atomic seed of 8 missions at startup + IStudentMissionsQuery cross-module seam with LAZY INSTANTIATION on dashboard read + DashboardDto.DailyMissions[] + WeeklyMission (replaces old DailyMission placeholder) + GET /api/Gamification/Missions/Me endpoint + MissionStatusDto/MissionTargetTypeDto/MissionTypeDto drift enums in Shared.Contracts + MissionRolloverJob Hangfire @ 5 0 * * * daily + 10 0 * * 1 weekly bulk ExecuteUpdateAsync; lead-approved 8 missions/lazy/PM-counts/daily-list+weekly-single + graph-nav 4th instance (AttachStudentMission); 19 unit tests + 23 integration tests + 62/62 P4-02/03/04/05 regression; security PASS with F1 comment + F2 narrowed catch + F3 DTO enums + F5 lock placement + reviewer F2-cleanup applied) — open as PR on feat/P4-06-missions
 - **Wave 12 (BE):** P4-05 (earn badges — Phase 3 Gamification 4th story: AddBadgeDefinitionAndStudentBadge migration on StudentXpProfiles + BadgeDefinitions catalog + StudentBadges append-only ledger + XpReason.BadgeEarned=5 + BadgeTriggerType enum + BadgePredicateEvaluator pure static total function + StudentXpProfile.RecordBadgeEarned domain mutation raising BadgeEarnedDomainEvent + AwardBadgeCommand (row-lock + dual-layer idempotency + narrowed DbUpdateException catch + AttachBadgeDefinition graph-navigation fix) + 3 notification handlers (LessonCompletedBadgeHandler/StreakAdvancedBadgeHandler/StudentLeveledUpBadgeHandler, each in own try/catch per ADR 0002 §3) + BadgeSeeder idempotent atomic seed of 10 badges at startup + IStudentBadgesQuery cross-module seam wired into Learning dashboard (BadgesCount + RecentBadges DESC top-3) + GET /api/Gamification/Badges/Me endpoint + GamificationConstants.XpRewards.BadgeEarned (Common+20/Rare+50/Epic+100/Legendary+250); lead-approved 10 badges/dashboard-count+recent3/XP-by-rarity/endpoint-shipped + Practice-Mode-by-construction + cascade chain (badge XP can level up which awards LEVEL_* badge); 12 BadgePredicateEvaluator unit tests + BadgeRarityDto enum drift unit test + 17 integration tests + 45/45 P4-02/03/04 regression (assertions updated for +20 FIRST_LESSON XP); security PASS with F1 OriginEventType + F2 atomic seeder + F4 RESTRICT comment + F5 AwardedAtUtc validator applied in-PR) — open as PR on feat/P4-05-earn-badges
 - **Wave 10:** P4-03-BE (maintain a daily streak — Phase 3 Gamification Batch 2: AddStreakColumns migration on StudentXpProfiles (CurrentStreak/LongestStreak/LastActivityDateUtc DateOnly) + ISystemClock abstraction seam in Shared.Kernel + StreakDayCalculator pure static (Classify with NoOp/FirstActivity/Advance/Reset/OutOfOrder Transition) + AdvanceStreakCommand + handler (calls Classify, switches on Transition; idempotency via XpAward unique index + narrowed DbUpdateException when constraint-name catch) + LessonCompletedIntegrationEventHandler extended (XP + streak in separate try/catch per ADR 0002) + StreakSweepJob Hangfire @ 5 0 * * * UTC bulk ExecuteUpdateAsync (registered Transient, scoped DbContext per run) + IStudentStreakQuery cross-module seam wired into Learning dashboard + 13 unit tests + 15 integration tests; SRS-recommended UTC day-boundary + lesson-completion-only trigger + +30 every-advance-day bonus + handler-as-source-of-truth + defensive sweep) — open as PR #75 on feat/P4-03-daily-streak
 - **Wave 11:** P2-02-FE + P2-03-FE (browse subjects/lessons + navigate skill tree — `MeResponse.Grade` inclusion + api-client regen + 4 new `@learnexia/ui` primitives (SubjectRow/LessonCard/SkillTreeNode/SegmentedTabs) + Badge boss variant + subject tint + 3 glow shadow tokens in `colors.ts` + i18n EN+AR + student-app child screens (subjects tabs/tree/lessons) + WhyLockedSheet + lesson stub; reviewer PASS with all 3 blocker fixes applied) — merged via PR #70
@@ -77,19 +78,20 @@
 | P2-12 | Account settings APIs (Parent module + Notifications prefs + Identity security) | ✅ | ✅ |
 
 ## Phase 3 — Gamification *(story IDs `P4-xx`)*
-| Story | Title | Status |
-|---|---|:--:|
-| P4-01 | Emit learning domain events | ✅ |
-| P4-02 | Earn XP and level up | 🟡 |
-| P4-03 | Maintain a daily streak | ✅ |
-| P4-04 | Lose hearts and enter Practice Mode | 🟡 |
-| P4-05 | Earn badges | 🟡 |
-| P4-06 | Complete daily/weekly missions | 🔲 |
-| P4-07 | Compete in weekly leagues | 🔲 |
-| P4-08 | Gamification screens & motion | 🔲 |
-| P4-09 | Re-engagement notifications | 🔲 |
-| P4-10 | Redis realtime gamification state | 🔲 |
-| P4-11 | Streak freeze, timed events & weekly challenges | 🔲 |
+> Backend XP/streak/hearts/badges shipped; **all gamification FE is not started** (task tree added under `tasks/Frontend/student-app/Phase-3-Gamification/`).
+| Story | Title | Backend | Frontend |
+|---|---|:--:|:--:|
+| P4-01 | Emit learning domain events | ✅ | — |
+| P4-02 | Earn XP and level up | ✅ | 🔲 |
+| P4-03 | Maintain a daily streak | ✅ | 🔲 |
+| P4-04 | Lose hearts and enter Practice Mode | ✅ | 🔲 |
+| P4-05 | Earn badges | ✅ | 🔲 |
+| P4-06 | Complete daily/weekly missions | 🟡 | 🔲 |
+| P4-07 | Compete in weekly leagues | 🔲 | 🔲 |
+| P4-08 | Gamification screens & motion | — | 🔲 |
+| P4-09 | Re-engagement notifications | 🔲 | 🔲 |
+| P4-10 | Redis realtime gamification state | 🔲 | — |
+| P4-11 | Streak freeze, timed events & weekly challenges | 🔲 | 🔲 |
 
 ## Phase 4 — AI Tutor *(story IDs `P3-xx`)*
 | Story | Title | Status |

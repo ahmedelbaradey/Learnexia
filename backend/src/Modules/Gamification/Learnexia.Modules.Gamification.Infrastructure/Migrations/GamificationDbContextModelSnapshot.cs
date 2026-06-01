@@ -142,6 +142,116 @@ namespace Learnexia.Modules.Gamification.Infrastructure.Migrations
                     b.ToTable("HeartLosses", "gamification");
                 });
 
+            modelBuilder.Entity("Learnexia.Modules.Gamification.Domain.Entities.MissionDefinition", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Cadence")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("IconKey")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<bool?>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("RewardXp")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SortOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("Target")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TargetType")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TitleKey")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("UX_MissionDefinitions_Code");
+
+                    b.ToTable("MissionDefinitions", "gamification");
+                });
+
+            modelBuilder.Entity("Learnexia.Modules.Gamification.Domain.Entities.MissionProgressLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("OriginEventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("OriginEventType")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<int>("ProgressDelta")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("StudentMissionId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StudentMissionId")
+                        .HasDatabaseName("IX_MissionProgressLogs_StudentMissionId");
+
+                    b.HasIndex("StudentMissionId", "OriginEventId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_MissionProgressLogs_StudentMissionId_OriginEventId");
+
+                    b.ToTable("MissionProgressLogs", "gamification");
+                });
+
             modelBuilder.Entity("Learnexia.Modules.Gamification.Domain.Entities.StudentBadge", b =>
                 {
                     b.Property<int>("Id")
@@ -186,6 +296,73 @@ namespace Learnexia.Modules.Gamification.Infrastructure.Migrations
                         .HasDatabaseName("UX_StudentBadges_StudentXpProfileId_BadgeDefinitionId");
 
                     b.ToTable("StudentBadges", "gamification");
+                });
+
+            modelBuilder.Entity("Learnexia.Modules.Gamification.Domain.Entities.StudentMission", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MissionDefinitionId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MissionType")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("PeriodEndUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PeriodKey")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("PeriodStartUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Progress")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("Status")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("StudentXpProfileId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Target")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MissionDefinitionId");
+
+                    b.HasIndex("Status", "PeriodEndUtc", "MissionType")
+                        .HasDatabaseName("IX_StudentMissions_Status_PeriodEndUtc_MissionType");
+
+                    b.HasIndex("StudentXpProfileId", "MissionDefinitionId", "PeriodKey")
+                        .IsUnique()
+                        .HasDatabaseName("UX_StudentMissions_StudentXpProfileId_MissionDefinitionId_PeriodKey");
+
+                    b.HasIndex("StudentXpProfileId", "Status", "PeriodEndUtc")
+                        .HasDatabaseName("IX_StudentMissions_StudentXpProfileId_Status_PeriodEndUtc");
+
+                    b.ToTable("StudentMissions", "gamification");
                 });
 
             modelBuilder.Entity("Learnexia.Modules.Gamification.Domain.Entities.StudentXpProfile", b =>
@@ -337,6 +514,17 @@ namespace Learnexia.Modules.Gamification.Infrastructure.Migrations
                     b.Navigation("StudentXpProfile");
                 });
 
+            modelBuilder.Entity("Learnexia.Modules.Gamification.Domain.Entities.MissionProgressLog", b =>
+                {
+                    b.HasOne("Learnexia.Modules.Gamification.Domain.Entities.StudentMission", "StudentMission")
+                        .WithMany()
+                        .HasForeignKey("StudentMissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("StudentMission");
+                });
+
             modelBuilder.Entity("Learnexia.Modules.Gamification.Domain.Entities.StudentBadge", b =>
                 {
                     b.HasOne("Learnexia.Modules.Gamification.Domain.Entities.BadgeDefinition", "BadgeDefinition")
@@ -352,6 +540,25 @@ namespace Learnexia.Modules.Gamification.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("BadgeDefinition");
+
+                    b.Navigation("StudentXpProfile");
+                });
+
+            modelBuilder.Entity("Learnexia.Modules.Gamification.Domain.Entities.StudentMission", b =>
+                {
+                    b.HasOne("Learnexia.Modules.Gamification.Domain.Entities.MissionDefinition", "MissionDefinition")
+                        .WithMany()
+                        .HasForeignKey("MissionDefinitionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Learnexia.Modules.Gamification.Domain.Entities.StudentXpProfile", "StudentXpProfile")
+                        .WithMany()
+                        .HasForeignKey("StudentXpProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MissionDefinition");
 
                     b.Navigation("StudentXpProfile");
                 });

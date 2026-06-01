@@ -34,6 +34,9 @@ public class GamificationDbContext : DbContext
     public DbSet<HeartLoss> HeartLosses { get; set; } = null!;
     public DbSet<BadgeDefinition> BadgeDefinitions => Set<BadgeDefinition>();
     public DbSet<StudentBadge> StudentBadges => Set<StudentBadge>();
+    public DbSet<MissionDefinition> MissionDefinitions => Set<MissionDefinition>();
+    public DbSet<StudentMission> StudentMissions => Set<StudentMission>();
+    public DbSet<MissionProgressLog> MissionProgressLogs => Set<MissionProgressLog>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));

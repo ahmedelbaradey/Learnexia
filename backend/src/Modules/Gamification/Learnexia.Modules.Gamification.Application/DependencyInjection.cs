@@ -29,6 +29,9 @@ public static class DependencyInjection
         // Hearts options (P4-04-B2a-2): bound from appsettings.json:Gamification:Hearts.
         services.Configure<HeartsOptions>(configuration.GetSection(HeartsOptions.SectionName));
 
+        // Mission options (P4-06): bound from appsettings.json:Gamification:Mission.
+        services.Configure<MissionOptions>(configuration.GetSection(MissionOptions.SectionName));
+
         return services;
     }
 }

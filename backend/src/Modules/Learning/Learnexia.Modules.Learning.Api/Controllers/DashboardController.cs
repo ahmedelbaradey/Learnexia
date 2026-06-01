@@ -12,8 +12,8 @@ namespace Learnexia.Modules.Learning.Api.Controllers;
 /// Returns the home dashboard for the JWT-resolved student.
 /// Route: GET api/Learning/Dashboard
 ///
-/// XP/Streak are 0 and DailyMission/LeaguePreview are null in Phase 2.
-/// Phase-4 wiring: P4-02 (Xp), P4-03 (Streak), P4-06 (DailyMission), P4-07 (LeaguePreview).
+/// XP/Streak/DailyMissions/WeeklyMission wired in Phase 4. LeaguePreview null until P4-07.
+/// Phase-4 wiring: P4-02 (Xp), P4-03 (Streak), P4-06 (DailyMissions + WeeklyMission), P4-07 (LeaguePreview).
 /// Continue points at the next Available lesson; may be null for new students with no Available
 /// lesson in any Grade-1 subject.
 ///

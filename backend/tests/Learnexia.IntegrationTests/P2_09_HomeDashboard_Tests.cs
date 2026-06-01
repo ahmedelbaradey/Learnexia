@@ -47,7 +47,7 @@ namespace Learnexia.IntegrationTests;
 /// Phase-4 contract notes (deliberately NOT tested here — Phase-2 stubs):
 ///   xp will always be 0 until P4-02 wires the XP ledger.
 ///   streak will always be 0 until P4-03 wires the streak engine.
-///   dailyMission will always be null until P4-06 wires the mission engine.
+///   dailyMissions (P4-06 WIRED) — now populated; null for brand-new students without an XP profile.
 ///   leaguePreview will always be null until P4-07 wires the leagues engine.
 /// </summary>
 [Collection("IntegrationTests")]
@@ -310,11 +310,13 @@ public sealed class P2_09_HomeDashboard_Tests : IAsyncLifetime
         TryProp(data, "streak", out var streak).Should().BeTrue("data.streak required; body: {0}", body);
         streak.GetInt32().Should().Be(0, "streak must be 0 in Phase 2; body: {0}", body);
 
-        // dailyMission and leaguePreview must be null
-        TryProp(data, "dailyMission", out var dailyMission).Should().BeTrue(
-            "data.dailyMission required; body: {0}", body);
-        dailyMission.ValueKind.Should().Be(JsonValueKind.Null,
-            "dailyMission must be null in Phase 2; body: {0}", body);
+        // P4-06: dailyMissions (plural) replaces the old dailyMission stub.
+        // Brand-new student has no XP profile, so IStudentMissionsQuery returns sentinel ([], null) → null.
+        TryProp(data, "dailyMissions", out var dailyMissions).Should().BeTrue(
+            "data.dailyMissions required (P4-06); body: {0}", body);
+        dailyMissions.ValueKind.Should().BeOneOf(
+            new[] { JsonValueKind.Null, JsonValueKind.Array },
+            "dailyMissions must be null or an array for a brand-new student; body: {0}", body);
 
         TryProp(data, "leaguePreview", out var leaguePreview).Should().BeTrue(
             "data.leaguePreview required; body: {0}", body);
@@ -447,10 +449,10 @@ public sealed class P2_09_HomeDashboard_Tests : IAsyncLifetime
     }
 
     // =========================================================================
-    // C05 — Phase-2 null values: dailyMission == null AND leaguePreview == null
+    // C05 — Phase-2 null values: dailyMissions == null (brand-new student) AND leaguePreview == null
     // =========================================================================
 
-    [Fact(DisplayName = "P209-C05 Phase-2 stubs: dailyMission is JSON null, leaguePreview is JSON null")]
+    [Fact(DisplayName = "P209-C05 P4-06 wired: dailyMissions is JSON null for brand-new student (no missions instantiated); leaguePreview is JSON null")]
     public async Task Phase2Nulls_DailyMissionNull_LeaguePreviewNull()
     {
         var (token, _) = await CreateStudentViaParentFlowAsync("c05");
@@ -461,11 +463,17 @@ public sealed class P2_09_HomeDashboard_Tests : IAsyncLifetime
 
         TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);
 
-        // dailyMission must be JSON null — not absent, not an empty object.
-        TryProp(data, "dailyMission", out var dailyMission).Should().BeTrue(
-            "dailyMission key must be present in the JSON; body: {0}", body);
-        dailyMission.ValueKind.Should().Be(JsonValueKind.Null,
-            "dailyMission must be JSON null in Phase 2 (TODO P4-06); body: {0}", body);
+        // P4-06: dailyMissions (plural) is the new field replacing the old dailyMission stub.
+        // Brand-new students: the sentinel returns an empty list which maps to null in the handler
+        // (empty list is suppressed to null for JSON compactness — mirrors RecentBadges behaviour).
+        // The MissionSeeder runs at startup and seeds catalog rows; however, a brand-new student
+        // has no StudentXpProfile yet, so IStudentMissionsQuery returns the sentinel ([], null),
+        // which handler maps to null.
+        TryProp(data, "dailyMissions", out var dailyMissions).Should().BeTrue(
+            "dailyMissions key must be present in the JSON; body: {0}", body);
+        dailyMissions.ValueKind.Should().BeOneOf(
+            new[] { JsonValueKind.Null, JsonValueKind.Array },
+            "dailyMissions must be JSON null or an array for a brand-new student (P4-06); body: {0}", body);
 
         // leaguePreview must be JSON null — not absent, not an empty object.
         TryProp(data, "leaguePreview", out var leaguePreview).Should().BeTrue(

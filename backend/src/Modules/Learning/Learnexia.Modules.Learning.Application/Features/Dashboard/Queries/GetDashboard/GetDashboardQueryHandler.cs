@@ -17,14 +17,15 @@ namespace Learnexia.Modules.Learning.Application.Features.Dashboard.Queries.GetD
 /// Handles <see cref="GetDashboardQuery"/>.
 /// Returns the home-screen dashboard for the JWT-resolved student.
 ///
-/// Phase-2 shape (P4-03 updated):
-///   Xp     = real XP from gamification module via IStudentXpQuery (P4-02)
-///   Streak = real streak from gamification module via IStudentStreakQuery (P4-03)
-///   DailyMission = null  (TODO P4-06 — daily mission engine)
+/// Phase-4 shape (P4-06 updated):
+///   Xp           = real XP from gamification module via IStudentXpQuery (P4-02)
+///   Streak       = real streak from gamification module via IStudentStreakQuery (P4-03)
+///   DailyMissions = current-period daily missions via IStudentMissionsQuery (P4-06)
+///   WeeklyMission = top weekly mission summary via IStudentMissionsQuery (P4-06)
 ///   LeaguePreview = null (TODO P4-07 — leagues engine)
-///   Continue = the first Available lesson in the most-recently-active subject,
-///              or the first Available lesson across Grade-1 subjects (fallback),
-///              or null when no Available lesson exists anywhere.
+///   Continue      = the first Available lesson in the most-recently-active subject,
+///                   or the first Available lesson across Grade-1 subjects (fallback),
+///                   or null when no Available lesson exists anywhere.
 ///
 /// StudentId is always resolved from the JWT (_currentUser.UserId) — never from the request.
 /// No SaveChangesAsync — read-only query.
@@ -40,6 +41,7 @@ public class GetDashboardQueryHandler
     private readonly IStudentStreakQuery _streakQuery;
     private readonly IStudentHeartsQuery _heartsQuery;
     private readonly IStudentBadgesQuery _badgesQuery;
+    private readonly IStudentMissionsQuery _missionsQuery;
 
     // Deterministic cross-subject fallback order (Q3 Option A step 5).
     private static readonly string[] FallbackSubjectOrder =
@@ -53,16 +55,18 @@ public class GetDashboardQueryHandler
         IStudentXpQuery xpQuery,
         IStudentStreakQuery streakQuery,
         IStudentHeartsQuery heartsQuery,
-        IStudentBadgesQuery badgesQuery)
+        IStudentBadgesQuery badgesQuery,
+        IStudentMissionsQuery missionsQuery)
     {
-        _repository = repository;
-        _currentUser = currentUser;
-        _logger = logger;
-        _localizer = localizer;
-        _xpQuery = xpQuery;
-        _streakQuery = streakQuery;
-        _heartsQuery = heartsQuery;
-        _badgesQuery = badgesQuery;
+        _repository    = repository;
+        _currentUser   = currentUser;
+        _logger        = logger;
+        _localizer     = localizer;
+        _xpQuery       = xpQuery;
+        _streakQuery   = streakQuery;
+        _heartsQuery   = heartsQuery;
+        _badgesQuery   = badgesQuery;
+        _missionsQuery = missionsQuery;
     }
 
     public async Task<BaseResponse<DashboardDto>> Handle(
@@ -128,8 +132,8 @@ public class GetDashboardQueryHandler
                 }
             }
 
-            // ── Step 8: Read XP + Streak + Hearts + Badges snapshots via cross-module seams ────
-            // All four queries go to Gamification.Infrastructure through Shared.Contracts seams —
+            // ── Step 8: Read XP + Streak + Hearts + Badges + Missions snapshots via cross-module seams ─
+            // All five queries go to Gamification.Infrastructure through Shared.Contracts seams —
             // no direct DbContext reference from Learning (module isolation rule 1).
             var xpSnapshot = await _xpQuery.GetByStudentIdAsync(studentId, cancellationToken);
             var xp = xpSnapshot?.TotalXp ?? 0;
@@ -149,18 +153,23 @@ public class GetDashboardQueryHandler
             // never null. Mirrors the IStudentHeartsQuery sentinel-snapshot pattern (D2).
             var badgesSnapshot = await _badgesQuery.GetByStudentIdAsync(studentId, cancellationToken);
 
+            // P4-06 — IStudentMissionsQuery lazy-instantiates the current period's missions on first
+            // call per period (D2 / AC4). Returns sentinel ([], null) for brand-new students.
+            var missionsSnapshot = await _missionsQuery.GetByStudentIdAsync(studentId, cancellationToken);
+
             // ── Step 9: Assemble DashboardDto ──────────────────────────────────────────────────
             var dto = new DashboardDto(
                 Xp: xp,
                 Streak: streak,
-                DailyMission: null,       // TODO P4-06 — wire daily mission engine
                 LeaguePreview: null,      // TODO P4-07 — wire leagues engine
                 Continue: continueTarget,
                 Level: level,
                 Hearts: hearts,           // P4-04 — real hearts from gamification module
                 InPracticeMode: inPracticeMode,  // P4-04 — derived from Hearts == 0
                 BadgesCount: badgesSnapshot.TotalCount,                                        // P4-05
-                RecentBadges: badgesSnapshot.Recent.Count > 0 ? badgesSnapshot.Recent : null   // P4-05
+                RecentBadges: badgesSnapshot.Recent.Count > 0 ? badgesSnapshot.Recent : null,  // P4-05
+                DailyMissions: missionsSnapshot.Daily.Count > 0 ? missionsSnapshot.Daily : null,  // P4-06
+                WeeklyMission: missionsSnapshot.Weekly                                         // P4-06
             );
 
             return Success(dto);
