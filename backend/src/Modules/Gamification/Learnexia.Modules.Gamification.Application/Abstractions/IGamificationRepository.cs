@@ -12,6 +12,44 @@ namespace Learnexia.Modules.Gamification.Application.Abstractions;
 /// </summary>
 public interface IGamificationRepository
 {
+    // ─────────────────────────── Badges (P4-05) ───────────────────────────
+
+    /// <summary>Returns all catalog rows (no active filter — all are active in P4-05). Uses AsNoTracking.</summary>
+    Task<List<BadgeDefinition>> GetAllBadgeDefinitionsAsync(CancellationToken ct = default);
+
+    /// <summary>Returns catalog rows for one trigger type (used by notification handlers). Uses AsNoTracking.</summary>
+    Task<List<BadgeDefinition>> GetBadgeDefinitionsByTriggerAsync(BadgeTriggerType triggerType, CancellationToken ct = default);
+
+    /// <summary>Returns earned BadgeDefinitionIds for a student (idempotency pre-check). Uses AsNoTracking.</summary>
+    Task<HashSet<int>> GetEarnedBadgeIdsAsync(int studentId, CancellationToken ct = default);
+
+    /// <summary>Idempotency check: returns true when the profile already holds a badge for the definition.</summary>
+    Task<bool> HasBadgeAsync(int studentXpProfileId, int badgeDefinitionId, CancellationToken ct = default);
+
+    /// <summary>Stages a new <see cref="StudentBadge"/> for insertion. Does NOT save — UoW commits.</summary>
+    Task AddStudentBadgeAsync(StudentBadge badge, CancellationToken ct = default);
+
+    /// <summary>Returns all earned <see cref="StudentBadge"/> rows for the student, including <see cref="BadgeDefinition"/> navigation. Used by BadgesController.GetMine.</summary>
+    Task<List<StudentBadge>> GetStudentBadgesAsync(int studentId, CancellationToken ct = default);
+
+    /// <summary>Returns the N most recently earned <see cref="StudentBadge"/> rows for the student (ordered by AwardedAtUtc DESC), including <see cref="BadgeDefinition"/> navigation. Used by IStudentBadgesQuery dashboard recent-3 strip.</summary>
+    Task<List<StudentBadge>> GetRecentStudentBadgesAsync(int studentId, int take, CancellationToken ct = default);
+
+    // ─────────────────────────── Seeder (P4-05) ───────────────────────────
+
+    /// <summary>Returns a single catalog row by Code. Used by <c>BadgeSeeder</c> upsert. Uses AsNoTracking.</summary>
+    Task<BadgeDefinition?> GetBadgeDefinitionByCodeAsync(string code, CancellationToken ct = default);
+
+    /// <summary>Stages a new <see cref="BadgeDefinition"/> for insertion. Does NOT save — seeder calls SaveChangesAsync directly.</summary>
+    Task AddBadgeDefinitionAsync(BadgeDefinition definition, CancellationToken ct = default);
+
+    /// <summary>
+    /// Attaches an existing (untracked) <see cref="BadgeDefinition"/> to the current DbContext
+    /// as <c>Unchanged</c> so that adding a <see cref="StudentBadge"/> with the navigation property
+    /// set does NOT cause EF to attempt a duplicate INSERT. Call this before <see cref="AddStudentBadgeAsync"/>.
+    /// No-op if the entity is already tracked.
+    /// </summary>
+    void AttachBadgeDefinition(BadgeDefinition definition);
     /// <summary>
     /// Returns the XP profile for <paramref name="studentId"/>, or <c>null</c> if no profile exists yet
     /// (brand-new student). The returned entity is change-tracked so <c>ApplyAward</c> mutations

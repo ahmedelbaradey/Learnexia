@@ -2,6 +2,7 @@ using Learnexia.Modules.Gamification.Application.Abstractions;
 using Learnexia.Modules.Gamification.Infrastructure.Behaviors;
 using Learnexia.Modules.Gamification.Infrastructure.Jobs;
 using Learnexia.Modules.Gamification.Infrastructure.Persistence;
+using Learnexia.Modules.Gamification.Infrastructure.Persistence.Seed;
 using Learnexia.Modules.Gamification.Infrastructure.Queries;
 using Learnexia.Modules.Gamification.Infrastructure.Repository;
 using Learnexia.Modules.Gamification.Infrastructure.Service;
@@ -45,6 +46,11 @@ public static class DependencyInjection
         // Includes persist-on-read for lazy refill (D5 / Q1.bis).
         services.AddScoped<IStudentHeartsQuery, StudentHeartsQuery>();
 
+        // Cross-module badges read seam (P4-05): Learning dashboard injects IStudentBadgesQuery to read
+        // badge count + recent-3 without referencing GamificationDbContext directly (module isolation rule 1).
+        // Returns sentinel (0, []) for brand-new students — never null (D2).
+        services.AddScoped<IStudentBadgesQuery, StudentBadgesQuery>();
+
         // Clock seam (P4-03-B2-1): wraps DateTime.UtcNow for deterministic testing. Singleton — stateless.
         services.AddSingleton<ISystemClock, SystemClock>();
 
@@ -58,6 +64,10 @@ public static class DependencyInjection
         // injects the concrete GamificationDbContext. Registered AFTER ValidationBehavior (added in
         // AddGamificationApplication, which is called before this) so validation rejects bad input first.
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(UnitOfWorkBehavior<,>));
+
+        // Badge catalog seeder (P4-05). Scoped — wired into GamificationModule.InitializeAsync in Batch 4.
+        // Runs in all environments (product-as-code catalog, not demo data).
+        services.AddScoped<BadgeSeeder>();
 
         return services;
     }

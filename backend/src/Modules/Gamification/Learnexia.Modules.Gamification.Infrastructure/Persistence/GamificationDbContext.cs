@@ -32,6 +32,8 @@ public class GamificationDbContext : DbContext
     public DbSet<StudentXpProfile> StudentXpProfiles => Set<StudentXpProfile>();
     public DbSet<XpAward> XpAwards => Set<XpAward>();
     public DbSet<HeartLoss> HeartLosses { get; set; } = null!;
+    public DbSet<BadgeDefinition> BadgeDefinitions => Set<BadgeDefinition>();
+    public DbSet<StudentBadge> StudentBadges => Set<StudentBadge>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));

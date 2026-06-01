@@ -39,6 +39,7 @@ public class GetDashboardQueryHandler
     private readonly IStudentXpQuery _xpQuery;
     private readonly IStudentStreakQuery _streakQuery;
     private readonly IStudentHeartsQuery _heartsQuery;
+    private readonly IStudentBadgesQuery _badgesQuery;
 
     // Deterministic cross-subject fallback order (Q3 Option A step 5).
     private static readonly string[] FallbackSubjectOrder =
@@ -51,7 +52,8 @@ public class GetDashboardQueryHandler
         IStringLocalizer<SharedResources> localizer,
         IStudentXpQuery xpQuery,
         IStudentStreakQuery streakQuery,
-        IStudentHeartsQuery heartsQuery)
+        IStudentHeartsQuery heartsQuery,
+        IStudentBadgesQuery badgesQuery)
     {
         _repository = repository;
         _currentUser = currentUser;
@@ -60,6 +62,7 @@ public class GetDashboardQueryHandler
         _xpQuery = xpQuery;
         _streakQuery = streakQuery;
         _heartsQuery = heartsQuery;
+        _badgesQuery = badgesQuery;
     }
 
     public async Task<BaseResponse<DashboardDto>> Handle(
@@ -125,8 +128,8 @@ public class GetDashboardQueryHandler
                 }
             }
 
-            // ── Step 8: Read XP + Streak + Hearts snapshots via cross-module seams ─────────────
-            // All three queries go to Gamification.Infrastructure through Shared.Contracts seams —
+            // ── Step 8: Read XP + Streak + Hearts + Badges snapshots via cross-module seams ────
+            // All four queries go to Gamification.Infrastructure through Shared.Contracts seams —
             // no direct DbContext reference from Learning (module isolation rule 1).
             var xpSnapshot = await _xpQuery.GetByStudentIdAsync(studentId, cancellationToken);
             var xp = xpSnapshot?.TotalXp ?? 0;
@@ -142,6 +145,10 @@ public class GetDashboardQueryHandler
             var hearts = heartsSnapshot.Hearts;
             var inPracticeMode = heartsSnapshot.InPracticeMode;
 
+            // P4-05 — IStudentBadgesQuery always returns a sentinel (0, []) for brand-new students —
+            // never null. Mirrors the IStudentHeartsQuery sentinel-snapshot pattern (D2).
+            var badgesSnapshot = await _badgesQuery.GetByStudentIdAsync(studentId, cancellationToken);
+
             // ── Step 9: Assemble DashboardDto ──────────────────────────────────────────────────
             var dto = new DashboardDto(
                 Xp: xp,
@@ -151,7 +158,9 @@ public class GetDashboardQueryHandler
                 Continue: continueTarget,
                 Level: level,
                 Hearts: hearts,           // P4-04 — real hearts from gamification module
-                InPracticeMode: inPracticeMode  // P4-04 — derived from Hearts == 0
+                InPracticeMode: inPracticeMode,  // P4-04 — derived from Hearts == 0
+                BadgesCount: badgesSnapshot.TotalCount,                                        // P4-05
+                RecentBadges: badgesSnapshot.Recent.Count > 0 ? badgesSnapshot.Recent : null   // P4-05
             );
 
             return Success(dto);

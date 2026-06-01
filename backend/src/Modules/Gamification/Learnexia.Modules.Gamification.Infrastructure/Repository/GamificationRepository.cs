@@ -78,4 +78,82 @@ public sealed class GamificationRepository : IGamificationRepository
     /// <inheritdoc />
     public async Task AddHeartLossAsync(HeartLoss heartLoss, CancellationToken ct = default)
         => await _context.HeartLosses.AddAsync(heartLoss, ct);
+
+    // ---------------------------------------------------------------------------
+    // Badges (P4-05)
+    // ---------------------------------------------------------------------------
+
+    /// <inheritdoc />
+    public async Task<List<BadgeDefinition>> GetAllBadgeDefinitionsAsync(CancellationToken ct = default)
+        => await _context.BadgeDefinitions
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+    /// <inheritdoc />
+    public async Task<List<BadgeDefinition>> GetBadgeDefinitionsByTriggerAsync(
+        BadgeTriggerType triggerType, CancellationToken ct = default)
+        => await _context.BadgeDefinitions
+            .AsNoTracking()
+            .Where(d => d.TriggerType == triggerType)
+            .ToListAsync(ct);
+
+    /// <inheritdoc />
+    public async Task<HashSet<int>> GetEarnedBadgeIdsAsync(int studentId, CancellationToken ct = default)
+    {
+        var ids = await _context.StudentBadges
+            .AsNoTracking()
+            .Where(b => b.StudentXpProfile.StudentId == studentId)
+            .Select(b => b.BadgeDefinitionId)
+            .ToListAsync(ct);
+        return ids.ToHashSet();
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> HasBadgeAsync(int studentXpProfileId, int badgeDefinitionId, CancellationToken ct = default)
+        => await _context.StudentBadges
+            .AsNoTracking()
+            .AnyAsync(b => b.StudentXpProfileId == studentXpProfileId && b.BadgeDefinitionId == badgeDefinitionId, ct);
+
+    /// <inheritdoc />
+    public async Task AddStudentBadgeAsync(StudentBadge badge, CancellationToken ct = default)
+        => await _context.StudentBadges.AddAsync(badge, ct);
+
+    /// <inheritdoc />
+    public async Task<List<StudentBadge>> GetStudentBadgesAsync(int studentId, CancellationToken ct = default)
+        => await _context.StudentBadges
+            .AsNoTracking()
+            .Where(b => b.StudentXpProfile.StudentId == studentId)
+            .Include(b => b.BadgeDefinition)
+            .ToListAsync(ct);
+
+    /// <inheritdoc />
+    public async Task<List<StudentBadge>> GetRecentStudentBadgesAsync(int studentId, int take, CancellationToken ct = default)
+        => await _context.StudentBadges
+            .AsNoTracking()
+            .Where(b => b.StudentXpProfile.StudentId == studentId)
+            .Include(b => b.BadgeDefinition)
+            .OrderByDescending(b => b.AwardedAtUtc)
+            .Take(take)
+            .ToListAsync(ct);
+
+    // ─────────────────────────── Seeder (P4-05) ───────────────────────────
+
+    /// <inheritdoc />
+    public async Task<BadgeDefinition?> GetBadgeDefinitionByCodeAsync(string code, CancellationToken ct = default)
+        => await _context.BadgeDefinitions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d => d.Code == code, ct);
+
+    /// <inheritdoc />
+    public async Task AddBadgeDefinitionAsync(BadgeDefinition definition, CancellationToken ct = default)
+        => await _context.BadgeDefinitions.AddAsync(definition, ct);
+
+    /// <inheritdoc />
+    public void AttachBadgeDefinition(BadgeDefinition definition)
+    {
+        // Only attach if not already tracked — avoids InvalidOperationException on double-attach.
+        var entry = _context.Entry(definition);
+        if (entry.State == Microsoft.EntityFrameworkCore.EntityState.Detached)
+            _context.BadgeDefinitions.Attach(definition);
+    }
 }

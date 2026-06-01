@@ -439,9 +439,9 @@ public sealed class P4_03_DailyStreak_Tests : IAsyncLifetime
         streakVal.GetInt32().Should().Be(1,
             "dashboard must reflect the real streak from IStudentStreakQuery; body: {0}", dashBody);
 
-        // XP total: 4×10 + 50 (LessonCompleted) + 20 (QuizPass at 100%) + 30 (StreakBonus) = 140
-        profile.TotalXp.Should().Be(140,
-            "4×CorrectAnswer(40) + LessonCompleted(50) + QuizPass(20) + StreakBonus(30) = 140 XP");
+        // XP total: 4×10 + 50 (LessonCompleted) + 20 (QuizPass at 100%) + 30 (StreakBonus) + 20 (FIRST_LESSON badge, P4-05) = 160
+        profile.TotalXp.Should().Be(160,
+            "4×CorrectAnswer(40) + LessonCompleted(50) + QuizPass(20) + StreakBonus(30) + FIRST_LESSON badge(20, P4-05) = 160 XP");
     }
 
     // =========================================================================
@@ -954,14 +954,14 @@ public sealed class P4_03_DailyStreak_Tests : IAsyncLifetime
             accuracyPct:   100,
             correctCount:  4);
 
-        // Expected XP: 95 (seed) + 50 (LessonCompleted) + 20 (QuizPass) + 30 (StreakBonus) = 195.
+        // Expected XP: 95 (seed) + 50 (LessonCompleted) + 20 (QuizPass) + 30 (StreakBonus) + 20 (FIRST_LESSON badge, P4-05) = 215.
         // Level 2 threshold = 100 XP cumulative.
         var profile = await GetProfileAsync(studentId);
         profile.Should().NotBeNull();
-        profile!.TotalXp.Should().Be(195,
-            "95 (seed) + LessonCompleted(50) + QuizPass(20) + StreakBonus(30) = 195 XP");
+        profile!.TotalXp.Should().Be(215,
+            "95 (seed) + LessonCompleted(50) + QuizPass(20) + StreakBonus(30) + FIRST_LESSON badge(20, P4-05) = 215 XP");
         profile.CurrentLevel.Should().Be(2,
-            "195 XP exceeds the L2 threshold of 100 XP");
+            "215 XP exceeds the L2 threshold of 100 XP");
         profile.CurrentStreak.Should().Be(1,
             "consecutive-day activity (yesterday → today with CurrentStreak=0) starts a fresh streak at 1");
     }
