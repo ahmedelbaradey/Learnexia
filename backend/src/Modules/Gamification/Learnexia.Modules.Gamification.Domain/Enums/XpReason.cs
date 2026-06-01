@@ -9,4 +9,5 @@ public enum XpReason
     LessonCompleted = 3,
     StreakBonus = 4,
     BadgeEarned = 5,    // P4-05 — rarity-scaled XP bonus awarded when a badge is earned
+    MissionCompleted = 6,   // P4-06 — per-mission scalar XP reward awarded on mission completion
 }

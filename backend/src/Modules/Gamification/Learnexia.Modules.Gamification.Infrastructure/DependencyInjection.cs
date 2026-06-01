@@ -51,6 +51,12 @@ public static class DependencyInjection
         // Returns sentinel (0, []) for brand-new students — never null (D2).
         services.AddScoped<IStudentBadgesQuery, StudentBadgesQuery>();
 
+        // Cross-module missions read seam (P4-06): Learning dashboard injects IStudentMissionsQuery to read
+        // current-period missions without referencing GamificationDbContext directly (module isolation rule 1).
+        // Lazy-instantiates the current period's missions on first call per period (D2 decision).
+        // Returns sentinel ([], null) for brand-new students — never null.
+        services.AddScoped<IStudentMissionsQuery, StudentMissionsQuery>();
+
         // Clock seam (P4-03-B2-1): wraps DateTime.UtcNow for deterministic testing. Singleton — stateless.
         services.AddSingleton<ISystemClock, SystemClock>();
 
@@ -58,6 +64,9 @@ public static class DependencyInjection
         // IServiceScopeFactory.CreateAsyncScope(), so it does not participate in any caller's scope.
         // Hangfire's job activator creates a fresh per-job scope anyway; Scoped here was misleading.
         services.AddTransient<StreakSweepJob>();
+
+        // Hangfire mission-rollover job (P4-06-B4-3): Transient — mirrors StreakSweepJob registration.
+        services.AddTransient<MissionRolloverJob>();
 
         // Unit-of-Work behavior (ADR 0001 §2 + ADR 0002 §2): commit once per ICommand<>, then dispatch
         // domain events AFTER commit. Registered here in Infrastructure (not Application) because it
@@ -68,6 +77,10 @@ public static class DependencyInjection
         // Badge catalog seeder (P4-05). Scoped — wired into GamificationModule.InitializeAsync in Batch 4.
         // Runs in all environments (product-as-code catalog, not demo data).
         services.AddScoped<BadgeSeeder>();
+
+        // Mission catalog seeder (P4-06). Scoped — wired into GamificationModule.InitializeAsync in Batch 4.
+        // Runs in all environments (product-as-code catalog, not demo data).
+        services.AddScoped<MissionSeeder>();
 
         return services;
     }

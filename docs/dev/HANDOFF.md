@@ -1,7 +1,57 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-05-31 (**P4-05 — commit + PR ready. P4-04 ready for committer. P4-03 merged via PR #75. FE: P2-09-FE merged via PR #74.**).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-06-01 (**P4-06 — commit + PR ready. P4-05 merged via PR #77. P4-04 ready for committer. P4-03 merged via PR #75. FE: P2-09-FE merged via PR #74.**).
 > Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
+
+## P4-06 — Complete daily/weekly missions (Batch 8 — commit + PR ready)
+
+**Branch:** `feat/P4-06-missions` (ready for committer).
+
+**What shipped:**
+
+**Phase-3 Gamification fifth story — second periodic-state layer on top of XP/streak/hearts/badges engines. Adds daily (5 templates) + weekly (3 templates) structured replayable goal system with progress tracking, auto-expiry, and reward chaining.**
+
+- **Schema:** `AddMissionDefinitionStudentMissionProgressLog` migration adds three tables to `gamification` schema: `MissionDefinitions` catalog (unique on Code, FullAuditedEntity, 8 seed rows: 5 daily + 3 weekly); `StudentMissions` per-period instance (CASCADE delete from StudentXpProfile, RESTRICT from catalog, unique on (StudentXpProfileId, MissionDefinitionId, PeriodStartUtc)); `MissionProgressLogs` idempotency ledger (CASCADE from StudentMission, unique on (StudentMissionId, OriginEventId)).
+- **`XpReason.MissionCompleted = 6`; `MissionTargetType` enum (CompleteLessons, CorrectAnswers, EarnXp, MaintainStreak, CompleteUnit).**
+- **`MissionPeriodCalculator`** pure static — UTC-normalized + ISO 8601 week math. Daily key "D:yyyy-MM-dd", weekly key "W:ISOyyyy-WW". 10 unit tests.
+- **`IncrementMissionProgressCommand` + handler** — probe → row-lock after → fetch under lock → per-mission idempotency check → ApplyProgress → inline completion (XpAward + RecordMissionCompleted + MarkCompleted) when target reached. Avoids nested-transaction issues from a separate command. Narrowed unique-constraint catches on both progress-log and mission-instance races (F2 fix applied).
+- **3 notification handlers** in `Features/Missions/EventHandlers/` — `LessonCompletedMissionHandler` (+1 CompleteLessons, cross-module), `AnswerSubmittedMissionHandler` (+N CorrectAnswers when IsCorrect, cross-module), `StreakAdvancedMissionHandler` (+1 MaintainStreak, in-module). Each in own try/catch per ADR 0002 §3.
+- **Cascade chain semantics** — Mission XP bonus can push student past level threshold → `StudentLeveledUpDomainEvent` → `StudentLeveledUpBadgeHandler` (P4-05) may award LEVEL_* badges. Bounded, terminates.
+- **Practice Mode counts** — `LessonCompletedMissionHandler` + `AnswerSubmittedMissionHandler` fire regardless of Hearts. `StreakAdvancedDomainEvent` by-construction unreachable in PM (upstream gate), so MaintainStreak missions stay at 0 in PM.
+- **`IStudentMissionsQuery` cross-module seam** with **lazy instantiation** — first dashboard read of period creates today's daily + this-week's weekly rows. Narrowed constraint-name catch (F2 fix). Sentinel zero-state for brand-new students.
+- **`MissionStatusDto`/`MissionTargetTypeDto`/`MissionTypeDto`** drift-enums in `Shared.Contracts.Gamification` with parity unit test (F3 fix — no domain enum leak on API surface).
+- **`DashboardDto`** — old `DailyMission` placeholder removed; `DailyMissions: IReadOnlyList<MissionSummary>?` + `WeeklyMission: MissionSummary?` appended positional, default-valued. Non-breaking.
+- **`GET /api/Gamification/Missions/Me`** — JWT-only via `[Authorize]`. Returns `MyMissionsResponse { Daily, Weekly }` with full metadata using DTO enums (F3 fix).
+- **`MissionRolloverJob`** Hangfire — `5 0 * * *` daily + `10 0 * * 1` Monday weekly. Bulk ExecuteUpdateAsync. Registered Transient.
+- **Graph-nav convention 4th instance** — `AttachStudentMission` + `AttachMissionDefinition` repo methods (mirrors XpAward → HeartLoss → StudentBadge pattern).
+- **`MissionSeeder`** idempotent atomic seed of 8 missions (5 daily + 3 weekly) at startup.
+
+**Security follow-ups applied:**
+- **F1 (Medium — comment):** Documented row-lock + missions-query scope alignment.
+- **F2 (Medium):** Narrowed `EnsureMissionsForPeriodAsync` + `IncrementMissionProgressCommandHandler` catches to specific constraint names only (bare 23505 fallback removed by reviewer).
+- **F3 (Medium):** `MissionStateDto` uses `Shared.Contracts` DTO enums (no domain enum leak).
+- **F5 (Low):** Row-lock moved AFTER missions probe (no-op contention fix).
+
+**Lead-approved decisions:**
+- **D1:** 8-mission MVP (5 daily + 3 weekly).
+- **D2:** Lazy instantiation on dashboard read; Hangfire rollover job defensive closeout only.
+- **D3:** Practice Mode lesson completions count toward missions.
+- **D4:** Dashboard surface = `DailyMissions` list + single `WeeklyMission`.
+
+**Test results:**
+- 10/10 MissionPeriodCalculator unit tests + 9/9 MissionEnumDrift unit tests = **19/19**
+- **23/23** P4-06 integration tests (catalog seed, brand-new student, lazy instantiation, idempotency on dashboard re-read, /Missions/Me, anonymous 401, lesson→progress, 3 lessons→complete, idempotency, correct→progress, wrong→no progress, streak→MaintainStreak, Practice Mode counts, rollover expires, rollover idempotent, rollover preserves current, IDOR×2, level-up chain, weekly accumulates, enum drift)
+- **62/62** P4-02/03/04/05 regression
+- **11/11** P2-09 dashboard regression (verifies old `DailyMission` placeholder removal didn't break contract)
+- **Full P4 suite: 85/85**
+
+**Deferred items (next stories):**
+- P4-07 (leagues), P4-08 (FE mission/badge/league screens + motion), P4-09 (notification nudges), P4-10 (Redis), P4-11 (streak freeze + weekly challenges), P7-03 (admin mission editor).
+
+**In-cycle bug fixed:** Graph-nav 4th instance (`AttachStudentMission` + `AttachMissionDefinition`); inline completion to avoid nested-transaction issues from a separate CompleteMissionCommand.
+
+---
+
 
 ## P4-05 — Earn badges (Batch 8 — commit + PR ready)
 

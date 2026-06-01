@@ -99,6 +99,70 @@ public interface IGamificationRepository
     /// </summary>
     Task<List<StudentXpProfile>> GetBrokenProfilesAsync(DateOnly threshold, CancellationToken ct = default);
 
+    // ─────── Missions (P4-06) ───────
+
+    /// <summary>Returns all mission catalog rows. Uses AsNoTracking.</summary>
+    Task<List<MissionDefinition>> GetAllMissionDefinitionsAsync(CancellationToken ct = default);
+
+    /// <summary>Returns catalog rows for one cadence (Daily or Weekly). Uses AsNoTracking.</summary>
+    Task<List<MissionDefinition>> GetMissionDefinitionsByCadenceAsync(MissionType cadence, CancellationToken ct = default);
+
+    /// <summary>Returns a single catalog row by Code (used by <c>MissionSeeder</c> upsert). Uses AsNoTracking.</summary>
+    Task<MissionDefinition?> GetMissionDefinitionByCodeAsync(string code, CancellationToken ct = default);
+
+    /// <summary>Stages a new <see cref="MissionDefinition"/> for insertion. Does NOT save — seeder calls SaveChangesAsync directly.</summary>
+    Task AddMissionDefinitionAsync(MissionDefinition definition, CancellationToken ct = default);
+
+    /// <summary>
+    /// Attaches an existing (untracked) <see cref="MissionDefinition"/> to the current DbContext
+    /// as <c>Unchanged</c> so that adding a <see cref="StudentMission"/> with the navigation property
+    /// set does NOT cause EF to attempt a duplicate INSERT. Call before <see cref="AddStudentMissionAsync"/>.
+    /// No-op if the entity is already tracked. Mirrors <see cref="AttachBadgeDefinition"/>.
+    /// </summary>
+    void AttachMissionDefinition(MissionDefinition definition);
+
+    /// <summary>
+    /// Returns all active (NotStarted or InProgress) <see cref="StudentMission"/> rows for a student
+    /// whose period has not yet ended, ordered by SortOrder. Includes the <see cref="MissionDefinition"/>
+    /// navigation. Used by the dashboard lazy-instantiation query.
+    /// </summary>
+    Task<List<StudentMission>> GetActiveMissionsForStudentAsync(int studentId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns active (NotStarted or InProgress) <see cref="StudentMission"/> rows for a student
+    /// filtered by <paramref name="targetType"/>. Includes the <see cref="MissionDefinition"/>
+    /// navigation. Used by notification handlers to find which missions to increment.
+    /// </summary>
+    Task<List<StudentMission>> GetActiveMissionsForStudentByTargetTypeAsync(
+        int studentId, MissionTargetType targetType, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all <see cref="StudentMission"/> rows for a student in the given period (by PeriodKey).
+    /// Uses AsNoTracking. Used by <c>StudentMissionsQuery</c> lazy-instantiation check.
+    /// </summary>
+    Task<List<StudentMission>> GetMissionsForStudentInPeriodAsync(
+        int studentId, string periodKey, CancellationToken ct = default);
+
+    /// <summary>Returns a single <see cref="StudentMission"/> by its PK. Includes the <see cref="MissionDefinition"/> navigation. Change-tracked for handler mutations.</summary>
+    Task<StudentMission?> GetMissionByIdAsync(int studentMissionId, CancellationToken ct = default);
+
+    /// <summary>Stages a new <see cref="StudentMission"/> for insertion. Does NOT save — UoW commits.</summary>
+    Task AddStudentMissionAsync(StudentMission mission, CancellationToken ct = default);
+
+    /// <summary>
+    /// Attaches an existing (AsNoTracking) <see cref="StudentMission"/> to the current DbContext
+    /// as <c>Modified</c> so that handler mutations on <c>Progress</c>, <c>Status</c>, and
+    /// <c>CompletedAtUtc</c> (all <c>internal set</c>) are picked up by the UoW before commit.
+    /// No-op if the entity is already tracked. Mirrors <see cref="AttachBadgeDefinition"/>.
+    /// </summary>
+    void AttachStudentMission(StudentMission mission);
+
+    /// <summary>Idempotency pre-check: returns true when a <see cref="MissionProgressLog"/> row already exists for (studentMissionId, originEventId). Uses AsNoTracking.</summary>
+    Task<bool> HasMissionProgressLogAsync(int studentMissionId, Guid originEventId, CancellationToken ct = default);
+
+    /// <summary>Stages a new <see cref="MissionProgressLog"/> row for insertion. Does NOT save — UoW commits.</summary>
+    Task AddMissionProgressLogAsync(MissionProgressLog log, CancellationToken ct = default);
+
     // ---------------------------------------------------------------------------
     // Hearts (P4-04-B2a-4)
     // ---------------------------------------------------------------------------

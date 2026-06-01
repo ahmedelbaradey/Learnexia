@@ -14,7 +14,7 @@ public class DashboardProfile : Profile
     {
         // No active maps in Phase 2 — hand-projection in GetDashboardQueryHandler.
         // TODO P4-02: add XP-ledger → DashboardDto.Xp map here.
-        // TODO P4-06: add Mission → DailyMissionDto map here.
+        // P4-06: DailyMissionsDto replaced by IStudentMissionsQuery cross-module seam — no AutoMapper map needed.
         // TODO P4-07: add League → LeaguePreviewDto map here.
     }
 }

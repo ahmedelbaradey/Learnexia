@@ -156,4 +156,113 @@ public sealed class GamificationRepository : IGamificationRepository
         if (entry.State == Microsoft.EntityFrameworkCore.EntityState.Detached)
             _context.BadgeDefinitions.Attach(definition);
     }
+
+    // ---------------------------------------------------------------------------
+    // Missions (P4-06)
+    // ---------------------------------------------------------------------------
+
+    /// <inheritdoc />
+    public async Task<List<MissionDefinition>> GetAllMissionDefinitionsAsync(CancellationToken ct = default)
+        => await _context.MissionDefinitions
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+    /// <inheritdoc />
+    public async Task<List<MissionDefinition>> GetMissionDefinitionsByCadenceAsync(
+        MissionType cadence, CancellationToken ct = default)
+        => await _context.MissionDefinitions
+            .AsNoTracking()
+            .Where(d => d.Cadence == cadence)
+            .ToListAsync(ct);
+
+    /// <inheritdoc />
+    public async Task<MissionDefinition?> GetMissionDefinitionByCodeAsync(
+        string code, CancellationToken ct = default)
+        => await _context.MissionDefinitions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d => d.Code == code, ct);
+
+    /// <inheritdoc />
+    public async Task AddMissionDefinitionAsync(MissionDefinition definition, CancellationToken ct = default)
+        => await _context.MissionDefinitions.AddAsync(definition, ct);
+
+    /// <inheritdoc />
+    public void AttachMissionDefinition(MissionDefinition definition)
+    {
+        // Only attach if not already tracked — avoids InvalidOperationException on double-attach.
+        // Mirrors AttachBadgeDefinition.
+        var entry = _context.Entry(definition);
+        if (entry.State == Microsoft.EntityFrameworkCore.EntityState.Detached)
+            _context.MissionDefinitions.Attach(definition);
+    }
+
+    /// <inheritdoc />
+    public async Task<List<StudentMission>> GetActiveMissionsForStudentAsync(
+        int studentId, CancellationToken ct = default)
+        => await _context.StudentMissions
+            .AsNoTracking()
+            .Where(m => m.StudentXpProfile.StudentId == studentId
+                     && (m.Status == MissionStatus.NotStarted
+                      || m.Status == MissionStatus.InProgress))
+            .Include(m => m.MissionDefinition)
+            .OrderBy(m => m.MissionDefinition.SortOrder)
+            .ToListAsync(ct);
+
+    /// <inheritdoc />
+    public async Task<List<StudentMission>> GetActiveMissionsForStudentByTargetTypeAsync(
+        int studentId, MissionTargetType targetType, CancellationToken ct = default)
+        => await _context.StudentMissions
+            .AsNoTracking()
+            .Where(m => m.StudentXpProfile.StudentId == studentId
+                     && m.MissionDefinition.TargetType == targetType
+                     && (m.Status == MissionStatus.NotStarted
+                      || m.Status == MissionStatus.InProgress))
+            .Include(m => m.MissionDefinition)
+            .ToListAsync(ct);
+
+    /// <inheritdoc />
+    public async Task<List<StudentMission>> GetMissionsForStudentInPeriodAsync(
+        int studentId, string periodKey, CancellationToken ct = default)
+        => await _context.StudentMissions
+            .AsNoTracking()
+            .Where(m => m.StudentXpProfile.StudentId == studentId
+                     && m.PeriodKey == periodKey)
+            .ToListAsync(ct);
+
+    /// <inheritdoc />
+    public async Task<StudentMission?> GetMissionByIdAsync(
+        int studentMissionId, CancellationToken ct = default)
+        => await _context.StudentMissions
+            .Include(m => m.MissionDefinition)
+            .FirstOrDefaultAsync(m => m.Id == studentMissionId, ct);
+
+    /// <inheritdoc />
+    public async Task AddStudentMissionAsync(StudentMission mission, CancellationToken ct = default)
+        => await _context.StudentMissions.AddAsync(mission, ct);
+
+    /// <inheritdoc />
+    public void AttachStudentMission(StudentMission mission)
+    {
+        // If the entity is already tracked (e.g., loaded via a tracked query in the same DbContext
+        // lifetime), do nothing — re-attaching would throw InvalidOperationException.
+        var entry = _context.Entry(mission);
+        if (entry.State == Microsoft.EntityFrameworkCore.EntityState.Detached)
+            _context.StudentMissions.Attach(mission);
+
+        // Always mark as Modified so that Progress / Status / CompletedAtUtc mutations
+        // (internal set on CreationAuditedEntity-derived entity) are flushed on SaveChanges.
+        if (entry.State != Microsoft.EntityFrameworkCore.EntityState.Added)
+            entry.State = Microsoft.EntityFrameworkCore.EntityState.Modified;
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> HasMissionProgressLogAsync(
+        int studentMissionId, Guid originEventId, CancellationToken ct = default)
+        => await _context.MissionProgressLogs
+            .AsNoTracking()
+            .AnyAsync(l => l.StudentMissionId == studentMissionId && l.OriginEventId == originEventId, ct);
+
+    /// <inheritdoc />
+    public async Task AddMissionProgressLogAsync(MissionProgressLog log, CancellationToken ct = default)
+        => await _context.MissionProgressLogs.AddAsync(log, ct);
 }
