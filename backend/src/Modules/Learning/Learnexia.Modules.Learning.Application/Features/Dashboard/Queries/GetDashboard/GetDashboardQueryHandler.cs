@@ -22,7 +22,7 @@ namespace Learnexia.Modules.Learning.Application.Features.Dashboard.Queries.GetD
 ///   Streak       = real streak from gamification module via IStudentStreakQuery (P4-03)
 ///   DailyMissions = current-period daily missions via IStudentMissionsQuery (P4-06)
 ///   WeeklyMission = top weekly mission summary via IStudentMissionsQuery (P4-06)
-///   LeaguePreview = null (TODO P4-07 — leagues engine)
+///   LeaguePreview = current league tier + rank (P4-07) via IStudentLeagueQuery; null for brand-new students
 ///   Continue      = the first Available lesson in the most-recently-active subject,
 ///                   or the first Available lesson across Grade-1 subjects (fallback),
 ///                   or null when no Available lesson exists anywhere.
@@ -42,6 +42,7 @@ public class GetDashboardQueryHandler
     private readonly IStudentHeartsQuery _heartsQuery;
     private readonly IStudentBadgesQuery _badgesQuery;
     private readonly IStudentMissionsQuery _missionsQuery;
+    private readonly IStudentLeagueQuery _leagueQuery;
 
     // Deterministic cross-subject fallback order (Q3 Option A step 5).
     private static readonly string[] FallbackSubjectOrder =
@@ -56,7 +57,8 @@ public class GetDashboardQueryHandler
         IStudentStreakQuery streakQuery,
         IStudentHeartsQuery heartsQuery,
         IStudentBadgesQuery badgesQuery,
-        IStudentMissionsQuery missionsQuery)
+        IStudentMissionsQuery missionsQuery,
+        IStudentLeagueQuery leagueQuery)
     {
         _repository    = repository;
         _currentUser   = currentUser;
@@ -67,6 +69,7 @@ public class GetDashboardQueryHandler
         _heartsQuery   = heartsQuery;
         _badgesQuery   = badgesQuery;
         _missionsQuery = missionsQuery;
+        _leagueQuery   = leagueQuery;
     }
 
     public async Task<BaseResponse<DashboardDto>> Handle(
@@ -157,11 +160,26 @@ public class GetDashboardQueryHandler
             // call per period (D2 / AC4). Returns sentinel ([], null) for brand-new students.
             var missionsSnapshot = await _missionsQuery.GetByStudentIdAsync(studentId, cancellationToken);
 
+            // P4-07 — IStudentLeagueQuery lazy-instantiates the current week's league membership on
+            // first call per period (D12 / AC1). Returns sentinel (Bronze, 0, 0, 0) for brand-new
+            // students with no profile. Never null (D13).
+            var leagueSnapshot = await _leagueQuery.GetByStudentIdAsync(studentId, cancellationToken);
+
+            // Map sentinel/real snapshot to LeaguePreviewDto (D14 — reuse existing nullable shape).
+            // Brand-new students (GroupSize == 0) → null (no league pill shown on dashboard).
+            var leaguePreview = leagueSnapshot.GroupSize > 0
+                ? new LeaguePreviewDto(
+                    TierName:    leagueSnapshot.Tier.ToString(),
+                    Rank:        leagueSnapshot.CurrentRank,
+                    TotalPlayers: leagueSnapshot.GroupSize,
+                    XpThisWeek:  leagueSnapshot.WeeklyXp)
+                : null;
+
             // ── Step 9: Assemble DashboardDto ──────────────────────────────────────────────────
             var dto = new DashboardDto(
                 Xp: xp,
                 Streak: streak,
-                LeaguePreview: null,      // TODO P4-07 — wire leagues engine
+                LeaguePreview: leaguePreview,   // P4-07 — wired; null only for brand-new students
                 Continue: continueTarget,
                 Level: level,
                 Hearts: hearts,           // P4-04 — real hearts from gamification module

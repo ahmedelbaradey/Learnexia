@@ -1,7 +1,120 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-06-01 (**P4-06 — commit + PR ready. P4-05 merged via PR #77. P4-04 ready for committer. P4-03 merged via PR #75. FE: P2-09-FE merged via PR #74.**).
-> Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-06-02 (**P4-07 FE Batch 5 — dashboard LeaguePreview flip ready for committer. P4-06 — commit + PR ready. P4-05 merged via PR #77. P4-04 ready for committer. P4-03 merged via PR #75. FE: P2-09-FE merged via PR #74.**).
+> Captures what's done, the decisions, the load-building config, and what's next. If you change any of these, update this file.
+
+## P4-07 — Weekly leagues (FE Batch 5 — LeaguePreview dashboard flip, commit + PR ready)
+
+**Branch:** `feat/P4-07-weekly-leagues`.
+
+**What shipped (FE-only, Batch 5):**
+
+Minimal dashboard data flip for the `LeaguePreview` section (plan task B5-1 scope: FE-2 + FE-4). No new component promoted to `@learnexia/ui`; no motion or animations (P4-08 owns those).
+
+- **api-client snapshot verified** — `LeaguePreviewDto` with `tierName`, `rank`, `totalPlayers`, `xpThisWeek` fields was already present in `packages/api-client/swagger.json` + `nswag-client.ts` from P2-09. No regen or patch needed.
+- **`apps/student-app/app/(child)/index.tsx`** — `LeaguePreviewRow` inline component added (screen-local, not promoted). Replaces the P2-09 TODO comment block. Renders `tierName` (mapped via i18n keys) + rank text when `dashboardQuery.data?.leaguePreview` is non-null. Hidden when null (brand-new student / BE not yet on P4-07).
+- **`packages/shared/src/i18n/resources.ts`** — Added 7 new keys under `child.home.*` in both EN and AR locales:
+  - `leagueTier.{bronze,silver,gold,diamond}` — maps BE's `LeagueTier.ToString()` strings to localized display names.
+  - `leaguePreview.{rankLabel,rankUnknown,a11y}` — rank display + accessibility label.
+
+**Key decisions:**
+- **No api-client patch** — `LeaguePreviewDto` shape was already correct in the snapshot.
+- **Tier name mapping** — BE sends `LeagueTier.ToString()` = "Bronze"/"Silver"/"Gold"/"Diamond" (D14 in plan). FE maps these lowercase strings to i18n keys; unknown values fall back to the raw string.
+- **Null guard** — `leaguePreview` is still rendered conditionally. When BE has not yet shipped the league engine (or brand-new student), the row is hidden. No fallback "Bronze" row (per D13 in plan — sentinel is BE responsibility).
+- **No new design** — FE-1 (tier badge primitives), FE-3 (full league screen), FE-5 (RTL pass) are P4-08.
+
+**Test results:** `pnpm` not in PATH (same as all prior batches). Direct `tsc` run shows only pre-existing workspace-resolution errors (all `Cannot find module '@learnexia/*'` + `--jsx` flag issues) — same errors exist on all other unmodified files. No new type errors from the changes.
+
+**Deferred items (P4-08):**
+- Medal/tier icons, motion, league screen, promotion/demotion animations.
+- RTL-specific polish pass.
+
+---
+
+## P4-06 — Complete daily/weekly missions (Batch 8 — commit + PR ready)
+
+
+## P4-07 — Weekly leagues (Batches 0-5 — ApplyAward refactor + league engine + endpoint + FE flip, commit + PR ready)
+
+**Branch:** `feat/P4-07-weekly-leagues`.
+
+**What shipped — Phase-3 Gamification sixth story. The first competitive layer. Sixth event-consumer feature in Gamification module, completing the reward economy:**
+
+### Batch 0 — ApplyAward chokepoint refactor (critical predecessor work)
+
+- **StudentXpProfile.ApplyAward expanded to 4-arg signature** — now a single chokepoint for ALL XP additions across all 5 prior sources. Signature: `ApplyAward(int amount, int newLevel, XpReason reason, DateTime occurredAtUtc)`. Raises new `XpAwardedDomainEvent(StudentId, Amount, TotalXpAfter, Reason, OccurredAtUtc)`.
+- **RecordBadgeEarned + RecordMissionCompleted now delegate to ApplyAward** — refactored to call ApplyAward instead of mutating TotalXp directly. Ensures event is raised from all XP paths.
+- **Semantic change: LastAwardAtUtc uses event timestamp, not wall-clock** — critical for week-boundary correctness when events are replayed/retried.
+- **85/85 P4-02..P4-06 regression PASSED post-refactor** — zero assertion updates needed.
+
+### Schema (Batch 1)
+
+- **AddLeagueAndLeagueMembership migration (20260601183834):**
+  - Leagues table — cohort aggregator with Tier, PeriodKey, GroupIndex, unique on (Tier, PeriodKey, GroupIndex).
+  - LeagueMemberships table — per-student per-week with WeeklyXp, JoinedAtUtc, TierAfter, ParticipantStatus, unique on (PeriodKey, StudentXpProfileId) and (LeagueId, StudentXpProfileId).
+  - LeagueXpDeltaLogs table — idempotency ledger with unique on (LeagueMembershipId, OriginEventId).
+  - StudentXpProfile.CurrentTier field (LeagueTier int, default Bronze=1).
+  - MembershipStatus enum (Active=1, Promoted=2, Demoted=3, Stayed=4).
+
+### Engine (Batches 2-4)
+
+- **LeagueStandings pure static** — ComputeCutoffs(size) + Apply(members, tier). Handles tier extremes + small-cohort scaling (floor(size * 7/30) promote, floor(size * 5/30) demote for size >= 12; 0/0 for size < 5).
+- **StudentXpProfile.UpdateTier mutation method** — encapsulates tier change during rollover.
+- **LeagueOptions config** — CohortSize=30, PromoteCount=7, DemoteCount=5, PromotionJobCron="15 0 * * 1", TimeZoneId="UTC".
+- **14 new IGamificationRepository methods** — GetOrCreateLeagueAsync, GetCurrentLeagueForStudentAsync, CreateLeagueMembershipAsync, IncrementLeagueMembershipXpAsync (with idempotency), GetLeagueStandingsAsync, UpdateLeaguePromotionAsync, GetStudentMembershipsForRolloverAsync, CreateLeagueMembershipsForNextWeekAsync, graph-nav attach methods.
+- **LeaguePlacementService (Infrastructure)** — GetOrCreateMembershipAsync: transactional find-or-create cohort + insert membership with graph-nav pattern.
+- **IncrementLeagueXpCommand + handler** — narrowed idempotency catch, period key derived from request.OccurredAtUtc (post-review fix for week-boundary correctness), no-op when no membership (lazy placement dashboard-driven).
+- **XpAwardedLeagueHandler notification handler** — in own try/catch per ADR 0002 §3, consumes XpAwardedDomainEvent, fans-out to IncrementLeagueXpCommand.
+- **IStudentLeagueQuery cross-module seam** with LAZY INSTANTIATION — on null membership, calls LeaguePlacementService to trigger cohort creation on first dashboard read of week.
+
+### Cross-module + API + Dashboard (Batch 5)
+
+- **LeagueTierDto drift enum** in Shared.Contracts — parity-tested (4/4 enum drift unit tests).
+- **DashboardDto.LeaguePreview wired** — GetDashboardQueryHandler injects IStudentLeagueQuery, replaces null with real snapshot.
+- **GET /api/Gamification/Leagues/Me endpoint** — JWT-only IDOR-proof. Returns MyLeagueResponse: CurrentTier, Rank, TotalPlayers, WeekStart/EndUtc, Standings(30-row cohort), PromotionCutlineRank=7, DemotionCutlineRank=26. DisplayName anonymized to "Student #N" (no PII).
+- **LeagueRolloverJob Hangfire** — "15 0 * * 1" UTC Monday 00:15 (after StreakSweep 00:05 + MissionRollover 00:10). For each cohort: rank members, promote top-7, demote bottom-5, update StudentXpProfile.CurrentTier. Idempotent.
+- **FE: LeaguePreviewRow component** — dashboard row using leaguePreview data + i18n tier names EN/AR.
+
+### Post-review fixes applied
+
+- **#2 should-fix:** IncrementLeagueXpCommandHandler period-key now from request.OccurredAtUtc (was wall-clock, broke week boundaries). 23/23 tests green.
+- **#4 nits:** stale TODO P4-07 comments removed from DashboardProfile.cs, LeaguePreviewDto.cs.
+
+### Lead-approved decisions
+
+- **D1:** ApplyAward 4-arg chokepoint refactor.
+- **D2:** Anonymization = "Student #N" (no PII).
+- **D3:** Top-7/bottom-5 cutoffs (Duolingo gentler standard).
+- **D4:** Endpoint + minimal FE flip bundled; full screen P4-08.
+- **D5:** Reuse MissionPeriodCalculator for weekly key.
+
+### Accepted MVP risks
+
+- **R1:** Concurrent placement may overfill cohort by 1 (race window, bounded, unique constraint prevents double-membership).
+- **D15:** XP earned before first dashboard load not credited (lazy placement trade-off).
+- **JoinOrder collision:** two students could get same display name under concurrent placement (UX flaw, not data corruption).
+- **XpAwardedDomainEvent ghost on retry (ADR 0002 §3):** single delivery via IsolatedNotificationPublisher, accepted.
+
+### Test results
+
+- **27/27 LeagueStandings unit** + **4/4 enum drift** = 31/31 unit.
+- **23/23 P4-07 integration** (lazy placement, XP increment, idempotency, rankings, tier extremes, endpoint, anon, IDOR, auth).
+- **85/85 P4-02..P4-06 regression** (ApplyAward refactor transparent).
+- **108/108 full P4 suite ✅**
+
+### Security: PASS (0 blocking, all Info/Low)
+
+### Graph-nav convention (5th instance)
+
+- AttachLeague + AttachLeagueMembership (mirrors Membership pattern).
+
+### Deferred
+
+- **P4-08:** Full league screen, tier badges, motion.
+- **P4-09:** Promotion/demotion nudges.
+- **P4-10:** Redis hot-path read model.
+- **P7-03:** Admin tier override.
+- **LeaguePlacementServiceTests.cs:** Service no longer pure-static (depends IGamificationRepository); behavior covered by 23/23 integration tests (T2/T3/T11/T12 lazy placement/concurrent/tier-tracking).
 
 ## P4-06 — Complete daily/weekly missions (Batch 8 — commit + PR ready)
 

@@ -492,6 +492,17 @@ export const en = {
       practiceMode: 'Practice Mode',
       practiceModeA11y: 'Practice Mode active — wrong answers cost no hearts',
       boss: 'Boss',
+      leagueTier: {
+        bronze: 'Bronze',
+        silver: 'Silver',
+        gold: 'Gold',
+        diamond: 'Diamond',
+      },
+      leaguePreview: {
+        rankLabel: 'Rank {{rank}} of {{total}}',
+        rankUnknown: 'Earning your rank…',
+        a11y: '{{tier}} league, rank {{rank}} of {{total}}, {{xp}} XP this week',
+      },
     },
     subjects: {
       title: 'Subjects',
@@ -1070,6 +1081,17 @@ export const ar = {
       practiceMode: 'وضع التدريب',
       practiceModeA11y: 'وضع التدريب مفعّل — الإجابات الخاطئة لا تُكلّف قلوباً',
       boss: 'بوس',
+      leagueTier: {
+        bronze: 'برونز',
+        silver: 'فضة',
+        gold: 'ذهب',
+        diamond: 'ألماس',
+      },
+      leaguePreview: {
+        rankLabel: 'المرتبة {{rank}} من {{total}}',
+        rankUnknown: 'جارٍ احتساب مرتبتك…',
+        a11y: 'دوري {{tier}}، المرتبة {{rank}} من {{total}}، {{xp}} نقطة هذا الأسبوع',
+      },
     },
     subjects: {
       title: 'المواد',

@@ -6,8 +6,8 @@ namespace Learnexia.Modules.Learning.Application.Features.Dashboard.Dtos;
 /// Home dashboard aggregation DTO for a student.
 /// Phase-4 shape: Xp/Level wired via IStudentXpQuery (P4-02); Streak via IStudentStreakQuery (P4-03);
 /// Hearts/InPracticeMode via IStudentHeartsQuery (P4-04); BadgesCount/RecentBadges via IStudentBadgesQuery (P4-05);
-/// DailyMissions/WeeklyMission via IStudentMissionsQuery (P4-06).
-/// LeaguePreview null (P4-07).
+/// DailyMissions/WeeklyMission via IStudentMissionsQuery (P4-06);
+/// LeaguePreview via IStudentLeagueQuery (P4-07) — null only for brand-new students with no league profile.
 /// Continue is null only when no Available lesson exists anywhere in the student's grade-1 subjects.
 ///
 /// Positional record — new fields are appended with defaults (additive change, non-breaking).
@@ -19,7 +19,7 @@ namespace Learnexia.Modules.Learning.Application.Features.Dashboard.Dtos;
 public record DashboardDto(
     int Xp,                              // real XP from gamification module (P4-02)
     int Streak,                          // real streak from gamification module (P4-03)
-    LeaguePreviewDto? LeaguePreview,     // null — TODO P4-07
+    LeaguePreviewDto? LeaguePreview,     // P4-07 — null only for brand-new students with no league profile
     ContinueTargetDto? Continue,         // null only when no Available lesson exists
     int Level = 1,                       // P4-02 — computed from XP via LevelCurve; default 1 for new students
     int Hearts = 5,                      // P4-04 — real hearts from gamification module; default 5 = Cap for new students

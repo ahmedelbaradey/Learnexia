@@ -107,17 +107,23 @@ public class StudentXpProfile : AggregateRoot
     // ---------------------------------------------------------------------------
 
     /// <summary>
-    /// Applies an XP award to the profile. Raises <see cref="StudentLeveledUpDomainEvent"/>
-    /// when <paramref name="newLevel"/> exceeds the current level. Both the XP increment and
-    /// the domain-event raise happen in memory; the <c>UnitOfWorkBehavior</c> commits and
-    /// then dispatches the domain event after commit.
+    /// Single chokepoint for all XP additions. Raises <see cref="XpAwardedDomainEvent"/> on every
+    /// call (consumed by <c>XpAwardedLeagueHandler</c> in P4-07) and raises
+    /// <see cref="StudentLeveledUpDomainEvent"/> when <paramref name="newLevel"/> exceeds the
+    /// current level. Both increments and domain-event raises happen in memory; the
+    /// <c>UnitOfWorkBehavior</c> commits and then dispatches the events after commit (ADR 0002).
+    ///
+    /// <paramref name="occurredAtUtc"/> is the event timestamp (not wall-clock at handling time),
+    /// which is stored in <see cref="LastAwardAtUtc"/> — reflects when the underlying action happened.
     /// </summary>
-    public void ApplyAward(int amount, int newLevel)
+    public void ApplyAward(int amount, int newLevel, XpReason reason, DateTime occurredAtUtc)
     {
         var oldLevel = CurrentLevel;
         TotalXp += amount;
         CurrentLevel = newLevel;
-        LastAwardAtUtc = DateTime.UtcNow;
+        LastAwardAtUtc = occurredAtUtc;
+
+        RaiseDomainEvent(new XpAwardedDomainEvent(StudentId, amount, TotalXp, reason, occurredAtUtc));
 
         if (newLevel > oldLevel)
             RaiseDomainEvent(new StudentLeveledUpDomainEvent(StudentId, oldLevel, newLevel));
@@ -257,6 +263,26 @@ public class StudentXpProfile : AggregateRoot
     }
 
     // ---------------------------------------------------------------------------
+    // League fields (P4-07-B1-1)
+    // ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// Current league tier. Defaults Bronze (brand-new students start Bronze per FR-GM-6).
+    /// Updated by LeaguePromotionJob on Monday rollover via <see cref="UpdateTier"/>.
+    /// Read by LeaguePlacementService to determine which tier's cohort to place this student in.
+    /// </summary>
+    public LeagueTier CurrentTier { get; private set; } = LeagueTier.Bronze;
+
+    /// <summary>
+    /// Updates the student's current league tier. Called by LeagueRolloverJob on promotion/demotion.
+    /// No domain event raised in this batch — forward-compat for P4-08 motion if needed.
+    /// </summary>
+    public void UpdateTier(LeagueTier newTier)
+    {
+        CurrentTier = newTier;
+    }
+
+    // ---------------------------------------------------------------------------
     // Badge mutation (P4-05-B3-1)
     // ---------------------------------------------------------------------------
 
@@ -286,14 +312,11 @@ public class StudentXpProfile : AggregateRoot
         int newLevel,
         DateTime awardedAtUtc)
     {
-        var oldLevel = CurrentLevel;
-        TotalXp += rewardXp;
-        CurrentLevel = newLevel;
-        LastAwardAtUtc = awardedAtUtc;
+        // Delegate XP mutation + XpAwardedDomainEvent raise + optional level-up event to the
+        // single chokepoint so that XpAwardedLeagueHandler (P4-07) sees badge XP too.
+        ApplyAward(rewardXp, newLevel, XpReason.BadgeEarned, awardedAtUtc);
 
-        if (newLevel > oldLevel)
-            RaiseDomainEvent(new StudentLeveledUpDomainEvent(StudentId, oldLevel, newLevel));
-
+        // Badge-specific event raised AFTER ApplyAward (XpAwardedDomainEvent dispatched first).
         RaiseDomainEvent(new BadgeEarnedDomainEvent(
             StudentId,
             badgeDefinitionId,
@@ -325,14 +348,11 @@ public class StudentXpProfile : AggregateRoot
         int newLevel,
         DateTime completedAtUtc)
     {
-        var oldLevel = CurrentLevel;
-        TotalXp += rewardXp;
-        CurrentLevel = newLevel;
-        LastAwardAtUtc = completedAtUtc;
+        // Delegate XP mutation + XpAwardedDomainEvent raise + optional level-up event to the
+        // single chokepoint so that XpAwardedLeagueHandler (P4-07) sees mission XP too.
+        ApplyAward(rewardXp, newLevel, XpReason.MissionCompleted, completedAtUtc);
 
-        if (newLevel > oldLevel)
-            RaiseDomainEvent(new StudentLeveledUpDomainEvent(StudentId, oldLevel, newLevel));
-
+        // Mission-specific event raised AFTER ApplyAward.
         RaiseDomainEvent(new Events.MissionCompletedDomainEvent(
             StudentId,
             missionDefinitionId,

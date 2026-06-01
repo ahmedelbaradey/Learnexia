@@ -106,7 +106,7 @@ public class AwardLessonCompletedXpCommandHandler
             await _repo.AddXpAwardAsync(lessonAward, cancellationToken);
 
             int newLevel = LevelCurve.LevelForXp(profile.TotalXp + lessonAmount);
-            profile.ApplyAward(lessonAmount, newLevel);
+            profile.ApplyAward(lessonAmount, newLevel, XpReason.LessonCompleted, request.OccurredAtUtc);
 
             _logger.LogInfo(
                 $"P4-02: LessonComplete +{lessonAmount} XP awarded to student {request.StudentId} " +
@@ -139,7 +139,7 @@ public class AwardLessonCompletedXpCommandHandler
                     await _repo.AddXpAwardAsync(quizAward, cancellationToken);
 
                     int levelAfterQuiz = LevelCurve.LevelForXp(profile.TotalXp + quizAmount);
-                    profile.ApplyAward(quizAmount, levelAfterQuiz);
+                    profile.ApplyAward(quizAmount, levelAfterQuiz, XpReason.QuizCompleted, request.OccurredAtUtc);
 
                     _logger.LogInfo(
                         $"P4-02: QuizPass +{quizAmount} XP awarded to student {request.StudentId} " +
