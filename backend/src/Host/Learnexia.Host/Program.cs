@@ -1,4 +1,5 @@
 using AspNetCoreRateLimit;
+using StackExchange.Redis;
 using Hangfire;
 using Hangfire.PostgreSql;
 using Learnexia.Host.Extensions;
@@ -62,6 +63,12 @@ if (!string.IsNullOrWhiteSpace(redisConnectionString))
         options.Configuration = redisConnectionString;
         options.InstanceName = "Learnexia:";
     });
+
+    // Register IConnectionMultiplexer for direct Redis ops (sorted-set leaderboard, SETNX, etc.).
+    // Conditional on the same Redis connection string gate as AddStackExchangeRedisCache above.
+    // Not registered when Redis is absent — modules must accept IConnectionMultiplexer? (nullable).
+    builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
+        ConnectionMultiplexer.Connect(redisConnectionString));
 }
 else
 {

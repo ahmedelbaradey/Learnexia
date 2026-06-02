@@ -5,21 +5,19 @@ using Microsoft.EntityFrameworkCore;
 namespace Learnexia.Modules.Gamification.Infrastructure.Queries;
 
 /// <summary>
-/// Implements <see cref="IStudentBadgesQuery"/> against <see cref="GamificationDbContext"/> — P4-05.
+/// Postgres implementation of <see cref="IStudentBadgesQuery"/> — P4-05. Wrapped by
+/// <c>CachedStudentBadgesQuery</c> (P4-10 decorator) at DI composition root.
 ///
 /// Resolves the student's <c>StudentXpProfile.Id</c> first (badges are keyed by StudentXpProfileId),
 /// then issues a count query and a recent-3 projection. Both reads use <c>AsNoTracking</c>.
 ///
-/// Brand-new students (no profile row): returns sentinel <c>StudentBadgesSnapshot(0, [])</c> —
-/// never null. Mirrors the <see cref="IStudentHeartsQuery"/> sentinel-snapshot pattern (D2 / D8).
-///
-/// Registered in <c>AddGamificationInfrastructure()</c> as Scoped.
+/// Brand-new students (no profile row): returns sentinel <c>StudentBadgesSnapshot(0, [])</c> — never null.
 /// </summary>
-public sealed class StudentBadgesQuery : IStudentBadgesQuery
+internal sealed class PostgresStudentBadgesQuery : IStudentBadgesQuery
 {
     private readonly GamificationDbContext _db;
 
-    public StudentBadgesQuery(GamificationDbContext db)
+    public PostgresStudentBadgesQuery(GamificationDbContext db)
     {
         _db = db;
     }

@@ -5,18 +5,16 @@ using Microsoft.EntityFrameworkCore;
 namespace Learnexia.Modules.Gamification.Infrastructure.Queries;
 
 /// <summary>
-/// Implements <see cref="IStudentXpQuery"/> against <see cref="GamificationDbContext"/>.
-/// Used by the Learning dashboard handler via the <see cref="IStudentXpQuery"/> seam in
-/// <c>Shared.Contracts</c> — no cross-module DbContext reference, no cross-module project reference.
-///
+/// Postgres implementation of <see cref="IStudentXpQuery"/>. Wrapped by
+/// <c>CachedStudentXpQuery</c> (P4-10 decorator) at DI composition root — registered directly
+/// as concrete type, not as <see cref="IStudentXpQuery"/>.
 /// Read-only: <c>AsNoTracking()</c>. Returns <c>null</c> when no profile exists yet (brand-new student).
-/// Registered in <c>AddGamificationInfrastructure()</c> as Scoped (mirrors IParentChildQuery pattern).
 /// </summary>
-public sealed class StudentXpQuery : IStudentXpQuery
+internal sealed class PostgresStudentXpQuery : IStudentXpQuery
 {
     private readonly GamificationDbContext _db;
 
-    public StudentXpQuery(GamificationDbContext db)
+    public PostgresStudentXpQuery(GamificationDbContext db)
     {
         _db = db;
     }

@@ -11,6 +11,7 @@
     <PackageReference Include="AutoMapper" />
     <PackageReference Include="Hangfire.Core" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <PackageReference Include="StackExchange.Redis" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Learnexia.Modules.Gamification.Application\Learnexia.Modules.Gamification.Application.csproj" />

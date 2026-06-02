@@ -115,5 +115,14 @@ public static class GamificationModule
             job => job.RunAsync(CancellationToken.None),
             reOptions.LapseWinBackCron,
             new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+        // Register nightly cache-rebuild recurring job (P4-10-B3).
+        // Runs 03:00 UTC daily — after all rollover jobs (00:05 / 00:10 / 00:15) so the rebuild
+        // reflects post-rollover state. Idempotent: safe to re-run across restarts.
+        recurringJobs.AddOrUpdate<GamificationCacheRebuildJob>(
+            "gamification:cache-rebuild",
+            job => job.RunAsync(CancellationToken.None),
+            "0 3 * * *",
+            new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
     }
 }

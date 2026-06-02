@@ -1,7 +1,59 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-06-02 (**P4-09 BE Batch 8 — re-engagement notifications + commit/PR ready. P4-07 FE Batch 5 — dashboard LeaguePreview flip ready for committer. P4-06 — commit + PR ready. P4-05 merged via PR #77. P4-04 ready for committer. P4-03 merged via PR #75. FE: P2-09-FE merged via PR #74.**).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-06-02 (**P4-10 BE — Redis realtime gamification state (cache layer + sorted-set leaderboard + nightly rebuild) — commit/PR ready. P4-09 merged via PR #80. P4-08 FE WIP on `feat/P4-08-gamification-screens-motion` (Batches 2–6 still open for FE lead). Earlier P4-* per below.**).
 > Captures what's done, the decisions, the load-building config, and what's next. If you change any of these, update this file.
+
+## P4-10 — Redis realtime gamification state (BE, commit + PR ready)
+
+**Branch:** `feat/P4-10-redis-realtime-gamification`. **No FE work.** No new endpoint, no migration, no DTO change. Pure infrastructure perf layer.
+
+**What shipped (BE only, all 4 batches):**
+
+Server-side Redis cache layer over the 6 dashboard read seams + a Redis sorted-set leaderboard for league cohorts + a nightly Hangfire rebuild job. Postgres remains the source of truth; Redis mirrors. "Realtime" in the story title = sub-50ms reads on the dashboard hot path, not push-to-client.
+
+- **`Host/Program.cs`** — registers `IConnectionMultiplexer` as Singleton when `ConnectionStrings:Redis` is non-empty (same conditional gate as the existing `AddStackExchangeRedisCache`). Null otherwise → `NullGamificationCache` resolves and Postgres path is unchanged.
+- **`appsettings.json` + `appsettings.Development.json`** — new `Gamification:Cache` section: `Enabled` kill-switch + 7 per-key TTLs (`XpTtlSeconds=60`, `StreakTtlSeconds=60`, `HeartsTtlSeconds=30`, `BadgesTtlSeconds=300`, `MissionsTtlSeconds=60`, `LeagueSnapshotTtlSeconds=30`, `LeaderboardSortedSetTtlSeconds=691200` = 8 days).
+- **`Gamification.Application/Caching/`** — `IGamificationCache` (string + sorted-set primitives, all fail-soft), `GamificationCacheOptions`, `GamificationCacheKeys` (canonical key builders: `gamification:student:{int_id}:{seam}[:{discriminator}]` + `gamification:league:{int_id}:standings`), `LeaderboardScoreEncoder` (packed-integer `weeklyXp * 16777216 + (16777215 - joinOrder)`).
+- **`Gamification.Application/Leagues/Caching/ILeagueLeaderboard.cs`** — abstraction for the sorted-set leaderboard (`UpsertMembership`, `GetRank`, `GetCohortSize`, `GetTop/BottomMembershipIds`, `Delete`).
+- **`Gamification.Infrastructure/Caching/`** — `RedisGamificationCache` (fail-soft try/catch on every op, `LogWarn` static messages, no `ex.Message`/no `ex` echoed), `NullGamificationCache` (no-op fallback), `RedisLeagueLeaderboard` (ZADD CH + ZREVRANK; `int.TryParse` guard on Redis-sourced member strings), `NullLeagueLeaderboard`, `GamificationCacheRebuilder` (Scoped, uses DbContext).
+- **`Gamification.Infrastructure/Queries/Cached/`** — 6 `Cached*Query` decorators (`Xp`, `Streak`, `Hearts`, `Badges`, `Missions`, `League`). Existing Postgres impls renamed to `Postgres*Query` and registered via factory DI (`AddScoped<Postgres*Query>()` + `AddScoped<I*Query>(sp => new Cached*Query(inner, cache, options))`). Decorators are `internal sealed`. Lazy-refill (Hearts) and lazy-instantiation (Missions/League) paths preserved — cache stores the post-side-effect value.
+- **`Gamification.Application/Features/Cache/Invalidators/`** — 8 `INotificationHandler` cache invalidators (`XpAwarded`, `StudentLeveledUp`, `StreakAdvanced`, `StreakBroken`, `HeartsDepleted`, `HeartsRefilled`, `BadgeEarned`, `MissionCompleted`). They DEL the relevant key post-commit (ADR 0002). `XpAwardedCacheInvalidator` also DELs the league snapshot key + ZADD CH the sorted set (defence in depth alongside the in-handler write).
+- **`IncrementLeagueXpCommandHandler`** — patched to call `_leaderboard.UpsertMembershipAsync` after `AddWeeklyXp(...)`. Documented as a pre-commit, best-effort leading write; phantom-score risk on Postgres rollback is corrected by the nightly rebuild job + post-commit invalidator (idempotent ZADD CH).
+- **`LeagueRolloverJob`** — patched to call `_leaderboard.DeleteAsync(leagueId)` per old cohort after the rollover commit. New cohorts populate the sorted set lazily as members earn XP.
+- **`Gamification.Infrastructure/Jobs/GamificationCacheRebuildJob`** — Hangfire recurring job, ID `gamification:cache-rebuild`, cron `"0 3 * * *"` UTC, mirrors `StreakSweepJob` shape (`IServiceScopeFactory + ILoggerManager`, creates async scope per run). Calls `GamificationCacheRebuilder.RebuildSortedSetsAsync` — for every active week cohort, DELs the sorted-set key then re-`ZADD CH`s every membership with freshly-encoded score. Idempotent; per-cohort fail-soft.
+
+**Key decisions (locked by lead):**
+- **Q1 — Realtime scope:** server-side caching only. NO SignalR. No FE contract change. `useDashboardDiff` continues polling.
+- **Q2 — Cache scope:** all 6 dashboard read seams + sorted-set leaderboard.
+- **Q5 — Score encoding:** packed integer `weeklyXp * 16777216 + (16777215 - joinOrder)`. Higher XP → higher score; equal XP → lower JoinOrder wins ties.
+- **Q9 — Sorted-set update op:** `ZADD CH` with Postgres-read `WeeklyXp` after each commit (drift-free).
+- **Consistency model:** write-around for per-student keys (DEL on event) + write-through-via-`ZADD CH` for the sorted set. Postgres is the durable ledger.
+- **Fail-soft semantics:** every Redis op wrapped, `LogWarn` static message on `RedisException`, fall through to Postgres. Cache failure NEVER raises a 5xx.
+- **Kill-switch:** `Gamification:Cache:Enabled = false` → `RedisGamificationCache` short-circuits to no-op AT TOP of every method (validated by test T08). Use this to bypass cache in ops emergencies.
+- **Decorator DI:** factory delegate per seam (no Scrutor dependency).
+
+**Load-bearing config (next agent: do NOT remove):**
+- `ConnectionStrings:Redis` (already wired in P1-06) — if set, Redis path active; if empty, Null path active.
+- `Gamification:Cache:Enabled` — set `false` to disable all caching without restarting Redis. Per-key TTLs are also live-tunable via appsettings reload (but `IOptions<T>` snapshots in constructor, so a host restart picks them up cleanly).
+- Hangfire connection (`ConnectionStrings:Hangfire`) — must be set or the recurring job registration fails at startup. Pre-existing requirement (P1-07).
+
+**Tests:**
+- `backend/tests/Learnexia.IntegrationTests/P4_10_RedisCache_IntegrationTests.cs` — 16 cases. Uses Testcontainers.Redis (newly pinned `3.10.0` in `Directory.Packages.props`) + Testcontainers.PostgreSql. Covers: cache hit/miss, invalidator DEL on every domain event, sorted-set ZADD/ZREVRANK ordering, tiebreak, rebuild idempotency, kill-switch, Postgres fallback, no PII in keys.
+- `backend/tests/Modules.Learning.UnitTests/LeaderboardScoreEncoderTests.cs` — 13 cases. Pure unit. Covers: round-trip, ordering invariants, double-precision safety, negative-input validation.
+- Both filters all-pass. Full-suite shows 3 pre-existing seeder-ordering failures in `P2_09_HomeDashboard_Tests` / `P2_04_LearningPath_Tests` (unrelated to P4-10; existed on `main`).
+
+**Security audit:** 0 Critical, 0 High, 3 Mediums all fixed in-PR (F-09: all `LogError(ex, ...)` swapped to `LogWarn(...)` static messages; `int.TryParse` guard on Redis sorted-set member strings; documented phantom-score window in `IncrementLeagueXpCommandHandler` comment). Pre-existing JWT `CHANGE_ME` + Postgres `Password=admin` defaults and the transitive `Newtonsoft.Json 11.0.1` via Hangfire.Core are NOT P4-10 introductions — tracked separately in MEMORY.md.
+
+**Operational notes:**
+- Redis sorted-set member format: `MembershipId.ToString()` (int — NOT a Guid). No PII.
+- Sorted-set keys carry 8-day TTL — survives the week + rollover window + buffer.
+- Per-student keys carry 30-300s TTLs — bounded staleness even if an invalidator misfires.
+- Rebuild job is the drift safety net — runs nightly 03:00 UTC. Can be invoked manually via the Hangfire dashboard.
+
+**NOT in scope (deferred / not P4-10):**
+- SignalR / push-to-client realtime → would need a new story; FE has no SignalR client and no story requires it this cycle.
+- Per-student rebuild API → `IGamificationCacheRebuilder` exposes only `RebuildSortedSetsAsync`. Per-student / per-league granularity can be added when ops asks for it.
+- Cross-module cache layer for Learning/Notifications/etc. → `IGamificationCache` is module-private by design; other modules will own their own caches.
 
 ## P4-07 — Weekly leagues (FE Batch 5 — LeaguePreview dashboard flip, commit + PR ready)
 

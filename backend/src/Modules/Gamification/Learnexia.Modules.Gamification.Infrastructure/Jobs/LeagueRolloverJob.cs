@@ -1,4 +1,5 @@
 using Learnexia.Modules.Gamification.Application.Configuration;
+using Learnexia.Modules.Gamification.Application.Leagues.Caching;
 using Learnexia.Modules.Gamification.Domain.Enums;
 using Learnexia.Modules.Gamification.Domain.Services;
 using Learnexia.Modules.Gamification.Infrastructure.Persistence;
@@ -168,6 +169,28 @@ public sealed class LeagueRolloverJob
         // GamificationDbContext.SaveChangesAsync(int userId) stamps audit fields;
         // userId = 0 (system job, no user context).
         await db.SaveChangesAsync(0);
+
+        // ── P4-10 Batch 1-B: Clean up the sorted-set keys for the rolled-over cohorts ───────────
+        // Each old cohort's sorted-set is now stale (the week ended). Delete them so that
+        // the 8-day TTL is not the only safety net; the next-week memberships will be seeded
+        // into fresh sorted-sets on first IncrementLeagueXp or dashboard read (lazy).
+        // Each DeleteAsync is fail-soft (NullLeagueLeaderboard / Redis errors are swallowed
+        // internally) — a delete failure is acceptable; the TTL will expire the key in 8 days.
+        var leaderboard = scope.ServiceProvider.GetRequiredService<ILeagueLeaderboard>();
+
+        foreach (var cohortGroup in byLeague)
+        {
+            try
+            {
+                await leaderboard.DeleteAsync(cohortGroup.Key, ct);
+            }
+            catch (Exception ex)
+            {
+                // Individual cohort delete failure must not abort the publish loop below.
+                _logger.LogError(ex,
+                    $"P4-10: LeagueRolloverJob — sorted-set delete failed for leagueId={cohortGroup.Key}.");
+            }
+        }
 
         // Publish LeagueTierChangedIntegrationEvent per promoted/demoted student AFTER commit.
         // Each publish is individually try/caught — a publish failure does NOT roll back the

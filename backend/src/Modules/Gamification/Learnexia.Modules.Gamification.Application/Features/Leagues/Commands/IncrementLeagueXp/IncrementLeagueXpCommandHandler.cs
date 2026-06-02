@@ -1,4 +1,5 @@
 using Learnexia.Modules.Gamification.Application.Abstractions;
+using Learnexia.Modules.Gamification.Application.Leagues.Caching;
 using Learnexia.Modules.Gamification.Domain.Entities;
 using Learnexia.Modules.Gamification.Domain.Enums;
 using Learnexia.Modules.Gamification.Domain.Services;
@@ -39,15 +40,18 @@ public sealed class IncrementLeagueXpCommandHandler
     private readonly IGamificationRepository _repo;
     private readonly ISystemClock _clock;
     private readonly ILoggerManager _logger;
+    private readonly ILeagueLeaderboard _leaderboard;
 
     public IncrementLeagueXpCommandHandler(
         IGamificationRepository repo,
         ISystemClock clock,
-        ILoggerManager logger)
+        ILoggerManager logger,
+        ILeagueLeaderboard leaderboard)
     {
-        _repo   = repo;
-        _clock  = clock;
-        _logger = logger;
+        _repo        = repo;
+        _clock       = clock;
+        _logger      = logger;
+        _leaderboard = leaderboard;
     }
 
     public async Task<BaseResponse<Unit>> Handle(
@@ -112,6 +116,20 @@ public sealed class IncrementLeagueXpCommandHandler
             _logger.LogInfo(
                 $"P4-07: league XP +{request.Amount} for studentId={request.StudentId} " +
                 $"membershipId={membership.Id} (weeklyXp={membership.WeeklyXp}).");
+
+            // ── 6. Mirror post-mutation WeeklyXp to the Redis sorted-set leaderboard ─────
+            // Mirror to Redis sorted-set leaderboard (best-effort, fail-soft).
+            // NOTE: this runs BEFORE UnitOfWorkBehavior commits Postgres. If SaveChanges
+            // subsequently fails, the sorted-set will carry a phantom score until the
+            // nightly GamificationCacheRebuildJob (03:00 UTC) corrects it. The Postgres
+            // ledger remains the source of truth; the post-commit XpAwardedCacheInvalidator
+            // also re-mirrors the persisted value via ZADD CH (idempotent).
+            await _leaderboard.UpsertMembershipAsync(
+                leagueId:     membership.LeagueId,
+                membershipId: membership.Id,
+                weeklyXp:     membership.WeeklyXp,
+                joinOrder:    membership.JoinOrder,
+                ct:           ct);
 
             return Success(Unit.Value);
         }
