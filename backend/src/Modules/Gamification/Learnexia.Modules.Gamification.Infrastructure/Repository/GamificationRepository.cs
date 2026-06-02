@@ -265,4 +265,146 @@ public sealed class GamificationRepository : IGamificationRepository
     /// <inheritdoc />
     public async Task AddMissionProgressLogAsync(MissionProgressLog log, CancellationToken ct = default)
         => await _context.MissionProgressLogs.AddAsync(log, ct);
+
+    // ---------------------------------------------------------------------------
+    // Leagues (P4-07)
+    // ---------------------------------------------------------------------------
+
+    /// <inheritdoc />
+    public async Task<League?> FindCohortWithCapacityAsync(
+        LeagueTier tier, string periodKey, int capacity, CancellationToken ct = default)
+    {
+        // Find the first cohort at (tier, periodKey) whose current member count < capacity.
+        // Sub-query counts memberships per league and returns the first with room.
+        var leagues = await _context.Leagues
+            .AsNoTracking()
+            .Where(l => l.Tier == tier && l.PeriodKey == periodKey)
+            .OrderBy(l => l.GroupIndex)
+            .ToListAsync(ct);
+
+        foreach (var league in leagues)
+        {
+            int count = await _context.LeagueMemberships
+                .AsNoTracking()
+                .CountAsync(m => m.LeagueId == league.Id, ct);
+            if (count < capacity)
+                return league;
+        }
+
+        return null;
+    }
+
+    /// <inheritdoc />
+    public async Task<int> GetMaxGroupIndexAsync(
+        LeagueTier tier, string periodKey, CancellationToken ct = default)
+    {
+        var max = await _context.Leagues
+            .AsNoTracking()
+            .Where(l => l.Tier == tier && l.PeriodKey == periodKey)
+            .MaxAsync(l => (int?)l.GroupIndex, ct);
+        return max ?? 0;
+    }
+
+    /// <inheritdoc />
+    public async Task<List<League>> GetCohortsForPeriodAsync(
+        string periodKey, CancellationToken ct = default)
+        => await _context.Leagues
+            .AsNoTracking()
+            .Where(l => l.PeriodKey == periodKey)
+            .OrderBy(l => l.Tier)
+            .ThenBy(l => l.GroupIndex)
+            .ToListAsync(ct);
+
+    /// <inheritdoc />
+    public async Task AddLeagueAsync(League league, CancellationToken ct = default)
+        => await _context.Leagues.AddAsync(league, ct);
+
+    /// <inheritdoc />
+    public void AttachLeague(League league)
+    {
+        // Only attach if not already tracked — avoids InvalidOperationException on double-attach.
+        // Fifth instance of the graph-nav convention (mirrors AttachBadgeDefinition pattern).
+        var entry = _context.Entry(league);
+        if (entry.State == Microsoft.EntityFrameworkCore.EntityState.Detached)
+            _context.Leagues.Attach(league);
+    }
+
+    /// <inheritdoc />
+    public async Task<LeagueMembership?> GetMembershipForStudentAsync(
+        int studentXpProfileId, string periodKey, CancellationToken ct = default)
+        => await _context.LeagueMemberships
+            .AsNoTracking()
+            .Include(m => m.League)
+            .FirstOrDefaultAsync(
+                m => m.StudentXpProfileId == studentXpProfileId && m.PeriodKey == periodKey, ct);
+
+    /// <inheritdoc />
+    public async Task<LeagueMembership?> GetMembershipForStudentTrackedAsync(
+        int studentXpProfileId, string periodKey, CancellationToken ct = default)
+        => await _context.LeagueMemberships
+            .FirstOrDefaultAsync(
+                m => m.StudentXpProfileId == studentXpProfileId && m.PeriodKey == periodKey, ct);
+
+    /// <inheritdoc />
+    public async Task<List<LeagueMembership>> GetMembershipsByLeagueIdAsync(
+        int leagueId, CancellationToken ct = default)
+        => await _context.LeagueMemberships
+            .AsNoTracking()
+            .Where(m => m.LeagueId == leagueId)
+            .OrderByDescending(m => m.WeeklyXp)
+            .ThenBy(m => m.JoinedAtUtc)
+            .ToListAsync(ct);
+
+    /// <inheritdoc />
+    public async Task<List<LeagueMembership>> GetMembershipsForRolloverAsync(
+        string periodKey, CancellationToken ct = default)
+        => await _context.LeagueMemberships
+            .Include(m => m.League)
+            .Include(m => m.StudentXpProfile)
+            .Where(m => m.PeriodKey == periodKey)
+            .ToListAsync(ct);
+
+    /// <inheritdoc />
+    public async Task<int> GetMembershipCountAsync(
+        int leagueId, CancellationToken ct = default)
+        => await _context.LeagueMemberships
+            .AsNoTracking()
+            .CountAsync(m => m.LeagueId == leagueId, ct);
+
+    /// <inheritdoc />
+    public async Task<int> GetNextJoinOrderAsync(
+        int leagueId, CancellationToken ct = default)
+    {
+        int count = await _context.LeagueMemberships
+            .AsNoTracking()
+            .CountAsync(m => m.LeagueId == leagueId, ct);
+        return count + 1;
+    }
+
+    /// <inheritdoc />
+    public async Task AddMembershipAsync(LeagueMembership membership, CancellationToken ct = default)
+        => await _context.LeagueMemberships.AddAsync(membership, ct);
+
+    /// <inheritdoc />
+    public async Task<bool> HasLeagueXpDeltaLogAsync(
+        int leagueMembershipId, Guid originEventId, CancellationToken ct = default)
+        => await _context.LeagueXpDeltaLogs
+            .AsNoTracking()
+            .AnyAsync(
+                l => l.LeagueMembershipId == leagueMembershipId && l.OriginEventId == originEventId, ct);
+
+    /// <inheritdoc />
+    public async Task AddLeagueXpDeltaLogAsync(LeagueXpDeltaLog log, CancellationToken ct = default)
+        => await _context.LeagueXpDeltaLogs.AddAsync(log, ct);
+
+    /// <inheritdoc />
+    public async Task<List<int>> GetDistinctTiersForPeriodAsync(
+        string periodKey, CancellationToken ct = default)
+        => await _context.Leagues
+            .AsNoTracking()
+            .Where(l => l.PeriodKey == periodKey)
+            .Select(l => (int)l.Tier)
+            .Distinct()
+            .OrderBy(t => t)
+            .ToListAsync(ct);
 }

@@ -145,7 +145,7 @@ public class AdvanceStreakCommandHandler
 
             // ── 7. Recompute level ────────────────────────────────────────────────────────────
             int newLevel = LevelCurve.LevelForXp(profile.TotalXp + bonusAmount);
-            profile.ApplyAward(bonusAmount, newLevel);
+            profile.ApplyAward(bonusAmount, newLevel, XpReason.StreakBonus, request.OccurredAtUtc);
 
             _logger.LogInfo(
                 $"P4-03: streak advanced " +

@@ -38,6 +38,11 @@ public class GamificationDbContext : DbContext
     public DbSet<StudentMission> StudentMissions => Set<StudentMission>();
     public DbSet<MissionProgressLog> MissionProgressLogs => Set<MissionProgressLog>();
 
+    // League tables (P4-07)
+    public DbSet<League> Leagues => Set<League>();
+    public DbSet<LeagueMembership> LeagueMemberships => Set<LeagueMembership>();
+    public DbSet<LeagueXpDeltaLog> LeagueXpDeltaLogs => Set<LeagueXpDeltaLog>();
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 

@@ -1,4 +1,5 @@
 using Learnexia.Modules.Gamification.Domain.Entities;
+using Learnexia.Modules.Gamification.Domain.Enums;
 using Learnexia.Modules.Gamification.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -53,6 +54,12 @@ public class StudentXpProfileConfig : IEntityTypeConfiguration<StudentXpProfile>
         builder.Property(p => p.LastHeartRefillAtUtc)
             .HasColumnType("timestamp with time zone")
             .IsRequired(false);
+
+        // League tier column (P4-07-B1-1): int NOT NULL DEFAULT 1 (Bronze) for all existing rows.
+        builder.Property(p => p.CurrentTier)
+            .HasConversion<int>()
+            .HasDefaultValue(LeagueTier.Bronze)
+            .IsRequired();
 
         // Unique index: one profile row per student. Also the primary read-path index.
         builder.HasIndex(x => x.StudentId)

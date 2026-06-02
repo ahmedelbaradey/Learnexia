@@ -112,7 +112,7 @@ public class AwardAnswerSubmittedXpCommandHandler
             await _repo.AddXpAwardAsync(award, cancellationToken);
 
             int newLevel = LevelCurve.LevelForXp(profile.TotalXp + amount);
-            profile.ApplyAward(amount, newLevel);
+            profile.ApplyAward(amount, newLevel, XpReason.CorrectAnswer, request.OccurredAtUtc);
 
             _logger.LogInfo(
                 $"P4-02: CorrectAnswer +{amount} XP awarded to student {request.StudentId} " +

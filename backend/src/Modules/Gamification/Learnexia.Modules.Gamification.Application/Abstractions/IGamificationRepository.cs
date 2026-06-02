@@ -178,4 +178,100 @@ public interface IGamificationRepository
     /// Stages a new <see cref="HeartLoss"/> row for insertion. Does NOT save — UoW commits.
     /// </summary>
     Task AddHeartLossAsync(HeartLoss heartLoss, CancellationToken ct = default);
+
+    // ─────── Leagues (P4-07) ───────
+
+    /// <summary>
+    /// Finds the first <see cref="League"/> cohort at the given tier + period key that still has
+    /// capacity (participant count &lt; <paramref name="capacity"/>). Uses AsNoTracking.
+    /// Returns <c>null</c> when all existing cohorts for the key are full (caller creates a new one).
+    /// </summary>
+    Task<League?> FindCohortWithCapacityAsync(LeagueTier tier, string periodKey, int capacity, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the highest <see cref="League.GroupIndex"/> value for the given tier + period key,
+    /// or 0 when no cohort exists yet. Used by <c>LeaguePlacementService</c> to compute the next
+    /// group index on cohort creation. Uses AsNoTracking.
+    /// </summary>
+    Task<int> GetMaxGroupIndexAsync(LeagueTier tier, string periodKey, CancellationToken ct = default);
+
+    /// <summary>
+    /// All <see cref="League"/> cohorts for the given period key across all tiers. Uses AsNoTracking.
+    /// Used by <c>LeaguePromotionJob</c> to iterate cohorts for rollover.
+    /// </summary>
+    Task<List<League>> GetCohortsForPeriodAsync(string periodKey, CancellationToken ct = default);
+
+    /// <summary>Stages a new <see cref="League"/> row. Does NOT save — caller commits.</summary>
+    Task AddLeagueAsync(League league, CancellationToken ct = default);
+
+    /// <summary>
+    /// Attaches an existing (untracked) <see cref="League"/> to the current DbContext as
+    /// <c>Unchanged</c> so that adding a <see cref="LeagueMembership"/> with the navigation
+    /// property set does NOT cause EF to attempt a duplicate INSERT.
+    /// No-op if the entity is already tracked. Fifth instance of the graph-nav convention.
+    /// </summary>
+    void AttachLeague(League league);
+
+    /// <summary>
+    /// Returns the active <see cref="LeagueMembership"/> for the student in the given period,
+    /// including the <see cref="League"/> navigation. Uses AsNoTracking.
+    /// Returns <c>null</c> when no membership exists (student not yet placed this week — D15).
+    /// </summary>
+    Task<LeagueMembership?> GetMembershipForStudentAsync(int studentXpProfileId, string periodKey, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the active <see cref="LeagueMembership"/> for the student in the given period as a
+    /// <b>tracked</b> entity (no AsNoTracking). Used by <c>IncrementLeagueXpCommandHandler</c>
+    /// so that <see cref="LeagueMembership.AddWeeklyXp"/> mutations are picked up by EF's change
+    /// tracker and committed by <c>UnitOfWorkBehavior</c> without an explicit Attach call.
+    /// Returns <c>null</c> when no membership exists (student not yet placed this week — D15).
+    /// </summary>
+    Task<LeagueMembership?> GetMembershipForStudentTrackedAsync(int studentXpProfileId, string periodKey, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all <see cref="LeagueMembership"/> rows for a cohort, ordered by
+    /// <c>WeeklyXp DESC, JoinedAtUtc ASC</c> (D4 tiebreak). Uses AsNoTracking.
+    /// Used by standings queries and by <c>LeaguePromotionJob</c>.
+    /// </summary>
+    Task<List<LeagueMembership>> GetMembershipsByLeagueIdAsync(int leagueId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all <see cref="LeagueMembership"/> rows for the given period key, including
+    /// the <see cref="League"/> and <see cref="StudentXpProfile"/> navigations.
+    /// Used by <c>LeaguePromotionJob</c> rollover pass (needs cohort metadata + tier update).
+    /// NOTE: This returns tracked entities (no AsNoTracking) so the job can mutate them.
+    /// </summary>
+    Task<List<LeagueMembership>> GetMembershipsForRolloverAsync(string periodKey, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the current participant count for the given league cohort. Uses AsNoTracking.
+    /// </summary>
+    Task<int> GetMembershipCountAsync(int leagueId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the next join-order value for the given league cohort
+    /// (<c>COUNT(existing memberships) + 1</c>). Uses AsNoTracking.
+    /// Caller assigns the returned value to <see cref="LeagueMembership.JoinOrder"/>.
+    /// </summary>
+    Task<int> GetNextJoinOrderAsync(int leagueId, CancellationToken ct = default);
+
+    /// <summary>Stages a new <see cref="LeagueMembership"/> row. Does NOT save — caller commits.</summary>
+    Task AddMembershipAsync(LeagueMembership membership, CancellationToken ct = default);
+
+    /// <summary>
+    /// Idempotency pre-check: returns <c>true</c> when a <see cref="LeagueXpDeltaLog"/> row
+    /// already exists for the given (leagueMembershipId, originEventId). Uses AsNoTracking.
+    /// </summary>
+    Task<bool> HasLeagueXpDeltaLogAsync(int leagueMembershipId, Guid originEventId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Stages a new <see cref="LeagueXpDeltaLog"/> row. Does NOT save — UoW commits.
+    /// </summary>
+    Task AddLeagueXpDeltaLogAsync(LeagueXpDeltaLog log, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the distinct set of <see cref="LeagueTier"/> int values that have at least one
+    /// cohort in the given period. Used by the promotion job to iterate tiers. Uses AsNoTracking.
+    /// </summary>
+    Task<List<int>> GetDistinctTiersForPeriodAsync(string periodKey, CancellationToken ct = default);
 }

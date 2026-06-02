@@ -12,9 +12,8 @@ public class DashboardProfile : Profile
 {
     public DashboardProfile()
     {
-        // No active maps in Phase 2 — hand-projection in GetDashboardQueryHandler.
-        // TODO P4-02: add XP-ledger → DashboardDto.Xp map here.
-        // P4-06: DailyMissionsDto replaced by IStudentMissionsQuery cross-module seam — no AutoMapper map needed.
-        // TODO P4-07: add League → LeaguePreviewDto map here.
+        // No active maps in this profile — Phase-3 dashboard fields (XP/streak/hearts/badges/
+        // missions/leagues) are populated via cross-module Shared.Contracts query seams in
+        // GetDashboardQueryHandler. AutoMapper is reserved for any future intra-module mappings.
     }
 }

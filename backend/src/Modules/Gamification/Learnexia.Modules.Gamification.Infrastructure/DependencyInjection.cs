@@ -57,6 +57,12 @@ public static class DependencyInjection
         // Returns sentinel ([], null) for brand-new students — never null.
         services.AddScoped<IStudentMissionsQuery, StudentMissionsQuery>();
 
+        // Cross-module league read seam (P4-07): Learning dashboard injects IStudentLeagueQuery to read
+        // current-week league snapshot without referencing GamificationDbContext directly (module isolation rule 1).
+        // Lazy-instantiates the current-week league membership on first call per period (D12 / AC1).
+        // Returns sentinel (Bronze, 0, 0, 0) for brand-new students with no profile — never null (D13).
+        services.AddScoped<IStudentLeagueQuery, StudentLeagueQuery>();
+
         // Clock seam (P4-03-B2-1): wraps DateTime.UtcNow for deterministic testing. Singleton — stateless.
         services.AddSingleton<ISystemClock, SystemClock>();
 
@@ -67,6 +73,10 @@ public static class DependencyInjection
 
         // Hangfire mission-rollover job (P4-06-B4-3): Transient — mirrors StreakSweepJob registration.
         services.AddTransient<MissionRolloverJob>();
+
+        // Hangfire league-rollover job (P4-07-B4-4): Transient — mirrors MissionRolloverJob registration.
+        // Runs Monday 00:15 UTC after StreakSweepJob (00:05) and MissionRolloverJob (00:10).
+        services.AddTransient<LeagueRolloverJob>();
 
         // Unit-of-Work behavior (ADR 0001 §2 + ADR 0002 §2): commit once per ICommand<>, then dispatch
         // domain events AFTER commit. Registered here in Infrastructure (not Application) because it
@@ -81,6 +91,11 @@ public static class DependencyInjection
         // Mission catalog seeder (P4-06). Scoped — wired into GamificationModule.InitializeAsync in Batch 4.
         // Runs in all environments (product-as-code catalog, not demo data).
         services.AddScoped<MissionSeeder>();
+
+        // League placement service (P4-07): finds or creates the appropriate league cohort for a
+        // student at a given tier + period, then stages the LeagueMembership row.
+        // Scoped — owns a unit of work reference via IGamificationRepository.
+        services.AddScoped<LeaguePlacementService>();
 
         return services;
     }

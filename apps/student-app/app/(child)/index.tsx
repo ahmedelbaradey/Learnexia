@@ -13,10 +13,14 @@
  *   InPracticeMode: dashboardQuery.data?.inPracticeMode (pill shown when true)
  *   Level: dashboardQuery.data?.level ?? 1 (real from BE — was hard-coded 1)
  *
+ * P4-07 data flip:
+ *   LeaguePreview: dashboardQuery.data?.leaguePreview — now populated by BE;
+ *   shows tier name + rank row. Hidden when leaguePreview is null (brand-new student
+ *   before the BE ships league engine — defensive fallback).
+ *
  * Remaining stubs (carry inline TODO comments pointing to Phase-4 story):
  *   WeeklyXpTarget: 100 (TODO P4-02 — weekly aggregation target)
  *   DailyMission: always null → MissionBanner never mounts (TODO P4-06)
- *   LeaguePreview: always null → not rendered (TODO P4-07)
  *
  * Acceptance criteria reference: AC1–AC13 in docs/briefs/W13-P2-09-FE.md.
  * Design Spec: design-system/ui_kits/student-mobile/W13-home-dashboard.md.
@@ -39,6 +43,94 @@ import { SubjectsListSection } from './_components/SubjectsListSection';
 
 const XStack = styled(TamStack, { flexDirection: 'row' });
 const Text = styled(TamText, { fontFamily: '$body', color: '$fg2' });
+
+// ---------------------------------------------------------------------------
+// LeaguePreviewRow — P4-07 dashboard data flip.
+// Minimal inline component (screen-local, not promoted to @learnexia/ui —
+// full LeagueCard with motion is P4-08). Reuses existing token/layout primitives.
+// ---------------------------------------------------------------------------
+interface LeaguePreviewRowProps {
+  tierName: string | null;
+  rank: number | null;
+  totalPlayers: number | null;
+  xpThisWeek: number | null;
+  direction?: 'ltr' | 'rtl';
+}
+
+function LeaguePreviewRow({
+  tierName,
+  rank,
+  totalPlayers,
+  xpThisWeek,
+  direction = 'ltr',
+}: LeaguePreviewRowProps) {
+  const { t } = useTranslation();
+  const isRtl = direction === 'rtl';
+  const rowDir = isRtl ? 'row-reverse' : 'row';
+
+  // Map BE tier name string → i18n key. BE sends LeagueTier.ToString() = "Bronze"|"Silver"|"Gold"|"Diamond".
+  const tierLabel = (() => {
+    const lower = (tierName ?? '').toLowerCase();
+    if (lower === 'bronze')  return t('child.home.leagueTier.bronze');
+    if (lower === 'silver')  return t('child.home.leagueTier.silver');
+    if (lower === 'gold')    return t('child.home.leagueTier.gold');
+    if (lower === 'diamond') return t('child.home.leagueTier.diamond');
+    return tierName ?? '';
+  })();
+
+  const rankText =
+    rank !== null && totalPlayers !== null && totalPlayers > 0
+      ? t('child.home.leaguePreview.rankLabel', { rank, total: totalPlayers })
+      : t('child.home.leaguePreview.rankUnknown');
+
+  const a11yLabel =
+    rank !== null && totalPlayers !== null
+      ? t('child.home.leaguePreview.a11y', {
+          tier: tierLabel,
+          rank,
+          total: totalPlayers,
+          xp: xpThisWeek ?? 0,
+        })
+      : tierLabel;
+
+  return (
+    <TamStack
+      flexDirection={rowDir as 'row' | 'row-reverse'}
+      paddingHorizontal={16}
+      paddingVertical={12}
+      borderRadius="$card"
+      backgroundColor="$cardSoft"
+      alignItems="center"
+      justifyContent="space-between"
+      accessibilityRole="text"
+      accessible
+      accessibilityLabel={a11yLabel}
+      aria-label={a11yLabel}
+    >
+      {/* Tier label */}
+      <Text
+        color="$fg1"
+        fontSize={15}
+        fontWeight="700"
+        fontFamily="$heading"
+        writingDirection={direction}
+      >
+        {tierLabel}
+      </Text>
+
+      {/* Rank text */}
+      <Text
+        color="$fg3"
+        fontSize={13}
+        fontWeight="500"
+        fontFamily="$body"
+        writingDirection={direction}
+      >
+        {rankText}
+      </Text>
+    </TamStack>
+  );
+}
 
 export default function ChildHomeScreen() {
   const { t } = useTranslation();
@@ -304,10 +396,21 @@ export default function ChildHomeScreen() {
         {/* ---------------------------------------------------------------- */}
 
         {/* ---------------------------------------------------------------- */}
-        {/* LeaguePreview — NEVER rendered in Phase 2 (AC7)                   */}
-        {/* dashboardQuery.data?.leaguePreview is always null in Phase 2.      */}
-        {/* TODO P4-07 — wire leaguePreview when Phase 4 ships league standings. */}
+        {/* LeaguePreview — P4-07: shows real tier + rank from dashboard.     */}
+        {/* Hidden when leaguePreview is null (brand-new student / BE < P4-07).*/}
+        {/* Full league screen + animations are P4-08.                         */}
         {/* ---------------------------------------------------------------- */}
+        {!isHeaderLoading && dashboardQuery.data?.leaguePreview ? (
+          <TamStack marginTop={24}>
+            <LeaguePreviewRow
+              tierName={dashboardQuery.data.leaguePreview.tierName ?? null}
+              rank={dashboardQuery.data.leaguePreview.rank ?? null}
+              totalPlayers={dashboardQuery.data.leaguePreview.totalPlayers ?? null}
+              xpThisWeek={dashboardQuery.data.leaguePreview.xpThisWeek ?? null}
+              direction={direction}
+            />
+          </TamStack>
+        ) : null}
 
         {/* ---------------------------------------------------------------- */}
         {/* SubjectsListSection (AC4, AC13)                                   */}

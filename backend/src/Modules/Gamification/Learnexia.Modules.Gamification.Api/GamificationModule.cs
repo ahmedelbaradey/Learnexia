@@ -86,5 +86,16 @@ public static class GamificationModule
             job => job.RunAsync(MissionType.Weekly, CancellationToken.None),
             missionOptions.WeeklyJobCron,
             new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+        // Register the weekly league rollover recurring job (P4-07-B4-4, AC2 + AC4).
+        // Runs Monday 00:15 UTC — strictly after StreakSweepJob (00:05) and both MissionRolloverJob
+        // registrations (00:05 / 00:10). AddOrUpdate is idempotent across restarts.
+        var leagueOptions = serviceProvider.GetRequiredService<IOptions<LeagueOptions>>().Value;
+
+        recurringJobs.AddOrUpdate<LeagueRolloverJob>(
+            "gamification:league-rollover",
+            job => job.RunAsync(CancellationToken.None),
+            leagueOptions.WeeklyRolloverCron,
+            new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
     }
 }

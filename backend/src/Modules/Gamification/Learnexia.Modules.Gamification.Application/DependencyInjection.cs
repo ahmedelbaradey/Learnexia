@@ -32,6 +32,9 @@ public static class DependencyInjection
         // Mission options (P4-06): bound from appsettings.json:Gamification:Mission.
         services.Configure<MissionOptions>(configuration.GetSection(MissionOptions.SectionName));
 
+        // League options (P4-07): bound from appsettings.json:Gamification:League.
+        services.Configure<LeagueOptions>(configuration.GetSection(LeagueOptions.SectionName));
+
         return services;
     }
 }
