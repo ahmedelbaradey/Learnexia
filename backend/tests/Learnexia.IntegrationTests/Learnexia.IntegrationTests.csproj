@@ -17,6 +17,8 @@
     <PackageReference Include="Testcontainers.PostgreSql" />
     <!-- Testcontainers generic container (ContainerBuilder) — used to spin up MinIO for avatar tests -->
     <PackageReference Include="Testcontainers" />
+    <!-- Testcontainers Redis — used by P4-10 Redis realtime gamification state tests -->
+    <PackageReference Include="Testcontainers.Redis" />
   </ItemGroup>
 
   <!-- Reference the Host project — it pulls in all modules transitively -->

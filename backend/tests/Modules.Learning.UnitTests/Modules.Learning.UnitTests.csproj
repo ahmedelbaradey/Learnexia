@@ -20,5 +20,7 @@
     <ProjectReference Include="..\..\src\Modules\Gamification\Learnexia.Modules.Gamification.Domain\Learnexia.Modules.Gamification.Domain.csproj" />
     <!-- BadgePredicateEvaluator + BadgeRarityDto enum drift test (P4-05) -->
     <ProjectReference Include="..\..\src\Shared\Learnexia.Shared.Contracts\Learnexia.Shared.Contracts.csproj" />
+    <!-- LeaderboardScoreEncoder unit tests (P4-10) — Application layer static helper -->
+    <ProjectReference Include="..\..\src\Modules\Gamification\Learnexia.Modules.Gamification.Application\Learnexia.Modules.Gamification.Application.csproj" />
   </ItemGroup>
 </Project>

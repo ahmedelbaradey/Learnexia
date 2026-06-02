@@ -5,18 +5,16 @@ using Microsoft.EntityFrameworkCore;
 namespace Learnexia.Modules.Gamification.Infrastructure.Queries;
 
 /// <summary>
-/// Implements <see cref="IStudentStreakQuery"/> against <see cref="GamificationDbContext"/>.
-/// Used by the Learning dashboard handler via the <see cref="IStudentStreakQuery"/> seam in
-/// <c>Shared.Contracts</c> — no cross-module DbContext reference, no cross-module project reference.
-///
+/// Postgres implementation of <see cref="IStudentStreakQuery"/>. Wrapped by
+/// <c>CachedStudentStreakQuery</c> (P4-10 decorator) at DI composition root — registered directly
+/// as concrete type, not as <see cref="IStudentStreakQuery"/>.
 /// Read-only: <c>AsNoTracking()</c>. Returns <c>null</c> when no profile exists yet (brand-new student).
-/// Registered in <c>AddGamificationInfrastructure()</c> as Scoped (mirrors <see cref="StudentXpQuery"/> pattern).
 /// </summary>
-public sealed class StudentStreakQuery : IStudentStreakQuery
+internal sealed class PostgresStudentStreakQuery : IStudentStreakQuery
 {
     private readonly GamificationDbContext _db;
 
-    public StudentStreakQuery(GamificationDbContext db)
+    public PostgresStudentStreakQuery(GamificationDbContext db)
     {
         _db = db;
     }

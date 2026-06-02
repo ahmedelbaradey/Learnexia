@@ -1,9 +1,16 @@
 using Learnexia.Modules.Gamification.Application.Abstractions;
+using Learnexia.Modules.Gamification.Application.Caching;
+using Learnexia.Modules.Gamification.Application.Caching.Rebuild;
+using Learnexia.Modules.Gamification.Application.Leagues.Caching;
 using Learnexia.Modules.Gamification.Infrastructure.Behaviors;
+using Learnexia.Modules.Gamification.Infrastructure.Caching;
+using Learnexia.Modules.Gamification.Infrastructure.Caching.Leagues;
+using Learnexia.Modules.Gamification.Infrastructure.Caching.Rebuild;
 using Learnexia.Modules.Gamification.Infrastructure.Jobs;
 using Learnexia.Modules.Gamification.Infrastructure.Persistence;
 using Learnexia.Modules.Gamification.Infrastructure.Persistence.Seed;
 using Learnexia.Modules.Gamification.Infrastructure.Queries;
+using Learnexia.Modules.Gamification.Infrastructure.Queries.Cached;
 using Learnexia.Modules.Gamification.Infrastructure.Repository;
 using Learnexia.Modules.Gamification.Infrastructure.Service;
 using Learnexia.Modules.Gamification.Infrastructure.Services;
@@ -15,6 +22,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using StackExchange.Redis;
 
 namespace Learnexia.Modules.Gamification.Infrastructure;
 
@@ -26,42 +35,70 @@ public static class DependencyInjection
     {
         services.AddDbContext(configuration);
 
+        services.AddGamificationCache(configuration);
+
         services.AddSingleton<ILoggerManager, LoggerManager>();
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
 
         services.AddScoped<IGamificationRepository, GamificationRepository>();
 
-        // Cross-module read seam: Learning dashboard injects IStudentXpQuery to read XP without
-        // referencing GamificationDbContext directly (module isolation rule 1). Mirrors IParentChildQuery.
-        // Future P4-10 swaps this for a Redis-backed implementation behind the same seam.
-        services.AddScoped<IStudentXpQuery, StudentXpQuery>();
+        // ── P4-10 Batch 1-A: decorator wiring ──────────────────────────────────────────────────
+        // Each Postgres*Query is registered as its concrete type.
+        // The interface is registered via a factory delegate that wraps the Postgres impl in a
+        // Cached*Query decorator. Consumers (Learning dashboard) resolve the interface and get the
+        // cached variant transparently — no consumer change required (Open-Closed principle).
 
-        // Cross-module streak read seam (P4-03): Learning dashboard injects IStudentStreakQuery to read
-        // streak state without referencing GamificationDbContext directly (module isolation rule 1).
-        services.AddScoped<IStudentStreakQuery, StudentStreakQuery>();
+        // XP seam (P4-02)
+        services.AddScoped<PostgresStudentXpQuery>();
+        services.AddScoped<IStudentXpQuery>(sp => new CachedStudentXpQuery(
+            sp.GetRequiredService<PostgresStudentXpQuery>(),
+            sp.GetRequiredService<IGamificationCache>(),
+            sp.GetRequiredService<IOptions<GamificationCacheOptions>>(),
+            sp.GetRequiredService<ILoggerManager>()));
 
-        // Cross-module hearts read seam (P4-04): Learning dashboard injects IStudentHeartsQuery to read
-        // hearts state without referencing GamificationDbContext directly (module isolation rule 1).
-        // Includes persist-on-read for lazy refill (D5 / Q1.bis).
-        services.AddScoped<IStudentHeartsQuery, StudentHeartsQuery>();
+        // Streak seam (P4-03)
+        services.AddScoped<PostgresStudentStreakQuery>();
+        services.AddScoped<IStudentStreakQuery>(sp => new CachedStudentStreakQuery(
+            sp.GetRequiredService<PostgresStudentStreakQuery>(),
+            sp.GetRequiredService<IGamificationCache>(),
+            sp.GetRequiredService<IOptions<GamificationCacheOptions>>(),
+            sp.GetRequiredService<ILoggerManager>()));
 
-        // Cross-module badges read seam (P4-05): Learning dashboard injects IStudentBadgesQuery to read
-        // badge count + recent-3 without referencing GamificationDbContext directly (module isolation rule 1).
-        // Returns sentinel (0, []) for brand-new students — never null (D2).
-        services.AddScoped<IStudentBadgesQuery, StudentBadgesQuery>();
+        // Hearts seam (P4-04) — inner has lazy-refill side effect; decorator caches post-refill snapshot.
+        services.AddScoped<PostgresStudentHeartsQuery>();
+        services.AddScoped<IStudentHeartsQuery>(sp => new CachedStudentHeartsQuery(
+            sp.GetRequiredService<PostgresStudentHeartsQuery>(),
+            sp.GetRequiredService<IGamificationCache>(),
+            sp.GetRequiredService<IOptions<GamificationCacheOptions>>(),
+            sp.GetRequiredService<ILoggerManager>()));
 
-        // Cross-module missions read seam (P4-06): Learning dashboard injects IStudentMissionsQuery to read
-        // current-period missions without referencing GamificationDbContext directly (module isolation rule 1).
-        // Lazy-instantiates the current period's missions on first call per period (D2 decision).
-        // Returns sentinel ([], null) for brand-new students — never null.
-        services.AddScoped<IStudentMissionsQuery, StudentMissionsQuery>();
+        // Badges seam (P4-05) — cache key uses fixed :3 suffix (inner hard-codes Take(3)).
+        services.AddScoped<PostgresStudentBadgesQuery>();
+        services.AddScoped<IStudentBadgesQuery>(sp => new CachedStudentBadgesQuery(
+            sp.GetRequiredService<PostgresStudentBadgesQuery>(),
+            sp.GetRequiredService<IGamificationCache>(),
+            sp.GetRequiredService<IOptions<GamificationCacheOptions>>(),
+            sp.GetRequiredService<ILoggerManager>()));
 
-        // Cross-module league read seam (P4-07): Learning dashboard injects IStudentLeagueQuery to read
-        // current-week league snapshot without referencing GamificationDbContext directly (module isolation rule 1).
-        // Lazy-instantiates the current-week league membership on first call per period (D12 / AC1).
-        // Returns sentinel (Bronze, 0, 0, 0) for brand-new students with no profile — never null (D13).
-        services.AddScoped<IStudentLeagueQuery, StudentLeagueQuery>();
+        // Missions seam (P4-06) — inner has lazy-instantiation side effect; cache key uses daily period key.
+        services.AddScoped<PostgresStudentMissionsQuery>();
+        services.AddScoped<IStudentMissionsQuery>(sp => new CachedStudentMissionsQuery(
+            sp.GetRequiredService<PostgresStudentMissionsQuery>(),
+            sp.GetRequiredService<IGamificationCache>(),
+            sp.GetRequiredService<IOptions<GamificationCacheOptions>>(),
+            sp.GetRequiredService<ISystemClock>(),
+            sp.GetRequiredService<ILoggerManager>()));
+
+        // League seam (P4-07) — inner has lazy-placement side effect; cache key uses weekly period key.
+        // Batch 1-B will enhance this decorator to re-derive CurrentRank from the sorted-set (Q13).
+        services.AddScoped<PostgresStudentLeagueQuery>();
+        services.AddScoped<IStudentLeagueQuery>(sp => new CachedStudentLeagueQuery(
+            sp.GetRequiredService<PostgresStudentLeagueQuery>(),
+            sp.GetRequiredService<IGamificationCache>(),
+            sp.GetRequiredService<IOptions<GamificationCacheOptions>>(),
+            sp.GetRequiredService<ISystemClock>(),
+            sp.GetRequiredService<ILoggerManager>()));
 
         // Clock seam (P4-03-B2-1): wraps DateTime.UtcNow for deterministic testing. Singleton — stateless.
         services.AddSingleton<ISystemClock, SystemClock>();
@@ -86,6 +123,16 @@ public static class DependencyInjection
         // One-shot lapse window. Runs Sunday at 12:00 UTC.
         services.AddTransient<LapseWinBackJob>();
 
+        // Rebuild service (P4-10-B3): Scoped — injects GamificationDbContext (also Scoped).
+        // Reads all active-week LeagueMemberships from Postgres and re-seeds the Redis sorted-set
+        // leaderboards. Idempotent (DEL + ZADD). Called by GamificationCacheRebuildJob.
+        services.AddScoped<IGamificationCacheRebuilder, GamificationCacheRebuilder>();
+
+        // Hangfire cache-rebuild job (P4-10-B3): Transient — mirrors other Hangfire job registrations.
+        // Creates its own inner scope (via IServiceScopeFactory) per run so the Scoped rebuilder
+        // is always resolved in a fresh scope. Runs daily at 03:00 UTC.
+        services.AddTransient<GamificationCacheRebuildJob>();
+
         // Unit-of-Work behavior (ADR 0001 §2 + ADR 0002 §2): commit once per ICommand<>, then dispatch
         // domain events AFTER commit. Registered here in Infrastructure (not Application) because it
         // injects the concrete GamificationDbContext. Registered AFTER ValidationBehavior (added in
@@ -104,6 +151,40 @@ public static class DependencyInjection
         // student at a given tier + period, then stages the LeagueMembership row.
         // Scoped — owns a unit of work reference via IGamificationRepository.
         services.AddScoped<LeaguePlacementService>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddGamificationCache(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.Configure<GamificationCacheOptions>(
+            configuration.GetSection(GamificationCacheOptions.SectionName));
+
+        // Cache implementation: Redis when IConnectionMultiplexer is registered, Null otherwise.
+        services.AddSingleton<IGamificationCache>(sp =>
+        {
+            var mux = sp.GetService<IConnectionMultiplexer>();
+            if (mux is null)
+                return new NullGamificationCache();
+            return new RedisGamificationCache(
+                mux,
+                sp.GetRequiredService<IOptions<GamificationCacheOptions>>(),
+                sp.GetRequiredService<ILoggerManager>());
+        });
+
+        // Sorted-set leaderboard (P4-10 Batch 1-B): Redis impl when IConnectionMultiplexer is
+        // registered, Null impl otherwise. Singleton — composes IGamificationCache (also Singleton).
+        services.AddSingleton<ILeagueLeaderboard>(sp =>
+        {
+            var mux = sp.GetService<IConnectionMultiplexer>();
+            if (mux is null)
+                return new NullLeagueLeaderboard();
+            return new RedisLeagueLeaderboard(
+                sp.GetRequiredService<IGamificationCache>(),
+                sp.GetRequiredService<IOptions<GamificationCacheOptions>>());
+        });
 
         return services;
     }

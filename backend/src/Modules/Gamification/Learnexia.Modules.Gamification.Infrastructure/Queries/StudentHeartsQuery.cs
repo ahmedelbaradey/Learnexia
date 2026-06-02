@@ -10,26 +10,22 @@ using Microsoft.Extensions.Options;
 namespace Learnexia.Modules.Gamification.Infrastructure.Queries;
 
 /// <summary>
-/// Implements <see cref="IStudentHeartsQuery"/> against <see cref="GamificationDbContext"/> — P4-04.
+/// Postgres implementation of <see cref="IStudentHeartsQuery"/> — P4-04. Wrapped by
+/// <c>CachedStudentHeartsQuery</c> (P4-10 decorator) at DI composition root.
 ///
 /// Persist-on-read (D5 / Q1.bis): when the lazy refiller detects a positive delta, the query
 /// updates the <c>StudentXpProfiles</c> row via <c>ExecuteUpdateAsync</c> with an optimistic
-/// WHERE-guard on <c>LastHeartRefillAtUtc</c>. The rare concurrent-read race may over-refill by
-/// at most 1 heart (capped at <see cref="HeartsOptions.Cap"/>), which is strictly better UX
-/// than blocking on a row-lock for a read endpoint.
+/// WHERE-guard on <c>LastHeartRefillAtUtc</c>.
 ///
 /// Brand-new students (no profile row): returns a sentinel snapshot with full hearts (D8 / Q10).
-/// This avoids leaking <see cref="HeartsOptions.Cap"/> into the Learning module.
-///
-/// Registered in <c>AddGamificationInfrastructure()</c> as Scoped.
 /// </summary>
-public sealed class StudentHeartsQuery : IStudentHeartsQuery
+internal sealed class PostgresStudentHeartsQuery : IStudentHeartsQuery
 {
     private readonly GamificationDbContext _db;
     private readonly ISystemClock _clock;
     private readonly IOptions<HeartsOptions> _heartsOptions;
 
-    public StudentHeartsQuery(
+    public PostgresStudentHeartsQuery(
         GamificationDbContext db,
         ISystemClock clock,
         IOptions<HeartsOptions> heartsOptions)

@@ -9,24 +9,14 @@ using Microsoft.EntityFrameworkCore;
 namespace Learnexia.Modules.Gamification.Infrastructure.Queries;
 
 /// <summary>
-/// Implements <see cref="IStudentLeagueQuery"/> against <see cref="GamificationDbContext"/> — P4-07.
+/// Postgres implementation of <see cref="IStudentLeagueQuery"/> — P4-07. Wrapped by
+/// <c>CachedStudentLeagueQuery</c> (P4-10 decorator) at DI composition root.
 ///
-/// Resolves the student's <c>StudentXpProfile.Id</c> first, then:
-///   1. Computes the current weekly period key via <see cref="MissionPeriodCalculator"/>.
-///   2. Checks for an existing <c>LeagueMembership</c> for (profile.Id, periodKey).
-///   3. If no membership → lazy-instantiates via <see cref="LeaguePlacementService"/> (first-fit cohort
-///      find-or-create); commits in this scope. The unique index
-///      <c>UX_LeagueMemberships_StudentXpProfileId_PeriodKey</c> prevents duplicate instantiation under
-///      concurrent dashboard reads; a constraint violation catch re-reads (D12 race-accepted).
-///   4. Computes rank as <c>1 + COUNT(members with WeeklyXp &gt; caller OR (tie + earlier joinedAt))</c>.
-///   5. Returns <see cref="StudentLeagueSnapshot"/>.
-///
+/// Lazy-instantiates the current-week league membership on first call per period (D12 / AC1).
 /// Brand-new students (no profile row): returns sentinel
 /// <c>(Tier: Bronze, WeeklyXp: 0, CurrentRank: 0, GroupSize: 0)</c> — never null (D13).
-///
-/// Registered in <c>AddGamificationInfrastructure()</c> as Scoped.
 /// </summary>
-public sealed class StudentLeagueQuery : IStudentLeagueQuery
+internal sealed class PostgresStudentLeagueQuery : IStudentLeagueQuery
 {
     private readonly GamificationDbContext _db;
     private readonly LeaguePlacementService _placement;
@@ -36,7 +26,7 @@ public sealed class StudentLeagueQuery : IStudentLeagueQuery
     private static readonly StudentLeagueSnapshot Sentinel =
         new(Tier: LeagueTierDto.Bronze, WeeklyXp: 0, CurrentRank: 0, GroupSize: 0);
 
-    public StudentLeagueQuery(
+    public PostgresStudentLeagueQuery(
         GamificationDbContext db,
         LeaguePlacementService placement,
         ISystemClock clock,

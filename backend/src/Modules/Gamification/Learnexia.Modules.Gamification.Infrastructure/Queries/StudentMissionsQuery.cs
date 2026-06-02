@@ -9,29 +9,19 @@ using Microsoft.EntityFrameworkCore;
 namespace Learnexia.Modules.Gamification.Infrastructure.Queries;
 
 /// <summary>
-/// Implements <see cref="IStudentMissionsQuery"/> against <see cref="GamificationDbContext"/> — P4-06.
+/// Postgres implementation of <see cref="IStudentMissionsQuery"/> — P4-06. Wrapped by
+/// <c>CachedStudentMissionsQuery</c> (P4-10 decorator) at DI composition root.
 ///
-/// Resolves the student's <c>StudentXpProfile.Id</c> first, then:
-///   1. Computes the current daily and weekly period keys via <see cref="MissionPeriodCalculator"/>.
-///   2. Lazy-instantiates missions for any period that has no rows yet (D2 decision — AC4).
-///      Race safety: the unique index <c>UX_StudentMissions_StudentXpProfileId_MissionDefinitionId_PeriodKey</c>
-///      prevents duplicate instantiation under concurrent dashboard reads; the <see cref="DbUpdateException"/>
-///      catch in <see cref="EnsureMissionsForPeriodAsync"/> treats a constraint violation as
-///      "already instantiated by a concurrent request" and re-reads.
-///   3. Projects the current-period missions to <see cref="MissionSummary"/> records.
-///
-/// Brand-new students (no profile row): returns sentinel <c>StudentMissionsSnapshot([], null)</c> —
-/// never null. Mirrors the <see cref="IStudentBadgesQuery"/> sentinel-snapshot pattern (D2).
-///
-/// Registered in <c>AddGamificationInfrastructure()</c> as Scoped.
+/// Lazy-instantiates missions for any period that has no rows yet (D2 decision — AC4).
+/// Brand-new students (no profile row): returns sentinel <c>StudentMissionsSnapshot([], null)</c> — never null.
 /// </summary>
-public sealed class StudentMissionsQuery : IStudentMissionsQuery
+internal sealed class PostgresStudentMissionsQuery : IStudentMissionsQuery
 {
     private readonly GamificationDbContext _db;
     private readonly ISystemClock _clock;
     private readonly ILoggerManager _logger;
 
-    public StudentMissionsQuery(
+    public PostgresStudentMissionsQuery(
         GamificationDbContext db,
         ISystemClock clock,
         ILoggerManager logger)
