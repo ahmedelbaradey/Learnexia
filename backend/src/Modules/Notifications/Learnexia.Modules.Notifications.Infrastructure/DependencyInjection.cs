@@ -1,6 +1,8 @@
 using Learnexia.Modules.Notifications.Application.Abstractions;
 using Learnexia.Modules.Notifications.Infrastructure.Email;
 using Learnexia.Modules.Notifications.Infrastructure.Persistence;
+using Learnexia.Modules.Notifications.Infrastructure.Push;
+using Learnexia.Modules.Notifications.Infrastructure.Reengagement;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
@@ -20,6 +22,11 @@ public static class DependencyInjection
         services.AddScoped<INotificationsDbContext>(sp => sp.GetRequiredService<NotificationsDbContext>());
 
         AddEmailSender(services, configuration);
+        AddPushSender(services, configuration);
+
+        // NudgeDispatcher composes IPushSender + INotificationsDbContext + ISystemClock.
+        // Scoped — matches the lifetime of INotificationsDbContext.
+        services.AddScoped<INudgeDispatcher, NudgeDispatcher>();
 
         return services;
     }
@@ -51,6 +58,36 @@ public static class DependencyInjection
             case EmailProvider.None:
             default:
                 services.AddScoped<IEmailSender, LogEmailSender>();
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Binds <see cref="PushSettings"/> from <c>Notifications:Push</c> and registers the
+    /// <see cref="IPushSender"/> adapter selected by <c>Provider</c> (enum-switch, no Strategy/Factory
+    /// per rule 8 — mirrors <c>AddEmailSender</c> pattern). Defaults to <see cref="LogPushSender"/>
+    /// so the stack runs without any push infrastructure in dev.
+    /// </summary>
+    private static void AddPushSender(IServiceCollection services, IConfiguration configuration)
+    {
+        var settings = configuration.GetSection(PushSettings.SectionName).Get<PushSettings>() ?? new PushSettings();
+        services.AddOptions<PushSettings>().Bind(configuration.GetSection(PushSettings.SectionName));
+
+        switch (settings.Provider)
+        {
+            case PushProvider.Expo:
+                services.AddHttpClient<ExpoPushSender>(c =>
+                {
+                    c.BaseAddress = new Uri(settings.Expo.BaseUrl);
+                    // F-07: bound worst-case dispatch latency — prevent thread-pool starvation
+                    // if the Expo API is slow (default HttpClient timeout is 100 seconds).
+                    c.Timeout = TimeSpan.FromSeconds(10);
+                });
+                services.AddScoped<IPushSender, ExpoPushSender>();
+                break;
+            case PushProvider.None:
+            default:
+                services.AddScoped<IPushSender, LogPushSender>();
                 break;
         }
     }

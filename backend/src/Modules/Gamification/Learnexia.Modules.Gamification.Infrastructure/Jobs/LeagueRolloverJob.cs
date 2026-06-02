@@ -2,7 +2,9 @@ using Learnexia.Modules.Gamification.Application.Configuration;
 using Learnexia.Modules.Gamification.Domain.Enums;
 using Learnexia.Modules.Gamification.Domain.Services;
 using Learnexia.Modules.Gamification.Infrastructure.Persistence;
+using Learnexia.Shared.Contracts.Gamification;
 using Learnexia.Shared.Kernel.Abstractions;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -19,15 +21,17 @@ namespace Learnexia.Modules.Gamification.Infrastructure.Jobs;
 ///         per <see cref="LeagueStandings.Apply"/>.</item>
 ///   <item>Update <c>StudentXpProfile.CurrentTier</c> for promoted/demoted members so that
 ///         next week's lazy placement reads the new tier.</item>
+///   <item>Publish one <see cref="LeagueTierChangedIntegrationEvent"/> per promoted/demoted member
+///         AFTER <c>SaveChangesAsync</c> (P4-09 forward-compat; no Notifications consumer in this
+///         story — deferred per P4-09 brief §"Not in scope").</item>
 /// </list></para>
 ///
 /// <para><b>Idempotency (AC4):</b> per-cohort short-circuit — if any member already has
 /// <c>TierAfter != null</c>, the cohort was already processed; skip it.</para>
 ///
-/// <para><b>No domain events:</b> job mutates via tracked entities but does NOT raise
-/// <c>TierChangedDomainEvent</c> from this bulk path (same precedent as StreakSweepJob +
-/// MissionRolloverJob). Forward-compat stub in <c>StudentXpProfile.UpdateTier</c> if P4-08/P4-09
-/// needs the event.</para>
+/// <para><b>Event ordering:</b> integration events are published AFTER <c>SaveChangesAsync</c>
+/// commits the tier update. A publish failure cannot undo the tier change (fail-soft per ADR 0002 §3).
+/// Each publish is individually try/caught.</para>
 ///
 /// <para><b>Scheduling:</b> Monday 00:15 UTC — strictly after StreakSweepJob (00:05) and
 /// MissionRolloverJob daily/weekly (00:05 / 00:10).</para>
@@ -71,6 +75,7 @@ public sealed class LeagueRolloverJob
 
         await using var scope = _scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<GamificationDbContext>();
+        var publisher = scope.ServiceProvider.GetRequiredService<IPublisher>();
 
         // Load all memberships for last week's period (tracked — mutations must flow to EF).
         // Include League (for tier + cohort metadata) and StudentXpProfile (for CurrentTier update).
@@ -95,6 +100,9 @@ public sealed class LeagueRolloverJob
         int totalDemoted  = 0;
         int totalStayed   = 0;
         int skippedCohorts = 0;
+
+        // Capture tier-changed entries for post-commit event publishing.
+        var tierChangedEntries = new List<(int StudentId, string OldTier, string NewTier, string Status)>();
 
         foreach (var cohortGroup in byLeague)
         {
@@ -134,10 +142,18 @@ public sealed class LeagueRolloverJob
                 member.FinalizePromotion(finalRank, tierAfter, status);
 
                 // Update the student's profile CurrentTier so next week's lazy placement
-                // reads the correct tier. No domain event in this batch (same precedent as
-                // StreakSweepJob + MissionRolloverJob — forward-compat via UpdateTier stub).
+                // reads the correct tier.
                 if (status == MembershipStatus.Promoted || status == MembershipStatus.Demoted)
+                {
                     member.StudentXpProfile.UpdateTier(tierAfter);
+
+                    // Capture for post-commit event publishing (P4-09 forward-compat).
+                    tierChangedEntries.Add((
+                        StudentId: member.StudentXpProfile.StudentId,
+                        OldTier: tier.ToString(),
+                        NewTier: tierAfter.ToString(),
+                        Status: status.ToString()));
+                }
 
                 switch (status)
                 {
@@ -153,9 +169,41 @@ public sealed class LeagueRolloverJob
         // userId = 0 (system job, no user context).
         await db.SaveChangesAsync(0);
 
+        // Publish LeagueTierChangedIntegrationEvent per promoted/demoted student AFTER commit.
+        // Each publish is individually try/caught — a publish failure does NOT roll back the
+        // tier update (fail-soft per ADR 0002 §3).
+        // Note: per P4-09 brief §"Not in scope", a league-tier push notification is deferred to
+        // a follow-up story. These events are published for forward-compatibility.
+        int tierEventsPublished = 0;
+        int tierEventsFailedPublish = 0;
+
+        foreach (var entry in tierChangedEntries)
+        {
+            try
+            {
+                await publisher.Publish(new LeagueTierChangedIntegrationEvent(
+                    EventId: Guid.NewGuid(),
+                    OccurredOnUtc: now,
+                    StudentId: entry.StudentId,
+                    OldTier: entry.OldTier,
+                    NewTier: entry.NewTier,
+                    Status: entry.Status), ct);
+
+                tierEventsPublished++;
+            }
+            catch (Exception ex)
+            {
+                tierEventsFailedPublish++;
+                _logger.LogError(ex,
+                    $"P4-09: LeagueRolloverJob — publish failed for studentId={entry.StudentId} " +
+                    $"status={entry.Status}.");
+            }
+        }
+
         _logger.LogInfo(
             $"P4-07: league-rollover complete periodKey={lastWeekKey} — " +
             $"promoted={totalPromoted}, demoted={totalDemoted}, stayed={totalStayed}, " +
-            $"skippedCohorts={skippedCohorts}.");
+            $"skippedCohorts={skippedCohorts}, " +
+            $"tierEventsPublished={tierEventsPublished}, tierEventsFailedPublish={tierEventsFailedPublish}.");
     }
 }

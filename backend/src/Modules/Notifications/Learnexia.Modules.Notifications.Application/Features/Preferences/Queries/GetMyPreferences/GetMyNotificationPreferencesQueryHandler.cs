@@ -13,8 +13,14 @@ namespace Learnexia.Modules.Notifications.Application.Features.Preferences.Queri
 /// <summary>
 /// Loads the caller's notification preferences from the <c>notifications</c> schema (P2-12 BE-1).
 /// Self-scoped: UserId is always resolved from the JWT via <see cref="ICurrentUserService"/> — never
-/// from a parameter. When no rows exist yet the handler returns defaults for ALL 4 categories (no 404,
-/// nothing persisted on read). Queries are NOT auto-validated (CONVENTIONS §4).
+/// from a parameter. When no rows exist yet the handler returns defaults for the 4 user-visible categories
+/// (no 404, nothing persisted on read). Queries are NOT auto-validated (CONVENTIONS §4).
+/// <para>
+/// P4-09 added <c>DailyMissionReminder = 4</c>, <c>LapseWinBack = 5</c>, and <c>System = 6</c> to the
+/// enum. Those categories are parent-controlled per-child (stored in <c>ChildReengagementPreference</c>)
+/// and NOT managed via this self-preferences endpoint. Only the original 4 self-managed categories are
+/// returned here.
+/// </para>
 /// </summary>
 public sealed class GetMyNotificationPreferencesQueryHandler
     : BaseResponseHandler,
@@ -55,9 +61,21 @@ public sealed class GetMyNotificationPreferencesQueryHandler
             // Build a lookup so we can fall back to defaults for missing categories without a second DB hit.
             var stored = rows.ToDictionary(r => r.Category);
 
-            var items = new List<NotificationPreferenceItemDto>(4);
+            // P4-09 guard: only the 4 original user-visible categories belong to the self-preferences
+            // endpoint. Categories 4 (DailyMissionReminder), 5 (LapseWinBack), and 6 (System) are either
+            // parent-controlled per-child (ChildReengagementPreference) or internal sentinels — they must
+            // NOT be surfaced here. Using an explicit allow-list keeps the set stable even if the enum grows.
+            var userFacingCategories = new[]
+            {
+                NotificationCategory.WeeklyReport,
+                NotificationCategory.StreakAtRisk,
+                NotificationCategory.ProductAnnouncement,
+                NotificationCategory.Achievement,
+            };
 
-            foreach (var category in Enum.GetValues<NotificationCategory>())
+            var items = new List<NotificationPreferenceItemDto>(userFacingCategories.Length);
+
+            foreach (var category in userFacingCategories)
             {
                 if (stored.TryGetValue(category, out var row))
                 {

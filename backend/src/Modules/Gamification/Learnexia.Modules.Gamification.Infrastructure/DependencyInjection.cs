@@ -78,6 +78,14 @@ public static class DependencyInjection
         // Runs Monday 00:15 UTC after StreakSweepJob (00:05) and MissionRolloverJob (00:10).
         services.AddTransient<LeagueRolloverJob>();
 
+        // Hangfire streak-at-risk + mission-reminder job (P4-09-B3-2): Transient — mirrors LeagueRolloverJob.
+        // Two-pass: streak-at-risk query + daily-mission-reminder query. Runs daily at 18:00 UTC.
+        services.AddTransient<StreakAtRiskJob>();
+
+        // Hangfire lapse-win-back job (P4-09-B3-2): Transient — mirrors StreakAtRiskJob registration.
+        // One-shot lapse window. Runs Sunday at 12:00 UTC.
+        services.AddTransient<LapseWinBackJob>();
+
         // Unit-of-Work behavior (ADR 0001 §2 + ADR 0002 §2): commit once per ICommand<>, then dispatch
         // domain events AFTER commit. Registered here in Infrastructure (not Application) because it
         // injects the concrete GamificationDbContext. Registered AFTER ValidationBehavior (added in

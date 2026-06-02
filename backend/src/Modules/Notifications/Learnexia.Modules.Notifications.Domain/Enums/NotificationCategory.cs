@@ -10,4 +10,9 @@ public enum NotificationCategory
     StreakAtRisk = 1,
     ProductAnnouncement = 2,
     Achievement = 3,
+    // P4-09 re-engagement categories
+    DailyMissionReminder = 4,
+    LapseWinBack = 5,
+    // Used as backfill default for the new Category column on existing Notification rows
+    System = 6,
 }

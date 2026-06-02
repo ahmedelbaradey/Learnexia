@@ -1659,4 +1659,58 @@
   <data name="LearningPathUnauthorized" xml:space="preserve">
     <value>يلزم تسجيل الدخول لعرض مسار التعلم.</value>
   </data>
+  <data name="ChildPreferencesRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد تفضيلات إشعارات الطفل بنجاح.</value>
+  </data>
+  <data name="ChildPreferencesUpdatedSuccessfully" xml:space="preserve">
+    <value>تم تحديث تفضيلات إشعارات الطفل بنجاح.</value>
+  </data>
+  <data name="NotAuthorizedForChild" xml:space="preserve">
+    <value>غير مخول لإدارة تفضيلات هذا الطفل.</value>
+  </data>
+  <data name="InvalidTimeZoneId" xml:space="preserve">
+    <value>معرّف المنطقة الزمنية المقدم غير صالح.</value>
+  </data>
+  <data name="InvalidDailyCapRange" xml:space="preserve">
+    <value>يجب أن يكون الحد اليومي بين 0 و 10.</value>
+  </data>
+  <data name="QuietHoursBothOrNeither" xml:space="preserve">
+    <value>يجب تحديد بداية ونهاية ساعات الهدوء معاً أو تركهما فارغين.</value>
+  </data>
+  <data name="QuietHoursStartEndMustDiffer" xml:space="preserve">
+    <value>يجب أن تختلف بداية ونهاية ساعات الهدوء.</value>
+  </data>
+  <data name="DeviceTokenRegisteredSuccessfully" xml:space="preserve">
+    <value>تم تسجيل رمز الجهاز بنجاح.</value>
+  </data>
+  <data name="DeviceTokenRevokedSuccessfully" xml:space="preserve">
+    <value>تم إلغاء رمز الجهاز بنجاح.</value>
+  </data>
+  <data name="DeviceTokenNotFound" xml:space="preserve">
+    <value>رمز الجهاز غير موجود.</value>
+  </data>
+  <data name="DeviceTokenRequired" xml:space="preserve">
+    <value>رمز الجهاز مطلوب.</value>
+  </data>
+  <data name="DevicePlatformInvalid" xml:space="preserve">
+    <value>يجب أن تكون المنصة إحدى: ios، android، web.</value>
+  </data>
+  <data name="InboxRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد صندوق الوارد بنجاح.</value>
+  </data>
+  <data name="NotificationMarkedReadSuccessfully" xml:space="preserve">
+    <value>تم تعليم الإشعار كمقروء.</value>
+  </data>
+  <data name="AllNotificationsMarkedReadSuccessfully" xml:space="preserve">
+    <value>تم تعليم جميع الإشعارات كمقروءة.</value>
+  </data>
+  <data name="NotificationNotFound" xml:space="preserve">
+    <value>الإشعار غير موجود.</value>
+  </data>
+  <data name="NotificationAccessForbidden" xml:space="preserve">
+    <value>غير مخول للوصول إلى هذا الإشعار.</value>
+  </data>
+  <data name="NotificationIdRequired" xml:space="preserve">
+    <value>معرّف الإشعار مطلوب.</value>
+  </data>
 </root>

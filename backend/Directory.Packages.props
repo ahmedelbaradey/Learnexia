@@ -49,6 +49,7 @@
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.6.0" />
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.5.0" />
     <PackageVersion Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.8" />
+    <PackageVersion Include="StackExchange.Redis" Version="2.7.27" />
 
     <!-- Logging -->
     <PackageVersion Include="NLog" Version="5.4.0" />

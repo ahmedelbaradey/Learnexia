@@ -1660,4 +1660,58 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="LearningPathUnauthorized" xml:space="preserve">
     <value>Authentication required to view learning path.</value>
   </data>
+  <data name="ChildPreferencesRetrievedSuccessfully" xml:space="preserve">
+    <value>Child notification preferences retrieved successfully.</value>
+  </data>
+  <data name="ChildPreferencesUpdatedSuccessfully" xml:space="preserve">
+    <value>Child notification preferences updated successfully.</value>
+  </data>
+  <data name="NotAuthorizedForChild" xml:space="preserve">
+    <value>You are not authorized to manage preferences for this child.</value>
+  </data>
+  <data name="InvalidTimeZoneId" xml:space="preserve">
+    <value>The provided time zone identifier is not valid.</value>
+  </data>
+  <data name="InvalidDailyCapRange" xml:space="preserve">
+    <value>Daily cap must be between 0 and 10.</value>
+  </data>
+  <data name="QuietHoursBothOrNeither" xml:space="preserve">
+    <value>Quiet hours start and end must both be provided, or both omitted.</value>
+  </data>
+  <data name="QuietHoursStartEndMustDiffer" xml:space="preserve">
+    <value>Quiet hours start and end must differ.</value>
+  </data>
+  <data name="DeviceTokenRegisteredSuccessfully" xml:space="preserve">
+    <value>Device token registered successfully.</value>
+  </data>
+  <data name="DeviceTokenRevokedSuccessfully" xml:space="preserve">
+    <value>Device token revoked successfully.</value>
+  </data>
+  <data name="DeviceTokenNotFound" xml:space="preserve">
+    <value>Device token not found.</value>
+  </data>
+  <data name="DeviceTokenRequired" xml:space="preserve">
+    <value>Device token is required.</value>
+  </data>
+  <data name="DevicePlatformInvalid" xml:space="preserve">
+    <value>Platform must be one of: ios, android, web.</value>
+  </data>
+  <data name="InboxRetrievedSuccessfully" xml:space="preserve">
+    <value>Inbox retrieved successfully.</value>
+  </data>
+  <data name="NotificationMarkedReadSuccessfully" xml:space="preserve">
+    <value>Notification marked as read.</value>
+  </data>
+  <data name="AllNotificationsMarkedReadSuccessfully" xml:space="preserve">
+    <value>All notifications marked as read.</value>
+  </data>
+  <data name="NotificationNotFound" xml:space="preserve">
+    <value>Notification not found.</value>
+  </data>
+  <data name="NotificationAccessForbidden" xml:space="preserve">
+    <value>You are not authorized to access this notification.</value>
+  </data>
+  <data name="NotificationIdRequired" xml:space="preserve">
+    <value>Notification ID is required.</value>
+  </data>
 </root>

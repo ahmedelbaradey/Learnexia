@@ -14,4 +14,22 @@ public interface IParentChildQuery
     /// (any <c>ParentStudent</c> row with <c>ParentId == parentId</c>).
     /// </summary>
     Task<bool> ParentHasAnyChildAsync(int parentId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns <c>true</c> if the JWT-authenticated parent is linked to the given child.
+    /// Used by P4-09 prefs endpoints to gate parent writes (JWT-role-Parent must match
+    /// the ChildId via this link check; child JWTs cannot write parent-controlled prefs).
+    /// Anti-IDOR: callers should return a generic 403 on false regardless of whether the
+    /// child exists — do not distinguish "child not found" from "not your child".
+    /// </summary>
+    Task<bool> IsParentOfChildAsync(int parentId, int childId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Reverse lookup: given a child (student) id, return the linked parent id.
+    /// Used by P4-09 cross-module integration-event consumers in Notifications to
+    /// determine which parent owns the reengagement preferences for the student
+    /// whose event fired. Returns <c>null</c> if the child has no linked parent (orphan
+    /// account or pre-link state).
+    /// </summary>
+    Task<int?> FindParentForChildAsync(int childId, CancellationToken ct = default);
 }

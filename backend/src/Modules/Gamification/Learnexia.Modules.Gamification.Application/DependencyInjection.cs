@@ -35,6 +35,11 @@ public static class DependencyInjection
         // League options (P4-07): bound from appsettings.json:Gamification:League.
         services.Configure<LeagueOptions>(configuration.GetSection(LeagueOptions.SectionName));
 
+        // Re-engagement options (P4-09): bound from appsettings.json:Gamification:Reengagement.
+        // Controls cron schedules for StreakAtRiskJob + LapseWinBackJob, lapse thresholds,
+        // and the mission-reminder lookahead window.
+        services.Configure<ReengagementOptions>(configuration.GetSection(ReengagementOptions.SectionName));
+
         return services;
     }
 }
