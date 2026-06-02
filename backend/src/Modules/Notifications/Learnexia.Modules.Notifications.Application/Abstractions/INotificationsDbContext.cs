@@ -9,6 +9,8 @@ public interface INotificationsDbContext
     DbSet<Notification> Notifications { get; }
     DbSet<MessageRequest> MessageRequests { get; }
     DbSet<NotificationPreference> NotificationPreferences { get; }
+    DbSet<ChildReengagementPreference> ChildReengagementPreferences { get; }
+    DbSet<UserDeviceToken> UserDeviceTokens { get; }
 
     // Exposed so a multi-row upsert (notification preferences, P2-12) can wrap its writes in an EXPLICIT
     // transaction — there is no Unit of Work (ADR 0001), so atomicity across rows is the caller's job.

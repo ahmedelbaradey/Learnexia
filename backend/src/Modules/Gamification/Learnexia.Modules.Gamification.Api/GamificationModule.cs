@@ -97,5 +97,23 @@ public static class GamificationModule
             job => job.RunAsync(CancellationToken.None),
             leagueOptions.WeeklyRolloverCron,
             new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+        // Register re-engagement recurring jobs (P4-09-B3-2).
+        // StreakAtRiskJob: daily at 18:00 UTC — two passes (streak-at-risk + daily-mission-reminder).
+        // LapseWinBackJob: Sunday at 12:00 UTC — one-shot lapse window (LapseDays = 3, MaxAbsenceDays = 30).
+        // Both are idempotent across restarts via AddOrUpdate.
+        var reOptions = serviceProvider.GetRequiredService<IOptions<ReengagementOptions>>().Value;
+
+        recurringJobs.AddOrUpdate<StreakAtRiskJob>(
+            "gamification:streak-at-risk",
+            job => job.RunAsync(CancellationToken.None),
+            reOptions.StreakAtRiskCron,
+            new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+        recurringJobs.AddOrUpdate<LapseWinBackJob>(
+            "gamification:lapse-win-back",
+            job => job.RunAsync(CancellationToken.None),
+            reOptions.LapseWinBackCron,
+            new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
     }
 }

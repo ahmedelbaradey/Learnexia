@@ -5,6 +5,7 @@ using Learnexia.Modules.Identity.Domain.Entities;
 using Learnexia.Modules.Identity.Infrastructure.Persistence;
 using Learnexia.Modules.Identity.Infrastructure.Persistence.Seed;
 using Learnexia.Modules.Learning.Infrastructure.Persistence;
+using Learnexia.Modules.Notifications.Application.Abstractions;
 using Learnexia.Modules.Notifications.Infrastructure.Persistence;
 using Learnexia.Modules.Parent.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
@@ -77,6 +78,11 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
             // TestClock defaults to DateTime.UtcNow unless a test calls factory.TestClock.SetUtcNow().
             services.RemoveAll<ISystemClock>();
             services.AddSingleton<ISystemClock>(TestClock);
+
+            // P4-09 push sender seam: replace the real IPushSender (ExpoPushSender or LogPushSender)
+            // with a test recorder so integration tests can assert push dispatch without calling Expo.
+            services.RemoveAll<IPushSender>();
+            services.AddScoped<IPushSender>(_ => PushSender);
         });
 
         builder.ConfigureAppConfiguration((_, config) =>
@@ -155,6 +161,41 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
     }
 
     public TestSystemClock TestClock { get; } = new TestSystemClock();
+
+    // -------------------------------------------------------------------------
+    // P4-09 push sender seam: TestPushSender records send attempts so integration
+    // tests can assert dispatch without calling the real Expo API.
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Test double for <see cref="IPushSender"/>. Records every <c>SendAsync</c> call
+    /// (tokens, title, body, dataJson) so integration tests can assert push dispatch.
+    /// Call <see cref="Reset"/> before each test to clear recorded sends.
+    /// </summary>
+    public sealed class TestPushSenderImpl : IPushSender
+    {
+        public readonly List<(IReadOnlyList<string> Tokens, string Title, string Body, string? DataJson)> Calls = new();
+
+        public Task<PushSendResult> SendAsync(
+            IReadOnlyList<string> expoPushTokens,
+            string title,
+            string body,
+            string? dataJson,
+            CancellationToken ct = default)
+        {
+            Calls.Add((expoPushTokens, title, body, dataJson));
+            return Task.FromResult(new PushSendResult(Sent: expoPushTokens.Count, Failed: 0, InvalidTokens: []));
+        }
+
+        public void Reset() => Calls.Clear();
+        public int CallCount => Calls.Count;
+    }
+
+    /// <summary>
+    /// Shared singleton instance of the test push sender. Registered as Scoped in ConfigureServices
+    /// but the same object is referenced so tests can inspect it. Reset before each test.
+    /// </summary>
+    public TestPushSenderImpl PushSender { get; } = new TestPushSenderImpl();
 
     // -------------------------------------------------------------------------
     // Helpers

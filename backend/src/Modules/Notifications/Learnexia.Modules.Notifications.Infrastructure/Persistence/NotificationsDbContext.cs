@@ -13,6 +13,8 @@ public sealed class NotificationsDbContext(DbContextOptions<NotificationsDbConte
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<MessageRequest> MessageRequests => Set<MessageRequest>();
     public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
+    public DbSet<ChildReengagementPreference> ChildReengagementPreferences => Set<ChildReengagementPreference>();
+    public DbSet<UserDeviceToken> UserDeviceTokens => Set<UserDeviceToken>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));

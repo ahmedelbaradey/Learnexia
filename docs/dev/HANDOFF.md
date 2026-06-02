@@ -1,6 +1,6 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-06-02 (**P4-07 FE Batch 5 — dashboard LeaguePreview flip ready for committer. P4-06 — commit + PR ready. P4-05 merged via PR #77. P4-04 ready for committer. P4-03 merged via PR #75. FE: P2-09-FE merged via PR #74.**).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-06-02 (**P4-09 BE Batch 8 — re-engagement notifications + commit/PR ready. P4-07 FE Batch 5 — dashboard LeaguePreview flip ready for committer. P4-06 — commit + PR ready. P4-05 merged via PR #77. P4-04 ready for committer. P4-03 merged via PR #75. FE: P2-09-FE merged via PR #74.**).
 > Captures what's done, the decisions, the load-building config, and what's next. If you change any of these, update this file.
 
 ## P4-07 — Weekly leagues (FE Batch 5 — LeaguePreview dashboard flip, commit + PR ready)

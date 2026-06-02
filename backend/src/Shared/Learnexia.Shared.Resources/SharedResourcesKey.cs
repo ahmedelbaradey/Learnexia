@@ -788,5 +788,25 @@
         public const string LearningPathSubjectNotFound = "LearningPathSubjectNotFound";
         public const string LearningPathUnauthorized = "LearningPathUnauthorized";
 
+        // P4-09 Re-engagement notifications — parent prefs, device tokens, inbox
+        public const string ChildPreferencesRetrievedSuccessfully = "ChildPreferencesRetrievedSuccessfully";
+        public const string ChildPreferencesUpdatedSuccessfully = "ChildPreferencesUpdatedSuccessfully";
+        public const string NotAuthorizedForChild = "NotAuthorizedForChild";
+        public const string InvalidTimeZoneId = "InvalidTimeZoneId";
+        public const string InvalidDailyCapRange = "InvalidDailyCapRange";
+        public const string QuietHoursBothOrNeither = "QuietHoursBothOrNeither";
+        public const string QuietHoursStartEndMustDiffer = "QuietHoursStartEndMustDiffer";
+        public const string DeviceTokenRegisteredSuccessfully = "DeviceTokenRegisteredSuccessfully";
+        public const string DeviceTokenRevokedSuccessfully = "DeviceTokenRevokedSuccessfully";
+        public const string DeviceTokenNotFound = "DeviceTokenNotFound";
+        public const string DeviceTokenRequired = "DeviceTokenRequired";
+        public const string DevicePlatformInvalid = "DevicePlatformInvalid";
+        public const string InboxRetrievedSuccessfully = "InboxRetrievedSuccessfully";
+        public const string NotificationMarkedReadSuccessfully = "NotificationMarkedReadSuccessfully";
+        public const string AllNotificationsMarkedReadSuccessfully = "AllNotificationsMarkedReadSuccessfully";
+        public const string NotificationNotFound = "NotificationNotFound";
+        public const string NotificationAccessForbidden = "NotificationAccessForbidden";
+        public const string NotificationIdRequired = "NotificationIdRequired";
+
     }
 }

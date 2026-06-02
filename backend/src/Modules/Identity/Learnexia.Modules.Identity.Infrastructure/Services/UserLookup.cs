@@ -23,6 +23,6 @@ public sealed class UserLookup : IUserLookup
         if (user is null)
             return null;
 
-        return new UserSummary(user.Id, user.UserName ?? string.Empty, user.Email ?? string.Empty);
+        return new UserSummary(user.Id, user.UserName ?? string.Empty, user.Email ?? string.Empty, user.PreferredLanguage);
     }
 }

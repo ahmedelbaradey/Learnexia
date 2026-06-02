@@ -21,4 +21,13 @@ public sealed class ParentChildQuery : IParentChildQuery
 
     public Task<bool> ParentHasAnyChildAsync(int parentId, CancellationToken ct = default)
         => _dbContext.ParentStudents.AnyAsync(ps => ps.ParentId == parentId, ct);
+
+    public Task<bool> IsParentOfChildAsync(int parentId, int childId, CancellationToken ct = default)
+        => _dbContext.ParentStudents.AnyAsync(ps => ps.ParentId == parentId && ps.StudentId == childId, ct);
+
+    public Task<int?> FindParentForChildAsync(int childId, CancellationToken ct = default)
+        => _dbContext.ParentStudents
+            .Where(ps => ps.StudentId == childId)
+            .Select(ps => (int?)ps.ParentId)
+            .FirstOrDefaultAsync(ct);
 }
