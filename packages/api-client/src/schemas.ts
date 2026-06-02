@@ -20,11 +20,13 @@
  */
 
 export type {
-  // W13 dashboard types (P2-09-FE)
+  // W13 dashboard types (P2-09-FE); P4-05/P4-06/P4-07 fields patched manually.
+  // NOTE: DailyMissionDto (singular, stale P2-09 placeholder) was removed in P4-05 patch.
   DashboardDto,
   DashboardDtoBaseResponse,
   ContinueTargetDto,
-  DailyMissionDto,
+  DashboardBadgeSummary,
+  DashboardMissionSummary,
   LeaguePreviewDto,
   // W12 quiz + lesson types
   SingleLessonResponse,

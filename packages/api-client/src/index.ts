@@ -33,3 +33,22 @@ export * from './hooks';
 
 // Generated DTO aliases.
 export * from './schemas';
+
+// P4-08 — Hand-written Gamification DTOs (pending NSwag regen on dev machine).
+export type {
+  StudentProfileDto,
+  BadgeRarity,
+  BadgeTriggerType,
+  BadgeStateDto,
+  MyBadgesResponse,
+  MissionCadence,
+  MissionStatus,
+  MissionTargetType,
+  MissionStateDto,
+  MyMissionsResponse,
+  LeagueTier,
+  LeagueStandingDto,
+  MyLeagueResponse,
+  BadgeSummary,
+  MissionSummary,
+} from './manual/gamification';

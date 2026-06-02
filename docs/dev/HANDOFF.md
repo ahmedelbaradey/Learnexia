@@ -1,7 +1,97 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-06-02 (**P4-07 FE Batch 5 — dashboard LeaguePreview flip ready for committer. P4-06 — commit + PR ready. P4-05 merged via PR #77. P4-04 ready for committer. P4-03 merged via PR #75. FE: P2-09-FE merged via PR #74.**).
-> Captures what's done, the decisions, the load-building config, and what's next. If you change any of these, update this file.
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-06-02 (**P4-08 — WIP checkpoint pushed for FE-lead pickup (Batch 0 api-client + Designer spec + Batch 1 motion infra DONE; Batches 2–6 OPEN). Phase 3 BE engines all merged through P4-07 (#73/#75/#76/#77/#78/#79). Backend lead now drives P4-09 (notifications) → P4-10 (Redis) → P4-11 (streak freeze) next; frontend lead picks up `feat/P4-08-gamification-screens-motion` to finish P4-08; separate FE lead remains on Phase 1 web app surface.**).
+> Captures what's done, the decisions, the load-bearing config, and what's next. If you change any of these, update this file.
+
+## ⚠️ Read first — lane split going forward (set 2026-06-02)
+
+- **Backend lead (this session's continuation)** owns: P4-09 (re-engagement notifications), P4-10 (Redis realtime gamification state), P4-11 (streak freeze + timed events). Cuts new branches off `main`; does NOT touch `feat/P4-08-gamification-screens-motion`.
+- **Frontend lead (gamification UI)** owns: P4-08 the rest of the way. Pulls `feat/P4-08-gamification-screens-motion`, continues from Batch 2 (see § P4-08 WIP CHECKPOINT below).
+- **Frontend lead (Phase 1 web)** continues on whatever Phase-1 web surface branch they're on. No overlap with the P4-08 branch.
+
+## P4-08 — Gamification screens & motion (WIP CHECKPOINT — FE lead pickup)
+
+**Branch:** `feat/P4-08-gamification-screens-motion` (pushed to origin, NO PR opened — it's WIP). Pull this branch to continue.
+
+**Status: PIPELINE PAUSED at end of Batch 1.** The pipeline is FE-only (no BE work). 3 of 9 batches complete; 6 batches + reviewer + committer remain.
+
+### What's DONE on the branch (committed)
+
+#### Pre-pipeline: analyzer + planner + designer
+- `docs/briefs/P4-08.md` — full Pipeline Brief.
+- `docs/plans/P4-08.md` — Execution Plan with 9 batches in dependency order + top-3 risks.
+- `design-system/ui_kits/student-mobile/P4-08.md` — **comprehensive Design Spec** covering all 5 surfaces (badges route, missions route, league route, RewardOverlay, PracticeModeBanner + HeartsDepletedSheet) + 7 motion sequences (M1 XP bar fill, M2 Badge pop-in, M3 Confetti, M4 QuestionCard shake, M5 StreakFlame ignite, M6 Heart shatter, M7 Promotion sheet). Spec includes token usage table, ~88 EN+AR i18n keys, RTL strategy, reduce-motion strategy, and 6 flagged token gaps (with literal fallbacks). **This spec is the source of truth for the remaining batches — read it before starting Batch 2a.**
+
+#### Batch 0 — api-client manual hooks + DTOs (FE-0)
+The CI shell has no `pnpm` / nswag runtime per HANDOFF history, so the api-client was NOT regenerated. Instead, hand-written types live in `packages/api-client/src/manual/gamification.ts` with field shapes verified against the actual BE DTO files. Key discrepancies the agent caught vs the plan:
+- `StudentProfileDto` has `xpIntoCurrentLevel` (plan didn't list it).
+- `BadgeStateDto` has `iconKey`, `triggerType`, `threshold`, `rewardXp` — NOT `name`/`description`/`sortOrder` (plan was wrong; BE wins).
+- `MyMissionsResponse.weekly` is `IReadOnlyList<MissionStateDto>` (a list), NOT a single nullable.
+- `MyLeagueResponse` has `PromotionCutoffRank` + `DemotionCutoffRank` (BE shipped them; analyzer suspected; confirmed).
+
+New files: `packages/api-client/src/manual/gamification.ts`, 4 hooks (`useGetMyProfile`, `useGetMyBadges`, `useGetMyMissions`, `useGetMyLeague`).
+
+Modified `packages/api-client/src/generated/nswag-client.ts`: removed stale `DailyMissionDto` (singular) + `dailyMission` field; added `badgesCount`, `recentBadges`, `dailyMissions`, `weeklyMission` to `DashboardDto`; added `DashboardBadgeSummary` + `DashboardMissionSummary` interfaces. Also updated `generated/index.ts`, `schemas.ts`, `query/queryKeys.ts`, `hooks/index.ts`, `index.ts` barrel.
+
+**Carry-forward for FE lead:** schedule a proper `pnpm gen:api` run on a dev machine against `GET /swagger/v1/swagger.json` to replace `manual/gamification.ts` with NSwag-generated code in a follow-up PR.
+
+#### Batch 1 — Motion infrastructure (FE-7)
+The three foundations every motion-using screen depends on. All three lazy-load their peer deps and gracefully fall back when unavailable (web SSR, Skia missing, reduce-motion).
+
+- **`packages/ui/src/internal/ConfettiLayer.tsx`** — Real Skia particle system replaces the prior stub. Props `{ active, paletteVariant?, onComplete? }`. 5 palette variants (multicolor / rare / epic / legendary / levelup) from `@learnexia/design-system` tokens. Physics: `PARTICLE_COUNT = 40` on Android / `60` on iOS+web, `LIFETIME_MS = 2000`, `GRAVITY = 980 px/s²`, opacity fade 1→0 over last 500ms. Animation loop via `requestAnimationFrame` (works on RN + web). Two-component architecture (outer guard + inner `SkiaCanvas`) — hooks always called before any conditional returns. Lazy-loads Skia via existing `tryLoadSkia()`; returns null if unavailable. Respects `useReduceMotion()` — returns null if true. `CONFETTI_COLORS` re-exported as backward-compat alias used by existing `RewardPopup` (which was updated to pass `active={visible}` + `paletteVariant`).
+- **`packages/ui/src/hooks/useDashboardDiff.ts`** — Detects reward transitions on `useDashboard()` data. **CRITICAL invariant (R3 from plan)**: `prevRef` starts `undefined`, returns `ZERO_DIFF` on cold start, NEVER fires the celebration cascade on first load even if `data.totalXp = 1000`. Returns `{ xpDelta, levelDelta, streakDelta, heartsDelta, newBadges[], completedMissions[], tierChange | null, enteredPracticeMode, exitedPracticeMode }`. Structural `DashboardLike` input type (decoupled from api-client for testability). Helper fns `diffNewCodes` + `diffCompletedMissions` exported `@internal` for unit testing.
+- **`packages/ui/src/hooks/useReduceMotion.ts`** — Cross-platform reduce-motion hook. Native: wraps Reanimated 3's `useReducedMotion()`. Web: reads `window.matchMedia('(prefers-reduced-motion: reduce)')` and subscribes to changes. Platform selection at module-load time — Rules of Hooks satisfied.
+- **`packages/ui/src/hooks/useDashboardDiff.test.ts`** — Pure-logic unit tests for the helper fns + ZERO_DIFF shape. Runnable with `npx ts-node packages/ui/src/hooks/useDashboardDiff.test.ts`. Hook-level test (requires jest + @testing-library/react) is documented as commented-out spec ready to activate when test infra is in place.
+- `packages/ui/src/index.ts` — barrel exports extended (ConfettiLayer + value/type, useDashboardDiff + ZERO_DIFF + types, useReduceMotion).
+
+### What's NOT DONE (FE lead picks up here)
+
+Per `docs/plans/P4-08.md` batch order, the FE lead's remaining work in dependency order:
+
+**Batch 2a–2f (6 parallel-safe sub-batches after Batch 1 — same agent or split across agents; serialize the shared-file edits to `packages/ui/src/index.ts` + `packages/shared/src/i18n/resources.ts`):**
+- **FE-1**: `RewardOverlay` primitive + dashboard mount + XP fill (M1) wiring driven by `useDashboardDiff`. Mounts `ConfettiLayer` with palette by reward type. Single combined celebration card (lead-locked decision Q2).
+- **FE-2**: `/(child)/badges` route + `BadgeRarityStrip` primitive + locked/earned tooltip modal. Per Design Spec Surface 1.
+- **FE-3**: `/(child)/league` route + `LeagueTierBanner` + `LeagueStandingRow` + `LeaguePromotionSheet` (M7). Promotion cutline at rank 7, relegation cutline before rank 26. Per Design Spec Surface 3.
+- **FE-4**: `/(child)/missions` route + `MissionTotalRewardCard` + `MissionStatusPill` + mount existing `MissionBanner` on dashboard (it was built but never mounted). Per Design Spec Surface 2.
+- **FE-5**: `PracticeModeBanner` on dashboard + lesson player + `HeartsDepletedSheet` triggered by `useDashboardDiff` heart 1→0 transition. M4 QuestionCard shake (Reanimated `withSequence`) + M6 Heart shatter (Reanimated rotate + optional Skia shards). Per Design Spec Surface 5.
+- **FE-6**: M5 StreakFlame ignite (Moti spring scale + glow flash) on `streakDelta > 0`. Wire into existing `StreakFlame` component.
+
+**Batch 3 — Route registration in `_layout.tsx`** (SERIALIZE — shared file edit). Register the 3 new routes (`/badges`, `/missions`, `/league`). Add nav entry points from the dashboard (tap badge count → `/badges`; tap missions card → `/missions`; tap LeaguePreviewRow → `/league`).
+
+**Batch 4 — a11y + RTL + i18n EN/AR audit + reduce-motion verification across all 7 animation entry points** (FE-8 task per plan). Adds ~88 EN+AR i18n keys per Design Spec. Tablet `maxWidth: 720` enforcement.
+
+**Batch 5 — reviewer gate.** Formal AC1–AC4 gate against the design spec + screen captures.
+
+**Batch 6 — committer.** Standard committer flow: HANDOFF update + commit + PR.
+
+### Key risks for FE lead
+
+- **R1 (Medium)** — `manual/gamification.ts` type drift if BE adds DTO fields. Mitigation: annotate each type with link to BE source; smoke-test endpoints in browser network tab before declaring screen done.
+- **R2 (Medium)** — Skia confetti performance on low-end Android. Mitigation: particle cap baked into `ConfettiLayer` (40 Android / 60 iOS+web); sequence animations (don't fire shake + shatter + confetti concurrently).
+- **R3 (High, MITIGATED in Batch 1)** — `useDashboardDiff` cold-start false positive. Strict invariant: prior ref starts `undefined`, returns ZERO_DIFF when prior undefined. **Verified in the committed unit test.** FE lead: do NOT change this invariant.
+
+### Open token gaps (literal fallbacks in spec)
+
+Per Design Spec §6: 6 token gaps. Use the literal fallbacks the spec provides, flag in PR description for design-system follow-up:
+1. `gradients.tierBronze/Silver/Gold/Diamond` — literal CSS.
+2. `gradients.avatarFire` — literal CSS.
+3. `$warningSoftStrong` (rgba alpha 0.28) — inline fallback.
+4. `$dangerSoftXp` (rgba alpha 0.13) — use `$dangerSoft` (0.18).
+5. `$borderOverlay` (rgba(255,255,255,0.12)) — promote from `RewardPopup` inline.
+6. `durations.slowAnimated` = 600ms for M1 XPBar — current `slow` is 400ms.
+
+### Carry-forward for design-system / BE
+
+- BE should expose `nextRefillAtUtc` on `DashboardDto` (currently only `Hearts` + `InPracticeMode`) so `HeartsDepletedSheet` can show the countdown without an extra round-trip. Backend lead: small follow-up to `IStudentHeartsQuery` snapshot.
+- AR twin screenshot `mobile-ar/14-mission-completed.png` is missing in `design-system/screenshots/`. Spec uses the EN screenshot for both directions; FE lead may want to flag for design-system follow-up.
+
+### When the FE lead opens the PR
+
+PR title: `feat(gamification): P4-08 gamification screens & motion`. Body should describe the surfaces shipped + cite the design spec. Don't split this branch into multiple smaller PRs — the design spec wires everything together.
+
+---
+
+
 
 ## P4-07 — Weekly leagues (FE Batch 5 — LeaguePreview dashboard flip, commit + PR ready)
 

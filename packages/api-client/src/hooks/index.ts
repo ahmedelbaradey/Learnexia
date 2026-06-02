@@ -52,6 +52,12 @@ export { useSubjectSkillTree } from './useSubjectSkillTree';
 // --- W13 dashboard hook (P2-09-FE) ---
 export { useDashboard } from './useDashboard';
 
+// --- P4-08 Gamification hooks (hand-written — NSwag regen follow-up pending) ---
+export { useGetMyProfile } from './useGetMyProfile';
+export { useGetMyBadges } from './useGetMyBadges';
+export { useGetMyMissions } from './useGetMyMissions';
+export { useGetMyLeague } from './useGetMyLeague';
+
 // --- W12 quiz hooks (P2-05-FE + P2-06-FE + P2-07-FE) ---
 export { useLesson } from './useLesson';
 export { useStartAttempt } from './useStartAttempt';

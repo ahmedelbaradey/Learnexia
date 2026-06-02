@@ -82,11 +82,13 @@ export type {
   AttemptSummaryDto,
   AttemptSummaryDtoBaseResponse,
   QuizQuestionDto,
-  // W13 — dashboard types (P2-09-FE)
+  // W13 — dashboard types (P2-09-FE); P4-05/P4-06/P4-07 fields patched manually.
+  // DailyMissionDto (singular, stale P2-09 placeholder) removed in P4-05 patch.
   DashboardDto,
   DashboardDtoBaseResponse,
   ContinueTargetDto,
-  DailyMissionDto,
+  DashboardBadgeSummary,
+  DashboardMissionSummary,
   LeaguePreviewDto,
 } from './nswag-client';
 

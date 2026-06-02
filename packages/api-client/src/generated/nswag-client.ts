@@ -6495,16 +6495,23 @@ export interface CurrentPlanResponseBaseResponse {
     errors?: any[] | undefined;
 }
 
-export interface DailyMissionDto {
-    type?: string | undefined;
-    target?: number | undefined;
-    progress?: number | undefined;
-}
-
+/**
+ * DashboardDto — GET /api/Learning/Dashboard response payload.
+ *
+ * Fields are added incrementally across Phase-3 stories. This interface
+ * is manually patched because NSwag regen tooling is unavailable in the CI shell.
+ * Run `pnpm gen:api` on a dev machine to replace with generated code.
+ *
+ * P4-02: level field added.
+ * P4-04: hearts + inPracticeMode fields added.
+ * P4-05: badgesCount + recentBadges fields added.
+ *        DailyMissionDto (singular, stale P2-09 placeholder) REMOVED.
+ * P4-06: dailyMissions (plural list) + weeklyMission fields added.
+ * P4-07: leaguePreview remains (was already present from nswag run).
+ */
 export interface DashboardDto {
     xp?: number;
     streak?: number;
-    dailyMission?: DailyMissionDto;
     leaguePreview?: LeaguePreviewDto;
     continue?: ContinueTargetDto;
     /** P4-02: XP level computed via LevelCurve; default 1 for new students. */
@@ -6513,6 +6520,44 @@ export interface DashboardDto {
     hearts?: number;
     /** P4-04: true when hearts == 0 (practice mode — wrong answers cost no hearts). */
     inPracticeMode?: boolean;
+    /** P4-05: total number of badges earned by the student. */
+    badgesCount?: number;
+    /** P4-05: top 3 most recently earned badges (AwardedAtUtc DESC). Empty array when none earned. */
+    recentBadges?: DashboardBadgeSummary[];
+    /** P4-06: all daily mission instances for the current period. Empty array for brand-new students. */
+    dailyMissions?: DashboardMissionSummary[];
+    /** P4-06: the first weekly mission for the current period. Null for brand-new students. */
+    weeklyMission?: DashboardMissionSummary | undefined;
+}
+
+/**
+ * Summary of a single earned badge in the dashboard recent-badges strip (P4-05).
+ * Source: BadgeSummary in Learnexia.Shared.Contracts.Gamification.
+ * Mirrored here (rather than importing from manual/) to keep nswag-client.ts self-contained
+ * for the generated-client toolchain.
+ */
+export interface DashboardBadgeSummary {
+    code?: string | undefined;
+    iconKey?: string | undefined;
+    rarity?: string | undefined;
+    awardedAtUtc?: string | undefined;
+}
+
+/**
+ * Summary of a single mission instance in the dashboard preview strip (P4-06).
+ * Source: MissionSummary in Learnexia.Shared.Contracts.Gamification.
+ * Smaller than the full MissionStateDto — no period boundaries or rewardXp.
+ * Mirrored here for self-contained nswag compatibility.
+ */
+export interface DashboardMissionSummary {
+    code?: string | undefined;
+    iconKey?: string | undefined;
+    titleKey?: string | undefined;
+    targetType?: string | undefined;
+    progress?: number | undefined;
+    target?: number | undefined;
+    status?: string | undefined;
+    completedAtUtc?: string | undefined;
 }
 
 export interface DashboardDtoBaseResponse {
