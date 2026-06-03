@@ -9,14 +9,12 @@ namespace Learnexia.IntegrationTests;
 /// <summary>
 /// Smoke / regression tests that gate P4-01 Batch 3.
 ///
-/// Tests validate three things after the Batch-2 MediatR rewire (single AddCrossModuleMediatR)
+/// Tests validate two things after the Batch-2 MediatR rewire (single AddCrossModuleMediatR)
 /// and the new Identity UnitOfWorkBehavior:
 ///
 ///   1. AppBoots     — the host builds and DI resolves (broken registration → startup exception).
 ///   2. SignIn       — POST /api/Users/Authentication/Sign-In with the seeded superadmin succeeds
 ///                     end-to-end through the new UnitOfWorkBehavior (the prime regression suspect).
-///   3. CatalogList  — GET /api/Catalog/Products/List returns 200 with the BaseResponse/
-///                     PaginatedResult envelope, proving cross-module handler resolution.
 /// </summary>
 [Collection("IntegrationTests")]
 public sealed class P4_01_Batch2_SmokeTests : IAsyncLifetime
@@ -91,67 +89,6 @@ public sealed class P4_01_Batch2_SmokeTests : IAsyncLifetime
             "'data.accessToken' must be present in the JwtAuthResponse payload");
         tokenProp.GetString().Should().NotBeNullOrWhiteSpace(
             "AccessToken must be a non-empty JWT string");
-    }
-
-    // =========================================================================
-    // Test 3: Catalog list — cross-module handler resolution after MediatR rewire
-    // P1-05 RBAC: Catalog reads now require authentication (any role). Attach the
-    // superadmin bearer token obtained in T2 by re-running sign-in here.
-    // =========================================================================
-    [Fact(DisplayName = "T3 CatalogList: GET /api/Catalog/Products/List returns 200 with BaseResponse envelope")]
-    public async Task T3_CatalogList_Returns200_WithPaginatedEnvelope()
-    {
-        // P1-05: Catalog reads are now gated behind [Authorize]. Mint a superadmin token so the
-        // request is authenticated — any authenticated role is permitted for read endpoints.
-        var signInBody = new { UserName = "superadmin", Password = "123Pa$$word!" };
-        var signInResp = await _client.PostAsJsonAsync("/api/Users/Authentication/Sign-In", signInBody);
-        signInResp.StatusCode.Should().Be(HttpStatusCode.OK,
-            "prerequisite: superadmin sign-in must succeed; T3 requires an authenticated client; " +
-            "HTTP {0} indicates a seed/startup problem: {1}",
-            (int)signInResp.StatusCode,
-            await signInResp.Content.ReadAsStringAsync());
-
-        var signInContent = await signInResp.Content.ReadAsStringAsync();
-        var signInDoc = JsonDocument.Parse(signInContent);
-        var accessToken = signInDoc.RootElement
-            .GetProperty("data")
-            .GetProperty("accessToken")
-            .GetString();
-        accessToken.Should().NotBeNullOrWhiteSpace("superadmin sign-in must return a valid JWT; T3 needs it for auth");
-
-        // Act — attach the bearer token (P1-05 RBAC: authenticated reads now required)
-        using var request = new System.Net.Http.HttpRequestMessage(
-            System.Net.Http.HttpMethod.Get, "/api/Catalog/Products/List?pageNumber=1&pageSize=10");
-        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
-        var response = await _client.SendAsync(request);
-
-        // Assert — HTTP 200
-        response.StatusCode.Should().Be(HttpStatusCode.OK,
-            "catalog product list must return HTTP 200; 500 signals unresolved cross-module MediatR handler");
-
-        var content = await response.Content.ReadAsStringAsync();
-        var doc = JsonDocument.Parse(content);
-        var root = doc.RootElement;
-
-        // BaseResponse envelope keys
-        root.TryGetProperty("successed", out var succeededProp).Should().BeTrue(
-            "response must contain 'successed' envelope key; body: {0}", content);
-        succeededProp.GetBoolean().Should().BeTrue(
-            "successed must be true; actual body: {0}", content);
-
-        // The handler returns BaseResponse<PaginatedResult<T>>, so the pagination keys live
-        // inside the 'data' object (not at the root).
-        root.TryGetProperty("data", out var dataProp).Should().BeTrue(
-            "response must contain 'data' key; body: {0}", content);
-
-        dataProp.TryGetProperty("currentPage", out _).Should().BeTrue(
-            "paged response data must include 'currentPage'; body: {0}", content);
-        dataProp.TryGetProperty("totalCount", out _).Should().BeTrue(
-            "paged response data must include 'totalCount'; body: {0}", content);
-        dataProp.TryGetProperty("totalPages", out _).Should().BeTrue(
-            "paged response data must include 'totalPages'; body: {0}", content);
-        dataProp.TryGetProperty("pageSize", out _).Should().BeTrue(
-            "paged response data must include 'pageSize'; body: {0}", content);
     }
 }
 

@@ -12,7 +12,7 @@ Private Claude/session memory does **not** travel with the repo, and one lead's 
 - **Backend:** [backend/](backend/) — `Learnexia.Modular.sln` (.NET 10 modular monolith). *(The legacy clean-architecture solution that previously sat here has been removed; this is the only backend.)*
 - **Stack:** **.NET 10**, ASP.NET Core, **modular monolith**, MediatR CQRS, FluentValidation, AutoMapper, ASP.NET Identity + JWT.
 - **Database:** **PostgreSQL** via `UseNpgsql` (Npgsql), DB `Learnexia`, schema-per-module. **NOT SQL Server** — ignore any stale "SQL Server" wording.
-- **Reference module:** **Catalog** is the canonical implementation. Mirror it for any new backend work.
+- **Reference module:** mirror an existing module's structure (e.g. **Learning**) for any new backend work.
 - **Frontend:** not started yet. **Turborepo monorepo** — Expo universal student app (web PWA + native), Tamagui, TanStack Query + Zustand; Next.js admin/marketing later. See [docs/dev/FRONTEND_ARCHITECTURE.md](docs/dev/FRONTEND_ARCHITECTURE.md). Design tokens/kit in [design-system/](design-system/).
 
 ## Work intake (source of truth for what to build)
@@ -44,7 +44,7 @@ Private Claude/session memory does **not** travel with the repo, and one lead's 
 5. **Logging** — inject `ILoggerManager`, not `ILogger<T>`. Don't add a second logger registration.
 6. **Auth** — permission policies (`{Module}.{Action}`) exist but aren't enforced; add `[Authorize(policy)]` deliberately.
 7. **No teacher role** in the product.
-8. **Design patterns — ask first.** Default to mirroring existing shapes (Catalog on backend, the decided architecture + existing component/hook shapes on frontend); do not invent abstractions. If a task genuinely calls for a design pattern (Strategy, Factory, Decorator, provider/compound-component, etc.), **stop and ask the lead/user before implementing it** — name the pattern, where it applies, and why. Wait for approval; never introduce one unilaterally. This applies to both backend and frontend agents.
+8. **Design patterns — ask first.** Default to mirroring existing shapes (existing modules on backend, the decided architecture + existing component/hook shapes on frontend); do not invent abstractions. If a task genuinely calls for a design pattern (Strategy, Factory, Decorator, provider/compound-component, etc.), **stop and ask the lead/user before implementing it** — name the pattern, where it applies, and why. Wait for approval; never introduce one unilaterally. This applies to both backend and frontend agents.
 
 ## Multi-agent workflow
 Specialized agents live in [.claude/agents/](.claude/agents/): `analyzer`, `planner`, `designer`, `db-migration`, `backend-feature`, `api-tester`, `frontend`, `security-auditor`, `reviewer`, `committer`.

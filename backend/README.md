@@ -12,7 +12,6 @@ Sibling rewrite of `backend/` as a **Modular Monolith** with:
 | Module | Responsibility |
 | --- | --- |
 | `Identity` | Authentication (JWT, refresh tokens), authorization, users, audit history, user sessions |
-| `Catalog` | Products, categories |
 | `Notifications` | Notifications, message requests, notification types/modules. Subscribes to integration events from other modules. |
 
 ## Shared projects
@@ -28,7 +27,6 @@ Sibling rewrite of `backend/` as a **Modular Monolith** with:
 Single physical database, **schema-per-module**, separate `DbContext` per module:
 
 - `identity.*` — `IdentityDbContext`
-- `catalog.*` — `CatalogDbContext`
 - `notifications.*` — `NotificationsDbContext`
 
 ## Layout

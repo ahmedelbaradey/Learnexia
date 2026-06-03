@@ -1,4 +1,3 @@
-using Learnexia.Modules.Catalog.Infrastructure.Persistence;
 using Learnexia.Modules.Gamification.Infrastructure.Persistence;
 using Learnexia.Modules.Identity.Api;
 using Learnexia.Modules.Identity.Domain.Entities;
@@ -53,7 +52,6 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
             var connectionString = _postgres.GetConnectionString();
 
             ReplaceDbContext<IdentityModuleDbContext>(services, connectionString, "identity");
-            ReplaceDbContext<CatalogDbContext>(services, connectionString, "catalog");
             ReplaceDbContext<NotificationsDbContext>(services, connectionString, "notifications");
             ReplaceDbContext<LearningDbContext>(services, connectionString, "learning");
             ReplaceDbContext<ParentDbContext>(services, connectionString, "parent");
@@ -103,9 +101,6 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
 
         var identityDb = sp.GetRequiredService<IdentityModuleDbContext>();
         await identityDb.Database.MigrateAsync();
-
-        var catalogDb = sp.GetRequiredService<CatalogDbContext>();
-        await catalogDb.Database.MigrateAsync();
 
         // Notifications: 20260521111622_InitialNotifications migration creates the notifications schema/tables.
         var notificationsDb = sp.GetRequiredService<NotificationsDbContext>();
