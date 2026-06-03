@@ -20,4 +20,11 @@ public static class GamificationCacheKeys
         => $"{Prefix}:student:{studentId}:league:{periodKey}";
     public static string LeaderboardSortedSet(int leagueId)
         => $"{Prefix}:league:{leagueId}:standings";
+
+    /// <summary>
+    /// Global cache key for the active timed-events list. Not per-student — events are global.
+    /// Invalidated by <c>TimedEventStartedCacheInvalidator</c> and
+    /// <c>TimedEventEndedCacheInvalidator</c>. P4-11-B1-B.
+    /// </summary>
+    public static string ActiveTimedEvents() => $"{Prefix}:timed_events:active";
 }

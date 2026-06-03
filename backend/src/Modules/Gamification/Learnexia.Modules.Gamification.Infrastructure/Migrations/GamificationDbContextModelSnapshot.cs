@@ -552,6 +552,11 @@ namespace Learnexia.Modules.Gamification.Infrastructure.Migrations
                     b.Property<int?>("DeletedBy")
                         .HasColumnType("integer");
 
+                    b.Property<int>("FreezeBalance")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
                     b.Property<int>("Hearts")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -595,7 +600,102 @@ namespace Learnexia.Modules.Gamification.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("UX_StudentXpProfiles_StudentId");
 
-                    b.ToTable("StudentXpProfiles", "gamification");
+                    b.ToTable("StudentXpProfiles", "gamification", t =>
+                        {
+                            t.HasCheckConstraint("CK_StudentXpProfiles_FreezeBalance", "\"FreezeBalance\" >= 0 AND \"FreezeBalance\" <= 2");
+                        });
+                });
+
+            modelBuilder.Entity("Learnexia.Modules.Gamification.Domain.Entities.TimedEvent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("DescriptionAr")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<string>("DescriptionEn")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<DateTime>("EndUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool?>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<decimal>("Multiplier")
+                        .HasColumnType("numeric(4,2)");
+
+                    b.Property<string>("NameAr")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("NameEn")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<int>("Scope")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("StartUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("UX_TimedEvents_Code");
+
+                    b.HasIndex("IsActive", "StartUtc")
+                        .HasDatabaseName("IX_TimedEvents_IsActive_StartUtc");
+
+                    b.HasIndex("StartUtc", "EndUtc")
+                        .HasDatabaseName("IX_TimedEvents_StartUtc_EndUtc");
+
+                    b.ToTable("TimedEvents", "gamification", t =>
+                        {
+                            t.HasCheckConstraint("CK_TimedEvents_DateRange", "\"StartUtc\" < \"EndUtc\"");
+
+                            t.HasCheckConstraint("CK_TimedEvents_Multiplier", "\"Multiplier\" >= 1.0 AND \"Multiplier\" <= 5.0");
+                        });
                 });
 
             modelBuilder.Entity("Learnexia.Modules.Gamification.Domain.Entities.XpAward", b =>

@@ -1,6 +1,7 @@
 using Learnexia.Modules.Gamification.Application.Abstractions;
 using Learnexia.Modules.Gamification.Application.Common;
 using Learnexia.Modules.Gamification.Application.Configuration;
+using Learnexia.Modules.Gamification.Application.Features.Events.Boost;
 using Learnexia.Modules.Gamification.Domain.Entities;
 using Learnexia.Modules.Gamification.Domain.Enums;
 using Learnexia.Modules.Gamification.Domain.Services;
@@ -39,17 +40,20 @@ public class AwardLessonCompletedXpCommandHandler
     private readonly IOptions<HeartsOptions> _heartsOptions;
     private readonly ISystemClock _clock;
     private readonly ILoggerManager _logger;
+    private readonly IXpBoostCalculator _boostCalc;
 
     public AwardLessonCompletedXpCommandHandler(
         IGamificationRepository repo,
         IOptions<HeartsOptions> heartsOptions,
         ISystemClock clock,
-        ILoggerManager logger)
+        ILoggerManager logger,
+        IXpBoostCalculator boostCalc)
     {
         _repo = repo;
         _heartsOptions = heartsOptions;
         _clock = clock;
         _logger = logger;
+        _boostCalc = boostCalc;
     }
 
     public async Task<BaseResponse<Unit>> Handle(
@@ -93,7 +97,12 @@ public class AwardLessonCompletedXpCommandHandler
 
             // ─────────────────────────────────────────────────────────────────────────────────
 
-            int lessonAmount = GamificationConstants.XpRewards.LessonComplete;
+            int lessonAmount = await _boostCalc.GetEffectiveAmountAsync(
+                GamificationConstants.XpRewards.LessonComplete,
+                XpReason.LessonCompleted,
+                request.OccurredAtUtc,
+                cancellationToken);
+
             var lessonAward = XpAward.Create(
                 profile: profile,
                 reason: XpReason.LessonCompleted,
@@ -126,7 +135,12 @@ public class AwardLessonCompletedXpCommandHandler
                 }
                 else
                 {
-                    int quizAmount = GamificationConstants.XpRewards.QuizPass;
+                    int quizAmount = await _boostCalc.GetEffectiveAmountAsync(
+                        GamificationConstants.XpRewards.QuizPass,
+                        XpReason.QuizCompleted,
+                        request.OccurredAtUtc,
+                        cancellationToken);
+
                     var quizAward = XpAward.Create(
                         profile: profile,
                         reason: XpReason.QuizCompleted,

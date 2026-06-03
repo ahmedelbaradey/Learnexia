@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Learnexia.Modules.Gamification.Infrastructure.Persistence.Seed;
 
 /// <summary>
-/// Idempotent upsert of the mission definition catalog (8 rows: 5 daily + 3 weekly).
+/// Idempotent upsert of the mission definition catalog (11 rows: 5 daily + 3 weekly + 3 weekly challenges).
 /// Runs in ALL environments (missions are product-as-code catalog, not demo data — same
 /// convention as <c>BadgeSeeder</c>). Registered as Scoped via <c>AddGamificationInfrastructure</c>;
 /// wired into <c>GamificationModule.InitializeAsync</c> in Batch 4.
@@ -15,6 +15,11 @@ namespace Learnexia.Modules.Gamification.Infrastructure.Persistence.Seed;
 /// Idempotency: checks by <see cref="MissionDefinition.Code"/>. Inserts missing rows; drift-corrects
 /// changed metadata (IconKey / TitleKey / Cadence / TargetType / Target / RewardXp / SortOrder) via
 /// <see cref="MissionDefinition.UpdateMetadata"/>. Code is immutable once seeded.
+///
+/// P4-11 Batch 1-C: Three weekly challenge rows (CHALLENGE_* prefix) appended after the WEEKLY_* rows.
+/// These reuse <see cref="MissionType.Weekly"/> cadence so the existing <c>MissionRolloverJob</c>
+/// (cron "10 0 * * 1") and <c>IncrementMissionProgressCommandHandler</c> pick them up automatically.
+/// FE differentiates challenge rows from classic weekly rows via <c>Code.StartsWith("CHALLENGE_")</c>.
 ///
 /// System user id convention: 0 (same as <c>BadgeSeeder.SystemUserId</c> and <c>LearningSeeder.SystemUserId</c>).
 /// </summary>
@@ -42,6 +47,14 @@ public sealed class MissionSeeder
             ("WEEKLY_15_LESSONS",    "icon.mission.weekly_15_lessons",    "mission.weekly_15_lessons.title",    MissionType.Weekly, MissionTargetType.CompleteLessons, 15, 150, 110),
             ("WEEKLY_75_CORRECT",    "icon.mission.weekly_75_correct",    "mission.weekly_75_correct.title",    MissionType.Weekly, MissionTargetType.CorrectAnswers,  75, 150, 120),
             ("WEEKLY_5_DAY_STREAK",  "icon.mission.weekly_5_day_streak",  "mission.weekly_5_day_streak.title",  MissionType.Weekly, MissionTargetType.MaintainStreak,   5, 200, 130),
+
+            // ── P4-11 Batch 1-C: weekly challenge rows (CHALLENGE_* prefix) ──────────────
+            // Higher RewardXp (300-500) signals "challenge" tier vs regular weekly (150-200).
+            // MissionType.Weekly reused (Q3=reuse lock) so the rollover job + progress engine
+            // picks them up with zero code change. FE discriminates by Code prefix.
+            ("CHALLENGE_25_LESSONS_WEEK", "icon.mission.challenge_lessons", "mission.challenge_25_lessons.title", MissionType.Weekly, MissionTargetType.CompleteLessons, 25, 500, 140),
+            ("CHALLENGE_100_CORRECT_WEEK", "icon.mission.challenge_correct", "mission.challenge_100_correct.title", MissionType.Weekly, MissionTargetType.CorrectAnswers, 100, 400, 150),
+            ("CHALLENGE_5_DAY_NO_BREAK",  "icon.mission.challenge_streak",  "mission.challenge_5_day_streak.title", MissionType.Weekly, MissionTargetType.MaintainStreak,   5, 300, 160),
         };
 
         int inserted = 0, updated = 0;
@@ -73,11 +86,11 @@ public sealed class MissionSeeder
         if (inserted > 0 || updated > 0)
         {
             await _db.SaveChangesAsync(0);
-            _logger.LogInfo($"P4-06: MissionSeeder — inserted={inserted}, updated={updated}, total catalog={catalog.Length}.");
+            _logger.LogInfo($"P4-11: MissionSeeder — inserted={inserted}, updated={updated}, total catalog={catalog.Length}.");
         }
         else
         {
-            _logger.LogInfo($"P4-06: MissionSeeder — catalog already up-to-date ({catalog.Length} rows).");
+            _logger.LogInfo($"P4-11: MissionSeeder — catalog already up-to-date ({catalog.Length} rows).");
         }
     }
 }

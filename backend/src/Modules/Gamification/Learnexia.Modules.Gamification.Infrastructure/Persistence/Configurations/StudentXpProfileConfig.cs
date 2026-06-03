@@ -61,6 +61,17 @@ public class StudentXpProfileConfig : IEntityTypeConfiguration<StudentXpProfile>
             .HasDefaultValue(LeagueTier.Bronze)
             .IsRequired();
 
+        // Streak freeze balance (P4-11-B0): int NOT NULL DEFAULT 0.
+        // DB CHECK constraint `freeze_balance >= 0 AND freeze_balance <= 2` provides defence-in-depth
+        // alongside the application-layer cap enforced by FreezeOptions.MaxInventory.
+        builder.Property(p => p.FreezeBalance)
+            .IsRequired()
+            .HasDefaultValue(0);
+
+        builder.ToTable(tb => tb.HasCheckConstraint(
+            "CK_StudentXpProfiles_FreezeBalance",
+            "\"FreezeBalance\" >= 0 AND \"FreezeBalance\" <= 2"));
+
         // Unique index: one profile row per student. Also the primary read-path index.
         builder.HasIndex(x => x.StudentId)
             .IsUnique()

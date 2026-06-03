@@ -124,5 +124,35 @@ public static class GamificationModule
             job => job.RunAsync(CancellationToken.None),
             "0 3 * * *",
             new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+        // Seed timed-event demo catalog (P4-11-B1-B). Runs after migration so TimedEvents table
+        // is guaranteed to exist. Seeds WELCOME_BOOST row only; idempotent by Code.
+        using (var scope = serviceProvider.CreateScope())
+        {
+            var timedEventSeeder = scope.ServiceProvider.GetRequiredService<TimedEventSeeder>();
+            await timedEventSeeder.SeedAsync();
+        }
+
+        // Register timed-event sweep recurring job (P4-11-B1-B, Fix 4: config-driven cron + timezone).
+        // Scans TimedEvents table per SweepCron (default "*/2 * * * *" UTC).
+        // TimeZoneId falls back to UTC if the configured string is invalid (fail-safe for typos).
+        // AddOrUpdate is idempotent across restarts.
+        var timedEventOptions = serviceProvider.GetRequiredService<IOptions<TimedEventOptions>>().Value;
+
+        TimeZoneInfo timedEventTimeZone;
+        try
+        {
+            timedEventTimeZone = TimeZoneInfo.FindSystemTimeZoneById(timedEventOptions.TimeZoneId);
+        }
+        catch
+        {
+            timedEventTimeZone = TimeZoneInfo.Utc;
+        }
+
+        recurringJobs.AddOrUpdate<TimedEventSweepJob>(
+            "gamification:timed-event-sweep",
+            job => job.RunAsync(CancellationToken.None),
+            timedEventOptions.SweepCron,
+            new RecurringJobOptions { TimeZone = timedEventTimeZone });
     }
 }

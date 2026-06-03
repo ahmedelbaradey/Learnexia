@@ -58,6 +58,23 @@ public class StudentXpProfile : AggregateRoot
     public DateOnly? LastActivityDateUtc { get; internal set; }
 
     // ---------------------------------------------------------------------------
+    // Streak freeze fields (added P4-11-B0; methods added P4-11-B1-A)
+    // ---------------------------------------------------------------------------
+
+    /// <summary>Maximum streak freezes a student can hold at one time.</summary>
+    public const int MaxFreezes = 2;
+
+    /// <summary>
+    /// Current number of streak freezes the student holds. Range [0 .. MaxFreezes].
+    /// Cap enforced at application layer via <c>FreezeOptions.MaxInventory</c> and at the DB
+    /// layer via a CHECK constraint. Defaults to 0 for all students — no opening grant (Q6 lock).
+    ///
+    /// Mutated only via <see cref="GrantFreeze"/> and <see cref="ConsumeFreeze"/>.
+    /// Private setter enforces that invariant within the module.
+    /// </summary>
+    public int FreezeBalance { get; private set; } = 0;
+
+    // ---------------------------------------------------------------------------
     // Hearts fields (added P4-04-B1-1)
     // ---------------------------------------------------------------------------
 
@@ -100,6 +117,7 @@ public class StudentXpProfile : AggregateRoot
             // (set in StudentXpProfileConfig). Runtime cap is enforced by HeartsOptions.Cap.
             Hearts = 5,
             LastHeartRefillAtUtc = null,   // clock idle — no loss yet
+            FreezeBalance = 0,             // brand-new students start with zero freezes (Q6 lock)
         };
 
     // ---------------------------------------------------------------------------
@@ -181,6 +199,71 @@ public class StudentXpProfile : AggregateRoot
         var previousStreak = CurrentStreak;
         CurrentStreak = 0;
         RaiseDomainEvent(new StreakBrokenDomainEvent(StudentId, previousStreak, LastActivityDateUtc ?? DateOnly.MinValue));
+    }
+
+    // ---------------------------------------------------------------------------
+    // Streak freeze mutation (P4-11-B1-A)
+    // ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// Earns 1 freeze (called on a 7-day streak milestone). No-op when already at
+    /// <see cref="MaxFreezes"/> — no event raised on a no-op (cap-silent rule).
+    ///
+    /// Raises <see cref="StreakFreezeGrantedDomainEvent"/> so the streak cache is invalidated
+    /// immediately after commit — fixes P4-11 audit Medium #2 (stale FreezeBalance on dashboard).
+    /// </summary>
+    public void GrantFreeze(DateTime occurredAtUtc)
+    {
+        if (FreezeBalance >= MaxFreezes) return;   // no-op at cap — no event raised
+        FreezeBalance += 1;
+        RaiseDomainEvent(new StreakFreezeGrantedDomainEvent(StudentId, FreezeBalance, occurredAtUtc));
+    }
+
+    /// <summary>
+    /// Consumes 1 freeze. Raises <see cref="StreakFreezeConsumedDomainEvent"/> on success.
+    /// Throws <see cref="InvalidOperationException"/> when <see cref="FreezeBalance"/> is 0.
+    /// Callers MUST check <c>FreezeBalance &gt; 0</c> before calling (the StreakSweepJob's
+    /// freeze branch does this — Batch 3-A scope).
+    /// </summary>
+    public void ConsumeFreeze()
+    {
+        if (FreezeBalance <= 0)
+            throw new InvalidOperationException("Cannot consume freeze when balance is 0.");
+
+        FreezeBalance -= 1;
+        RaiseDomainEvent(new StreakFreezeConsumedDomainEvent(
+            StudentId,
+            CurrentStreak,
+            FreezeBalance,
+            DateTime.UtcNow));
+    }
+
+    /// <summary>
+    /// Called by <c>StreakSweepJob</c> (Pass 2) to consume 1 freeze and shift
+    /// <see cref="LastActivityDateUtc"/> forward by 1 day so the streak appears maintained.
+    /// Uses the sweep job's clock timestamp rather than <c>DateTime.UtcNow</c>, preserving
+    /// determinism across time zones and test scenarios.
+    ///
+    /// Raises <see cref="StreakFreezeConsumedDomainEvent"/> with the caller-supplied
+    /// <paramref name="occurredAtUtc"/>. Does NOT call <see cref="ConsumeFreeze"/> to avoid
+    /// raising a duplicate event.
+    ///
+    /// Precondition: <see cref="FreezeBalance"/> &gt; 0 — callers MUST check before calling.
+    /// Throws <see cref="InvalidOperationException"/> when balance is 0.
+    /// </summary>
+    public void ConsumeFreezeAndShiftActivity(DateOnly newLastActivityDate, DateTime occurredAtUtc)
+    {
+        if (FreezeBalance <= 0)
+            throw new InvalidOperationException("Cannot consume freeze when balance is 0.");
+
+        FreezeBalance -= 1;
+        LastActivityDateUtc = newLastActivityDate;
+
+        RaiseDomainEvent(new StreakFreezeConsumedDomainEvent(
+            StudentId,
+            CurrentStreak,
+            FreezeBalance,
+            occurredAtUtc));
     }
 
     // ---------------------------------------------------------------------------
