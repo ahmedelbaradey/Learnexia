@@ -22,4 +22,4 @@ As an admin, I want curriculum content to move through a draft→published lifec
 ## Notes
 - Surface: **Next.js `admin-dashboard`** app, built on the P1-10 admin shell.
 - Depends on: P7-01..P7-04 (the content being versioned), P2-01 (hierarchy), P1-10 (admin shell), P1-05 (Admin policy).
-- Lifecycle state (`Draft`/`Published`) + version rows live in the `learning`/`assessment` modules; publish is an atomic multi-write done in an explicit transaction (no Unit of Work). Student-facing reads filter to the latest published version. Admin-only per SRS §3.
+- Lifecycle state (`Draft`/`Published`) + version rows live entirely in the `Learning` module (covers subject/unit/lesson/quiz — there is no separate `assessment` module in this codebase). Publish is an atomic multi-write done in an explicit transaction (no Unit of Work). Student-facing reads filter to the latest published version. Admin-only per SRS §3.
