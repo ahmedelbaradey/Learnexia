@@ -14,6 +14,8 @@ namespace Learnexia.Modules.Learning.Application.Features.Dashboard.Dtos;
 /// P4-06: The old Phase-2 stub field <c>DailyMission</c> (typed <c>DailyMissionDto?</c>, always null)
 /// has been replaced by <c>DailyMissions</c> (list — lazy-instantiated current-period missions)
 /// and <c>WeeklyMission</c> (single summary). The old <c>DailyMissionDto</c> type has been deleted.
+/// P4-11 (Batch 4): added <c>FreezeBalance</c> (streak-freeze inventory) and
+/// <c>ActiveTimedEvents</c> (timed-event banner list for the FE countdown/banner strip).
 /// Api-client regen needed after this change.
 /// </summary>
 public record DashboardDto(
@@ -27,5 +29,7 @@ public record DashboardDto(
     int BadgesCount = 0,                 // P4-05 — total badges earned from gamification module; default 0 for new students
     IReadOnlyList<BadgeSummary>? RecentBadges = null,  // P4-05 — top 3 recent badges (null = none earned yet)
     IReadOnlyList<MissionSummary>? DailyMissions = null,  // P4-06 — current-period daily missions (null = brand-new student / not yet loaded)
-    MissionSummary? WeeklyMission = null  // P4-06 — top weekly mission summary (null = brand-new student / not yet loaded)
+    MissionSummary? WeeklyMission = null,  // P4-06 — top weekly mission summary (null = brand-new student / not yet loaded)
+    int FreezeBalance = 0,               // P4-11 — number of streak freezes currently held (0 for brand-new students)
+    IReadOnlyList<ActiveTimedEventDto>? ActiveTimedEvents = null  // P4-11 — active timed-event banners (null = no events active)
 );

@@ -43,6 +43,7 @@ public class GetDashboardQueryHandler
     private readonly IStudentBadgesQuery _badgesQuery;
     private readonly IStudentMissionsQuery _missionsQuery;
     private readonly IStudentLeagueQuery _leagueQuery;
+    private readonly IActiveTimedEventsQuery _activeEventsQuery;
 
     // Deterministic cross-subject fallback order (Q3 Option A step 5).
     private static readonly string[] FallbackSubjectOrder =
@@ -58,18 +59,20 @@ public class GetDashboardQueryHandler
         IStudentHeartsQuery heartsQuery,
         IStudentBadgesQuery badgesQuery,
         IStudentMissionsQuery missionsQuery,
-        IStudentLeagueQuery leagueQuery)
+        IStudentLeagueQuery leagueQuery,
+        IActiveTimedEventsQuery activeEventsQuery)
     {
-        _repository    = repository;
-        _currentUser   = currentUser;
-        _logger        = logger;
-        _localizer     = localizer;
-        _xpQuery       = xpQuery;
-        _streakQuery   = streakQuery;
-        _heartsQuery   = heartsQuery;
-        _badgesQuery   = badgesQuery;
-        _missionsQuery = missionsQuery;
-        _leagueQuery   = leagueQuery;
+        _repository        = repository;
+        _currentUser       = currentUser;
+        _logger            = logger;
+        _localizer         = localizer;
+        _xpQuery           = xpQuery;
+        _streakQuery       = streakQuery;
+        _heartsQuery       = heartsQuery;
+        _badgesQuery       = badgesQuery;
+        _missionsQuery     = missionsQuery;
+        _leagueQuery       = leagueQuery;
+        _activeEventsQuery = activeEventsQuery;
     }
 
     public async Task<BaseResponse<DashboardDto>> Handle(
@@ -144,6 +147,7 @@ public class GetDashboardQueryHandler
 
             var streakSnapshot = await _streakQuery.GetByStudentIdAsync(studentId, cancellationToken);
             var streak = streakSnapshot?.CurrentStreak ?? 0;  // P4-03 — real streak from gamification module
+            var freezeBalance = streakSnapshot?.FreezeBalance ?? 0;  // P4-11 — streak-freeze inventory
 
             // P4-04 — IStudentHeartsQuery always returns a sentinel (never null) so brand-new students
             // correctly see Hearts = Cap = 5 and InPracticeMode = false without leaking HeartsOptions.Cap
@@ -164,6 +168,21 @@ public class GetDashboardQueryHandler
             // first call per period (D12 / AC1). Returns sentinel (Bronze, 0, 0, 0) for brand-new
             // students with no profile. Never null (D13).
             var leagueSnapshot = await _leagueQuery.GetByStudentIdAsync(studentId, cancellationToken);
+
+            // P4-11 — IActiveTimedEventsQuery returns the global list of currently active timed events.
+            // Never null — returns an empty list when no events are active. Hand-projected to
+            // ActiveTimedEventDto (no AutoMapper per CONVENTIONS).
+            var activeEventSnapshots = await _activeEventsQuery.GetActiveAtAsync(DateTime.UtcNow, cancellationToken);
+            var activeTimedEvents = activeEventSnapshots.Count > 0
+                ? activeEventSnapshots
+                    .Select(e => new ActiveTimedEventDto(
+                        Code:       e.Code,
+                        NameEn:     e.NameEn,
+                        NameAr:     e.NameAr,
+                        Multiplier: e.Multiplier,
+                        EndUtc:     e.EndUtc))
+                    .ToList()
+                : null;
 
             // Map sentinel/real snapshot to LeaguePreviewDto (D14 — reuse existing nullable shape).
             // Brand-new students (GroupSize == 0) → null (no league pill shown on dashboard).
@@ -187,7 +206,9 @@ public class GetDashboardQueryHandler
                 BadgesCount: badgesSnapshot.TotalCount,                                        // P4-05
                 RecentBadges: badgesSnapshot.Recent.Count > 0 ? badgesSnapshot.Recent : null,  // P4-05
                 DailyMissions: missionsSnapshot.Daily.Count > 0 ? missionsSnapshot.Daily : null,  // P4-06
-                WeeklyMission: missionsSnapshot.Weekly                                         // P4-06
+                WeeklyMission: missionsSnapshot.Weekly,                                        // P4-06
+                FreezeBalance: freezeBalance,                                                  // P4-11
+                ActiveTimedEvents: activeTimedEvents                                           // P4-11
             );
 
             return Success(dto);

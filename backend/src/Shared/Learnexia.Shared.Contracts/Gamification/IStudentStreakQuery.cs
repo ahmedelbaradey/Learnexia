@@ -21,8 +21,10 @@ public interface IStudentStreakQuery
 /// Lightweight streak projection crossing the module boundary.
 /// Contains only the fields that consumers need — no navigation properties, no PII.
 /// <see cref="StudentId"/> is intentionally omitted (the consumer already has it — F8 clean start).
+/// <see cref="FreezeBalance"/> added P4-11-B1-A — number of streak freezes currently held.
 /// </summary>
 public record StudentStreakSnapshot(
     int CurrentStreak,
     int LongestStreak,
-    DateOnly? LastActivityDateUtc);
+    DateOnly? LastActivityDateUtc,
+    int FreezeBalance = 0);

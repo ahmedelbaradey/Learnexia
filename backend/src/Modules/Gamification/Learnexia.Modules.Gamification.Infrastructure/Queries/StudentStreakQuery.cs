@@ -25,7 +25,7 @@ internal sealed class PostgresStudentStreakQuery : IStudentStreakQuery
         var profile = await _db.StudentXpProfiles
             .AsNoTracking()
             .Where(p => p.StudentId == studentId)
-            .Select(p => new { p.CurrentStreak, p.LongestStreak, p.LastActivityDateUtc })
+            .Select(p => new { p.CurrentStreak, p.LongestStreak, p.LastActivityDateUtc, p.FreezeBalance })
             .FirstOrDefaultAsync(ct);
 
         if (profile is null)
@@ -34,6 +34,7 @@ internal sealed class PostgresStudentStreakQuery : IStudentStreakQuery
         return new StudentStreakSnapshot(
             profile.CurrentStreak,
             profile.LongestStreak,
-            profile.LastActivityDateUtc);
+            profile.LastActivityDateUtc,
+            profile.FreezeBalance);
     }
 }

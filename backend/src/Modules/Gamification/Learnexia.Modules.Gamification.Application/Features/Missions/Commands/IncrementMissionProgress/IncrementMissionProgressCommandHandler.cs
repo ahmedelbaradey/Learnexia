@@ -1,4 +1,5 @@
 using Learnexia.Modules.Gamification.Application.Abstractions;
+using Learnexia.Modules.Gamification.Application.Features.Events.Boost;
 using Learnexia.Modules.Gamification.Domain.Entities;
 using Learnexia.Modules.Gamification.Domain.Enums;
 using Learnexia.Modules.Gamification.Domain.Services;
@@ -53,13 +54,16 @@ public sealed class IncrementMissionProgressCommandHandler
 {
     private readonly IGamificationRepository _repo;
     private readonly ILoggerManager _logger;
+    private readonly IXpBoostCalculator _boostCalc;
 
     public IncrementMissionProgressCommandHandler(
         IGamificationRepository repo,
-        ILoggerManager logger)
+        ILoggerManager logger,
+        IXpBoostCalculator boostCalc)
     {
         _repo = repo;
         _logger = logger;
+        _boostCalc = boostCalc;
     }
 
     public async Task<BaseResponse<Unit>> Handle(
@@ -147,9 +151,15 @@ public sealed class IncrementMissionProgressCommandHandler
                         _repo.UpsertXpProfile(profile);
                     }
 
-                    // Recompute level — XP bonus may push past a threshold
-                    int newLevel = LevelCurve.LevelForXp(
-                        profile.TotalXp + mission.MissionDefinition.RewardXp);
+                    // Apply the timed-event XP boost to the mission reward before awarding.
+                    int effectiveRewardXp = await _boostCalc.GetEffectiveAmountAsync(
+                        mission.MissionDefinition.RewardXp,
+                        XpReason.MissionCompleted,
+                        request.OccurredAtUtc,
+                        ct);
+
+                    // Recompute level — boosted XP bonus may push past a threshold
+                    int newLevel = LevelCurve.LevelForXp(profile.TotalXp + effectiveRewardXp);
 
                     // Domain mutation: applies XP, recomputes level, raises
                     // MissionCompletedDomainEvent (+ StudentLeveledUpDomainEvent if level crossed).
@@ -157,7 +167,7 @@ public sealed class IncrementMissionProgressCommandHandler
                     profile.RecordMissionCompleted(
                         missionDefinitionId: mission.MissionDefinitionId,
                         code: mission.MissionDefinition.Code,
-                        rewardXp: mission.MissionDefinition.RewardXp,
+                        rewardXp: effectiveRewardXp,
                         newLevel: newLevel,
                         completedAtUtc: request.OccurredAtUtc);
 
@@ -168,7 +178,7 @@ public sealed class IncrementMissionProgressCommandHandler
                     var xpAward = XpAward.Create(
                         profile: profile,
                         reason: XpReason.MissionCompleted,
-                        xpAmount: mission.MissionDefinition.RewardXp,
+                        xpAmount: effectiveRewardXp,
                         originEventId: Guid.NewGuid(),
                         occurredAtUtc: request.OccurredAtUtc,
                         lessonId: null,

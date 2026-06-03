@@ -479,23 +479,24 @@ public sealed class P4_06_Missions_Tests : IAsyncLifetime
     // T1 — Catalog seeded: 8 rows with correct Code/Cadence/Target/RewardXp
     // =========================================================================
 
-    [Fact(DisplayName = "P406-T1 MissionSeeder seeds exactly 8 rows with correct Code/Cadence/Target/RewardXp")]
-    public async Task T1_CatalogSeeded_Exactly8Rows_CorrectMetadata()
+    [Fact(DisplayName = "P406-T1 MissionSeeder seeds exactly 11 rows with correct Code/Cadence/Target/RewardXp")]
+    public async Task T1_CatalogSeeded_Exactly11Rows_CorrectMetadata()
     {
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<GamificationDbContext>();
 
         var defs = await db.MissionDefinitions.AsNoTracking().ToListAsync();
 
-        defs.Should().HaveCount(8,
-            "MissionSeeder seeds exactly 8 mission definitions (D1 locked catalog)");
+        defs.Should().HaveCount(11,
+            "MissionSeeder seeds 8 base rows (D1) + 3 P4-11 CHALLENGE_* rows = 11 total");
 
-        // Verify each expected code exists
+        // Verify each expected code exists (8 base + 3 P4-11 CHALLENGE_* rows)
         var expectedCodes = new[]
         {
             CODE_DAILY_3_LESSONS, CODE_DAILY_10_CORRECT, CODE_DAILY_KEEP_STREAK,
             CODE_DAILY_1_LESSON_EARLY, CODE_DAILY_20_CORRECT,
-            CODE_WEEKLY_15_LESSONS, CODE_WEEKLY_75_CORRECT, CODE_WEEKLY_5_DAY_STREAK
+            CODE_WEEKLY_15_LESSONS, CODE_WEEKLY_75_CORRECT, CODE_WEEKLY_5_DAY_STREAK,
+            "CHALLENGE_25_LESSONS_WEEK", "CHALLENGE_100_CORRECT_WEEK", "CHALLENGE_5_DAY_NO_BREAK"
         };
         foreach (var code in expectedCodes)
         {
@@ -512,6 +513,10 @@ public sealed class P4_06_Missions_Tests : IAsyncLifetime
         AssertMission(defs, CODE_WEEKLY_15_LESSONS,    MissionType.Weekly, MissionTargetType.CompleteLessons, 15, 150);
         AssertMission(defs, CODE_WEEKLY_75_CORRECT,    MissionType.Weekly, MissionTargetType.CorrectAnswers,  75, 150);
         AssertMission(defs, CODE_WEEKLY_5_DAY_STREAK,  MissionType.Weekly, MissionTargetType.MaintainStreak,   5, 200);
+        // P4-11 weekly challenge rows
+        AssertMission(defs, "CHALLENGE_25_LESSONS_WEEK",  MissionType.Weekly, MissionTargetType.CompleteLessons,  25, 500);
+        AssertMission(defs, "CHALLENGE_100_CORRECT_WEEK", MissionType.Weekly, MissionTargetType.CorrectAnswers,  100, 400);
+        AssertMission(defs, "CHALLENGE_5_DAY_NO_BREAK",   MissionType.Weekly, MissionTargetType.MaintainStreak,    5, 300);
 
         static void AssertMission(List<MissionDefinition> defs, string code,
             MissionType cadence, MissionTargetType targetType, int target, int rewardXp)
@@ -568,7 +573,7 @@ public sealed class P4_06_Missions_Tests : IAsyncLifetime
     // T3 — First dashboard read (student with profile) → lazily instantiates missions
     // =========================================================================
 
-    [Fact(DisplayName = "P406-T3 First dashboard read for student with profile → lazily instantiates 5 daily + 3 weekly rows")]
+    [Fact(DisplayName = "P406-T3 First dashboard read for student with profile → lazily instantiates 5 daily + 6 weekly rows")]
     public async Task T3_FirstDashboardRead_LazilyInstantiatesMissions()
     {
         var (token, studentId) = await CreateStudentViaParentFlowAsync("t3");
@@ -602,8 +607,8 @@ public sealed class P4_06_Missions_Tests : IAsyncLifetime
             "exactly 5 daily StudentMission rows must be created on first dashboard read");
 
         var weeklyRows = await GetCurrentPeriodMissionsAsync(studentId, MissionType.Weekly);
-        weeklyRows.Should().HaveCount(3,
-            "exactly 3 weekly StudentMission rows must be created on first dashboard read");
+        weeklyRows.Should().HaveCount(6,
+            "exactly 6 weekly StudentMission rows (3 base + 3 P4-11 CHALLENGE_*) must be created on first dashboard read");
 
         // All missions start at Progress=0, Status=NotStarted
         dailyRows.Should().AllSatisfy(m =>
@@ -618,7 +623,7 @@ public sealed class P4_06_Missions_Tests : IAsyncLifetime
     // T4 — Second dashboard read same day → idempotent (no duplicate rows)
     // =========================================================================
 
-    [Fact(DisplayName = "P406-T4 Second dashboard read same day → idempotent (still 5 daily + 3 weekly, no duplicates)")]
+    [Fact(DisplayName = "P406-T4 Second dashboard read same day → idempotent (still 5 daily + 6 weekly, no duplicates)")]
     public async Task T4_SecondDashboardRead_Idempotent_NoDuplicateRows()
     {
         var (token, studentId) = await CreateStudentViaParentFlowAsync("t4");
@@ -631,7 +636,7 @@ public sealed class P4_06_Missions_Tests : IAsyncLifetime
         var dailyAfterFirst = await GetCurrentPeriodMissionsAsync(studentId, MissionType.Daily);
         var weeklyAfterFirst = await GetCurrentPeriodMissionsAsync(studentId, MissionType.Weekly);
         dailyAfterFirst.Should().HaveCount(5, "5 daily missions after first read");
-        weeklyAfterFirst.Should().HaveCount(3, "3 weekly missions after first read");
+        weeklyAfterFirst.Should().HaveCount(6, "6 weekly missions (3 base + 3 P4-11 CHALLENGE_*) after first read");
 
         // Second dashboard read — lazy instantiation is a no-op when rows already exist
         await GetDashboardAsync(token);
@@ -640,7 +645,7 @@ public sealed class P4_06_Missions_Tests : IAsyncLifetime
         var weeklyAfterSecond = await GetCurrentPeriodMissionsAsync(studentId, MissionType.Weekly);
         dailyAfterSecond.Should().HaveCount(5,
             "second dashboard read must NOT create duplicate daily missions (idempotency)");
-        weeklyAfterSecond.Should().HaveCount(3,
+        weeklyAfterSecond.Should().HaveCount(6,
             "second dashboard read must NOT create duplicate weekly missions (idempotency)");
     }
 
@@ -660,7 +665,7 @@ public sealed class P4_06_Missions_Tests : IAsyncLifetime
     // T6 — GET /Missions/Me returns daily (5 items) + weekly (3 items) with full metadata
     // =========================================================================
 
-    [Fact(DisplayName = "P406-T6 GET /Missions/Me returns 5 daily + 3 weekly missions with required metadata fields")]
+    [Fact(DisplayName = "P406-T6 GET /Missions/Me returns 5 daily + 6 weekly missions with required metadata fields")]
     public async Task T6_MissionsMeReturnsFullMetadata()
     {
         var (token, studentId) = await CreateStudentViaParentFlowAsync("t6");
@@ -680,11 +685,11 @@ public sealed class P4_06_Missions_Tests : IAsyncLifetime
         dailyArr.GetArrayLength().Should().Be(5,
             "GET /Missions/Me must return 5 daily missions; body: {0}", body);
 
-        // weekly array: 3 items
+        // weekly array: 6 items (3 base + 3 P4-11 CHALLENGE_*)
         TryProp(data, "weekly", out var weeklyArr).Should().BeTrue("body: {0}", body);
         weeklyArr.ValueKind.Should().Be(JsonValueKind.Array, "body: {0}", body);
-        weeklyArr.GetArrayLength().Should().Be(3,
-            "GET /Missions/Me must return 3 weekly missions; body: {0}", body);
+        weeklyArr.GetArrayLength().Should().Be(6,
+            "GET /Missions/Me must return 6 weekly missions (3 base + 3 P4-11 CHALLENGE_*); body: {0}", body);
 
         // Each daily item must have required metadata fields
         foreach (var mission in dailyArr.EnumerateArray())
@@ -1386,7 +1391,7 @@ public sealed class P4_06_Missions_Tests : IAsyncLifetime
     // =========================================================================
 
     [Fact(DisplayName = "P406-Seed MissionSeeder is idempotent — running twice does not duplicate rows")]
-    public async Task Seed_IdempotencyRunTwice_Still8Rows()
+    public async Task Seed_IdempotencyRunTwice_Still11Rows()
     {
         // Run the seeder a second time (first was in InitializeAsync)
         using var scope = _factory.Services.CreateScope();
@@ -1395,7 +1400,7 @@ public sealed class P4_06_Missions_Tests : IAsyncLifetime
 
         using var db = scope.ServiceProvider.GetRequiredService<GamificationDbContext>();
         var count = await db.MissionDefinitions.AsNoTracking().CountAsync();
-        count.Should().Be(8,
-            "MissionSeeder upsert by Code must not duplicate rows on second run");
+        count.Should().Be(11,
+            "MissionSeeder upsert by Code must not duplicate rows on second run (8 base + 3 P4-11 CHALLENGE_*)");
     }
 }

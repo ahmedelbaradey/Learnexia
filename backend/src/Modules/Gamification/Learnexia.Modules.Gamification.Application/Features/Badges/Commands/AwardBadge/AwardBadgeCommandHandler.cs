@@ -1,5 +1,6 @@
 using Learnexia.Modules.Gamification.Application.Abstractions;
 using Learnexia.Modules.Gamification.Application.Common;
+using Learnexia.Modules.Gamification.Application.Features.Events.Boost;
 using Learnexia.Modules.Gamification.Domain.Entities;
 using Learnexia.Modules.Gamification.Domain.Enums;
 using Learnexia.Modules.Gamification.Domain.Services;
@@ -32,11 +33,16 @@ public sealed class AwardBadgeCommandHandler
 {
     private readonly IGamificationRepository _repo;
     private readonly ILoggerManager _logger;
+    private readonly IXpBoostCalculator _boostCalc;
 
-    public AwardBadgeCommandHandler(IGamificationRepository repo, ILoggerManager logger)
+    public AwardBadgeCommandHandler(
+        IGamificationRepository repo,
+        ILoggerManager logger,
+        IXpBoostCalculator boostCalc)
     {
         _repo = repo;
         _logger = logger;
+        _boostCalc = boostCalc;
     }
 
     public async Task<BaseResponse<Unit>> Handle(AwardBadgeCommand request, CancellationToken ct)
@@ -76,8 +82,14 @@ public sealed class AwardBadgeCommandHandler
                 }
             }
 
-            // ── 5. Recompute level (XP bonus may push past a threshold) ─────────────────────
-            int newLevel = LevelCurve.LevelForXp(profile.TotalXp + definition.RewardXp);
+            // ── 5. Apply timed-event XP boost to the badge reward, then recompute level ──────
+            int effectiveRewardXp = await _boostCalc.GetEffectiveAmountAsync(
+                definition.RewardXp,
+                XpReason.BadgeEarned,
+                request.AwardedAtUtc,
+                ct);
+
+            int newLevel = LevelCurve.LevelForXp(profile.TotalXp + effectiveRewardXp);
 
             // ── 6. Domain mutation — applies XP, updates level, raises events ─────────────────
             // BadgeEarnedDomainEvent (and optionally StudentLeveledUpDomainEvent if level crossed)
@@ -86,7 +98,7 @@ public sealed class AwardBadgeCommandHandler
                 badgeDefinitionId: definition.Id,
                 code: definition.Code,
                 rarity: definition.Rarity,
-                rewardXp: definition.RewardXp,
+                rewardXp: effectiveRewardXp,
                 newLevel: newLevel,
                 awardedAtUtc: request.AwardedAtUtc);
 
@@ -109,7 +121,7 @@ public sealed class AwardBadgeCommandHandler
             var xpAward = XpAward.Create(
                 profile: profile,
                 reason: XpReason.BadgeEarned,
-                xpAmount: definition.RewardXp,
+                xpAmount: effectiveRewardXp,
                 originEventId: Guid.NewGuid(),
                 occurredAtUtc: request.AwardedAtUtc,
                 lessonId: null,
@@ -117,7 +129,7 @@ public sealed class AwardBadgeCommandHandler
             await _repo.AddXpAwardAsync(xpAward, ct);
 
             _logger.LogInfo(
-                $"P4-05: badge awarded {definition.Code} (rarity={definition.Rarity}, +{definition.RewardXp} XP) " +
+                $"P4-05: badge awarded {definition.Code} (rarity={definition.Rarity}, +{effectiveRewardXp} XP) " +
                 $"to studentId={request.StudentId}, eventId={request.OriginEventId}.");
 
             return Success(Unit.Value);

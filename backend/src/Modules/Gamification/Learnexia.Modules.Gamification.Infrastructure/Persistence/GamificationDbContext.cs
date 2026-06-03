@@ -43,6 +43,9 @@ public class GamificationDbContext : DbContext
     public DbSet<LeagueMembership> LeagueMemberships => Set<LeagueMembership>();
     public DbSet<LeagueXpDeltaLog> LeagueXpDeltaLogs => Set<LeagueXpDeltaLog>();
 
+    // Timed event catalog (P4-11)
+    public DbSet<TimedEvent> TimedEvents => Set<TimedEvent>();
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 

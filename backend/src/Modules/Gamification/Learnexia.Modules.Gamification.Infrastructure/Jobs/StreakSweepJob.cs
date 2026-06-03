@@ -1,8 +1,11 @@
+using Hangfire;
 using Learnexia.Modules.Gamification.Application.Configuration;
+using Learnexia.Modules.Gamification.Domain.Entities;
 using Learnexia.Modules.Gamification.Domain.Services;
 using Learnexia.Modules.Gamification.Infrastructure.Persistence;
 using Learnexia.Shared.Contracts.Gamification;
 using Learnexia.Shared.Kernel.Abstractions;
+using Learnexia.Shared.Kernel.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,23 +21,30 @@ namespace Learnexia.Modules.Gamification.Infrastructure.Jobs;
 /// students who go silent and would otherwise keep a stale non-zero <c>CurrentStreak</c> on the
 /// dashboard indefinitely.
 ///
-/// Algorithm (P4-09 D6 — capture-before-bulk):
+/// Algorithm (P4-11 two-pass with freeze branch):
 /// <list type="number">
-///   <item>Project affected rows (StudentId + CurrentStreak) BEFORE the bulk update.</item>
-///   <item>Bulk <c>ExecuteUpdateAsync</c> — sets <c>CurrentStreak = 0</c> for all stale profiles.
-///         Does NOT touch <c>LongestStreak</c> or <c>LastActivityDateUtc</c>.</item>
-///   <item>Loop captured rows and publish one <see cref="StreakBrokenIntegrationEvent"/> per student
-///         (each in its own try/catch — a publish failure does NOT roll back the bulk update).</item>
+///   <item>
+///     <b>Pass 1 (bulk — performance):</b> capture student IDs + streaks for profiles where
+///     <c>CurrentStreak &gt; 0 AND LastActivityDateUtc &lt; threshold AND FreezeBalance = 0</c>.
+///     Execute a single <c>ExecuteUpdateAsync</c> to set <c>CurrentStreak = 0</c> for that
+///     filtered set. Publish <see cref="StreakBrokenIntegrationEvent"/> per captured ID
+///     (capture-before-bulk pattern). This is the pre-P4-11 path, narrowed by the
+///     <c>FreezeBalance = 0</c> predicate.
+///   </item>
+///   <item>
+///     <b>Pass 2 (per-row — freeze consumers):</b> load profiles where
+///     <c>CurrentStreak &gt; 0 AND LastActivityDateUtc &lt; threshold AND FreezeBalance &gt; 0</c>
+///     (change-tracked). For each, call
+///     <see cref="StudentXpProfile.ConsumeFreezeAndShiftActivity"/> which decrements
+///     <c>FreezeBalance</c>, shifts <c>LastActivityDateUtc</c> to <c>threshold</c> (yesterday),
+///     and raises <see cref="Domain.Events.StreakFreezeConsumedDomainEvent"/> on the entity.
+///     After saving, collect and dispatch the domain event via <see cref="IPublisher"/>.
+///     <c>CurrentStreak</c> is NOT reset. No <see cref="StreakBrokenIntegrationEvent"/> is raised.
+///   </item>
 /// </list>
 ///
-/// This path emits <see cref="StreakBrokenIntegrationEvent"/> directly (no domain object) because
-/// <c>ExecuteUpdateAsync</c> bypasses the change tracker. The domain mutation path
-/// (<c>StudentXpProfile.ResetStreakAndStart</c>) raises <c>StreakBrokenDomainEvent</c> which is
-/// re-published by <c>StreakBrokenDomainEventRepublisher</c>. Both paths produce the same
-/// integration event; Notifications-side Redis dedupe prevents duplicate nudges.
-///
-/// Idempotent: running twice consecutively → second pass touches 0 rows (all already = 0), and
-/// the captured list is empty so no integration events are published.
+/// Idempotent: running twice consecutively — Pass 1 finds 0 rows (already reset),
+/// Pass 2 finds 0 rows (FreezeBalance already decremented / LastActivityDateUtc already shifted).
 ///
 /// TOCTOU note: rows captured between the SELECT and the ExecuteUpdateAsync that a concurrent write
 /// updates to a new streak may receive a false-positive integration event. This is bounded, low-
@@ -66,9 +76,14 @@ public sealed class StreakSweepJob
     /// <summary>
     /// Executes the sweep. Creates a fresh DI scope with its own <see cref="GamificationDbContext"/>
     /// and <see cref="IPublisher"/> (Hangfire worker has no HTTP request scope — a new scope is mandatory).
+    ///
+    /// <c>[DisableConcurrentExecution]</c> prevents two instances of this daily job from
+    /// overlapping if a run is delayed or retried — fixes P4-11 audit Medium #4.
     /// </summary>
+    [DisableConcurrentExecution(timeoutInSeconds: 120)]
     public async Task RunAsync(CancellationToken ct)
     {
+        var nowUtc = _clock.UtcNow;
         var today = StreakDayCalculator.Today(_options.Value.TimeZoneId, _clock);
         var threshold = today.AddDays(-1);   // anything older than yesterday = broken
 
@@ -76,55 +91,130 @@ public sealed class StreakSweepJob
         var db = scope.ServiceProvider.GetRequiredService<GamificationDbContext>();
         var publisher = scope.ServiceProvider.GetRequiredService<IPublisher>();
 
-        // Step 1: Capture affected rows BEFORE the bulk update (lightweight projection).
-        // Same WHERE clause as the bulk update below to minimise the TOCTOU window.
-        var affected = await db.StudentXpProfiles
+        // ── Pass 1: Bulk-reset profiles with FreezeBalance == 0 ────────────────────────────
+        // Capture affected rows BEFORE the bulk update (lightweight projection).
+        // Narrowed by FreezeBalance = 0 — freeze-holders are handled in Pass 2.
+        var brokenCandidates = await db.StudentXpProfiles
             .AsNoTracking()
             .Where(p => p.CurrentStreak > 0
-                     && (p.LastActivityDateUtc == null || p.LastActivityDateUtc < threshold))
+                     && (p.LastActivityDateUtc == null || p.LastActivityDateUtc < threshold)
+                     && p.FreezeBalance == 0)
             .Select(p => new { p.StudentId, p.CurrentStreak })
             .ToListAsync(ct);
 
-        // Step 2: Bulk UPDATE — EF 7+ ExecuteUpdateAsync issues a single SQL statement.
+        // Bulk UPDATE — EF 7+ ExecuteUpdateAsync issues a single SQL statement.
         // Does NOT go through the change tracker → no domain events from this path.
-        var rowsAffected = await db.StudentXpProfiles
+        var rowsReset = await db.StudentXpProfiles
             .Where(p => p.CurrentStreak > 0
-                     && (p.LastActivityDateUtc == null || p.LastActivityDateUtc < threshold))
+                     && (p.LastActivityDateUtc == null || p.LastActivityDateUtc < threshold)
+                     && p.FreezeBalance == 0)
             .ExecuteUpdateAsync(
                 s => s.SetProperty(p => p.CurrentStreak, 0),
                 ct);
 
-        // Step 3: Publish one StreakBrokenIntegrationEvent per affected student.
+        // Publish one StreakBrokenIntegrationEvent per broken student.
         // Each publish is individually try/caught — a publish failure does NOT roll back
         // the already-committed bulk update (fail-soft per ADR 0002 §3).
-        int publishedCount = 0;
-        int publishFailedCount = 0;
+        int brokenPublishedCount = 0;
+        int brokenPublishFailedCount = 0;
 
-        foreach (var row in affected)
+        foreach (var row in brokenCandidates)
         {
             try
             {
                 await publisher.Publish(new StreakBrokenIntegrationEvent(
                     EventId: Guid.NewGuid(),
-                    OccurredOnUtc: _clock.UtcNow,
+                    OccurredOnUtc: nowUtc,
                     StudentId: row.StudentId,
                     PreviousStreak: row.CurrentStreak,
                     BrokenAtDate: threshold), ct);
 
-                publishedCount++;
+                brokenPublishedCount++;
             }
             catch (Exception ex)
             {
-                publishFailedCount++;
+                brokenPublishFailedCount++;
                 _logger.LogError(ex,
-                    $"P4-09: StreakSweepJob — publish failed for studentId={row.StudentId}.");
+                    $"P4-09: StreakSweepJob — break publish failed for studentId={row.StudentId}.");
             }
         }
 
+        // ── Pass 2: Per-row freeze consumption ─────────────────────────────────────────────
+        // Load change-tracked profiles whose streak would break but have a freeze to spend.
+        // Batched in pages of 500 to bound memory; outer loop continues while rows remain.
+        int freezeConsumedCount = 0;
+        int freezePublishFailedCount = 0;
+
+        List<StudentXpProfile> freezeCandidates;
+        do
+        {
+            freezeCandidates = await db.StudentXpProfiles
+                .Where(p => p.CurrentStreak > 0
+                         && (p.LastActivityDateUtc == null || p.LastActivityDateUtc < threshold)
+                         && p.FreezeBalance > 0)
+                .Take(500)
+                .ToListAsync(ct);
+
+            foreach (var profile in freezeCandidates)
+            {
+                try
+                {
+                    // Consume 1 freeze, shift LastActivityDateUtc to threshold (yesterday),
+                    // and raise StreakFreezeConsumedDomainEvent on the entity.
+                    // CurrentStreak is NOT changed — the streak survives.
+                    profile.ConsumeFreezeAndShiftActivity(threshold, nowUtc);
+
+                    // Commit this row's changes.
+                    await db.SaveChangesAsync(0);
+
+                    // Count the successful freeze consumption per profile — outside the inner
+                    // domain-event dispatch loop so the counter reflects actual profile saves,
+                    // not the number of events published (fixes P4-11 audit Low #6).
+                    freezeConsumedCount++;
+
+                    // Collect domain events from the change tracker and dispatch post-commit.
+                    var aggregates = db.ChangeTracker
+                        .Entries<AggregateRoot>()
+                        .Where(e => e.Entity.DomainEvents.Count > 0)
+                        .Select(e => e.Entity)
+                        .ToList();
+
+                    foreach (var aggregate in aggregates)
+                    {
+                        var domainEvents = aggregate.DomainEvents.ToList();
+                        aggregate.ClearDomainEvents();
+
+                        foreach (var domainEvent in domainEvents)
+                        {
+                            try
+                            {
+                                await publisher.Publish(domainEvent, ct);
+                            }
+                            catch (Exception ex)
+                            {
+                                freezePublishFailedCount++;
+                                _logger.LogError(ex,
+                                    $"P4-11: StreakSweepJob — freeze-consumed publish failed " +
+                                    $"for studentId={profile.StudentId}.");
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex,
+                        $"P4-11: StreakSweepJob — freeze consumption failed " +
+                        $"for studentId={profile.StudentId}.");
+                }
+            }
+        }
+        while (freezeCandidates.Count == 500);
+
         _logger.LogInfo(
-            $"P4-03/P4-09: streak-sweep complete — " +
-            $"capturedAffected={affected.Count}, rowsReset={rowsAffected}, " +
-            $"published={publishedCount}, failedPublish={publishFailedCount}, " +
+            $"P4-03/P4-11: streak-sweep complete — " +
+            $"brokenCaptured={brokenCandidates.Count}, rowsReset={rowsReset}, " +
+            $"brokenPublished={brokenPublishedCount}, brokenPublishFailed={brokenPublishFailedCount}, " +
+            $"freezeConsumed={freezeConsumedCount}, freezePublishFailed={freezePublishFailedCount}, " +
             $"threshold={threshold:yyyy-MM-dd}.");
     }
 }

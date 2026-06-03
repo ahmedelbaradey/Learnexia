@@ -1,6 +1,7 @@
 using Learnexia.Modules.Gamification.Application.Abstractions;
 using Learnexia.Modules.Gamification.Application.Common;
 using Learnexia.Modules.Gamification.Application.Configuration;
+using Learnexia.Modules.Gamification.Application.Features.Events.Boost;
 using Learnexia.Modules.Gamification.Domain.Entities;
 using Learnexia.Modules.Gamification.Domain.Enums;
 using Learnexia.Modules.Gamification.Domain.Services;
@@ -41,20 +42,26 @@ public class AdvanceStreakCommandHandler
     private readonly ISystemClock _clock;
     private readonly IOptions<StreakOptions> _streakOptions;
     private readonly IOptions<HeartsOptions> _heartsOptions;
+    private readonly FreezeOptions _freezeOptions;
     private readonly ILoggerManager _logger;
+    private readonly IXpBoostCalculator _boostCalc;
 
     public AdvanceStreakCommandHandler(
         IGamificationRepository repo,
         ISystemClock clock,
         IOptions<StreakOptions> streakOptions,
         IOptions<HeartsOptions> heartsOptions,
-        ILoggerManager logger)
+        IOptions<FreezeOptions> freezeOptions,
+        ILoggerManager logger,
+        IXpBoostCalculator boostCalc)
     {
         _repo = repo;
         _clock = clock;
         _streakOptions = streakOptions;
         _heartsOptions = heartsOptions;
+        _freezeOptions = freezeOptions.Value;
         _logger = logger;
+        _boostCalc = boostCalc;
     }
 
     public async Task<BaseResponse<Unit>> Handle(
@@ -130,8 +137,22 @@ public class AdvanceStreakCommandHandler
                     break;
             }
 
+            // ── 5b. P4-11: Grant a freeze on every N-day streak milestone (no-op when at cap) ──
+            // N is driven by FreezeOptions.EarnEveryNStreakDays (default 7, live-bound via appsettings).
+            // Pass OccurredAtUtc so StreakFreezeGrantedDomainEvent carries the event timestamp
+            // (deterministic across time zones; fixes P4-11 audit Medium #2 cache invalidation).
+            if (profile.CurrentStreak > 0 && profile.CurrentStreak % _freezeOptions.EarnEveryNStreakDays == 0)
+            {
+                profile.GrantFreeze(request.OccurredAtUtc);
+            }
+
             // ── 6. Award StreakBonus XP ───────────────────────────────────────────────────────
-            int bonusAmount = GamificationConstants.XpRewards.StreakBonus;
+            int bonusAmount = await _boostCalc.GetEffectiveAmountAsync(
+                GamificationConstants.XpRewards.StreakBonus,
+                XpReason.StreakBonus,
+                request.OccurredAtUtc,
+                cancellationToken);
+
             var award = XpAward.Create(
                 profile: profile,
                 reason: XpReason.StreakBonus,

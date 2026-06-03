@@ -1,11 +1,14 @@
 using Learnexia.Modules.Gamification.Application.Abstractions;
 using Learnexia.Modules.Gamification.Application.Caching;
+using Learnexia.Modules.Gamification.Application.Configuration;
 using Learnexia.Modules.Gamification.Application.Caching.Rebuild;
+using Learnexia.Modules.Gamification.Application.Features.Events.Boost;
 using Learnexia.Modules.Gamification.Application.Leagues.Caching;
 using Learnexia.Modules.Gamification.Infrastructure.Behaviors;
 using Learnexia.Modules.Gamification.Infrastructure.Caching;
 using Learnexia.Modules.Gamification.Infrastructure.Caching.Leagues;
 using Learnexia.Modules.Gamification.Infrastructure.Caching.Rebuild;
+using Learnexia.Modules.Gamification.Infrastructure.Features.Events.Boost;
 using Learnexia.Modules.Gamification.Infrastructure.Jobs;
 using Learnexia.Modules.Gamification.Infrastructure.Persistence;
 using Learnexia.Modules.Gamification.Infrastructure.Persistence.Seed;
@@ -146,6 +149,47 @@ public static class DependencyInjection
         // Mission catalog seeder (P4-06). Scoped — wired into GamificationModule.InitializeAsync in Batch 4.
         // Runs in all environments (product-as-code catalog, not demo data).
         services.AddScoped<MissionSeeder>();
+
+        // ── P4-11-B1-B: Timed Events ─────────────────────────────────────────────────────────
+
+        // Active timed-events query seam (P4-11-B1-B): Postgres impl wrapped by a cached decorator.
+        // Consumers (Learning dashboard handler, IXpBoostCalculator in Batch 2) resolve
+        // IActiveTimedEventsQuery and get the cached variant transparently (Open-Closed principle).
+        services.AddScoped<PostgresActiveTimedEventsQuery>();
+        services.AddScoped<IActiveTimedEventsQuery>(sp => new CachedActiveTimedEventsQuery(
+            sp.GetRequiredService<PostgresActiveTimedEventsQuery>(),
+            sp.GetRequiredService<IGamificationCache>(),
+            sp.GetRequiredService<IOptions<GamificationCacheOptions>>(),
+            sp.GetRequiredService<ILoggerManager>()));
+
+        // Hangfire timed-event sweep job (P4-11-B1-B): Transient — mirrors StreakSweepJob registration.
+        // Creates its own inner scope via IServiceScopeFactory so scoped dependencies are safe.
+        services.AddTransient<TimedEventSweepJob>();
+
+        // Timed-event catalog seeder (P4-11-B1-B). Scoped — wired into GamificationModule.InitializeAsync.
+        // Seeds the WELCOME_BOOST demo row; idempotent by Code.
+        services.AddScoped<TimedEventSeeder>();
+
+        // ── P4-11-B2: XP boost calculator ────────────────────────────────────────────────────
+        // GamificationEventsOptions: MaxMultiplierCeiling hard-ceiling for timed-event multipliers.
+        // Bound from appsettings.json:Gamification:Events.
+        services.Configure<GamificationEventsOptions>(
+            configuration.GetSection(GamificationEventsOptions.SectionName));
+
+        // FreezeOptions: config-driven dials for the streak-freeze mechanic (P4-11 Fix 3).
+        // Bound from appsettings.json:Gamification:Freeze.
+        services.Configure<FreezeOptions>(
+            configuration.GetSection(FreezeOptions.SectionName));
+
+        // TimedEventOptions: config-driven dials for the timed-event sweep (P4-11 Fix 4).
+        // Bound from appsettings.json:Gamification:TimedEvent.
+        services.Configure<TimedEventOptions>(
+            configuration.GetSection(TimedEventOptions.SectionName));
+
+        // XP boost calculator (P4-11-B2): consults active timed events via the cached
+        // IActiveTimedEventsQuery seam; applies max(multipliers) capped at MaxMultiplierCeiling.
+        // Scoped — shares the per-request IActiveTimedEventsQuery instance.
+        services.AddScoped<IXpBoostCalculator, XpBoostCalculator>();
 
         // League placement service (P4-07): finds or creates the appropriate league cohort for a
         // student at a given tier + period, then stages the LeagueMembership row.
