@@ -407,4 +407,49 @@ public sealed class GamificationRepository : IGamificationRepository
             .Distinct()
             .OrderBy(t => t)
             .ToListAsync(ct);
+
+    // ---------------------------------------------------------------------------
+    // Timed Events (P4-11-B1-B)
+    // ---------------------------------------------------------------------------
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<TimedEvent>> GetActiveTimedEventsAsync(
+        DateTime nowUtc, CancellationToken ct = default)
+        => await _context.TimedEvents
+            .AsNoTracking()
+            .Where(e => e.IsActive && e.StartUtc <= nowUtc && e.EndUtc > nowUtc)
+            .ToListAsync(ct);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<TimedEvent>> GetTimedEventsToActivateAsync(
+        DateTime nowUtc, CancellationToken ct = default)
+        => await _context.TimedEvents
+            .Where(e => !e.IsActive && e.StartUtc <= nowUtc && e.EndUtc > nowUtc)
+            .ToListAsync(ct);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<TimedEvent>> GetTimedEventsToDeactivateAsync(
+        DateTime nowUtc, CancellationToken ct = default)
+        => await _context.TimedEvents
+            .Where(e => e.IsActive && e.EndUtc <= nowUtc)
+            .ToListAsync(ct);
+
+    /// <inheritdoc />
+    public async Task<TimedEvent?> GetTimedEventByCodeAsync(
+        string code, CancellationToken ct = default)
+        => await _context.TimedEvents
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.Code == code, ct);
+
+    /// <inheritdoc />
+    public async Task AddTimedEventAsync(TimedEvent timedEvent, CancellationToken ct = default)
+        => await _context.TimedEvents.AddAsync(timedEvent, ct);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<TimedEvent>> GetAllTimedEventsAsync(CancellationToken ct = default)
+        => await _context.TimedEvents
+            .AsNoTracking()
+            .OrderByDescending(e => e.StartUtc)
+            .Take(200)
+            .ToListAsync(ct);
 }

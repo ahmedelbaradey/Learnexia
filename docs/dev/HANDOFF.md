@@ -1,7 +1,59 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-06-02 (**P4-10 BE — Redis realtime gamification state (cache layer + sorted-set leaderboard + nightly rebuild) — commit/PR ready. P4-09 merged via PR #80. P4-08 FE WIP on `feat/P4-08-gamification-screens-motion` (Batches 2–6 still open for FE lead). Earlier P4-* per below.**).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-06-03 (**P4-11 BE — Streak freeze + timed events + weekly challenges + XP boost — commit/PR ready. P4-10 BE merged. P4-09 merged via PR #80. P4-08 FE WIP on `feat/P4-08-gamification-screens-motion` (Batches 2–6 still open for FE lead). Earlier P4-* per below.**).
 > Captures what's done, the decisions, the load-building config, and what's next. If you change any of these, update this file.
+
+## P4-11 — Streak freeze + timed events + weekly challenges (BE, commit + PR ready)
+
+**Branch:** `feat/P4-11-streak-freeze-timed-events`. BE-only, single PR for 3 concerns.
+
+**What shipped:**
+
+- **Streak freeze** — earned-only, cap=2 via DB CHECK + `StudentXpProfile.MaxFreezes = 2` entity constant + handler option. Granted on every 7-day streak milestone (configurable via `FreezeOptions.EarnEveryNStreakDays`) via `AdvanceStreakCommandHandler` — raises `StreakFreezeGrantedDomainEvent` → cache invalidator. Sweep job two-pass consumes pre-break and shifts `LastActivityDateUtc`, raising `StreakFreezeConsumedDomainEvent` → republisher + invalidator.
+
+- **Timed events** — `TimedEvent` entity + table + `TimedEventScope` enum + sweep job at `*/2 * * * *` UTC (configurable via `TimedEventOptions.SweepCron`) + `IActiveTimedEventsQuery` cross-module seam + Redis-cached decorator at 30s TTL + WELCOME_BOOST seed row 30 days in future + 2 invalidators + 2 republishers + admin read endpoint `GET /api/admin/timed-events` with `[Authorize(Policy = AuthorizationPolicies.AdminOnly)]`.
+
+- **Weekly challenges** — 3 `CHALLENGE_*` rows in `MissionSeeder` reusing P4-06 mission engine; daily=5, weekly=6 now.
+
+- **XP boost integration** — `IXpBoostCalculator` handler-side; wired into 5 XP-awarding handlers (lesson, answer, streak bonus, mission completion, badge). League NOT wired per lead lock since it receives boosted upstream. `max(multipliers)` capped at `MaxMultiplierCeiling=5.0`. Fail-soft with `LogWarn`.
+
+- **Dashboard surface** — `FreezeBalance` on streak snapshot; `ActiveTimedEvents` list on `DashboardDto`.
+
+**Locked lead decisions:**
+- Single PR for all three concerns.
+- Earned-only freeze (no parent/shop grants this cycle).
+- Handler-side calculator (no MediatR pipeline behavior).
+- `max` + ceiling 5.0 for overlapping events.
+
+**Load-bearing config (next agent: do NOT remove):**
+- `Gamification:Freeze:MaxInventory = 2` — informational; DB CHECK and `StudentXpProfile.MaxFreezes` are the hard caps.
+- `Gamification:Freeze:EarnEveryNStreakDays = 7` — live-bound via `FreezeOptions`; `AdvanceStreakCommandHandler` reads this.
+- `Gamification:TimedEvent:SweepCron = "*/2 * * * *"` — live-bound via `TimedEventOptions`; `GamificationModule.InitializeAsync` reads this.
+- `Gamification:TimedEvent:TimeZoneId = "UTC"` — live-bound via `TimedEventOptions`; falls back to `TimeZoneInfo.Utc` on invalid string.
+- `Gamification:Events:MaxMultiplierCeiling = 5.0`
+- `Gamification:Cache:TimedEventsTtlSeconds = 30`
+
+**Migration applied:** `20260602215558_P4_11_AddFreezeBalanceAndTimedEvents` — adds `FreezeBalance int NOT NULL DEFAULT 0` + CHECK constraint `>= 0 AND <= 2`; creates `TimedEvents` table with CHECK `multiplier >= 1.0 AND <= 5.0` + CHECK `start_utc < end_utc` + 3 indexes.
+
+**Important infra fix — Npgsql legacy timestamp bug:** Under `Npgsql.EnableLegacyTimestampBehavior=true`, `timestamptz` columns are read as `DateTime` with `Kind=Local`. Comparing in-memory against `Kind=Utc` parameters gives wrong results on non-UTC hosts. Fix pattern: at the mapping boundary (Postgres impl of cross-module query seam), call `.ToUniversalTime()` on every datetime field. Future entities using `timestamptz` should follow this pattern. Concrete example: `PostgresActiveTimedEventsQuery` maps each `e.StartUtc.ToUniversalTime()`.
+
+**Test coverage:** 16 unit tests (LeaderboardScoreEncoder-style pure logic) + 20 integration tests (Testcontainers.Redis+Postgres; 19 original + 1 T14b added in reviewer fix pass). All pass. P4-06 catalog count assertions updated from 8→11 (daily=5 unchanged, weekly=3→6).
+
+**Security audit:** 0 Crit/High, 4 Mediums fixed in-PR (`StreakFreezeGrantedDomainEvent` + invalidator, `AdminOnly` policy on TimedEvents endpoint, `LogWarn` in `XpBoostCalculator` catch, `[DisableConcurrentExecution(120)]` on both sweep jobs). Pre-existing JWT CHANGE_ME + Newtonsoft.Json transitive scanner-noise unchanged.
+
+**Operational notes:**
+- WELCOME_BOOST is a future-dated demo row that ops must manually shift to activate in any environment. Seeder is idempotent by Code; will not duplicate or shift on second run.
+- Both sweep jobs carry `[DisableConcurrentExecution(120)]` — safe under scale-out.
+- Hangfire dashboard exposes `gamification:timed-event-sweep` (2 min) and `gamification:streak-sweep` (existing) for manual run.
+
+**NOT in scope (deferred):**
+- Hearts cadence boost during fast-hearts events (P4 follow-up)
+- Parent-grantable freezes (would need Parent module endpoint + new domain event source field)
+- XP-shop / coin economy freezes (no economy primitive exists)
+- Admin write endpoints for timed events (P7 admin console)
+- SignalR push to FE (server-side caching only per P4-10 decision)
+
+---
 
 ## P4-10 — Redis realtime gamification state (BE, commit + PR ready)
 

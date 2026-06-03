@@ -1,6 +1,7 @@
 using Learnexia.Modules.Gamification.Application.Abstractions;
 using Learnexia.Modules.Gamification.Application.Common;
 using Learnexia.Modules.Gamification.Application.Configuration;
+using Learnexia.Modules.Gamification.Application.Features.Events.Boost;
 using Learnexia.Modules.Gamification.Domain.Entities;
 using Learnexia.Modules.Gamification.Domain.Enums;
 using Learnexia.Modules.Gamification.Domain.Services;
@@ -38,17 +39,20 @@ public class AwardAnswerSubmittedXpCommandHandler
     private readonly IOptions<HeartsOptions> _heartsOptions;
     private readonly ISystemClock _clock;
     private readonly ILoggerManager _logger;
+    private readonly IXpBoostCalculator _boostCalc;
 
     public AwardAnswerSubmittedXpCommandHandler(
         IGamificationRepository repo,
         IOptions<HeartsOptions> heartsOptions,
         ISystemClock clock,
-        ILoggerManager logger)
+        ILoggerManager logger,
+        IXpBoostCalculator boostCalc)
     {
         _repo = repo;
         _heartsOptions = heartsOptions;
         _clock = clock;
         _logger = logger;
+        _boostCalc = boostCalc;
     }
 
     public async Task<BaseResponse<Unit>> Handle(
@@ -98,7 +102,11 @@ public class AwardAnswerSubmittedXpCommandHandler
 
             // ─────────────────────────────────────────────────────────────────────────────────
 
-            int amount = GamificationConstants.XpRewards.CorrectAnswer;
+            int amount = await _boostCalc.GetEffectiveAmountAsync(
+                GamificationConstants.XpRewards.CorrectAnswer,
+                XpReason.CorrectAnswer,
+                request.OccurredAtUtc,
+                cancellationToken);
 
             var award = XpAward.Create(
                 profile: profile,

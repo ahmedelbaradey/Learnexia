@@ -274,4 +274,50 @@ public interface IGamificationRepository
     /// cohort in the given period. Used by the promotion job to iterate tiers. Uses AsNoTracking.
     /// </summary>
     Task<List<int>> GetDistinctTiersForPeriodAsync(string periodKey, CancellationToken ct = default);
+
+    // ─────── Timed Events (P4-11-B1-B) ───────
+
+    /// <summary>
+    /// Returns all <see cref="TimedEvent"/> rows whose window covers <paramref name="nowUtc"/>
+    /// and whose <c>IsActive</c> flag is true.
+    /// Used by <c>ActiveTimedEventsQuery</c> (Postgres impl — clock-based source of truth).
+    /// Uses AsNoTracking.
+    /// </summary>
+    Task<IReadOnlyList<TimedEvent>> GetActiveTimedEventsAsync(DateTime nowUtc, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all <see cref="TimedEvent"/> rows whose window has started but whose
+    /// <c>IsActive</c> flag is still false (awaiting sweep-job activation).
+    /// Used exclusively by <c>TimedEventSweepJob</c> Pass 1 (activation).
+    /// Returns change-tracked entities (mutation follows).
+    /// </summary>
+    Task<IReadOnlyList<TimedEvent>> GetTimedEventsToActivateAsync(DateTime nowUtc, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all <see cref="TimedEvent"/> rows whose window has closed but whose
+    /// <c>IsActive</c> flag is still true (awaiting sweep-job deactivation).
+    /// Used exclusively by <c>TimedEventSweepJob</c> Pass 2 (deactivation).
+    /// Returns change-tracked entities (mutation follows).
+    /// </summary>
+    Task<IReadOnlyList<TimedEvent>> GetTimedEventsToDeactivateAsync(DateTime nowUtc, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns a single <see cref="TimedEvent"/> row by its idempotency code.
+    /// Used by <c>TimedEventSeeder</c> upsert logic. Uses AsNoTracking.
+    /// Returns <c>null</c> when no row with the given code exists.
+    /// </summary>
+    Task<TimedEvent?> GetTimedEventByCodeAsync(string code, CancellationToken ct = default);
+
+    /// <summary>
+    /// Stages a new <see cref="TimedEvent"/> catalog row for insertion.
+    /// Does NOT save — seeder calls <c>SaveChangesAsync</c> directly.
+    /// </summary>
+    Task AddTimedEventAsync(TimedEvent timedEvent, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all <see cref="TimedEvent"/> catalog rows ordered by <c>StartUtc DESC</c>,
+    /// limited to the most recent 200 rows. Used by the admin read endpoint (P4-11-B4).
+    /// Uses AsNoTracking.
+    /// </summary>
+    Task<IReadOnlyList<TimedEvent>> GetAllTimedEventsAsync(CancellationToken ct = default);
 }
