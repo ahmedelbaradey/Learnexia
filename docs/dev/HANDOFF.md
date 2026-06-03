@@ -3,6 +3,13 @@
 > Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-06-03 (**P4-11 BE — Streak freeze + timed events + weekly challenges + XP boost — commit/PR ready. P4-10 BE merged. P4-09 merged via PR #80. P4-08 FE WIP on `feat/P4-08-gamification-screens-motion` (Batches 2–6 still open for FE lead). Earlier P4-* per below.**).
 > Captures what's done, the decisions, the load-building config, and what's next. If you change any of these, update this file.
 
+## Catalog module REMOVED (2026-06-03)
+
+The demo **Catalog** module (Products/Categories + the `DEMO_PgvectorProof` migration) has been **deleted entirely** — all 4 src projects, the `Modules.Catalog.UnitTests` project, the `Shared.Contracts/Catalog` integration event, and its solution entries. Host wiring (`Program.cs`, `Learnexia.Host.csproj`, `MediatRExtensions`), the `"Catalog"` entry in Identity `Claims.GenerateModules()`, and all integration-test references (`LearnexiaWebAppFactory`, `P1_07`, `P1_12_BE4/BE5`, `P1_13_BE4/BE1`, `P4_01` smoke T3) were updated to drop it. `P1_05_RBAC_Tests` kept its Identity/Parent RBAC coverage and dropped the Catalog Products/Categories cases (the "real HTTP 401" envelope test was repointed to `Authorzation/RoleList`).
+
+- **Reference module:** Catalog was the documented canonical reference. There is no named replacement — mirror an existing module (e.g. **Learning**) for new backend work.
+- **pgvector:** no remaining module needs the `vector` extension (see the pgvector note below) — the image stays pinned only to match staging/prod.
+
 ## P4-11 — Streak freeze + timed events + weekly challenges (BE, commit + PR ready)
 
 **Branch:** `feat/P4-11-streak-freeze-timed-events`. BE-only, single PR for 3 concerns.
@@ -835,7 +842,7 @@ These exist because the WSL clean install drifts dependencies past the Expo SDK 
 - **i18n is initialized at module load** in `apps/student-app/app/_layout.tsx` (NOT in a useEffect) — react-i18next changes its hook count unready→ready, so initializing mid-mount crashes. Keep `initI18n()` at module scope.
 - **i18n resources are one flat namespace** (`packages/shared/src/i18n/config.ts`) — components use dotted keys like `t('auth.login.title')`. `i18next ^24` / `react-i18next ^15.4` aligned across student-app + `@learnexia/shared` (a major mismatch caused a duplicate react-i18next instance).
 - **Backend error envelopes are camelCase** — `ErrorHandlerMiddleWare` serializes with `JsonNamingPolicy.CamelCase` so error responses match the `BaseResponse` success shape (the typed client parses them).
-- **Postgres MUST be a pgvector image** (`pgvector/pgvector:pg15` in `docker/docker-compose.yaml`, pinned to pg15 to match staging/prod). The **Catalog** migration `DEMO_PgvectorProof` runs `CREATE EXTENSION vector`; on a plain `postgres` image it fails at startup with `0A000: extension "vector" is not available`. If you stand up a DB elsewhere (e.g. a manual `docker run`), use the pgvector image — not `postgres:15-alpine`. (This bit the remote server until its container was swapped to `pgvector/pgvector:pg15`.)
+- **Postgres image is pinned to pgvector** (`pgvector/pgvector:pg15` in `docker/docker-compose.yaml`, pinned to pg15 to match staging/prod). NOTE: the hard `CREATE EXTENSION vector` startup requirement came from the **Catalog** module's `DEMO_PgvectorProof` migration, which has been **removed along with the Catalog module** — no remaining module needs the `vector` extension, so a plain `postgres` image would no longer fail at startup. The image stays pinned to pgvector to match staging/prod (and to keep the door open for future pgvector use); keep using it unless you deliberately decide otherwise.
 - **Remote shared DB:** `learnexia` @ `75.119.158.102:5344` runs `pgvector/pgvector:pg15`; fully migrated + seeded (24 subjects / 162 lessons / 162 skills / 13 roles). Its connection string lives ONLY in gitignored `appsettings.Development.local.json` (loaded via the optional `appsettings.{Environment}.local.json` line in `Program.cs`) — never commit it.
 - **Regenerating `@learnexia/api-client` needs the .NET 9 runtime** — `nswag` 14.x ships a **Net90** binary and self-checks the runtime, so it won't run on net10 alone. Install side-by-side: `dotnet-install.sh --runtime dotnet --channel 9.0` **and** `--runtime aspnetcore --channel 9.0`. Then: start the backend, `SWAGGER_URL=http://localhost:5080/swagger/v2/swagger.json pnpm --filter @learnexia/api-client refresh:swagger` → `pnpm --filter @learnexia/api-client gen:api` (the default SWAGGER_URL is https://localhost:7080; override to the HTTP :5080 dev URL).
 
@@ -868,7 +875,7 @@ These exist because the WSL clean install drifts dependencies past the Expo SDK 
 - **Subjects = Math / Science / Arabic / English** everywhere (the dashboard/reports captures show "Reading"/"Art" — that's mock data; use the 4 product subjects).
 - **Scope trims:** Child Home → **P2-09** (not P1-11); secondary Settings tabs (Notifications/Linked/Security/Plan) → **P2-12** (back + front).
 - **All new backend → P1-12 "Batch 2" + P1-13 hardening: ✅ BUILT & MERGED** (profile/`Me`, avatar upload [MinIO], Google OAuth, password reset, update-child, register country+consent; lockout, sign-in anti-enumeration, admin seed). See the "Backend — … DONE" section below. FE can now light up the UI-first surfaces (regenerate the api-client).
-- Per CLAUDE.md: **ask before adding any design pattern**; mirror existing shapes (Catalog backend, existing component/hook shapes frontend).
+- Per CLAUDE.md: **ask before adding any design pattern**; mirror existing shapes (existing modules backend, existing component/hook shapes frontend).
 
 ## For the backend lead (P1-12, Batch 2) — ✅ DONE (retained for traceability)
 > All items below are **built & merged** — see the "Backend — … DONE" section for PRs/details. Kept here as the original gap list.

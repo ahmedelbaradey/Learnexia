@@ -5,7 +5,6 @@ using Hangfire.PostgreSql;
 using Learnexia.Host.Extensions;
 using Learnexia.Host.Middleware;
 using Learnexia.Host.SystemConfiguration;
-using Learnexia.Modules.Catalog.Api;
 using Learnexia.Modules.Identity.Api;
 using Learnexia.Modules.Learning.Api;
 using Learnexia.Modules.Parent.Api;
@@ -108,7 +107,6 @@ if (!string.IsNullOrWhiteSpace(defaultConnectionString))
 
 // Modules (each wires its own Application + Infrastructure + JWT auth + controllers application part)
 builder.Services.AddIdentityModule(builder.Configuration);
-builder.Services.AddCatalogModule(builder.Configuration);
 builder.Services.AddLearningModule(builder.Configuration);
 builder.Services.AddParentModule(builder.Configuration);
 builder.Services.AddNotificationsModule(builder.Configuration);
@@ -163,12 +161,11 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = Forward
 
 // Apply pending migrations per module + seed (all idempotent). Each module owns its own DbContext and
 // exposes a Host-callable hook through its Api entry point — the Host never references module Infrastructure
-// directly (module isolation). Identity's SeedAsync also migrates before seeding; Catalog and Notifications
+// directly (module isolation). Identity's SeedAsync also migrates before seeding; the other modules
 // migrate via InitializeAsync. Modules are independent, so ordering is not significant.
 using (var scope = app.Services.CreateScope())
 {
     await IdentityModule.SeedAsync(scope.ServiceProvider);
-    await CatalogModule.InitializeAsync(scope.ServiceProvider);
     await LearningModule.InitializeAsync(scope.ServiceProvider);
     await ParentModule.InitializeAsync(scope.ServiceProvider);
     await NotificationsModule.InitializeAsync(scope.ServiceProvider);
@@ -207,7 +204,6 @@ if (app.Environment.IsDevelopment())
 app.MapControllers();
 
 // Module endpoints (minimal APIs for not-yet-controllerized modules)
-app.MapCatalogModule();
 app.MapLearningModule();
 app.MapParentModule();
 app.MapNotificationsModule();

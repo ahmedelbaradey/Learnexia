@@ -27,7 +27,6 @@ public static class MediatRExtensions
             // handlers) are discoverable across module boundaries. Add new modules' Application
             // assemblies here (e.g. Gamification) as they come online.
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Identity.Application.AssemblyReference>();
-            cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Catalog.Application.AssemblyReference>();
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Learning.Application.AssemblyReference>();
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Parent.Application.AssemblyReference>();
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Notifications.Application.AssemblyReference>();

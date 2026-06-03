@@ -826,8 +826,6 @@ public sealed class AvatarWebAppFactory : WebApplicationFactory<Program>, IAsync
             // Override all DbContexts to use the test Postgres container.
             ReplaceDbContext<Learnexia.Modules.Identity.Infrastructure.Persistence.IdentityModuleDbContext>(
                 services, _postgresConnectionString, "identity");
-            ReplaceDbContext<Learnexia.Modules.Catalog.Infrastructure.Persistence.CatalogDbContext>(
-                services, _postgresConnectionString, "catalog");
             ReplaceDbContext<Learnexia.Modules.Notifications.Infrastructure.Persistence.NotificationsDbContext>(
                 services, _postgresConnectionString, "notifications");
             ReplaceDbContext<Learnexia.Modules.Learning.Infrastructure.Persistence.LearningDbContext>(
@@ -869,8 +867,6 @@ public sealed class AvatarWebAppFactory : WebApplicationFactory<Program>, IAsync
         var sp = scope.ServiceProvider;
 
         await sp.GetRequiredService<Learnexia.Modules.Identity.Infrastructure.Persistence.IdentityModuleDbContext>()
-            .Database.MigrateAsync();
-        await sp.GetRequiredService<Learnexia.Modules.Catalog.Infrastructure.Persistence.CatalogDbContext>()
             .Database.MigrateAsync();
         await sp.GetRequiredService<Learnexia.Modules.Notifications.Infrastructure.Persistence.NotificationsDbContext>()
             .Database.MigrateAsync();

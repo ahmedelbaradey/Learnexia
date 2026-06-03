@@ -4,7 +4,6 @@ using System.Text;
 using System.Text.Json;
 using AspNetCoreRateLimit;
 using FluentAssertions;
-using Learnexia.Modules.Catalog.Infrastructure.Persistence;
 using Learnexia.Modules.Identity.Api;
 using Learnexia.Modules.Identity.Application.Abstractions;
 using Learnexia.Modules.Identity.Domain.Entities;
@@ -82,7 +81,6 @@ public sealed class GoogleSignInWebAppFactory : WebApplicationFactory<Program>, 
 
             // Replace all module DbContexts with the Testcontainers connection.
             ReplaceDbContext<IdentityModuleDbContext>(services, connectionString, "identity");
-            ReplaceDbContext<CatalogDbContext>(services, connectionString, "catalog");
             ReplaceDbContext<NotificationsDbContext>(services, connectionString, "notifications");
             ReplaceDbContext<LearningDbContext>(services, connectionString, "learning");
 
@@ -111,7 +109,6 @@ public sealed class GoogleSignInWebAppFactory : WebApplicationFactory<Program>, 
         var sp = scope.ServiceProvider;
 
         await sp.GetRequiredService<IdentityModuleDbContext>().Database.MigrateAsync();
-        await sp.GetRequiredService<CatalogDbContext>().Database.MigrateAsync();
         await sp.GetRequiredService<NotificationsDbContext>().Database.MigrateAsync();
         await sp.GetRequiredService<LearningDbContext>().Database.MigrateAsync();
 
