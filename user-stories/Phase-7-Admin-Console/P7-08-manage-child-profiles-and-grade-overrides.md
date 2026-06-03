@@ -21,5 +21,5 @@ As an admin, I want to edit a child's profile and override their grade, so that 
 
 ## Notes
 - Surface: **Next.js `admin-dashboard`** app, built on the P1-10 admin shell.
-- Depends on: P1-10 (admin shell), P1-05 (Admin policy), P1-01/P1-03/P1-04 (Identity, parent/child), P7-06 (inspect/search), P7-12 (audit log); grade behavior mirrors P5-06.
-- Reuses the **Identity** module. Grade override **preserves XP/badges/streaks/mastery history** (per P5-06) and re-scopes curriculum via `Shared.Contracts` integration events only. No teacher role.
+- Depends on: P1-10 (admin shell), P1-05 (Admin policy), P1-01/P1-03/P1-04 (Identity, parent/child), P7-06 (inspect/search), P7-12 (audit log). **P5-06 has not been built yet** — P7-08 introduces the `ChildGradeChanged` integration event in `Shared.Contracts` so P5-06 can consume the same seam when it lands.
+- Reuses the **Identity** module. Grade override **preserves XP/badges/streaks/mastery history** and re-scopes curriculum via the `ChildGradeChanged` integration event (no cross-module FK). No teacher role.
