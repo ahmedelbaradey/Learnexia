@@ -7,6 +7,12 @@ public class User : IdentityUser<int>
 {
     public string FullName { get; set; } = default!;
     public string PreferredLanguage { get; set; } = "ar-EG";
+    /// <summary>
+    /// Medium-of-instruction language for the child's curriculum ("ar" or "en").
+    /// Distinct from <see cref="PreferredLanguage"/> (the UI/UX language).
+    /// Set by the parent at onboarding; immutable by the student (parent-only change in P8-04).
+    /// </summary>
+    public string LearningLanguage { get; set; } = "ar";
     public string CountryCode { get; set; } = "+20";
     
     public string? Nationality { get; set; }

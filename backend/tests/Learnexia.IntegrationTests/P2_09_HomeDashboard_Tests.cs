@@ -96,22 +96,31 @@ public sealed class P2_09_HomeDashboard_Tests : IAsyncLifetime
         // Resolve subject IDs used across multiple test cases.
         var db = scope.ServiceProvider.GetRequiredService<LearningDbContext>();
 
+        // P8-02: query by SubjectCode + Language — names are now grade-suffixed ("Math (G1)" etc.)
+        // and differ between language trees. Students use learning_language="en" so the En tree
+        // is the relevant one for Math and Science (ARABIC→Ar pinned, ENGLISH→En pinned).
         var mathSubject = await db.Subjects
             .AsNoTracking()
             .Include(s => s.Grade)
-            .FirstOrDefaultAsync(s => s.Name == "Math" && s.Grade.Number == 1);
+            .FirstOrDefaultAsync(s =>
+                s.SubjectCode == SubjectCode.MATH &&
+                s.Language == ContentLanguage.En &&
+                s.Grade.Number == 1);
 
         mathSubject.Should().NotBeNull(
-            "LearningSeeder must seed a 'Math' subject for Grade 1; check LearningSeeder.SeedAsync.");
+            "LearningSeeder must seed a MATH/En subject for Grade 1; check LearningSeeder.SeedAsync.");
         _mathG1SubjectId = mathSubject!.Id;
 
         var scienceSubject = await db.Subjects
             .AsNoTracking()
             .Include(s => s.Grade)
-            .FirstOrDefaultAsync(s => s.Name == "Science" && s.Grade.Number == 1);
+            .FirstOrDefaultAsync(s =>
+                s.SubjectCode == SubjectCode.SCIENCE &&
+                s.Language == ContentLanguage.En &&
+                s.Grade.Number == 1);
 
         scienceSubject.Should().NotBeNull(
-            "LearningSeeder must seed a 'Science' subject for Grade 1; check LearningSeeder.SeedAsync.");
+            "LearningSeeder must seed a SCIENCE/En subject for Grade 1; check LearningSeeder.SeedAsync.");
         _scienceG1SubjectId = scienceSubject!.Id;
     }
 
@@ -210,6 +219,7 @@ public sealed class P2_09_HomeDashboard_Tests : IAsyncLifetime
                 Grade    = 1,
                 Language = "ar",
                 Country  = "EG",
+                LearningLanguage = "en", // P8-01: "en" so handler resolves MATH/En, SCIENCE/En trees
             },
             parentToken);
         ((int)addResp.StatusCode).Should().BeOneOf(new[] { 200, 201 },
@@ -682,12 +692,17 @@ public sealed class P2_09_HomeDashboard_Tests : IAsyncLifetime
     // C11 — Seeder smoke: Grade 1 has exactly 4 subjects after SeedAsync
     // =========================================================================
 
-    [Fact(DisplayName = "P209-C11 Seeder smoke: Grade 1 has exactly 4 subjects (Math, Science, Arabic, English)")]
+    [Fact(DisplayName = "P209-C11 Seeder smoke: Grade 1 has all 6 bilingual subject trees; 4 visible to an English-medium student")]
     public async Task SeederSmoke_Grade1Has4Subjects()
     {
-        // This test guards the dashboard tests' assumption that Grade-1 subjects are seeded.
-        // If the seeder doesn't run or produces a different count, all dashboard fallback
-        // tests would give incorrect results without a clear error message.
+        // P8-02: The bilingual seeder now creates 6 subject roots per grade
+        // (Math/Ar, Math/En, Science/Ar, Science/En, Arabic/Ar, English/En).
+        // The total DB count for Grade 1 is 6 — assert that.
+        // The 4 subjects VISIBLE to an English-medium student (resolved by SubjectLanguageResolver):
+        //   MATH    → En → "Math (G1)"
+        //   SCIENCE → En → "Science (G1)"
+        //   ARABIC  → Ar (pinned) → Arabic subject
+        //   ENGLISH → En (pinned) → "English (G1)"
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<LearningDbContext>();
 
@@ -697,21 +712,42 @@ public sealed class P2_09_HomeDashboard_Tests : IAsyncLifetime
             .Where(s => s.Grade.Number == 1)
             .CountAsync();
 
-        grade1SubjectCount.Should().Be(4,
-            "LearningSeeder must seed exactly 4 subjects for Grade 1: Math, Science, Arabic, English. " +
+        grade1SubjectCount.Should().Be(6,
+            "P8-02 bilingual seeder must seed exactly 6 subject roots for Grade 1 " +
+            "(Math/Ar, Math/En, Science/Ar, Science/En, Arabic/Ar, English/En). " +
             "If this fails, check that LearningSeeder.SeedAsync ran successfully in InitializeAsync.");
 
-        // Verify the expected subject names are present.
-        var grade1SubjectNames = await db.Subjects
+        // Verify all 4 stable SubjectCodes are seeded (MATH=0, SCIENCE=1, ARABIC=2, ENGLISH=3).
+        var grade1SubjectCodes = await db.Subjects
             .AsNoTracking()
             .Include(s => s.Grade)
             .Where(s => s.Grade.Number == 1)
-            .Select(s => s.Name)
+            .Select(s => s.SubjectCode)
+            .Distinct()
             .ToListAsync();
 
-        grade1SubjectNames.Should().Contain("Math", "Math subject must be seeded for Grade 1");
-        grade1SubjectNames.Should().Contain("Science", "Science subject must be seeded for Grade 1");
-        grade1SubjectNames.Should().Contain("Arabic", "Arabic subject must be seeded for Grade 1");
-        grade1SubjectNames.Should().Contain("English", "English subject must be seeded for Grade 1");
+        grade1SubjectCodes.Should().Contain(SubjectCode.MATH,
+            "MATH subject trees must be seeded for Grade 1");
+        grade1SubjectCodes.Should().Contain(SubjectCode.SCIENCE,
+            "SCIENCE subject trees must be seeded for Grade 1");
+        grade1SubjectCodes.Should().Contain(SubjectCode.ARABIC,
+            "ARABIC subject tree must be seeded for Grade 1");
+        grade1SubjectCodes.Should().Contain(SubjectCode.ENGLISH,
+            "ENGLISH subject tree must be seeded for Grade 1");
+
+        // Verify that the 4 trees visible to an English-medium student are present.
+        var mathEn = await db.Subjects.AsNoTracking().Include(s => s.Grade)
+            .AnyAsync(s => s.SubjectCode == SubjectCode.MATH && s.Language == ContentLanguage.En && s.Grade.Number == 1);
+        var scienceEn = await db.Subjects.AsNoTracking().Include(s => s.Grade)
+            .AnyAsync(s => s.SubjectCode == SubjectCode.SCIENCE && s.Language == ContentLanguage.En && s.Grade.Number == 1);
+        var arabicAr = await db.Subjects.AsNoTracking().Include(s => s.Grade)
+            .AnyAsync(s => s.SubjectCode == SubjectCode.ARABIC && s.Language == ContentLanguage.Ar && s.Grade.Number == 1);
+        var englishEn = await db.Subjects.AsNoTracking().Include(s => s.Grade)
+            .AnyAsync(s => s.SubjectCode == SubjectCode.ENGLISH && s.Language == ContentLanguage.En && s.Grade.Number == 1);
+
+        mathEn.Should().BeTrue("MATH/En tree must be seeded for Grade 1 (visible to English-medium student)");
+        scienceEn.Should().BeTrue("SCIENCE/En tree must be seeded for Grade 1 (visible to English-medium student)");
+        arabicAr.Should().BeTrue("ARABIC/Ar tree must be seeded for Grade 1 (always Ar per pinning rule)");
+        englishEn.Should().BeTrue("ENGLISH/En tree must be seeded for Grade 1 (always En per pinning rule)");
     }
 }

@@ -164,7 +164,8 @@ public sealed class P1_09_Me_Tests : IAsyncLifetime
                 Password = "Child@Pass1",
                 Grade = grade,
                 Language = "ar",
-                Country = "EG"
+                Country = "EG",
+                LearningLanguage = "ar", // P8-01: required
             },
             parentToken);
         resp.StatusCode.Should().Be(HttpStatusCode.OK,
@@ -613,5 +614,70 @@ public sealed class P1_09_Me_Tests : IAsyncLifetime
 
         hasChildren.GetBoolean().Should().BeFalse(
             "parent B's hasChildren must remain false when only parent A has added a child; body: {0}", body);
+    }
+
+    // ===========================================================================
+    // P8-01: learningLanguage field on Me response
+    // ===========================================================================
+
+    [Fact(DisplayName = "P8-01: child Me.learningLanguage equals the value set at Add-Child")]
+    public async Task P8_01_LearningLanguage_Child_Me_ReturnsSetValue()
+    {
+        // Arrange
+        var (parentToken, _) = await RegisterParentAsync(UniqueEmail("p801parent"));
+        var childEmail = UniqueEmail("p801child");
+
+        // Add-Child with learningLanguage = "en"
+        var (addResp, _, addBody) = await SendAsync(_client, HttpMethod.Post, AddChildUrl,
+            new
+            {
+                FullName = "P801 Child",
+                Email = childEmail,
+                Password = "Child@Pass1",
+                Grade = 3,
+                Language = "ar",
+                Country = "EG",
+                LearningLanguage = "en",
+            },
+            parentToken);
+        addResp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "Add-Child must succeed; body: {0}", addBody);
+
+        // Sign in as child
+        var (signInResp, signInRoot, signInBody) = await SendAsync(
+            _client, HttpMethod.Post, SignInUrl,
+            new { UserName = childEmail, Password = "Child@Pass1" });
+        signInResp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "child sign-in must succeed; body: {0}", signInBody);
+        TryProp(signInRoot, "data", out var signInData).Should().BeTrue("body: {0}", signInBody);
+        TryProp(signInData, "accessToken", out var childTokenProp).Should().BeTrue("body: {0}", signInBody);
+        var childToken = childTokenProp.GetString()!;
+
+        // Act: call /Me as the child
+        var (meResp, meRoot, meBody) = await GetMeAsync(childToken);
+
+        // Assert
+        meResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", meBody);
+        TryProp(meRoot, "data", out var meData).Should().BeTrue("body: {0}", meBody);
+        TryProp(meData, "learningLanguage", out var llProp).Should().BeTrue(
+            "Me response must contain the 'learningLanguage' field (P8-01); body: {0}", meBody);
+        llProp.GetString().Should().Be("en",
+            "learningLanguage must equal the value set at Add-Child; body: {0}", meBody);
+    }
+
+    [Fact(DisplayName = "P8-01: Me.learningLanguage is present for a parent (defaults to 'ar')")]
+    public async Task P8_01_LearningLanguage_Parent_Me_HasDefaultValue()
+    {
+        var (parentToken, _) = await RegisterParentAsync(UniqueEmail("p801parentdefault"));
+
+        var (resp, root, body) = await GetMeAsync(parentToken);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", body);
+        TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);
+        TryProp(data, "learningLanguage", out var llProp).Should().BeTrue(
+            "Me response must always contain the 'learningLanguage' field; body: {0}", body);
+        // Parent accounts get the DB default "ar"
+        llProp.GetString().Should().Be("ar",
+            "parent LearningLanguage must be the DB default 'ar'; body: {0}", body);
     }
 }

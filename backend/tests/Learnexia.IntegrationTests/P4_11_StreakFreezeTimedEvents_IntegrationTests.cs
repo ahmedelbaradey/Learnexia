@@ -200,6 +200,7 @@ public sealed class P4_11_StreakFreezeTimedEvents_IntegrationTests : IAsyncLifet
                 Grade    = 1,
                 Language = "ar",
                 Country  = "EG",
+                LearningLanguage = "ar", // P8-01: required
             },
             parentToken);
         ((int)addResp.StatusCode).Should().BeOneOf(new[] { 200, 201 },

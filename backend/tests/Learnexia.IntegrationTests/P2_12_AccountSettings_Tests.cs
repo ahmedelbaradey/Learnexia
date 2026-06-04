@@ -158,7 +158,8 @@ public sealed class P2_12_AccountSettings_Tests : IAsyncLifetime
         return token.GetString()!;
     }
 
-    private static object ValidChildBody(string email, int grade = 3, string language = "ar", string country = "EG")
+    // P8-01: LearningLanguage is now required. Default "ar" for existing tests.
+    private static object ValidChildBody(string email, int grade = 3, string language = "ar", string country = "EG", string learningLanguage = "ar")
         => new
         {
             FullName = "Test Child",
@@ -167,6 +168,7 @@ public sealed class P2_12_AccountSettings_Tests : IAsyncLifetime
             Grade = grade,
             Language = language,
             Country = country,
+            LearningLanguage = learningLanguage,
         };
 
     private Task<(HttpResponseMessage Response, JsonElement Root, string Body)>

@@ -133,12 +133,17 @@ public sealed class P2_05_OpenAndCompleteLesson_Tests : IAsyncLifetime
 
         _mathG1DemoLessonId = demoLesson!.Id;
 
+        // P8-02: query by SubjectCode + Language — names are now grade-suffixed ("Math (G1)" etc.).
+        // Students use learning_language="en" so the MATH/En tree is the relevant one.
         var mathG1Subject = await db.Subjects
             .AsNoTracking()
             .Include(s => s.Grade)
-            .FirstOrDefaultAsync(s => s.Name == "Math" && s.Grade.Number == 1);
+            .FirstOrDefaultAsync(s =>
+                s.SubjectCode == SubjectCode.MATH &&
+                s.Language == ContentLanguage.En &&
+                s.Grade.Number == 1);
 
-        mathG1Subject.Should().NotBeNull("Math G1 subject must be seeded");
+        mathG1Subject.Should().NotBeNull("Math/En G1 subject must be seeded");
         _mathG1SubjectId = mathG1Subject!.Id;
 
         // Find a lesson WITHOUT demo content (Explanation IS NULL) in Math G1.
@@ -245,6 +250,7 @@ public sealed class P2_05_OpenAndCompleteLesson_Tests : IAsyncLifetime
                 Grade    = 1,
                 Language = "ar",
                 Country  = "EG",
+                LearningLanguage = "en", // P8-01: "en" so handler resolves MATH/En tree
             },
             parentToken);
         ((int)addResp.StatusCode).Should().BeOneOf(new[] { 200, 201 },
@@ -282,6 +288,7 @@ public sealed class P2_05_OpenAndCompleteLesson_Tests : IAsyncLifetime
                 Grade    = 1,
                 Language = "ar",
                 Country  = "EG",
+                LearningLanguage = "en", // P8-01: "en" so handler resolves MATH/En tree
             },
             parentTok);
         ((int)addResp.StatusCode).Should().BeOneOf(new[] { 200, 201 },

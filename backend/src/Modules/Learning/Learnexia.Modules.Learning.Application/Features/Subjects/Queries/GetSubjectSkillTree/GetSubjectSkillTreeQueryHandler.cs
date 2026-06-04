@@ -1,5 +1,6 @@
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Dtos;
+using Learnexia.Modules.Learning.Application.Helpers;
 using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Modules.Learning.Domain.Services;
@@ -15,6 +16,11 @@ namespace Learnexia.Modules.Learning.Application.Features.Subjects.Queries.GetSu
 /// <summary>
 /// Handles <see cref="GetSubjectSkillTreeQuery"/>.
 /// Verifies the subject exists (404 if not), then loads Concepts with their Skills and the Skills' Lessons.
+///
+/// P8-03: Before loading, the handler verifies that the requested subject's <see cref="ContentLanguage"/>
+/// matches the effective language resolved for its <see cref="SubjectCode"/> from the student's JWT claim.
+/// If it does not match, it attempts to serve the correct-language tree (falling back if absent) and logs a
+/// warning. This prevents a student from accessing the wrong-language tree via a direct <c>SubjectId</c>.
 ///
 /// When the request is authenticated (<see cref="ICurrentUserService.UserId"/> is non-null),
 /// the <see cref="LearningPathEngine"/> derives per-student <see cref="NodeState"/> for each skill.
@@ -51,14 +57,49 @@ public class GetSubjectSkillTreeQueryHandler
     {
         try
         {
-            var subjectExists = await _repository.Learning
-                .AnyAsync<Subject>(s => s.Id == request.SubjectId);
+            // Load the subject to verify it exists and to check its language.
+            var subject = await _repository.Learning
+                .GetByCondition<Subject>(s => s.Id == request.SubjectId, false)
+                .FirstOrDefaultAsync(cancellationToken);
 
-            if (!subjectExists)
+            if (subject is null)
                 return NotFound<List<ConceptNodeDto>>(_localizer[SharedResourcesKey.SubjectNotFound]);
 
+            // P8-03-BE-1/BE-4: resolve the effective language for this subject code.
+            var learnerLang = LearningLanguageClaimAccessor.GetLearningLanguage(_currentUser, _logger);
+            var resolved = SubjectLanguageResolver.Resolve(subject.SubjectCode, learnerLang);
+
+            // P8-03-BE-4/BE-6: if the requested subject is in the wrong language, redirect to the
+            // correct-language tree for the same SubjectCode in the same Grade.
+            if (subject.Language != resolved)
+            {
+                var correctSubject = await _repository.Learning
+                    .GetByCondition<Subject>(
+                        s => s.GradeId == subject.GradeId
+                          && s.SubjectCode == subject.SubjectCode
+                          && s.Language == resolved,
+                        trackChanges: false)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                if (correctSubject is not null)
+                {
+                    // Silently serve the correct-language tree.
+                    subject = correctSubject;
+                }
+                else
+                {
+                    // Missing-tree fallback (AC-10): the resolved tree is absent; serve what was requested
+                    // and log a warning.
+                    _logger.LogWarn(
+                        $"Missing subject tree for SubjectCode={subject.SubjectCode} Language={resolved}" +
+                        $" GradeId={subject.GradeId}. Falling back to Language={subject.Language}.");
+                }
+            }
+
+            var effectiveSubjectId = subject.Id;
+
             var concepts = await _repository.Learning
-                .GetByCondition<Concept>(c => c.SubjectId == request.SubjectId, false)
+                .GetByCondition<Concept>(c => c.SubjectId == effectiveSubjectId, false)
                 .Include(c => c.Skills)
                     .ThenInclude(sk => sk.Lessons)
                 .OrderBy(c => c.Id)
@@ -75,15 +116,15 @@ public class GetSubjectSkillTreeQueryHandler
 
                 // Bulk-fetch the 5 engine inputs.
                 var nodes = await _repository.Learning
-                    .GetSubjectKnowledgeNodesAsync(request.SubjectId, cancellationToken);
+                    .GetSubjectKnowledgeNodesAsync(effectiveSubjectId, cancellationToken);
                 var edges = await _repository.Learning
-                    .GetSubjectKnowledgeEdgesAsync(request.SubjectId, cancellationToken);
+                    .GetSubjectKnowledgeEdgesAsync(effectiveSubjectId, cancellationToken);
                 var masteryBySkillId = await _repository.Learning
-                    .GetSkillMasteryForStudentInSubjectAsync(studentId.Value, request.SubjectId, cancellationToken);
+                    .GetSkillMasteryForStudentInSubjectAsync(studentId.Value, effectiveSubjectId, cancellationToken);
                 var completedLessonIds = await _repository.Learning
-                    .GetCompletedLessonIdsForStudentInSubjectAsync(studentId.Value, request.SubjectId, cancellationToken);
+                    .GetCompletedLessonIdsForStudentInSubjectAsync(studentId.Value, effectiveSubjectId, cancellationToken);
                 var lessons = await _repository.Learning
-                    .GetSubjectLessonsAsync(request.SubjectId, cancellationToken);
+                    .GetSubjectLessonsAsync(effectiveSubjectId, cancellationToken);
 
                 // Build skillsById for the engine (all skills in subject, already loaded via concepts).
                 var skillsById = concepts
@@ -190,7 +231,7 @@ public class GetSubjectSkillTreeQueryHandler
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error: in GetSubjectSkillTreeQuery");
-            return ServerError<List<ConceptNodeDto>>(ex.Message);
+            return ServerError<List<ConceptNodeDto>>();  // P8-SEC-3: do not expose ex.Message to the client.
         }
     }
 

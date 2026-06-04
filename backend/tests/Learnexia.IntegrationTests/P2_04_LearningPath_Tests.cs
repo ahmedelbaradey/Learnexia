@@ -19,7 +19,7 @@ namespace Learnexia.IntegrationTests;
 /// Endpoints under test:
 ///   GET /api/learning/Subjects/{id}/SkillTree   [Authorize]   (P2-04: was anonymous in P2-02)
 ///   GET /api/learning/Subjects/{id}/Lessons     [Authorize]   (P2-04: was anonymous in P2-02)
-///   GET /api/learning/Subjects/ForGrade?grade=  (anonymous — unchanged)
+///   GET /api/learning/Subjects/ForGrade?grade=  [Authorize] since P8 (security fix)
 ///
 /// Seeding: Uses LearningSeeder.SeedAsync which creates the Math G1 prereq chain:
 ///   Count to 1000 (G1)  →  Compare and Order Numbers (G1)  →  Add Single-Digit Numbers (G1)
@@ -37,7 +37,7 @@ namespace Learnexia.IntegrationTests;
 ///   TC-06  MissingPrerequisites shape — 5 fields all non-null/non-default
 ///   TC-07  Completed lesson → state == Completed
 ///   TC-08  Cross-student isolation (Student A's mastery does NOT unlock for Student B)
-///   TC-09  Anonymous ForGrade still returns 200 (not gated)
+///   TC-09  Authenticated ForGrade returns 200 (P8: requires JWT now)
 ///   TC-10  Unknown subject id with auth → 404
 ///   TC-11  Lesson with null SkillId → Available
 ///   TC-12  Envelope "successed": key is camelCase + boolean true
@@ -78,10 +78,15 @@ public sealed class P2_04_LearningPath_Tests : IAsyncLifetime
         await LearningSeeder.SeedAsync(scope.ServiceProvider);
 
         // Resolve the Math G1 subject id for tests that need a real subject id.
+        // P8-02: query by SubjectCode + Language — names are now grade-suffixed and language-specific.
+        // Students use learning_language="en" so the MATH/En tree is the relevant one.
         var db = scope.ServiceProvider.GetRequiredService<LearningDbContext>();
         var subject = await db.Subjects
             .Include(s => s.Grade)
-            .FirstAsync(s => s.Name == "Math" && s.Grade.Number == 1);
+            .FirstAsync(s =>
+                s.SubjectCode == SubjectCode.MATH &&
+                s.Language == ContentLanguage.En &&
+                s.Grade.Number == 1);
         _mathG1SubjectId = subject.Id;
     }
 
@@ -167,6 +172,7 @@ public sealed class P2_04_LearningPath_Tests : IAsyncLifetime
                 Grade    = 1,
                 Language = "ar",
                 Country  = "EG",
+                LearningLanguage = "en", // P8-01: "en" so handler resolves MATH/En tree
             },
             parentToken);
         ((int)addResp.StatusCode).Should().BeOneOf(new[] { 200, 201 },
@@ -361,7 +367,8 @@ public sealed class P2_04_LearningPath_Tests : IAsyncLifetime
     }
 
     /// <summary>
-    /// Look up a skill's ID by its exact name (case-sensitive), scoped to Math G1.
+    /// Look up a skill's ID by its exact name (case-sensitive), scoped to Math G1 English tree.
+    /// P8-02: uses SubjectCode + Language instead of Subject.Name (names are now grade-suffixed).
     /// </summary>
     private async Task<int> GetSkillIdByNameAsync(string skillName)
     {
@@ -375,18 +382,20 @@ public sealed class P2_04_LearningPath_Tests : IAsyncLifetime
                     .ThenInclude(sub => sub.Grade)
             .FirstOrDefaultAsync(s =>
                 s.Name == skillName &&
-                s.Concept.Subject.Name == "Math" &&
+                s.Concept.Subject.SubjectCode == SubjectCode.MATH &&
+                s.Concept.Subject.Language == ContentLanguage.En &&
                 s.Concept.Subject.Grade.Number == 1);
 
         skill.Should().NotBeNull(
-            $"seeder must have created skill '{skillName}' for Math G1; " +
+            $"seeder must have created skill '{skillName}' for Math/En G1; " +
             $"check that LearningSeeder.SeedAsync ran.");
 
         return skill!.Id;
     }
 
     /// <summary>
-    /// Finds the first lesson whose SkillId == skillId, within Math G1.
+    /// Finds the first lesson whose SkillId == skillId, within Math G1 English tree.
+    /// P8-02: uses SubjectCode + Language instead of Subject.Name (names are now grade-suffixed).
     /// </summary>
     private async Task<int> GetLessonIdForSkillAsync(int skillId)
     {
@@ -400,24 +409,26 @@ public sealed class P2_04_LearningPath_Tests : IAsyncLifetime
                     .ThenInclude(s => s.Grade)
             .FirstOrDefaultAsync(l =>
                 l.SkillId == skillId &&
-                l.Unit.Subject.Name == "Math" &&
+                l.Unit.Subject.SubjectCode == SubjectCode.MATH &&
+                l.Unit.Subject.Language == ContentLanguage.En &&
                 l.Unit.Subject.Grade.Number == 1);
 
         lesson.Should().NotBeNull(
-            $"there must be at least one Math G1 lesson with SkillId={skillId}");
+            $"there must be at least one Math/En G1 lesson with SkillId={skillId}");
 
         return lesson!.Id;
     }
 
     /// <summary>
-    /// Finds any lesson whose SkillId IS NULL in Math G1.
+    /// Finds any lesson whose SkillId IS NULL in Math G1 English tree.
+    /// P8-02: uses SubjectCode + Language instead of Subject.Name (names are now grade-suffixed).
     /// </summary>
     private async Task<int> GetNullSkillLessonIdAsync()
     {
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<LearningDbContext>();
 
-        // The seeder creates 3 null-SkillId lessons per grade in Math:
+        // The English-tree seeder creates 3 null-SkillId lessons per grade in Math/En:
         //   "Word Problems: Add and Subtract (G1)"
         //   "Division as Equal Groups (G1)"
         //   "Word Problems: Multiply and Divide (G1)"
@@ -428,10 +439,11 @@ public sealed class P2_04_LearningPath_Tests : IAsyncLifetime
                     .ThenInclude(s => s.Grade)
             .FirstOrDefaultAsync(l =>
                 l.SkillId == null &&
-                l.Unit.Subject.Name == "Math" &&
+                l.Unit.Subject.SubjectCode == SubjectCode.MATH &&
+                l.Unit.Subject.Language == ContentLanguage.En &&
                 l.Unit.Subject.Grade.Number == 1);
 
-        lesson.Should().NotBeNull("Math G1 seeder must create lessons with null SkillId (fill-in content)");
+        lesson.Should().NotBeNull("Math/En G1 seeder must create lessons with null SkillId (fill-in content)");
         return lesson!.Id;
     }
 
@@ -781,17 +793,22 @@ public sealed class P2_04_LearningPath_Tests : IAsyncLifetime
     }
 
     // =========================================================================
-    // TC-09: Anonymous ForGrade still works (unchanged)
+    // TC-09: ForGrade with JWT returns 200 + 4 subjects
+    //        P8 BREAKING CHANGE: GetForGrade now requires [Authorize] — anonymous callers get 401.
+    //        Test updated to authenticate and verify the happy path still works.
     // =========================================================================
 
-    [Fact(DisplayName = "P204-TC09 Anonymous GET /Subjects/ForGrade?grade=1 returns 200 + 4 subjects (not gated)")]
-    public async Task ForGrade_Anonymous_StillReturns200With4Subjects()
+    [Fact(DisplayName = "P204-TC09 Authenticated GET /Subjects/ForGrade?grade=1 returns 200 + 4 subjects (P8: now requires JWT)")]
+    public async Task ForGrade_Authenticated_Returns200With4Subjects()
     {
-        // No bearer token.
-        var (response, root, body) = await GetAsync("/api/learning/Subjects/ForGrade?grade=1");
+        // P8: GetForGrade now has [Authorize] — an anonymous call returns 401.
+        // Create a fresh student and use their JWT for the ForGrade call.
+        var (token, _) = await CreateStudentViaParentFlowAsync("tc09");
+
+        var (response, root, body) = await GetAsync("/api/learning/Subjects/ForGrade?grade=1", token);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK,
-            "ForGrade is anonymous (no [Authorize]) — must still work without a JWT; body: {0}", body);
+            "authenticated GET /ForGrade?grade=1 must return 200; body: {0}", body);
 
         TryProp(root, "successed", out var successed).Should().BeTrue("body: {0}", body);
         successed.GetBoolean().Should().BeTrue("body: {0}", body);
@@ -799,7 +816,7 @@ public sealed class P2_04_LearningPath_Tests : IAsyncLifetime
         TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);
         data.ValueKind.Should().Be(JsonValueKind.Array, "body: {0}", body);
         data.GetArrayLength().Should().Be(4,
-            "seeder creates exactly 4 subjects (Math, Science, Arabic, English) per grade; body: {0}", body);
+            "handler resolves exactly 4 subjects (one per SubjectCode) for the student's language; body: {0}", body);
     }
 
     // =========================================================================

@@ -1713,4 +1713,7 @@
   <data name="NotificationIdRequired" xml:space="preserve">
     <value>معرّف الإشعار مطلوب.</value>
   </data>
+  <data name="LessonLanguageMismatch" xml:space="preserve">
+    <value>هذا الدرس غير متاح بلغة التعلم الحالية.</value>
+  </data>
 </root>

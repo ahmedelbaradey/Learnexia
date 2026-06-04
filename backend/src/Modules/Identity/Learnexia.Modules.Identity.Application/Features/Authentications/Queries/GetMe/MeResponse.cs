@@ -15,6 +15,14 @@ public class MeResponse
 
     public string? PreferredLanguage { get; set; }
 
+    /// <summary>
+    /// Medium-of-instruction language for curriculum delivery ("ar" or "en").
+    /// Distinct from <see cref="PreferredLanguage"/> (the UI/UX language).
+    /// Set by the parent at onboarding; immutable by the student (parent-only change is P8-04).
+    /// Null only for non-student accounts (parents/admins) that predate P8-01.
+    /// </summary>
+    public string? LearningLanguage { get; set; }
+
     // True until the user has completed registration/onboarding — mirrors SignIn's IsFirstLogin
     // (computed from RegistrationIsCompleted on the user record).
     public bool IsFirstLogin { get; set; }

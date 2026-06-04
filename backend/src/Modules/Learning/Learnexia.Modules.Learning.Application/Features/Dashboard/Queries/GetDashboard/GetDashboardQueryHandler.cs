@@ -1,5 +1,6 @@
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Features.Dashboard.Dtos;
+using Learnexia.Modules.Learning.Application.Helpers;
 using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Modules.Learning.Domain.Services;
@@ -27,6 +28,12 @@ namespace Learnexia.Modules.Learning.Application.Features.Dashboard.Queries.GetD
 ///                   or the first Available lesson across Grade-1 subjects (fallback),
 ///                   or null when no Available lesson exists anywhere.
 ///
+/// P8-03-BE-5: The Grade-1 fallback subject set is now resolved per <see cref="SubjectCode"/> via
+/// <see cref="SubjectLanguageResolver"/> using the student's JWT <c>learning_language</c> claim.
+/// The hard-coded name-based <c>FallbackSubjectOrder</c> is replaced by a <see cref="SubjectCode"/>-ordered
+/// list (<c>FallbackSubjectCodeOrder</c>). For each code the handler picks the subject whose Language matches
+/// the resolved effective language; if absent, the other-language tree is used and a warning is logged.
+///
 /// StudentId is always resolved from the JWT (_currentUser.UserId) — never from the request.
 /// No SaveChangesAsync — read-only query.
 /// </summary>
@@ -45,9 +52,15 @@ public class GetDashboardQueryHandler
     private readonly IStudentLeagueQuery _leagueQuery;
     private readonly IActiveTimedEventsQuery _activeEventsQuery;
 
-    // Deterministic cross-subject fallback order (Q3 Option A step 5).
-    private static readonly string[] FallbackSubjectOrder =
-        { "Math", "Science", "Arabic", "English" };
+    // P8-03-BE-5: Deterministic cross-subject fallback order keyed by SubjectCode (not by name).
+    // Replaces the old name-based FallbackSubjectOrder which was fragile against bilingual name variations.
+    private static readonly SubjectCode[] FallbackSubjectCodeOrder =
+    {
+        SubjectCode.MATH,
+        SubjectCode.SCIENCE,
+        SubjectCode.ARABIC,
+        SubjectCode.ENGLISH,
+    };
 
     public GetDashboardQueryHandler(
         ILearningRepositoryManager repository,
@@ -87,25 +100,57 @@ public class GetDashboardQueryHandler
 
         try
         {
+            // P8-03-BE-1: resolve the student's learning language from the JWT claim.
+            var learnerLang = LearningLanguageClaimAccessor.GetLearningLanguage(_currentUser, _logger);
+
             // ── Step 2: Resolve primary subject ────────────────────────────────────────────────
             // Q3 Option A: start with the subject of the student's most-recent Attempt.
             var recentSubjectId = await _repository.Learning
                 .GetMostRecentActivitySubjectIdAsync(studentId, cancellationToken);
 
-            // ── Step 3: Load Grade-1 subjects for the cross-subject fallback ────────────────────
+            // ── Step 3: Load all Grade-1 subjects for the cross-subject fallback ──────────────
             // Loaded once here and passed down to avoid repeated DB round-trips.
-            // Order: deterministic per FallbackSubjectOrder array.
-            var grade1Subjects = await _repository.Learning
+            var allGrade1Subjects = await _repository.Learning
                 .GetByCondition<Subject>(s => s.Grade.Number == 1, trackChanges: false)
                 .Include(s => s.Grade)
                 .ToListAsync(cancellationToken);
 
-            // If no recent activity, fall back to Grade-1 Math as the primary subject (Q3.bis).
+            // P8-03-BE-5: Build the resolved Grade-1 subject list in deterministic SubjectCode order.
+            // For each code, resolve the effective language and pick the matching subject.
+            // Falls back to the other-language tree (with a warning) when the resolved tree is absent.
+            var resolvedGrade1Subjects = new List<Subject>(FallbackSubjectCodeOrder.Length);
+            foreach (var code in FallbackSubjectCodeOrder)
+            {
+                var resolved = SubjectLanguageResolver.Resolve(code, learnerLang);
+                var match = allGrade1Subjects.FirstOrDefault(s => s.SubjectCode == code && s.Language == resolved);
+
+                if (match is null)
+                {
+                    // Missing-tree fallback (AC-10): serve the other language tree and log a warning.
+                    var fallbackLang = resolved == ContentLanguage.Ar ? ContentLanguage.En : ContentLanguage.Ar;
+                    match = allGrade1Subjects.FirstOrDefault(s => s.SubjectCode == code && s.Language == fallbackLang);
+
+                    if (match is not null)
+                    {
+                        _logger.LogWarn(
+                            $"Missing subject tree for SubjectCode={code} Language={resolved} Grade=1." +
+                            $" Falling back to {fallbackLang}.");
+                    }
+                }
+
+                if (match is not null)
+                    resolvedGrade1Subjects.Add(match);
+            }
+
+            // If no recent activity, fall back to Grade-1 Math (resolved language) as the primary subject.
             int? primarySubjectId = recentSubjectId;
             if (primarySubjectId is null)
             {
-                primarySubjectId = grade1Subjects
-                    .FirstOrDefault(s => s.Name == "Math")?.Id;
+                // Pick the Math subject at the resolved language.
+                var mathResolved = SubjectLanguageResolver.Resolve(SubjectCode.MATH, learnerLang);
+                primarySubjectId = resolvedGrade1Subjects
+                    .FirstOrDefault(s => s.SubjectCode == SubjectCode.MATH && s.Language == mathResolved)?.Id
+                    ?? resolvedGrade1Subjects.FirstOrDefault(s => s.SubjectCode == SubjectCode.MATH)?.Id;
                 // If still null (seeder not run), Continue will stay null — empty state is valid (Q8).
             }
 
@@ -115,25 +160,17 @@ public class GetDashboardQueryHandler
             if (primarySubjectId.HasValue)
             {
                 continueTarget = await TryResolveContinueForSubjectAsync(
-                    studentId, primarySubjectId.Value, grade1Subjects, cancellationToken);
+                    studentId, primarySubjectId.Value, resolvedGrade1Subjects, cancellationToken);
             }
 
             if (continueTarget is null)
             {
-                // Cross-subject fallback: iterate Grade-1 subjects in deterministic Name order
-                // (Math → Science → Arabic → English), skipping the primary already tried (Q3 step 5).
-                var ordered = grade1Subjects
-                    .Where(s => s.Id != primarySubjectId)
-                    .OrderBy(s =>
-                    {
-                        var idx = Array.IndexOf(FallbackSubjectOrder, s.Name);
-                        return idx < 0 ? int.MaxValue : idx;
-                    });
-
-                foreach (var subject in ordered)
+                // Cross-subject fallback: iterate resolved Grade-1 subjects in deterministic SubjectCode order
+                // (MATH → SCIENCE → ARABIC → ENGLISH), skipping the primary already tried.
+                foreach (var subject in resolvedGrade1Subjects.Where(s => s.Id != primarySubjectId))
                 {
                     continueTarget = await TryResolveContinueForSubjectAsync(
-                        studentId, subject.Id, grade1Subjects, cancellationToken);
+                        studentId, subject.Id, resolvedGrade1Subjects, cancellationToken);
                     if (continueTarget is not null) break;
                 }
             }

@@ -36,6 +36,7 @@ public class LessonsController : AppControllerBase
     /// Kept for back-compat with existing admin tooling. Will be removed in P6-06 / hardening wave.
     /// </remarks>
     [HttpGet]
+    [Authorize]   // P8-SEC-2: closes unauthenticated language-guard bypass; all lesson access requires auth.
     public async Task<IActionResult> GetById(int id)
         => NewResult(await Mediator.Send(new GetLessonQuery { Id = id }));
 

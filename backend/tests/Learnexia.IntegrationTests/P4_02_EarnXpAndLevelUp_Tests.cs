@@ -209,6 +209,7 @@ public sealed class P4_02_EarnXpAndLevelUp_Tests : IAsyncLifetime
                 Grade    = 1,
                 Language = "ar",
                 Country  = "EG",
+                LearningLanguage = "ar", // P8-01: required
             },
             parentToken);
         ((int)addResp.StatusCode).Should().BeOneOf(new[] { 200, 201 },
