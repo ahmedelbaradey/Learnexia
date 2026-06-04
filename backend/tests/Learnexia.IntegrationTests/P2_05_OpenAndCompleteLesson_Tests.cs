@@ -44,7 +44,7 @@ public sealed class CapturingLessonCompletedHandlerP205
 ///
 /// Endpoints under test:
 ///   GET  /api/Learning/Lessons/{id}             [Authorize]   (NEW — P2-05)
-///   GET  /api/Learning/Lessons?id={id}          (anonymous — back-compat)
+///   GET  /api/Learning/Lessons?id={id}          [Authorize] (back-compat, P8-SEC-2 added auth)
 ///   POST /api/Learning/Quizzes/{lessonId}/Attempt    [Authorize(Roles="Student")]
 ///   POST /api/Learning/Quizzes/{attemptId}/Answers   [Authorize(Roles="Student")]
 ///   POST /api/Learning/Quizzes/{attemptId}/Complete  [Authorize(Roles="Student")]
@@ -539,15 +539,19 @@ public sealed class P2_05_OpenAndCompleteLesson_Tests : IAsyncLifetime
     // Case 7: Back-compat route GET /api/Learning/Lessons?id={id} still works
     // =========================================================================
 
-    [Fact(DisplayName = "P205-C07 Back-compat GET /api/Learning/Lessons?id={id} (anonymous, old route) → 200 with demo content populated")]
+    [Fact(DisplayName = "P205-C07 Back-compat GET /api/Learning/Lessons?id={id} (authenticated, old route) → 200 with demo content populated")]
     public async Task GetLesson_BackCompatRoute_StillWorks()
     {
-        // The old route is anonymous — no bearer token required.
+        // P8-SEC-2: the back-compat ?id= route now requires [Authorize] (same as the canonical /{id} route).
+        // Create an English-medium student (LearningLanguage="en") so the language guard passes for
+        // the Math/En demo lesson.
+        var (token, _) = await CreateStudentViaParentFlowAsync("c07bc");
+
         var (resp, root, body) = await SendAsync(_client, HttpMethod.Get,
-            $"api/Learning/Lessons?id={_mathG1DemoLessonId}");
+            $"api/Learning/Lessons?id={_mathG1DemoLessonId}", null, token);
 
         resp.StatusCode.Should().Be(HttpStatusCode.OK,
-            "the back-compat ?id= route (kept for admin tooling) must still return 200; body: {0}", body);
+            "the back-compat ?id= route must return 200 for an authenticated en-student (P8-SEC-2 added [Authorize]); body: {0}", body);
 
         TryProp(root, "successed", out var successed).Should().BeTrue("body: {0}", body);
         successed.GetBoolean().Should().BeTrue("successed must be true; body: {0}", body);
@@ -848,7 +852,7 @@ public sealed class P2_05_OpenAndCompleteLesson_Tests : IAsyncLifetime
         {
             "Introduction to Counting (G1)",
             "What Are Living Things? (G1)",
-            "Arabic Alphabet Review (G1)",
+            "مراجعة الحروف الهجائية (ص1)", // Arabic/Ar demo lesson — bilingual seeder uses Arabic-script name
             "Sight Words and Fluency (G1)",
         };
 

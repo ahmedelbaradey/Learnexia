@@ -190,7 +190,7 @@ public sealed class P4_03_DailyStreak_Tests : IAsyncLifetime
                 Grade    = 1,
                 Language = "ar",
                 Country  = "EG",
-                LearningLanguage = "ar", // P8-01: required
+                LearningLanguage = "en", // P8-03: "en" so language guard passes for MATH/En demo lesson
             },
             parentToken);
         ((int)addResp.StatusCode).Should().BeOneOf(new[] { 200, 201 },
