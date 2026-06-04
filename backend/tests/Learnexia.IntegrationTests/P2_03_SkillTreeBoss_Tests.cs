@@ -92,22 +92,31 @@ public sealed class P2_03_SkillTreeBoss_Tests : IAsyncLifetime
         // Resolve subject IDs and known lesson IDs for test assertions.
         var db = scope.ServiceProvider.GetRequiredService<LearningDbContext>();
 
+        // P8-02: query by SubjectCode + Language — names are now grade-suffixed ("Math (G1)" etc.)
+        // and differ between language trees. Students use learning_language="en" so the En tree
+        // is the relevant tree for Math and Science (ARABIC→Ar pinned, ENGLISH→En pinned).
         var mathSubject = await db.Subjects
             .AsNoTracking()
             .Include(s => s.Grade)
-            .FirstOrDefaultAsync(s => s.Name == "Math" && s.Grade.Number == 1);
+            .FirstOrDefaultAsync(s =>
+                s.SubjectCode == SubjectCode.MATH &&
+                s.Language == ContentLanguage.En &&
+                s.Grade.Number == 1);
 
         mathSubject.Should().NotBeNull(
-            "LearningSeeder must seed a 'Math' subject for Grade 1; check LearningSeeder.SeedAsync.");
+            "LearningSeeder must seed a MATH/En subject for Grade 1; check LearningSeeder.SeedAsync.");
         _mathG1SubjectId = mathSubject!.Id;
 
         var scienceSubject = await db.Subjects
             .AsNoTracking()
             .Include(s => s.Grade)
-            .FirstOrDefaultAsync(s => s.Name == "Science" && s.Grade.Number == 1);
+            .FirstOrDefaultAsync(s =>
+                s.SubjectCode == SubjectCode.SCIENCE &&
+                s.Language == ContentLanguage.En &&
+                s.Grade.Number == 1);
 
         scienceSubject.Should().NotBeNull(
-            "LearningSeeder must seed a 'Science' subject for Grade 1; check LearningSeeder.SeedAsync.");
+            "LearningSeeder must seed a SCIENCE/En subject for Grade 1; check LearningSeeder.SeedAsync.");
         _scienceG1SubjectId = scienceSubject!.Id;
 
         // Find the boss lesson for Math G1 Unit 1 — highest SequenceOrder in Numbers and Place Value unit.
@@ -229,6 +238,7 @@ public sealed class P2_03_SkillTreeBoss_Tests : IAsyncLifetime
                 Grade    = 1,
                 Language = "ar",
                 Country  = "EG",
+                LearningLanguage = "en", // P8-01: "en" so handler resolves MATH/En, SCIENCE/En trees
             },
             parentToken);
         ((int)addResp.StatusCode).Should().BeOneOf(new[] { 200, 201 },
@@ -267,12 +277,12 @@ public sealed class P2_03_SkillTreeBoss_Tests : IAsyncLifetime
             "Check that MarkBossLessonsAsync ran and that no unit has 0 or 2+ boss lessons.",
             unitCount, bossCount);
 
-        // Sanity: the expected tally per the plan (66 boss lessons, 66 units across 6 grades × 11 units-per-grade).
-        // Math: 5 units/grade × 6 grades = 30; Science/Arabic/English: 2 units/grade × 6 grades × 3 subjects = 36.
-        // Total = 66. Allow ± 5 in case the seeder schema evolves.
-        bossCount.Should().BeInRange(60, 72,
-            "The seeder plants 66 boss lessons (5 Math units × 6 grades + 2×3 Science/Arabic/English units × 6 grades); " +
-            "allow ±5 tolerance for future curriculum additions; actual bossCount = {0}", bossCount);
+        // Sanity: P8-02 bilingual seeder plants 108 boss lessons across 108 units.
+        // Per grade: Math/Ar(5)+Math/En(5)+Science/Ar(2)+Science/En(2)+Arabic/Ar(2)+English/En(2) = 18 units.
+        // 6 grades × 18 units/grade = 108 total. Allow ± 10 for future curriculum additions.
+        bossCount.Should().BeInRange(98, 118,
+            "P8-02 seeder plants 108 boss lessons (18 units/grade × 6 grades); " +
+            "allow ±10 tolerance for future curriculum additions; actual bossCount = {0}", bossCount);
     }
 
     // =========================================================================
@@ -472,9 +482,11 @@ public sealed class P2_03_SkillTreeBoss_Tests : IAsyncLifetime
             "second SeedAsync must not insert extra lessons; " +
             "before={0}, after={1}", totalLessons, totalLessonsAfter);
 
-        // Final sanity: 66 boss, 96 non-boss (plan estimate).
-        bossCountAfter.Should().BeInRange(60, 72,
-            "expected ~66 boss lessons (5 Math × 6 grades + 2 × 3 subjects × 6 grades); actual={0}",
+        // Final sanity: P8-02 bilingual seeder plants 108 boss lessons.
+        // Per grade: 5(Math/Ar)+5(Math/En)+2(Science/Ar)+2(Science/En)+2(Arabic/Ar)+2(English/En) = 18 units.
+        // 6 grades × 18 = 108 boss lessons total. Allow ±10 tolerance.
+        bossCountAfter.Should().BeInRange(98, 118,
+            "expected ~108 boss lessons (P8-02 bilingual: 18 units/grade × 6 grades); actual={0}",
             bossCountAfter);
         nonBossCountAfter.Should().BeGreaterThan(bossCountAfter,
             "non-boss lessons must outnumber boss lessons; nonBoss={0}, boss={1}",

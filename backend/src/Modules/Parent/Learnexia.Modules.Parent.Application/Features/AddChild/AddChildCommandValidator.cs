@@ -37,6 +37,12 @@ public class AddChildCommandValidator : AbstractValidator<AddChildCommand>
             .Must(lang => lang == "ar" || lang == "en")
             .WithMessage(_localizer[SharedResourcesKey.InvalidLanguageCode]);
 
+        // P8-01: medium-of-instruction language — required, mirrors the Language rule above.
+        RuleFor(x => x.LearningLanguage)
+            .NotEmpty().WithMessage(_localizer[SharedResourcesKey.ProfileRequiredField])
+            .Must(lang => lang == "ar" || lang == "en")
+            .WithMessage(_localizer[SharedResourcesKey.InvalidLanguageCode]);
+
         RuleFor(x => x.Country)
             .NotEmpty().WithMessage(_localizer[SharedResourcesKey.ProfileRequiredField]);
     }

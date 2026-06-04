@@ -218,6 +218,7 @@ public sealed class P2_07_InstantAnswerFeedback_Tests : IAsyncLifetime
                 Grade    = 3,
                 Language = "ar",
                 Country  = "EG",
+                LearningLanguage = "ar", // P8-01: required
             },
             parentToken);
         ((int)addResp.StatusCode).Should().BeOneOf(new[] { 200, 201 },
@@ -858,7 +859,7 @@ public sealed class P2_07_InstantAnswerFeedback_Tests : IAsyncLifetime
 
         var childEmail = UniqueEmail("c11child");
         var (addResp, addRoot, addBody) = await SendViaFork(HttpMethod.Post, AddChildUrl,
-            new { FullName = "C11 Student", Email = childEmail, Password = ValidChildPassword, Grade = 3, Language = "ar", Country = "EG" },
+            new { FullName = "C11 Student", Email = childEmail, Password = ValidChildPassword, Grade = 3, Language = "ar", Country = "EG", LearningLanguage = "ar" },
             parentTok);
         ((int)addResp.StatusCode).Should().BeOneOf(new[] { 200, 201 }, $"Add-Child must succeed; body: {addBody}");
 

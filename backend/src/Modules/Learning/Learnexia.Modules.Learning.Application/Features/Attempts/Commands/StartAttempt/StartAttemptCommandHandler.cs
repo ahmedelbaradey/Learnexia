@@ -1,11 +1,14 @@
 using AutoMapper;
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Features.Attempts.Dtos;
+using Learnexia.Modules.Learning.Application.Helpers;
 using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
+using Learnexia.Modules.Learning.Domain.Services;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -17,6 +20,11 @@ namespace Learnexia.Modules.Learning.Application.Features.Attempts.Commands.Star
 /// Creates an Attempt (Status=InProgress, StartedAt=UtcNow, StudentId from JWT — never from client).
 /// Then fetches the lesson's questions and returns them WITHOUT CorrectAnswer.
 /// A lesson with no questions yet returns 200 with an empty Questions list.
+///
+/// P8-03-BE-4: Before creating or resuming an attempt the handler verifies that the lesson's
+/// owning Subject language matches the student's resolved effective language for that SubjectCode
+/// (Lesson → Unit → Subject walk). If it does not match, 403 Forbidden is returned
+/// (<see cref="SharedResourcesKey.LessonLanguageMismatch"/>).
 ///
 /// The new-attempt path delegates to <c>IAttemptService.StartNewAsync</c> which commits immediately
 /// via <c>LearningDbContext.SaveChangesAsync(studentId)</c> so the DB-generated <c>Id</c> is
@@ -64,10 +72,31 @@ public class StartAttemptCommandHandler : BaseResponseHandler,
                 return Unauthorized<StartAttemptResponse>(_localizer[SharedResourcesKey.Unauthorized]);
 
             // [F7] Verify the lesson exists before any write.
-            var lessonExists = await _repository.Learning
-                .AnyAsync<Lesson>(l => l.Id == request.LessonId);
-            if (!lessonExists)
+            var lesson = await _repository.Learning
+                .GetByCondition<Lesson>(l => l.Id == request.LessonId, false)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (lesson is null)
                 return NotFound<StartAttemptResponse>(_localizer[SharedResourcesKey.LessonNotFound]);
+
+            // P8-03-BE-4: Language guard — walk Lesson → Unit → Subject to verify the language.
+            var owningSubject = await _repository.Learning
+                .GetByCondition<Unit>(u => u.Id == lesson.UnitId, false)
+                .Include(u => u.Subject)
+                .Select(u => u.Subject)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (owningSubject is not null)
+            {
+                var learnerLang = LearningLanguageClaimAccessor.GetLearningLanguage(_currentUser, _logger);
+                var resolved = SubjectLanguageResolver.Resolve(owningSubject.SubjectCode, learnerLang);
+
+                if (owningSubject.Language != resolved)
+                {
+                    // The student is trying to start an attempt in the wrong-language tree.
+                    return Forbidden<StartAttemptResponse>(_localizer[SharedResourcesKey.LessonLanguageMismatch]);
+                }
+            }
 
             // [F4] Resume an existing in-progress attempt instead of creating a duplicate.
             var existingAttempt = _repository.Learning

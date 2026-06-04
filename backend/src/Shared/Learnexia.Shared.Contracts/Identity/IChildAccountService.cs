@@ -40,6 +40,11 @@ public interface IChildAccountService
 }
 
 /// <summary>Request to provision a new child account. <c>ActingParentId</c> is the JWT-resolved parent.</summary>
+/// <param name="LearningLanguage">
+/// Medium-of-instruction language for curriculum delivery ("ar" or "en").
+/// Distinct from <paramref name="Language"/> (the UI/UX language preference).
+/// Required; set by the parent at onboarding; immutable by the student (parent-only change is P8-04).
+/// </param>
 public sealed record CreateChildRequest(
     string Email,
     string Password,
@@ -47,7 +52,8 @@ public sealed record CreateChildRequest(
     string Language,
     string Country,
     int Grade,
-    int ActingParentId);
+    int ActingParentId,
+    string LearningLanguage);
 
 /// <summary>Request to update an existing child's editable profile fields.</summary>
 public sealed record UpdateChildRequest(

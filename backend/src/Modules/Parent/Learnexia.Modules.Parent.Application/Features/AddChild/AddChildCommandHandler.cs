@@ -54,7 +54,8 @@ public class AddChildCommandHandler : BaseResponseHandler, ICommandHandler<AddCh
                     Language: request.Language,
                     Country: request.Country,
                     Grade: request.Grade,
-                    ActingParentId: parentId.Value),
+                    ActingParentId: parentId.Value,
+                    LearningLanguage: request.LearningLanguage),
                 cancellationToken);
 
             if (!createResult.Succeeded || createResult.Profile is null)

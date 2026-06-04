@@ -153,7 +153,8 @@ public sealed class P1_03_AddChild_Tests : IAsyncLifetime
     /// Builds a valid Add-Child command body using the actual command fields
     /// (FullName, Email, Password, Grade, Language, Country).
     /// </summary>
-    private static object ValidChildBody(string email, int grade = 3, string language = "ar", string country = "EG")
+    // P8-01: LearningLanguage is now required. Default to "ar" (Arabic-first) for existing tests.
+    private static object ValidChildBody(string email, int grade = 3, string language = "ar", string country = "EG", string learningLanguage = "ar")
         => new
         {
             FullName = "Test Child",
@@ -162,6 +163,7 @@ public sealed class P1_03_AddChild_Tests : IAsyncLifetime
             Grade = grade,
             Language = language,
             Country = country,
+            LearningLanguage = learningLanguage,
         };
 
     private Task<(HttpResponseMessage Response, JsonElement Root, string Body)>
@@ -506,6 +508,7 @@ public sealed class P1_03_AddChild_Tests : IAsyncLifetime
             Grade = -1,
             Language = "ar",
             Country = "EG",
+            LearningLanguage = "ar",
         };
 
         var (resp, _, rawBody) = await AddChildAsync(parentToken, body);
@@ -530,6 +533,7 @@ public sealed class P1_03_AddChild_Tests : IAsyncLifetime
             Grade = 3,
             Language = "ar",
             Country = "EG",
+            LearningLanguage = "ar",
         };
 
         var (resp, root, rawBody) = await AddChildAsync(parentToken, body);
@@ -554,6 +558,7 @@ public sealed class P1_03_AddChild_Tests : IAsyncLifetime
             Grade = 3,
             Language = "ar",
             Country = "EG",
+            LearningLanguage = "ar",
         };
 
         var (resp, root, rawBody) = await AddChildAsync(parentToken, body);
@@ -612,6 +617,7 @@ public sealed class P1_03_AddChild_Tests : IAsyncLifetime
             Grade = 3,
             Language = "ar",
             Country = "EG",
+            LearningLanguage = "ar",
         };
 
         var (resp, root, rawBody) = await AddChildAsync(parentToken, body);
@@ -634,6 +640,7 @@ public sealed class P1_03_AddChild_Tests : IAsyncLifetime
             Grade = 3,
             Language = "ar",
             Country = "EG",
+            LearningLanguage = "ar",
         };
 
         var (resp, _, rawBody) = await AddChildAsync(parentToken, body);
@@ -658,6 +665,7 @@ public sealed class P1_03_AddChild_Tests : IAsyncLifetime
             Grade = 3,
             Language = "ar",
             Country = "EG",
+            LearningLanguage = "ar",
         };
 
         var (resp, root, rawBody) = await AddChildAsync(parentToken, body);
@@ -684,6 +692,7 @@ public sealed class P1_03_AddChild_Tests : IAsyncLifetime
             Grade = 3,
             Language = "ar",
             Country = "",
+            LearningLanguage = "ar",
         };
 
         var (resp, root, rawBody) = await AddChildAsync(parentToken, body);
@@ -808,6 +817,7 @@ public sealed class P1_03_AddChild_Tests : IAsyncLifetime
             Grade = 3,
             Language = "ar",
             Country = "EG",
+            LearningLanguage = "ar",
             ParentId = 999999, // extra field — must be silently ignored
         };
 
@@ -955,5 +965,71 @@ public sealed class P1_03_AddChild_Tests : IAsyncLifetime
         // auto-link behavior. The Parent-module link row is revalidated by the P2-12 api-tester batch
         // against the new /api/Parent routes.
         _ = childId;
+    }
+
+    // ===========================================================================
+    // P8-01 — LearningLanguage validation (required, ar|en only)
+    // ===========================================================================
+
+    [Fact(DisplayName = "P8-01: Add-Child without LearningLanguage → 422")]
+    public async Task P8_01_MissingLearningLanguage_Returns422()
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        var body = new
+        {
+            FullName = "Test Child",
+            Email = UniqueEmail("child"),
+            Password = ValidChildPassword,
+            Grade = 3,
+            Language = "ar",
+            Country = "EG",
+            // LearningLanguage intentionally omitted
+        };
+
+        var (resp, root, rawBody) = await AddChildAsync(parentToken, body);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "missing LearningLanguage must return 422; body: {0}", rawBody);
+        TryProp(root, "errors", out var errors).Should().BeTrue("body: {0}", rawBody);
+        errors.GetArrayLength().Should().BeGreaterThan(0, "Errors[] must be populated; body: {0}", rawBody);
+    }
+
+    [Fact(DisplayName = "P8-01: Add-Child with invalid LearningLanguage='fr' → 422")]
+    public async Task P8_01_InvalidLearningLanguage_Returns422()
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        var body = new
+        {
+            FullName = "Test Child",
+            Email = UniqueEmail("child"),
+            Password = ValidChildPassword,
+            Grade = 3,
+            Language = "ar",
+            Country = "EG",
+            LearningLanguage = "fr",
+        };
+
+        var (resp, root, rawBody) = await AddChildAsync(parentToken, body);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "LearningLanguage='fr' must return 422; body: {0}", rawBody);
+        TryProp(root, "errors", out var errors).Should().BeTrue("body: {0}", rawBody);
+        errors.GetArrayLength().Should().BeGreaterThan(0, "Errors[] must be populated; body: {0}", rawBody);
+    }
+
+    [Theory(DisplayName = "P8-01: Add-Child with valid LearningLanguage ('ar' or 'en') → 200")]
+    [InlineData("ar")]
+    [InlineData("en")]
+    public async Task P8_01_ValidLearningLanguage_Returns200(string learningLanguage)
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail($"parent_{learningLanguage}"));
+        var body = ValidChildBody(UniqueEmail($"child_{learningLanguage}"), learningLanguage: learningLanguage);
+
+        var (resp, root, rawBody) = await AddChildAsync(parentToken, body);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "LearningLanguage='{0}' must be accepted; body: {1}", learningLanguage, rawBody);
+        TryProp(root, "successed", out var successed).Should().BeTrue("body: {0}", rawBody);
+        successed.GetBoolean().Should().BeTrue("body: {0}", rawBody);
     }
 }

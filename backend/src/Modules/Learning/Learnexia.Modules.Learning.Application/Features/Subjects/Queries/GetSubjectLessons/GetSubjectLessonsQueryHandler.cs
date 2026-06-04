@@ -1,5 +1,6 @@
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Dtos;
+using Learnexia.Modules.Learning.Application.Helpers;
 using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Modules.Learning.Domain.Services;
@@ -16,6 +17,10 @@ namespace Learnexia.Modules.Learning.Application.Features.Subjects.Queries.GetSu
 /// Handles <see cref="GetSubjectLessonsQuery"/>.
 /// Verifies the subject exists (404 if not), then loads Units ordered by SequenceOrder,
 /// each with their Lessons ordered by SequenceOrder.
+///
+/// P8-03: Before loading, the handler verifies that the requested subject's <see cref="ContentLanguage"/>
+/// matches the effective language resolved for its <see cref="SubjectCode"/> from the student's JWT claim.
+/// If it does not match, it redirects to the correct-language tree (falling back if absent with a warning).
 ///
 /// When the request is authenticated (<see cref="ICurrentUserService.UserId"/> is non-null),
 /// the <see cref="LearningPathEngine"/> derives per-student <see cref="NodeState"/> and
@@ -52,14 +57,47 @@ public class GetSubjectLessonsQueryHandler
     {
         try
         {
-            var subjectExists = await _repository.Learning
-                .AnyAsync<Subject>(s => s.Id == request.SubjectId);
+            // Load the subject to verify it exists and to check its language.
+            var subject = await _repository.Learning
+                .GetByCondition<Subject>(s => s.Id == request.SubjectId, false)
+                .FirstOrDefaultAsync(cancellationToken);
 
-            if (!subjectExists)
+            if (subject is null)
                 return NotFound<List<UnitWithLessonsDto>>(_localizer[SharedResourcesKey.SubjectNotFound]);
 
+            // P8-03-BE-1/BE-4: resolve the effective language for this subject code.
+            var learnerLang = LearningLanguageClaimAccessor.GetLearningLanguage(_currentUser, _logger);
+            var resolved = SubjectLanguageResolver.Resolve(subject.SubjectCode, learnerLang);
+
+            // P8-03-BE-4/BE-6: if the requested subject is in the wrong language, redirect to the
+            // correct-language tree for the same SubjectCode in the same Grade.
+            if (subject.Language != resolved)
+            {
+                var correctSubject = await _repository.Learning
+                    .GetByCondition<Subject>(
+                        s => s.GradeId == subject.GradeId
+                          && s.SubjectCode == subject.SubjectCode
+                          && s.Language == resolved,
+                        trackChanges: false)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                if (correctSubject is not null)
+                {
+                    subject = correctSubject;
+                }
+                else
+                {
+                    // Missing-tree fallback (AC-10): resolved tree absent; log and continue with the requested tree.
+                    _logger.LogWarn(
+                        $"Missing subject tree for SubjectCode={subject.SubjectCode} Language={resolved}" +
+                        $" GradeId={subject.GradeId}. Falling back to Language={subject.Language}.");
+                }
+            }
+
+            var effectiveSubjectId = subject.Id;
+
             var units = await _repository.Learning
-                .GetByCondition<Unit>(u => u.SubjectId == request.SubjectId, false)
+                .GetByCondition<Unit>(u => u.SubjectId == effectiveSubjectId, false)
                 .Include(u => u.Lessons)
                 .OrderBy(u => u.SequenceOrder)
                 .ToListAsync(cancellationToken);
@@ -75,19 +113,19 @@ public class GetSubjectLessonsQueryHandler
 
                 // Bulk-fetch the 5 engine inputs.
                 var nodes = await _repository.Learning
-                    .GetSubjectKnowledgeNodesAsync(request.SubjectId, cancellationToken);
+                    .GetSubjectKnowledgeNodesAsync(effectiveSubjectId, cancellationToken);
                 var edges = await _repository.Learning
-                    .GetSubjectKnowledgeEdgesAsync(request.SubjectId, cancellationToken);
+                    .GetSubjectKnowledgeEdgesAsync(effectiveSubjectId, cancellationToken);
                 var masteryBySkillId = await _repository.Learning
-                    .GetSkillMasteryForStudentInSubjectAsync(studentId.Value, request.SubjectId, cancellationToken);
+                    .GetSkillMasteryForStudentInSubjectAsync(studentId.Value, effectiveSubjectId, cancellationToken);
                 var completedLessonIds = await _repository.Learning
-                    .GetCompletedLessonIdsForStudentInSubjectAsync(studentId.Value, request.SubjectId, cancellationToken);
+                    .GetCompletedLessonIdsForStudentInSubjectAsync(studentId.Value, effectiveSubjectId, cancellationToken);
                 var allLessons = await _repository.Learning
-                    .GetSubjectLessonsAsync(request.SubjectId, cancellationToken);
+                    .GetSubjectLessonsAsync(effectiveSubjectId, cancellationToken);
 
                 // Load skills for the subject (needed for MasteryThreshold + Name on MissingPrerequisiteDto).
                 var skills = await _repository.Learning
-                    .GetByCondition<Skill>(sk => sk.Concept.SubjectId == request.SubjectId, false)
+                    .GetByCondition<Skill>(sk => sk.Concept.SubjectId == effectiveSubjectId, false)
                     .ToListAsync(cancellationToken);
                 var skillsById = skills.ToDictionary(sk => sk.Id);
 
@@ -109,7 +147,7 @@ public class GetSubjectLessonsQueryHandler
                                          {
                                              // Defensive: engine should always have an entry for every lesson,
                                              // but if somehow it doesn't, fall back to Available and log.
-                                             _logger.LogWarn($"LearningPathEngine returned no state for lesson {l.Id} in subject {request.SubjectId}. Defaulting to Available.");
+                                             _logger.LogWarn($"LearningPathEngine returned no state for lesson {l.Id} in subject {effectiveSubjectId}. Defaulting to Available.");
                                              return new LessonInUnitDto
                                              {
                                                  LessonId             = l.Id,
@@ -176,7 +214,7 @@ public class GetSubjectLessonsQueryHandler
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error: in GetSubjectLessonsQuery");
-            return ServerError<List<UnitWithLessonsDto>>(ex.Message);
+            return ServerError<List<UnitWithLessonsDto>>();  // P8-SEC-3: do not expose ex.Message to the client.
         }
     }
 }
