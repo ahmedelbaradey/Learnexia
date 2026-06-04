@@ -27,6 +27,7 @@ These intentional decisions diverge from the source docs; each affected story re
 | `Phase-5-Parent-Analytics` | P5 | 8 | Weekly reports, weak areas, KPIs, parent dashboard | A parent sees a weekly report with weak areas; KPI events captured |
 | `Phase-6-Stabilization` | P6 | 9 | Testing, perf, prompt tuning, observability | NFR-1 perf met, prompts tuned, critical bugs cleared → launch-ready |
 | `Phase-7-Admin-Console` | P7 | post-MVP | Admin console: curriculum mgmt, user/account mgmt, moderation, analytics/AI oversight | Admins can manage curriculum, users, moderate content, and view platform + AI-safety dashboards |
+| `Phase-8-Localization` | P8 | post-MVP | Learning language (medium of instruction) vs UI language; bilingual curriculum (parallel ar/en trees) | A student gets Math/Science in their learning language; Arabic/English subjects pinned by subject |
 | `Backlog-Phase-2-Plus` | post-MVP | — | Curriculum Intelligence (ingestion, KG, RAG at scale) | Deferred; data model designed in MVP |
 
 ## How to load into Jira
@@ -133,6 +134,13 @@ These intentional decisions diverge from the source docs; each affected story re
 - P7-10 Platform analytics & KPI dashboard
 - P7-11 AI-safety & quality monitoring dashboard
 - P7-12 Admin action audit log
+
+### Phase 8 — Localization
+*Learning language (medium of instruction) is a per-student attribute, separate from UI language. Math/Science follow the learning language; the Arabic and English subjects are pinned to their own language. See [../docs/architecture/localization-architecture.md](../docs/architecture/localization-architecture.md).*
+- P8-01 Set a child's learning language *(parent-driven, immutable by student; JWT claim)*
+- P8-02 Author bilingual curriculum *(SubjectCode + Language on Subject; parallel ar/en trees) — Technical Enabler*
+- P8-03 Serve curriculum in the student's learning language *(read-path resolution + Arabic/English edge case)*
+- P8-04 Change a child's learning language *(parent-only, fresh-start reset of Math/Science progress)*
 
 ### Backlog (Phase 2+) — Curriculum Intelligence
 *Three-stage pipeline: Multimodal Parsing (BL-02) → Curriculum Ingestion (BL-05) → Knowledge Graph (BL-03).*
