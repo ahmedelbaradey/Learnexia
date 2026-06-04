@@ -21,7 +21,8 @@ tasks/
     ├── Phase-2-Learning-Core/ P2-xx-BE.md
     ├── Phase-3-Gamification/ P4-xx-BE.md
     ├── Phase-6-Stabilization/ P6-06-BE.md
-    └── Phase-7-Admin-Console/ P7-xx-BE.md
+    ├── Phase-7-Admin-Console/ P7-xx-BE.md
+    └── Phase-8-Localization/  P8-xx-BE.md
 ```
 
 > **Scope:** this tree covers **Phase 1 & 2** stories, the **Phase 3 — Gamification** breakdown (`P4-xx`, both stacks), the **Phase 7 — Admin Console** feature breakdown (`P7-xx`), plus the **Phase 6 — `P6-06`** backend security-hardening pass (relocated from P1-13b). The barrier-to-entry stories **P4-09** (re-engagement notifications), **P4-10** (Redis realtime gamification) and **P4-11** (streak freeze / timed events) are now decomposed in the Phase 3 tree below. The remaining barrier-to-entry stories — **P3-13** (adaptive student profile) and **P5-07** (data feedback / calibration) — are **pending task breakdown** and will be decomposed when their phase trees are built. The Phase-2 story **P2-11** (skill dependency graph) is broken down here. See [../docs/briefs/barrier-to-entry-gap-analysis.md](../docs/briefs/barrier-to-entry-gap-analysis.md).
@@ -123,3 +124,14 @@ Admin feature breakdown behind the P1-10 shell. **All FE work lands in `apps/adm
 | P7-10 | Platform analytics & KPI dashboard | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-10-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-10-BE.md) |
 | P7-11 | AI-safety & quality monitoring dashboard | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-11-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-11-BE.md) |
 | P7-12 | Admin action audit log | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-12-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-12-BE.md) |
+
+### Phase 8 — Localization
+
+Learning language (medium of instruction) vs UI language; bilingual curriculum as parallel ar/en trees keyed on `Subject`. Backend-led; FE work (parent learning-language picker + fresh-start warning copy) folds into the parent app. Design of record: [../docs/architecture/localization-architecture.md](../docs/architecture/localization-architecture.md).
+
+| Story | Title | Frontend | Backend |
+|---|---|---|---|
+| P8-01 | Set a child's learning language *(parent-driven, JWT claim)* | — | [BE](Backend/Phase-8-Localization/P8-01-BE.md) |
+| P8-02 | Author bilingual curriculum *(SubjectCode + Language; parallel trees)* | — | [BE](Backend/Phase-8-Localization/P8-02-BE.md) |
+| P8-03 | Serve curriculum in the learning language *(read-path resolution)* | — | [BE](Backend/Phase-8-Localization/P8-03-BE.md) |
+| P8-04 | Change a child's learning language *(parent-only, fresh start)* | — | [BE](Backend/Phase-8-Localization/P8-04-BE.md) |

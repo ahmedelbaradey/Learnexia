@@ -121,6 +121,15 @@
 | P7-11 | AI-safety & quality monitoring dashboard | 🔲 | 🔲 |
 | P7-12 | Admin action audit log | 🔲 | 🔲 |
 
+## Phase 8 — Localization
+> Learning language (medium of instruction) vs UI language; bilingual curriculum as parallel ar/en trees. Design: `docs/architecture/localization-architecture.md`.
+| Story | Title | Backend | Frontend |
+|---|---|:--:|:--:|
+| P8-01 | Set a child's learning language (parent-driven; JWT claim) | 🔲 | 🔲 |
+| P8-02 | Author bilingual curriculum (SubjectCode + Language; parallel trees) | 🔲 | — |
+| P8-03 | Serve curriculum in the student's learning language | 🔲 | — |
+| P8-04 | Change a child's learning language (parent-only, fresh start) | 🔲 | 🔲 |
+
 ## Backlog (Phase 2+) — Curriculum Intelligence
 | Story | Title | Status |
 |---|---|:--:|
