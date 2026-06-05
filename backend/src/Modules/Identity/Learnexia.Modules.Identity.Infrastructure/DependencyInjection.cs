@@ -221,7 +221,27 @@ public static class DependencyInjection
             environment.Equals("Staging", StringComparison.OrdinalIgnoreCase);
 
         if (!isProtectedEnvironment)
+        {
+            // Development/Testing: do not block startup, but warn the developer when the
+            // placeholder secret is still in use, so they are reminded to set the real
+            // JwtSettings__Secret environment variable before deploying.
+            // This path is intentionally non-fatal — local dev and the integration tests
+            // run with the placeholder; only Production/Staging must have the real key.
+            var isDevelopment = environment.Equals("Development", StringComparison.OrdinalIgnoreCase);
+            if (isDevelopment &&
+                (string.IsNullOrWhiteSpace(jwtSettings.Secret) ||
+                 string.Equals(jwtSettings.Secret, DefaultJwtSecret, StringComparison.Ordinal)))
+            {
+                // Use LoggerManager directly — NLog is already initialised at this point (AddLoggerServices
+                // runs before AddIdentityService). This is a dev-only, non-fatal reminder and does NOT
+                // affect token validation, signing, or any auth flow logic.
+                new LoggerManager().LogWarn(
+                    "[SECURITY] JwtSettings:Secret is the committed placeholder value. " +
+                    "Set JwtSettings__Secret (env var) to a strong key before deploying to Production/Staging. " +
+                    "GuardJwtSecret will throw on startup in those environments if the placeholder is still in use.");
+            }
             return;
+        }
 
         var secret = jwtSettings.Secret;
 

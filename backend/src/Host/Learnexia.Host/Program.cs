@@ -76,6 +76,8 @@ else
 
 // Health checks (P1-07-BE-2) — readiness probe dependencies.
 // - "database": Npgsql check against ConnectionStrings:Default (Unhealthy when the DB is down → 503).
+//   The connection string is resolved lazily via IServiceProvider so WebApplicationFactory overrides
+//   (ConfigureAppConfiguration) are honoured — avoids capturing the local variable at builder time.
 // - "redis": only registered when ConnectionStrings:Redis is set; failureStatus = Degraded so a missing
 //   or down Redis does NOT fail the readiness probe (Redis is optional locally, mirroring the cache wiring
 //   above). When no Redis connection string is configured the check is skipped entirely.
@@ -83,7 +85,12 @@ var defaultConnectionString = builder.Configuration.GetConnectionString("Default
 var healthChecks = builder.Services.AddHealthChecks();
 if (!string.IsNullOrWhiteSpace(defaultConnectionString))
 {
-    healthChecks.AddNpgSql(defaultConnectionString, name: "database", tags: ["ready"]);
+    // Resolve ConnectionStrings:Default lazily so the test factory's ConfigureAppConfiguration
+    // override wins at runtime rather than the captured local variable from builder setup.
+    healthChecks.AddNpgSql(
+        sp => sp.GetRequiredService<IConfiguration>().GetConnectionString("Default")!,
+        name: "database",
+        tags: ["ready"]);
 }
 if (!string.IsNullOrWhiteSpace(redisConnectionString))
 {
@@ -95,13 +102,29 @@ if (!string.IsNullOrWhiteSpace(redisConnectionString))
 // later Phase 4 (streaks/leagues) and Phase 5 (report) recurring/background jobs. Hangfire bootstraps its
 // own `hangfire` schema tables in the existing Learnexia database via its storage initializer (not an EF
 // migration). The dashboard is gated to Development only (see the app section below).
+// Register Hangfire only when a Default connection string is present (Production/Development gate).
+// The connection string is resolved lazily via IConfiguration at DI resolution time rather than
+// capturing the local `defaultConnectionString` variable at registration time. This allows
+// WebApplicationFactory (integration tests) to override ConnectionStrings:Default via
+// ConfigureAppConfiguration after builder setup and have Hangfire pick up the Testcontainers
+// connection string instead of the committed localhost:5432 default.
+builder.Services.AddHangfire((sp, config) =>
+{
+    var connectionString = sp.GetRequiredService<IConfiguration>().GetConnectionString("Default");
+    if (!string.IsNullOrWhiteSpace(connectionString))
+    {
+        config
+            .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+            .UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UsePostgreSqlStorage(o => o.UseNpgsqlConnection(connectionString));
+    }
+});
+// Start the Hangfire worker only when a Default connection string is present at setup time
+// (prod/dev always have it; a bare host without it skips the server). Storage itself is resolved
+// lazily above so integration tests still override it via ConfigureAppConfiguration.
 if (!string.IsNullOrWhiteSpace(defaultConnectionString))
 {
-    builder.Services.AddHangfire(config => config
-        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-        .UseSimpleAssemblyNameTypeSerializer()
-        .UseRecommendedSerializerSettings()
-        .UsePostgreSqlStorage(o => o.UseNpgsqlConnection(defaultConnectionString)));
     builder.Services.AddHangfireServer();
 }
 
