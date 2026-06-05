@@ -67,6 +67,9 @@ public class GetMeQueryHandler : BaseResponseHandler, IQueryHandler<GetMeQuery, 
                 Roles = roles,
                 FullName = user.FullName,
                 PreferredLanguage = user.PreferredLanguage,
+                // P8-01: medium-of-instruction language ("ar"/"en"). Set by parent at onboarding;
+                // immutable by the student. Non-student accounts carry the DB default ("ar").
+                LearningLanguage = user.LearningLanguage,
                 // Mirror SignIn: first login until registration/onboarding is completed.
                 IsFirstLogin = !user.RegistrationIsCompleted,
                 HasChildren = hasChildren,

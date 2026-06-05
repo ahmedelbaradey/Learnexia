@@ -163,6 +163,7 @@ public sealed class P2_08_RecordGranularAnswers_Tests : IAsyncLifetime
                 Grade    = 3,
                 Language = "ar",
                 Country  = "EG",
+                LearningLanguage = "ar", // P8-01: required
             },
             parentToken);
         ((int)addResp.StatusCode).Should().BeOneOf(new[] { 200, 201 },

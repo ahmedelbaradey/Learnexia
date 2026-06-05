@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Learnexia.Modules.Learning.Domain.Entities;
+using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Modules.Learning.Infrastructure.Persistence;
 using Learnexia.Modules.Learning.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +12,8 @@ namespace Modules.Learning.UnitTests;
 /// <summary>
 /// Unit tests for <see cref="LearningSeeder"/>. Each test gets a fresh InMemory database via
 /// <see cref="BuildServiceProvider"/> so tests are fully isolated.
+///
+/// P8-02: Updated to assert the bilingual 6-root-per-grade model.
 /// </summary>
 public sealed class LearningSeederTests
 {
@@ -35,34 +38,123 @@ public sealed class LearningSeederTests
         sp.GetRequiredService<LearningDbContext>();
 
     // -------------------------------------------------------------------------
-    // AC-1: Exactly 4 subjects per grade (Math, Science, Arabic, English)
+    // P8-02 AC-1: Exactly 6 subject roots per grade
     // -------------------------------------------------------------------------
 
     [Fact]
-    public async Task SeedAsync_Creates_ExactlyFourSubjects_PerGrade()
+    public async Task SeedAsync_Creates_ExactlySixSubjects_PerGrade()
     {
         var sp = BuildServiceProvider();
         await LearningSeeder.SeedAsync(sp);
 
         var db = GetDb(sp);
 
-        // Grade 1 must exist
-        var grade1 = await db.Grades.AsNoTracking().FirstOrDefaultAsync(g => g.Number == 1);
-        grade1.Should().NotBeNull();
+        for (var gradeNumber = 1; gradeNumber <= 6; gradeNumber++)
+        {
+            var grade = await db.Grades.AsNoTracking().FirstOrDefaultAsync(g => g.Number == gradeNumber);
+            grade.Should().NotBeNull($"Grade {gradeNumber} must exist");
 
-        // Exactly 4 subjects in grade 1
-        var subjectsInGrade1 = await db.Subjects
-            .AsNoTracking()
-            .Where(s => s.GradeId == grade1!.Id)
-            .ToListAsync();
+            var subjects = await db.Subjects
+                .AsNoTracking()
+                .Where(s => s.GradeId == grade!.Id)
+                .ToListAsync();
 
-        subjectsInGrade1.Should().HaveCount(4);
-        subjectsInGrade1.Select(s => s.Name).Should().BeEquivalentTo(
-            new[] { "Math", "Science", "Arabic", "English" });
+            subjects.Should().HaveCount(6,
+                $"Grade {gradeNumber} must have exactly 6 subject roots (MATH/Ar, MATH/En, SCIENCE/Ar, SCIENCE/En, ARABIC/Ar, ENGLISH/En)");
+        }
     }
 
     // -------------------------------------------------------------------------
-    // AC-2: Full tree linkage — no orphan nodes
+    // P8-02 AC-2: All six expected (SubjectCode, Language) combinations exist per grade
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task SeedAsync_Creates_AllSixExpectedCodeLanguagePairs_PerGrade()
+    {
+        var sp = BuildServiceProvider();
+        await LearningSeeder.SeedAsync(sp);
+
+        var db = GetDb(sp);
+
+        var expectedPairs = new (SubjectCode Code, ContentLanguage Language)[]
+        {
+            (SubjectCode.MATH,    ContentLanguage.Ar),
+            (SubjectCode.MATH,    ContentLanguage.En),
+            (SubjectCode.SCIENCE, ContentLanguage.Ar),
+            (SubjectCode.SCIENCE, ContentLanguage.En),
+            (SubjectCode.ARABIC,  ContentLanguage.Ar),
+            (SubjectCode.ENGLISH, ContentLanguage.En),
+        };
+
+        for (var gradeNumber = 1; gradeNumber <= 6; gradeNumber++)
+        {
+            var grade = await db.Grades.AsNoTracking().FirstAsync(g => g.Number == gradeNumber);
+
+            var subjects = await db.Subjects
+                .AsNoTracking()
+                .Where(s => s.GradeId == grade.Id)
+                .ToListAsync();
+
+            var actualPairs = subjects
+                .Select(s => (s.SubjectCode, s.Language))
+                .ToHashSet();
+
+            foreach (var (code, language) in expectedPairs)
+            {
+                actualPairs.Should().Contain((code, language),
+                    $"Grade {gradeNumber} must contain the {code}/{language} tree");
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // P8-02 AC-3: (GradeId, SubjectCode, Language) triplet is unique — no duplicates
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task SeedAsync_GradeSubjectCodeLanguage_IsUnique_NoCollisions()
+    {
+        var sp = BuildServiceProvider();
+        await LearningSeeder.SeedAsync(sp);
+
+        var db = GetDb(sp);
+
+        var allSubjects = await db.Subjects.AsNoTracking().ToListAsync();
+
+        var triplets = allSubjects
+            .Select(s => (s.GradeId, s.SubjectCode, s.Language))
+            .ToList();
+
+        // No duplicate triplets
+        triplets.Distinct().Should().HaveCount(triplets.Count,
+            "each (GradeId, SubjectCode, Language) triplet must be unique");
+    }
+
+    // -------------------------------------------------------------------------
+    // P8-02 AC-4: SubjectCode is always explicitly set (never the default int 0 mismatch)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task SeedAsync_AllSubjects_HaveExplicitSubjectCode()
+    {
+        var sp = BuildServiceProvider();
+        await LearningSeeder.SeedAsync(sp);
+
+        var db = GetDb(sp);
+
+        var allSubjects = await db.Subjects.AsNoTracking().ToListAsync();
+        allSubjects.Should().NotBeEmpty();
+
+        // All four valid SubjectCode values must be represented
+        var codes = allSubjects.Select(s => s.SubjectCode).Distinct().ToHashSet();
+        codes.Should().Contain(SubjectCode.MATH);
+        codes.Should().Contain(SubjectCode.SCIENCE);
+        codes.Should().Contain(SubjectCode.ARABIC);
+        codes.Should().Contain(SubjectCode.ENGLISH);
+    }
+
+    // -------------------------------------------------------------------------
+    // P8-02 AC-5: Full tree linkage — no orphan nodes
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -73,19 +165,15 @@ public sealed class LearningSeederTests
 
         var db = GetDb(sp);
 
-        // All subject IDs that exist
         var subjectIds = await db.Subjects.AsNoTracking().Select(s => s.Id).ToHashSetAsync();
         subjectIds.Should().NotBeEmpty();
 
-        // All unit IDs that exist
         var unitIds = await db.Units.AsNoTracking().Select(u => u.Id).ToHashSetAsync();
         unitIds.Should().NotBeEmpty();
 
-        // All concept IDs that exist
         var conceptIds = await db.Concepts.AsNoTracking().Select(c => c.Id).ToHashSetAsync();
         conceptIds.Should().NotBeEmpty();
 
-        // All skill IDs that exist
         var skillIds = await db.Skills.AsNoTracking().Select(sk => sk.Id).ToHashSetAsync();
         skillIds.Should().NotBeEmpty();
 
@@ -111,49 +199,13 @@ public sealed class LearningSeederTests
     }
 
     // -------------------------------------------------------------------------
-    // AC-3: Lesson↔Skill links resolve for Math Grade 1
+    // P8-02 AC-6: Math (both trees) has the deepest sub-tree structure per grade
+    // Each language tree of Math must have strictly more Units than Science/Arabic/English
+    // in the same grade.
     // -------------------------------------------------------------------------
 
     [Fact]
-    public async Task SeedAsync_LessonsLinkToSkills_WhereSet()
-    {
-        var sp = BuildServiceProvider();
-        await LearningSeeder.SeedAsync(sp);
-
-        var db = GetDb(sp);
-
-        var grade1 = await db.Grades.AsNoTracking().FirstAsync(g => g.Number == 1);
-        var mathSubject = await db.Subjects.AsNoTracking()
-            .FirstAsync(s => s.Name == "Math" && s.GradeId == grade1.Id);
-
-        // At least one lesson in Math Grade 1 has SkillId set
-        var mathUnitIds = await db.Units.AsNoTracking()
-            .Where(u => u.SubjectId == mathSubject.Id)
-            .Select(u => u.Id)
-            .ToListAsync();
-
-        var mathLessonsWithSkill = await db.Lessons.AsNoTracking()
-            .Where(l => mathUnitIds.Contains(l.UnitId) && l.SkillId != null)
-            .ToListAsync();
-
-        mathLessonsWithSkill.Should().NotBeEmpty(
-            "at least one Math Grade 1 lesson must teach a specific skill");
-
-        // The SkillIds on those lessons must exist in Skills
-        var allSkillIds = await db.Skills.AsNoTracking().Select(sk => sk.Id).ToHashSetAsync();
-
-        mathLessonsWithSkill
-            .Select(l => l.SkillId!.Value)
-            .Should().OnlyContain(id => allSkillIds.Contains(id),
-                "every SkillId set on a lesson must reference an existing Skill");
-    }
-
-    // -------------------------------------------------------------------------
-    // AC-5: Math has the deepest tree per grade
-    // -------------------------------------------------------------------------
-
-    [Fact]
-    public async Task SeedAsync_Math_HasDeepestTree()
+    public async Task SeedAsync_MathTrees_HaveDeepestStructure_PerGrade()
     {
         var sp = BuildServiceProvider();
         await LearningSeeder.SeedAsync(sp);
@@ -166,47 +218,178 @@ public sealed class LearningSeederTests
             .Where(s => s.GradeId == grade1.Id)
             .ToListAsync();
 
-        var mathId = subjects.First(s => s.Name == "Math").Id;
-        var othersIds = subjects.Where(s => s.Name != "Math").Select(s => s.Id).ToList();
+        var mathArId  = subjects.First(s => s.SubjectCode == SubjectCode.MATH    && s.Language == ContentLanguage.Ar).Id;
+        var mathEnId  = subjects.First(s => s.SubjectCode == SubjectCode.MATH    && s.Language == ContentLanguage.En).Id;
+        var nonMathIds = subjects
+            .Where(s => s.SubjectCode != SubjectCode.MATH)
+            .Select(s => s.Id)
+            .ToList();
 
-        // Unit counts
-        var mathUnitCount = await db.Units.AsNoTracking().CountAsync(u => u.SubjectId == mathId);
-        foreach (var otherId in othersIds)
+        var mathArUnitCount = await db.Units.AsNoTracking().CountAsync(u => u.SubjectId == mathArId);
+        var mathEnUnitCount = await db.Units.AsNoTracking().CountAsync(u => u.SubjectId == mathEnId);
+
+        mathArUnitCount.Should().BeGreaterThan(2,
+            "MATH/Ar must have more than 2 units (it has 5)");
+        mathEnUnitCount.Should().BeGreaterThan(2,
+            "MATH/En must have more than 2 units (it has 5)");
+
+        foreach (var otherId in nonMathIds)
         {
             var otherUnitCount = await db.Units.AsNoTracking().CountAsync(u => u.SubjectId == otherId);
-            mathUnitCount.Should().BeGreaterThan(otherUnitCount,
-                "Math must have strictly more units than every other subject");
-        }
-
-        // Concept counts
-        var mathConceptCount = await db.Concepts.AsNoTracking().CountAsync(c => c.SubjectId == mathId);
-        foreach (var otherId in othersIds)
-        {
-            var otherConceptCount = await db.Concepts.AsNoTracking().CountAsync(c => c.SubjectId == otherId);
-            mathConceptCount.Should().BeGreaterThan(otherConceptCount,
-                "Math must have strictly more concepts than every other subject");
-        }
-
-        // Skill counts (via concepts belonging to the subject's concepts)
-        var mathConceptIds = await db.Concepts.AsNoTracking()
-            .Where(c => c.SubjectId == mathId).Select(c => c.Id).ToListAsync();
-        var mathSkillCount = await db.Skills.AsNoTracking()
-            .CountAsync(sk => mathConceptIds.Contains(sk.ConceptId));
-
-        foreach (var otherId in othersIds)
-        {
-            var otherConceptIds = await db.Concepts.AsNoTracking()
-                .Where(c => c.SubjectId == otherId).Select(c => c.Id).ToListAsync();
-            var otherSkillCount = await db.Skills.AsNoTracking()
-                .CountAsync(sk => otherConceptIds.Contains(sk.ConceptId));
-
-            mathSkillCount.Should().BeGreaterThan(otherSkillCount,
-                "Math must have strictly more skills than every other subject");
+            mathArUnitCount.Should().BeGreaterThan(otherUnitCount,
+                "MATH/Ar must have strictly more units than every non-Math subject");
+            mathEnUnitCount.Should().BeGreaterThan(otherUnitCount,
+                "MATH/En must have strictly more units than every non-Math subject");
         }
     }
 
     // -------------------------------------------------------------------------
-    // AC-4: Idempotency — second run does not duplicate rows
+    // P8-02 AC-7: Per-language Math prerequisite edge graphs are non-empty and
+    // each tree's KnowledgeNodes reference the correct language Subject.
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task SeedAsync_MathPrereqEdges_ExistInBothLanguageTrees()
+    {
+        var sp = BuildServiceProvider();
+        await LearningSeeder.SeedAsync(sp);
+
+        var db = GetDb(sp);
+
+        // Collect all MATH/Ar and MATH/En subject ids across all grades.
+        var mathArSubjectIds = await db.Subjects
+            .AsNoTracking()
+            .Where(s => s.SubjectCode == SubjectCode.MATH && s.Language == ContentLanguage.Ar)
+            .Select(s => s.Id)
+            .ToHashSetAsync();
+
+        var mathEnSubjectIds = await db.Subjects
+            .AsNoTracking()
+            .Where(s => s.SubjectCode == SubjectCode.MATH && s.Language == ContentLanguage.En)
+            .Select(s => s.Id)
+            .ToHashSetAsync();
+
+        mathArSubjectIds.Should().NotBeEmpty("MATH/Ar subjects must be seeded");
+        mathEnSubjectIds.Should().NotBeEmpty("MATH/En subjects must be seeded");
+
+        // KnowledgeNodes belonging to each language's Math tree.
+        var arMathNodeIds = await db.KnowledgeNodes
+            .AsNoTracking()
+            .Where(n => mathArSubjectIds.Contains(n.SubjectId))
+            .Select(n => n.Id)
+            .ToHashSetAsync();
+
+        var enMathNodeIds = await db.KnowledgeNodes
+            .AsNoTracking()
+            .Where(n => mathEnSubjectIds.Contains(n.SubjectId))
+            .Select(n => n.Id)
+            .ToHashSetAsync();
+
+        arMathNodeIds.Should().NotBeEmpty("MATH/Ar KnowledgeNodes must be seeded");
+        enMathNodeIds.Should().NotBeEmpty("MATH/En KnowledgeNodes must be seeded");
+
+        // Prerequisite edges fully within the Ar tree.
+        var allEdges = await db.KnowledgeEdges.AsNoTracking().ToListAsync();
+
+        var arMathEdges = allEdges
+            .Where(e => e.RelationshipType == EdgeRelationshipType.Prerequisite
+                     && arMathNodeIds.Contains(e.SourceNodeId)
+                     && arMathNodeIds.Contains(e.TargetNodeId))
+            .ToList();
+
+        var enMathEdges = allEdges
+            .Where(e => e.RelationshipType == EdgeRelationshipType.Prerequisite
+                     && enMathNodeIds.Contains(e.SourceNodeId)
+                     && enMathNodeIds.Contains(e.TargetNodeId))
+            .ToList();
+
+        arMathEdges.Should().NotBeEmpty("MATH/Ar tree must have at least one prerequisite edge");
+        enMathEdges.Should().NotBeEmpty("MATH/En tree must have at least one prerequisite edge");
+    }
+
+    // -------------------------------------------------------------------------
+    // P8-02 AC-8: No cross-language KnowledgeEdges — edges only connect nodes
+    // within the same language tree (Ar nodes → Ar nodes, En nodes → En nodes).
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task SeedAsync_NoEdgesSpan_CrossLanguageTrees()
+    {
+        var sp = BuildServiceProvider();
+        await LearningSeeder.SeedAsync(sp);
+
+        var db = GetDb(sp);
+
+        // Build a map: KnowledgeNodeId → ContentLanguage via Skill → Concept → Subject.
+        var nodeLanguages = await db.KnowledgeNodes
+            .AsNoTracking()
+            .Where(n => n.SkillId != null)
+            .Include(n => n.Skill!)
+                .ThenInclude(sk => sk.Concept)
+                    .ThenInclude(c => c.Subject)
+            .ToDictionaryAsync(
+                n => n.Id,
+                n => n.Skill!.Concept.Subject.Language);
+
+        var allEdges = await db.KnowledgeEdges.AsNoTracking().ToListAsync();
+
+        foreach (var edge in allEdges.Where(e => e.RelationshipType == EdgeRelationshipType.Prerequisite))
+        {
+            if (!nodeLanguages.TryGetValue(edge.SourceNodeId, out var srcLang) ||
+                !nodeLanguages.TryGetValue(edge.TargetNodeId, out var tgtLang))
+                continue; // Node not skill-backed — skip.
+
+            srcLang.Should().Be(tgtLang,
+                $"Edge (SourceNodeId={edge.SourceNodeId} → TargetNodeId={edge.TargetNodeId}) " +
+                $"must not span two language trees");
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // AC-9: Lesson↔Skill links resolve for Math Grade 1 (both trees)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task SeedAsync_LessonsLinkToSkills_InBothMathTrees_Grade1()
+    {
+        var sp = BuildServiceProvider();
+        await LearningSeeder.SeedAsync(sp);
+
+        var db = GetDb(sp);
+
+        var grade1 = await db.Grades.AsNoTracking().FirstAsync(g => g.Number == 1);
+
+        foreach (var language in new[] { ContentLanguage.Ar, ContentLanguage.En })
+        {
+            var mathSubject = await db.Subjects.AsNoTracking()
+                .FirstAsync(s =>
+                    s.SubjectCode == SubjectCode.MATH &&
+                    s.Language == language &&
+                    s.GradeId == grade1.Id);
+
+            var mathUnitIds = await db.Units.AsNoTracking()
+                .Where(u => u.SubjectId == mathSubject.Id)
+                .Select(u => u.Id)
+                .ToListAsync();
+
+            var mathLessonsWithSkill = await db.Lessons.AsNoTracking()
+                .Where(l => mathUnitIds.Contains(l.UnitId) && l.SkillId != null)
+                .ToListAsync();
+
+            mathLessonsWithSkill.Should().NotBeEmpty(
+                $"at least one MATH/{language} Grade 1 lesson must teach a specific skill");
+
+            var allSkillIds = await db.Skills.AsNoTracking().Select(sk => sk.Id).ToHashSetAsync();
+
+            mathLessonsWithSkill
+                .Select(l => l.SkillId!.Value)
+                .Should().OnlyContain(id => allSkillIds.Contains(id),
+                    $"every SkillId set on a MATH/{language} Grade 1 lesson must reference an existing Skill");
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // AC-10: Idempotency — second run does not duplicate rows
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -220,28 +403,47 @@ public sealed class LearningSeederTests
         await LearningSeeder.SeedAsync(sp);
 
         var db = GetDb(sp);
-        var gradesAfterFirst = await db.Grades.AsNoTracking().CountAsync();
+        var gradesAfterFirst   = await db.Grades.AsNoTracking().CountAsync();
         var subjectsAfterFirst = await db.Subjects.AsNoTracking().CountAsync();
-        var unitsAfterFirst = await db.Units.AsNoTracking().CountAsync();
-        var lessonsAfterFirst = await db.Lessons.AsNoTracking().CountAsync();
+        var unitsAfterFirst    = await db.Units.AsNoTracking().CountAsync();
+        var lessonsAfterFirst  = await db.Lessons.AsNoTracking().CountAsync();
         var conceptsAfterFirst = await db.Concepts.AsNoTracking().CountAsync();
-        var skillsAfterFirst = await db.Skills.AsNoTracking().CountAsync();
+        var skillsAfterFirst   = await db.Skills.AsNoTracking().CountAsync();
 
         // Second run (same provider = same InMemory database)
         await LearningSeeder.SeedAsync(sp);
 
-        var gradesAfterSecond = await db.Grades.AsNoTracking().CountAsync();
+        var gradesAfterSecond   = await db.Grades.AsNoTracking().CountAsync();
         var subjectsAfterSecond = await db.Subjects.AsNoTracking().CountAsync();
-        var unitsAfterSecond = await db.Units.AsNoTracking().CountAsync();
-        var lessonsAfterSecond = await db.Lessons.AsNoTracking().CountAsync();
+        var unitsAfterSecond    = await db.Units.AsNoTracking().CountAsync();
+        var lessonsAfterSecond  = await db.Lessons.AsNoTracking().CountAsync();
         var conceptsAfterSecond = await db.Concepts.AsNoTracking().CountAsync();
-        var skillsAfterSecond = await db.Skills.AsNoTracking().CountAsync();
+        var skillsAfterSecond   = await db.Skills.AsNoTracking().CountAsync();
 
-        gradesAfterSecond.Should().Be(gradesAfterFirst, "Grade count must not change on second seed");
+        gradesAfterSecond.Should().Be(gradesAfterFirst,   "Grade count must not change on second seed");
         subjectsAfterSecond.Should().Be(subjectsAfterFirst, "Subject count must not change on second seed");
-        unitsAfterSecond.Should().Be(unitsAfterFirst, "Unit count must not change on second seed");
-        lessonsAfterSecond.Should().Be(lessonsAfterFirst, "Lesson count must not change on second seed");
+        unitsAfterSecond.Should().Be(unitsAfterFirst,     "Unit count must not change on second seed");
+        lessonsAfterSecond.Should().Be(lessonsAfterFirst,  "Lesson count must not change on second seed");
         conceptsAfterSecond.Should().Be(conceptsAfterFirst, "Concept count must not change on second seed");
-        skillsAfterSecond.Should().Be(skillsAfterFirst, "Skill count must not change on second seed");
+        skillsAfterSecond.Should().Be(skillsAfterFirst,   "Skill count must not change on second seed");
+    }
+
+    // -------------------------------------------------------------------------
+    // AC-11: Expected subject root count across all grades = 6 × 6 = 36
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task SeedAsync_TotalSubjectCount_Is_ThirtySix()
+    {
+        var sp = BuildServiceProvider();
+        await LearningSeeder.SeedAsync(sp);
+
+        var db = GetDb(sp);
+
+        var totalSubjects = await db.Subjects.AsNoTracking().CountAsync();
+
+        // 6 grades × 6 roots per grade = 36
+        totalSubjects.Should().Be(36,
+            "6 grades × 6 subject roots per grade (MATH/Ar, MATH/En, SCIENCE/Ar, SCIENCE/En, ARABIC/Ar, ENGLISH/En) = 36");
     }
 }

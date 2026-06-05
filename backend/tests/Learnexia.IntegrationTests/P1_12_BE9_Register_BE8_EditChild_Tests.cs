@@ -158,7 +158,8 @@ public sealed class P1_12_BE9_Register_BE8_EditChild_Tests : IAsyncLifetime
     /// Adds a child for the given parent token and returns the child's Id.
     /// </summary>
     private async Task<int> AddChildAsync(string parentToken, string childEmail,
-        string fullName = "Test Child", int grade = 3, string language = "ar", string country = "EG")
+        string fullName = "Test Child", int grade = 3, string language = "ar", string country = "EG",
+        string learningLanguage = "ar")
     {
         var body = new
         {
@@ -167,7 +168,8 @@ public sealed class P1_12_BE9_Register_BE8_EditChild_Tests : IAsyncLifetime
             Password = ValidChildPassword,
             Grade = grade,
             Language = language,
-            Country = country
+            Country = country,
+            LearningLanguage = learningLanguage, // P8-01: required
         };
         var (resp, root, rawBody) = await SendAsync(_client, HttpMethod.Post, AddChildUrl, body, parentToken);
         resp.StatusCode.Should().Be(HttpStatusCode.OK,

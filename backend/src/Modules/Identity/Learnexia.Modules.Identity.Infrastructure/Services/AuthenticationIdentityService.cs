@@ -200,6 +200,10 @@ public class AuthenticationIdentityService : IAuthenticationService
             new(nameof(UserClaimsModel.Id), user.Id.ToString()),
             new(JwtRegisteredClaimNames.Jti, jwtId),
             new("SessionId", sessionId),
+            // P8-01: medium-of-instruction language for student curriculum delivery.
+            // Absent on non-student accounts (consumers fall back to "ar"). Re-issued on every
+            // GenerateJwtToken call, which covers both initial issuance and refresh rotation.
+            new(CustomClaimTypes.LearningLanguage, user.LearningLanguage),
         };
 
         foreach (var roleName in roles)

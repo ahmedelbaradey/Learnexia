@@ -43,7 +43,13 @@ public sealed class IdentityChildAccountService : IChildAccountService
             UserName = req.Email,
             Email = req.Email,
             FullName = req.FullName,
+            // UI/UX language (full culture code); defaults to the chosen learning language at creation
+            // so the UI starts in the same language as the curriculum — independently editable later
+            // via the existing EditUserPreferredLanguage endpoint.
             PreferredLanguage = NormalizeLanguage(req.Language),
+            // P8-01: medium-of-instruction language ("ar" or "en"); stored as the short code.
+            // Distinct from PreferredLanguage; immutable by the student (parent-only change is P8-04).
+            LearningLanguage = req.LearningLanguage,
             Nationality = req.Country,
             Grade = req.Grade,
             RegistrationIsCompleted = false,

@@ -205,6 +205,7 @@ public sealed class P4_07_Leagues_Tests : IAsyncLifetime
                 Grade    = 1,
                 Language = "ar",
                 Country  = "EG",
+                LearningLanguage = "ar", // P8-01: required
             },
             parentToken);
         ((int)addResp.StatusCode).Should().BeOneOf(new[] { 200, 201 },
@@ -1251,30 +1252,53 @@ public sealed class P4_07_Leagues_Tests : IAsyncLifetime
     [Fact(DisplayName = "P407-T17 LeagueRolloverJob does NOT affect current-week memberships (only processes last week)")]
     public async Task T17_RolloverJob_CurrentWeekIsNoop()
     {
-        var now = _factory.TestClock.UtcNow;
+        // Pin the clock to a Monday 01:00 UTC so the rollover job's "now.AddDays(-3)"
+        // arithmetic is deterministic regardless of which day of the week the test runs.
+        // The rollover job computes lastWeekKey = GetCurrentPeriod(now.AddDays(-3)).
+        // When "now" is a Monday, "now.AddDays(-3)" = last Friday (previous ISO week),
+        // so lastWeekKey = previous week — guaranteed different from currentWeekKey.
+        // Without this pin the test is flaky on Thu/Fri/Sat/Sun because AddDays(-3)
+        // lands on a day still inside the current week (lastWeekKey == currentWeekKey)
+        // and the rollover incorrectly processes the current membership.
+        var realNow = DateTime.UtcNow;
+        int daysUntilMonday = ((int)DayOfWeek.Monday - (int)realNow.DayOfWeek + 7) % 7;
+        // If today is Monday, use the NEXT Monday (7 days ahead) so we stay in the NEXT week.
+        // This ensures the "current week" for this test is the week starting on that Monday,
+        // while "now.AddDays(-3)" = last Friday = previous week.
+        if (daysUntilMonday == 0) daysUntilMonday = 7;
+        var stableMonday = realNow.Date.AddDays(daysUntilMonday).AddHours(1); // Monday 01:00 UTC
+        _factory.TestClock.SetUtcNow(stableMonday);
 
-        var (token, studentId) = await CreateStudentViaParentFlowAsync("t17");
-        await SeedProfileAsync(studentId);
-        await GetDashboardAsync(token); // creates current-week membership
-
-        var membershipBefore = await GetActiveMembershipAsync(studentId);
-        membershipBefore.Should().NotBeNull("membership must exist before rollover");
-        membershipBefore!.TierAfter.Should().BeNull("current-week membership must not be finalized yet");
-        membershipBefore.Status.Should().Be(MembershipStatus.Active, "must be Active before rollover");
-
-        // Run rollover (processes last week — current week must be untouched)
-        using (var scope = _factory.Services.CreateScope())
+        try
         {
-            var job = scope.ServiceProvider.GetRequiredService<LeagueRolloverJob>();
-            await job.RunAsync(CancellationToken.None);
-        }
+            var (token, studentId) = await CreateStudentViaParentFlowAsync("t17");
+            await SeedProfileAsync(studentId);
+            await GetDashboardAsync(token); // creates current-week membership (week of stableMonday)
 
-        var membershipAfter = await GetActiveMembershipAsync(studentId);
-        membershipAfter.Should().NotBeNull("current-week membership must still exist after rollover");
-        membershipAfter!.TierAfter.Should().BeNull(
-            "current-week membership TierAfter must remain null (not touched by rollover)");
-        membershipAfter.Status.Should().Be(MembershipStatus.Active,
-            "current-week membership Status must remain Active (rollover only touches last week)");
+            var membershipBefore = await GetActiveMembershipAsync(studentId);
+            membershipBefore.Should().NotBeNull("membership must exist before rollover");
+            membershipBefore!.TierAfter.Should().BeNull("current-week membership must not be finalized yet");
+            membershipBefore.Status.Should().Be(MembershipStatus.Active, "must be Active before rollover");
+
+            // Run rollover (processes last week — current week must be untouched).
+            // With clock at Monday 01:00, now.AddDays(-3) = last Friday → previous week key.
+            using (var scope = _factory.Services.CreateScope())
+            {
+                var job = scope.ServiceProvider.GetRequiredService<LeagueRolloverJob>();
+                await job.RunAsync(CancellationToken.None);
+            }
+
+            var membershipAfter = await GetActiveMembershipAsync(studentId);
+            membershipAfter.Should().NotBeNull("current-week membership must still exist after rollover");
+            membershipAfter!.TierAfter.Should().BeNull(
+                "current-week membership TierAfter must remain null (not touched by rollover)");
+            membershipAfter.Status.Should().Be(MembershipStatus.Active,
+                "current-week membership Status must remain Active (rollover only touches last week)");
+        }
+        finally
+        {
+            _factory.TestClock.Reset();
+        }
     }
 
     // =========================================================================

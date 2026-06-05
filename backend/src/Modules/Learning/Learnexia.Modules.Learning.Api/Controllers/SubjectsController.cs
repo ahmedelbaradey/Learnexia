@@ -34,6 +34,7 @@ public class SubjectsController : AppControllerBase
     /// GET /api/learning/Subjects/ForGrade?grade={n}
     /// </summary>
     [HttpGet("ForGrade")]
+    [Authorize]   // P8-SEC-1: curriculum browse requires authentication (mirrors GetLessons/GetSkillTree).
     [ProducesResponseType(typeof(BaseResponse<List<StudentSubjectDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetForGrade([FromQuery] int grade)
         => NewResult(await Mediator.Send(new GetSubjectsForGradeQuery { Grade = grade }));

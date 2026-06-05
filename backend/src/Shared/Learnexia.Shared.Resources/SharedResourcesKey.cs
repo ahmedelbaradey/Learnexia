@@ -808,5 +808,12 @@
         public const string NotificationAccessForbidden = "NotificationAccessForbidden";
         public const string NotificationIdRequired = "NotificationIdRequired";
 
+        // P8-03 — learning-language curriculum guard
+        /// <summary>
+        /// Returned when a student tries to access a lesson whose subject language does not match
+        /// the student's resolved effective language for that subject code.
+        /// </summary>
+        public const string LessonLanguageMismatch = "LessonLanguageMismatch";
+
     }
 }

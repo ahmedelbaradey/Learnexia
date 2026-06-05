@@ -34,6 +34,15 @@ public class UserEntityConfig : IEntityTypeConfiguration<User>
             .HasDefaultValue("ar-EG")
             .HasComment("User's preferred language (ar-EG or en-US)");
 
+        // LearningLanguage is the medium-of-instruction language for the child's curriculum ("ar" or "en").
+        // It is distinct from PreferredLanguage (UI/UX language) and is immutable by the student.
+        // Default "ar" backfills all existing rows to Arabic-first, matching the product default.
+        builder.Property(u => u.LearningLanguage)
+            .IsRequired()
+            .HasMaxLength(2)
+            .HasDefaultValue("ar")
+            .HasComment("Medium-of-instruction language for curriculum delivery (ar or en). Distinct from PreferredLanguage (UI language). Set by parent at onboarding; student cannot change it.");
+
         builder.Property(u => u.CountryCode)
             .IsRequired()
             .HasMaxLength(10)

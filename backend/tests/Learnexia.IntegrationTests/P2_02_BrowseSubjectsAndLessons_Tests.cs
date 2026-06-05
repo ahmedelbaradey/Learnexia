@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
+using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Modules.Learning.Infrastructure.Persistence;
 using Learnexia.Modules.Learning.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
@@ -15,39 +16,43 @@ namespace Learnexia.IntegrationTests;
 /// P2-02 integration tests — Browse Subjects and Lessons (student-facing read endpoints).
 ///
 /// Endpoints under test:
-///   GET /api/learning/Subjects/ForGrade?grade={1-6}    (anonymous — unchanged)
+///   GET /api/learning/Subjects/ForGrade?grade={1-6}    [Authorize] since P8 (security fix)
 ///   GET /api/learning/Subjects/{id}/Lessons            [Authorize] since P2-04 (was anonymous)
 ///   GET /api/learning/Subjects/{id}/SkillTree          [Authorize] since P2-04 (was anonymous)
 ///
-/// P2-04 BREAKING CHANGE (Q7 decision): SubjectsController.GetLessons and GetSkillTree now require
-/// [Authorize]. TC-6 through TC-12 (which call those endpoints) have been updated to pass a valid
-/// Student JWT obtained via the parent→add-child→sign-in flow (mirrors P2-08 pattern).
-/// TC-1 through TC-5 (ForGrade only) remain anonymous — ForGrade is not auth-gated.
+/// P8 BREAKING CHANGE: SubjectsController.GetForGrade now requires [Authorize].
+/// ALL test cases (TC-1 through TC-12) pass the shared student JWT.
 ///
-/// Seed shape (from LearningSeeder.cs):
+/// P8 SEED CHANGE: The bilingual seeder now produces 6 subjects per grade (Math/Ar, Math/En,
+/// Science/Ar, Science/En, Arabic/Ar, English/En). However, GetForGrade still returns exactly
+/// 4 subjects (one per SubjectCode) resolved by the student's learning_language JWT claim.
+/// Shared student uses learning_language="en" so the resolver returns:
+///   MATH    → ContentLanguage.En → "Math (G1)"
+///   SCIENCE → ContentLanguage.En → "Science (G1)"
+///   ARABIC  → ContentLanguage.Ar (pinned) → Arabic subject
+///   ENGLISH → ContentLanguage.En (pinned) → "English (G1)"
+/// Subject lookups in InitializeAsync use SubjectCode + ContentLanguage.En (not bare Name).
+///
+/// Seed shape for MATH/En tree (ContentLanguage.En):
 ///   Math    G1 : 5 units × 3 lessons = 15 lessons;  5 concepts × 3 skills = 15 skills
 ///   Science G1 : 2 units × 2 lessons;  2 concepts × 2 skills
-///   Arabic  G1 : 2 units × 2 lessons;  2 concepts × 2 skills
-///   English G1 : 2 units × 2 lessons;  2 concepts × 2 skills
-///
-/// Per grade, the seeder produces exactly 4 subjects (Math, Science, Arabic, English).
 ///
 /// NodeState enum serialized as int (no JsonStringEnumConverter registered):
 ///   Locked=0, Available=1, Completed=2
 ///
 /// Coverage map (12 test cases → Fact methods):
-///   TC-1  ForGrade Grade 1 happy path          → ForGrade_Grade1_Returns200_With4Subjects
-///   TC-2  ForGrade Grade 6 happy path          → ForGrade_Grade6_Returns200_With4Subjects
-///   TC-3  ForGrade out-of-range grade=99       → ForGrade_OutOfRange_Grade99_Returns400_NotServerError
-///   TC-4  ForGrade missing param (grade=0)     → ForGrade_MissingParam_Returns400_NotServerError
-///   TC-5  ForGrade item shape                  → ForGrade_ItemShape_HasRequiredFields
-///   TC-6  Lessons happy path (now with JWT)    → Lessons_HappyPath_Returns200_WithUnitsAndLessons
+///   TC-1  ForGrade Grade 1 happy path (JWT)      → ForGrade_Grade1_Returns200_With4Subjects
+///   TC-2  ForGrade Grade 6 happy path (JWT)      → ForGrade_Grade6_Returns200_With4Subjects
+///   TC-3  ForGrade out-of-range grade=99 (JWT)   → ForGrade_OutOfRange_Grade99_Returns400_NotServerError
+///   TC-4  ForGrade missing param (JWT)           → ForGrade_MissingParam_Returns400_NotServerError
+///   TC-5  ForGrade item shape (JWT)              → ForGrade_ItemShape_HasRequiredFields
+///   TC-6  Lessons happy path (JWT)               → Lessons_HappyPath_Returns200_WithUnitsAndLessons
 ///   TC-7  Lessons ordered by SequenceOrder (JWT) → Lessons_UnitsAndLessonsOrderedBySequenceOrder
-///   TC-8  Lessons unknown subject id (JWT)     → Lessons_UnknownSubjectId_Returns404_NotServerError
-///   TC-9  SkillTree happy path (now with JWT)  → SkillTree_HappyPath_Returns200_WithConceptsAndSkills
-///   TC-10 SkillTree NodeState field (JWT)      → SkillTree_NodeState_FieldPresentAndValidValue
-///   TC-11 SkillTree unknown subject id (JWT)   → SkillTree_UnknownSubjectId_Returns404_NotServerError
-///   TC-12 Envelope successed casing (JWT)      → Envelope_SuccessedCamelCase_IsPresent
+///   TC-8  Lessons unknown subject id (JWT)       → Lessons_UnknownSubjectId_Returns404_NotServerError
+///   TC-9  SkillTree happy path (JWT)             → SkillTree_HappyPath_Returns200_WithConceptsAndSkills
+///   TC-10 SkillTree NodeState field (JWT)        → SkillTree_NodeState_FieldPresentAndValidValue
+///   TC-11 SkillTree unknown subject id (JWT)     → SkillTree_UnknownSubjectId_Returns404_NotServerError
+///   TC-12 Envelope successed casing (JWT)        → Envelope_SuccessedCamelCase_IsPresent
 /// </summary>
 [Collection("IntegrationTests")]
 public sealed class P2_02_BrowseSubjectsAndLessons_Tests : IAsyncLifetime
@@ -87,10 +92,16 @@ public sealed class P2_02_BrowseSubjectsAndLessons_Tests : IAsyncLifetime
         await LearningSeeder.SeedAsync(scope.ServiceProvider);
 
         // Resolve the Math G1 subject id once for all tests that need a real subject id.
+        // P8-02: query by SubjectCode + Language (not by Name — names are now grade-suffixed
+        // and differ between language trees). Shared student uses learning_language="en" so
+        // the En tree (MATH/En → "Math (G1)") is the relevant tree.
         var db = scope.ServiceProvider.GetRequiredService<LearningDbContext>();
         var subject = await db.Subjects
             .Include(s => s.Grade)
-            .FirstAsync(s => s.Name == "Math" && s.Grade.Number == 1);
+            .FirstAsync(s =>
+                s.SubjectCode == SubjectCode.MATH &&
+                s.Language == ContentLanguage.En &&
+                s.Grade.Number == 1);
         _mathG1SubjectId = subject.Id;
 
         // P2-04 regression fix: create a shared Student JWT for TC-6..TC-12.
@@ -194,6 +205,7 @@ public sealed class P2_02_BrowseSubjectsAndLessons_Tests : IAsyncLifetime
                 Grade    = 1,
                 Language = "ar",
                 Country  = "EG",
+                LearningLanguage = "en", // P8-01: "en" so handler resolves MATH/En, SCIENCE/En trees
             },
             parentToken);
         ((int)addResp.StatusCode).Should().BeOneOf(new[] { 200, 201 },
@@ -210,13 +222,15 @@ public sealed class P2_02_BrowseSubjectsAndLessons_Tests : IAsyncLifetime
     }
 
     // =========================================================================
-    // TC-1: ForGrade Grade 1 — 4 subjects returned
+    // TC-1: ForGrade Grade 1 — 4 subjects returned  (P8: now requires JWT)
     // =========================================================================
 
-    [Fact(DisplayName = "TC-1: GET /ForGrade?grade=1 returns HTTP 200 with exactly 4 subjects")]
+    [Fact(DisplayName = "TC-1: GET /ForGrade?grade=1 (with JWT) returns HTTP 200 with exactly 4 subjects")]
     public async Task ForGrade_Grade1_Returns200_With4Subjects()
     {
-        var (response, root, body) = await GetAsync("/api/learning/Subjects/ForGrade?grade=1");
+        // P8: GetForGrade now requires [Authorize] — must pass a JWT.
+        var (response, root, body) = await GetAuthenticatedAsync(
+            "/api/learning/Subjects/ForGrade?grade=1", _sharedStudentToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK,
             "ForGrade grade=1 must return 200; body: {0}", body);
@@ -232,13 +246,15 @@ public sealed class P2_02_BrowseSubjectsAndLessons_Tests : IAsyncLifetime
     }
 
     // =========================================================================
-    // TC-2: ForGrade Grade 6 — 4 subjects returned
+    // TC-2: ForGrade Grade 6 — 4 subjects returned  (P8: now requires JWT)
     // =========================================================================
 
-    [Fact(DisplayName = "TC-2: GET /ForGrade?grade=6 returns HTTP 200 with exactly 4 subjects")]
+    [Fact(DisplayName = "TC-2: GET /ForGrade?grade=6 (with JWT) returns HTTP 200 with exactly 4 subjects")]
     public async Task ForGrade_Grade6_Returns200_With4Subjects()
     {
-        var (response, root, body) = await GetAsync("/api/learning/Subjects/ForGrade?grade=6");
+        // P8: GetForGrade now requires [Authorize] — must pass a JWT.
+        var (response, root, body) = await GetAuthenticatedAsync(
+            "/api/learning/Subjects/ForGrade?grade=6", _sharedStudentToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK,
             "ForGrade grade=6 must return 200; body: {0}", body);
@@ -250,13 +266,15 @@ public sealed class P2_02_BrowseSubjectsAndLessons_Tests : IAsyncLifetime
     }
 
     // =========================================================================
-    // TC-3: ForGrade out-of-range grade=99 → 400, not 500
+    // TC-3: ForGrade out-of-range grade=99 → 400, not 500  (P8: now requires JWT)
     // =========================================================================
 
-    [Fact(DisplayName = "TC-3: GET /ForGrade?grade=99 returns 400 (out-of-range), NOT 500")]
+    [Fact(DisplayName = "TC-3: GET /ForGrade?grade=99 (with JWT) returns 400 (out-of-range), NOT 500")]
     public async Task ForGrade_OutOfRange_Grade99_Returns400_NotServerError()
     {
-        var (response, root, body) = await GetAsync("/api/learning/Subjects/ForGrade?grade=99");
+        // P8: GetForGrade now requires [Authorize] — must pass a JWT.
+        var (response, root, body) = await GetAuthenticatedAsync(
+            "/api/learning/Subjects/ForGrade?grade=99", _sharedStudentToken);
 
         // Handler explicitly returns BadRequest for grade outside 1-6.
         ((int)response.StatusCode).Should().NotBe(500,
@@ -270,15 +288,17 @@ public sealed class P2_02_BrowseSubjectsAndLessons_Tests : IAsyncLifetime
     }
 
     // =========================================================================
-    // TC-4: ForGrade missing param (defaults to 0) → 400, not 500
+    // TC-4: ForGrade missing param (defaults to 0) → 400, not 500  (P8: now requires JWT)
     // =========================================================================
 
-    [Fact(DisplayName = "TC-4: GET /ForGrade (no grade param, defaults to 0) returns non-500")]
+    [Fact(DisplayName = "TC-4: GET /ForGrade (no grade param, defaults to 0, with JWT) returns non-500")]
     public async Task ForGrade_MissingParam_Returns400_NotServerError()
     {
         // When ?grade is omitted, ASP.NET model binding supplies default(int) = 0.
         // 0 < 1 triggers BadRequest in the handler, so we expect 400.
-        var (response, root, body) = await GetAsync("/api/learning/Subjects/ForGrade");
+        // P8: GetForGrade now requires [Authorize] — must pass a JWT.
+        var (response, root, body) = await GetAuthenticatedAsync(
+            "/api/learning/Subjects/ForGrade", _sharedStudentToken);
 
         ((int)response.StatusCode).Should().NotBe(500,
             "missing grade param must never produce 500; body: {0}", body);
@@ -289,13 +309,17 @@ public sealed class P2_02_BrowseSubjectsAndLessons_Tests : IAsyncLifetime
     }
 
     // =========================================================================
-    // TC-5: ForGrade item shape — each subject DTO has id, name, gradeNumber
+    // TC-5: ForGrade item shape — each subject DTO has id, name, gradeNumber, subjectCode
+    //       P8: now requires JWT; subject names are grade-suffixed ("Math (G1)" etc.)
+    //       so assertions use the stable subjectCode field instead of bare Name strings.
     // =========================================================================
 
-    [Fact(DisplayName = "TC-5: GET /ForGrade?grade=1 item shape has id, name, gradeNumber")]
+    [Fact(DisplayName = "TC-5: GET /ForGrade?grade=1 (with JWT) item shape has id, name, gradeNumber, subjectCode")]
     public async Task ForGrade_ItemShape_HasRequiredFields()
     {
-        var (response, root, body) = await GetAsync("/api/learning/Subjects/ForGrade?grade=1");
+        // P8: GetForGrade now requires [Authorize] — must pass a JWT.
+        var (response, root, body) = await GetAuthenticatedAsync(
+            "/api/learning/Subjects/ForGrade?grade=1", _sharedStudentToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", body);
         TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);
@@ -315,21 +339,29 @@ public sealed class P2_02_BrowseSubjectsAndLessons_Tests : IAsyncLifetime
             TryProp(item, "gradeNumber", out var gradeNumProp).Should().BeTrue(
                 "each subject DTO must have 'gradeNumber'; body: {0}", body);
             gradeNumProp.GetInt32().Should().Be(1, "'gradeNumber' must match the requested grade; body: {0}", body);
+
+            // P8-02: subjectCode field must be present (stable int identifier).
+            TryProp(item, "subjectCode", out var subjectCodeProp).Should().BeTrue(
+                "each subject DTO must have 'subjectCode' (P8-02); body: {0}", body);
+            subjectCodeProp.ValueKind.Should().Be(JsonValueKind.Number,
+                "'subjectCode' must be serialized as int; body: {0}", body);
         }
 
-        // Verify the four expected subject names are present.
-        var names = data.EnumerateArray()
+        // P8-02: verify the four expected subject codes are present (0=MATH, 1=SCIENCE, 2=ARABIC, 3=ENGLISH).
+        // Subject names are now grade-suffixed and language-specific (e.g. "Math (G1)", "العلوم (الصف 1)").
+        // The stable subjectCode field is the correct discriminator — not Name.
+        var codes = data.EnumerateArray()
             .Select(item =>
             {
-                TryProp(item, "name", out var n);
-                return n.GetString();
+                TryProp(item, "subjectCode", out var c);
+                return c.GetInt32();
             })
-            .ToList();
+            .ToHashSet();
 
-        names.Should().Contain("Math", "Math subject must be in grade 1; body: {0}", body);
-        names.Should().Contain("Science", "Science subject must be in grade 1; body: {0}", body);
-        names.Should().Contain("Arabic", "Arabic subject must be in grade 1; body: {0}", body);
-        names.Should().Contain("English", "English subject must be in grade 1; body: {0}", body);
+        codes.Should().Contain(0, "MATH (subjectCode=0) must be in grade 1; body: {0}", body);
+        codes.Should().Contain(1, "SCIENCE (subjectCode=1) must be in grade 1; body: {0}", body);
+        codes.Should().Contain(2, "ARABIC (subjectCode=2) must be in grade 1; body: {0}", body);
+        codes.Should().Contain(3, "ENGLISH (subjectCode=3) must be in grade 1; body: {0}", body);
     }
 
     // =========================================================================
@@ -599,7 +631,9 @@ public sealed class P2_02_BrowseSubjectsAndLessons_Tests : IAsyncLifetime
     public async Task Envelope_SuccessedCamelCase_IsPresent()
     {
         // Use ForGrade endpoint as the representative success response.
-        var (response, root, body) = await GetAsync("/api/learning/Subjects/ForGrade?grade=1");
+        // P8: GetForGrade now requires [Authorize] — pass the shared student JWT.
+        var (response, root, body) = await GetAuthenticatedAsync(
+            "/api/learning/Subjects/ForGrade?grade=1", _sharedStudentToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", body);
 
