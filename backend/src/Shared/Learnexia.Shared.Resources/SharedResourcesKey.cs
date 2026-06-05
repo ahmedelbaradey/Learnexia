@@ -815,5 +815,21 @@
         /// </summary>
         public const string LessonLanguageMismatch = "LessonLanguageMismatch";
 
+        // P8-04 — change a child's learning language (parent-only, fresh start)
+
+        /// <summary>
+        /// Returned (HTTP 424 FailedDependency) when the parent calls Change-Learning-Language
+        /// without <c>confirmFreshStart = true</c>. No state is changed when this fires.
+        /// </summary>
+        public const string ConfirmFreshStartRequired = "ConfirmFreshStartRequired";
+
+        /// <summary>Returned on success of Change-Learning-Language.</summary>
+        public const string LearningLanguageChangedSuccessfully = "LearningLanguageChangedSuccessfully";
+
+        /// <summary>
+        /// Returned when the Identity seam fails to persist the new LearningLanguage value.
+        /// </summary>
+        public const string LearningLanguageUpdateFailed = "LearningLanguageUpdateFailed";
+
     }
 }

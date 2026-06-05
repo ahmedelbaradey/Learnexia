@@ -156,6 +156,45 @@ public sealed class IdentityChildAccountService : IChildAccountService
         _ => "ar-EG",
     };
 
+    public async Task<ChildLanguageChangeResult> ChangeLearningLanguageAsync(
+        int childUserId,
+        string newLearningLanguage,
+        CancellationToken ct = default)
+    {
+        // Step 1 — Resolve child; missing → NotFound.
+        var child = await _identityServiceManager.UserManagmentService.FindByIdAsync(childUserId.ToString());
+        if (child is null)
+            return new ChildLanguageChangeResult(false, 0, string.Empty, newLearningLanguage, ErrorCode: ChildAccountError.NotFound);
+
+        // Step 2 — Capture old language; same-language request → no-op success (no mutation, no publish).
+        var oldLanguage = child.LearningLanguage ?? string.Empty;
+        if (oldLanguage == newLearningLanguage)
+        {
+            _logger.LogInfo($"ChangeLearningLanguageAsync: child {childUserId} already has LearningLanguage='{newLearningLanguage}'. No-op.");
+            return new ChildLanguageChangeResult(true, childUserId, oldLanguage, newLearningLanguage, IsNoOp: true);
+        }
+
+        // Step 3 — Mutate and commit. Identity has no UoW; UpdateAsync commits immediately.
+        child.LearningLanguage = newLearningLanguage;
+        child.UpdatedAt = DateTime.UtcNow;
+
+        var result = await _identityServiceManager.UserManagmentService.UpdateAsync(child);
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            _logger.LogError(null, $"ChangeLearningLanguageAsync UpdateAsync failed for child {childUserId}: {errors}");
+            return new ChildLanguageChangeResult(false, childUserId, oldLanguage, newLearningLanguage, ErrorCode: ChildAccountError.LanguageUpdateFailed);
+        }
+
+        _logger.LogInfo($"ChangeLearningLanguageAsync: child {childUserId} LearningLanguage changed from '{oldLanguage}' to '{newLearningLanguage}'.");
+
+        // Step 4 — Best-effort post-commit publish (mirrors PublishUserRegisteredEventAsync).
+        // A publish failure must NEVER roll back the already-committed User change (ADR 0002 §3).
+        await PublishLearningLanguageChangedEventAsync(childUserId, oldLanguage, newLearningLanguage, ct);
+
+        return new ChildLanguageChangeResult(true, childUserId, oldLanguage, newLearningLanguage);
+    }
+
     private async Task PublishUserRegisteredEventAsync(User user, CancellationToken cancellationToken)
     {
         try
@@ -172,6 +211,30 @@ public sealed class IdentityChildAccountService : IChildAccountService
         catch (Exception ex)
         {
             _logger.LogError(ex, $"Failed to publish UserRegisteredIntegrationEvent for user {user.Id}.");
+        }
+    }
+
+    private async Task PublishLearningLanguageChangedEventAsync(
+        int studentId,
+        string oldLanguage,
+        string newLanguage,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var integrationEvent = new LearningLanguageChangedIntegrationEvent(
+                EventId: Guid.NewGuid(),
+                OccurredOnUtc: DateTime.UtcNow,
+                StudentId: studentId,
+                OldLanguage: oldLanguage,
+                NewLanguage: newLanguage);
+
+            await _publisher.Publish(integrationEvent, cancellationToken);
+            _logger.LogInfo($"Published LearningLanguageChangedIntegrationEvent for student {studentId} ({oldLanguage} → {newLanguage}).");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Failed to publish LearningLanguageChangedIntegrationEvent for student {studentId}. Change is committed; reset may be missed.");
         }
     }
 }

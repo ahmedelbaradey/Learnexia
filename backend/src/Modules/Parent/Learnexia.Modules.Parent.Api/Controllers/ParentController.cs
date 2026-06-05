@@ -1,5 +1,6 @@
 using Learnexia.Modules.Parent.Api.Bases;
 using Learnexia.Modules.Parent.Application.Features.AddChild;
+using Learnexia.Modules.Parent.Application.Features.ChangeChildLearningLanguage;
 using Learnexia.Modules.Parent.Application.Features.LinkChild;
 using Learnexia.Modules.Parent.Application.Features.ListMyChildren;
 using Learnexia.Modules.Parent.Application.Features.UnlinkChild;
@@ -45,5 +46,13 @@ public class ParentController : AppControllerBase
     [HttpDelete("Unlink-Child")]
     [ProducesResponseType(typeof(BaseResponse<bool>), StatusCodes.Status200OK)]
     public async Task<IActionResult> UnlinkChild([FromBody] UnlinkChildCommand command)
+        => NewResult(await Mediator.Send(command));
+
+    // NEW (P8-04): change a child's learning language. Destructive — resets Math/Science Attempt rows.
+    // Gated behind confirmFreshStart = true in the body (returns 424 if absent/false).
+    // Family-scope: acting parent resolved from JWT; IsLinked check in handler.
+    [HttpPut("Change-Learning-Language")]
+    [ProducesResponseType(typeof(BaseResponse<ChangedLearningLanguageResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ChangeLearningLanguage([FromBody] ChangeLearningLanguageCommand command)
         => NewResult(await Mediator.Send(command));
 }
