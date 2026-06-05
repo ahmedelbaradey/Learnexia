@@ -842,11 +842,15 @@ public sealed class AvatarWebAppFactory : WebApplicationFactory<Program>, IAsync
             });
         });
 
-        // Override MinIOConfiguration to point at the Testcontainers MinIO container.
+        // Override MinIOConfiguration to point at the Testcontainers MinIO container, and
+        // override ConnectionStrings:Default to the Testcontainers Postgres so Hangfire (which reads
+        // ConnectionStrings:Default via IConfiguration at DI resolution time) uses the container DB
+        // rather than the real localhost:5432 — making this factory fully self-contained.
         builder.ConfigureAppConfiguration((_, config) =>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
+                ["ConnectionStrings:Default"] = _postgresConnectionString,
                 ["MinIOConfiguration:Endpoint"] = _minioEndpoint,
                 ["MinIOConfiguration:AccessKey"] = "minioadmin",
                 ["MinIOConfiguration:SecretKey"] = "minioadmin",

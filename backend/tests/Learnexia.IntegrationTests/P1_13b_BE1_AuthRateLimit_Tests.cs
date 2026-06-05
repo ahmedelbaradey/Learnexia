@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Testcontainers.PostgreSql;
@@ -90,6 +91,16 @@ public sealed class RateLimitWebAppFactory : WebApplicationFactory<Program>, IAs
                 };
                 // Health probes stay whitelisted (production parity).
                 opt.EndpointWhitelist = new List<string> { "get:/health", "get:/health/live" };
+            });
+        });
+
+        // Override ConnectionStrings:Default so Hangfire (which reads IConfiguration lazily at DI
+        // resolution time) uses the Testcontainers container rather than localhost:5432.
+        builder.ConfigureAppConfiguration((_, config) =>
+        {
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:Default"] = _postgres.GetConnectionString()
             });
         });
     }

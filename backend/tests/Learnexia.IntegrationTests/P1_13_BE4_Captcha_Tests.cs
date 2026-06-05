@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Testcontainers.PostgreSql;
@@ -101,6 +102,16 @@ public sealed class CaptchaWebAppFactory : WebApplicationFactory<Program>, IAsyn
             // HttpClient factory try to construct it. AddScoped injects the shared fake instance.
             services.RemoveAll<ICaptchaVerifier>();
             services.AddScoped<ICaptchaVerifier>(_ => FakeVerifier);
+        });
+
+        // Override ConnectionStrings:Default so Hangfire (which reads IConfiguration lazily at DI
+        // resolution time) uses the Testcontainers container rather than localhost:5432.
+        builder.ConfigureAppConfiguration((_, config) =>
+        {
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:Default"] = _postgres.GetConnectionString()
+            });
         });
     }
 

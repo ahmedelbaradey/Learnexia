@@ -12,6 +12,7 @@ using AspNetCoreRateLimit;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Testcontainers.PostgreSql;
@@ -85,9 +86,15 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
 
         builder.ConfigureAppConfiguration((_, config) =>
         {
-            // Ensure JwtSettings are present so JWT token generation does not throw.
-            // The appsettings.json in the Host project provides them, but we also set them
-            // here as a safety net.
+            // Override ConnectionStrings:Default to the Testcontainers connection string so Hangfire
+            // (and any other code reading ConnectionStrings:Default directly) uses the container DB
+            // rather than the real localhost:5432. This makes the integration suite fully self-contained
+            // with no external Postgres dependency. _postgres.GetConnectionString() is safe to call here
+            // because InitializeAsync (which calls _postgres.StartAsync()) runs before the host is built.
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:Default"] = _postgres.GetConnectionString()
+            });
         });
     }
 

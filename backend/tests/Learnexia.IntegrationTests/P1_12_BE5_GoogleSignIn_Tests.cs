@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Testcontainers.PostgreSql;
@@ -99,6 +100,16 @@ public sealed class GoogleSignInWebAppFactory : WebApplicationFactory<Program>, 
             // it runs in the correct order relative to other service registrations.
             services.RemoveAll<IGoogleTokenValidator>();
             services.AddSingleton<IGoogleTokenValidator>(FakeValidator);
+        });
+
+        // Override ConnectionStrings:Default so Hangfire (which reads IConfiguration lazily at DI
+        // resolution time) uses the Testcontainers container rather than localhost:5432.
+        builder.ConfigureAppConfiguration((_, config) =>
+        {
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:Default"] = _postgres.GetConnectionString()
+            });
         });
     }
 

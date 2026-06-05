@@ -1,6 +1,11 @@
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- Force all transitive Newtonsoft.Json resolutions to the pinned 13.0.3 version (CVE/GHSA-5crp-9r3c-p9vr).
+         Without this, Hangfire.PostgreSql pulls in 11.0.1 as a transitive dependency in Gamification projects.
+         CentralPackageTransitivePinningEnabled=true makes central package management honour the
+         PackageVersion for Newtonsoft.Json even when it is resolved transitively. -->
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
     <AspireVersion>9.0.0</AspireVersion>
     <AspnetVersion>10.0.8</AspnetVersion>
     <EfcoreVersion>10.0.8</EfcoreVersion>
