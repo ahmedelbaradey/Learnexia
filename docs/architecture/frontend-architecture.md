@@ -190,6 +190,25 @@ sequenceDiagram
 - **Responsive web:** media queries at 390 (phone), 768 (tablet), 1024+ (laptop); max-width
   containers; web-only hover/focus states.
 
+### 3.5 Localization — three-axis model (planned FE work)
+
+Localization spans **three independent axes** (full design of record:
+[localization-architecture.md](localization-architecture.md)):
+
+- **A. UI language** — buttons/labels/chrome, driven by `User.PreferredLanguage` + **react-i18next /
+  RTL** (§3.4). This is the **remaining localization work** — frontend i18n is not yet built.
+- **B. Learning language** — the **medium of instruction** for Math/Science, a separate
+  `User.LearningLanguage` (ar/en) **set by the parent at onboarding** (immutable by the student;
+  parent-only fresh-start change). It is **distinct from the UI language** — a child may read the app
+  in one language while learning Math in the other.
+- **C. Subject content language** — derived per subject, **never** chosen on the client.
+
+The student-app does **not** resolve curriculum language itself: the backend already selects the
+correct language-tagged tree from the student's `learning_language` **JWT claim**, so the app just
+renders whatever the read endpoints return (`StudentSubjectDto.SubjectCode` is available for
+ordering/iconography). The onboarding flow should let the parent set the learning language (and may
+default the UI `PreferredLanguage` to match, kept independently editable).
+
 ---
 
 ## 4. Services — navigation / screen map (student-app)

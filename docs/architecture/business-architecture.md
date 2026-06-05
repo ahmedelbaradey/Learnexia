@@ -25,7 +25,7 @@ driver's seat.
 | **Gamification** | XP, levels, streaks, hearts, badges, missions, weekly leagues, timed events — engagement + retention engine. |
 | **AI tutor** | On-demand concept explanations, progressive hints, curriculum-grounded question generation (RAG). |
 | **Parent involvement** | Parent-driven onboarding, weekly reports, weak-area detection, progress dashboards. |
-| **Localization** | Arabic-first, RTL, bilingual (ar/en) content and UI. |
+| **Localization** | Arabic-first, RTL, bilingual (ar/en) content and UI; a child's **learning language** (medium of instruction for Math/Science) is set by the parent, distinct from the UI language. |
 
 ### 1.2 Product decisions (binding — override BRD/SRS where they conflict)
 
@@ -109,8 +109,9 @@ flowchart TB
 
 </details>
 
-> **Maturity legend:** Access, Learning & Assessment, and Engagement are **delivered (backend)**.
-> Intelligence, Parent Analytics, and Admin Console are **planned** (Phases 4–7).
+> **Maturity legend:** Access, Learning & Assessment, Engagement, and **Localization** are
+> **delivered (backend)** (Localization = Phase 8; frontend i18n remains). Intelligence, Parent
+> Analytics, and Admin Console are **planned** (Phases 4–7).
 
 ---
 
@@ -182,19 +183,23 @@ stateDiagram-v2
     Phase5: Phase 5 - Parent + Analytics (planned)
     Phase6: Phase 6 - Stabilization (planned)
     Phase7: Phase 7 - Admin Console (planned)
+    Phase8: Phase 8 - Localization (DONE - BE)
     Phase1 --> Phase2
     Phase2 --> Phase3
     Phase3 --> Phase4
     Phase4 --> Phase5
     Phase5 --> Phase6
     Phase6 --> Phase7
+    Phase3 --> Phase8
+    Phase8 --> [*]
     Phase7 --> [*]
 ```
 
 </details>
 
-> Backend for **Phases 1–3 is complete** (verified against code); the gamification frontend and
-> Phases 4–7 are the open scope. Source: [../../tasks/PROGRESS.md](../../tasks/PROGRESS.md).
+> Backend for **Phases 1–3 and Phase 8 (Localization) is complete** (verified against code); the
+> gamification + i18n frontend and Phases 4–7 are the open scope. Source:
+> [../../tasks/PROGRESS.md](../../tasks/PROGRESS.md).
 
 ---
 
@@ -210,6 +215,7 @@ How business capabilities are realized by backend modules (technical detail in
 | Curriculum Modeling, Skill Graph, Lessons, Quizzes, Answer Capture & Feedback | **Learning** (`learning` schema) | Delivered |
 | Gamification, Badges, Missions, Leagues, Timed Events | **Gamification** (`gamification` schema) | Delivered |
 | Notifications & Re-engagement | **Notifications** (`notifications` schema) | Delivered |
+| Localization (learning language, language-tagged curriculum, parent fresh-start) | **Identity** + **Learning** (+ Parent) | Delivered (backend; FE i18n planned) |
 | AI Tutor, Adaptivity, RAG | *(new AI/Curriculum modules)* | **(planned)** |
 | Parent Analytics & Reports | *(extends Parent + Notifications)* | **(planned)** |
 | Admin Console, AI Safety Monitoring | *(extends all modules + admin surface)* | **(planned)** |
@@ -230,6 +236,7 @@ operations, not a deployment unit (Learnexia is a single modular-monolith deploy
 | **Assessment** | Start quiz attempt (4 question types), submit answers, instant feedback, granular answer recording | Delivered |
 | **Engagement** | XP/levels, daily streaks (+ freeze), hearts + practice mode, badges, daily/weekly missions, weekly leagues, timed events/challenges | Delivered |
 | **Notifications** | In-app inbox, device tokens, preferences, transactional email, re-engagement nudges | Delivered |
+| **Localization** | Set a child's learning language at onboarding (medium of instruction, distinct from UI language), serve language-tagged curriculum trees resolved per subject, parent-only learning-language change with fresh-start Math/Science reset | Delivered (backend; FE i18n planned) |
 | **AI Tutor** | Explain concept, progressive hints, grounded question generation, adaptivity, mastery tracking, spaced repetition | **(planned — Phase 4)** |
 | **Parent Insight** | Weekly report generation, weak-area detection, analytics capture, report delivery, parent dashboard, grade transition | **(planned — Phase 5)** |
 | **Admin** | Manage curriculum/users/accounts, moderation, platform + AI-safety dashboards, audit log | **(planned — Phase 7)** |

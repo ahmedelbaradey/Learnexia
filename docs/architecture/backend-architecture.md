@@ -73,8 +73,13 @@ avatar, OAuth, password flows, account hardening.
 
 **Key building blocks:** ASP.NET Identity (`User`/`Role`, int keys), JWT + refresh tokens,
 `IDistributedCache` sessions, lockout, Turnstile CAPTCHA (`ICaptchaVerifier`), `IEmailSender`-backed
-flows, MinIO avatar via `IFilePreviewUrlProvider`. **Publishes:** `UserRegisteredIntegrationEvent`,
-`PasswordResetRequestedIntegrationEvent`. **Provides seams:** `IUserLookup`, `IChildAccountService`.
+flows, MinIO avatar via `IFilePreviewUrlProvider`. **Localization (P8):** `User.LearningLanguage`
+(`ar`/`en`, default `ar`, the **medium of instruction** — separate from `PreferredLanguage` and
+immutable by the student); emitted as the `learning_language` JWT claim in
+`AuthenticationIdentityService.GetClaims` (re-issued on refresh), set at add-child, and returned on
+`/Me`. **Publishes:** `UserRegisteredIntegrationEvent`, `PasswordResetRequestedIntegrationEvent`,
+`LearningLanguageChangedIntegrationEvent` (P8-04). **Provides seams:** `IUserLookup`,
+`IChildAccountService` (incl. `ChangeLearningLanguageAsync`).
 
 ### 2.2 Parent (`parent` schema)
 
@@ -83,7 +88,12 @@ children) layered on Identity-owned accounts.
 
 | Controller | Representative routes |
 |---|---|
-| `ParentController` | add child, link existing child, list my children *(Parent/Admin roles, family-scoped)* |
+| `ParentController` | add child, link existing child, list my children, **change a child's learning language** (`PUT api/Parent/Change-Learning-Language`) *(Parent/Admin roles, family-scoped)* |
+
+**Localization (P8-04):** `ChangeChildLearningLanguage` command + validator + handler — parent-only,
+family-scoped (foreign child → **403**), **confirm-gated** (missing/false `confirmFreshStart` → **424**,
+enforced first). It calls Identity's `IChildAccountService.ChangeLearningLanguageAsync`; the cascade
+reset is driven by the integration event (§5), not by Parent.
 
 **Key entity:** `ParentStudent` (M:N parent↔student link). **Provides seam:** `IParentChildQuery`
 (lets other modules resolve a parent's children without referencing the module). Family-scope
@@ -103,9 +113,19 @@ feedback, and the student home dashboard.
 | `DashboardController` | Aggregated home dashboard (subjects, streak, XP, missions via gamification seams) |
 
 **Domain services:** `LearningPathEngine` (pure DFS unlock computation by prerequisite + mastery),
-`AnswerComparator` (per-type correctness), `SkillGraphValidator` (acyclic check). **Publishes:**
-`AnswerSubmittedIntegrationEvent`, `LessonCompletedIntegrationEvent`. **Consumes (read):** gamification
-seams for the dashboard.
+`AnswerComparator` (per-type correctness), `SkillGraphValidator` (acyclic check),
+`SubjectLanguageResolver` (pure static; maps `SubjectCode` + learner language → effective
+`ContentLanguage`). **Localization (P8):** `Subject.SubjectCode` (MATH/SCIENCE/ARABIC/ENGLISH) +
+`Subject.Language` (`ContentLanguage` Ar/En) with a UNIQUE `(GradeId,SubjectCode,Language)` index;
+`LearningSeeder` authors **6 language-tagged Subject roots per grade** (parallel ar/en trees,
+per-language Math prereq graphs). `LearningLanguageClaimAccessor` (`Application/Helpers`) reads the
+`learning_language` JWT claim (fallback Ar + warn, never 500); the **six read handlers**
+(subjects-for-grade, skill-tree, lessons-in-unit, lesson, start-attempt, dashboard) filter/guard on the
+resolved language — cross-language access → **403**. `StudentSubjectDto.SubjectCode` is exposed.
+**Publishes:** `AnswerSubmittedIntegrationEvent`, `LessonCompletedIntegrationEvent`. **Consumes:**
+gamification seams for the dashboard (read); `LearningLanguageChangedIntegrationEvent` via
+`LearningLanguageChangedIntegrationEventHandler` → internal `ResetMathScienceProgressCommand`
+(hard-deletes the student's Math/Science `Attempt` rows; `StudentAnswer` cascades).
 
 ### 2.4 Gamification (`gamification` schema)
 
@@ -196,7 +216,8 @@ erDiagram
         string Email
         string FullName
         int Grade "1-6 (child)"
-        string PreferredLanguage "ar/en"
+        string PreferredLanguage "UI language ar/en"
+        string LearningLanguage "P8: medium of instruction ar/en"
         string Country
         string Phone
         string AvatarUrl
@@ -267,6 +288,8 @@ erDiagram
     Subjects {
         int Id PK
         int GradeId FK
+        int SubjectCode "P8: MATH/SCIENCE/ARABIC/ENGLISH"
+        int Language "P8: ar/en (tree language)"
         string Name "Math/Science/Arabic/English"
     }
     Units {
@@ -481,12 +504,15 @@ flowchart LR
         ev5["StreakAtRisk / Broken / FreezeConsumed"]
         ev6["Hearts Depleted / Refilled"]
         ev7["League / TimedEvent changes"]
+        ev8["LearningLanguageChanged"]
     end
     identity["Identity"] --> ev1
+    identity --> ev8
     learning["Learning"] --> ev2 & ev3
     gamification["Gamification"] --> ev4 & ev5 & ev6 & ev7
     ev1 --> notifications["Notifications"]
     ev2 & ev3 --> gamification
+    ev8 --> learning
     ev4 & ev5 & ev6 & ev7 --> notifications
 ```
 
@@ -497,7 +523,7 @@ flowchart LR
 | Seam | Provided by | Consumed by | Purpose |
 |---|---|---|---|
 | `IUserLookup` | Identity | Notifications | resolve email/name for messages |
-| `IChildAccountService` | Identity | Parent | create child accounts |
+| `IChildAccountService` | Identity | Parent | create/update child accounts + change learning language |
 | `IParentChildQuery` | Parent | others | resolve a parent's children |
 | `IStudentXp/Streak/Hearts/Badges/Missions/League Query` | Gamification | Learning (dashboard) | read gamification state |
 | `IActiveTimedEventsQuery` | Gamification | Learning (dashboard) | active timed events |
@@ -610,6 +636,8 @@ sequenceDiagram
 | `RequireHttpsMetadata=false` not env-gated; forgot-password timing oracle; in-memory rate-limit store; transactional-email localization | Deferred to **P6-06** (Low severity) |
 | Gamification Redis model is cache-aside snapshots, not literal `INCRBY`/Lua counters | Intentional (ADR-locked) |
 | Streak freeze is earn-only (no purchase/parent-grant); freeze/timed-event reads folded into dashboard | Intentional MVP scope |
+| Localization (Phase 8) — learning language, language-tagged curriculum, parent-only fresh-start | **DONE (backend)** — P8-01/02/03 (PR #90) + P8-04 (PR #91); frontend i18n remains |
+| JWT placeholder secret (`CHANGE_ME`); Newtonsoft.Json CVE; integration suite needing a side Postgres | **Resolved** (hardening PR #92): `GuardJwtSecret` blocks placeholder in prod/staging (env-overridable, Dev-only warning); Newtonsoft pinned to 13.0.3 via `CentralPackageTransitivePinningEnabled`; suite self-contained |
 | AI Tutor, Adaptivity, Parent Analytics, Admin Console | **(planned)** — Phases 4/5/7 |
 | `architecture.md` describes 3 modules + SQL Server | **stale** — trust this doc + code |
 

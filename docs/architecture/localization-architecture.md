@@ -4,8 +4,10 @@
 > **Scope:** how Learnexia handles language across three independent axes, and specifically how a
 > student's **learning language** (medium of instruction) selects curriculum content — including the
 > Arabic/English subject edge case.
-> **Status:** design of record for **Phase 8 — Localization**. Supersedes the earlier "translate every
-> curriculum row" idea (paired ar/en columns) for curriculum content.
+> **Status:** **IMPLEMENTED & merged to main** (backend) for **Phase 8 — Localization** —
+> P8-01/02/03 (PR #90) + P8-04 (PR #91). Design of record; supersedes the earlier "translate every
+> curriculum row" idea (paired ar/en columns) for curriculum content. The remaining localization work
+> is the **frontend i18n phase** (react-i18next / RTL — see §1 axis A).
 > **Sources:** [../../CLAUDE.md](../../CLAUDE.md), [backend-architecture.md](backend-architecture.md),
 > [../dev/CONVENTIONS.md](../dev/CONVENTIONS.md), the Learning entities + `LearningSeeder`.
 
@@ -47,7 +49,8 @@ flowchart TB
 
 ## 2. The resolution rule (handles the Arabic/English edge case)
 
-Each `Subject` carries a stable `SubjectCode`. Content language is resolved per subject:
+Each `Subject` carries a stable `SubjectCode`. Content language is resolved per subject by the pure,
+static `SubjectLanguageResolver` (Learning `Domain/Services`):
 
 ![localization-architecture diagram 2](diagrams/localization-architecture-2.svg)
 
@@ -172,8 +175,12 @@ sequenceDiagram
 
 </details>
 
-The same resolution applies to skill-tree, lessons-in-unit, quiz, and dashboard queries — anywhere a
-subject's content is read for a student.
+The same resolution applies to skill-tree, lessons-in-unit, quiz/start-attempt, and dashboard queries
+— anywhere a subject's content is read for a student. The student's learning language is read from the
+`learning_language` JWT claim via `LearningLanguageClaimAccessor` (Learning `Application/Helpers`),
+which **falls back to Arabic and warns — never 500s** if the claim is missing. The six read handlers
+filter/guard on the resolved `(SubjectCode, Language)`, so a cross-language lesson/attempt access
+returns **403**.
 
 ---
 
@@ -182,7 +189,17 @@ subject's content is read for a student.
 The learning language is **immutable by the student** and changeable **only by the parent**, with an
 explicit fresh-start warning. It happens rarely, normally only at the **start of a school year**.
 Switching changes which Math/Science trees the child sees, so their **Math/Science progress no longer
-maps and is reset**; Arabic/English subjects are unaffected.
+maps and is reset (hard-delete)**; Arabic/English subjects and all gamification (XP/streak/badges) are
+unaffected.
+
+The Parent module's `ChangeLearningLanguageCommandHandler` (route `PUT api/Parent/Change-Learning-Language`)
+is family-scoped (foreign child → **403**) and **confirm-gated**: a missing/false `confirmFreshStart`
+returns **424** (BusinessValidation), enforced before any write. The change is applied in Identity via
+the `IChildAccountService.ChangeLearningLanguageAsync` seam, which (after commit) best-effort-publishes
+`LearningLanguageChangedIntegrationEvent` (Shared.Contracts/Identity; carries StudentId + old/new
+codes). Learning's `LearningLanguageChangedIntegrationEventHandler` consumes it and dispatches the
+internal `ResetMathScienceProgressCommand`, which **hard-deletes** the student's Math/Science `Attempt`
+rows (`StudentAnswer` cascades). A same-language request is a no-op success.
 
 ![localization-architecture diagram 5](diagrams/localization-architecture-5.svg)
 
@@ -225,13 +242,15 @@ sequenceDiagram
 4. Curriculum content uses **parallel language trees keyed by `Subject.Language`**, not per-row
    translations.
 
-## 7. Open / to-confirm during build
+## 7. Resolved during build (backend) / open for frontend
 
-- **Fresh-start scope:** confirm reset covers Math/Science **Learning** attempts + mastery only;
-  global gamification (XP/streak/badges) is engagement and is **retained**.
-- **Onboarding default:** default the UI `PreferredLanguage` to match the chosen `LearningLanguage`,
-  but keep them editable independently.
-- Whether `SubjectCode` should also drive ordering/iconography (likely yes, FE concern).
+- **Fresh-start scope (resolved):** the reset hard-deletes the student's Math/Science **Learning**
+  `Attempt` rows (mastery is derived, so it resets with them); global gamification (XP/streak/badges)
+  is engagement and is **retained**.
+- **Onboarding default (FE):** default the UI `PreferredLanguage` to match the chosen
+  `LearningLanguage`, but keep them editable independently — frontend concern.
+- Whether `SubjectCode` should also drive ordering/iconography (likely yes, FE concern;
+  `StudentSubjectDto.SubjectCode` is now exposed for this).
 
 ---
 

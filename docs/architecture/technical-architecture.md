@@ -13,7 +13,7 @@
 >
 > **Note:** the older [../architecture.md](../architecture.md) predates the Learning/Gamification/Parent
 > modules and still describes a 3-module SQL-Server setup. **This document supersedes it** for the
-> current state: PostgreSQL, 6 modules, deferred-commit + domain-event dispatch.
+> current state: PostgreSQL, 5 modules, deferred-commit + domain-event dispatch.
 
 ---
 
@@ -90,7 +90,7 @@ flowchart TD
 | Logging / telemetry | **NLog** via `ILoggerManager`; OpenTelemetry packages referenced |
 | API surface | MVC controllers + minimal endpoints; Swagger v2; API versioning |
 | Anti-abuse | `AspNetCoreRateLimit` (IP), Cloudflare **Turnstile** CAPTCHA (config-gated) |
-| Testing | xUnit + Moq + FluentAssertions + **Testcontainers** (PostgreSQL) |
+| Testing | xUnit + Moq + FluentAssertions + **Testcontainers** (PostgreSQL); the integration suite is **self-contained** — `Program.cs` resolves `ConnectionStrings:Default` lazily (for Hangfire storage + the Npgsql health check) so the test factories inject the Testcontainers connection without a side Postgres on `localhost:5432` (hardening PR #92) |
 
 ---
 
@@ -268,9 +268,12 @@ sequenceDiagram
 </details>
 
 > **Integration events** (`IIntegrationEvent : INotification`) are the cross-module contract — a
-> publishing module raises a contract event and never references the consumer. Synchronous
-> cross-module reads use **interface seams** (e.g. `IStudentXpQuery`, `IParentChildQuery`,
-> `IUserLookup`). Full catalog in [backend-architecture.md](backend-architecture.md) §5.
+> publishing module raises a contract event and never references the consumer. The catalog includes
+> `UserRegistered`, `AnswerSubmitted`, `LessonCompleted`, the gamification reward/streak/hearts/league
+> events, and (Phase 8) `LearningLanguageChangedIntegrationEvent` (Identity → Learning, fanning out the
+> Math/Science progress reset on a parent-driven learning-language change). Synchronous cross-module
+> reads use **interface seams** (e.g. `IStudentXpQuery`, `IParentChildQuery`, `IUserLookup`). Full
+> catalog in [backend-architecture.md](backend-architecture.md) §5.
 
 ---
 
@@ -324,7 +327,8 @@ flowchart LR
 
 | Control | Implementation | Notes |
 |---|---|---|
-| **Authentication** | JWT bearer; validates issuer/audience/lifetime/signing key (HMAC); secret guarded out of source in non-Dev | `RequireHttpsMetadata=false` not yet env-gated → P6-06 |
+| **Authentication** | JWT bearer; validates issuer/audience/lifetime/signing key (HMAC); `GuardJwtSecret` blocks the `CHANGE_ME` placeholder in prod/staging (env-overridable; Dev-only warning) | `RequireHttpsMetadata=false` not yet env-gated → P6-06 |
+| **Dependency hygiene** | Newtonsoft.Json CVE (GHSA-5crp-9r3c-p9vr) closed by pinning the transitive ref to 13.0.3 via `CentralPackageTransitivePinningEnabled` (hardening PR #92) | central package management |
 | **Account protection** | Lockout engaged (5 attempts / 5 min); sign-in collapses not-found/wrong-password to one result (no enumeration) with a timing-oracle guard | Identity `SignInCommandHandler` |
 | **Anti-automation** | IP rate limiting + Cloudflare Turnstile CAPTCHA (config-gated, fail-closed in prod/staging) | `ICaptchaVerifier` |
 | **Authorization** | Permission-claim policies `{Module}.{Action}` + roles; **family-scope** handler restricts parents to their own children | applied deliberately per endpoint |
