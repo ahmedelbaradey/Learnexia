@@ -37,6 +37,28 @@ public interface IChildAccountService
     /// Email/login/role are intentionally NOT mutable here (no mass-assignment). Returns a shaped result.
     /// </summary>
     Task<ChildAccountResult> UpdateChildAsync(UpdateChildRequest req, CancellationToken ct = default);
+
+    /// <summary>
+    /// Changes the medium-of-instruction language (<c>User.LearningLanguage</c>) for an existing child.
+    ///
+    /// Contract:
+    ///   1. Resolves the child by <paramref name="childUserId"/>; missing → <c>NotFound</c>.
+    ///   2. Captures old language; if <c>newLearningLanguage</c> already equals the current value,
+    ///      returns a success no-op result (OldLanguage == NewLanguage) — no publish, no reset.
+    ///   3. Sets <c>User.LearningLanguage = newLearningLanguage</c> + <c>UpdatedAt = UtcNow</c>
+    ///      and calls <c>UpdateAsync</c> (commits immediately — Identity has no UoW).
+    ///   4. After the commit, best-effort-publishes a <see cref="LearningLanguageChangedIntegrationEvent"/>
+    ///      (mirrors <c>PublishUserRegisteredEventAsync</c>: try/catch/log; publish failure never
+    ///      rolls back the committed change).
+    ///   5. Returns <see cref="ChildLanguageChangeResult"/> with old and new language codes.
+    ///
+    /// The confirm-gate (<c>ConfirmFreshStart</c>) is enforced in the handler BEFORE this method
+    /// is called — the seam itself is safe to call even without an explicit gate.
+    /// </summary>
+    Task<ChildLanguageChangeResult> ChangeLearningLanguageAsync(
+        int childUserId,
+        string newLearningLanguage,
+        CancellationToken ct = default);
 }
 
 /// <summary>Request to provision a new child account. <c>ActingParentId</c> is the JWT-resolved parent.</summary>
@@ -101,4 +123,18 @@ public enum ChildAccountError
     RoleAssignFailed = 3,
     NotFound = 4,
     UpdateFailed = 5,
+    LanguageUpdateFailed = 6,
 }
+
+/// <summary>
+/// Shaped outcome of <see cref="IChildAccountService.ChangeLearningLanguageAsync"/>.
+/// On success, <see cref="OldLanguage"/> and <see cref="NewLanguage"/> carry the before/after codes.
+/// For same-language no-ops, <see cref="IsNoOp"/> is <c>true</c> and both values are equal.
+/// </summary>
+public sealed record ChildLanguageChangeResult(
+    bool Succeeded,
+    int ChildUserId,
+    string OldLanguage,
+    string NewLanguage,
+    bool IsNoOp = false,
+    ChildAccountError ErrorCode = ChildAccountError.None);

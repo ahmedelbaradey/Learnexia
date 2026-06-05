@@ -1717,4 +1717,13 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="LessonLanguageMismatch" xml:space="preserve">
     <value>This lesson is not available in your current learning language.</value>
   </data>
+  <data name="ConfirmFreshStartRequired" xml:space="preserve">
+    <value>You must confirm the fresh start to change the learning language. This will reset Math and Science progress.</value>
+  </data>
+  <data name="LearningLanguageChangedSuccessfully" xml:space="preserve">
+    <value>Learning language changed successfully. Math and Science progress has been reset.</value>
+  </data>
+  <data name="LearningLanguageUpdateFailed" xml:space="preserve">
+    <value>Failed to update the learning language. Please try again.</value>
+  </data>
 </root>

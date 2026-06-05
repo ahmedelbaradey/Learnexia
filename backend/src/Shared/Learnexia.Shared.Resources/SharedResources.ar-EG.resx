@@ -1716,4 +1716,13 @@
   <data name="LessonLanguageMismatch" xml:space="preserve">
     <value>هذا الدرس غير متاح بلغة التعلم الحالية.</value>
   </data>
+  <data name="ConfirmFreshStartRequired" xml:space="preserve">
+    <value>يجب تأكيد البدء من جديد لتغيير لغة التعلم. سيؤدي ذلك إلى إعادة تعيين تقدم الرياضيات والعلوم.</value>
+  </data>
+  <data name="LearningLanguageChangedSuccessfully" xml:space="preserve">
+    <value>تم تغيير لغة التعلم بنجاح. تمت إعادة تعيين تقدم الرياضيات والعلوم.</value>
+  </data>
+  <data name="LearningLanguageUpdateFailed" xml:space="preserve">
+    <value>فشل تحديث لغة التعلم. يرجى المحاولة مرة أخرى.</value>
+  </data>
 </root>
