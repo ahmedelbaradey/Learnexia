@@ -1,7 +1,31 @@
 # Handoff — Phase 1 web frontend + dev environment
 
-> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-06-03 (**P4-11 BE — Streak freeze + timed events + weekly challenges + XP boost — commit/PR ready. P4-10 BE merged. P4-09 merged via PR #80. P4-08 FE WIP on `feat/P4-08-gamification-screens-motion` (Batches 2–6 still open for FE lead). Earlier P4-* per below.**).
+> Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-06-05 (**Phase 8 — Localization backend COMPLETE + merged to main (P8-01/02/03 PR #90; P8-04 PR #91) — see the Phase 8 section directly below.** Earlier status: **P4-11 BE — Streak freeze + timed events + weekly challenges + XP boost — commit/PR ready. P4-10 BE merged. P4-09 merged via PR #80. P4-08 FE WIP on `feat/P4-08-gamification-screens-motion` (Batches 2–6 still open for FE lead). Earlier P4-* per below.**).
 > Captures what's done, the decisions, the load-building config, and what's next. If you change any of these, update this file.
+
+## Phase 8 — Localization (backend COMPLETE, merged to main, 2026-06-05)
+
+Learning language (medium of instruction) vs UI language vs subject content language. **Design of record: `docs/architecture/localization-architecture.md`** (image-first SVG diagrams + Mermaid source). Stories/tasks: `user-stories/Phase-8-Localization/`, `tasks/Backend/Phase-8-Localization/`. Briefs/plans: `docs/briefs/P8-localization.md`, `docs/briefs/P8-04.md`, `docs/plans/P8-localization.md`, `docs/plans/P8-04.md`.
+
+**Shipped + merged to main:**
+- **P8-01/02/03** (docs PR #88, impl **PR #90**) — `User.LearningLanguage` (ar/en, **separate** from `PreferredLanguage`, **immutable by the student**) + `learning_language` JWT claim (emitted in `AuthenticationIdentityService.GetClaims`, re-issued on refresh) + required at add-child + returned on `/Me`. `Subject.SubjectCode` (MATH/SCIENCE/ARABIC/ENGLISH) + `Subject.Language` (ContentLanguage Ar/En) + UNIQUE index `(GradeId,SubjectCode,Language)`. `LearningSeeder` rewritten to **6 language-tagged roots per grade** (Math/Science ×2 langs, Arabic=Ar, English=En; per-language Math prereq graphs) via a **destructive re-seed migration `P8_02_AddSubjectCodeAndLanguage`** (lead-approved wipe of demo curriculum to enable the unique index). `SubjectLanguageResolver` (pure static) + `LearningLanguageClaimAccessor` (reads JWT claim, **fallback Ar + warn, never 500**) + language filter/guard across the **6 read handlers** (subjects-for-grade, skill-tree, lessons-in-unit, lesson, start-attempt, dashboard); cross-language lesson/attempt access → **403**. `StudentSubjectDto.SubjectCode` exposed. Security fixes: `[Authorize]` on `GetForGrade` + deprecated `/Lessons?id=` route; removed `ex.Message` leakage in 3 handlers.
+- **P8-04** (**PR #91**) — parent-only, family-scoped, **confirm-gated** (`confirmFreshStart` false/absent → **424** BusinessValidation, enforced first in the handler) change of a child's `LearningLanguage`. Publishes `LearningLanguageChangedIntegrationEvent` (Shared.Contracts/Identity) post-commit (best-effort, mirrors `PublishUserRegisteredEventAsync`). Learning consumer (`IntegrationEventHandlers/LearningLanguageChangedIntegrationEventHandler` → internal `ResetMathScienceProgressCommand` through UoW) **hard-deletes** the child's Math/Science `Attempt` rows (StudentAnswer cascades); **Arabic/English progress + all gamification (XP/streak/badges/level) retained**; same-language request = no-op success.
+
+**Resolution rule:** `EffectiveLanguage(SubjectCode, learnerLang)` = ARABIC→Ar, ENGLISH→En, MATH/SCIENCE→learnerLang. Arabic-medium student sees Math(Ar)/Science(Ar)/Arabic(Ar)/English(En); English-medium sees Math(En)/Science(En)/Arabic(Ar)/English(En). Both school types take **both** language subjects; Arabic/English subjects are pinned to their own language.
+
+**Locked lead decisions:** LearningLanguage separate + immutable-by-student (parent-only change with explicit fresh-start warning, rare/start-of-year); curriculum = **parallel ar/en trees keyed on Subject** (NOT per-row translations); **hard-delete** on fresh-start (no soft-delete); reset scope = all the student's Math/Science attempts; gamification retained.
+
+**Verification:** build green; **231 Learning + 2 Identity unit tests**; **670/670 integration tests** (real Postgres). Reviewer PASS; security PASS (P8-specific) with 2 pre-existing platform Highs carried (below).
+
+**⚠️ Test-infra gap (next agent — being fixed):** the integration suite needs a **Postgres on `localhost:5432`** (`postgres`/`admin`/`Learnexia`) for **Hangfire** storage *in addition to* Testcontainers for EF, because `LearnexiaWebAppFactory` overrides the 5 EF DbContexts but NOT the Hangfire connection (`Program.cs:104` uses the `Default` string). Local workaround: `docker run --name lx-hangfire-pg -e POSTGRES_PASSWORD=admin -e POSTGRES_USER=postgres -e POSTGRES_DB=Learnexia -d -p 5432:5432 pgvector/pgvector:pg16`. Planned fix: `appsettings.Testing.json` or override Hangfire in the factory.
+
+**⚠️ Stacked-PR lesson:** PR #89 (P8 impl) was stacked on PR #88 (docs base); #88 merged to main **first**, then #89 merged into the already-merged docs branch → impl **stranded off main**. Recovered via **PR #90** (`feat/P8-localization → main`). **Rule: merge stacked PRs bottom-up (code before base), or target all PRs at `main` independently.**
+
+**Pre-existing platform Highs (NOT P8; carried/accepted, being addressed in a hardening pass):** JWT `CHANGE_ME` placeholder secret in `appsettings.json` (guarded for prod/staging by `GuardJwtSecret`); Newtonsoft.Json 11.0.1 CVE (GHSA-5crp-9r3c-p9vr) in `Gamification.Api`/`Gamification.Infrastructure`.
+
+**Remaining localization work:** the **frontend i18n phase** (app-side react-i18next/RTL per `docs/architecture/localization-architecture.md` §1 axis A) is not started.
+
+---
 
 ## Catalog module REMOVED (2026-06-03)
 
