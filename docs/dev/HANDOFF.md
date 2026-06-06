@@ -2,6 +2,17 @@
 
 > Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-06-06 (**FE state reconciliation — see the ⭐ block directly below; Phase-1 + Phase-2 student FE confirmed merged, P8-04 FE corrected to not-started.** Earlier: **Phase 8 — Localization backend COMPLETE + merged to main (P8-01/02/03 PR #90; P8-04 PR #91) — see the Phase 8 section directly below.** Earlier status: **P4-11 BE — Streak freeze + timed events + weekly challenges + XP boost — commit/PR ready. P4-10 BE merged. P4-09 merged via PR #80. P4-08 FE WIP on `feat/P4-08-gamification-screens-motion` (Batches 2–6 still open for FE lead). Earlier P4-* per below.**).
 > Captures what's done, the decisions, the load-building config, and what's next. If you change any of these, update this file.
+> 2026-06-07: **E2E test stage added — `frontend-e2e-tester` agent + `tests/e2e/` Playwright harness (PR #99, branch `chore/e2e-playwright-harness`). See "Testing — E2E (Playwright)" directly below.**
+
+## Testing — E2E (Playwright) — added 2026-06-07 (PR #99, not yet merged)
+
+New runtime UI-testing stage for the **student-app web PWA**, the frontend analog of `api-tester`. Lives on branch `chore/e2e-playwright-harness` (off `main`).
+
+- **Agent `frontend-e2e-tester`** (`.claude/agents/frontend-e2e-tester.md`): drives the running Expo **web** build with Playwright (user flows, RTL ar/en, form/`BaseResponse` validation, auth/role routing, states). Tests only — files bugs back to `frontend`, results feed the `reviewer` gate. Wired into the CLAUDE.md pipeline: `frontend` → **`frontend-e2e-tester`** → `reviewer` (workflow step 4 + reviewer-gate inputs). Runs for stories with a student-app UI surface.
+- **Harness `tests/e2e/`** (`@learnexia/e2e`, added to `pnpm-workspace.yaml`): `playwright.config.ts` → `baseURL` http://localhost:8081, `chromium` + `mobile` (Pixel 7) projects, trace/screenshot/video on failure, Playwright-owned Expo `webServer` (reused if already up). `specs/smoke.spec.ts` is a deliberately locale-agnostic runway (boot + login input) — story specs go in `specs/<StoryID>.spec.ts`.
+- **Run recipe** (`tests/e2e/README.md`): backend at `:5080` is a prerequisite (NOT auto-started — needs the Postgres stack); `pnpm --filter @learnexia/e2e install:browser` once, then `pnpm --filter @learnexia/e2e test`. Playwright starts/owns Expo web at `:8081`.
+- **Selector convention:** `getByTestId` first (RN Web maps `testID`→`data-testid`), then `getByRole`/`getByLabel` (`accessibilityRole`→`role`, `accessibilityLabel`→`aria-label`). Avoid copy-based selectors — **Arabic is the default locale**. Auth screens (login/register) currently carry `accessibilityLabel` (i18n-keyed) but **few `testID`s** — when a flow lacks a stable hook, the agent reports the needed `testID` back to `frontend` rather than reaching into CSS.
+- **Status / not-yet-done:** harness verified only via `npx playwright test --list` (4 tests discovered, config parses). The smoke specs were **not** run end-to-end (needs backend + Postgres + Expo web up). No CI job wired yet. PR #99 open against `main`.
 
 ## ⭐ Frontend state reconciliation (2026-06-06) — READ FIRST; supersedes stale wave statuses below
 
