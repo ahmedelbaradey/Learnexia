@@ -82,6 +82,7 @@ export default function AddChildScreen() {
           password: draft.values.password,
           grade: draft.values.grade,
           language: draft.values.language,
+          learningLanguage: draft.values.learningLanguage,
           country: draft.values.country.trim(),
         });
         setDrafts((prev) => prev.map((d) => (d.localId === draft.localId ? { ...d, status: 'success', errorKey: undefined } : d)));

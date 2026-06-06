@@ -1,6 +1,14 @@
 /**
  * AddChildForm — the one-child detail form inside the Add-Child screen (Design
- * Spec Screen 5). Fields: name, login email, password, grade, language, country.
+ * Spec Screen 5). Fields: name, login email, password, grade, [language group:
+ * learning language + app language], country.
+ *
+ * P8-01-FE: adds a required `learningLanguage` field (axis B — medium of
+ * instruction for Math & Science), distinct from the existing `language` field
+ * (axis A — UI/account language). Both fields are grouped in a thin labelled
+ * container for disambiguation. Selecting a learning language auto-fills the app
+ * language to match while the parent has not manually touched the app-language
+ * field (`appLanguageTouched` flag). Both fields stay independently editable.
  *
  * Validation (`addChildSchema`) fires on the "Add Child to List" press, not per
  * keystroke. On a valid submit it hands the values up via `onAdd` and resets.
@@ -9,20 +17,31 @@
 import { addChildSchema, type AddChildFormValues, type Locale } from '@learnexia/shared';
 import { Button, GradePicker, LanguageSelect, TextField } from '@learnexia/ui';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Stack } from '@tamagui/core';
-import { Controller, useForm } from 'react-hook-form';
+import { Stack, Text } from '@tamagui/core';
+import { Controller, type DefaultValues, useForm } from 'react-hook-form';
+import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useLocale } from '../../../src/hooks/useLocale';
 import { useGradeOptions, useLanguageOptions } from '../../../src/hooks/useChildOptions';
 
-const EMPTY: AddChildFormValues = {
+/**
+ * EMPTY default values. `learningLanguage` is deliberately absent (undefined)
+ * so the field starts with no selection (placeholder rendered) and zod enforces
+ * a required pick. `language` keeps its `'ar'` default and auto-fills from
+ * learningLanguage on first selection.
+ *
+ * Typed as `DefaultValues<AddChildFormValues>` (react-hook-form's own type that
+ * accepts `undefined` for each field) so strictness is satisfied.
+ */
+const EMPTY: DefaultValues<AddChildFormValues> = {
   fullName: '',
   email: '',
   password: '',
   grade: 1,
   language: 'ar',
   country: '',
+  // learningLanguage intentionally omitted → undefined → placeholder shown
 };
 
 export interface AddChildFormProps {
@@ -33,11 +52,19 @@ export interface AddChildFormProps {
 
 export function AddChildForm({ initialValues, submitLabel, onAdd }: AddChildFormProps) {
   const { t } = useTranslation();
-  const { direction } = useLocale();
+  const { direction, isRtl } = useLocale();
   const gradeOptions = useGradeOptions();
   const languageOptions = useLanguageOptions();
 
-  const { control, handleSubmit, reset } = useForm<AddChildFormValues>({
+  /**
+   * Tracks whether the parent has manually touched the app-language (axis A)
+   * field. When false, selecting a learning language auto-fills the app language
+   * to match. Once the parent edits app language directly, this becomes true and
+   * subsequent learning-language changes no longer overwrite it.
+   */
+  const appLanguageTouched = useRef(false);
+
+  const { control, handleSubmit, reset, setValue } = useForm<AddChildFormValues>({
     resolver: zodResolver(addChildSchema),
     defaultValues: initialValues ?? EMPTY,
     mode: 'onSubmit',
@@ -45,10 +72,13 @@ export function AddChildForm({ initialValues, submitLabel, onAdd }: AddChildForm
 
   const onSubmit = handleSubmit((values) => {
     onAdd(values);
+    appLanguageTouched.current = false;
     reset(EMPTY);
   });
 
   const errText = (msg?: string) => (msg ? t(msg) : undefined);
+
+  const helperTextAlign = isRtl ? ('right' as const) : ('left' as const);
 
   return (
     <Stack gap="$4" accessibilityRole={undefined}>
@@ -110,21 +140,105 @@ export function AddChildForm({ initialValues, submitLabel, onAdd }: AddChildForm
           />
         )}
       />
-      <Controller
-        control={control}
-        name="language"
-        render={({ field, fieldState }) => (
-          <LanguageSelect
-            label={t('onboarding.addChild.labelLanguage')}
-            placeholder={t('onboarding.addChild.languagePlaceholder')}
-            options={languageOptions}
-            value={field.value ?? null}
-            onChange={(v) => field.onChange(v as Locale)}
-            error={errText(fieldState.error?.message)}
-            direction={direction}
-          />
-        )}
-      />
+
+      {/* Language group — thin labelled container fencing both language fields */}
+      <Stack
+        gap="$3"
+        padding="$3"
+        borderRadius="$sm"
+        borderWidth={1}
+        borderColor="$borderSubtle"
+      >
+        {/* Group eyebrow — matches the listLabel eyebrow style on the screen */}
+        <Text
+          color="$fg3"
+          fontSize={12}
+          fontWeight="600"
+          fontFamily="$heading"
+          textTransform="uppercase"
+          letterSpacing={0.6}
+          textAlign={helperTextAlign}
+          writingDirection={direction}
+        >
+          {t('onboarding.addChild.languageGroupLabel')}
+        </Text>
+
+        {/* Learning language — axis B; required, no default */}
+        <Controller
+          control={control}
+          name="learningLanguage"
+          render={({ field, fieldState }) => (
+            <>
+              <LanguageSelect
+                label={t('onboarding.addChild.labelLearningLanguage')}
+                placeholder={t('onboarding.addChild.learningLanguagePlaceholder')}
+                options={languageOptions}
+                value={field.value ?? null}
+                onChange={(v) => {
+                  const chosen = v as Locale;
+                  field.onChange(chosen);
+                  // Auto-fill app language to match, guarded by the touched flag.
+                  if (!appLanguageTouched.current) {
+                    setValue('language', chosen, { shouldValidate: false });
+                  }
+                }}
+                error={errText(fieldState.error?.message)}
+                direction={direction}
+                accessibilityLabel={t('onboarding.addChild.labelLearningLanguage')}
+              />
+              <Text
+                color="$fg3"
+                fontSize={12}
+                fontFamily="$body"
+                lineHeight={17}
+                marginTop={2}
+                textAlign={helperTextAlign}
+                writingDirection={direction}
+                accessibilityElementsHidden={false}
+              >
+                {t('onboarding.addChild.learningLanguageHelper')}
+              </Text>
+            </>
+          )}
+        />
+
+        {/* App language — axis A; relabelled, auto-fills from learning language */}
+        <Controller
+          control={control}
+          name="language"
+          render={({ field, fieldState }) => (
+            <>
+              <LanguageSelect
+                label={t('onboarding.addChild.labelAppLanguage')}
+                placeholder={t('onboarding.addChild.languagePlaceholder')}
+                options={languageOptions}
+                value={field.value ?? null}
+                onChange={(v) => {
+                  // Mark as touched so the auto-fill stops overwriting.
+                  appLanguageTouched.current = true;
+                  field.onChange(v as Locale);
+                }}
+                error={errText(fieldState.error?.message)}
+                direction={direction}
+                accessibilityLabel={t('onboarding.addChild.labelAppLanguage')}
+              />
+              <Text
+                color="$fg3"
+                fontSize={12}
+                fontFamily="$body"
+                lineHeight={17}
+                marginTop={2}
+                textAlign={helperTextAlign}
+                writingDirection={direction}
+                accessibilityElementsHidden={false}
+              >
+                {t('onboarding.addChild.appLanguageHelper')}
+              </Text>
+            </>
+          )}
+        />
+      </Stack>
+
       <Controller
         control={control}
         name="country"
