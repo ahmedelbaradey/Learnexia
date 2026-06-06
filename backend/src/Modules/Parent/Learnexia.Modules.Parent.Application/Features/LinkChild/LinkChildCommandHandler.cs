@@ -104,6 +104,7 @@ public class LinkChildCommandHandler : BaseResponseHandler, ICommandHandler<Link
             Id = childId,
             FullName = p?.FullName ?? string.Empty,
             Email = p?.Email ?? string.Empty,
+            LearningLanguage = p?.LearningLanguage ?? string.Empty,
         });
     }
 }

@@ -54,6 +54,7 @@ public class ListMyChildrenQueryHandler : BaseResponseHandler, IQueryHandler<Lis
                     Id = p.Id,
                     FullName = p.FullName,
                     Email = p.Email,
+                    LearningLanguage = p.LearningLanguage,
                 })
                 .ToList();
 
