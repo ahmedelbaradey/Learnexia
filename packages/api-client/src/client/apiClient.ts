@@ -422,11 +422,19 @@ function extractTokens(data: unknown): AuthTokens | null {
  * Anonymous endpoints that must NOT carry an Authorization header (and must NOT
  * trigger the 401-refresh retry, since they ARE the auth bootstrap). Matched by
  * path suffix so the absolute URLs the NSwag client builds still resolve.
+ *
+ * Transport fix (P1-12-FE FE-0a): Google-SignIn, Forgot-Password, and
+ * Reset-Password are unauthenticated endpoints. Without this list they would
+ * attach a stale bearer token and trigger the single-flight 401-refresh retry,
+ * breaking the flows. Verified against nswag-client.ts lines 1137/1344/1413.
  */
 const ANONYMOUS_PATH_SUFFIXES = [
   '/api/Users/Authentication/Sign-In',
   '/api/Users/Authentication/Register-Parent',
   '/api/Users/Authentication/Refresh-Token',
+  '/api/Users/Authentication/Google-SignIn',
+  '/api/Users/Authentication/Forgot-Password',
+  '/api/Users/Authentication/Reset-Password',
 ];
 
 function isAnonymousPath(url: string): boolean {

@@ -140,6 +140,46 @@ export const en = {
       errors: {
         invalidCredentials: 'Incorrect username or password.',
         notFound: 'No account found with this email.',
+        socialFailed: "Couldn't sign in with Google. Please try again.",
+      },
+      social: {
+        loading: 'Signing in with Google…',
+      },
+    },
+    forgotPassword: {
+      eyebrow: 'Reset password',
+      title: 'Forgot your password?',
+      subtitle: "Enter your email and we'll send you a reset link.",
+      labelEmail: 'Email',
+      submitButton: 'Send reset link →',
+      successTitle: 'Check your email',
+      successBody:
+        "If an account exists for that email, we've sent a password reset link.",
+      backToSignIn: 'Back to Sign in',
+      errors: {
+        invalidEmail: 'Please enter a valid email address.',
+        generic: 'Something went wrong. Please try again.',
+      },
+    },
+    resetPassword: {
+      eyebrow: 'Set a new password',
+      title: 'Create a new password',
+      subtitle: 'Choose a strong password for {{email}}.',
+      labelEmail: 'Email',
+      labelNewPassword: 'New password',
+      labelConfirmPassword: 'Confirm password',
+      passwordHelper: 'At least 6 characters.',
+      submitButton: 'Reset password →',
+      successBody: 'Your password has been reset. Please sign in.',
+      requestNewLink: 'Request a new link',
+      errors: {
+        weakPassword:
+          'Password must be at least 6 characters with uppercase, lowercase, number, and special character.',
+        mismatch: "Passwords don't match.",
+        tokenInvalid: 'This reset link is invalid. Please request a new one.',
+        tokenExpired:
+          'This reset link has expired. Please request a new one.',
+        generic: 'Something went wrong. Please try again.',
       },
     },
   },
@@ -347,6 +387,16 @@ export const en = {
         loading: 'Loading your profile…',
         saveSuccess: 'Your profile has been saved.',
         saveError: "Couldn't save your profile. Please try again.",
+        avatar: {
+          helper: 'PNG or JPG, up to 5 MB',
+          uploading: 'Uploading your photo…',
+          uploadSuccess: 'Photo updated.',
+          uploadError: "Couldn't upload that photo. Please try again.",
+          tooLarge: 'That image is too large (max 5 MB).',
+          wrongType: 'Please choose a PNG or JPG image.',
+          removeSuccess: 'Photo removed.',
+          removeError: "Couldn't remove the photo. Please try again.",
+        },
       },
       language: {
         title: 'Language & region',
@@ -767,6 +817,45 @@ export const ar = {
       errors: {
         invalidCredentials: 'اسم المستخدم أو كلمة المرور غير صحيحة.',
         notFound: 'لا يوجد حساب بهذا البريد الإلكتروني.',
+        socialFailed: 'تعذّر تسجيل الدخول عبر Google. حاول مرة أخرى.',
+      },
+      social: {
+        loading: 'جارٍ تسجيل الدخول عبر Google…',
+      },
+    },
+    forgotPassword: {
+      eyebrow: 'إعادة تعيين كلمة المرور',
+      title: 'هل نسيت كلمة المرور؟',
+      subtitle: 'أدخل بريدك الإلكتروني وسنرسل لك رابط إعادة التعيين.',
+      labelEmail: 'البريد الإلكتروني',
+      submitButton: 'إرسال رابط الإعادة ←',
+      successTitle: 'تحقّق من بريدك',
+      successBody:
+        'إذا كان هناك حساب بهذا البريد، فقد أرسلنا رابط إعادة تعيين كلمة المرور.',
+      backToSignIn: 'العودة لتسجيل الدخول',
+      errors: {
+        invalidEmail: 'يرجى إدخال بريد إلكتروني صحيح.',
+        generic: 'حدث خطأ ما. حاول مرة أخرى.',
+      },
+    },
+    resetPassword: {
+      eyebrow: 'تعيين كلمة مرور جديدة',
+      title: 'أنشئ كلمة مرور جديدة',
+      subtitle: 'اختر كلمة مرور قوية لـ {{email}}.',
+      labelEmail: 'البريد الإلكتروني',
+      labelNewPassword: 'كلمة المرور الجديدة',
+      labelConfirmPassword: 'تأكيد كلمة المرور',
+      passwordHelper: '٦ أحرف على الأقل.',
+      submitButton: 'إعادة تعيين كلمة المرور ←',
+      successBody: 'تم إعادة تعيين كلمة المرور. يرجى تسجيل الدخول.',
+      requestNewLink: 'طلب رابط جديد',
+      errors: {
+        weakPassword:
+          'يجب أن تتكوّن كلمة المرور من ٦ أحرف على الأقل وتشمل حرفاً كبيراً وصغيراً ورقماً ورمزاً خاصاً.',
+        mismatch: 'كلمتا المرور غير متطابقتين.',
+        tokenInvalid: 'رابط إعادة التعيين غير صالح. يرجى طلب رابط جديد.',
+        tokenExpired: 'انتهت صلاحية رابط إعادة التعيين. يرجى طلب رابط جديد.',
+        generic: 'حدث خطأ ما. حاول مرة أخرى.',
       },
     },
   },
@@ -972,6 +1061,16 @@ export const ar = {
         loading: 'جارٍ تحميل ملفك الشخصي…',
         saveSuccess: 'تم حفظ ملفك الشخصي.',
         saveError: 'تعذّر حفظ ملفك الشخصي. يرجى المحاولة مجدداً.',
+        avatar: {
+          helper: 'PNG أو JPG، حتى ٥ ميجابايت',
+          uploading: 'جارٍ رفع صورتك…',
+          uploadSuccess: 'تم تحديث الصورة.',
+          uploadError: 'تعذّر رفع الصورة. حاول مرة أخرى.',
+          tooLarge: 'الصورة كبيرة جداً (الحد ٥ ميجابايت).',
+          wrongType: 'اختر صورة بصيغة PNG أو JPG.',
+          removeSuccess: 'تمت إزالة الصورة.',
+          removeError: 'تعذّر إزالة الصورة. حاول مرة أخرى.',
+        },
       },
       language: {
         title: 'اللغة والمنطقة',

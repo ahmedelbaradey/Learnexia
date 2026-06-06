@@ -1,5 +1,5 @@
 /**
- * RegisterForm — parent registration form (P1-11 capture).
+ * RegisterForm — parent registration form (P1-11 capture, P1-12-FE-7 wired).
  *
  * react-hook-form + zod (`registerParentSchema`). Field set: full name + country
  * (two-column row at tablet+), email, password (with "At least 6 characters"
@@ -7,10 +7,8 @@
  * `useRegisterParent`; on success persists tokens (`authStore.setTokens`) and
  * routes to onboarding. Maps `BaseResponse.errors` to localized banner copy.
  *
- * Client-only fields NOT posted:
- *  - `country` — collected for UX; backend `RegisterParentCommand` has no country
- *    field yet. TODO(P1-12): country-on-register needs a Batch-2 BE field.
- *  - `acceptedTerms` — consent gate; no backend flag exists yet (UI-only).
+ * P1-12-FE-7: `country` and `acceptedTerms` are now posted. `captchaToken` is
+ * intentionally omitted — it is tracked as P1-11-FE-16 (separate story).
  *
  * RTL-aware via `useLocale`.
  */
@@ -96,13 +94,16 @@ export function RegisterForm() {
 
   const onSubmit = handleSubmit(async (values) => {
     try {
-      // NOTE: `country` + `acceptedTerms` are intentionally NOT sent — the BE
-      // RegisterParentCommand only accepts { email, password, fullName }.
-      // TODO(P1-12): country-on-register needs a Batch-2 BE field.
+      // P1-12-FE-7: `country` and `acceptedTerms` are now sent to the backend.
+      // `captchaToken` is omitted — tracked as P1-11-FE-16 (out of scope here).
+      // `acceptedTerms` MUST remain false by default and only become true via
+      // the user checking the CheckboxField (security requirement — never auto-set).
       const res = await register.mutateAsync({
         email: values.email.trim(),
         password: values.password,
         fullName: values.fullName?.trim() || undefined,
+        country: values.country || undefined,
+        acceptedTerms: values.acceptedTerms,
       });
       if (res.accessToken && res.refreshToken?.tokenString) {
         await setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken.tokenString });

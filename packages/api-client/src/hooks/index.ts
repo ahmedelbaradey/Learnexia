@@ -34,6 +34,16 @@ export { useMyChildren } from './useMyChildren';
 export { useMyProfile } from './useMyProfile';
 export { useUpdateProfile } from './useUpdateProfile';
 
+// P1-12-FE Batch 1 — avatar + new auth flows (FE-0b/0c/0d/0e/0f).
+// useUploadAvatar + useRemoveAvatar are consumed in this batch (avatar UI, FE-2).
+// useGoogleSignIn, useForgotPassword, useResetPassword are wired but consumed in
+// later batches (Batch 4: Google OAuth, Batch 3: forgot/reset screens).
+export { useUploadAvatar } from './useUploadAvatar';
+export { useRemoveAvatar } from './useRemoveAvatar';
+export { useGoogleSignIn } from './useGoogleSignIn';
+export { useForgotPassword } from './useForgotPassword';
+export { useResetPassword } from './useResetPassword';
+
 // W10 / P2-12 settings-tab hooks.
 export { useNotificationPreferences } from './useNotificationPreferences';
 export { useUpdateNotificationPreferences } from './useUpdateNotificationPreferences';

@@ -23,7 +23,10 @@
 import {
   useMyProfile,
   useUpdateProfile,
+  useUploadAvatar,
+  useRemoveAvatar,
   type AccountProfileResponse,
+  type FileParameter,
 } from '@learnexia/api-client';
 import { LanguagePanel } from './settings/LanguagePanel';
 import { LinkedChildrenPanel } from './settings/LinkedChildrenPanel';
@@ -33,7 +36,8 @@ import { SecurityPanel } from './settings/SecurityPanel';
 import { COUNTRIES, type CountryCode } from '@learnexia/shared';
 import { Avatar, Button, Select, Tabs, TextField, type TabItem } from '@learnexia/ui';
 import { Stack, Text } from '@tamagui/core';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ServerErrorBanner } from '../../../src/components/ServerErrorBanner';
@@ -252,11 +256,31 @@ function toCountryCode(country: string | undefined): CountryCode | null {
   return match ? (match.code as CountryCode) : null;
 }
 
+/** Maximum avatar file size allowed (5 MB). */
+const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
+/** Accepted avatar MIME types (web <input accept> + client-side guard). */
+// Kept in sync with the avatar helper/wrongType copy ("PNG or JPG"). The MIME guard
+// in handleFileChange derives its allowlist from this string, and the <input accept> uses it.
+const AVATAR_ACCEPT = 'image/png,image/jpeg';
+
 function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelProps) {
   const { t } = useTranslation();
   const { locale } = useLocale();
   const updateProfile = useUpdateProfile();
+  const uploadAvatar = useUploadAvatar();
+  const removeAvatar = useRemoveAvatar();
   const resolveError = useServerError();
+
+  // Web-only hidden file input ref for programmatic <input type="file"> pick.
+  // Platform-guarded: only wired on web; native avatar upload is deferred (B-3).
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Avatar feedback state (inline, below the avatar row).
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [avatarSuccess, setAvatarSuccess] = useState<string | null>(null);
+
+  const avatarPending = uploadAvatar.isPending || removeAvatar.isPending;
+  const hasAvatar = Boolean(profile?.avatarUrl);
 
   // Form state seeded from the loaded profile. `email` is display-only (not part
   // of the profile contract). Re-sync whenever the loaded profile changes.
@@ -299,6 +323,57 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
     });
   };
 
+  /** Trigger the hidden web file input. Native deferred per plan B-3. */
+  const handleUploadPress = () => {
+    if (Platform.OS === 'web' && fileInputRef.current) {
+      setAvatarError(null);
+      setAvatarSuccess(null);
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
+  };
+
+  /** Validate and upload the chosen file (web only). */
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Client-side type guard — match AVATAR_ACCEPT exactly (the <input accept> attr is advisory
+    // only; this allowlist is the real client check, though the server remains authoritative).
+    if (!AVATAR_ACCEPT.split(',').includes(file.type)) {
+      setAvatarError(t('parent.settings.profile.avatar.wrongType'));
+      return;
+    }
+    // Client-side size cap (5 MB).
+    if (file.size > AVATAR_MAX_BYTES) {
+      setAvatarError(t('parent.settings.profile.avatar.tooLarge'));
+      return;
+    }
+
+    setAvatarError(null);
+    setAvatarSuccess(null);
+
+    const param: FileParameter = { data: file, fileName: file.name };
+    try {
+      await uploadAvatar.mutateAsync(param);
+      setAvatarSuccess(t('parent.settings.profile.avatar.uploadSuccess'));
+    } catch {
+      setAvatarError(t('parent.settings.profile.avatar.uploadError'));
+    }
+  };
+
+  /** Direct remove — no confirm dialog (reversible; danger button is the UX safeguard). */
+  const handleRemove = async () => {
+    setAvatarError(null);
+    setAvatarSuccess(null);
+    try {
+      await removeAvatar.mutateAsync();
+      setAvatarSuccess(t('parent.settings.profile.avatar.removeSuccess'));
+    } catch {
+      setAvatarError(t('parent.settings.profile.avatar.removeError'));
+    }
+  };
+
   if (isLoading) {
     return (
       <PanelSurface>
@@ -324,38 +399,119 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
         direction={direction}
       />
 
-      {/* Avatar (image from avatarUrl, else initials) + upload/remove stubs */}
-      <Stack flexDirection={rowDir} alignItems="center" gap={18}>
-        <Avatar
-          name={name || profile?.fullName || 'A'}
-          uri={profile?.avatarUrl || undefined}
-          size="xl"
-          accessibilityLabel={t('parent.settings.profile.title')}
+      {/* Avatar upload/remove — wired (P1-12-FE FE-2).
+          Web: hidden <input type="file"> triggered programmatically.
+          Native: deferred (Platform guard; see plan B-3). */}
+      {Platform.OS === 'web' && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={AVATAR_ACCEPT}
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+          aria-hidden
         />
-        <Stack flexDirection={rowDir} alignItems="center" gap="$3">
-          {/* TODO(P1-12 avatar upload): avatar upload/remove backend (BE-4) not built yet. */}
-          <Button
-            variant="primary"
-            size="sm"
-            disabled
-            accessibilityLabel={t('parent.settings.profile.uploadPhoto')}
-            onPress={() => {
-              /* TODO(P1-12 avatar upload): wire avatar upload once BE-4 lands. */
-            }}
-          >
-            {t('parent.settings.profile.uploadPhoto')}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled
-            accessibilityLabel={t('parent.settings.profile.removePhoto')}
-            onPress={() => {
-              /* TODO(P1-12 avatar upload): wire avatar removal once BE-4 lands. */
-            }}
-          >
-            {t('parent.settings.profile.removePhoto')}
-          </Button>
+      )}
+      <Stack flexDirection={rowDir} alignItems="center" gap={18}>
+        {/* Avatar circle with pending overlay while mutation is in flight. */}
+        <Stack position="relative">
+          <Avatar
+            name={name || profile?.fullName || 'A'}
+            uri={profile?.avatarUrl || undefined}
+            size="xl"
+            accessibilityLabel={t('parent.settings.profile.title')}
+          />
+          {avatarPending && (
+            <Stack
+              position="absolute"
+              top={0}
+              left={0}
+              right={0}
+              bottom={0}
+              borderRadius={9999}
+              backgroundColor="$overlay"
+              alignItems="center"
+              justifyContent="center"
+              aria-busy
+            >
+              <Text fontSize={20} accessibilityElementsHidden>
+                {'⏳'}
+              </Text>
+            </Stack>
+          )}
+        </Stack>
+
+        <Stack flexDirection="column" gap="$2">
+          <Stack flexDirection={rowDir} gap="$3">
+            <Button
+              variant="primary"
+              size="sm"
+              loading={uploadAvatar.isPending}
+              disabled={avatarPending}
+              accessibilityLabel={t('parent.settings.profile.uploadPhoto')}
+              onPress={handleUploadPress}
+            >
+              {t('parent.settings.profile.uploadPhoto')}
+            </Button>
+            {/* Remove shown only when a photo is set (no remove on initials-only avatar). */}
+            {hasAvatar && (
+              <Button
+                variant="danger"
+                size="sm"
+                loading={removeAvatar.isPending}
+                disabled={avatarPending}
+                accessibilityLabel={t('parent.settings.profile.removePhoto')}
+                onPress={handleRemove}
+              >
+                {t('parent.settings.profile.removePhoto')}
+              </Button>
+            )}
+          </Stack>
+
+          {/* Helper / feedback text below the button group. */}
+          {avatarError ? (
+            <Text
+              color="$danger"
+              fontSize={12}
+              fontFamily="$body"
+              textAlign={direction === 'rtl' ? 'right' : 'left'}
+              writingDirection={direction}
+              accessibilityLiveRegion="assertive"
+            >
+              {avatarError}
+            </Text>
+          ) : avatarSuccess ? (
+            <Text
+              color="$success"
+              fontSize={12}
+              fontFamily="$body"
+              textAlign={direction === 'rtl' ? 'right' : 'left'}
+              writingDirection={direction}
+              accessibilityLiveRegion="polite"
+            >
+              {avatarSuccess}
+            </Text>
+          ) : avatarPending ? (
+            <Text
+              color="$fg3"
+              fontSize={12}
+              fontFamily="$body"
+              textAlign={direction === 'rtl' ? 'right' : 'left'}
+              writingDirection={direction}
+            >
+              {t('parent.settings.profile.avatar.uploading')}
+            </Text>
+          ) : (
+            <Text
+              color="$fg3"
+              fontSize={12}
+              fontFamily="$body"
+              textAlign={direction === 'rtl' ? 'right' : 'left'}
+              writingDirection={direction}
+            >
+              {t('parent.settings.profile.avatar.helper')}
+            </Text>
+          )}
         </Stack>
       </Stack>
 
