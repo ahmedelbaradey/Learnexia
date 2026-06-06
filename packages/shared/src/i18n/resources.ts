@@ -807,7 +807,7 @@ export const ar = {
       submitButton: 'تسجيل الدخول ←',
       orDivider: 'أو',
       orContinueWith: 'أو واصل بـ',
-      socialGoogle: 'جوجل',
+      socialGoogle: 'Google',
       socialApple: 'آبل',
       socialMicrosoft: 'مايكروسوفت',
       newParent: 'جديد على Learnexia؟',

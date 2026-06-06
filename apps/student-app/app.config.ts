@@ -31,6 +31,19 @@ const config: ExpoConfig = {
   experiments: {
     typedRoutes: true,
   },
+  /**
+   * Extra config values injected as `Constants.expoConfig.extra` at runtime.
+   * `googleClientId` is read from the environment so it is NEVER hardcoded —
+   * the build must set EXPO_PUBLIC_GOOGLE_CLIENT_ID for the env-var path (web),
+   * or EAS build env for the native standalone build (via this extra block).
+   *
+   * The value here intentionally falls back to '' so the app starts gracefully
+   * even without a client ID configured. Google sign-in will be disabled (button
+   * greyed out) until the lead provisions the real client ID.
+   */
+  extra: {
+    googleClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? '',
+  },
 };
 
 export default config;

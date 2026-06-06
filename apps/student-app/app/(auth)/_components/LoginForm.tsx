@@ -1,5 +1,6 @@
 /**
- * LoginForm — shared parent + child sign-in (Design Spec Screen 2, P1-11).
+ * LoginForm — shared parent + child sign-in (Design Spec Screen 2, P1-11 +
+ * P1-12-FE Batch 3: Google OAuth flow).
  *
  * react-hook-form + zod (`signInSchema`). Posts via `useSignIn`; on success
  * persists tokens then routes to `/` (splash), where the routing guard reads
@@ -7,15 +8,40 @@
  * home in the child's language). Invalid credentials show a generic banner (no
  * field-level reveal). RTL-aware.
  *
- * P1-11 additions (re-skin around the same wiring): a Parent/Student persona
- * toggle (UI-only hint — does NOT enable student self-register), a "Remember me"
- * checkbox, a "Forgot password?" link, an "OR CONTINUE WITH" divider, and
- * Google/Apple/Microsoft social buttons. The persona, remember-me, and social
- * buttons are UI-only placeholders wired to no-op TODO handlers (no faked auth)
- * until the corresponding backend stories land. The auth mutation, error
- * mapping, token persistence and routing are unchanged.
+ * P1-11 additions: persona toggle, remember-me, forgot-password link, OR divider,
+ * Google/Apple/Microsoft social buttons.
+ *
+ * P1-12 Batch 3 Google OAuth:
+ *  - expo-auth-session `useAuthRequest` + `useAutoDiscovery` against Google.
+ *  - Response type = id_token (implicit IdToken grant over OIDC).
+ *  - Client ID from `process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID`. If missing/empty,
+ *    the Google button is disabled and a console.warn is printed — NO crash.
+ *  - On success: idToken → `useGoogleSignIn` → authStore.setTokens →
+ *    router.replace('/') — SAME path as email sign-in `onSubmit`.
+ *  - User cancel (type === 'dismiss' | 'cancel'): silent, no error shown.
+ *  - Network/auth failure: ServerErrorBanner with `auth.login.errors.socialFailed`.
+ *  - While Google flow is in flight: Google button shows loading state; email
+ *    submit + Apple + Microsoft buttons are disabled (one-action-at-a-time).
+ *  - Apple + Microsoft: remain dimmed `disabled` visual placeholders (no-op).
+ *
+ * Environment / setup:
+ *  - Web: `EXPO_PUBLIC_GOOGLE_CLIENT_ID` must be set in `.env.local`.
+ *  - The `learnexia` URI scheme is registered in `app.config.ts` and is used as
+ *    the native redirect. On web, `makeRedirectUri()` uses `window.location.origin`.
+ *  - `expo-web-browser` `maybeCompleteAuthSession()` is called at module load to
+ *    close the popup after the OAuth redirect lands back on the page (web-only).
+ *  - PKCE is enabled by default in expo-auth-session (code_challenge_method=S256).
+ *    Do NOT disable it.
+ *  - The client ID is NEVER hardcoded. The flow ships wired; the lead provisions
+ *    the real client ID before live testing.
+ *
+ * Security:
+ *  - `idToken` travels only to `useGoogleSignIn` (backend). It is never logged,
+ *    echoed in the UI, stored in Zustand, or reflected in error messages.
+ *  - Token persistence goes through `authStore.setTokens` (same path as
+ *    email sign-in — no separate token storage path).
  */
-import { useSignIn } from '@learnexia/api-client';
+import { useGoogleSignIn, useSignIn } from '@learnexia/api-client';
 import {
   LOGIN_PERSONAS,
   signInSchema,
@@ -26,8 +52,16 @@ import {
 import { Button, TextField } from '@learnexia/ui';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Stack, Text } from '@tamagui/core';
+import {
+  makeRedirectUri,
+  ResponseType,
+  useAuthRequest,
+  useAutoDiscovery,
+} from 'expo-auth-session';
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import * as WebBrowser from 'expo-web-browser';
+import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
@@ -38,17 +72,122 @@ import { Checkbox, OrDivider, SocialButton, SocialRow } from './loginParts';
 import { PersonaToggle } from './PersonaToggle';
 import { AppleIcon, GoogleIcon, MicrosoftIcon } from './SocialIcons';
 
+/**
+ * Close the OAuth popup after the redirect lands back on the web page.
+ * On native this is a no-op. Must be called at module level (outside any
+ * component) per the expo-auth-session docs.
+ */
+WebBrowser.maybeCompleteAuthSession();
+
+/** Google OIDC discovery endpoint. */
+const GOOGLE_DISCOVERY_URL = 'https://accounts.google.com';
+
 export function LoginForm() {
   const { t } = useTranslation();
   const { direction } = useLocale();
   const router = useRouter();
   const setTokens = useAuthStore((s) => s.setTokens);
   const signIn = useSignIn();
+  const googleSignIn = useGoogleSignIn();
   const resolveError = useServerError();
 
   // UI-only client state (NOT server data → local component state, not Zustand).
   const [persona, setPersona] = useState<LoginPersona>(LOGIN_PERSONAS.Parent);
   const [rememberMe, setRememberMe] = useState(false);
+  // Google-specific error surfaced via the shared ServerErrorBanner.
+  const [googleError, setGoogleError] = useState<string | null>(null);
+
+  // Read client ID from env at runtime — never hardcoded.
+  // Web: EXPO_PUBLIC_GOOGLE_CLIENT_ID from .env.local.
+  // Native: Constants.expoConfig?.extra?.googleClientId from app.config.ts extra block.
+  // If missing/empty the Google button is disabled with a console.warn (no crash).
+  const googleClientId =
+    (Constants.expoConfig?.extra as Record<string, string> | undefined)?.googleClientId ??
+    process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ??
+    '';
+  const isGoogleConfigured = Boolean(googleClientId);
+  // Warn once on mount if the client ID is missing so the developer knows why
+  // the button is disabled. Not an error — the button gracefully disables
+  // instead of crashing. Production is silent.
+  useEffect(() => {
+    // Dev-only diagnostic — `__DEV__` blocks are stripped from production bundles, so this never
+    // surfaces config details in a release build's console.
+    if (__DEV__ && !isGoogleConfigured) {
+      // eslint-disable-next-line no-console
+      console.warn('[LoginForm] EXPO_PUBLIC_GOOGLE_CLIENT_ID is not set. Google sign-in is disabled.');
+    }
+    // isGoogleConfigured is stable — derived purely from an env var constant.
+  }, [isGoogleConfigured]);
+
+  // ── expo-auth-session OAuth setup ────────────────────────────────────────
+  // Discovery doc is fetched once at component mount. On web, makeRedirectUri()
+  // returns `window.location.origin` (e.g. http://localhost:8081). On native it
+  // uses the `learnexia://` scheme registered in app.config.ts.
+  const discovery = useAutoDiscovery(GOOGLE_DISCOVERY_URL);
+  const redirectUri = makeRedirectUri({ scheme: 'learnexia' });
+
+  const [request, response, promptAsync] = useAuthRequest(
+    {
+      clientId: googleClientId,
+      responseType: ResponseType.IdToken,
+      scopes: ['openid', 'email', 'profile'],
+      redirectUri,
+      // PKCE is on by default (code_challenge_method=S256). Do NOT disable it.
+    },
+    // When clientId is missing, discovery is ignored — request will be null.
+    isGoogleConfigured ? discovery : null,
+  );
+
+  // Track whether the Google sign-in mutation (backend call) is in flight.
+  const isGoogleMutating = googleSignIn.isPending;
+  // Track whether the OAuth prompt is in flight (request loading or promptAsync
+  // called but not yet resolved). Combined flag drives the in-flight UI state.
+  const [isPromptPending, setIsPromptPending] = useState(false);
+  const isGoogleInFlight = isGoogleMutating || isPromptPending;
+
+  // ── Handle OAuth response (fires once response changes) ────────────────
+  useEffect(() => {
+    if (!response) return;
+
+    const handle = async () => {
+      setIsPromptPending(false);
+
+      if (response.type === 'cancel' || response.type === 'dismiss') {
+        // User dismissed the Google dialog — silent, no error shown.
+        return;
+      }
+
+      if (response.type === 'error') {
+        // OAuth protocol error (not user-cancel).
+        setGoogleError(t('auth.login.errors.socialFailed'));
+        return;
+      }
+
+      if (response.type === 'success') {
+        const idToken = response.params?.id_token;
+        if (!idToken) {
+          setGoogleError(t('auth.login.errors.socialFailed'));
+          return;
+        }
+        try {
+          // idToken goes ONLY to the backend (never logged/stored elsewhere).
+          const res = await googleSignIn.mutateAsync({ idToken });
+          if (res.accessToken && res.refreshToken?.tokenString) {
+            // Mirror the EXACT same token-persistence + routing path as email sign-in.
+            await setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken.tokenString });
+            router.replace('/');
+          } else {
+            setGoogleError(t('auth.login.errors.socialFailed'));
+          }
+        } catch {
+          // Error surfaced inline via googleError state.
+          setGoogleError(t('auth.login.errors.socialFailed'));
+        }
+      }
+    };
+
+    void handle();
+  }, [response, googleSignIn, setTokens, router, t]);
 
   const { control, handleSubmit, formState } = useForm<SignInFormValues>({
     resolver: zodResolver(signInSchema),
@@ -56,7 +195,8 @@ export function LoginForm() {
     mode: 'onTouched',
   });
 
-  const serverMessage = signIn.isError
+  // Email sign-in error message (shared banner — google error takes precedence when present).
+  const emailServerMessage = signIn.isError
     ? resolveError(signIn.error, {
         hints: [{ contains: ['not found', 'no account'], key: 'auth.login.errors.notFound' }],
         byStatus: {
@@ -67,7 +207,11 @@ export function LoginForm() {
       })
     : null;
 
+  const serverMessage = googleError ?? emailServerMessage;
+
   const onSubmit = handleSubmit(async (values) => {
+    // Clear any previous Google error before a new email attempt.
+    setGoogleError(null);
     try {
       const res = await signIn.mutateAsync({ userName: values.userName.trim(), password: values.password });
       if (res.accessToken && res.refreshToken?.tokenString) {
@@ -81,16 +225,24 @@ export function LoginForm() {
     }
   });
 
-  const disabled = signIn.isPending;
-
-  // Social auth is UI-only until the OAuth story lands — no faked auth.
-  const handleSocial = (provider: string) => {
-    // TODO(P-OAuth): wire `provider` to the OAuth flow once the backend exists.
-    void provider;
-  };
+  // While Google flow is in flight: disable email form + Apple + Microsoft buttons.
+  const emailFormDisabled = signIn.isPending || isGoogleInFlight;
+  const emailButtonDisabled = emailFormDisabled || formState.isSubmitting;
 
   const handleForgotPassword = () => {
     router.push('/(auth)/forgot-password');
+  };
+
+  const handleGoogleSignIn = async () => {
+    if (!isGoogleConfigured || !request || isGoogleInFlight) return;
+    setGoogleError(null);
+    setIsPromptPending(true);
+    try {
+      await promptAsync();
+    } catch {
+      setIsPromptPending(false);
+      setGoogleError(t('auth.login.errors.socialFailed'));
+    }
   };
 
   return (
@@ -103,7 +255,7 @@ export function LoginForm() {
         }
         accessibilityLabel={t('auth.login.personaToggleLabel')}
         direction={direction}
-        disabled={disabled}
+        disabled={emailFormDisabled}
       />
 
       <Controller
@@ -120,7 +272,7 @@ export function LoginForm() {
             forceLtr
             error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
             direction={direction}
-            disabled={disabled}
+            disabled={emailFormDisabled}
           />
         )}
       />
@@ -136,7 +288,7 @@ export function LoginForm() {
             autoComplete="password"
             error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
             direction={direction}
-            disabled={disabled}
+            disabled={emailFormDisabled}
           />
         )}
       />
@@ -154,7 +306,7 @@ export function LoginForm() {
           onChange={setRememberMe}
           label={t('auth.login.rememberMe')}
           direction={direction}
-          disabled={disabled}
+          disabled={emailFormDisabled}
         />
         <Text
           color="$primaryLight"
@@ -172,6 +324,7 @@ export function LoginForm() {
         </Text>
       </Stack>
 
+      {/* Shared error banner — covers both email and Google errors. */}
       <ServerErrorBanner message={serverMessage} direction={direction} />
 
       <Button
@@ -179,7 +332,7 @@ export function LoginForm() {
         size="full"
         accessibilityLabel={t('auth.login.submitButton')}
         loading={signIn.isPending}
-        disabled={disabled || formState.isSubmitting}
+        disabled={emailButtonDisabled}
         onPress={onSubmit}
       >
         {t('auth.login.submitButton')}
@@ -193,34 +346,40 @@ export function LoginForm() {
         <OrDivider label={t('auth.login.orContinueWith')} direction={direction} />
       </Stack>
 
-      {/* Social buttons — Google + Apple on all sizes; Microsoft on tablet+. */}
+      {/* Social buttons — Google + Apple on all sizes; Microsoft on tablet+.
+          Google: fully wired (P1-12-FE-3). Apple + Microsoft: dimmed placeholders.
+          While Google is in flight: Apple + MS are disabled; email form disabled too. */}
       <SocialRow direction={direction}>
         <SocialButton
           label={t('auth.login.socialGoogle')}
           icon={<GoogleIcon />}
-          onPress={() => handleSocial(SOCIAL_GOOGLE)}
+          onPress={handleGoogleSignIn}
           direction={direction}
+          loading={isGoogleInFlight}
+          disabled={!isGoogleConfigured || !request}
+          labelLtr
         />
         <SocialButton
           label={t('auth.login.socialApple')}
           icon={<AppleIcon />}
-          onPress={() => handleSocial(SOCIAL_APPLE)}
+          onPress={() => {
+            /* TODO(P-OAuth): Apple sign-in — placeholder, no-op. */
+          }}
           direction={direction}
+          disabled
         />
         <Stack display="none" flex={1} $tablet={{ display: 'flex' }}>
           <SocialButton
             label={t('auth.login.socialMicrosoft')}
             icon={<MicrosoftIcon />}
-            onPress={() => handleSocial(SOCIAL_MICROSOFT)}
+            onPress={() => {
+              /* TODO(P-OAuth): Microsoft sign-in — placeholder, no-op. */
+            }}
             direction={direction}
+            disabled
           />
         </Stack>
       </SocialRow>
     </Stack>
   );
 }
-
-// Non-user-facing technical identifiers for the no-op social handlers.
-const SOCIAL_GOOGLE = 'google';
-const SOCIAL_APPLE = 'apple';
-const SOCIAL_MICROSOFT = 'microsoft';

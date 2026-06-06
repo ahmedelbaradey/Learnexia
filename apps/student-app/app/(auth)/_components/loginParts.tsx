@@ -1,11 +1,14 @@
 /**
- * loginParts — small presentational pieces for the Login screen (P1-11):
- * a Checkbox (Remember me), an "OR" divider, the social-auth button row, and
+ * loginParts — small presentational pieces for the Login screen (P1-11 +
+ * P1-12 Batch 3): Checkbox (Remember me), OR divider, social-auth buttons, and
  * the web brand panel. All token-driven, RTL-aware, no raw hex / free-text.
- * Social buttons are UI-only (no-op TODO handlers — no faked auth).
+ *
+ * P1-12-FE-3: `SocialButton` extended with `loading` and `disabled` props to
+ * support the Google OAuth in-flight and Apple/Microsoft placeholder states.
  */
 import { type Direction } from '@learnexia/shared';
 import { Stack, Text } from '@tamagui/core';
+import { MotiView } from 'moti';
 import type { ReactNode } from 'react';
 
 /**
@@ -111,9 +114,36 @@ export interface SocialButtonProps {
   icon: ReactNode;
   onPress: () => void;
   direction?: Direction;
+  /**
+   * When true, swaps the icon for a spinner, dims the label, removes press
+   * feedback, and sets aria-busy. Enforces one-action-at-a-time by disabling
+   * the other social buttons externally (see LoginForm Google flow).
+   */
+  loading?: boolean;
+  /**
+   * When true, the button is fully non-interactive (opacity 0.5, no press
+   * feedback). Used for Apple + Microsoft placeholder buttons.
+   */
+  disabled?: boolean;
+  /**
+   * Force the label to render LTR regardless of the ambient direction.
+   * Use this for Latin brand names (Google) that must not flip in RTL.
+   */
+  labelLtr?: boolean;
 }
 
-export function SocialButton({ label, icon, onPress, direction = 'ltr' }: SocialButtonProps) {
+export function SocialButton({
+  label,
+  icon,
+  onPress,
+  direction = 'ltr',
+  loading = false,
+  disabled = false,
+  labelLtr = false,
+}: SocialButtonProps) {
+  const isInteractive = !loading && !disabled;
+  const labelDirection = labelLtr ? 'ltr' : direction;
+
   return (
     <Stack
       flex={1}
@@ -126,19 +156,48 @@ export function SocialButton({ label, icon, onPress, direction = 'ltr' }: Social
       borderRadius={socialButtonRadius}
       borderWidth={1}
       borderColor="$border"
-      cursor="pointer"
-      hoverStyle={{ backgroundColor: '$cardSoft' }}
-      pressStyle={{ scale: 0.95 }}
-      onPress={onPress}
+      cursor={isInteractive ? 'pointer' : 'default'}
+      hoverStyle={isInteractive ? { backgroundColor: '$cardSoft' } : undefined}
+      pressStyle={isInteractive ? { scale: 0.95 } : undefined}
+      onPress={isInteractive ? onPress : undefined}
+      opacity={disabled ? 0.5 : 1}
       accessibilityRole="button"
       accessible
       accessibilityLabel={label}
       aria-label={label}
+      accessibilityState={{ disabled, busy: loading }}
+      aria-disabled={disabled}
+      aria-busy={loading}
     >
       <Stack accessibilityElementsHidden aria-hidden>
-        {icon}
+        {loading ? (
+          /* Spinner replaces icon in-place — no layout shift (same 20px slot).
+             Moti opacity pulse (same pattern as packages/ui Spinner). */
+          <MotiView
+            from={{ opacity: 0.3 }}
+            animate={{ opacity: 1 }}
+            transition={{ type: 'timing', duration: 300, loop: true, repeatReverse: true }}
+          >
+            <Stack
+              width={20}
+              height={20}
+              borderRadius={9999}
+              borderWidth={2}
+              borderColor="$fg1"
+              borderTopColor="transparent"
+            />
+          </MotiView>
+        ) : (
+          icon
+        )}
       </Stack>
-      <Text color="$fg1" fontSize={14} fontWeight="700" fontFamily="$heading" writingDirection={direction}>
+      <Text
+        color={loading ? '$fg3' : '$fg1'}
+        fontSize={14}
+        fontWeight="700"
+        fontFamily="$heading"
+        writingDirection={labelDirection}
+      >
         {label}
       </Text>
     </Stack>
