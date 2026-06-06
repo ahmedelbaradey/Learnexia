@@ -32,7 +32,7 @@
 | P1-09 | Auth & onboarding screens | ✅ | ✅ |
 | P1-10 | Sign in to the admin dashboard | ✅ | ✅ |
 | P1-11 | Web app pages (pixel-perfect, parent web) | — | 🟡 |
-| P1-12 | Web account backend (Batch 2) — profile/Me, register consent, edit-child, avatar (MinIO), Google sign-in, password reset | ✅ | 🔲 |
+| P1-12 | Web account backend (Batch 2) — profile/Me, register consent, edit-child, avatar (MinIO), Google sign-in, password reset | ✅ | 🟡 |
 | P1-12b | IUserLookup cross-module seam | ✅ | — |
 | P1-13a | Notifications email delivery (enabler) | ✅ | — |
 | P1-13 | Backend hardening (lockout/sign-in/admin seed/CAPTCHA) | ✅ | — |

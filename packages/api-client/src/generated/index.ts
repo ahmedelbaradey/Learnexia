@@ -20,6 +20,14 @@ export {
 } from './nswag-client';
 
 export type {
+  // P1-12-FE — Avatar upload/remove + new auth flows
+  AvatarUploadResponse,
+  AvatarUploadResponseBaseResponse,
+  FileParameter,
+  GoogleSignInCommand,
+  ForgotPasswordCommand,
+  ResetPasswordCommand,
+  // Existing DTOs
   SignInCommand,
   RegisterParentCommand,
   RefreshTokenCommand,

@@ -20,6 +20,13 @@
  */
 
 export type {
+  // P1-12-FE — Avatar upload/remove + new auth flows (FE-0b/0c/0d/0e/0f/0g)
+  AvatarUploadResponse,
+  AvatarUploadResponseBaseResponse,
+  FileParameter,
+  GoogleSignInCommand,
+  ForgotPasswordCommand,
+  ResetPasswordCommand,
   // W13 dashboard types (P2-09-FE)
   DashboardDto,
   DashboardDtoBaseResponse,

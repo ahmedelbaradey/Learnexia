@@ -58,14 +58,14 @@ export const signInSchema = z.object({
 export type SignInFormValues = z.infer<typeof signInSchema>;
 
 /**
- * Parent registration form (P1-11 capture). Maps to `RegisterParentCommand`
- * (`{ email, password, fullName? }`). `country` and `acceptedTerms` are
- * client-only consent/onboarding fields and are NOT posted:
- *  - `country` — collected for UX; the BE `RegisterParentCommand` has no country
- *    field yet (TODO(P1-12): country-on-register needs a Batch-2 BE field), so
- *    the form keeps it in state but the register call omits it.
- *  - `acceptedTerms` — required client-side consent gate; no backend flag exists
- *    yet, so it is validated locally only.
+ * Parent registration form. Maps to `RegisterParentCommand`
+ * (`{ email, password, fullName?, country?, acceptedTerms? }`). As of P1-12-FE,
+ * `country` and `acceptedTerms` ARE posted to the backend (the merged P1-12 BE
+ * accepts both):
+ *  - `country` — controlled-vocabulary code, sent on register.
+ *  - `acceptedTerms` — required consent gate; defaults to `false` and only
+ *    becomes `true` by explicit user action, then is transmitted to the BE.
+ * (CAPTCHA token is a separate task, P1-11-FE-16, and is intentionally not here.)
  * `fullName` is optional (the backend defaults it to the email local-part).
  */
 export const registerParentSchema = z.object({
