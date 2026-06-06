@@ -9108,6 +9108,10 @@
           "email": {
             "type": "string",
             "nullable": true
+          },
+          "learningLanguage": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

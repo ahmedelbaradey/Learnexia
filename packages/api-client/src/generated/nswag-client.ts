@@ -7272,6 +7272,7 @@ export interface LinkedChildResponse {
     id?: number;
     fullName?: string | undefined;
     email?: string | undefined;
+    learningLanguage?: string | undefined;
 }
 
 export interface LinkedChildResponseBaseResponse {

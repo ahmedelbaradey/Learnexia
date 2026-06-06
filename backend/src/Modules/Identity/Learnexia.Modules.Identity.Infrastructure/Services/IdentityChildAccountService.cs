@@ -147,7 +147,8 @@ public sealed class IdentityChildAccountService : IChildAccountService
         Email: user.Email ?? string.Empty,
         Grade: user.Grade,
         Language: user.PreferredLanguage,
-        Country: user.Nationality ?? string.Empty);
+        Country: user.Nationality ?? string.Empty,
+        LearningLanguage: user.LearningLanguage);
 
     private static string NormalizeLanguage(string language) => language?.Trim().ToLowerInvariant() switch
     {

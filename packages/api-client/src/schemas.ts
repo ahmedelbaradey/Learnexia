@@ -85,6 +85,10 @@ export type {
   CurrentPlanResponseBaseResponse,
   // P8-99-FE-2 — UI-language persistence (axis A)
   EditUserPreferredLanguageCommand,
+  // P8-04-FE — child learning-language change (axis B)
+  ChangeLearningLanguageCommand,
+  ChangedLearningLanguageResponse,
+  ChangedLearningLanguageResponseBaseResponse,
   // W11 / Learning (P2-02-FE + P2-03-FE)
   StudentSubjectDto,
   StudentSubjectDtoListBaseResponse,

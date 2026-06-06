@@ -47,6 +47,9 @@ export { useMyPlan } from './useMyPlan';
 // P8-99-FE — UI-language persistence (axis A).
 export { useUpdateUserLanguage } from './useUpdateUserLanguage';
 
+// P8-04-FE — child learning-language change (axis B, parent-only).
+export { useChangeLearningLanguage } from './useChangeLearningLanguage';
+
 // W11 learning hooks (P2-02-FE + P2-03-FE).
 export { useSubjectsForGrade } from './useSubjectsForGrade';
 export { useSubjectLessons } from './useSubjectLessons';

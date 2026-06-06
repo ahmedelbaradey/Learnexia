@@ -25,8 +25,10 @@ import {
   useMyChildren,
   useUpdateChild,
   useUnlinkChild,
+  useChangeLearningLanguage,
   type LinkedChildResponse,
   type UpdateChildCommand,
+  type ChangeLearningLanguageCommand,
 } from '@learnexia/api-client';
 import { Button, ChildCard, Select, TextField } from '@learnexia/ui';
 import { Stack, Text } from '@tamagui/core';
@@ -38,6 +40,7 @@ import { ServerErrorBanner } from '../../../../src/components/ServerErrorBanner'
 import { useLocale } from '../../../../src/hooks/useLocale';
 import { useServerError } from '../../../../src/hooks/useServerError';
 import { COUNTRIES, type CountryCode } from '@learnexia/shared';
+import { ChangeLearningLanguageModal } from './ChangeLearningLanguageModal';
 
 interface LinkedChildrenPanelProps {
   direction: 'ltr' | 'rtl';
@@ -348,6 +351,275 @@ function InlineUnlinkStrip({ child, direction, rowDir, onCancel, onSuccess }: Un
   );
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// LearningLanguageRow — per-child inline row (P8-04-FE-2).
+//
+// Shows the child's current learning language (from LinkedChildResponse) and a
+// ghost "Change" button. Tapping Change opens a picker strip (select + CTA).
+// The CTA opens ChangeLearningLanguageModal. No-op guard: Confirm disabled if
+// selected == current. Success shows an in-panel success strip (auto-clears 4s).
+// ────────────────────────────────────────────────────────────────────────────
+
+interface LearningLanguageRowProps {
+  child: LinkedChildResponse;
+  direction: 'ltr' | 'rtl';
+  rowDir: 'row' | 'row-reverse';
+}
+
+function LearningLanguageRow({ child, direction, rowDir }: LearningLanguageRowProps) {
+  const { t } = useTranslation();
+
+  const changeLearningLanguage = useChangeLearningLanguage();
+
+  // Local UI state — never in Zustand (server data lives in TanStack Query).
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [selectedLang, setSelectedLang] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [ackChecked, setAckChecked] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const currentLang = child.learningLanguage ?? null;
+
+  const languageOptions = [
+    { value: 'ar', label: t('onboarding.language.ar') },
+    { value: 'en', label: t('onboarding.language.en') },
+  ];
+
+  // No-op guard: disable "Change Language" CTA if selection matches current.
+  const isNoOp = selectedLang !== null && selectedLang === currentLang;
+
+  function handleOpenPicker() {
+    setIsPickerOpen(true);
+    setSelectedLang(null);
+    changeLearningLanguage.reset();
+    setSuccessMessage(null);
+  }
+
+  function handleClosePicker() {
+    setIsPickerOpen(false);
+    setSelectedLang(null);
+  }
+
+  function handleOpenModal() {
+    if (!selectedLang || isNoOp) return;
+    setAckChecked(false);
+    changeLearningLanguage.reset();
+    setModalVisible(true);
+  }
+
+  function handleModalCancel() {
+    setModalVisible(false);
+    setAckChecked(false);
+  }
+
+  function handleConfirm() {
+    if (!selectedLang || !child.id || !ackChecked) return;
+    const cmd: ChangeLearningLanguageCommand = {
+      childId: child.id,
+      newLearningLanguage: selectedLang,
+      confirmFreshStart: true, // only true when ack is ticked and Confirm pressed
+    };
+    changeLearningLanguage.mutate(cmd, {
+      onSuccess: () => {
+        setModalVisible(false);
+        setIsPickerOpen(false);
+        setAckChecked(false);
+        setSelectedLang(null);
+        const langLabel = t(`onboarding.language.${selectedLang}` as const);
+        setSuccessMessage(
+          t('parent.settings.linkedChildren.learningLanguage.success', {
+            name: child.fullName ?? '',
+            language: langLabel,
+          }),
+        );
+        setTimeout(() => setSuccessMessage(null), 4000);
+      },
+    });
+  }
+
+  // Display label for current language.
+  const currentLangLabel = currentLang
+    ? t(`onboarding.language.${currentLang}` as const)
+    : null;
+
+  return (
+    <Stack flexDirection="column" gap={6}>
+      {/* Idle row — low-prominence strip */}
+      <Stack
+        flexDirection={rowDir}
+        alignItems="center"
+        justifyContent="space-between"
+        gap={12}
+        padding={14}
+        backgroundColor="$bgElevated"
+        borderRadius={14}
+        borderWidth={1}
+        borderColor="rgba(255,255,255,0.06)"
+        marginTop={-4}
+      >
+        {/* Leading label block */}
+        <Stack flexDirection="column" gap={2} flex={1}>
+          <Text
+            color="$fg2"
+            fontSize={13}
+            fontWeight="600"
+            fontFamily="$body"
+            writingDirection={direction}
+            textAlign={direction === 'rtl' ? 'right' : 'left'}
+          >
+            {t('parent.settings.linkedChildren.learningLanguage.rowLabel')}
+          </Text>
+          {currentLangLabel ? (
+            <Text
+              color="$fg1"
+              fontSize={14}
+              fontWeight="700"
+              fontFamily="$body"
+              writingDirection={direction}
+              textAlign={direction === 'rtl' ? 'right' : 'left'}
+            >
+              {currentLangLabel}
+            </Text>
+          ) : null}
+        </Stack>
+
+        {/* Ghost Change button */}
+        <Stack
+          minWidth={44}
+          minHeight={44}
+          alignItems="center"
+          justifyContent="center"
+          paddingHorizontal={12}
+          onPress={handleOpenPicker}
+          cursor="pointer"
+          pressStyle={{ opacity: 0.7 }}
+          accessibilityRole="button"
+          accessible
+          accessibilityLabel={t('parent.settings.linkedChildren.learningLanguage.change')}
+          aria-label={t('parent.settings.linkedChildren.learningLanguage.change')}
+        >
+          <Text color="$fg3" fontSize={13} fontWeight="600" fontFamily="$body">
+            {t('parent.settings.linkedChildren.learningLanguage.change')}
+          </Text>
+        </Stack>
+      </Stack>
+
+      {/* Inline picker strip — revealed on "Change" tap */}
+      {isPickerOpen ? (
+        <Stack
+          flexDirection="column"
+          gap={12}
+          padding={14}
+          backgroundColor="$bgElevated"
+          borderRadius={14}
+          borderWidth={1}
+          borderColor="rgba(255,255,255,0.06)"
+          marginTop={-4}
+        >
+          <Select
+            label={t('parent.settings.linkedChildren.learningLanguage.pickerLabel')}
+            value={selectedLang}
+            onChange={(v) => setSelectedLang(String(v))}
+            options={languageOptions}
+            placeholder={t('onboarding.addChild.learningLanguagePlaceholder')}
+            direction={direction}
+            disabled={changeLearningLanguage.isPending}
+            accessibilityLabel={t('parent.settings.linkedChildren.learningLanguage.pickerLabel')}
+          />
+
+          {/* Helper sits UNDER the picker (Design Spec §3) — muted $fg3. */}
+          <Text
+            color="$fg3"
+            fontSize={12}
+            fontFamily="$body"
+            writingDirection={direction}
+            textAlign={direction === 'rtl' ? 'right' : 'left'}
+          >
+            {t('parent.settings.linkedChildren.learningLanguage.pickerHelper')}
+          </Text>
+
+          {/* No-op hint */}
+          {isNoOp ? (
+            <Text
+              color="$fg3"
+              fontSize={12}
+              fontFamily="$body"
+              writingDirection={direction}
+              textAlign={direction === 'rtl' ? 'right' : 'left'}
+              accessibilityLiveRegion="polite"
+            >
+              {t('parent.settings.linkedChildren.learningLanguage.noChange')}
+            </Text>
+          ) : null}
+
+          {/* Action row: Cancel + Change Language CTA */}
+          <Stack flexDirection={rowDir} justifyContent="flex-end" gap={10}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onPress={handleClosePicker}
+              disabled={changeLearningLanguage.isPending}
+              accessibilityLabel={t('common.cancel')}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onPress={handleOpenModal}
+              disabled={!selectedLang || isNoOp || changeLearningLanguage.isPending}
+              accessibilityLabel={t('parent.settings.linkedChildren.learningLanguage.changeCta')}
+            >
+              {t('parent.settings.linkedChildren.learningLanguage.changeCta')}
+            </Button>
+          </Stack>
+        </Stack>
+      ) : null}
+
+      {/* Success strip (auto-clears) */}
+      {successMessage ? (
+        <Stack
+          backgroundColor="$successSoft"
+          borderRadius="$sm"
+          padding={12}
+          accessibilityLiveRegion="polite"
+          marginTop={-4}
+        >
+          <Text
+            color="$success"
+            fontSize={14}
+            fontFamily="$body"
+            writingDirection={direction}
+            textAlign={direction === 'rtl' ? 'right' : 'left'}
+          >
+            {successMessage}
+          </Text>
+        </Stack>
+      ) : null}
+
+      {/* Confirmation overlay */}
+      {selectedLang ? (
+        <ChangeLearningLanguageModal
+          visible={modalVisible}
+          childId={child.id ?? 0}
+          childName={child.fullName ?? ''}
+          currentLanguage={currentLang}
+          selectedLanguage={selectedLang}
+          ackChecked={ackChecked}
+          onAckChange={setAckChecked}
+          isPending={changeLearningLanguage.isPending}
+          isError={changeLearningLanguage.isError}
+          error={changeLearningLanguage.error}
+          direction={direction}
+          rowDir={rowDir}
+          onCancel={handleModalCancel}
+          onConfirm={handleConfirm}
+        />
+      ) : null}
+    </Stack>
+  );
+}
+
 export function LinkedChildrenPanel({ direction, rowDir }: LinkedChildrenPanelProps) {
   const { t } = useTranslation();
   const { locale } = useLocale();
@@ -542,6 +814,13 @@ export function LinkedChildrenPanel({ direction, rowDir }: LinkedChildrenPanelPr
                     }}
                   />
                 ) : null}
+
+                {/* Learning language row (P8-04-FE) */}
+                <LearningLanguageRow
+                  child={child}
+                  direction={direction}
+                  rowDir={rowDir}
+                />
               </Stack>
             );
           })}

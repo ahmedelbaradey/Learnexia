@@ -125,13 +125,13 @@
 
 ## Phase 8 — Localization
 > Learning language (medium of instruction) vs UI language; bilingual curriculum as parallel ar/en trees. Design: `docs/architecture/localization-architecture.md`.
-> **App-side localization FE wave** (tasks `tasks/Frontend/student-app/Phase-8-Localization/`): **P8-99-FE** app-shell foundation (fonts + persisted UI-language switch + RTL + api-client regen, incl. a durable NSwag `/Me` operationId fix) ✅ merged (PR #93); **P8-01-FE** (add-child learning-language field) 🟡 PR open on `feat/P8-01-FE`; **P8-04-FE** (parent change-learning-language UI) 🔲 next.
+> **App-side localization FE wave** (tasks `tasks/Frontend/student-app/Phase-8-Localization/`): **P8-99-FE** app-shell foundation (fonts + persisted UI-language switch + RTL + api-client regen, incl. a durable NSwag `/Me` operationId fix) ✅ merged (PR #93); **P8-01-FE** (add-child learning-language field) ✅ merged (PR #94); **P8-04-FE** (parent change-learning-language UI, fresh-start warning) 🟡 PR open on `feat/P8-04-FE`. Wave feature-complete.
 | Story | Title | Backend | Frontend |
 |---|---|:--:|:--:|
 | P8-01 | Set a child's learning language (parent-driven; JWT claim) | 🔲 | 🔲 |
 | P8-02 | Author bilingual curriculum (SubjectCode + Language; parallel trees) | 🔲 | — |
 | P8-03 | Serve curriculum in the student's learning language | 🔲 | — |
-| P8-04 | Change a child's learning language (parent-only, fresh start) | ✅ | 🔲 |
+| P8-04 | Change a child's learning language (parent-only, fresh start) | ✅ | 🟡 |
 
 ## Backlog (Phase 2+) — Curriculum Intelligence
 | Story | Title | Status |

@@ -94,14 +94,19 @@ public sealed record LinkableChild(
     bool IsStudent,
     int? CreatedByParentId);
 
-/// <summary>A child user profile projection. <c>Language</c> echoes the stored culture code; <c>Country</c> echoes Nationality.</summary>
+/// <summary>
+/// A child user profile projection. <c>Language</c> echoes the stored UI culture code; <c>Country</c>
+/// echoes Nationality. <c>LearningLanguage</c> is the medium-of-instruction code ("ar"/"en", axis B) —
+/// the Parent module surfaces it so the parent can see/change it (P8-04); distinct from <c>Language</c>.
+/// </summary>
 public sealed record ChildProfile(
     int Id,
     string FullName,
     string Email,
     int? Grade,
     string Language,
-    string Country);
+    string Country,
+    string LearningLanguage);
 
 /// <summary>
 /// Shaped outcome of a create/update operation. On failure, <see cref="ErrorCode"/> is a stable,
