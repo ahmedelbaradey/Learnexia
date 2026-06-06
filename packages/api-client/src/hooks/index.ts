@@ -44,6 +44,9 @@ export { useMySessions } from './useMySessions';
 export { useSignOutOtherSessions } from './useSignOutOtherSessions';
 export { useMyPlan } from './useMyPlan';
 
+// P8-99-FE — UI-language persistence (axis A).
+export { useUpdateUserLanguage } from './useUpdateUserLanguage';
+
 // W11 learning hooks (P2-02-FE + P2-03-FE).
 export { useSubjectsForGrade } from './useSubjectsForGrade';
 export { useSubjectLessons } from './useSubjectLessons';

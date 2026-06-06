@@ -4,6 +4,7 @@ using AspNetCoreRateLimit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.OpenApi.Models;
 namespace Learnexia.Host.Extensions;
 
@@ -127,6 +128,22 @@ public static class ServiceExtensions
             });
 
             s.EnableAnnotations();
+
+            // Stable operationIds for `/Me` routes. Several controllers (Users, Gamification
+            // Badges/Leagues/Missions, Notifications Inbox) expose a `GET .../Me`. With no explicit
+            // operationId the NSwag client collapses them by route suffix and disambiguates
+            // POSITIONALLY (me, me2, me3, …), so the typed Users/Me binding silently shifts whenever
+            // another `/Me` endpoint is added — exactly what bit the api-client regen. Deriving the id
+            // from the controller name (e.g. `UsersMe`, `BadgesMe`) makes the generated method names
+            // stable and self-describing. Only `/Me` routes are touched; every other operation keeps
+            // its default name (return null → Swashbuckle leaves operationId unset), so no other
+            // generated method is renamed.
+            s.CustomOperationIds(apiDesc =>
+                apiDesc.ActionDescriptor is ControllerActionDescriptor cad
+                && apiDesc.RelativePath is { } path
+                && path.EndsWith("/Me", StringComparison.OrdinalIgnoreCase)
+                    ? $"{cad.ControllerName}Me"
+                    : null);
 
             s.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme
             {

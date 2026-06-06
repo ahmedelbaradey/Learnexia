@@ -1,5 +1,6 @@
 using Learnexia.Modules.Gamification.Api.Bases;
 using Learnexia.Modules.Gamification.Application.Features.Badges.Queries.GetMyBadges;
+using Learnexia.Shared.Kernel.Responses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -31,6 +32,7 @@ public sealed class BadgesController : AppControllerBase
     /// Brand-new students see all 10 badges as locked. No studentId accepted from the request.
     /// </summary>
     [HttpGet("Me")]
+    [ProducesResponseType(typeof(BaseResponse<MyBadgesResponse>), 200)]
     public async Task<IActionResult> GetMine(CancellationToken ct)
         => NewResult(await Mediator.Send(new GetMyBadgesQuery(), ct));
 }

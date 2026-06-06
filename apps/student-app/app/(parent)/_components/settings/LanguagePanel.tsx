@@ -1,0 +1,204 @@
+/**
+ * LanguagePanel — Settings → Language & region tab (P8-99-FE-3).
+ *
+ * Promotes the UI-language switch from a local-only Zustand update into a
+ * persistent server-backed choice. On change:
+ *   - Persists `User.PreferredLanguage` to the backend via `useUpdateUserLanguage`
+ *     (axis A — the UI display language, separate from the child's learning language).
+ *   - Syncs the locale store (Zustand) + react-i18next so the app reflects the
+ *     change immediately (web) or after restart (native).
+ *   - WEB: direction flips instantly (no restart needed).
+ *   - NATIVE: if the new locale has a different direction, shows the existing
+ *     `RestartPrompt` via `restartPromptStore.show()` before applying the RTL flip.
+ *
+ * Layout / tokens: mirrors the PlanPanel / ProfilePanel grammar (PanelSurface +
+ * PanelHeader + flex row of Select widgets). RTL-aware via `direction` + `rowDir`
+ * props passed by `SettingsWeb`. No raw hex; token-only.
+ *
+ * No API calls in this component — all server interaction goes through
+ * `useUpdateUserLanguage` from `@learnexia/api-client`.
+ * No server data in Zustand — the locale store is the applied-UI mirror only.
+ */
+import { useUpdateUserLanguage } from '@learnexia/api-client';
+import {
+  COUNTRIES,
+  LOCALES,
+  directionForLocale,
+  useRestartPromptStore,
+  type Locale,
+} from '@learnexia/shared';
+import { Select } from '@learnexia/ui';
+import { Stack, Text } from '@tamagui/core';
+import React, { useState } from 'react';
+import { Platform } from 'react-native';
+import { useTranslation } from 'react-i18next';
+
+import { useLocale } from '../../../../src/hooks/useLocale';
+import { useLocaleStore } from '../../../../src/providers/localeStore';
+import { ServerErrorBanner } from '../../../../src/components/ServerErrorBanner';
+import { useServerError } from '../../../../src/hooks/useServerError';
+
+interface LanguagePanelProps {
+  direction: 'ltr' | 'rtl';
+  rowDir: 'row' | 'row-reverse';
+  locale: Locale;
+}
+
+/** Fixed region set (enum-style; region select is UI-only until a region endpoint ships). */
+const REGION = {
+  Sa: 'SA',
+  Eg: 'EG',
+  Ae: 'AE',
+} as const;
+
+const LOCALE_LABEL_KEY: Record<Locale, string> = {
+  en: 'common.prefs.switchToEnglish',
+  ar: 'common.prefs.switchToArabic',
+};
+
+function PanelSurface({ children }: { children: React.ReactNode }) {
+  return (
+    <Stack
+      flexDirection="column"
+      gap={18}
+      borderRadius="$modal"
+      backgroundColor="$card"
+      borderWidth={1}
+      borderColor="rgba(255,255,255,0.06)"
+      padding={22}
+    >
+      {children}
+    </Stack>
+  );
+}
+
+function PanelHeader({
+  title,
+  subtitle,
+  direction,
+}: {
+  title: string;
+  subtitle: string;
+  direction: 'ltr' | 'rtl';
+}) {
+  return (
+    <Stack flexDirection="column" gap="$1">
+      <Text
+        color="$fg1"
+        fontSize={16}
+        fontWeight="800"
+        fontFamily="$heading"
+        writingDirection={direction}
+      >
+        {title}
+      </Text>
+      <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction}>
+        {subtitle}
+      </Text>
+    </Stack>
+  );
+}
+
+export function LanguagePanel({ direction, rowDir, locale }: LanguagePanelProps) {
+  const { t } = useTranslation();
+  const { isRtl } = useLocale();
+  const setLocale = useLocaleStore((s) => s.setLocale);
+  const showRestartPrompt = useRestartPromptStore((s) => s.show);
+  const updateUserLanguage = useUpdateUserLanguage();
+  const resolveError = useServerError();
+  const [region, setRegion] = useState<string>(REGION.Sa);
+
+  const languageOptions = LOCALES.map((loc) => ({
+    value: loc,
+    label: t(LOCALE_LABEL_KEY[loc]),
+  }));
+
+  const regionOptions = (Object.values(REGION) as string[]).map((code) => {
+    const c = COUNTRIES.find((country) => country.code === code);
+    return { value: code, label: locale === 'ar' ? (c?.ar ?? code) : (c?.en ?? code) };
+  });
+
+  const serverMessage = updateUserLanguage.isError
+    ? resolveError(updateUserLanguage.error, {})
+    : null;
+
+  const onLocaleChange = (nextLocale: Locale) => {
+    if (nextLocale === locale) return;
+
+    // Always persist the choice to the backend — the server persists
+    // `User.PreferredLanguage` so the selection survives sign-out/sign-in.
+    // `id` is omitted (the endpoint resolves the acting user from the JWT).
+    updateUserLanguage.mutate({ userPreferredLanguage: nextLocale });
+
+    const nextDirection = directionForLocale(nextLocale);
+    const currentDirection = isRtl ? 'rtl' : 'ltr';
+
+    if (Platform.OS !== 'web' && nextDirection !== currentDirection) {
+      // NATIVE: direction change requires a restart for RTL to fully apply.
+      // Show the existing restart prompt; the locale store is updated after
+      // restart via `applyNativeRtl` inside `RestartPrompt`.
+      showRestartPrompt(nextLocale);
+    } else {
+      // WEB (or same-direction locale change): apply immediately.
+      setLocale(nextLocale);
+    }
+  };
+
+  return (
+    <PanelSurface>
+      <PanelHeader
+        title={t('parent.settings.language.title')}
+        subtitle={t('parent.settings.language.subtitle')}
+        direction={direction}
+      />
+
+      <ServerErrorBanner message={serverMessage} direction={direction} />
+
+      {updateUserLanguage.isSuccess ? (
+        <Stack
+          backgroundColor="$successSoft"
+          borderRadius="$sm"
+          padding="$3"
+          accessibilityLiveRegion="polite"
+        >
+          <Text
+            color="$success"
+            fontSize={14}
+            fontFamily="$body"
+            textAlign={direction === 'rtl' ? 'right' : 'left'}
+            writingDirection={direction}
+          >
+            {t('parent.settings.language.saveSuccess')}
+          </Text>
+        </Stack>
+      ) : null}
+
+      <Stack flexDirection={rowDir} gap={14} flexWrap="wrap">
+        <Stack flex={1} minWidth={240}>
+          <Select
+            label={t('parent.settings.language.languageLabel')}
+            value={locale}
+            onChange={(v) => onLocaleChange(v as Locale)}
+            options={languageOptions}
+            direction={direction}
+            accessibilityLabel={t('parent.settings.language.languageLabel')}
+          />
+        </Stack>
+        <Stack flex={1} minWidth={240}>
+          {/* Region select is UI-only (no backend persistence yet). */}
+          <Select
+            label={t('parent.settings.language.regionLabel')}
+            value={region}
+            onChange={(v) => setRegion(String(v))}
+            options={regionOptions}
+            placeholder={t('parent.settings.language.regionPlaceholder')}
+            direction={direction}
+            accessibilityLabel={t('parent.settings.language.regionLabel')}
+          />
+        </Stack>
+      </Stack>
+    </PanelSurface>
+  );
+}
+
+LanguagePanel.displayName = 'LanguagePanel';

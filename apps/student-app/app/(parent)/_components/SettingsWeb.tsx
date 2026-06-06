@@ -25,11 +25,12 @@ import {
   useUpdateProfile,
   type AccountProfileResponse,
 } from '@learnexia/api-client';
+import { LanguagePanel } from './settings/LanguagePanel';
 import { LinkedChildrenPanel } from './settings/LinkedChildrenPanel';
 import { NotificationsPanel } from './settings/NotificationsPanel';
 import { PlanPanel } from './settings/PlanPanel';
 import { SecurityPanel } from './settings/SecurityPanel';
-import { COUNTRIES, LOCALES, type CountryCode, type Locale } from '@learnexia/shared';
+import { COUNTRIES, type CountryCode } from '@learnexia/shared';
 import { Avatar, Button, Select, Tabs, TextField, type TabItem } from '@learnexia/ui';
 import { Stack, Text } from '@tamagui/core';
 import React, { useEffect, useState } from 'react';
@@ -38,7 +39,6 @@ import { useTranslation } from 'react-i18next';
 import { ServerErrorBanner } from '../../../src/components/ServerErrorBanner';
 import { useLocale } from '../../../src/hooks/useLocale';
 import { useServerError } from '../../../src/hooks/useServerError';
-import { useLocaleStore } from '../../../src/providers/localeStore';
 
 /** Fixed set of settings sections (enum-style const, never raw literals). */
 const SETTINGS_TAB = {
@@ -76,21 +76,16 @@ const TAB_LABEL_KEY: Record<SettingsTabKey, string> = {
   [SETTINGS_TAB.Language]: 'parent.settings.tabs.language',
 };
 
-/** Fixed region set (enum-style; region select is UI-only in P1-11). */
-const REGION = {
-  Sa: 'SA',
-  Eg: 'EG',
-  Ae: 'AE',
-} as const;
-
 export function SettingsWeb() {
   const { t } = useTranslation();
-  const { direction, isRtl, locale } = useLocale();
+  const { direction, locale } = useLocale();
   const profile = useMyProfile();
   const [period, setPeriod] = useState<string>(REPORTING_PERIOD.ThisWeek);
   const [activeTab, setActiveTab] = useState<SettingsTabKey>(SETTINGS_TAB.Profile);
 
-  const rowDir = isRtl ? 'row-reverse' : 'row';
+  // Always `row` — the document `dir="rtl"` flips the layout once (rail on the
+  // right in Arabic). An explicit `row-reverse` for RTL would double-flip it.
+  const rowDir = 'row' as const;
 
   const tabItems: TabItem[] = (Object.values(SETTINGS_TAB) as SettingsTabKey[]).map((key) => ({
     value: key,
@@ -99,7 +94,7 @@ export function SettingsWeb() {
   }));
 
   return (
-    <Stack flexDirection="column" maxWidth={1200} width="100%" alignSelf="center">
+    <Stack flexDirection="column" width="100%">
       {/* Header — own padding + a 1px bottom rule (web-page-header card). */}
       <Stack
         flexDirection={rowDir}
@@ -458,70 +453,6 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
         >
           {t('parent.settings.profile.save')}
         </Button>
-      </Stack>
-    </PanelSurface>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Language & region panel — functional language switch + UI region    */
-/* ------------------------------------------------------------------ */
-
-interface LanguagePanelProps extends PanelProps {
-  rowDir: 'row' | 'row-reverse';
-  locale: Locale;
-}
-
-const LOCALE_LABEL_KEY: Record<Locale, string> = {
-  en: 'common.prefs.switchToEnglish',
-  ar: 'common.prefs.switchToArabic',
-};
-
-function LanguagePanel({ direction, rowDir, locale }: LanguagePanelProps) {
-  const { t } = useTranslation();
-  // Reuse the existing locale switch (Login uses the same store). Setting the
-  // locale flips i18n + RTL app-wide and persists via the locale store; on
-  // native a direction change is gated behind the restart prompt.
-  const setLocale = useLocaleStore((s) => s.setLocale);
-  const [region, setRegion] = useState<string>(REGION.Sa);
-
-  const languageOptions = LOCALES.map((loc) => ({ value: loc, label: t(LOCALE_LABEL_KEY[loc]) }));
-  const regionOptions = (Object.values(REGION) as string[]).map((code) => {
-    const c = COUNTRIES.find((country) => country.code === code);
-    return { value: code, label: locale === 'ar' ? (c?.ar ?? code) : (c?.en ?? code) };
-  });
-
-  return (
-    <PanelSurface>
-      <PanelHeader
-        title={t('parent.settings.language.title')}
-        subtitle={t('parent.settings.language.subtitle')}
-        direction={direction}
-      />
-
-      <Stack flexDirection={rowDir} gap={14} flexWrap="wrap">
-        <Stack flex={1} minWidth={240}>
-          <Select
-            label={t('parent.settings.language.languageLabel')}
-            value={locale}
-            onChange={(v) => setLocale(v as Locale)}
-            options={languageOptions}
-            direction={direction}
-            accessibilityLabel={t('parent.settings.language.languageLabel')}
-          />
-        </Stack>
-        <Stack flex={1} minWidth={240}>
-          {/* Region select is UI-only in P1-11 (no backend persistence yet). */}
-          <Select
-            label={t('parent.settings.language.regionLabel')}
-            value={region}
-            onChange={(v) => setRegion(String(v))}
-            options={regionOptions}
-            placeholder={t('parent.settings.language.regionPlaceholder')}
-            direction={direction}
-            accessibilityLabel={t('parent.settings.language.regionLabel')}
-          />
-        </Stack>
       </Stack>
     </PanelSurface>
   );

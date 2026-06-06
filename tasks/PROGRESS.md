@@ -125,6 +125,7 @@
 
 ## Phase 8 — Localization
 > Learning language (medium of instruction) vs UI language; bilingual curriculum as parallel ar/en trees. Design: `docs/architecture/localization-architecture.md`.
+> **App-side localization FE wave in progress** on `feat/P8-localization-FE` (tasks `tasks/Frontend/student-app/Phase-8-Localization/`): **P8-99-FE** app-shell foundation (fonts + persisted UI-language switch + RTL + api-client regen, incl. a durable NSwag `/Me` operationId fix) 🟡 PR open; **P8-01-FE** (add-child learning-language field) 🔲 and **P8-04-FE** (parent change-learning-language UI) 🔲 next.
 | Story | Title | Backend | Frontend |
 |---|---|:--:|:--:|
 | P8-01 | Set a child's learning language (parent-driven; JWT claim) | 🔲 | 🔲 |

@@ -5,8 +5,15 @@
  * it flips instantly on web and updates the store on native. Theme toggle flips
  * the theme store (instant on both). Token-driven, RTL-aware, i18n labels.
  */
-import { LOCALES, type Direction, type Locale } from '@learnexia/shared';
+import {
+  LOCALES,
+  directionForLocale,
+  useRestartPromptStore,
+  type Direction,
+  type Locale,
+} from '@learnexia/shared';
 import { Stack, Text } from '@tamagui/core';
+import { Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { useLocaleStore } from '../../../src/providers/localeStore';
@@ -25,11 +32,24 @@ export function LocaleThemeControls({ direction = 'ltr' }: LocaleThemeControlsPr
   const { t } = useTranslation();
   const locale = useLocaleStore((s) => s.locale);
   const setLocale = useLocaleStore((s) => s.setLocale);
+  const showRestartPrompt = useRestartPromptStore((s) => s.show);
   const theme = useThemeStore((s) => s.theme);
   const toggleTheme = useThemeStore((s) => s.toggleTheme);
 
   const rowDir = direction === 'rtl' ? 'row-reverse' : 'row';
   const isDark = theme === 'dark';
+
+  const handleLocaleChange = (nextLocale: Locale) => {
+    if (nextLocale === locale) return;
+    const nextDirection = directionForLocale(nextLocale);
+    const currentDirection = directionForLocale(locale);
+    if (Platform.OS !== 'web' && nextDirection !== currentDirection) {
+      // NATIVE: direction change requires a restart for RTL to fully apply.
+      showRestartPrompt(nextLocale);
+    } else {
+      setLocale(nextLocale);
+    }
+  };
 
   return (
     <Stack flexDirection={rowDir} alignItems="center" gap="$2">
@@ -59,7 +79,7 @@ export function LocaleThemeControls({ direction = 'ltr' }: LocaleThemeControlsPr
               borderRadius="$pill"
               cursor="pointer"
               backgroundColor={active ? '$primary' : 'transparent'}
-              onPress={() => setLocale(loc)}
+              onPress={() => handleLocaleChange(loc)}
               accessibilityRole="radio"
               accessible
               accessibilityState={{ selected: active }}

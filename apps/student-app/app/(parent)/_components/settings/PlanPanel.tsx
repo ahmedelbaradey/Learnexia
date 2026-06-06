@@ -25,14 +25,15 @@ interface PlanPanelProps {
 }
 
 /**
- * FE-side plan-name display map (AR locale).
- * The BE returns Latin strings ("Free", "Pro", …); we localize the
- * display label on the FE. When the plan catalog grows, move this to the BE
- * response or a dedicated i18n namespace — tracked under DG-W10-04.
+ * Map from BE plan-name string to the i18n key suffix for display.
+ * The BE returns Latin strings ("Free", "Pro", …); we localize via
+ * `parent.settings.billing.planName.*`. When the plan catalog grows,
+ * add new keys to `packages/shared/src/i18n/resources.ts` (ar + en).
+ * Tracked under DG-W10-04.
  */
-const PLAN_NAME_AR: Record<string, string> = {
-  Free: 'مجاني',
-  Pro: 'برو',
+const PLAN_NAME_KEY: Record<string, string> = {
+  Free: 'parent.settings.billing.planName.free',
+  Pro: 'parent.settings.billing.planName.pro',
 };
 
 function PanelSurface({ children }: { children: React.ReactNode }) {
@@ -90,11 +91,10 @@ export function PlanPanel({ direction, rowDir }: PlanPanelProps) {
   const plan = planQuery.data;
   const isActive = plan?.status === 'Active';
 
-  // Localized plan-name display: use the AR map when direction is rtl
-  const displayPlanName =
-    direction === 'rtl' && plan?.planName
-      ? (PLAN_NAME_AR[plan.planName] ?? plan.planName)
-      : (plan?.planName ?? '');
+  // Localized plan-name display: look up the i18n key; fall back to the raw
+  // BE string if the plan name is not in the map (future-proofs new plans).
+  const planNameKey = plan?.planName ? (PLAN_NAME_KEY[plan.planName] ?? null) : null;
+  const displayPlanName = planNameKey ? t(planNameKey) : (plan?.planName ?? '');
 
   if (planQuery.isPending) {
     return (

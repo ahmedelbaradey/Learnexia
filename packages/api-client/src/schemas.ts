@@ -24,7 +24,8 @@ export type {
   DashboardDto,
   DashboardDtoBaseResponse,
   ContinueTargetDto,
-  DailyMissionDto,
+  // P4-06 renamed the dashboard mission sub-type DailyMissionDto → MissionSummary.
+  MissionSummary,
   LeaguePreviewDto,
   // W12 quiz + lesson types
   SingleLessonResponse,
@@ -82,6 +83,8 @@ export type {
   // W10 / P2-12 — Plan & billing tab
   CurrentPlanResponse,
   CurrentPlanResponseBaseResponse,
+  // P8-99-FE-2 — UI-language persistence (axis A)
+  EditUserPreferredLanguageCommand,
   // W11 / Learning (P2-02-FE + P2-03-FE)
   StudentSubjectDto,
   StudentSubjectDtoListBaseResponse,

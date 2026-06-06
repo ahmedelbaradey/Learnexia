@@ -12,7 +12,8 @@ tasks/
 │   │   ├── Phase-1-Foundation/    P1-xx-FE.md
 │   │   ├── Phase-2-Learning-Core/ P2-xx-FE.md
 │   │   ├── Phase-3-Gamification/  P4-xx-FE.md   (XP/streak/hearts/badges/missions/leagues/motion)
-│   │   └── Phase-5-Parent-Analytics/ P5-xx-FE.md
+│   │   ├── Phase-5-Parent-Analytics/ P5-xx-FE.md
+│   │   └── Phase-8-Localization/  P8-xx-FE.md   (add-child learning lang, parent change flow, app-shell fonts/RTL)
 │   └── admin-dashboard/       Next.js admin screens
 │       ├── Phase-1-Foundation/    P1-10-FE.md   (admin sign-in & shell)
 │       └── Phase-7-Admin-Console/ P7-xx-FE.md   (admin feature screens)
@@ -127,11 +128,12 @@ Admin feature breakdown behind the P1-10 shell. **All FE work lands in `apps/adm
 
 ### Phase 8 — Localization
 
-Learning language (medium of instruction) vs UI language; bilingual curriculum as parallel ar/en trees keyed on `Subject`. Backend-led; FE work (parent learning-language picker + fresh-start warning copy) folds into the parent app. Design of record: [../docs/architecture/localization-architecture.md](../docs/architecture/localization-architecture.md).
+Learning language (medium of instruction) vs UI language; bilingual curriculum as parallel ar/en trees keyed on `Subject`. Backend is **merged to main** (P8-01/02/03 PR #90, P8-04 PR #91); the remaining work is the **app-side localization FE wave** (analyzer brief: [../docs/briefs/P8-localization-FE.md](../docs/briefs/P8-localization-FE.md)). **The FE wave is blocked on an api-client regeneration** (`refresh:swagger` → `gen:api`) — the committed Swagger snapshot predates the P8 contracts (no add-child `learningLanguage`, no `/Me` `learningLanguage`, no `Change-Learning-Language`). Design of record: [../docs/architecture/localization-architecture.md](../docs/architecture/localization-architecture.md).
 
 | Story | Title | Frontend | Backend |
 |---|---|---|---|
-| P8-01 | Set a child's learning language *(parent-driven, JWT claim)* | — | [BE](Backend/Phase-8-Localization/P8-01-BE.md) |
+| P8-01 | Set a child's learning language *(parent-driven, JWT claim)* | [FE](Frontend/student-app/Phase-8-Localization/P8-01-FE.md) | [BE](Backend/Phase-8-Localization/P8-01-BE.md) |
 | P8-02 | Author bilingual curriculum *(SubjectCode + Language; parallel trees)* | — | [BE](Backend/Phase-8-Localization/P8-02-BE.md) |
 | P8-03 | Serve curriculum in the learning language *(read-path resolution)* | — | [BE](Backend/Phase-8-Localization/P8-03-BE.md) |
-| P8-04 | Change a child's learning language *(parent-only, fresh start)* | — | [BE](Backend/Phase-8-Localization/P8-04-BE.md) |
+| P8-04 | Change a child's learning language *(parent-only, fresh start)* | [FE](Frontend/student-app/Phase-8-Localization/P8-04-FE.md) | [BE](Backend/Phase-8-Localization/P8-04-BE.md) |
+| P8-99 | App-shell language foundation *(FE-only: api-client regen, fonts, UI-language persistence, RTL/i18n pass — folds in P6-03 FE-relevant)* | [FE](Frontend/student-app/Phase-8-Localization/P8-99-FE.md) | — |
