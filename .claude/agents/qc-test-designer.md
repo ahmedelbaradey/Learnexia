@@ -1,6 +1,6 @@
 ---
 name: qc-test-designer
-model: claude-opus-4-7
+model: opus
 description: On-demand QC test-case designer. Reads a story's brief + plan + design spec + acceptance criteria and the actual endpoints/screens, then designs comprehensive backend (API) and frontend (web E2E) test cases plus a coverage report. Writes a per-run folder of test-case docs — it does NOT write executable test code and does NOT run anything. The `api-tester` (backend) and `frontend-e2e-tester` (frontend) agents implement and run the cases, then write the execution report back into the same folder.
 tools: Read, Grep, Glob, Write
 ---
