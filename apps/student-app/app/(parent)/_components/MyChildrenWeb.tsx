@@ -24,6 +24,7 @@ import { Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { useLocale } from '../../../src/hooks/useLocale';
+import { EditChildSheet, type EditChildInitialValues } from '../../(onboarding)/_components/EditChildSheet';
 import { AddChildCard } from './AddChildCard';
 import { ChildDashboardCard } from './ChildDashboardCard';
 import { FamilySummaryStrip } from './FamilySummaryStrip';
@@ -49,12 +50,24 @@ function CardSkeleton() {
   );
 }
 
+/** Shape of the child being edited — seeded from useMyChildren data. */
+interface EditingChild {
+  id: number;
+  fullName: string;
+  grade: number;
+  language: string;
+  country: string;
+  email?: string;
+}
+
 export function MyChildrenWeb() {
   const { t } = useTranslation();
   const { direction, isRtl } = useLocale();
   const router = useRouter();
   const query = useMyChildren();
   const [period, setPeriod] = useState<string>(REPORTING_PERIOD.ThisWeek);
+  // Edit-child state (P1-12-FE-5): null = sheet closed; set to child data to open.
+  const [editingChild, setEditingChild] = useState<EditingChild | null>(null);
 
   const rowDir = isRtl ? 'row-reverse' : 'row';
   const children = query.data ?? [];
@@ -168,12 +181,27 @@ export function MyChildrenWeb() {
               <>
                 {children.map((child) => {
                   const id = String(child.id);
+                  const childId = child.id ?? 0;
+                  // Card stats (XP/mastery) remain Phase-5 stubs. The edit sheet, however, pre-fills the
+                  // child's REAL grade/language/country (now returned on LinkedChildResponse) so a save
+                  // can't silently overwrite them with placeholders.
+                  const stub = getChildStatsStub(id);
                   return (
                     <ChildDashboardCard
                       key={id}
                       fullName={child.fullName ?? ''}
-                      stats={getChildStatsStub(id)}
+                      stats={stub}
                       onViewDashboard={() => router.push('/(parent)')}
+                      onEdit={() =>
+                        setEditingChild({
+                          id: childId,
+                          fullName: child.fullName ?? '',
+                          grade: child.grade ?? stub.grade,
+                          language: child.language ?? 'ar',
+                          country: child.country ?? '',
+                          email: child.email ?? undefined,
+                        })
+                      }
                     />
                   );
                 })}
@@ -183,6 +211,29 @@ export function MyChildrenWeb() {
           </Stack>
         )}
       </Stack>
+
+      {/* Edit-child sheet (P1-12-FE-5) — backend-wired, slim field set.
+          Opens when a child card's Edit button is pressed. On save, the hook
+          invalidates queryKeys.family.myChildren() so the list refreshes. */}
+      <EditChildSheet
+        visible={editingChild !== null}
+        initialValues={
+          editingChild
+            ? ({
+                fullName: editingChild.fullName,
+                grade: editingChild.grade,
+                language: editingChild.language,
+                country: editingChild.country,
+                email: editingChild.email,
+              } satisfies EditChildInitialValues)
+            : null
+        }
+        childId={editingChild?.id}
+        onSave={() => {
+          /* onSave is not called in backend mode (childId present); kept for type compliance */
+        }}
+        onClose={() => setEditingChild(null)}
+      />
     </Stack>
   );
 }

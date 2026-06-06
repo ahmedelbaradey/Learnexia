@@ -9112,6 +9112,19 @@
           "learningLanguage": {
             "type": "string",
             "nullable": true
+          },
+          "grade": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
+            "nullable": true
+          },
+          "country": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

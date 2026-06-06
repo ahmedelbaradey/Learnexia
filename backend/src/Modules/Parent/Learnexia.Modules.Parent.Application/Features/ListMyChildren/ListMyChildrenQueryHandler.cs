@@ -55,6 +55,11 @@ public class ListMyChildrenQueryHandler : BaseResponseHandler, IQueryHandler<Lis
                     FullName = p.FullName,
                     Email = p.Email,
                     LearningLanguage = p.LearningLanguage,
+                    Grade = p.Grade,
+                    // Map the stored culture code (e.g. "en-US"/"ar-EG") to the short code the FE LanguageSelect
+                    // uses — the BE NormalizeLanguage only round-trips "ar"/"en", so an edit-save must send those.
+                    Language = (p.Language?.StartsWith("en", StringComparison.OrdinalIgnoreCase) ?? false) ? "en" : "ar",
+                    Country = p.Country,
                 })
                 .ToList();
 

@@ -28,6 +28,8 @@ export interface ChildDashboardCardProps {
   fullName: string;
   stats: ChildStatsStub;
   onViewDashboard: () => void;
+  /** When provided, renders an Edit affordance (pencil icon button) in the card header. */
+  onEdit?: () => void;
 }
 
 function formatNumber(value: number, locale: string): string {
@@ -49,6 +51,7 @@ export function ChildDashboardCard({
   fullName,
   stats,
   onViewDashboard,
+  onEdit,
 }: ChildDashboardCardProps) {
   const { t } = useTranslation();
   const { direction, isRtl, locale } = useLocale();
@@ -94,7 +97,7 @@ export function ChildDashboardCard({
         shadowOffset: { width: 0, height: 8 },
       }}
     >
-      {/* Header */}
+      {/* Header — avatar + name/meta + optional edit affordance at inline-end */}
       <Stack flexDirection={rowDir} alignItems="flex-start" gap="$3">
         <Avatar name={fullName} size="lg" />
         <Stack flexDirection="column" flex={1} gap="$2">
@@ -148,6 +151,31 @@ export function ChildDashboardCard({
             </Text>
           </Stack>
         </Stack>
+        {/* Edit affordance — pencil icon button, rendered when onEdit is provided.
+            Sits at the inline-end of the header row (reverses with RTL).
+            44×44 touch target, labelled for a11y. */}
+        {onEdit ? (
+          <Stack
+            width={44}
+            height={44}
+            alignItems="center"
+            justifyContent="center"
+            cursor="pointer"
+            borderRadius="$sm"
+            hoverStyle={{ backgroundColor: '$cardSoft' }}
+            pressStyle={{ scale: 0.95 }}
+            onPress={onEdit}
+            accessibilityRole="button"
+            accessible
+            accessibilityLabel={t('parent.myChildren.editChild', { name: fullName })}
+            aria-label={t('parent.myChildren.editChild', { name: fullName })}
+          >
+            {/* Pencil glyph — consistent with the codebase's existing emoji/glyph icon approach */}
+            <Text fontSize={16} color="$fg3" accessibilityElementsHidden>
+              ✎
+            </Text>
+          </Stack>
+        ) : null}
       </Stack>
 
       {/* Stat tiles */}

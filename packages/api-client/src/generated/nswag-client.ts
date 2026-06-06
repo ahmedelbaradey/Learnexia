@@ -7273,6 +7273,9 @@ export interface LinkedChildResponse {
     fullName?: string | undefined;
     email?: string | undefined;
     learningLanguage?: string | undefined;
+    grade?: number | undefined;
+    language?: string | undefined;
+    country?: string | undefined;
 }
 
 export interface LinkedChildResponseBaseResponse {

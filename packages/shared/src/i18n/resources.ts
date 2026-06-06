@@ -164,7 +164,7 @@ export const en = {
     resetPassword: {
       eyebrow: 'Set a new password',
       title: 'Create a new password',
-      subtitle: 'Choose a strong password for {{email}}.',
+      subtitle: 'Choose a strong password for',
       labelEmail: 'Email',
       labelNewPassword: 'New password',
       labelConfirmPassword: 'Confirm password',
@@ -300,6 +300,9 @@ export const en = {
         reading: 'Reading',
         numbers: 'Numbers',
       },
+      editChild: 'Edit {{name}}',
+      editError: "Couldn't save changes. Please try again.",
+      editSuccess: 'Changes saved.',
     },
     familySummary: {
       eyebrow: 'This Week · Combined',
@@ -841,7 +844,7 @@ export const ar = {
     resetPassword: {
       eyebrow: 'تعيين كلمة مرور جديدة',
       title: 'أنشئ كلمة مرور جديدة',
-      subtitle: 'اختر كلمة مرور قوية لـ {{email}}.',
+      subtitle: 'اختر كلمة مرور قوية لـ',
       labelEmail: 'البريد الإلكتروني',
       labelNewPassword: 'كلمة المرور الجديدة',
       labelConfirmPassword: 'تأكيد كلمة المرور',
@@ -974,6 +977,9 @@ export const ar = {
         reading: 'القراءة',
         numbers: 'الأرقام',
       },
+      editChild: 'تعديل {{name}}',
+      editError: 'تعذّر حفظ التغييرات. حاول مرة أخرى.',
+      editSuccess: 'تم حفظ التغييرات.',
     },
     familySummary: {
       eyebrow: 'هذا الأسبوع · الإجمالي',
