@@ -42,13 +42,13 @@ importers:
         version: 1.144.4(react-dom@18.3.1(react@18.3.1))(react-native@0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.5(@babel/core@7.29.0))(@types/react@18.3.29)(react@18.3.1))(react@18.3.1)
       '@tamagui/next-plugin':
         specifier: ^1.116.0
-        version: 1.144.4(@babel/core@7.29.0)(next@15.5.18(@babel/core@7.29.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react-native@0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.5(@babel/core@7.29.0))(@types/react@18.3.29)(react@18.3.1))(react@18.3.1)
+        version: 1.144.4(@babel/core@7.29.0)(next@15.5.18(@babel/core@7.29.0)(@playwright/test@1.60.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react-native@0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.5(@babel/core@7.29.0))(@types/react@18.3.29)(react@18.3.1))(react@18.3.1)
       '@tanstack/react-query':
         specifier: ^5.64.0
         version: 5.100.11(react@18.3.1)
       next:
         specifier: ^15.1.4
-        version: 15.5.18(@babel/core@7.29.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 15.5.18(@babel/core@7.29.0)(@playwright/test@1.60.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react:
         specifier: 18.3.1
         version: 18.3.1
@@ -97,7 +97,7 @@ importers:
     dependencies:
       next:
         specifier: ^15.1.4
-        version: 15.5.18(@babel/core@7.29.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 15.5.18(@babel/core@7.29.0)(@playwright/test@1.60.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react:
         specifier: 18.3.1
         version: 18.3.1
@@ -430,6 +430,12 @@ importers:
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
+
+  tests/e2e:
+    devDependencies:
+      '@playwright/test':
+        specifier: ^1.49.1
+        version: 1.60.0
 
 packages:
 
@@ -2083,6 +2089,11 @@ packages:
     resolution: {integrity: sha512-fdDH1LSGfZdTH2sxdpVMw31BanV28K/Gry0cVFxaNP77neJSkd82mM8ErPNYs9e+0O7SdHBLTDzDgwUuy18RnQ==}
     engines: {node: ^12.20.0 || ^14.18.0 || >=16.0.0}
 
+  '@playwright/test@1.60.0':
+    resolution: {integrity: sha512-O71yZIbAh/PxDMNGns37GHBIfrVkEVyn+AXyIa5dOTfb4/xNvRWV+Vv/NMbNCtODB/pO7vLlF2OTmMVLhmr7Ag==}
+    engines: {node: '>=18'}
+    hasBin: true
+
   '@radix-ui/react-compose-refs@1.0.0':
     resolution: {integrity: sha512-0KaSv6sx787/hK3eF53iOkiSLwAGlFMx5lotrqD2pTjB18KbybKoEIgkNZTKC60YECDQTKGTRcDBILwZVqVKvA==}
     peerDependencies:
@@ -2141,8 +2152,6 @@ packages:
   '@react-native/metro-babel-transformer@0.76.9':
     resolution: {integrity: sha512-HGq11347UHNiO/NvVbAO35hQCmH8YZRs7in7nVq7SL99pnpZK4WXwLdAXmSuwz5uYqOuwnKYDlpadz8fkE94Mg==}
     engines: {node: '>=18'}
-    peerDependencies:
-      '@babel/core': '*'
 
   '@react-native/normalize-color@2.1.0':
     resolution: {integrity: sha512-Z1jQI2NpdFJCVgpY+8Dq/Bt3d+YUi1928Q+/CZm/oh66fzM0RUl54vvuXlPJKybH4pdCZey1eDTPaLHkMPNgWA==}
@@ -4406,6 +4415,11 @@ packages:
   fs.realpath@1.0.0:
     resolution: {integrity: sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==}
 
+  fsevents@2.3.2:
+    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
+    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
+    os: [darwin]
+
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
@@ -5645,6 +5659,16 @@ packages:
   pkg-up@3.1.0:
     resolution: {integrity: sha512-nDywThFk1i4BQK4twPQ6TA4RT8bDY96yeuCVBWL3ePARCiEKDRSrNGbFIgUJpLp+XeIR65v8ra7WuJOFUBtkMA==}
     engines: {node: '>=8'}
+
+  playwright-core@1.60.0:
+    resolution: {integrity: sha512-9bW6zvX/m0lEbgTKJ6YppOKx8H3VOPBMOCFh2irXFOT4BbHgrx5hPjwJYLT40Lu+4qtD36qKc/Hn56StUW57IA==}
+    engines: {node: '>=18'}
+    hasBin: true
+
+  playwright@1.60.0:
+    resolution: {integrity: sha512-hheHdokM8cdqCb0lcE3s+zT4t4W+vvjpGxsZlDnikarzx8tSzMebh3UiFtgqwFwnTnjYQcsyMF8ei2mCO/tpeA==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   plist@3.1.1:
     resolution: {integrity: sha512-ZIfcLJC+7E7FBFnDxm9MPmt7D+DidyQ26lewieO75AdhA2ayMtsJSES0iWzqJQbcVRSrTufQoy0DR94xHue0oA==}
@@ -8695,6 +8719,10 @@ snapshots:
 
   '@pkgr/core@0.1.2': {}
 
+  '@playwright/test@1.60.0':
+    dependencies:
+      playwright: 1.60.0
+
   '@radix-ui/react-compose-refs@1.0.0(react@18.3.1)':
     dependencies:
       '@babel/runtime': 7.29.2
@@ -8780,10 +8808,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@react-native/community-cli-plugin@0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.5(@babel/core@7.29.0))':
+  '@react-native/community-cli-plugin@0.76.9(@babel/preset-env@7.29.5(@babel/core@7.29.0))':
     dependencies:
       '@react-native/dev-middleware': 0.76.9
-      '@react-native/metro-babel-transformer': 0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.5(@babel/core@7.29.0))
+      '@react-native/metro-babel-transformer': 0.76.9(@babel/preset-env@7.29.5(@babel/core@7.29.0))
       chalk: 4.1.2
       execa: 5.1.1
       invariant: 2.2.4
@@ -8794,7 +8822,6 @@ snapshots:
       readline: 1.3.0
       semver: 7.8.1
     transitivePeerDependencies:
-      - '@babel/core'
       - '@babel/preset-env'
       - bufferutil
       - encoding
@@ -8826,7 +8853,7 @@ snapshots:
 
   '@react-native/js-polyfills@0.76.9': {}
 
-  '@react-native/metro-babel-transformer@0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.5(@babel/core@7.29.0))':
+  '@react-native/metro-babel-transformer@0.76.9(@babel/preset-env@7.29.5(@babel/core@7.29.0))':
     dependencies:
       '@babel/core': 7.29.0
       '@react-native/babel-preset': 0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.5(@babel/core@7.29.0))
@@ -9508,7 +9535,7 @@ snapshots:
       - react-native
       - supports-color
 
-  '@tamagui/next-plugin@1.144.4(@babel/core@7.29.0)(next@15.5.18(@babel/core@7.29.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react-native@0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.5(@babel/core@7.29.0))(@types/react@18.3.29)(react@18.3.1))(react@18.3.1)':
+  '@tamagui/next-plugin@1.144.4(@babel/core@7.29.0)(next@15.5.18(@babel/core@7.29.0)(@playwright/test@1.60.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react-native@0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.5(@babel/core@7.29.0))(@types/react@18.3.29)(react@18.3.1))(react@18.3.1)':
     dependencies:
       '@babel/preset-react': 7.28.5(@babel/core@7.29.0)
       '@tamagui/proxy-worm': 1.144.4
@@ -9520,7 +9547,7 @@ snapshots:
       esbuild-loader: 4.4.3
       file-loader: 6.2.0
       html-webpack-plugin: 5.6.7
-      next: 15.5.18(@babel/core@7.29.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      next: 15.5.18(@babel/core@7.29.0)(@playwright/test@1.60.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       tamagui-loader: 1.144.4(react-dom@18.3.1(react@18.3.1))(react-native@0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.5(@babel/core@7.29.0))(@types/react@18.3.29)(react@18.3.1))(react@18.3.1)
       url-loader: 4.1.1(file-loader@6.2.0)
     transitivePeerDependencies:
@@ -12096,6 +12123,9 @@ snapshots:
 
   fs.realpath@1.0.0: {}
 
+  fsevents@2.3.2:
+    optional: true
+
   fsevents@2.3.3:
     optional: true
 
@@ -13150,7 +13180,7 @@ snapshots:
 
   nested-error-stacks@2.0.1: {}
 
-  next@15.5.18(@babel/core@7.29.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  next@15.5.18(@babel/core@7.29.0)(@playwright/test@1.60.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       '@next/env': 15.5.18
       '@swc/helpers': 0.5.15
@@ -13168,6 +13198,7 @@ snapshots:
       '@next/swc-linux-x64-musl': 15.5.18
       '@next/swc-win32-arm64-msvc': 15.5.18
       '@next/swc-win32-x64-msvc': 15.5.18
+      '@playwright/test': 1.60.0
       sharp: 0.34.5
     transitivePeerDependencies:
       - '@babel/core'
@@ -13444,6 +13475,14 @@ snapshots:
   pkg-up@3.1.0:
     dependencies:
       find-up: 3.0.0
+
+  playwright-core@1.60.0: {}
+
+  playwright@1.60.0:
+    dependencies:
+      playwright-core: 1.60.0
+    optionalDependencies:
+      fsevents: 2.3.2
 
   plist@3.1.1:
     dependencies:
@@ -13735,7 +13774,7 @@ snapshots:
       '@jest/create-cache-key-function': 29.7.0
       '@react-native/assets-registry': 0.76.9
       '@react-native/codegen': 0.76.9(@babel/preset-env@7.29.5(@babel/core@7.29.0))
-      '@react-native/community-cli-plugin': 0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.5(@babel/core@7.29.0))
+      '@react-native/community-cli-plugin': 0.76.9(@babel/preset-env@7.29.5(@babel/core@7.29.0))
       '@react-native/gradle-plugin': 0.76.9
       '@react-native/js-polyfills': 0.76.9
       '@react-native/normalize-colors': 0.76.9
