@@ -115,19 +115,15 @@ export interface IClient {
 
     update(body: EditRoleCommand | undefined): Promise<void>;
 
-    list(pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void>;
+    me(): Promise<void>;
 
-    categories(id: number | undefined): Promise<void>;
-
-    create2(body: AddCategoryCommand | undefined): Promise<void>;
-
-    list2(subjectId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void>;
+    list(subjectId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void>;
 
     conceptsGET(id: number | undefined): Promise<void>;
 
     conceptsDELETE(id: number | undefined): Promise<void>;
 
-    create3(body: AddConceptCommand | undefined): Promise<void>;
+    create2(body: AddConceptCommand | undefined): Promise<void>;
 
     update2(body: EditConceptCommand | undefined): Promise<void>;
 
@@ -136,21 +132,56 @@ export interface IClient {
      */
     dashboard(): Promise<DashboardDtoBaseResponse>;
 
-    list3(pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void>;
+    /**
+     * @param body (optional) 
+     * @return OK
+     */
+    register(body: RegisterDeviceCommand | undefined): Promise<StringBaseResponse>;
+
+    /**
+     * @return OK
+     */
+    devices(tokenId: number): Promise<StringBaseResponse>;
+
+    profileGET2(): Promise<void>;
+
+    list2(pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void>;
 
     gradesGET(id: number | undefined): Promise<void>;
 
     gradesDELETE(id: number | undefined): Promise<void>;
 
-    create4(body: AddGradeCommand | undefined): Promise<void>;
+    create3(body: AddGradeCommand | undefined): Promise<void>;
 
     update3(body: EditGradeCommand | undefined): Promise<void>;
+
+    /**
+     * @param take (optional) 
+     * @param skip (optional) 
+     * @return OK
+     */
+    me2(take: number | undefined, skip: number | undefined): Promise<PagedInboxResultBaseResponse>;
+
+    /**
+     * @return OK
+     */
+    markRead(id: string): Promise<StringBaseResponse>;
+
+    /**
+     * @return OK
+     */
+    markAllRead(): Promise<StringBaseResponse>;
 
     prerequisites(nodeId: number): Promise<void>;
 
     unlockedBy(nodeId: number): Promise<void>;
 
-    list4(unitId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void>;
+    /**
+     * @return OK
+     */
+    me3(): Promise<MyLeagueResponseBaseResponse>;
+
+    list3(unitId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void>;
 
     /**
      * @return OK
@@ -161,16 +192,18 @@ export interface IClient {
 
     lessonsDELETE(id: number | undefined): Promise<void>;
 
-    create5(body: AddLessonCommand | undefined): Promise<void>;
+    create4(body: AddLessonCommand | undefined): Promise<void>;
 
     update4(body: EditLessonCommand | undefined): Promise<void>;
+
+    me4(): Promise<void>;
 
     /**
      * @return OK
      */
     notifications(body: SendNotificationCommand): Promise<void>;
 
-    list5(recipientUserId: number | undefined): Promise<void>;
+    list4(recipientUserId: number | undefined): Promise<void>;
 
     /**
      * @param body (optional) 
@@ -202,6 +235,12 @@ export interface IClient {
     unlinkChild(body: UnlinkChildCommand | undefined): Promise<BooleanBaseResponse>;
 
     /**
+     * @param body (optional) 
+     * @return OK
+     */
+    changeLearningLanguage(body: ChangeLearningLanguageCommand | undefined): Promise<ChangedLearningLanguageResponseBaseResponse>;
+
+    /**
      * @return OK
      */
     preferencesGET(): Promise<NotificationPreferencesResponseBaseResponse>;
@@ -212,15 +251,16 @@ export interface IClient {
      */
     preferencesPUT(body: UpdateMyNotificationPreferencesCommand | undefined): Promise<StringBaseResponse>;
 
-    list6(pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void>;
+    /**
+     * @return OK
+     */
+    reengagementGET(childId: number): Promise<ChildReengagementPreferenceDtoListBaseResponse>;
 
-    productsGET(id: number | undefined): Promise<void>;
-
-    productsDELETE(id: number | undefined): Promise<void>;
-
-    create6(body: AddProductCommand | undefined): Promise<void>;
-
-    update5(body: EditProductCommand | undefined): Promise<void>;
+    /**
+     * @param body (optional) 
+     * @return OK
+     */
+    reengagementPUT(childId: number, body: UpdateChildReengagementPreferencesCommand | undefined): Promise<StringBaseResponse>;
 
     /**
      * @return OK
@@ -243,15 +283,15 @@ export interface IClient {
      */
     abandon(attemptId: number): Promise<AttemptSummaryDtoBaseResponse>;
 
-    list7(conceptId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void>;
+    list5(conceptId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void>;
 
     skillsGET(id: number | undefined): Promise<void>;
 
     skillsDELETE(id: number | undefined): Promise<void>;
 
-    create7(body: AddSkillCommand | undefined): Promise<void>;
+    create5(body: AddSkillCommand | undefined): Promise<void>;
 
-    update6(body: EditSkillCommand | undefined): Promise<void>;
+    update5(body: EditSkillCommand | undefined): Promise<void>;
 
     stats(skillId: number, studentId: number | undefined): Promise<void>;
 
@@ -260,7 +300,7 @@ export interface IClient {
      */
     attempts(studentId: number): Promise<AttemptListItemDtoListBaseResponse>;
 
-    list8(gradeId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void>;
+    list6(gradeId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void>;
 
     subjectsGET(id: number | undefined): Promise<void>;
 
@@ -282,24 +322,26 @@ export interface IClient {
      */
     skillTree(id: number): Promise<ConceptNodeDtoListBaseResponse>;
 
-    create8(body: AddSubjectCommand | undefined): Promise<void>;
+    create6(body: AddSubjectCommand | undefined): Promise<void>;
 
-    update7(body: EditSubjectCommand | undefined): Promise<void>;
+    update6(body: EditSubjectCommand | undefined): Promise<void>;
 
     /**
      * @return OK
      */
     configuration(): Promise<void>;
 
-    list9(subjectId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void>;
+    timedEvents(): Promise<void>;
+
+    list7(subjectId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void>;
 
     unitsGET(id: number | undefined): Promise<void>;
 
     unitsDELETE(id: number | undefined): Promise<void>;
 
-    create9(body: AddUnitCommand | undefined): Promise<void>;
+    create7(body: AddUnitCommand | undefined): Promise<void>;
 
-    update8(body: EditUnitCommand | undefined): Promise<void>;
+    update7(body: EditUnitCommand | undefined): Promise<void>;
 
     userList(role: string | undefined, isActive: boolean | undefined, name: string | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void>;
 
@@ -394,7 +436,7 @@ export interface IClient {
     /**
      * @return OK
      */
-    me(): Promise<MeResponseBaseResponse>;
+    me5(): Promise<MeResponseBaseResponse>;
 }
 
 export class Client implements IClient {
@@ -1845,24 +1887,8 @@ export class Client implements IClient {
         return Promise.resolve<void>(null as any);
     }
 
-    list(pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void> {
-        let url_ = this.baseUrl + "/api/Catalog/Categories/List?";
-        if (pageNumber === null)
-            throw new globalThis.Error("The parameter 'pageNumber' cannot be null.");
-        else if (pageNumber !== undefined)
-            url_ += "PageNumber=" + encodeURIComponent("" + pageNumber) + "&";
-        if (pageSize === null)
-            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
-        else if (pageSize !== undefined)
-            url_ += "PageSize=" + encodeURIComponent("" + pageSize) + "&";
-        if (search === null)
-            throw new globalThis.Error("The parameter 'search' cannot be null.");
-        else if (search !== undefined)
-            url_ += "Search=" + encodeURIComponent("" + search) + "&";
-        if (orderBy === null)
-            throw new globalThis.Error("The parameter 'orderBy' cannot be null.");
-        else if (orderBy !== undefined)
-            url_ += "OrderBy=" + encodeURIComponent("" + orderBy) + "&";
+    me(): Promise<void> {
+        let url_ = this.baseUrl + "/api/Gamification/Badges/Me";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
@@ -1872,11 +1898,11 @@ export class Client implements IClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processList(_response);
+            return this.processMe(_response);
         });
     }
 
-    protected processList(response: Response): Promise<void> {
+    protected processMe(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 400) {
@@ -1903,99 +1929,7 @@ export class Client implements IClient {
         return Promise.resolve<void>(null as any);
     }
 
-    categories(id: number | undefined): Promise<void> {
-        let url_ = this.baseUrl + "/api/Catalog/Categories?";
-        if (id === null)
-            throw new globalThis.Error("The parameter 'id' cannot be null.");
-        else if (id !== undefined)
-            url_ += "id=" + encodeURIComponent("" + id) + "&";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processCategories(_response);
-        });
-    }
-
-    protected processCategories(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 400) {
-            return response.text().then((_responseText) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("Bad Request", status, _responseText, _headers, result400);
-            });
-        } else if (status === 404) {
-            return response.text().then((_responseText) => {
-            let result404: any = null;
-            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("Not Found", status, _responseText, _headers, result404);
-            });
-        } else if (status === 500) {
-            return response.text().then((_responseText) => {
-            return throwException("Internal Server Error", status, _responseText, _headers);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
-
-    create2(body: AddCategoryCommand | undefined): Promise<void> {
-        let url_ = this.baseUrl + "/api/Catalog/Categories/Create";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(body);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json-patch+json",
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processCreate2(_response);
-        });
-    }
-
-    protected processCreate2(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 400) {
-            return response.text().then((_responseText) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("Bad Request", status, _responseText, _headers, result400);
-            });
-        } else if (status === 404) {
-            return response.text().then((_responseText) => {
-            let result404: any = null;
-            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("Not Found", status, _responseText, _headers, result404);
-            });
-        } else if (status === 500) {
-            return response.text().then((_responseText) => {
-            return throwException("Internal Server Error", status, _responseText, _headers);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
-
-    list2(subjectId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void> {
+    list(subjectId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/learning/Concepts/List?";
         if (subjectId === null)
             throw new globalThis.Error("The parameter 'subjectId' cannot be null.");
@@ -2026,11 +1960,11 @@ export class Client implements IClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processList2(_response);
+            return this.processList(_response);
         });
     }
 
-    protected processList2(response: Response): Promise<void> {
+    protected processList(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 400) {
@@ -2149,7 +2083,7 @@ export class Client implements IClient {
         return Promise.resolve<void>(null as any);
     }
 
-    create3(body: AddConceptCommand | undefined): Promise<void> {
+    create2(body: AddConceptCommand | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/learning/Concepts/Create";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -2164,11 +2098,11 @@ export class Client implements IClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processCreate3(_response);
+            return this.processCreate2(_response);
         });
     }
 
-    protected processCreate3(response: Response): Promise<void> {
+    protected processCreate2(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 400) {
@@ -2293,7 +2227,173 @@ export class Client implements IClient {
         return Promise.resolve<DashboardDtoBaseResponse>(null as any);
     }
 
-    list3(pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void> {
+    /**
+     * @param body (optional) 
+     * @return OK
+     */
+    register(body: RegisterDeviceCommand | undefined): Promise<StringBaseResponse> {
+        let url_ = this.baseUrl + "/api/Notifications/Devices/Register";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json-patch+json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processRegister(_response);
+        });
+    }
+
+    protected processRegister(response: Response): Promise<StringBaseResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StringBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 401) {
+            return response.text().then((_responseText) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<StringBaseResponse>(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    devices(tokenId: number): Promise<StringBaseResponse> {
+        let url_ = this.baseUrl + "/api/Notifications/Devices/{tokenId}";
+        if (tokenId === undefined || tokenId === null)
+            throw new globalThis.Error("The parameter 'tokenId' must be defined.");
+        url_ = url_.replace("{tokenId}", encodeURIComponent("" + tokenId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "DELETE",
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processDevices(_response);
+        });
+    }
+
+    protected processDevices(response: Response): Promise<StringBaseResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StringBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 401) {
+            return response.text().then((_responseText) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<StringBaseResponse>(null as any);
+    }
+
+    profileGET2(): Promise<void> {
+        let url_ = this.baseUrl + "/api/Gamification/Profile";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processProfileGET2(_response);
+        });
+    }
+
+    protected processProfileGET2(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
+    list2(pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/learning/Grades/List?";
         if (pageNumber === null)
             throw new globalThis.Error("The parameter 'pageNumber' cannot be null.");
@@ -2320,11 +2420,11 @@ export class Client implements IClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processList3(_response);
+            return this.processList2(_response);
         });
     }
 
-    protected processList3(response: Response): Promise<void> {
+    protected processList2(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 400) {
@@ -2443,7 +2543,7 @@ export class Client implements IClient {
         return Promise.resolve<void>(null as any);
     }
 
-    create4(body: AddGradeCommand | undefined): Promise<void> {
+    create3(body: AddGradeCommand | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/learning/Grades/Create";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -2458,11 +2558,11 @@ export class Client implements IClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processCreate4(_response);
+            return this.processCreate3(_response);
         });
     }
 
-    protected processCreate4(response: Response): Promise<void> {
+    protected processCreate3(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 400) {
@@ -2533,6 +2633,199 @@ export class Client implements IClient {
             });
         }
         return Promise.resolve<void>(null as any);
+    }
+
+    /**
+     * @param take (optional) 
+     * @param skip (optional) 
+     * @return OK
+     */
+    me2(take: number | undefined, skip: number | undefined): Promise<PagedInboxResultBaseResponse> {
+        let url_ = this.baseUrl + "/api/Notifications/Inbox/Me?";
+        if (take === null)
+            throw new globalThis.Error("The parameter 'take' cannot be null.");
+        else if (take !== undefined)
+            url_ += "take=" + encodeURIComponent("" + take) + "&";
+        if (skip === null)
+            throw new globalThis.Error("The parameter 'skip' cannot be null.");
+        else if (skip !== undefined)
+            url_ += "skip=" + encodeURIComponent("" + skip) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processMe2(_response);
+        });
+    }
+
+    protected processMe2(response: Response): Promise<PagedInboxResultBaseResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PagedInboxResultBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 401) {
+            return response.text().then((_responseText) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<PagedInboxResultBaseResponse>(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    markRead(id: string): Promise<StringBaseResponse> {
+        let url_ = this.baseUrl + "/api/Notifications/Inbox/{id}/MarkRead";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "POST",
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processMarkRead(_response);
+        });
+    }
+
+    protected processMarkRead(response: Response): Promise<StringBaseResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StringBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 401) {
+            return response.text().then((_responseText) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Forbidden", status, _responseText, _headers, result403);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<StringBaseResponse>(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    markAllRead(): Promise<StringBaseResponse> {
+        let url_ = this.baseUrl + "/api/Notifications/Inbox/MarkAllRead";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "POST",
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processMarkAllRead(_response);
+        });
+    }
+
+    protected processMarkAllRead(response: Response): Promise<StringBaseResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StringBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 401) {
+            return response.text().then((_responseText) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<StringBaseResponse>(null as any);
     }
 
     prerequisites(nodeId: number): Promise<void> {
@@ -2625,7 +2918,59 @@ export class Client implements IClient {
         return Promise.resolve<void>(null as any);
     }
 
-    list4(unitId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void> {
+    /**
+     * @return OK
+     */
+    me3(): Promise<MyLeagueResponseBaseResponse> {
+        let url_ = this.baseUrl + "/api/Gamification/Leagues/Me";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processMe3(_response);
+        });
+    }
+
+    protected processMe3(response: Response): Promise<MyLeagueResponseBaseResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MyLeagueResponseBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<MyLeagueResponseBaseResponse>(null as any);
+    }
+
+    list3(unitId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/learning/Lessons/List?";
         if (unitId === null)
             throw new globalThis.Error("The parameter 'unitId' cannot be null.");
@@ -2656,11 +3001,11 @@ export class Client implements IClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processList4(_response);
+            return this.processList3(_response);
         });
     }
 
-    protected processList4(response: Response): Promise<void> {
+    protected processList3(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 400) {
@@ -2834,7 +3179,7 @@ export class Client implements IClient {
         return Promise.resolve<void>(null as any);
     }
 
-    create5(body: AddLessonCommand | undefined): Promise<void> {
+    create4(body: AddLessonCommand | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/learning/Lessons/Create";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -2849,11 +3194,11 @@ export class Client implements IClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processCreate5(_response);
+            return this.processCreate4(_response);
         });
     }
 
-    protected processCreate5(response: Response): Promise<void> {
+    protected processCreate4(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 400) {
@@ -2926,6 +3271,48 @@ export class Client implements IClient {
         return Promise.resolve<void>(null as any);
     }
 
+    me4(): Promise<void> {
+        let url_ = this.baseUrl + "/api/Gamification/Missions/Me";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processMe4(_response);
+        });
+    }
+
+    protected processMe4(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
     /**
      * @return OK
      */
@@ -2963,7 +3350,7 @@ export class Client implements IClient {
         return Promise.resolve<void>(null as any);
     }
 
-    list5(recipientUserId: number | undefined): Promise<void> {
+    list4(recipientUserId: number | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/Notifications/Notifications/List?";
         if (recipientUserId === null)
             throw new globalThis.Error("The parameter 'recipientUserId' cannot be null.");
@@ -2978,11 +3365,11 @@ export class Client implements IClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processList5(_response);
+            return this.processList4(_response);
         });
     }
 
-    protected processList5(response: Response): Promise<void> {
+    protected processList4(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 400) {
@@ -3290,6 +3677,63 @@ export class Client implements IClient {
     }
 
     /**
+     * @param body (optional) 
+     * @return OK
+     */
+    changeLearningLanguage(body: ChangeLearningLanguageCommand | undefined): Promise<ChangedLearningLanguageResponseBaseResponse> {
+        let url_ = this.baseUrl + "/api/Parent/Change-Learning-Language";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json-patch+json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processChangeLearningLanguage(_response);
+        });
+    }
+
+    protected processChangeLearningLanguage(response: Response): Promise<ChangedLearningLanguageResponseBaseResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ChangedLearningLanguageResponseBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<ChangedLearningLanguageResponseBaseResponse>(null as any);
+    }
+
+    /**
      * @return OK
      */
     preferencesGET(): Promise<NotificationPreferencesResponseBaseResponse> {
@@ -3410,45 +3854,54 @@ export class Client implements IClient {
         return Promise.resolve<StringBaseResponse>(null as any);
     }
 
-    list6(pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void> {
-        let url_ = this.baseUrl + "/api/Catalog/Products/List?";
-        if (pageNumber === null)
-            throw new globalThis.Error("The parameter 'pageNumber' cannot be null.");
-        else if (pageNumber !== undefined)
-            url_ += "PageNumber=" + encodeURIComponent("" + pageNumber) + "&";
-        if (pageSize === null)
-            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
-        else if (pageSize !== undefined)
-            url_ += "PageSize=" + encodeURIComponent("" + pageSize) + "&";
-        if (search === null)
-            throw new globalThis.Error("The parameter 'search' cannot be null.");
-        else if (search !== undefined)
-            url_ += "Search=" + encodeURIComponent("" + search) + "&";
-        if (orderBy === null)
-            throw new globalThis.Error("The parameter 'orderBy' cannot be null.");
-        else if (orderBy !== undefined)
-            url_ += "OrderBy=" + encodeURIComponent("" + orderBy) + "&";
+    /**
+     * @return OK
+     */
+    reengagementGET(childId: number): Promise<ChildReengagementPreferenceDtoListBaseResponse> {
+        let url_ = this.baseUrl + "/api/Notifications/Preferences/Children/{childId}/Reengagement";
+        if (childId === undefined || childId === null)
+            throw new globalThis.Error("The parameter 'childId' must be defined.");
+        url_ = url_.replace("{childId}", encodeURIComponent("" + childId));
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
             method: "GET",
             headers: {
+                "Accept": "application/json"
             }
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processList6(_response);
+            return this.processReengagementGET(_response);
         });
     }
 
-    protected processList6(response: Response): Promise<void> {
+    protected processReengagementGET(response: Response): Promise<ChildReengagementPreferenceDtoListBaseResponse> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 400) {
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ChildReengagementPreferenceDtoListBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
             return response.text().then((_responseText) => {
             let result400: any = null;
             result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
             return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 401) {
+            return response.text().then((_responseText) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Forbidden", status, _responseText, _headers, result403);
             });
         } else if (status === 404) {
             return response.text().then((_responseText) => {
@@ -3465,149 +3918,18 @@ export class Client implements IClient {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<void>(null as any);
+        return Promise.resolve<ChildReengagementPreferenceDtoListBaseResponse>(null as any);
     }
 
-    productsGET(id: number | undefined): Promise<void> {
-        let url_ = this.baseUrl + "/api/Catalog/Products?";
-        if (id === null)
-            throw new globalThis.Error("The parameter 'id' cannot be null.");
-        else if (id !== undefined)
-            url_ += "id=" + encodeURIComponent("" + id) + "&";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processProductsGET(_response);
-        });
-    }
-
-    protected processProductsGET(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 400) {
-            return response.text().then((_responseText) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("Bad Request", status, _responseText, _headers, result400);
-            });
-        } else if (status === 404) {
-            return response.text().then((_responseText) => {
-            let result404: any = null;
-            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("Not Found", status, _responseText, _headers, result404);
-            });
-        } else if (status === 500) {
-            return response.text().then((_responseText) => {
-            return throwException("Internal Server Error", status, _responseText, _headers);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
-
-    productsDELETE(id: number | undefined): Promise<void> {
-        let url_ = this.baseUrl + "/api/Catalog/Products?";
-        if (id === null)
-            throw new globalThis.Error("The parameter 'id' cannot be null.");
-        else if (id !== undefined)
-            url_ += "id=" + encodeURIComponent("" + id) + "&";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "DELETE",
-            headers: {
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processProductsDELETE(_response);
-        });
-    }
-
-    protected processProductsDELETE(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 400) {
-            return response.text().then((_responseText) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("Bad Request", status, _responseText, _headers, result400);
-            });
-        } else if (status === 404) {
-            return response.text().then((_responseText) => {
-            let result404: any = null;
-            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("Not Found", status, _responseText, _headers, result404);
-            });
-        } else if (status === 500) {
-            return response.text().then((_responseText) => {
-            return throwException("Internal Server Error", status, _responseText, _headers);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
-
-    create6(body: AddProductCommand | undefined): Promise<void> {
-        let url_ = this.baseUrl + "/api/Catalog/Products/Create";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(body);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json-patch+json",
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processCreate6(_response);
-        });
-    }
-
-    protected processCreate6(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 400) {
-            return response.text().then((_responseText) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("Bad Request", status, _responseText, _headers, result400);
-            });
-        } else if (status === 404) {
-            return response.text().then((_responseText) => {
-            let result404: any = null;
-            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("Not Found", status, _responseText, _headers, result404);
-            });
-        } else if (status === 500) {
-            return response.text().then((_responseText) => {
-            return throwException("Internal Server Error", status, _responseText, _headers);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
-
-    update5(body: EditProductCommand | undefined): Promise<void> {
-        let url_ = this.baseUrl + "/api/Catalog/Products/Update";
+    /**
+     * @param body (optional) 
+     * @return OK
+     */
+    reengagementPUT(childId: number, body: UpdateChildReengagementPreferencesCommand | undefined): Promise<StringBaseResponse> {
+        let url_ = this.baseUrl + "/api/Notifications/Preferences/Children/{childId}/Reengagement";
+        if (childId === undefined || childId === null)
+            throw new globalThis.Error("The parameter 'childId' must be defined.");
+        url_ = url_.replace("{childId}", encodeURIComponent("" + childId));
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(body);
@@ -3617,22 +3939,41 @@ export class Client implements IClient {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json-patch+json",
+                "Accept": "application/json"
             }
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processUpdate5(_response);
+            return this.processReengagementPUT(_response);
         });
     }
 
-    protected processUpdate5(response: Response): Promise<void> {
+    protected processReengagementPUT(response: Response): Promise<StringBaseResponse> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 400) {
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StringBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
             return response.text().then((_responseText) => {
             let result400: any = null;
             result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
             return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 401) {
+            return response.text().then((_responseText) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Forbidden", status, _responseText, _headers, result403);
             });
         } else if (status === 404) {
             return response.text().then((_responseText) => {
@@ -3649,7 +3990,7 @@ export class Client implements IClient {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<void>(null as any);
+        return Promise.resolve<StringBaseResponse>(null as any);
     }
 
     /**
@@ -3877,7 +4218,7 @@ export class Client implements IClient {
         return Promise.resolve<AttemptSummaryDtoBaseResponse>(null as any);
     }
 
-    list7(conceptId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void> {
+    list5(conceptId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/learning/Skills/List?";
         if (conceptId === null)
             throw new globalThis.Error("The parameter 'conceptId' cannot be null.");
@@ -3908,11 +4249,11 @@ export class Client implements IClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processList7(_response);
+            return this.processList5(_response);
         });
     }
 
-    protected processList7(response: Response): Promise<void> {
+    protected processList5(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 400) {
@@ -4031,7 +4372,7 @@ export class Client implements IClient {
         return Promise.resolve<void>(null as any);
     }
 
-    create7(body: AddSkillCommand | undefined): Promise<void> {
+    create5(body: AddSkillCommand | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/learning/Skills/Create";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -4046,11 +4387,11 @@ export class Client implements IClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processCreate7(_response);
+            return this.processCreate5(_response);
         });
     }
 
-    protected processCreate7(response: Response): Promise<void> {
+    protected processCreate5(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 400) {
@@ -4077,7 +4418,7 @@ export class Client implements IClient {
         return Promise.resolve<void>(null as any);
     }
 
-    update6(body: EditSkillCommand | undefined): Promise<void> {
+    update5(body: EditSkillCommand | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/learning/Skills/Update";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -4092,11 +4433,11 @@ export class Client implements IClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processUpdate6(_response);
+            return this.processUpdate5(_response);
         });
     }
 
-    protected processUpdate6(response: Response): Promise<void> {
+    protected processUpdate5(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 400) {
@@ -4227,7 +4568,7 @@ export class Client implements IClient {
         return Promise.resolve<AttemptListItemDtoListBaseResponse>(null as any);
     }
 
-    list8(gradeId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void> {
+    list6(gradeId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/learning/Subjects/List?";
         if (gradeId === null)
             throw new globalThis.Error("The parameter 'gradeId' cannot be null.");
@@ -4258,11 +4599,11 @@ export class Client implements IClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processList8(_response);
+            return this.processList6(_response);
         });
     }
 
-    protected processList8(response: Response): Promise<void> {
+    protected processList6(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 400) {
@@ -4548,7 +4889,7 @@ export class Client implements IClient {
         return Promise.resolve<ConceptNodeDtoListBaseResponse>(null as any);
     }
 
-    create8(body: AddSubjectCommand | undefined): Promise<void> {
+    create6(body: AddSubjectCommand | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/learning/Subjects/Create";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -4563,11 +4904,11 @@ export class Client implements IClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processCreate8(_response);
+            return this.processCreate6(_response);
         });
     }
 
-    protected processCreate8(response: Response): Promise<void> {
+    protected processCreate6(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 400) {
@@ -4594,7 +4935,7 @@ export class Client implements IClient {
         return Promise.resolve<void>(null as any);
     }
 
-    update7(body: EditSubjectCommand | undefined): Promise<void> {
+    update6(body: EditSubjectCommand | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/learning/Subjects/Update";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -4609,11 +4950,11 @@ export class Client implements IClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processUpdate7(_response);
+            return this.processUpdate6(_response);
         });
     }
 
-    protected processUpdate7(response: Response): Promise<void> {
+    protected processUpdate6(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 400) {
@@ -4673,7 +5014,49 @@ export class Client implements IClient {
         return Promise.resolve<void>(null as any);
     }
 
-    list9(subjectId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void> {
+    timedEvents(): Promise<void> {
+        let url_ = this.baseUrl + "/api/admin/timed-events";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processTimedEvents(_response);
+        });
+    }
+
+    protected processTimedEvents(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("Internal Server Error", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
+    list7(subjectId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/learning/Units/List?";
         if (subjectId === null)
             throw new globalThis.Error("The parameter 'subjectId' cannot be null.");
@@ -4704,11 +5087,11 @@ export class Client implements IClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processList9(_response);
+            return this.processList7(_response);
         });
     }
 
-    protected processList9(response: Response): Promise<void> {
+    protected processList7(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 400) {
@@ -4827,7 +5210,7 @@ export class Client implements IClient {
         return Promise.resolve<void>(null as any);
     }
 
-    create9(body: AddUnitCommand | undefined): Promise<void> {
+    create7(body: AddUnitCommand | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/learning/Units/Create";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -4842,11 +5225,11 @@ export class Client implements IClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processCreate9(_response);
+            return this.processCreate7(_response);
         });
     }
 
-    protected processCreate9(response: Response): Promise<void> {
+    protected processCreate7(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 400) {
@@ -4873,7 +5256,7 @@ export class Client implements IClient {
         return Promise.resolve<void>(null as any);
     }
 
-    update8(body: EditUnitCommand | undefined): Promise<void> {
+    update7(body: EditUnitCommand | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/learning/Units/Update";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -4888,11 +5271,11 @@ export class Client implements IClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processUpdate8(_response);
+            return this.processUpdate7(_response);
         });
     }
 
-    protected processUpdate8(response: Response): Promise<void> {
+    protected processUpdate7(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 400) {
@@ -6199,7 +6582,7 @@ export class Client implements IClient {
     /**
      * @return OK
      */
-    me(): Promise<MeResponseBaseResponse> {
+    me5(): Promise<MeResponseBaseResponse> {
         let url_ = this.baseUrl + "/api/Users/Me";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -6211,11 +6594,11 @@ export class Client implements IClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processMe(_response);
+            return this.processMe5(_response);
         });
     }
 
-    protected processMe(response: Response): Promise<MeResponseBaseResponse> {
+    protected processMe5(response: Response): Promise<MeResponseBaseResponse> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {
@@ -6280,10 +6663,12 @@ export interface AccountProfileResponseBaseResponse {
     errors?: any[] | undefined;
 }
 
-export interface AddCategoryCommand {
-    id?: number;
-    name?: string | undefined;
-    description?: string | undefined;
+export interface ActiveTimedEventDto {
+    code?: string | undefined;
+    nameEn?: string | undefined;
+    nameAr?: string | undefined;
+    multiplier?: number;
+    endUtc?: Date;
 }
 
 export interface AddChildCommand {
@@ -6293,6 +6678,7 @@ export interface AddChildCommand {
     grade?: number;
     language?: string | undefined;
     country?: string | undefined;
+    learningLanguage?: string | undefined;
 }
 
 export interface AddConceptCommand {
@@ -6317,14 +6703,6 @@ export interface AddLessonCommand {
     isLocked?: boolean;
     unitId?: number;
     skillId?: number | undefined;
-}
-
-export interface AddProductCommand {
-    id?: number;
-    name?: string | undefined;
-    price?: number;
-    description?: string | undefined;
-    categoryId?: number;
 }
 
 export interface AddRoleCommand {
@@ -6441,6 +6819,20 @@ export interface AvatarUploadResponseBaseResponse {
     errors?: any[] | undefined;
 }
 
+export enum BadgeRarityDto {
+    _1 = 1,
+    _2 = 2,
+    _3 = 3,
+    _4 = 4,
+}
+
+export interface BadgeSummary {
+    code?: string | undefined;
+    iconKey?: string | undefined;
+    rarity?: BadgeRarityDto;
+    awardedAtUtc?: Date;
+}
+
 export interface BooleanBaseResponse {
     statusCode?: HttpStatusCode;
     successed?: boolean;
@@ -6449,10 +6841,55 @@ export interface BooleanBaseResponse {
     errors?: any[] | undefined;
 }
 
+export interface CategoryPrefItem {
+    category?: NotificationCategory;
+    email?: boolean;
+    push?: boolean;
+    inApp?: boolean;
+}
+
+export interface ChangeLearningLanguageCommand {
+    childId?: number;
+    newLearningLanguage?: string | undefined;
+    confirmFreshStart?: boolean;
+}
+
 export interface ChangePasswordCommand {
     currentPassword?: string | undefined;
     newPassword?: string | undefined;
     confirmPassword?: string | undefined;
+}
+
+export interface ChangedLearningLanguageResponse {
+    childId?: number;
+    newLearningLanguage?: string | undefined;
+}
+
+export interface ChangedLearningLanguageResponseBaseResponse {
+    statusCode?: HttpStatusCode;
+    successed?: boolean;
+    message?: string | undefined;
+    data?: ChangedLearningLanguageResponse;
+    errors?: any[] | undefined;
+}
+
+export interface ChildReengagementPreferenceDto {
+    category?: NotificationCategory;
+    email?: boolean;
+    push?: boolean;
+    inApp?: boolean;
+    quietHoursStartLocal?: string | undefined;
+    quietHoursEndLocal?: string | undefined;
+    timeZoneId?: string | undefined;
+    dailyCap?: number;
+}
+
+export interface ChildReengagementPreferenceDtoListBaseResponse {
+    statusCode?: HttpStatusCode;
+    successed?: boolean;
+    message?: string | undefined;
+    data?: ChildReengagementPreferenceDto[] | undefined;
+    errors?: any[] | undefined;
 }
 
 export interface ConceptNodeDto {
@@ -6495,24 +6932,20 @@ export interface CurrentPlanResponseBaseResponse {
     errors?: any[] | undefined;
 }
 
-export interface DailyMissionDto {
-    type?: string | undefined;
-    target?: number | undefined;
-    progress?: number | undefined;
-}
-
 export interface DashboardDto {
     xp?: number;
     streak?: number;
-    dailyMission?: DailyMissionDto;
     leaguePreview?: LeaguePreviewDto;
     continue?: ContinueTargetDto;
-    /** P4-02: XP level computed via LevelCurve; default 1 for new students. */
     level?: number;
-    /** P4-04: current hearts count; default 5 (cap) for new students. */
     hearts?: number;
-    /** P4-04: true when hearts == 0 (practice mode — wrong answers cost no hearts). */
     inPracticeMode?: boolean;
+    badgesCount?: number;
+    recentBadges?: BadgeSummary[] | undefined;
+    dailyMissions?: MissionSummary[] | undefined;
+    weeklyMission?: MissionSummary;
+    freezeBalance?: number;
+    activeTimedEvents?: ActiveTimedEventDto[] | undefined;
 }
 
 export interface DashboardDtoBaseResponse {
@@ -6551,14 +6984,6 @@ export interface EditLessonCommand {
     isLocked?: boolean;
     unitId?: number;
     skillId?: number | undefined;
-}
-
-export interface EditProductCommand {
-    id?: number;
-    name?: string | undefined;
-    price?: number;
-    description?: string | undefined;
-    categoryId?: number;
 }
 
 export interface EditRoleCommand {
@@ -6727,6 +7152,18 @@ export enum HttpStatusCode {
     _511 = 511,
 }
 
+export interface InboxItemDto {
+    id?: string;
+    title?: string | undefined;
+    body?: string | undefined;
+    category?: NotificationCategory;
+    code?: string | undefined;
+    data?: string | undefined;
+    isRead?: boolean;
+    createdAtUtc?: Date;
+    openedAtUtc?: Date | undefined;
+}
+
 export interface JwtAuthResponse {
     accessToken?: string | undefined;
     refreshToken?: RefreshToken;
@@ -6749,6 +7186,20 @@ export interface LeaguePreviewDto {
     rank?: number | undefined;
     totalPlayers?: number | undefined;
     xpThisWeek?: number | undefined;
+}
+
+export interface LeagueStandingDto {
+    rank?: number;
+    displayName?: string | undefined;
+    weeklyXp?: number;
+    isMe?: boolean;
+}
+
+export enum LeagueTierDto {
+    _1 = 1,
+    _2 = 2,
+    _3 = 3,
+    _4 = 4,
 }
 
 export interface LessonInUnitDto {
@@ -6794,6 +7245,7 @@ export interface MeResponse {
     roles?: string[] | undefined;
     fullName?: string | undefined;
     preferredLanguage?: string | undefined;
+    learningLanguage?: string | undefined;
     isFirstLogin?: boolean;
     hasChildren?: boolean;
     phone?: string | undefined;
@@ -6818,6 +7270,50 @@ export interface MissingPrerequisiteDto {
     currentAccuracy?: number;
 }
 
+export enum MissionStatusDto {
+    _0 = 0,
+    _1 = 1,
+    _2 = 2,
+    _3 = 3,
+}
+
+export interface MissionSummary {
+    code?: string | undefined;
+    iconKey?: string | undefined;
+    titleKey?: string | undefined;
+    targetType?: MissionTargetTypeDto;
+    progress?: number;
+    target?: number;
+    status?: MissionStatusDto;
+    completedAtUtc?: Date | undefined;
+}
+
+export enum MissionTargetTypeDto {
+    _1 = 1,
+    _2 = 2,
+    _3 = 3,
+}
+
+export interface MyLeagueResponse {
+    tier?: LeagueTierDto;
+    periodKey?: string | undefined;
+    periodStartUtc?: Date;
+    periodEndUtc?: Date;
+    myRank?: number;
+    myWeeklyXp?: number;
+    standings?: LeagueStandingDto[] | undefined;
+    promotionCutoffRank?: number;
+    demotionCutoffRank?: number;
+}
+
+export interface MyLeagueResponseBaseResponse {
+    statusCode?: HttpStatusCode;
+    successed?: boolean;
+    message?: string | undefined;
+    data?: MyLeagueResponse;
+    errors?: any[] | undefined;
+}
+
 export enum NodeState {
     _0 = 0,
     _1 = 1,
@@ -6829,6 +7325,9 @@ export enum NotificationCategory {
     _1 = 1,
     _2 = 2,
     _3 = 3,
+    _4 = 4,
+    _5 = 5,
+    _6 = 6,
 }
 
 export interface NotificationPreferenceItemDto {
@@ -6846,6 +7345,21 @@ export interface NotificationPreferencesResponseBaseResponse {
     successed?: boolean;
     message?: string | undefined;
     data?: NotificationPreferencesResponse;
+    errors?: any[] | undefined;
+}
+
+export interface PagedInboxResult {
+    items?: InboxItemDto[] | undefined;
+    totalCount?: number;
+    skip?: number;
+    take?: number;
+}
+
+export interface PagedInboxResultBaseResponse {
+    statusCode?: HttpStatusCode;
+    successed?: boolean;
+    message?: string | undefined;
+    data?: PagedInboxResult;
     errors?: any[] | undefined;
 }
 
@@ -6882,6 +7396,11 @@ export interface RefreshToken {
 export interface RefreshTokenCommand {
     accessToken?: string | undefined;
     refreshToken?: string | undefined;
+}
+
+export interface RegisterDeviceCommand {
+    expoPushToken?: string | undefined;
+    platform?: string | undefined;
 }
 
 export interface RegisterParentCommand {
@@ -7028,6 +7547,7 @@ export interface StudentSubjectDto {
     id?: number;
     name?: string | undefined;
     gradeNumber?: number;
+    subjectCode?: SubjectCode;
 }
 
 export interface StudentSubjectDtoListBaseResponse {
@@ -7036,6 +7556,13 @@ export interface StudentSubjectDtoListBaseResponse {
     message?: string | undefined;
     data?: StudentSubjectDto[] | undefined;
     errors?: any[] | undefined;
+}
+
+export enum SubjectCode {
+    _0 = 0,
+    _1 = 1,
+    _2 = 2,
+    _3 = 3,
 }
 
 export interface SubmitAnswerCommand {
@@ -7085,6 +7612,15 @@ export interface UpdateChildCommand {
     grade?: number;
     language?: string | undefined;
     country?: string | undefined;
+}
+
+export interface UpdateChildReengagementPreferencesCommand {
+    childId?: number;
+    items?: CategoryPrefItem[] | undefined;
+    quietHoursStartLocal?: string | undefined;
+    quietHoursEndLocal?: string | undefined;
+    timeZoneId?: string | undefined;
+    dailyCap?: number | undefined;
 }
 
 export interface UpdateMyNotificationPreferencesCommand {
