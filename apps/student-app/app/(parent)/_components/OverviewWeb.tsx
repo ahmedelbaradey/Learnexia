@@ -127,7 +127,7 @@ export function OverviewWeb() {
   const dateRange = t('parent.overview.dateRange');
 
   return (
-    <Stack flexDirection="column" gap="$6" padding="$6" maxWidth={1280} width="100%" alignSelf="center">
+    <Stack flexDirection="column" gap="$6" padding="$6" width="100%">
       {/* Header */}
       <Stack flexDirection={rowDir} alignItems="flex-start" justifyContent="space-between" gap="$4" flexWrap="wrap">
         <Stack flexDirection="column" gap="$1">

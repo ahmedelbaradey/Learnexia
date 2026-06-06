@@ -73,7 +73,7 @@ export function MyChildrenWeb() {
     : undefined;
 
   return (
-    <Stack flexDirection="column" width="100%" maxWidth={1100} alignSelf="center">
+    <Stack flexDirection="column" width="100%">
       {/* Header row — its own 20/32 padding + hairline bottom border (H-1/H-2) */}
       <Stack
         flexDirection={rowDir}

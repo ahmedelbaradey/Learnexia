@@ -345,6 +345,7 @@ export const en = {
         languageLabel: 'Language',
         regionLabel: 'Region',
         regionPlaceholder: 'Select region',
+        saveSuccess: 'Language preference saved.',
       },
       comingSoon: {
         // TODO(P2-12): Notifications / Linked children / Security / Plan & billing.
@@ -438,6 +439,10 @@ export const en = {
         manage: 'Manage Subscription',
         managePending: 'Subscription management coming soon.',
         upgradeComingSoon: "You're on the Free plan. Paid upgrades land soon — we'll let you know.",
+        planName: {
+          free: 'Free',
+          pro: 'Pro',
+        },
       },
     },
     linkChild: {
@@ -934,6 +939,7 @@ export const ar = {
         languageLabel: 'اللغة',
         regionLabel: 'المنطقة',
         regionPlaceholder: 'اختر المنطقة',
+        saveSuccess: 'تم حفظ تفضيل اللغة.',
       },
       comingSoon: {
         // TODO(P2-12): Notifications / Linked children / Security / Plan & billing.
@@ -1027,6 +1033,10 @@ export const ar = {
         manage: 'إدارة الاشتراك',
         managePending: 'إدارة الاشتراك قريبًا.',
         upgradeComingSoon: 'أنت على الخطة المجانية. خطط الاشتراك قادمة قريبًا، سنُعلمك.',
+        planName: {
+          free: 'مجاني',
+          pro: 'برو',
+        },
       },
     },
     linkChild: {

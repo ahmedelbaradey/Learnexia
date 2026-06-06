@@ -48,8 +48,12 @@ export {
   cairoFont,
   tajawalFont,
   fontFamilyForLocale,
+  loadWebFonts,
+  nativeFontMap,
+  nativeFaceFor,
+  fontFaces,
 } from './fonts';
-export type { Fonts } from './fonts';
+export type { Fonts, FontFaceDescriptor } from './fonts';
 
 // Themes.
 export { themes, darkTheme, lightTheme, DEFAULT_THEME } from './themes';

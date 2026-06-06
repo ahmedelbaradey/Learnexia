@@ -1847,7 +1847,18 @@
         "tags": [
           "Badges"
         ],
+        "operationId": "BadgesMe",
         "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyBadgesResponseBaseResponse"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -2691,6 +2702,7 @@
         "tags": [
           "Inbox"
         ],
+        "operationId": "InboxMe",
         "parameters": [
           {
             "name": "take",
@@ -2974,6 +2986,7 @@
         "tags": [
           "Leagues"
         ],
+        "operationId": "LeaguesMe",
         "responses": {
           "200": {
             "description": "OK",
@@ -3365,7 +3378,18 @@
         "tags": [
           "Missions"
         ],
+        "operationId": "MissionsMe",
         "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyMissionsResponseBaseResponse"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -7260,6 +7284,7 @@
         "tags": [
           "Users"
         ],
+        "operationId": "UsersMe",
         "responses": {
           "200": {
             "description": "OK",
@@ -7889,6 +7914,16 @@
         },
         "additionalProperties": false
       },
+      "BadgeRarity": {
+        "enum": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
       "BadgeRarityDto": {
         "enum": [
           1,
@@ -7898,6 +7933,43 @@
         ],
         "type": "integer",
         "format": "int32"
+      },
+      "BadgeStateDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "iconKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "rarity": {
+            "$ref": "#/components/schemas/BadgeRarity"
+          },
+          "triggerType": {
+            "$ref": "#/components/schemas/BadgeTriggerType"
+          },
+          "threshold": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "rewardXp": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isEarned": {
+            "type": "boolean"
+          },
+          "awardedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
       },
       "BadgeSummary": {
         "type": "object",
@@ -7919,6 +7991,15 @@
           }
         },
         "additionalProperties": false
+      },
+      "BadgeTriggerType": {
+        "enum": [
+          1,
+          2,
+          3
+        ],
+        "type": "integer",
+        "format": "int32"
       },
       "BooleanBaseResponse": {
         "type": "object",
@@ -9185,6 +9266,58 @@
         },
         "additionalProperties": false
       },
+      "MissionStateDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "iconKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "titleKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "cadence": {
+            "$ref": "#/components/schemas/MissionTypeDto"
+          },
+          "targetType": {
+            "$ref": "#/components/schemas/MissionTargetTypeDto"
+          },
+          "target": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rewardXp": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "progress": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MissionStatusDto"
+          },
+          "periodStartUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "periodEndUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "MissionStatusDto": {
         "enum": [
           0,
@@ -9240,6 +9373,51 @@
         ],
         "type": "integer",
         "format": "int32"
+      },
+      "MissionTypeDto": {
+        "enum": [
+          1,
+          2
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "MyBadgesResponse": {
+        "type": "object",
+        "properties": {
+          "badges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BadgeStateDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "MyBadgesResponseBaseResponse": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "$ref": "#/components/schemas/HttpStatusCode"
+          },
+          "successed": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/MyBadgesResponse"
+          },
+          "errors": {
+            "type": "array",
+            "items": {},
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
       },
       "MyLeagueResponse": {
         "type": "object",
@@ -9300,6 +9478,50 @@
           },
           "data": {
             "$ref": "#/components/schemas/MyLeagueResponse"
+          },
+          "errors": {
+            "type": "array",
+            "items": {},
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "MyMissionsResponse": {
+        "type": "object",
+        "properties": {
+          "daily": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MissionStateDto"
+            },
+            "nullable": true
+          },
+          "weekly": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MissionStateDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "MyMissionsResponseBaseResponse": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "$ref": "#/components/schemas/HttpStatusCode"
+          },
+          "successed": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/MyMissionsResponse"
           },
           "errors": {
             "type": "array",

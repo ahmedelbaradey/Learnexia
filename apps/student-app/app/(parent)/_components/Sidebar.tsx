@@ -83,8 +83,14 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
       width={240}
       height="100%"
       backgroundColor="$bg"
-      borderEndWidth={1}
-      borderEndColor="$borderSubtle"
+      // Divider faces the body content: border-right in EN (sidebar on the
+      // left), border-left in Arabic (sidebar on the right). Set the physical
+      // side explicitly — react-native-web does not reliably flip the logical
+      // `borderEnd*` by `dir` on web.
+      borderRightWidth={isRtl ? 0 : 1}
+      borderLeftWidth={isRtl ? 1 : 0}
+      borderRightColor="$borderSubtle"
+      borderLeftColor="$borderSubtle"
       paddingHorizontal="$4"
       paddingVertical="$6"
       gap="$6"
@@ -206,7 +212,7 @@ function SidebarXpWidget({ direction }: { direction: Direction }) {
       padding={14}
       gap="$1"
       accessible
-      accessibilityLabel={`${t('parent.nav.xpWidget.eyebrow')} ${t('parent.nav.xpWidget.value', { xp: STUB_XP })} ${t('parent.nav.xpWidget.delta', { percent: STUB_DELTA_PERCENT })}`}
+      accessibilityLabel={`${t('parent.xpWidget.eyebrow')} ${t('parent.xpWidget.value', { xp: STUB_XP })} ${t('parent.xpWidget.delta', { percent: STUB_DELTA_PERCENT })}`}
     >
       <Text
         color="$xp"
@@ -217,13 +223,13 @@ function SidebarXpWidget({ direction }: { direction: Direction }) {
         letterSpacing={0.8}
         writingDirection={direction}
       >
-        {t('parent.nav.xpWidget.eyebrow')}
+        {t('parent.xpWidget.eyebrow')}
       </Text>
       <Text color="$fg1" fontSize={20} fontWeight="800" fontFamily="$heading" writingDirection={direction}>
-        {t('parent.nav.xpWidget.value', { xp: STUB_XP })}
+        {t('parent.xpWidget.value', { xp: STUB_XP })}
       </Text>
       <Text color="$fg3" fontSize={11} fontFamily="$body" writingDirection={direction}>
-        {t('parent.nav.xpWidget.delta', { percent: STUB_DELTA_PERCENT })}
+        {t('parent.xpWidget.delta', { percent: STUB_DELTA_PERCENT })}
       </Text>
     </Stack>
   );

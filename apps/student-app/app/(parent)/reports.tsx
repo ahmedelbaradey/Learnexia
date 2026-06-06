@@ -32,9 +32,7 @@ function ReportsBody() {
       flexDirection="column"
       gap="$3"
       padding="$6"
-      maxWidth={1200}
       width="100%"
-      alignSelf="center"
     >
       <Text
         color="$fg1"

@@ -115,7 +115,10 @@ export interface IClient {
 
     update(body: EditRoleCommand | undefined): Promise<void>;
 
-    me(): Promise<void>;
+    /**
+     * @return OK
+     */
+    badgesMe(): Promise<MyBadgesResponseBaseResponse>;
 
     list(subjectId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void>;
 
@@ -160,7 +163,7 @@ export interface IClient {
      * @param skip (optional) 
      * @return OK
      */
-    me2(take: number | undefined, skip: number | undefined): Promise<PagedInboxResultBaseResponse>;
+    inboxMe(take: number | undefined, skip: number | undefined): Promise<PagedInboxResultBaseResponse>;
 
     /**
      * @return OK
@@ -179,7 +182,7 @@ export interface IClient {
     /**
      * @return OK
      */
-    me3(): Promise<MyLeagueResponseBaseResponse>;
+    leaguesMe(): Promise<MyLeagueResponseBaseResponse>;
 
     list3(unitId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void>;
 
@@ -196,7 +199,10 @@ export interface IClient {
 
     update4(body: EditLessonCommand | undefined): Promise<void>;
 
-    me4(): Promise<void>;
+    /**
+     * @return OK
+     */
+    missionsMe(): Promise<MyMissionsResponseBaseResponse>;
 
     /**
      * @return OK
@@ -436,7 +442,7 @@ export interface IClient {
     /**
      * @return OK
      */
-    me5(): Promise<MeResponseBaseResponse>;
+    usersMe(): Promise<MeResponseBaseResponse>;
 }
 
 export class Client implements IClient {
@@ -1887,25 +1893,35 @@ export class Client implements IClient {
         return Promise.resolve<void>(null as any);
     }
 
-    me(): Promise<void> {
+    /**
+     * @return OK
+     */
+    badgesMe(): Promise<MyBadgesResponseBaseResponse> {
         let url_ = this.baseUrl + "/api/Gamification/Badges/Me";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
             method: "GET",
             headers: {
+                "Accept": "application/json"
             }
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processMe(_response);
+            return this.processBadgesMe(_response);
         });
     }
 
-    protected processMe(response: Response): Promise<void> {
+    protected processBadgesMe(response: Response): Promise<MyBadgesResponseBaseResponse> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 400) {
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MyBadgesResponseBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
             return response.text().then((_responseText) => {
             let result400: any = null;
             result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
@@ -1926,7 +1942,7 @@ export class Client implements IClient {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<void>(null as any);
+        return Promise.resolve<MyBadgesResponseBaseResponse>(null as any);
     }
 
     list(subjectId: number | undefined, pageNumber: number | undefined, pageSize: number | undefined, search: string | undefined, orderBy: string | undefined): Promise<void> {
@@ -2640,7 +2656,7 @@ export class Client implements IClient {
      * @param skip (optional) 
      * @return OK
      */
-    me2(take: number | undefined, skip: number | undefined): Promise<PagedInboxResultBaseResponse> {
+    inboxMe(take: number | undefined, skip: number | undefined): Promise<PagedInboxResultBaseResponse> {
         let url_ = this.baseUrl + "/api/Notifications/Inbox/Me?";
         if (take === null)
             throw new globalThis.Error("The parameter 'take' cannot be null.");
@@ -2660,11 +2676,11 @@ export class Client implements IClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processMe2(_response);
+            return this.processInboxMe(_response);
         });
     }
 
-    protected processMe2(response: Response): Promise<PagedInboxResultBaseResponse> {
+    protected processInboxMe(response: Response): Promise<PagedInboxResultBaseResponse> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {
@@ -2921,7 +2937,7 @@ export class Client implements IClient {
     /**
      * @return OK
      */
-    me3(): Promise<MyLeagueResponseBaseResponse> {
+    leaguesMe(): Promise<MyLeagueResponseBaseResponse> {
         let url_ = this.baseUrl + "/api/Gamification/Leagues/Me";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -2933,11 +2949,11 @@ export class Client implements IClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processMe3(_response);
+            return this.processLeaguesMe(_response);
         });
     }
 
-    protected processMe3(response: Response): Promise<MyLeagueResponseBaseResponse> {
+    protected processLeaguesMe(response: Response): Promise<MyLeagueResponseBaseResponse> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {
@@ -3271,25 +3287,35 @@ export class Client implements IClient {
         return Promise.resolve<void>(null as any);
     }
 
-    me4(): Promise<void> {
+    /**
+     * @return OK
+     */
+    missionsMe(): Promise<MyMissionsResponseBaseResponse> {
         let url_ = this.baseUrl + "/api/Gamification/Missions/Me";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
             method: "GET",
             headers: {
+                "Accept": "application/json"
             }
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processMe4(_response);
+            return this.processMissionsMe(_response);
         });
     }
 
-    protected processMe4(response: Response): Promise<void> {
+    protected processMissionsMe(response: Response): Promise<MyMissionsResponseBaseResponse> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 400) {
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MyMissionsResponseBaseResponse;
+            return result200;
+            });
+        } else if (status === 400) {
             return response.text().then((_responseText) => {
             let result400: any = null;
             result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
@@ -3310,7 +3336,7 @@ export class Client implements IClient {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<void>(null as any);
+        return Promise.resolve<MyMissionsResponseBaseResponse>(null as any);
     }
 
     /**
@@ -6582,7 +6608,7 @@ export class Client implements IClient {
     /**
      * @return OK
      */
-    me5(): Promise<MeResponseBaseResponse> {
+    usersMe(): Promise<MeResponseBaseResponse> {
         let url_ = this.baseUrl + "/api/Users/Me";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -6594,11 +6620,11 @@ export class Client implements IClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processMe5(_response);
+            return this.processUsersMe(_response);
         });
     }
 
-    protected processMe5(response: Response): Promise<MeResponseBaseResponse> {
+    protected processUsersMe(response: Response): Promise<MeResponseBaseResponse> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {
@@ -6819,6 +6845,13 @@ export interface AvatarUploadResponseBaseResponse {
     errors?: any[] | undefined;
 }
 
+export enum BadgeRarity {
+    _1 = 1,
+    _2 = 2,
+    _3 = 3,
+    _4 = 4,
+}
+
 export enum BadgeRarityDto {
     _1 = 1,
     _2 = 2,
@@ -6826,11 +6859,28 @@ export enum BadgeRarityDto {
     _4 = 4,
 }
 
+export interface BadgeStateDto {
+    code?: string | undefined;
+    iconKey?: string | undefined;
+    rarity?: BadgeRarity;
+    triggerType?: BadgeTriggerType;
+    threshold?: number | undefined;
+    rewardXp?: number;
+    isEarned?: boolean;
+    awardedAtUtc?: Date | undefined;
+}
+
 export interface BadgeSummary {
     code?: string | undefined;
     iconKey?: string | undefined;
     rarity?: BadgeRarityDto;
     awardedAtUtc?: Date;
+}
+
+export enum BadgeTriggerType {
+    _1 = 1,
+    _2 = 2,
+    _3 = 3,
 }
 
 export interface BooleanBaseResponse {
@@ -7270,6 +7320,21 @@ export interface MissingPrerequisiteDto {
     currentAccuracy?: number;
 }
 
+export interface MissionStateDto {
+    code?: string | undefined;
+    iconKey?: string | undefined;
+    titleKey?: string | undefined;
+    cadence?: MissionTypeDto;
+    targetType?: MissionTargetTypeDto;
+    target?: number;
+    rewardXp?: number;
+    progress?: number;
+    status?: MissionStatusDto;
+    periodStartUtc?: Date;
+    periodEndUtc?: Date;
+    completedAtUtc?: Date | undefined;
+}
+
 export enum MissionStatusDto {
     _0 = 0,
     _1 = 1,
@@ -7294,6 +7359,23 @@ export enum MissionTargetTypeDto {
     _3 = 3,
 }
 
+export enum MissionTypeDto {
+    _1 = 1,
+    _2 = 2,
+}
+
+export interface MyBadgesResponse {
+    badges?: BadgeStateDto[] | undefined;
+}
+
+export interface MyBadgesResponseBaseResponse {
+    statusCode?: HttpStatusCode;
+    successed?: boolean;
+    message?: string | undefined;
+    data?: MyBadgesResponse;
+    errors?: any[] | undefined;
+}
+
 export interface MyLeagueResponse {
     tier?: LeagueTierDto;
     periodKey?: string | undefined;
@@ -7311,6 +7393,19 @@ export interface MyLeagueResponseBaseResponse {
     successed?: boolean;
     message?: string | undefined;
     data?: MyLeagueResponse;
+    errors?: any[] | undefined;
+}
+
+export interface MyMissionsResponse {
+    daily?: MissionStateDto[] | undefined;
+    weekly?: MissionStateDto[] | undefined;
+}
+
+export interface MyMissionsResponseBaseResponse {
+    statusCode?: HttpStatusCode;
+    successed?: boolean;
+    message?: string | undefined;
+    data?: MyMissionsResponse;
     errors?: any[] | undefined;
 }
 

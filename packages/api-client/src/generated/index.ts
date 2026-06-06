@@ -61,6 +61,8 @@ export type {
   // W10 / P2-12 — Plan & billing tab
   CurrentPlanResponse,
   CurrentPlanResponseBaseResponse,
+  // P8-99-FE-2 — UI-language persistence (axis A)
+  EditUserPreferredLanguageCommand,
   // W11 — learning types (P2-02-FE + P2-03-FE)
   StudentSubjectDto,
   StudentSubjectDtoListBaseResponse,
@@ -86,7 +88,9 @@ export type {
   DashboardDto,
   DashboardDtoBaseResponse,
   ContinueTargetDto,
-  DailyMissionDto,
+  // P4-06 renamed the dashboard mission sub-type DailyMissionDto → MissionSummary
+  // (DashboardDto now exposes dailyMissions: MissionSummary[] + weeklyMission: MissionSummary).
+  MissionSummary,
   LeaguePreviewDto,
 } from './nswag-client';
 

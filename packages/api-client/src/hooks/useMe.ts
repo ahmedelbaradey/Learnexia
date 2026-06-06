@@ -25,6 +25,6 @@ export function useMe(
   return useQuery<MeResponse, Error, MeResponse>({
     ...options,
     queryKey: queryKeys.auth.me(),
-    queryFn: () => unwrapEnvelope(client.me()) as Promise<MeResponse>,
+    queryFn: () => unwrapEnvelope(client.usersMe()) as Promise<MeResponse>,
   });
 }
