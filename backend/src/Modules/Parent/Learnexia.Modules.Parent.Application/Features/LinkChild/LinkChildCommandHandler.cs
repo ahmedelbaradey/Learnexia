@@ -105,6 +105,9 @@ public class LinkChildCommandHandler : BaseResponseHandler, ICommandHandler<Link
             FullName = p?.FullName ?? string.Empty,
             Email = p?.Email ?? string.Empty,
             LearningLanguage = p?.LearningLanguage ?? string.Empty,
+            Grade = p?.Grade,
+            Language = (p?.Language?.StartsWith("en", StringComparison.OrdinalIgnoreCase) ?? false) ? "en" : "ar",
+            Country = p?.Country ?? string.Empty,
         });
     }
 }

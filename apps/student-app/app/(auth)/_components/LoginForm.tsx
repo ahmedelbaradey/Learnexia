@@ -90,7 +90,7 @@ export function LoginForm() {
   };
 
   const handleForgotPassword = () => {
-    // TODO(P-ForgotPassword): route to the forgot-password screen once it exists.
+    router.push('/(auth)/forgot-password');
   };
 
   return (
