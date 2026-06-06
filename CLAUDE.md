@@ -47,7 +47,7 @@ Private Claude/session memory does **not** travel with the repo, and one lead's 
 8. **Design patterns — ask first.** Default to mirroring existing shapes (existing modules on backend, the decided architecture + existing component/hook shapes on frontend); do not invent abstractions. If a task genuinely calls for a design pattern (Strategy, Factory, Decorator, provider/compound-component, etc.), **stop and ask the lead/user before implementing it** — name the pattern, where it applies, and why. Wait for approval; never introduce one unilaterally. This applies to both backend and frontend agents.
 
 ## Multi-agent workflow
-Specialized agents live in [.claude/agents/](.claude/agents/): `analyzer`, `planner`, `designer`, `db-migration`, `backend-feature`, `api-tester`, `frontend`, `frontend-e2e-tester`, `security-auditor`, `reviewer`, `committer`.
+Specialized agents live in [.claude/agents/](.claude/agents/): `analyzer`, `planner`, `designer`, `db-migration`, `backend-feature`, `api-tester`, `frontend`, `frontend-e2e-tester`, `qc-test-designer`, `security-auditor`, `reviewer`, `committer`.
 
 **Fixed order — analyzer → planner → (designer for UI) → implementers → reviewer:**
 1. **`analyzer`** (first, always) — reads the user story + task files, builds business + technical understanding, and writes a **Pipeline Brief** to `docs/briefs/<story>.md` (traceability, acceptance criteria, per-agent handoffs, open questions). If anything is ambiguous, it returns questions for the lead to ask the user **before** planning.
@@ -58,6 +58,7 @@ Specialized agents live in [.claude/agents/](.claude/agents/): `analyzer`, `plan
 5. **`reviewer`** gates each batch against the brief's acceptance criteria + CONVENTIONS.md (including `api-tester`, `frontend-e2e-tester`, and `security-auditor` results) before it's done.
 6. **`committer`** — only after `reviewer` PASSES — stages and commits the batch on a per-story branch (`feat/<StoryID>-…`) with a conventional message, then **always pushes the branch and opens a Pull Request** (with a full description). Never on `main`, never amends/force-pushes, and never merges the PR itself unless explicitly told.
 
+- **`qc-test-designer` (on-demand QC stage, not in the fixed order):** when the lead asks for it, this Opus-pinned agent designs comprehensive backend + frontend test cases for a story and writes a per-run folder `docs/qc/<StoryID>/` (test-case docs + a coverage report). It only *designs* — `api-tester` then implements `backend-test-cases.md` and `frontend-e2e-tester` implements `frontend-test-cases.md`, both writing results into that folder's `execution-report.md`. Run it before those tester stages when you want a deliberate, traceable test plan rather than ad-hoc coverage.
 - Downstream agents consume the **Pipeline Brief + Execution Plan** (and frontend also the **Design Spec**) as their spec, follow the docs above, and report back: what changed, files touched, build/test status, any rule they had to bend (with why).
 - Do not skip analyzer or planner for anything beyond a trivial one-line fix.
 

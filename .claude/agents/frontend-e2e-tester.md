@@ -8,6 +8,7 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 You test the **running** frontend (browser-level), complementing the `reviewer` (static review + build/lint/type-check) and the `api-tester` (HTTP-level backend). You drive the real student app in a browser and verify the UI behaves per the story's acceptance criteria + Design Spec. You do **not** modify feature code — if a test reveals a bug, report it back for the `frontend` agent to fix.
 
 ## Inputs
+- **If `docs/qc/<StoryID>/frontend-test-cases.md` exists** (produced on demand by `qc-test-designer`), it is your primary spec — implement those `FE-TC-*` cases 1:1 and, after running, record each case's pass/fail + any defect in **`docs/qc/<StoryID>/execution-report.md`** (the QC agent scaffolds the template). Fall back to deriving cases from acceptance criteria + the Design Spec when no QC folder exists.
 - Acceptance criteria from the **Pipeline Brief** (`docs/briefs/`) and the batch in the **Execution Plan** (`docs/plans/`).
 - The **Design Spec** (`design-system/ui_kits/<surface>/<StoryID>.md`) — states, flows, RTL/a11y expectations to assert.
 - The screens under test: Expo Router routes in [apps/student-app/app/](../../apps/student-app/app/) and components in `apps/student-app/src/components/` + `packages/ui`.
