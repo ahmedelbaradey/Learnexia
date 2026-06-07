@@ -42,6 +42,7 @@ export interface ChildCardProps {
   direction?: Direction;
   locale?: string;
   accessibilityLabel: string;
+  testID?: string;
 }
 
 function resolveDirection(direction?: Direction, locale?: string): Direction {
@@ -139,6 +140,7 @@ export function ChildCard({
   direction,
   locale,
   accessibilityLabel,
+  testID,
 }: ChildCardProps) {
   const dir = resolveDirection(direction, locale);
   const rowDir = dir === 'rtl' ? 'row-reverse' : 'row';
@@ -149,6 +151,7 @@ export function ChildCard({
   return (
     <YStack gap="$1">
       <Stack
+        testID={testID}
         minHeight={72}
         borderRadius="$card"
         borderWidth={1}

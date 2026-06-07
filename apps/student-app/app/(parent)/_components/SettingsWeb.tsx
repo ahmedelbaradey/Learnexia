@@ -98,7 +98,7 @@ export function SettingsWeb() {
   }));
 
   return (
-    <Stack flexDirection="column" width="100%">
+    <Stack testID="settings-root" flexDirection="column" width="100%">
       {/* Header — own padding + a 1px bottom rule (web-page-header card). */}
       <Stack
         flexDirection={rowDir}
@@ -163,6 +163,7 @@ export function SettingsWeb() {
             onChange={(v) => setActiveTab(v as SettingsTabKey)}
             direction={direction}
             accessibilityLabel={t('parent.settings.tabs.navLabel')}
+            testID="settings-tabs-nav"
           />
         </Stack>
 
@@ -405,6 +406,7 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
       {Platform.OS === 'web' && (
         <input
           ref={fileInputRef}
+          data-testid="avatar-file-input"
           type="file"
           accept={AVATAR_ACCEPT}
           style={{ display: 'none' }}
@@ -450,6 +452,7 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
               disabled={avatarPending}
               accessibilityLabel={t('parent.settings.profile.uploadPhoto')}
               onPress={handleUploadPress}
+              testID="avatar-upload-button"
             >
               {t('parent.settings.profile.uploadPhoto')}
             </Button>
@@ -462,6 +465,7 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
                 disabled={avatarPending}
                 accessibilityLabel={t('parent.settings.profile.removePhoto')}
                 onPress={handleRemove}
+                testID="avatar-remove-button"
               >
                 {t('parent.settings.profile.removePhoto')}
               </Button>
@@ -596,6 +600,7 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
           disabled={updateProfile.isPending}
           accessibilityLabel={t('parent.settings.profile.cancel')}
           onPress={resetToLoaded}
+          testID="profile-cancel"
         >
           {t('parent.settings.profile.cancel')}
         </Button>
@@ -606,6 +611,7 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
           disabled={updateProfile.isPending}
           accessibilityLabel={t('parent.settings.profile.save')}
           onPress={onSave}
+          testID="profile-save"
         >
           {t('parent.settings.profile.save')}
         </Button>

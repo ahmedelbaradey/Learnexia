@@ -106,6 +106,7 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
       {/* Child-selector card */}
       {activeChild ? (
         <Stack
+          testID="sidebar-child-selector"
           borderRadius="$cardInner"
           backgroundColor="$card"
           borderWidth={1}

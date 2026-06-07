@@ -30,6 +30,7 @@ export interface ChildDashboardCardProps {
   onViewDashboard: () => void;
   /** When provided, renders an Edit affordance (pencil icon button) in the card header. */
   onEdit?: () => void;
+  testID?: string;
 }
 
 function formatNumber(value: number, locale: string): string {
@@ -52,6 +53,7 @@ export function ChildDashboardCard({
   stats,
   onViewDashboard,
   onEdit,
+  testID,
 }: ChildDashboardCardProps) {
   const { t } = useTranslation();
   const { direction, isRtl, locale } = useLocale();
@@ -76,6 +78,7 @@ export function ChildDashboardCard({
 
   return (
     <Stack
+      testID={testID}
       flexDirection="column"
       gap={18}
       flex={1}

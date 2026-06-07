@@ -256,6 +256,7 @@ export function LoginForm() {
         accessibilityLabel={t('auth.login.personaToggleLabel')}
         direction={direction}
         disabled={emailFormDisabled}
+        testID="login-persona-toggle"
       />
 
       <Controller
@@ -273,6 +274,7 @@ export function LoginForm() {
             error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
             direction={direction}
             disabled={emailFormDisabled}
+            testID="login-username"
           />
         )}
       />
@@ -289,6 +291,7 @@ export function LoginForm() {
             error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
             direction={direction}
             disabled={emailFormDisabled}
+            testID="login-password"
           />
         )}
       />
@@ -319,13 +322,14 @@ export function LoginForm() {
           accessibilityLabel={t('auth.login.forgotPassword')}
           aria-label={t('auth.login.forgotPassword')}
           writingDirection={direction}
+          testID="login-forgot-password"
         >
           {t('auth.login.forgotPassword')}
         </Text>
       </Stack>
 
       {/* Shared error banner — covers both email and Google errors. */}
-      <ServerErrorBanner message={serverMessage} direction={direction} />
+      <ServerErrorBanner message={serverMessage} direction={direction} testID="login-error" />
 
       <Button
         variant="primary"
@@ -334,6 +338,7 @@ export function LoginForm() {
         loading={signIn.isPending}
         disabled={emailButtonDisabled}
         onPress={onSubmit}
+        testID="login-submit"
       >
         {t('auth.login.submitButton')}
       </Button>
@@ -358,6 +363,7 @@ export function LoginForm() {
           loading={isGoogleInFlight}
           disabled={!isGoogleConfigured || !request}
           labelLtr
+          testID="login-social-google"
         />
         <SocialButton
           label={t('auth.login.socialApple')}
@@ -367,6 +373,7 @@ export function LoginForm() {
           }}
           direction={direction}
           disabled
+          testID="login-social-apple"
         />
         <Stack display="none" flex={1} $tablet={{ display: 'flex' }}>
           <SocialButton
@@ -377,6 +384,7 @@ export function LoginForm() {
             }}
             direction={direction}
             disabled
+            testID="login-social-microsoft"
           />
         </Stack>
       </SocialRow>

@@ -72,6 +72,7 @@ export function CheckboxField({
         accessibilityState={{ checked, disabled }}
         accessibilityLabel={accessibilityLabel}
         aria-label={accessibilityLabel}
+        aria-checked={checked}
         hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
       >
         <Stack

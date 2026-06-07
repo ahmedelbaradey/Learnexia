@@ -110,6 +110,7 @@ export function EditChildSheet({
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Stack flex={1} backgroundColor="$overlay" justifyContent="flex-end">
         <Stack
+          testID="edit-child-sheet"
           maxHeight="85%"
           backgroundColor="$card"
           borderTopStartRadius="$modal"
@@ -332,7 +333,7 @@ function EditChildFields({ childId, initialValues, onClose }: EditChildFieldsPro
         )}
       />
 
-      <ServerErrorBanner message={serverMessage} direction={direction} />
+      <ServerErrorBanner message={serverMessage} direction={direction} testID="edit-child-error" />
 
       <Button
         variant="secondary"
@@ -341,6 +342,7 @@ function EditChildFields({ childId, initialValues, onClose }: EditChildFieldsPro
         loading={updateChild.isPending}
         disabled={disabled || formState.isSubmitting}
         onPress={onSubmit}
+        testID="edit-child-save"
       >
         {t('onboarding.saveChanges')}
       </Button>

@@ -149,6 +149,7 @@ export function MyChildrenWeb() {
             size="sm"
             accessibilityLabel={t('parent.myChildren.addChild')}
             onPress={() => router.push('/(onboarding)/add-child')}
+            testID="my-children-add-button"
           >
             {t('parent.myChildren.addChild')}
           </Button>
@@ -167,6 +168,7 @@ export function MyChildrenWeb() {
         ) : (
           /* Card grid — 3-col CSS grid on web, wrapping flex on native */
           <Stack
+            testID="my-children-list"
             {...(IS_WEB
               ? { style: gridStyle }
               : { flexDirection: rowDir, flexWrap: 'wrap' as const, gap: '$4', alignItems: 'stretch' })}
@@ -189,6 +191,7 @@ export function MyChildrenWeb() {
                   return (
                     <ChildDashboardCard
                       key={id}
+                      testID={`child-card-${id}`}
                       fullName={child.fullName ?? ''}
                       stats={stub}
                       onViewDashboard={() => router.push('/(parent)')}

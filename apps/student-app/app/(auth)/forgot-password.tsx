@@ -181,6 +181,7 @@ function ForgotPasswordForm({ direction }: { direction: Direction }) {
     // Anti-enumeration success state: replace form with a generic confirmation.
     return (
       <Stack
+        testID="forgot-password-success"
         backgroundColor="$successSoft"
         borderRadius="$card"
         padding="$5"
@@ -233,11 +234,12 @@ function ForgotPasswordForm({ direction }: { direction: Direction }) {
             error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
             direction={direction}
             disabled={disabled}
+            testID="forgot-password-email"
           />
         )}
       />
 
-      <ServerErrorBanner message={serverMessage} direction={direction} />
+      <ServerErrorBanner message={serverMessage} direction={direction} testID="forgot-password-error" />
 
       <Button
         variant="primary"
@@ -246,6 +248,7 @@ function ForgotPasswordForm({ direction }: { direction: Direction }) {
         loading={forgotPassword.isPending}
         disabled={disabled || formState.isSubmitting}
         onPress={onSubmit}
+        testID="forgot-password-submit"
       >
         {t('auth.forgotPassword.submitButton')}
       </Button>

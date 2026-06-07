@@ -291,6 +291,7 @@ export function NotificationsPanel({ direction, rowDir }: NotificationsPanelProp
                     accessibilityLabel={`${categoryLabel} — ${emailLabel}`}
                     direction={direction}
                     disabled={updateMutation.isPending}
+                    testID={`notification-${catKey}-email`}
                   />
                 </Stack>
 
@@ -313,6 +314,7 @@ export function NotificationsPanel({ direction, rowDir }: NotificationsPanelProp
                     accessibilityLabel={`${categoryLabel} — ${pushLabel}`}
                     direction={direction}
                     disabled={updateMutation.isPending}
+                    testID={`notification-${catKey}-push`}
                   />
                 </Stack>
               </Stack>

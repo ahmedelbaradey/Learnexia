@@ -182,6 +182,7 @@ export function LanguagePanel({ direction, rowDir, locale }: LanguagePanelProps)
             options={languageOptions}
             direction={direction}
             accessibilityLabel={t('parent.settings.language.languageLabel')}
+            testID="settings-language-switch"
           />
         </Stack>
         <Stack flex={1} minWidth={240}>

@@ -67,6 +67,7 @@ export default function SplashScreen() {
 
   return (
     <GradientBox
+      testID="splash-screen"
       flex={1}
       stops={gradientStops.splashBg.colors}
       angle={gradientStops.splashBg.angle}
@@ -174,7 +175,7 @@ export default function SplashScreen() {
             />
           </Stack>
 
-          <Text fontFamily={bodyFont} fontSize={14} color={FG2_ALPHA} textAlign="center">
+          <Text testID="splash-loading" fontFamily={bodyFont} fontSize={14} color={FG2_ALPHA} textAlign="center">
             {t('common.splash.loading')}
           </Text>
         </Stack>

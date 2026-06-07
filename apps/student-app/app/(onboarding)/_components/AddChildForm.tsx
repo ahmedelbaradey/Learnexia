@@ -93,6 +93,7 @@ export function AddChildForm({ initialValues, submitLabel, onAdd }: AddChildForm
             autoCapitalize="words"
             error={errText(fieldState.error?.message)}
             direction={direction}
+            testID="add-child-name"
           />
         )}
       />
@@ -108,6 +109,7 @@ export function AddChildForm({ initialValues, submitLabel, onAdd }: AddChildForm
             autoCapitalize="none"
             error={errText(fieldState.error?.message)}
             direction={direction}
+            testID="add-child-email"
           />
         )}
       />
@@ -122,6 +124,7 @@ export function AddChildForm({ initialValues, submitLabel, onAdd }: AddChildForm
             secureTextEntry
             error={errText(fieldState.error?.message)}
             direction={direction}
+            testID="add-child-password"
           />
         )}
       />
@@ -137,6 +140,7 @@ export function AddChildForm({ initialValues, submitLabel, onAdd }: AddChildForm
             onChange={(v) => field.onChange(Number(v))}
             error={errText(fieldState.error?.message)}
             direction={direction}
+            testID="add-child-grade"
           />
         )}
       />
@@ -185,6 +189,7 @@ export function AddChildForm({ initialValues, submitLabel, onAdd }: AddChildForm
                 error={errText(fieldState.error?.message)}
                 direction={direction}
                 accessibilityLabel={t('onboarding.addChild.labelLearningLanguage')}
+                testID="add-child-learning-language"
               />
               <Text
                 color="$fg3"
@@ -221,6 +226,7 @@ export function AddChildForm({ initialValues, submitLabel, onAdd }: AddChildForm
                 error={errText(fieldState.error?.message)}
                 direction={direction}
                 accessibilityLabel={t('onboarding.addChild.labelAppLanguage')}
+                testID="add-child-app-language"
               />
               <Text
                 color="$fg3"
@@ -254,7 +260,7 @@ export function AddChildForm({ initialValues, submitLabel, onAdd }: AddChildForm
         )}
       />
 
-      <Button variant="secondary" size="full" accessibilityLabel={submitLabel} onPress={onSubmit}>
+      <Button variant="secondary" size="full" accessibilityLabel={submitLabel} onPress={onSubmit} testID="add-child-to-list">
         {submitLabel}
       </Button>
     </Stack>
