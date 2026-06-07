@@ -14,6 +14,7 @@ As an admin, I want to author skills and edit their prerequisite dependency grap
 ## Acceptance Criteria
 - Given a lesson/concept, when the admin creates/edits a skill, then it persists with name, mastery threshold, estimated time, and its owning concept/lesson.
 - Given the skill graph editor, when the admin adds a prerequisite edge between two skills, then a `KnowledgeEdge` (prerequisite/related + `Strength`) is created.
+- Given an edge whose two skills belong to **different language trees** (e.g. an `ar` skill and an `en` skill), then the API **rejects the cross-language edge** with a clear "edge must stay within one language tree" error and the UI shows it without persisting — the skill graph is **per-language** and edges never cross between the `ar` and `en` trees of a subject.
 - Given an edit that would create a cycle, then the API rejects it with a clear "would create a cycle" error and the UI shows it without persisting.
 - Given a skill, when the admin views it, then "prerequisites of X" and "skills unlocked by X" are listed (reusing the P2-11 queries).
 - Given an edge, when the admin removes it, then the edge is deleted and the graph re-renders.
@@ -22,4 +23,4 @@ As an admin, I want to author skills and edit their prerequisite dependency grap
 ## Notes
 - Surface: **Next.js `admin-dashboard`** app, built on the P1-10 admin shell.
 - Depends on: P2-11 (relational `KnowledgeNode`/`KnowledgeEdge` + acyclic validator + prereq/unlock queries), P2-01 (`Skill`), P1-10 (admin shell), P1-05 (Admin policy).
-- This is the admin UI over the hand-authored graph from P2-11 — it replaces seed-only authoring; the OCR ingestion pipeline (BL-01..05) stays out of scope. Admin-only per SRS §3.
+- This is the admin UI over the hand-authored graph from P2-11 — it replaces seed-only authoring; the OCR ingestion pipeline (BL-01..05) stays out of scope. Curriculum is now **bilingual parallel trees**: skills inherit `Language` from their owning Subject (`SubjectCode` + `Language`, ar/en), so the knowledge graph is **per-language** — an edge must keep both nodes in the same language tree (cross-language edges are rejected). Admin-only per SRS §3.
