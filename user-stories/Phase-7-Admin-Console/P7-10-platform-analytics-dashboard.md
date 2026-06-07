@@ -13,7 +13,7 @@ As an admin, I want a platform-wide KPI dashboard, so that I can see how the who
 
 ## Acceptance Criteria
 - Given the admin dashboard, when I open Analytics, then I see platform-wide KPI cards: **active users (DAU/WAU/MAU), retention, lessons & quizzes completed, and engagement** (e.g. session duration, missions completed), each over a selectable time range.
-- KPIs are rendered as **charts/trends** (time series + summary cards) with a date-range filter and, where relevant, breakdown by subject (Math, Science, Arabic, English) and grade.
+- KPIs are rendered as **charts/trends** (time series + summary cards) with a date-range filter and, where relevant, breakdown by subject (Math, Science, Arabic, English), grade, and **language (ar / en)** — so an admin can compare engagement/throughput across the two curriculum languages.
 - All figures are **aggregates** sourced from the P5-03 analytics events via a reporting read-model — no individual child PII is shown on this dashboard.
 - The dashboard reads from a summary/aggregate query that responds quickly and does not degrade live request latency (NFR-1); aggregates may be cached.
 - Only an admin can reach these views and endpoints; non-admin → 403/redirect.
@@ -22,4 +22,4 @@ As an admin, I want a platform-wide KPI dashboard, so that I can see how the who
 ## Notes
 - Surface: **Next.js `admin-dashboard`** app, built on the P1-10 admin shell.
 - Depends on: P1-10 (admin shell), P1-05 (Admin policy), P5-03 (analytics event capture).
-- P7-10 reads analytics events from P5-03 and exposes them as admin aggregates; this is the admin-facing complement to the operator KPI view in P6-05. Read/aggregate-only — no new write entities beyond optional cached aggregates. Charts are admin-facing (web). RTL/Arabic + English.
+- P7-10 reads analytics events from P5-03 and exposes them as admin aggregates; this is the admin-facing complement to the operator KPI view in P6-05. Read/aggregate-only — no new write entities beyond optional cached aggregates. Curriculum is now **bilingual parallel trees**, so **language (ar/en)** is a first-class breakdown dimension alongside subject and grade. Charts are admin-facing (web). RTL/Arabic + English.

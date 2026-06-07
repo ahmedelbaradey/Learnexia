@@ -13,7 +13,7 @@ As an admin, I want to search and inspect parent and child accounts, so that I c
 
 ## Acceptance Criteria
 - Given the admin dashboard, when I open Users, then I see a **paginated list** of accounts filterable by role (parent/child), status (active/suspended), and a free-text query over name/email; results are server-paginated.
-- Given a result, when I open it, then I see a **read-only profile**: name, email, role, status, created/last-active dates, and (for children) grade, language, and country.
+- Given a result, when I open it, then I see a **read-only profile**: name, email, role, status, created/last-active dates, and (for children) grade, country, and **both language fields** — **`PreferredLanguage`** (UI language, ar/en) **and** **`LearningLanguage`** (medium of instruction for Math/Science, ar/en) shown distinctly and labeled, since they are now two separate values.
 - Given a parent, then I can see their **linked children** (family); given a child, then I can see their linked parent(s) — per the P1-04 `ParentStudent` linkage.
 - Given a selected user, then I can view a **recent activity summary** (e.g. last sign-in, recent learning/gamification activity) sourced via integration contracts, not direct cross-module FKs.
 - Only an admin can reach these views and endpoints; non-admin → 403/redirect.
@@ -22,4 +22,4 @@ As an admin, I want to search and inspect parent and child accounts, so that I c
 ## Notes
 - Surface: **Next.js `admin-dashboard`** app, built on the P1-10 admin shell.
 - Depends on: P1-10 (admin shell), P1-05 (Admin policy), P1-01/P1-03/P1-04 (Identity, parent/child).
-- Reuses the **Identity** module. Activity summary crosses modules → consumed via `Shared.Contracts` integration seams only (no cross-module FK). No teacher role.
+- Reuses the **Identity** module. A child now has **two** language fields: `PreferredLanguage` (UI) and `LearningLanguage` (medium of instruction — drives which Math/Science Subject tree they get); the profile view shows both. Activity summary crosses modules → consumed via `Shared.Contracts` integration seams only (no cross-module FK). No teacher role.
