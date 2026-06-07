@@ -20,6 +20,7 @@ P1-01-FE is the **parent Register** screen — the only registration path in the
 | P1 | 8 |
 | P2 | 4 |
 | Blocked (not testable as written) | 3 (FE-TC-04 success-route, FE-TC-13 duplicate-email, FE-TC-14 weak-password from server) — all depend on a live/seedable backend at `:5080`; see Risk + Open Questions |
+| **Executed (2026-06-07)** | **20 PASS / 0 FAIL / 0 BLOCKED** — all 3 previously-BLOCKED cases ran against the live backend at `:5080` |
 
 All cases target **`frontend-e2e-tester`** (Playwright, chromium + mobile projects).
 

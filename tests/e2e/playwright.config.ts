@@ -32,7 +32,7 @@ export default defineConfig({
     { name: 'mobile', use: { ...devices['Pixel 7'] } },
   ],
   webServer: {
-    command: 'npx expo start --port 8081',
+    command: 'EXPO_OFFLINE=1 npx expo start --port 8081',
     cwd: '../../apps/student-app',
     url: WEB_URL,
     reuseExistingServer: !process.env.CI,
