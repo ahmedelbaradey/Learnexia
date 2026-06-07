@@ -3,6 +3,20 @@
 > Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-06-06 (**FE state reconciliation — see the ⭐ block directly below; Phase-1 + Phase-2 student FE confirmed merged, P8-04 FE corrected to not-started.** Earlier: **Phase 8 — Localization backend COMPLETE + merged to main (P8-01/02/03 PR #90; P8-04 PR #91) — see the Phase 8 section directly below.** Earlier status: **P4-11 BE — Streak freeze + timed events + weekly challenges + XP boost — commit/PR ready. P4-10 BE merged. P4-09 merged via PR #80. P4-08 FE WIP on `feat/P4-08-gamification-screens-motion` (Batches 2–6 still open for FE lead). Earlier P4-* per below.**).
 > Captures what's done, the decisions, the load-building config, and what's next. If you change any of these, update this file.
 > 2026-06-07: **E2E test stage added — `frontend-e2e-tester` agent + `tests/e2e/` Playwright harness (PR #99, branch `chore/e2e-playwright-harness`). See "Testing — E2E (Playwright)" directly below.**
+> 2026-06-07: **QC test-design + api-tester pass over all Phase-1 backend stories (branch `qc/phase-1-backend`) — ~329 designed cases, ~520 integration tests run; surfaced one HIGH security hole + several robustness/contract defects. See "QC — Phase-1 backend test pass + defects" directly below.**
+
+## QC — Phase-1 backend test pass + defects — added 2026-06-07 (branch `qc/phase-1-backend`)
+
+On-demand `qc-test-designer` (Opus) designed backend test cases for the 11 Phase-1 API-surface stories (P1-01/02/03/04/05/09/10/12/13/13a/13b; infra P1-06/07 excluded — no HTTP). Catalogs live in **`docs/qc/<StoryID>/`** (`README.md` coverage report + `backend-test-cases.md` + `execution-report.md`). `api-tester` then implemented them into `backend/tests/Learnexia.IntegrationTests/` and filled each `execution-report.md`.
+
+**Combined P1 suite: 511 passed / 6 skipped / 1 failed (518).** The one RED is the intentional bug-documenting test (P1-03 `BE-TC-30`). ~24 cases are legitimately BLOCKED on missing test-harness seams (a `Production`-env host, throwing `IEmailSender`/`SignInManager` doubles, MinIO fault-injection, cross-boot re-seed) — documented per story, none faked.
+
+**Defects surfaced (feature code was NOT changed by api-tester — these are for `backend-feature`):**
+- **🔴 HIGH — P1-05 / `GradesController`** (`api/learning/Grades/*`): no `[Authorize]` at all — unauthenticated **Create/Update/Delete** of curriculum grades. Introduced in P2-01 with authz deferred via a code comment. Fix: gate writes `AdminOnly`, reads authenticated (don't leave reads anonymous; don't blanket-block reads that the student browse flow needs — verify P2 browse first).
+- **🟠 Missing length bounds → unhandled 500** (should be 422/400): `AddChildCommandValidator.FullName`/`Country` (DEF-P103-01, the RED test) and `RegisterParentCommandValidator.Email` (oversized → DB `varchar` overflow → 500). Add `MaximumLength`. Also register **malformed JSON body → 500** (null command dereference) should be a 400.
+- **🟠 P1-09 — `preferredLanguage` round-trip**: stored/returned as BCP-47 `ar-EG`/`en-US` (via `IdentityChildAccountService.NormalizeLanguage` + hard-coded defaults) but Add-Child accepts and the FE contract expects 2-letter `ar`/`en`. **Lead decision:** normalize to 2-letter, or change the FE contract. (Deferred — not auto-fixed; wider data/contract impact.)
+- **🟡 P1-13a — `Notifications` (lead-intent, deferred):** (1) `UpdateMyNotificationPreferencesCommandValidator` does NOT require all 4 categories — a single-category PUT returns 200; (2) `SendNotificationCommand` is `IRequest<Result>` not `ICommand<>`, so `ValidationBehavior` never fires → `POST /api/notifications` doesn't 422 on empty Title/Body, returns bare 202 (not a `BaseResponse` envelope). Confirm intended contract before changing.
+- **Confirmations (no action unless product wants it):** post-Sign-Out the access JWT stays valid until expiry (no blocklist/security-stamp revocation); 429 responses carry no `Retry-After` header; lockout fires on attempt **5** (`MaxFailedAccessAttempts=5`, no off-by-one).
 
 ## Testing — E2E (Playwright) — added 2026-06-07 (PR #99, not yet merged)
 
