@@ -122,6 +122,7 @@
 | P7-10 | Platform analytics & KPI dashboard | 🔲 | 🔲 |
 | P7-11 | AI-safety & quality monitoring dashboard | 🔲 | 🔲 |
 | P7-12 | Admin action audit log | 🔲 | 🔲 |
+| P7-13 | Gamification admin overrides (tier / badge & mission catalog / timed-event write / streak-freeze) | 🔲 | 🔲 |
 
 ## Phase 8 — Localization
 > Learning language (medium of instruction) vs UI language; bilingual curriculum as parallel ar/en trees. Design: `docs/architecture/localization-architecture.md`.

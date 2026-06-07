@@ -125,6 +125,7 @@ Admin feature breakdown behind the P1-10 shell. **All FE work lands in `apps/adm
 | P7-10 | Platform analytics & KPI dashboard | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-10-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-10-BE.md) |
 | P7-11 | AI-safety & quality monitoring dashboard | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-11-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-11-BE.md) |
 | P7-12 | Admin action audit log | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-12-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-12-BE.md) |
+| P7-13 | Gamification admin overrides *(tier / badge & mission catalog / timed-event write / streak-freeze)* | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-13-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-13-BE.md) |
 
 ### Phase 8 — Localization
 
