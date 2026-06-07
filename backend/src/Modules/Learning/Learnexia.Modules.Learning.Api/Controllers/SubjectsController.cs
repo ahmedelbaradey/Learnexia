@@ -8,6 +8,7 @@ using Learnexia.Modules.Learning.Application.Features.Subjects.Queries.GetSubjec
 using Learnexia.Modules.Learning.Application.Features.Subjects.Queries.GetSubjectsForGrade;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Queries.GetSubjectSkillTree;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Queries.List;
+using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Responses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -62,14 +63,17 @@ public class SubjectsController : AppControllerBase
     // ── Admin CRUD ────────────────────────────────────────────────────────────
 
     [HttpPost("Create")]
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
     public async Task<IActionResult> Create([FromBody] AddSubjectCommand command)
         => NewResult(await Mediator.Send(command));
 
     [HttpPut("Update")]
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
     public async Task<IActionResult> Update([FromBody] EditSubjectCommand command)
         => NewResult(await Mediator.Send(command));
 
     [HttpDelete]
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
     public async Task<IActionResult> Delete(int id)
         => NewResult(await Mediator.Send(new DeleteSubjectCommand { Id = id }));
 }

@@ -4,6 +4,8 @@ using Learnexia.Modules.Learning.Application.Features.Concepts.Commands.Delete;
 using Learnexia.Modules.Learning.Application.Features.Concepts.Commands.Edit;
 using Learnexia.Modules.Learning.Application.Features.Concepts.Queries.Get;
 using Learnexia.Modules.Learning.Application.Features.Concepts.Queries.List;
+using Learnexia.Shared.Kernel.Abstractions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Learnexia.Modules.Learning.Api.Controllers;
@@ -21,14 +23,17 @@ public class ConceptsController : AppControllerBase
         => NewResult(await Mediator.Send(new GetConceptQuery { Id = id }));
 
     [HttpPost("Create")]
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
     public async Task<IActionResult> Create([FromBody] AddConceptCommand command)
         => NewResult(await Mediator.Send(command));
 
     [HttpPut("Update")]
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
     public async Task<IActionResult> Update([FromBody] EditConceptCommand command)
         => NewResult(await Mediator.Send(command));
 
     [HttpDelete]
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
     public async Task<IActionResult> Delete(int id)
         => NewResult(await Mediator.Send(new DeleteConceptCommand { Id = id }));
 }
