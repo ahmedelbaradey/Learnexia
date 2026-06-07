@@ -436,6 +436,7 @@
         public const string ProfileFullNameTooLong = "ProfileFullNameTooLong"; // P1-12 BE-1
         public const string ProfileInvalidPhoneFormat = "ProfileInvalidPhoneFormat"; // P1-12 BE-1
         public const string ProfileCountryTooLong = "ProfileCountryTooLong"; // P1-12 BE-1
+        public const string ProfileEmailTooLong = "ProfileEmailTooLong"; // QC defect fix — RegisterParent email length bound
 
         // User Login Messages (MSG-LOGIN-001 to MSG-LOGIN-004)
         public const string LoginUserNotFound = "LoginUserNotFound"; // MSG-LOGIN-001

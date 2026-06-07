@@ -981,6 +981,204 @@ public sealed class P1_12_BE9_Register_BE8_EditChild_Tests : IAsyncLifetime
             "the child's email must NOT be changed by an extra 'email' field in the body; childId: {0}", childId);
     }
 
+    // ===========================================================================
+    // BE-TC-51: Edit non-existent child → identical 403 (no id-enumeration oracle)
+    // Not-linked AND not-found must both return the SAME 403 + same message so
+    // an attacker cannot distinguish "child exists but not mine" from "no such child".
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-51a: PUT Update-Child with non-existent childId (999999999) → 403")]
+    public async Task BE8_NonExistentChild_Returns403()
+    {
+        var (parentToken, _) = await RegisterParentAsync(UniqueEmail("nonexist-parent"));
+
+        var body = new
+        {
+            ChildId = 999999999, // almost certainly does not exist
+            FullName = "Ghost Child",
+            Grade = 3,
+            Language = "ar",
+            Country = "EG"
+        };
+
+        var (resp, root, rawBody) = await SendAsync(_client, HttpMethod.Put, UpdateChildUrl, body, parentToken);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden,
+            "BE-TC-51: non-existent childId must return 403 (same as not-linked) — no id-enumeration oracle; body: {0}", rawBody);
+
+        TryProp(root, "successed", out var successed).Should().BeTrue("body: {0}", rawBody);
+        successed.GetBoolean().Should().BeFalse(
+            "Successed must be false for non-existent child; body: {0}", rawBody);
+    }
+
+    [Fact(DisplayName = "BE-TC-51b: Non-existent child returns same 403 message as cross-family (no enumeration oracle)")]
+    public async Task BE8_NonExistentChild_SameMessageAsCrossFamily()
+    {
+        // Path A: cross-family (child exists but belongs to a different parent)
+        var (tokenA, _) = await RegisterParentAsync(UniqueEmail("enum-A"));
+        var (tokenB, _) = await RegisterParentAsync(UniqueEmail("enum-B"));
+        var childBId = await AddChildAsync(tokenB, UniqueEmail("enum-childB"));
+
+        var crossFamilyBody = new
+        {
+            ChildId = childBId,
+            FullName = "Cross Attempt",
+            Grade = 3,
+            Language = "ar",
+            Country = "EG"
+        };
+        var (crossResp, crossRoot, crossRawBody) = await SendAsync(
+            _client, HttpMethod.Put, UpdateChildUrl, crossFamilyBody, tokenA);
+        crossResp.StatusCode.Should().Be(HttpStatusCode.Forbidden, "cross-family; body: {0}", crossRawBody);
+        TryProp(crossRoot, "message", out var crossMsg).Should().BeTrue("body: {0}", crossRawBody);
+
+        // Path B: non-existent child (using a fresh parent who has no children)
+        var (tokenC, _) = await RegisterParentAsync(UniqueEmail("enum-C"));
+        var nonExistBody = new
+        {
+            ChildId = 999999998,
+            FullName = "Ghost",
+            Grade = 3,
+            Language = "ar",
+            Country = "EG"
+        };
+        var (nonExistResp, nonExistRoot, nonExistRawBody) = await SendAsync(
+            _client, HttpMethod.Put, UpdateChildUrl, nonExistBody, tokenC);
+        nonExistResp.StatusCode.Should().Be(HttpStatusCode.Forbidden, "non-existent; body: {0}", nonExistRawBody);
+        TryProp(nonExistRoot, "message", out var nonExistMsg).Should().BeTrue("body: {0}", nonExistRawBody);
+
+        // Both must produce the same message — no id-enumeration oracle
+        crossMsg.GetString().Should().Be(nonExistMsg.GetString(),
+            "BE-TC-51 HEADLINE: 403 message must be IDENTICAL for cross-family and non-existent child " +
+            "— any difference is a child-id enumeration oracle. " +
+            "cross-family body: {0}, non-existent body: {1}",
+            crossRawBody, nonExistRawBody);
+    }
+
+    // ===========================================================================
+    // BE-TC-57: Register cannot inject a role / create a non-parent
+    // Extra unmapped fields (roles, role) in the body must be silently ignored.
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-57: Register with extra 'roles' field → 200 but account is Parent ONLY (role injection blocked)")]
+    public async Task BE9_Register_RoleInjection_Blocked()
+    {
+        var email = UniqueEmail("role-inject");
+
+        // Attempt mass-assignment: include 'roles' and 'role' extra fields alongside valid registration fields.
+        // UpdateMyProfileCommand / RegisterParentCommand do NOT have a Roles property, so the model binder
+        // must silently ignore them.
+        var payload = new Dictionary<string, object?>
+        {
+            ["Email"] = email,
+            ["Password"] = ValidParentPassword,
+            ["AcceptedTerms"] = true,
+            // These extra fields must be ignored — command doesn't have a Roles property
+            ["Roles"] = new[] { "Admin" },
+            ["Role"] = "Student",
+        };
+
+        var (regResp, regRoot, regBody) = await SendAsync(_client, HttpMethod.Post, RegisterParentUrl, payload);
+
+        regResp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "BE-TC-57: Register with extra role fields must still succeed (extras ignored); body: {0}", regBody);
+
+        TryProp(regRoot, "successed", out var successed).Should().BeTrue("body: {0}", regBody);
+        successed.GetBoolean().Should().BeTrue("body: {0}", regBody);
+
+        TryProp(regRoot, "data", out var data).Should().BeTrue("body: {0}", regBody);
+        TryProp(data, "accessToken", out var tokenProp).Should().BeTrue("body: {0}", regBody);
+        var token = tokenProp.GetString()!;
+
+        // Verify via /Me that the assigned role is Parent only
+        var (meResp, meRoot, meBody) = await GetMeAsync(token);
+        meResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", meBody);
+        TryProp(meRoot, "data", out var meData).Should().BeTrue("body: {0}", meBody);
+        TryProp(meData, "roles", out var rolesProp).Should().BeTrue("body: {0}", meBody);
+
+        var roles = rolesProp.EnumerateArray()
+            .Select(r => r.GetString())
+            .Where(r => r is not null)
+            .ToList();
+
+        roles.Should().Contain(r => string.Equals(r, "Parent", StringComparison.OrdinalIgnoreCase),
+            "roles must contain 'Parent'; roles={0}; body={1}", string.Join(",", roles!), meBody);
+
+        roles.Should().NotContain(r => string.Equals(r, "Admin", StringComparison.OrdinalIgnoreCase),
+            "roles must NOT contain 'Admin' — role injection via extra body field must be blocked; body: {0}", meBody);
+
+        roles.Should().NotContain(r => string.Equals(r, "Student", StringComparison.OrdinalIgnoreCase),
+            "roles must NOT contain 'Student' — student self-register is blocked per product decisions; body: {0}", meBody);
+
+        roles.Should().NotContain(r => string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase),
+            "roles must NOT contain 'SuperAdmin' — privilege escalation via extra field must be blocked; body: {0}", meBody);
+    }
+
+    // ===========================================================================
+    // BE-TC-58: Register duplicate email → 422 (no second account created)
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-58a: Register same email twice → second attempt returns 422 (duplicate email)")]
+    public async Task BE9_Register_DuplicateEmail_Returns422()
+    {
+        var email = UniqueEmail("dup-email");
+
+        // First registration — must succeed
+        var (firstResp, _, firstBody) = await SendAsync(_client, HttpMethod.Post, RegisterParentUrl,
+            new { Email = email, Password = ValidParentPassword, AcceptedTerms = true });
+        firstResp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "First registration must succeed; body: {0}", firstBody);
+
+        // Second registration with the same email — must be rejected
+        var (secondResp, secondRoot, secondBody) = await SendAsync(_client, HttpMethod.Post, RegisterParentUrl,
+            new { Email = email, Password = ValidParentPassword, AcceptedTerms = true });
+
+        secondResp.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "BE-TC-58: Registering with a duplicate email must return 422; body: {0}", secondBody);
+
+        TryProp(secondRoot, "successed", out var successed).Should().BeTrue("body: {0}", secondBody);
+        successed.GetBoolean().Should().BeFalse(
+            "Successed must be false for duplicate email; body: {0}", secondBody);
+
+        TryProp(secondRoot, "errors", out var errorsProp).Should().BeTrue("body: {0}", secondBody);
+        errorsProp.ValueKind.Should().Be(JsonValueKind.Array, "body: {0}", secondBody);
+        errorsProp.GetArrayLength().Should().BeGreaterThan(0,
+            "errors must have at least one entry on duplicate email; body: {0}", secondBody);
+    }
+
+    [Fact(DisplayName = "BE-TC-58b: Only one account is created for a duplicate email (no account-takeover via re-register)")]
+    public async Task BE9_Register_DuplicateEmail_OnlyOneAccount()
+    {
+        var email = UniqueEmail("dup-one");
+
+        // First registration
+        var (firstResp, firstRoot, firstBody) = await SendAsync(_client, HttpMethod.Post, RegisterParentUrl,
+            new { Email = email, Password = ValidParentPassword, AcceptedTerms = true });
+        firstResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", firstBody);
+        TryProp(firstRoot, "data", out var data1).Should().BeTrue("body: {0}", firstBody);
+        TryProp(data1, "userId", out var idProp1).Should().BeTrue("body: {0}", firstBody);
+        var originalUserId = idProp1.GetInt32();
+
+        // Second registration — should be rejected
+        var (secondResp, _, _) = await SendAsync(_client, HttpMethod.Post, RegisterParentUrl,
+            new { Email = email, Password = "DifferentP@ss1", AcceptedTerms = true });
+        secondResp.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "duplicate registration must be rejected");
+
+        // Verify via DB that there is exactly one user with this email
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<
+            Learnexia.Modules.Identity.Infrastructure.Persistence.IdentityModuleDbContext>();
+        var count = db.Users.Count(u => u.Email == email);
+        count.Should().Be(1,
+            "BE-TC-58: exactly one account must exist for email '{0}'; found {1}", email, count);
+
+        // The existing account must not have been mutated (password still the original)
+        var existingUser = db.Users.Single(u => u.Email == email);
+        existingUser.Id.Should().Be(originalUserId,
+            "The userId must be unchanged after the failed duplicate registration");
+    }
+
     // ---- Additional: Regression — existing (old-signature) register still works with AcceptedTerms=true ----
 
     [Fact(DisplayName = "Regression: existing tests register-parent helper with AcceptedTerms=true still returns 200")]

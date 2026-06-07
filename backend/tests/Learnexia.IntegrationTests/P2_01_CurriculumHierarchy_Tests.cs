@@ -1,5 +1,7 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using FluentAssertions;
 using Learnexia.Modules.Learning.Infrastructure.Persistence;
@@ -19,6 +21,15 @@ namespace Learnexia.IntegrationTests;
 ///   Lessons   : same pattern with optional ?UnitId= on List
 ///   Concepts  : same pattern with optional ?SubjectId= on List
 ///   Skills    : same pattern with optional ?ConceptId= on List
+///
+/// Auth contract (post-gate):
+///   Grades List / GetById     — requires any authenticated user (class-level [Authorize]);
+///                               anonymous → 401.
+///   Grades Create/Update/Delete — requires Admin or SuperAdmin
+///                               ([Authorize(Policy = AdminOnly)]);
+///                               anonymous → 401, non-admin → 403.
+///   All other aggregate controllers (Subjects/Units/Lessons/Concepts/Skills) — unchanged:
+///                               anonymous access is permitted.
 ///
 /// JSON Response Structure (OBSERVED from actual API):
 ///   List → BaseResponse&lt;PaginatedResult&lt;T&gt;&gt;
@@ -42,13 +53,23 @@ namespace Learnexia.IntegrationTests;
 ///   AC-3 : Validation → 422 on empty Name, GradeId=0, out-of-range enum, out-of-range MasteryThreshold
 ///   AC-4 : Non-existent GradeId fails gracefully (not a naked exception, non-2xx)
 ///   AC-5 : DifficultyLevel enum persists and round-trips as int in JSON
-///   AC-6 : All six controllers are anonymous (no 401 without JWT)
+///   AC-6 : Grades List requires authentication (401 anonymous); other five list endpoints are anonymous
 /// </summary>
 [Collection("IntegrationTests")]
 public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
 {
     private readonly LearnexiaWebAppFactory _factory;
     private readonly HttpClient _client;
+
+    // -------------------------------------------------------------------------
+    // Seeded admin credentials (mirrored from P1_05_RBAC_Tests)
+    // -------------------------------------------------------------------------
+    private const string AdminUserName = "superadmin";
+    private const string AdminPassword = "123Pa$$word!";
+    private const string SignInUrl = "api/Users/Authentication/Sign-In";
+
+    /// <summary>Lazy admin token — fetched once per test class instance.</summary>
+    private string? _adminToken;
 
     public P2_01_CurriculumHierarchy_Tests(LearnexiaWebAppFactory factory)
     {
@@ -65,9 +86,62 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<LearningDbContext>();
         await db.Database.MigrateAsync();
+
+        // Pre-fetch admin token so all write + read helpers can reuse it.
+        _adminToken = await FetchAdminTokenAsync();
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
+
+    // =========================================================================
+    // Auth helpers
+    // =========================================================================
+
+    /// <summary>Signs in as the seeded superadmin and returns the JWT access token.</summary>
+    private async Task<string> FetchAdminTokenAsync()
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, SignInUrl);
+        request.Content = new StringContent(
+            JsonSerializer.Serialize(new { UserName = AdminUserName, Password = AdminPassword }),
+            Encoding.UTF8, "application/json");
+
+        var response = await _client.SendAsync(request);
+        var body = await response.Content.ReadAsStringAsync();
+        response.StatusCode.Should().Be(HttpStatusCode.OK,
+            "admin sign-in prerequisite must succeed; body: {0}", body);
+
+        var root = JsonDocument.Parse(body).RootElement;
+        TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);
+        TryProp(data, "accessToken", out var token).Should().BeTrue("body: {0}", body);
+        return token.GetString()!;
+    }
+
+    /// <summary>Builds an HttpRequestMessage with an optional bearer token.</summary>
+    private static HttpRequestMessage BuildRequest(HttpMethod method, string url, object? body = null, string? bearer = null)
+    {
+        var request = new HttpRequestMessage(method, url);
+        if (body is not null)
+            request.Content = new StringContent(
+                JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+        if (bearer is not null)
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
+        return request;
+    }
+
+    private async Task<(HttpResponseMessage Response, JsonElement Root, string Body)>
+        SendAsync(HttpMethod method, string url, object? body = null, string? bearer = null)
+    {
+        using var request = BuildRequest(method, url, body, bearer);
+        var response = await _client.SendAsync(request);
+        var bodyStr = await response.Content.ReadAsStringAsync();
+        JsonElement root = default;
+        if (!string.IsNullOrWhiteSpace(bodyStr))
+        {
+            try { root = JsonDocument.Parse(bodyStr).RootElement; }
+            catch { /* non-JSON */ }
+        }
+        return (response, root, bodyStr);
+    }
 
     // =========================================================================
     // Helpers
@@ -90,45 +164,18 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
         return false;
     }
 
-    private async Task<(HttpResponseMessage Response, JsonElement Root, string Body)> PostAsync(string url, object payload)
-    {
-        var response = await _client.PostAsJsonAsync(url, payload);
-        var body = await response.Content.ReadAsStringAsync();
-        JsonElement root = default;
-        if (!string.IsNullOrWhiteSpace(body))
-            root = JsonDocument.Parse(body).RootElement;
-        return (response, root, body);
-    }
+    // Authenticated variants used by test bodies
+    private Task<(HttpResponseMessage Response, JsonElement Root, string Body)> PostAsync(string url, object payload, string? bearer = null)
+        => SendAsync(HttpMethod.Post, url, payload, bearer);
 
-    private async Task<(HttpResponseMessage Response, JsonElement Root, string Body)> GetAsync(string url)
-    {
-        var response = await _client.GetAsync(url);
-        var body = await response.Content.ReadAsStringAsync();
-        JsonElement root = default;
-        if (!string.IsNullOrWhiteSpace(body))
-            root = JsonDocument.Parse(body).RootElement;
-        return (response, root, body);
-    }
+    private Task<(HttpResponseMessage Response, JsonElement Root, string Body)> GetAsync(string url, string? bearer = null)
+        => SendAsync(HttpMethod.Get, url, null, bearer);
 
-    private async Task<(HttpResponseMessage Response, JsonElement Root, string Body)> PutAsync(string url, object payload)
-    {
-        var response = await _client.PutAsJsonAsync(url, payload);
-        var body = await response.Content.ReadAsStringAsync();
-        JsonElement root = default;
-        if (!string.IsNullOrWhiteSpace(body))
-            root = JsonDocument.Parse(body).RootElement;
-        return (response, root, body);
-    }
+    private Task<(HttpResponseMessage Response, JsonElement Root, string Body)> PutAsync(string url, object payload, string? bearer = null)
+        => SendAsync(HttpMethod.Put, url, payload, bearer);
 
-    private async Task<(HttpResponseMessage Response, JsonElement Root, string Body)> DeleteAsync(string url)
-    {
-        var response = await _client.DeleteAsync(url);
-        var body = await response.Content.ReadAsStringAsync();
-        JsonElement root = default;
-        if (!string.IsNullOrWhiteSpace(body))
-            root = JsonDocument.Parse(body).RootElement;
-        return (response, root, body);
-    }
+    private Task<(HttpResponseMessage Response, JsonElement Root, string Body)> DeleteAsync(string url, string? bearer = null)
+        => SendAsync(HttpMethod.Delete, url, null, bearer);
 
     /// <summary>
     /// Extracts the inner list from a paged response.
@@ -175,42 +222,45 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     }
 
     // =========================================================================
-    // AC-6 — Anonymous access: no 401 on any endpoint
+    // AC-6 — Auth contract: Grades List requires auth; other lists are anonymous
     // =========================================================================
 
-    [Fact(DisplayName = "AC-6: GET /api/learning/grades/List is accessible anonymously (no 401)")]
-    public async Task AC6_GradesList_IsAnonymous()
+    [Fact(DisplayName = "AC-6: GET /api/learning/grades/List is protected — anonymous → 401")]
+    public async Task AC6_GradesList_RequiresAuth()
     {
-        _client.DefaultRequestHeaders.Authorization = null;
-
+        // No token — grade list must challenge with 401 (class-level [Authorize] on GradesController).
         var (response, _, body) = await GetAsync("/api/learning/grades/List?PageNumber=1&PageSize=10");
 
-        ((int)response.StatusCode).Should().NotBe(401,
-            "Grades List must not require JWT; body: {0}", body);
-        ((int)response.StatusCode).Should().NotBe(403,
-            "Grades List must not require policy; body: {0}", body);
-        response.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", body);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized,
+            "GradesController is [Authorize]; anonymous request must return 401; body: {0}", body);
     }
 
-    [Theory(DisplayName = "AC-6 Anonymous: All six List endpoints accessible without JWT")]
-    [InlineData("/api/learning/grades/List?PageNumber=1&PageSize=10")]
+    [Fact(DisplayName = "AC-6: GET /api/learning/grades/List with valid token → 200")]
+    public async Task AC6_GradesList_Authenticated_Returns200()
+    {
+        var (response, _, body) = await GetAsync("/api/learning/grades/List?PageNumber=1&PageSize=10", _adminToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK,
+            "Authenticated user must receive 200 on Grades List; body: {0}", body);
+    }
+
+    [Theory(DisplayName = "AC-6: Subjects/Units/Lessons/Concepts/Skills List endpoints remain anonymous (200 without JWT)")]
     [InlineData("/api/learning/subjects/List?PageNumber=1&PageSize=10")]
     [InlineData("/api/learning/units/List?PageNumber=1&PageSize=10")]
     [InlineData("/api/learning/lessons/List?PageNumber=1&PageSize=10")]
     [InlineData("/api/learning/concepts/List?PageNumber=1&PageSize=10")]
     [InlineData("/api/learning/skills/List?PageNumber=1&PageSize=10")]
-    public async Task AC6_AllListEndpoints_AreAnonymous(string url)
+    public async Task AC6_NonGradeListEndpoints_AreAnonymous(string url)
     {
-        _client.DefaultRequestHeaders.Authorization = null;
-
+        // No token — all non-grade list endpoints must still return 200 (unchanged contract).
         var (response, _, body) = await GetAsync(url);
 
         ((int)response.StatusCode).Should().NotBe(401,
-            "endpoint {0} must not require authentication; body: {1}", url, body);
+            "endpoint {0} must not require authentication (unchanged); body: {1}", url, body);
         ((int)response.StatusCode).Should().NotBe(403,
-            "endpoint {0} must not require authorization policy; body: {1}", url, body);
+            "endpoint {0} must not require a policy (unchanged); body: {1}", url, body);
         response.StatusCode.Should().Be(HttpStatusCode.OK,
-            "List endpoint {0} must return 200 for anonymous requests; body: {1}", url, body);
+            "Non-grade List endpoint {0} must return 200 for anonymous requests; body: {1}", url, body);
     }
 
     // =========================================================================
@@ -220,7 +270,8 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-2: List Grades response outer envelope has statusCode/successed/message/data/errors")]
     public async Task AC2_GradesList_OuterEnvelopeShape()
     {
-        var (response, root, body) = await GetAsync("/api/learning/grades/List?PageNumber=1&PageSize=10");
+        // Grades List requires authentication — send admin token.
+        var (response, root, body) = await GetAsync("/api/learning/grades/List?PageNumber=1&PageSize=10", _adminToken);
         response.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", body);
 
         // Outer BaseResponse<PaginatedResult<T>> keys
@@ -235,7 +286,8 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-2: List Grades PaginatedResult (root.data) has currentPage/totalCount/totalPages/pageSize/data")]
     public async Task AC2_GradesList_PaginatedResultShape()
     {
-        var (response, root, body) = await GetAsync("/api/learning/grades/List?PageNumber=1&PageSize=10");
+        // Grades List requires authentication — send admin token.
+        var (response, root, body) = await GetAsync("/api/learning/grades/List?PageNumber=1&PageSize=10", _adminToken);
         response.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", body);
 
         TryProp(root, "data", out var paginatedResult).Should().BeTrue("body: {0}", body);
@@ -262,13 +314,13 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     {
         var uniqueName = $"Grade Test {Guid.NewGuid():N}";
 
-        // CREATE
+        // CREATE — requires Admin JWT
         var (createResp, createRoot, createBody) = await PostAsync("/api/learning/grades/Create",
-            new { Number = 2, DisplayName = uniqueName });
+            new { Number = 2, DisplayName = uniqueName }, _adminToken);
         AssertCreateSuccess(createResp, createRoot, createBody);
 
-        // LIST — find the created grade by unique name
-        var (listResp, listRoot, listBody) = await GetAsync("/api/learning/grades/List?PageNumber=1&PageSize=200");
+        // LIST — authenticated read; find the created grade by unique name
+        var (listResp, listRoot, listBody) = await GetAsync("/api/learning/grades/List?PageNumber=1&PageSize=200", _adminToken);
         listResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", listBody);
         var gradeItems = ExtractItems(listRoot, listBody);
 
@@ -285,8 +337,8 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
         createdGradeId.Should().BeGreaterThan(0,
             "created grade must appear in the list with a positive id; listBody: {0}", listBody);
 
-        // GET BY ID
-        var (getResp, getRoot, getBody) = await GetAsync($"/api/learning/grades?id={createdGradeId}");
+        // GET BY ID — authenticated read
+        var (getResp, getRoot, getBody) = await GetAsync($"/api/learning/grades?id={createdGradeId}", _adminToken);
         getResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", getBody);
         TryProp(getRoot, "successed", out var getSucceeded).Should().BeTrue("body: {0}", getBody);
         getSucceeded.GetBoolean().Should().BeTrue("GetById successed must be true; body: {0}", getBody);
@@ -296,23 +348,23 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
         TryProp(getData, "displayName", out var getDnProp).Should().BeTrue("body: {0}", getBody);
         getDnProp.GetString().Should().Be(uniqueName, "displayName must match; body: {0}", getBody);
 
-        // UPDATE
+        // UPDATE — requires Admin JWT
         var updatedName = $"Updated {uniqueName}";
         var (updateResp, updateRoot, updateBody) = await PutAsync("/api/learning/grades/Update",
-            new { Id = createdGradeId, Number = 2, DisplayName = updatedName });
+            new { Id = createdGradeId, Number = 2, DisplayName = updatedName }, _adminToken);
         updateResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", updateBody);
         TryProp(updateRoot, "successed", out var updateSucceeded).Should().BeTrue("body: {0}", updateBody);
         updateSucceeded.GetBoolean().Should().BeTrue("Update successed must be true; body: {0}", updateBody);
 
-        // GET after UPDATE — verify name changed
-        var (getAfterUpdateResp, getAfterUpdateRoot, getAfterUpdateBody) = await GetAsync($"/api/learning/grades?id={createdGradeId}");
+        // GET after UPDATE — verify name changed; authenticated read
+        var (getAfterUpdateResp, getAfterUpdateRoot, getAfterUpdateBody) = await GetAsync($"/api/learning/grades?id={createdGradeId}", _adminToken);
         getAfterUpdateResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", getAfterUpdateBody);
         TryProp(getAfterUpdateRoot, "data", out var updatedData).Should().BeTrue("body: {0}", getAfterUpdateBody);
         TryProp(updatedData, "displayName", out var updatedDnProp).Should().BeTrue("body: {0}", getAfterUpdateBody);
         updatedDnProp.GetString().Should().Be(updatedName, "displayName must reflect update; body: {0}", getAfterUpdateBody);
 
-        // DELETE
-        var (deleteResp, deleteRoot, deleteBody) = await DeleteAsync($"/api/learning/grades?id={createdGradeId}");
+        // DELETE — requires Admin JWT
+        var (deleteResp, deleteRoot, deleteBody) = await DeleteAsync($"/api/learning/grades?id={createdGradeId}", _adminToken);
         deleteResp.StatusCode.Should().Be(HttpStatusCode.OK, "Delete must return 200; body: {0}", deleteBody);
         TryProp(deleteRoot, "successed", out var deleteSucceeded).Should().BeTrue("body: {0}", deleteBody);
         deleteSucceeded.GetBoolean().Should().BeTrue("Delete successed must be true; body: {0}", deleteBody);
@@ -325,16 +377,16 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-1 Hierarchy: Grade→Subject→Unit→Lesson→Concept→Skill full creation round-trip")]
     public async Task AC1_FullHierarchy_CreationRoundTrip()
     {
-        // STEP 1: Create Grade
+        // STEP 1: Create Grade — requires Admin JWT
         var gradeName = $"Hierarchy Grade {Guid.NewGuid():N}";
         var (gradeResp, gradeRoot, gradeBody) = await PostAsync("/api/learning/grades/Create",
-            new { Number = 3, DisplayName = gradeName });
+            new { Number = 3, DisplayName = gradeName }, _adminToken);
         AssertCreateSuccess(gradeResp, gradeRoot, gradeBody);
 
         int gradeId = await FindIdInList("/api/learning/grades/List?PageNumber=1&PageSize=200",
-            "displayName", gradeName, "grade");
+            "displayName", gradeName, "grade", _adminToken);
 
-        // STEP 2: Create Subject
+        // STEP 2: Create Subject — anonymous allowed
         var subjName = $"Math {Guid.NewGuid():N}";
         var (subjResp, subjRoot, subjBody) = await PostAsync("/api/learning/subjects/Create",
             new { Name = subjName, Country = "EG", GradeId = gradeId });
@@ -344,7 +396,7 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
             $"/api/learning/subjects/List?PageNumber=1&PageSize=200&GradeId={gradeId}",
             "name", subjName, "subject");
 
-        // STEP 3: Create Unit
+        // STEP 3: Create Unit — anonymous allowed
         var unitName = $"Algebra {Guid.NewGuid():N}";
         var (unitResp, unitRoot, unitBody) = await PostAsync("/api/learning/units/Create",
             new { Name = unitName, SequenceOrder = 1, SubjectId = subjectId });
@@ -354,7 +406,7 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
             $"/api/learning/units/List?PageNumber=1&PageSize=200&SubjectId={subjectId}",
             "name", unitName, "unit");
 
-        // STEP 4: Create Concept
+        // STEP 4: Create Concept — anonymous allowed
         var conceptName = $"Variables {Guid.NewGuid():N}";
         var (conceptResp, conceptRoot, conceptBody) = await PostAsync("/api/learning/concepts/Create",
             new { Name = conceptName, Description = "Intro to variables", DifficultyLevel = 1 /* Easy */, SubjectId = subjectId });
@@ -364,7 +416,7 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
             $"/api/learning/concepts/List?PageNumber=1&PageSize=200&SubjectId={subjectId}",
             "name", conceptName, "concept");
 
-        // STEP 5: Create Skill
+        // STEP 5: Create Skill — anonymous allowed
         var skillName = $"Solve Equations {Guid.NewGuid():N}";
         var (skillResp, skillRoot, skillBody) = await PostAsync("/api/learning/skills/Create",
             new { Name = skillName, MasteryThreshold = 80, EstimatedTimeMinutes = 30, ConceptId = conceptId });
@@ -374,19 +426,19 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
             $"/api/learning/skills/List?PageNumber=1&PageSize=200&ConceptId={conceptId}",
             "name", skillName, "skill");
 
-        // STEP 6: Create Lesson WITHOUT SkillId (null is allowed)
+        // STEP 6: Create Lesson WITHOUT SkillId (null is allowed) — anonymous allowed
         var lesson1Name = $"Intro Lesson {Guid.NewGuid():N}";
         var (lesson1Resp, lesson1Root, lesson1Body) = await PostAsync("/api/learning/lessons/Create",
             new { Name = lesson1Name, Difficulty = 1 /* Easy */, SequenceOrder = 1, IsLocked = false, UnitId = unitId });
         AssertCreateSuccess(lesson1Resp, lesson1Root, lesson1Body);
 
-        // STEP 7: Create Lesson WITH SkillId
+        // STEP 7: Create Lesson WITH SkillId — anonymous allowed
         var lesson2Name = $"Linked Lesson {Guid.NewGuid():N}";
         var (lesson2Resp, lesson2Root, lesson2Body) = await PostAsync("/api/learning/lessons/Create",
             new { Name = lesson2Name, Difficulty = 2 /* Medium */, SequenceOrder = 2, IsLocked = false, UnitId = unitId, SkillId = skillId });
         AssertCreateSuccess(lesson2Resp, lesson2Root, lesson2Body);
 
-        // Verify lessons appear in filtered list
+        // Verify lessons appear in filtered list — anonymous allowed
         var (lessonListResp, lessonListRoot, lessonListBody) = await GetAsync(
             $"/api/learning/lessons/List?PageNumber=1&PageSize=200&UnitId={unitId}");
         lessonListResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", lessonListBody);
@@ -478,8 +530,9 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-3 Validation: Grade Create with empty DisplayName → 422")]
     public async Task AC3_Grade_EmptyDisplayName_Returns422()
     {
+        // Admin JWT required so the auth gate passes and FluentValidation fires.
         var (response, root, body) = await PostAsync("/api/learning/grades/Create",
-            new { Number = 1, DisplayName = "" });
+            new { Number = 1, DisplayName = "" }, _adminToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
             "empty DisplayName must trigger FluentValidation → 422; body: {0}", body);
@@ -492,8 +545,9 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-3 Validation: Grade Create with Number=0 (out of 1–6 range) → 422")]
     public async Task AC3_Grade_InvalidNumber_Zero_Returns422()
     {
+        // Admin JWT required so FluentValidation fires (not the auth gate).
         var (response, root, body) = await PostAsync("/api/learning/grades/Create",
-            new { Number = 0, DisplayName = "Valid Name" });
+            new { Number = 0, DisplayName = "Valid Name" }, _adminToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
             "Number=0 out of valid range 1–6 → 422; body: {0}", body);
@@ -504,8 +558,9 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-3 Validation: Grade Create with Number=7 (out of 1–6 range) → 422")]
     public async Task AC3_Grade_InvalidNumber_TooLarge_Returns422()
     {
+        // Admin JWT required so FluentValidation fires (not the auth gate).
         var (response, root, body) = await PostAsync("/api/learning/grades/Create",
-            new { Number = 7, DisplayName = "Valid Name" });
+            new { Number = 7, DisplayName = "Valid Name" }, _adminToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
             "Number=7 out of valid range 1–6 → 422; body: {0}", body);
@@ -631,8 +686,9 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-2 Validation Envelope: 422 has statusCode, successed=false, message, errors[]")]
     public async Task AC2_ValidationEnvelope_Has422Shape()
     {
+        // Admin JWT required so FluentValidation runs (multiple violations → 422).
         var (response, root, body) = await PostAsync("/api/learning/grades/Create",
-            new { Number = 0, DisplayName = "" });
+            new { Number = 0, DisplayName = "" }, _adminToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
             "multiple violations must return 422; body: {0}", body);
@@ -771,7 +827,8 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     {
         // LearningRepository.GetByIdAsync throws InvalidOperationException when entity not found.
         // The handler's catch block returns ServerError() → HTTP 500 with successed=false.
-        var (response, root, body) = await GetAsync("/api/learning/grades?id=99999999");
+        // Authenticated read required.
+        var (response, root, body) = await GetAsync("/api/learning/grades?id=99999999", _adminToken);
 
         var statusCode = (int)response.StatusCode;
         statusCode.Should().NotBe(200,
@@ -793,11 +850,11 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-1 Subject Filter: List with GradeId filter returns only that grade's subjects")]
     public async Task AC1_Subjects_FilterByGradeId_Works()
     {
-        // Create two distinct grades
+        // Create two distinct grades — requires Admin JWT
         var gradeAId = await CreateGradeGetId();
         var gradeBId = await CreateGradeGetId();
 
-        // Create one subject per grade with unique names
+        // Create one subject per grade with unique names — Subjects are anonymous
         var nameA = $"SubjA {Guid.NewGuid():N}";
         var nameB = $"SubjB {Guid.NewGuid():N}";
 
@@ -809,7 +866,7 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
             new { Name = nameB, GradeId = gradeBId });
         AssertCreateSuccess(sBResp, sBRoot, sBBody);
 
-        // List subjects filtered by GradeA
+        // List subjects filtered by GradeA — anonymous allowed
         var (listResp, listRoot, listBody) = await GetAsync(
             $"/api/learning/subjects/List?PageNumber=1&PageSize=200&GradeId={gradeAId}");
         listResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", listBody);
@@ -829,9 +886,9 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     /// <summary>
     /// Searches the paged list at the given URL for an item where field==value, returns its id.
     /// </summary>
-    private async Task<int> FindIdInList(string listUrl, string field, string value, string entityType)
+    private async Task<int> FindIdInList(string listUrl, string field, string value, string entityType, string? bearer = null)
     {
-        var (listResp, listRoot, listBody) = await GetAsync(listUrl);
+        var (listResp, listRoot, listBody) = await GetAsync(listUrl, bearer);
         listResp.StatusCode.Should().Be(HttpStatusCode.OK,
             "prereq list for {0} must succeed; body: {1}", entityType, listBody);
 
@@ -849,13 +906,14 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
             $"Could not find {entityType} where {field}='{value}' in list; url={listUrl}; listBody={listBody}");
     }
 
+    /// <summary>Creates a grade using Admin JWT and returns its id.</summary>
     private async Task<int> CreateGradeGetId()
     {
         var name = $"Setup Grade {Guid.NewGuid():N}";
         var (resp, _, body) = await PostAsync("/api/learning/grades/Create",
-            new { Number = 1, DisplayName = name });
+            new { Number = 1, DisplayName = name }, _adminToken);
         resp.StatusCode.Should().Be(HttpStatusCode.OK, "prereq grade create failed; body: {0}", body);
-        return await FindIdInList("/api/learning/grades/List?PageNumber=1&PageSize=200", "displayName", name, "grade");
+        return await FindIdInList("/api/learning/grades/List?PageNumber=1&PageSize=200", "displayName", name, "grade", _adminToken);
     }
 
     private async Task<int> CreateSubjectGetId(int gradeId)
