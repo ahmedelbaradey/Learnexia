@@ -648,66 +648,82 @@ public sealed class P1_05_RBAC_Tests : IAsyncLifetime
     }
 
     // ===========================================================================
-    // BE-TC-20 — GradesController curriculum-authoring is fully anonymous (SECURITY GAP)
-    // This test documents the ACTUAL (insecure) behavior. It is expected to PASS because
-    // the gap is real — it records the current state, not the desired state.
-    // The test name and comments make the defect unmistakable.
+    // BE-TC-20 — GradesController curriculum-authoring: corrected auth behavior
+    //
+    // GradesController now carries class-level [Authorize] (reads) and
+    // [Authorize(Policy = AdminOnly)] on writes (Create/Update/Delete).
+    // These tests assert the CORRECT behavior after the fix.
     // ===========================================================================
 
-    [Fact(DisplayName = "BE-TC-20 [SECURITY-GAP] GradesController: GET List is anonymous (no 401 without token)")]
-    public async Task BeTc20_Grades_List_NoToken_IsAnonymous_SecurityGap()
+    [Fact(DisplayName = "BE-TC-20 GradesController: GET List anonymous → 401 Unauthorized")]
+    public async Task BeTc20_Grades_List_NoToken_Returns401()
     {
-        // SECURITY BUG: GradesController has no [Authorize] — curriculum reads are world-readable.
-        // EXPECTED (desired): 401 without token.
-        // ACTUAL (current insecure behavior): 200 — handler executes without authentication.
-        // This test documents the gap; it passes when the gap is present.
+        // GradesController is class-level [Authorize] — anonymous read must be challenged.
         var (resp, _, body) = await SendAsync(_client, HttpMethod.Get, "api/learning/Grades/List");
 
-        // Assert current ACTUAL behavior (not the desired behavior)
-        ((int)resp.StatusCode).Should().NotBe(401,
-            "SECURITY-GAP: GradesController/List has no [Authorize] — it is world-readable. " +
-            "This test documents the gap (actual 200, desired 401). body: {0}", body);
-
-        ((int)resp.StatusCode).Should().Be(200,
-            "SECURITY-GAP: curriculum grades list is anonymous — returns 200 without any token. " +
-            "Desired behavior is 401. Fix: add [Authorize] to GradesController. body: {0}", body);
+        resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized,
+            "GradesController GET List is [Authorize]; no token → 401. body: {0}", body);
     }
 
-    [Fact(DisplayName = "BE-TC-20b [SECURITY-GAP] GradesController: POST Create is anonymous (no 401 without token)")]
-    public async Task BeTc20b_Grades_Create_NoToken_IsAnonymous_SecurityGap()
+    [Fact(DisplayName = "BE-TC-20b GradesController: GET List with authenticated user → 200")]
+    public async Task BeTc20b_Grades_List_Authenticated_Returns200()
     {
-        // SECURITY BUG: GradesController has no [Authorize] — curriculum writes are world-writable.
-        // DESIRED: 401 (no token) / 403 (non-admin token).
-        // ACTUAL: handler executes — the create may succeed (200/201) or return a validation
-        // error (422/400), but it must NOT return 401 (no auth gate fires).
-        var gradeBody = new { Number = 99, DisplayName = "SecurityGapTestGrade" };
+        // Any authenticated user (admin here) can read the grades list.
+        var adminToken = await SignInAndGetTokenAsync(AdminUserName, AdminPassword);
+
+        var (resp, root, body) = await SendAsync(_client, HttpMethod.Get, "api/learning/Grades/List",
+            null, adminToken);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "GradesController GET List with valid token → 200. body: {0}", body);
+        TryProp(root, "successed", out var successed).Should().BeTrue("body: {0}", body);
+        successed.GetBoolean().Should().BeTrue("successed must be true; body: {0}", body);
+    }
+
+    [Fact(DisplayName = "BE-TC-20c GradesController: POST Create anonymous → 401 Unauthorized")]
+    public async Task BeTc20c_Grades_Create_NoToken_Returns401()
+    {
+        // GradesController Create requires AdminOnly; no token → 401 (auth gate before policy gate).
+        var gradeBody = new { Number = 5, DisplayName = "AuthTest Grade" };
         var (resp, _, body) = await SendAsync(_client, HttpMethod.Post,
             "api/learning/Grades/Create", gradeBody);
 
-        ((int)resp.StatusCode).Should().NotBe(401,
-            "SECURITY-GAP: GradesController/Create has no [Authorize] — it is world-writable. " +
-            "This test documents the gap. Fix: add [Authorize(Policy=AdminOnly)] to GradesController. " +
-            "body: {0}", body);
-
-        // The response is NOT a 401 auth challenge — it reaches the handler
-        var sc = (int)resp.StatusCode;
-        (sc == 200 || sc == 201 || sc == 400 || sc == 422 || sc == 500).Should().BeTrue(
-            "SECURITY-GAP: without auth gate, the handler runs and returns a business-layer result " +
-            "(200/201/400/422). Got {0}. body: {1}", sc, body);
+        resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized,
+            "GradesController POST Create is [Authorize(AdminOnly)]; no token → 401. body: {0}", body);
     }
 
-    [Fact(DisplayName = "BE-TC-20c [SECURITY-GAP] GradesController: DELETE is anonymous (no 401 without token)")]
-    public async Task BeTc20c_Grades_Delete_NoToken_IsAnonymous_SecurityGap()
+    [Fact(DisplayName = "BE-TC-20d GradesController: POST Create with Parent token → 403 Forbidden")]
+    public async Task BeTc20d_Grades_Create_ParentToken_Returns403()
     {
-        // SECURITY BUG: DELETE on Grades (no auth gate).
-        var (resp, _, body) = await SendAsync(_client, HttpMethod.Delete,
-            "api/learning/Grades?id=99999");
+        // Parent is authenticated but not Admin/SuperAdmin → 403 on AdminOnly endpoint.
+        var parentToken = await RegisterParentAndGetTokenAsync();
 
-        ((int)resp.StatusCode).Should().NotBe(401,
-            "SECURITY-GAP: GradesController DELETE has no [Authorize]. " +
-            "Without a token the handler still executes (returns 404/424/200). " +
-            "Desired behavior: 401. Fix: add [Authorize(Policy=AdminOnly)] to GradesController. " +
-            "body: {0}", body);
+        var gradeBody = new { Number = 5, DisplayName = "ParentAuthTest Grade" };
+        var (resp, _, body) = await SendAsync(_client, HttpMethod.Post,
+            "api/learning/Grades/Create", gradeBody, parentToken);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden,
+            "GradesController POST Create is AdminOnly; Parent token is not Admin/SuperAdmin → 403. body: {0}", body);
+    }
+
+    [Fact(DisplayName = "BE-TC-20e GradesController: POST Create with Admin token → reaches handler (200 or 422)")]
+    public async Task BeTc20e_Grades_Create_AdminToken_ReachesHandler()
+    {
+        // Admin passes AdminOnly gate; result is a business-layer response (200/422).
+        var adminToken = await SignInAndGetTokenAsync(AdminUserName, AdminPassword);
+
+        var gradeBody = new { Number = 5, DisplayName = $"AdminAuthTest {Guid.NewGuid():N}" };
+        var (resp, _, body) = await SendAsync(_client, HttpMethod.Post,
+            "api/learning/Grades/Create", gradeBody, adminToken);
+
+        var sc = (int)resp.StatusCode;
+        sc.Should().NotBe(401,
+            "Admin must pass auth gate on GradesController Create; must not get 401. Got {0}. body: {1}", sc, body);
+        sc.Should().NotBe(403,
+            "Admin must pass AdminOnly gate on GradesController Create; must not get 403. Got {0}. body: {1}", sc, body);
+        // Business-layer result is 200 (success) or 422 (validation) — both confirm handler was reached.
+        (sc == 200 || sc == 422).Should().BeTrue(
+            "Admin reaching handler on Create must get 200 or 422; got {0}. body: {1}", sc, body);
     }
 
     // ===========================================================================

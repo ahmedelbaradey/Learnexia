@@ -4,22 +4,25 @@
 
 | Field | Value |
 |---|---|
-| Date run | 2026-06-07 |
-| Agent | api-tester |
-| Branch / commit | main / 8a8124c |
+| Date run (initial) | 2026-06-07 |
+| Date run (corrected) | 2026-06-07 |
+| Agent | api-tester (initial) / backend-feature (corrected) |
+| Branch / commit | main / 8a8124c → feat/grade-authz (corrected) |
 | Harness | `LearnexiaWebAppFactory` (env "Testing", Testcontainers PostgreSQL pgvector/pgvector:pg16) |
 | Test file(s) | `backend/tests/Learnexia.IntegrationTests/P1_05_RBAC_Tests.cs` |
-| Overall verdict | **PASS** (32/32) with 1 documented security gap (BE-TC-20) |
+| Overall verdict | **PASS** (34/34) — security gap (BE-TC-20) fixed; corrected-behavior tests added |
 
-## dotnet test result (verbatim)
+## dotnet test result (verbatim — corrected run)
 
 ```
-Passed!  - Failed:     0, Passed:    32, Skipped:     0, Total:    32, Duration: 15 s - Learnexia.IntegrationTests.dll (net10.0)
+Passed!  - Failed:     0, Passed:    66, Skipped:     0, Total:    66, Duration: 28 s - Learnexia.IntegrationTests.dll (net10.0)
 ```
+
+(66 total = 34 P1_05 + 32 P2_01 via joint filter `P2_01_CurriculumHierarchy|P1_05_RBAC`.)
 
 Command used:
 ```
-dotnet test backend/tests/Learnexia.IntegrationTests/Learnexia.IntegrationTests.csproj --filter "FullyQualifiedName~P1_05"
+dotnet test backend/tests/Learnexia.IntegrationTests/Learnexia.IntegrationTests.csproj --filter "FullyQualifiedName~P2_01_CurriculumHierarchy|FullyQualifiedName~P1_05_RBAC"
 ```
 
 ## Results
@@ -46,13 +49,13 @@ dotnet test backend/tests/Learnexia.IntegrationTests/Learnexia.IntegrationTests.
 | BE-TC-18 | Admin allowed into ParentController | P2 | PASS | HTTP 200, `successed=true` | `AC4_FamilyScope_AdminToken_Succeeds` (pre-existing) |
 | BE-TC-19 | Parent on Student-only quiz route → 403 | P1 | PASS | HTTP 403 | `BeTc19_QuizzesAttempt_ParentToken_Returns403` (new) |
 | BE-TC-19b | Policies only for real modules (Learning, Parent) | P2 | PASS | `GenerateModules()` = `["Learning","Parent"]`; no Catalog | `BeTc19b_GenerateModules_IsLearningAndParentOnly` (new) |
-| BE-TC-20 | GradesController anonymous (GAP) | P0 (finding) | PASS (gap confirmed) | GET List = HTTP 200 no token; POST Create = HTTP 200/400 no token; DELETE = non-401 no token | **SECURITY BUG — see defects below**. Three sub-tests document all three verbs. |
+| BE-TC-20 | GradesController auth (FIXED) | P0 | PASS | GET List no token → 401; GET List with auth → 200; POST Create no token → 401; POST Create Parent → 403; POST Create Admin → 200/422 (handler reached) | **Security gap closed**. Gap-documenting tests replaced with corrected-behavior tests: `BeTc20_Grades_List_NoToken_Returns401`, `BeTc20b_Grades_List_Authenticated_Returns200`, `BeTc20c_Grades_Create_NoToken_Returns401`, `BeTc20d_Grades_Create_ParentToken_Returns403`, `BeTc20e_Grades_Create_AdminToken_ReachesHandler`. |
 | BE-TC-21 | 401 is real HTTP, not fake 200 | P0 | PASS | HTTP status = 401 (not 200 envelope) | `Envelope_401_IsRealHttp401_NotFake200` (pre-existing) |
 | BE-TC-22 | 401 on ParentController is real HTTP | P1 | PASS | HTTP 401 on `api/Parent/My-Children` | `BeTc22_Envelope_401_OnParentController_IsRealHttp401` (new) |
 | BE-TC-23 | 403 is real HTTP, not fake 200 | P0 | PASS | HTTP status = 403 (not 200 envelope) | `Envelope_403_IsRealHttp403_NotFake200` (pre-existing) |
 | BE-TC-24 | appsettings JWT secret is placeholder | P1 | PASS | `JwtSettings.Secret = "CHANGE_ME_super_secret_key_at_least_32_chars_long_0123456789"` | `BeTc24_AppsettingsJson_JwtSecret_IsPlaceholder` (new) |
 
-**Tally: 24 cases PASS, 0 FAIL, 0 BLOCKED. 32 test methods (some cases covered by multiple methods).**
+**Tally: 24 cases PASS, 0 FAIL, 0 BLOCKED. 34 test methods (some cases covered by multiple methods; BE-TC-20 expanded from 3 gap-documenting methods to 5 corrected-behavior methods).**
 
 ---
 
@@ -60,7 +63,7 @@ dotnet test backend/tests/Learnexia.IntegrationTests/Learnexia.IntegrationTests.
 
 | # | Case ID | Severity | Summary | Repro | Status |
 |---|---|---|---|---|---|
-| DEF-01 | BE-TC-20 | HIGH (security) | `GradesController` (`api/learning/Grades/*`) has no `[Authorize]` attribute — all five endpoints (List, GetById, Create, Update, Delete) are world-accessible without authentication. Unauthenticated users can read all curriculum grades AND create/update/delete them. This directly contradicts the story AC "admin-only curriculum endpoints reject non-admins." | `GET api/learning/Grades/List` with no token → HTTP 200; `POST api/learning/Grades/Create` with no `Authorization` header + body `{ Number: 99, DisplayName: "test" }` → HTTP 200/400 (handler runs); `DELETE api/learning/Grades?id=99999` with no token → handler runs (not 401). Tests `BeTc20_Grades_List_NoToken_IsAnonymous_SecurityGap`, `BeTc20b_Grades_Create_NoToken_IsAnonymous_SecurityGap`, `BeTc20c_Grades_Delete_NoToken_IsAnonymous_SecurityGap` all pass by documenting this insecure state. | OPEN — filed back to `backend-feature`. **Fix:** add `[Authorize(Policy = AuthorizationPolicies.AdminOnly)]` at class level on `GradesController`. Reads may optionally be `[Authorize]` only (not AdminOnly). |
+| DEF-01 | BE-TC-20 | HIGH (security) | `GradesController` (`api/learning/Grades/*`) had no `[Authorize]` attribute — all five endpoints were world-accessible without authentication. | See original gap-documenting tests (now replaced by corrected-behavior tests). | **FIXED** — `GradesController` now carries class-level `[Authorize]` (reads) and `[Authorize(Policy = AuthorizationPolicies.AdminOnly)]` on Create/Update/Delete. Verified: anonymous GET → 401, authenticated GET → 200, anonymous POST → 401, Parent POST → 403, Admin POST → reaches handler (200/422). |
 
 ---
 
@@ -72,7 +75,7 @@ dotnet test backend/tests/Learnexia.IntegrationTests/Learnexia.IntegrationTests.
 | Unauthenticated → 401 (AC-2) | BE-TC-01, BE-TC-02, BE-TC-03, BE-TC-04, BE-TC-14, BE-TC-21, BE-TC-22 | PASS |
 | Students/parents data isolation (AC-4) | BE-TC-15, BE-TC-16, BE-TC-17, BE-TC-18 | PASS |
 | Parent not a learner (AC-5) | BE-TC-19 | PASS |
-| Admin-only curriculum (AC-3) | BE-TC-05 through BE-TC-10 + BE-TC-20 (gap) | PARTIAL — role/claim CRUD and user mgmt gated; `GradesController` is NOT gated (DEF-01) |
+| Admin-only curriculum (AC-3) | BE-TC-05 through BE-TC-10 + BE-TC-20 (fixed) | PASS — role/claim CRUD, user mgmt, and `GradesController` writes all gated; `GradesController` reads gated to authenticated users (DEF-01 fixed) |
 | Secret out of appsettings (AC-7) | BE-TC-24 | PASS |
 | Claims scoped to real modules (AC-6) | BE-TC-19b | PASS |
 | Authn/health stay anonymous (AC-8) | BE-TC-11, BE-TC-12, BE-TC-13 | PASS |
@@ -81,16 +84,17 @@ dotnet test backend/tests/Learnexia.IntegrationTests/Learnexia.IntegrationTests.
 
 ## Notes for reviewer / lead
 
-### Security Bug — DEF-01 (`GradesController` fully anonymous): action required from `backend-feature`
+### Security Bug — DEF-01 (`GradesController` fully anonymous): FIXED
 
-`GradesController` at `api/learning/Grades/*` carries a source comment "AuthZ deliberately omitted for P2-01" — the authz was intentionally deferred. However, the story AC for P1-05 explicitly requires "admin-only curriculum endpoints reject non-admins." The current state is:
+`GradesController` at `api/learning/Grades/*` previously carried a source comment "AuthZ deliberately omitted for P2-01." This has been resolved by lead decision. The fix applied:
 
-- `GET api/learning/Grades/List` — no token required → returns all grades
-- `POST api/learning/Grades/Create` — no token required → creates a grade
-- `PUT api/learning/Grades/Update` — no token required → edits a grade
-- `DELETE api/learning/Grades?id=...` — no token required → deletes a grade
+- Class-level `[Authorize]` on `GradesController` — reads (List, GetById) require any authenticated bearer.
+- `[Authorize(Policy = AuthorizationPolicies.AdminOnly)]` on Create, Update, Delete — require Admin or SuperAdmin role.
+- Stale comment removed from the controller.
+- `P2_01_CurriculumHierarchy_Tests.cs` updated: grade writes use Admin JWT, grade reads use Admin JWT, AC-6 grade anonymity test flipped to assert 401 (renamed to `AC6_GradesList_RequiresAuth`), parameterized test split into grades-specific + other-five tests.
+- `P1_05_RBAC_Tests.cs` BE-TC-20 gap-documenting tests replaced with 5 corrected-behavior tests.
 
-**Requested fix for `backend-feature`:** Add `[Authorize(Policy = AuthorizationPolicies.AdminOnly)]` at the `GradesController` class level. This is a one-line change. Once applied, re-run the BE-TC-20 tests — they will fail (because they assert the *current insecure state*), which means the gap is fixed. The tests should be updated by `backend-feature` or `api-tester` to assert the **desired** 401/403 behavior after the fix.
+All 66 combined P1_05 + P2_01 tests pass.
 
 ### Open questions resolved by this run
 
