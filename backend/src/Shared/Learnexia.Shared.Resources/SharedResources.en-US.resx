@@ -859,6 +859,9 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="ProfileCountryTooLong" xml:space="preserve">
     <value>Country must not exceed 100 characters.</value>
   </data>
+  <data name="ProfileEmailTooLong" xml:space="preserve">
+    <value>Email address must not exceed 254 characters.</value>
+  </data>
   <data name="ProfileSystemErrorSavingData" xml:space="preserve">
     <value>An error is occurred while saving data.</value>
   </data>

@@ -1636,8 +1636,8 @@ public sealed class P1_03_AddChild_Tests : IAsyncLifetime
     // BE-TC-30 — Oversized inputs are handled gracefully (no 500)
     // ===========================================================================
 
-    [Fact(DisplayName = "BE-TC-30: oversized fullName (~10000 chars) → clean 422/400/200 (no unhandled 500)")]
-    public async Task BETC30_OversizedFullName_NoUnhandled500()
+    [Fact(DisplayName = "BE-TC-30: oversized fullName (~10000 chars) → 422 (MaximumLength validator fires)")]
+    public async Task BETC30_OversizedFullName_Returns422()
     {
         var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
         var longName = new string('A', 10_000);
@@ -1654,7 +1654,11 @@ public sealed class P1_03_AddChild_Tests : IAsyncLifetime
 
         var (resp, _, rawBody) = await AddChildAsync(parentToken, body);
 
-        // Must NEVER be an unhandled 500 — accept 200 (if no max-length rule), 422, or 400
+        // Fixed: MaximumLength(255) added to AddChildCommandValidator.FullName (DEF-P103-01).
+        // The oversized name is now caught by FluentValidation at 422 before reaching the DB.
+        ((int)resp.StatusCode).Should().Be(422,
+            "an oversized fullName must be rejected by the validator with 422 (not 500); body: {0}", rawBody);
+
         ((int)resp.StatusCode).Should().NotBe(500,
             "an oversized fullName must never cause an unhandled 500; body: {0}", rawBody);
     }

@@ -1065,23 +1065,21 @@ public sealed class P1_01_RegisterParent_Tests : IAsyncLifetime
     // This test DOCUMENTS the actual (broken) behaviour so the regression is detectable.
     // =========================================================================
 
-    [Fact(DisplayName = "BE-TC-36 MalformedJson: invalid JSON body → DOCUMENTS BUG: returns 500 instead of 400")]
-    public async Task BETC36_MalformedJson_DocumentsBug_Returns500InsteadOf400()
+    [Fact(DisplayName = "BE-TC-36 MalformedJson: invalid JSON body → 400 Bad Request (fixed)")]
+    public async Task BETC36_MalformedJson_Returns400()
     {
         var content = new StringContent("{ this is not json", Encoding.UTF8, "application/json");
         var response = await _client.PostAsync("/api/Users/Authentication/Register-Parent", content);
         var bodyStr = await response.Content.ReadAsStringAsync();
 
-        // EXPECTED (correct behavior): 400
-        // ACTUAL (current bug): 500 with "Value cannot be null. (Parameter 'request')"
-        // This assertion documents the actual broken behavior. When the bug is fixed,
-        // this test should be changed to assert 400 instead of 500.
-        ((int)response.StatusCode).Should().Be(500,
-            "[BUG] Malformed JSON causes 500 instead of 400 — ErrorHandlerMiddleWare does not handle " +
-            "null command binding from JSON parse failure. Expected: 400. Actual body: {0}", bodyStr);
+        // Fixed: ErrorHandlerMiddleWare now handles ArgumentNullException(paramName="request")
+        // (raised by MediatR when model binding yields null from a malformed JSON body) and returns 400.
+        ((int)response.StatusCode).Should().Be(400,
+            "Malformed JSON must return 400 Bad Request — ErrorHandlerMiddleWare now intercepts the " +
+            "null command ArgumentNullException and maps it to 400. Actual body: {0}", bodyStr);
 
         bodyStr.Should().NotContain("Exception",
-            "even on this bug path, no stack trace should be visible; body: {0}", bodyStr);
+            "no stack trace should be visible in the response; body: {0}", bodyStr);
     }
 
     // =========================================================================
@@ -1101,8 +1099,8 @@ public sealed class P1_01_RegisterParent_Tests : IAsyncLifetime
     // This test DOCUMENTS the actual (broken) behaviour.
     // =========================================================================
 
-    [Fact(DisplayName = "BE-TC-37 OversizedEmail: DOCUMENTS BUG — very long email causes 500 instead of 422/400")]
-    public async Task BETC37_OversizedEmail_DocumentsBug_Returns500InsteadOf422()
+    [Fact(DisplayName = "BE-TC-37 OversizedEmail: very long email → 422 (MaximumLength(254) validator fires, fixed)")]
+    public async Task BETC37_OversizedEmail_Returns422()
     {
         var longLocalPart = new string('a', 300);
         var longEmail = $"{longLocalPart}@example.com";
@@ -1110,20 +1108,20 @@ public sealed class P1_01_RegisterParent_Tests : IAsyncLifetime
         var body = new { Email = longEmail, Password = "Str0ng@Pass", AcceptedTerms = true };
         var (response, root, bodyStr) = await PostRegisterAsync(body);
 
-        // EXPECTED (correct behavior): 422 (validator rejects) or 400 (handler reports Identity error)
-        // ACTUAL (current bug): 500 — Npgsql throws on column length; handler catches and returns ServerError
-        // Body example: {"statusCode":500,"successed":false,
-        //   "message":"An error occurred while saving the entity changes. See the inner exception for details.
-        //   \n22001: value too long for type character varying(255)","data":null,"errors":[]}
-        // When the bug is fixed, this assertion should change to NotBe(500).
-        ((int)response.StatusCode).Should().Be(500,
-            "[BUG] A 300-char local-part email should return 422/400 (length validation or Identity error) " +
-            "but instead returns 500 because the Email field is not length-bounded in the validator. " +
+        // Fixed: MaximumLength(254) added to RegisterParentCommandValidator.Email (RFC 5321).
+        // The 300-char local-part email is now caught by FluentValidation at 422 before reaching
+        // the DB column constraint. No more 500 from Npgsql "22001: value too long for varchar(256)".
+        ((int)response.StatusCode).Should().Be(422,
+            "A 300-char local-part email must be rejected by the MaximumLength(254) validator rule " +
+            "with HTTP 422, not 500. Actual body: {0}", bodyStr);
+
+        ((int)response.StatusCode).Should().NotBe(500,
+            "Email length validation must prevent the DB 22001 overflow — no 500 should occur. " +
             "Actual body: {0}", bodyStr);
 
-        // At minimum, Successed must be false and the response must be a BaseResponse envelope.
+        // Successed must be false and the response must be a BaseResponse envelope.
         TryProp(root, "successed", out var succeededProp).Should().BeTrue(
-            "response must contain 'successed' even on the 500 path; body: {0}", bodyStr);
+            "response must contain 'successed' on the 422 path; body: {0}", bodyStr);
         succeededProp.GetBoolean().Should().BeFalse(
             "Successed must be false on any error path; body: {0}", bodyStr);
     }

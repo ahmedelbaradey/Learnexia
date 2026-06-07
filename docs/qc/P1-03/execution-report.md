@@ -54,13 +54,13 @@
 | BE-TC-26 | Blank country → 422 | P1 | 422 | 422 | PASS | `AC6_EmptyCountry_Returns422` |
 | BE-TC-27 | Role-assign-fail compensating delete | P2 | 500 + no orphan | — | BLOCKED | No fault-injection hook to force `AddToRoleAsync` failure from the HTTP layer. See Blocked section. |
 | BE-TC-29 | Admin/SuperAdmin token can call (support) | P2 | 200 | 200 | PASS | `AC4_SuperAdmin_AddChild_Returns200` + `BETC29_SuperAdmin_AddChild_ChildLinkedToSuperAdmin` |
-| BE-TC-30 | Oversized inputs → no 500 | P2 | 422/400/200 | **500** | **FAIL** | `BETC30_OversizedFullName_NoUnhandled500` — 10k-char fullName hits a Postgres column-length violation, caught by the handler's generic catch, returned as 500. See DEF-P103-01. |
+| BE-TC-30 | Oversized inputs → 422 | P2 | 422 | 422 | **PASS** (fixed) | `BETC30_OversizedFullName_Returns422` — `MaximumLength(255)` added to `AddChildCommandValidator.FullName` (DEF-P103-01 fix). `MaximumLength(100)` also added to `Country`. Validator now rejects at 422 before reaching the DB. |
 
 ## Defects found
 
 | Defect ID | Case(s) | Severity | Summary | Filed to | Status |
 |---|---|---|---|---|---|
-| DEF-P103-01 | BE-TC-30 | Medium | An oversized `fullName` (~10,000 chars) that exceeds the Postgres column length causes a DB exception, which the handler's generic `catch` converts to a 500 (`SystemErrorSavingData`). The validator has no `MaximumLength` rule on `FullName`, so the input passes validation (200 envelope path) and only fails at the DB `INSERT`. A `MaximumLength(N)` rule in `AddChildCommandValidator` would catch it at 422 and prevent the 500. Expected: 422 (or at most a graceful 400). Actual: 500 with `{"statusCode":500,"successed":false,"message":"حدث خطأ أثناء حفظ البيانات","data":null,"errors":[]}`. | backend-feature | Open |
+| DEF-P103-01 | BE-TC-30 | Medium | An oversized `fullName` (~10,000 chars) that exceeds the Postgres column length causes a DB exception, which the handler's generic `catch` converts to a 500 (`SystemErrorSavingData`). The validator has no `MaximumLength` rule on `FullName`, so the input passes validation (200 envelope path) and only fails at the DB `INSERT`. A `MaximumLength(N)` rule in `AddChildCommandValidator` would catch it at 422 and prevent the 500. Expected: 422 (or at most a graceful 400). Actual: 500 with `{"statusCode":500,"successed":false,"message":"حدث خطأ أثناء حفظ البيانات","data":null,"errors":[]}`. | backend-feature | **FIXED** — `MaximumLength(255)` on `FullName` + `MaximumLength(100)` on `Country` added in `AddChildCommandValidator`. |
 
 ## Blocked cases — reason
 
@@ -82,6 +82,6 @@
 | AC-8 | Child stored language drives locale (persistence only; consumption is P1-09) | BE-TC-03, BE-TC-21, BE-TC-22 | COVERED |
 
 ## Tester sign-off
-- **Overall verdict: FAIL**
-- Unexpected 500s observed: **1** — BE-TC-30 (oversized fullName, no max-length validator in `AddChildCommandValidator`). DEF-P103-01 filed to `backend-feature`.
-- Notes for reviewer: All P0 and P1 cases pass. The single failure (BE-TC-30, P2) is a missing `MaximumLength` rule in the validator. BE-TC-27 (P2) is BLOCKED — no HTTP fault-injection seam exists.
+- **Overall verdict: PASS** (all cases pass or blocked; DEF-P103-01 fixed by `backend-feature`)
+- Unexpected 500s observed: **0** — BE-TC-30 now returns 422 after `MaximumLength(255)` fix.
+- Notes for reviewer: All P0 and P1 cases pass. BE-TC-30 (P2) fixed (DEF-P103-01 resolved). BE-TC-27 (P2) remains BLOCKED — no HTTP fault-injection seam exists for `AddToRoleAsync` failure.

@@ -19,7 +19,8 @@ public class AddChildCommandValidator : AbstractValidator<AddChildCommand>
         _localizer = localizer;
 
         RuleFor(x => x.FullName)
-            .NotEmpty().WithMessage(_localizer[SharedResourcesKey.ProfileRequiredField]);
+            .NotEmpty().WithMessage(_localizer[SharedResourcesKey.ProfileRequiredField])
+            .MaximumLength(255).WithMessage(_localizer[SharedResourcesKey.ProfileFullNameTooLong]);
 
         RuleFor(x => x.Email)
             .NotEmpty().WithMessage(_localizer[SharedResourcesKey.ProfileRequiredField])
@@ -44,6 +45,7 @@ public class AddChildCommandValidator : AbstractValidator<AddChildCommand>
             .WithMessage(_localizer[SharedResourcesKey.InvalidLanguageCode]);
 
         RuleFor(x => x.Country)
-            .NotEmpty().WithMessage(_localizer[SharedResourcesKey.ProfileRequiredField]);
+            .NotEmpty().WithMessage(_localizer[SharedResourcesKey.ProfileRequiredField])
+            .MaximumLength(100).WithMessage(_localizer[SharedResourcesKey.ProfileCountryTooLong]);
     }
 }

@@ -65,6 +65,17 @@ public class ErrorHandlerMiddleWare
                 response.StatusCode = (int)HttpStatusCode.NotFound;
                 break;
 
+            // ArgumentNullException with parameter name "request" is raised by MediatR when ASP.NET
+            // Core model binding fails to parse a malformed JSON body (Newtonsoft catches the parse
+            // error, adds it to ModelState, binds null, and the action receives a null command).
+            // SuppressModelStateInvalidFilter=true means the framework does not return 400 on its own,
+            // so we catch the null-dereference here and return 400 instead of 500.
+            case ArgumentNullException argEx when argEx.ParamName == "request":
+                responseModel.Message = "Bad Request";
+                responseModel.StatusCode = HttpStatusCode.BadRequest;
+                response.StatusCode = (int)HttpStatusCode.BadRequest;
+                break;
+
             default:
                 responseModel.Message = error?.Message;
                 responseModel.Message += (error as Exception)?.InnerException == null ? "" : "\n" + error!.InnerException!.Message;
