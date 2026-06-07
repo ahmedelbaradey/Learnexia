@@ -1032,4 +1032,640 @@ public sealed class P1_03_AddChild_Tests : IAsyncLifetime
         TryProp(root, "successed", out var successed).Should().BeTrue("body: {0}", rawBody);
         successed.GetBoolean().Should().BeTrue("body: {0}", rawBody);
     }
+
+    // ===========================================================================
+    // BE-TC-05 — Duplicate after sibling does not undo the sibling
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-05: duplicate after valid sibling does not undo the sibling")]
+    public async Task BETC05_DuplicateAfterSibling_DoesNotUndoSibling()
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        var email1 = UniqueEmail("child1");
+        var email2 = email1; // same email — duplicate
+
+        // Step 1: add first child → must succeed
+        var (r1, _, b1) = await AddChildAsync(parentToken, ValidChildBody(email1));
+        r1.StatusCode.Should().Be(HttpStatusCode.OK, "first Add-Child must succeed; body: {0}", b1);
+
+        // Step 2: add duplicate → must return 400
+        var (r2, root2, b2) = await AddChildAsync(parentToken, ValidChildBody(email2));
+        r2.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            "duplicate email must return 400; body: {0}", b2);
+        TryProp(root2, "successed", out var succ2).Should().BeTrue("body: {0}", b2);
+        succ2.GetBoolean().Should().BeFalse("Successed must be false for duplicate; body: {0}", b2);
+
+        // Step 3: first child still exists in My-Children
+        var (listResp, listRoot, listBody) = await MyChildrenAsync(parentToken);
+        listResp.StatusCode.Should().Be(HttpStatusCode.OK, "My-Children must return 200; body: {0}", listBody);
+        TryProp(listRoot, "data", out var data).Should().BeTrue("body: {0}", listBody);
+        var emails = data.EnumerateArray()
+            .Select(c => TryProp(c, "email", out var ep) ? ep.GetString() : null)
+            .ToList();
+        emails.Should().Contain(email1,
+            "the first child must still exist; duplicate failure must not roll it back; body: {0}", listBody);
+    }
+
+    // ===========================================================================
+    // BE-TC-08 — Grade extreme 1000 → 422
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-08b: grade=1000 (extreme) → 422")]
+    public async Task BETC08b_Grade1000_Returns422()
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        var body = new
+        {
+            FullName = "Test Child",
+            Email = UniqueEmail("child"),
+            Password = ValidChildPassword,
+            Grade = 1000,
+            Language = "ar",
+            Country = "EG",
+            LearningLanguage = "ar",
+        };
+
+        var (resp, _, rawBody) = await AddChildAsync(parentToken, body);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "grade=1000 is outside 1-6 and must return 422; body: {0}", rawBody);
+    }
+
+    // ===========================================================================
+    // BE-TC-10 — Password fails complexity (additional sub-runs)
+    // ===========================================================================
+
+    [Theory(DisplayName = "BE-TC-10: password fails complexity → 422")]
+    [InlineData("alllower1!", "no uppercase")]
+    [InlineData("ALLUPPER1!", "no lowercase")]
+    [InlineData("Aa!aaaaa", "no digit")]
+    [InlineData("Aa1aaaaa", "no special char")]
+    [InlineData("Aa1!", "too short (len < 6)")]
+    public async Task BETC10_PasswordFailsComplexity_Returns422(string password, string reason)
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        var body = new
+        {
+            FullName = "Test Child",
+            Email = UniqueEmail("child"),
+            Password = password,
+            Grade = 3,
+            Language = "ar",
+            Country = "EG",
+            LearningLanguage = "ar",
+        };
+
+        var (resp, root, rawBody) = await AddChildAsync(parentToken, body);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "password '{0}' ({1}) must fail complexity and return 422; body: {2}", password, reason, rawBody);
+        TryProp(root, "successed", out var successed).Should().BeTrue("body: {0}", rawBody);
+        successed.GetBoolean().Should().BeFalse("Successed must be false; body: {0}", rawBody);
+        TryProp(root, "errors", out var errors).Should().BeTrue("body: {0}", rawBody);
+        errors.GetArrayLength().Should().BeGreaterThan(0, "Errors[] must be populated; body: {0}", rawBody);
+    }
+
+    // ===========================================================================
+    // BE-TC-11 — Minimum-valid password → 200 (positive boundary)
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-11: minimum-valid password 'Aa1!aa' (len 6, all 4 complexity classes) → 200")]
+    public async Task BETC11_MinimumValidPassword_Returns200()
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        // Exactly 6 chars: one lower (a), one upper (A), one digit (1), one special (!), two more lower (aa)
+        const string minValidPassword = "Aa1!aa";
+        var body = new
+        {
+            FullName = "Test Child",
+            Email = UniqueEmail("child"),
+            Password = minValidPassword,
+            Grade = 3,
+            Language = "ar",
+            Country = "EG",
+            LearningLanguage = "ar",
+        };
+
+        var (resp, root, rawBody) = await AddChildAsync(parentToken, body);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "password 'Aa1!aa' meets the minimum complexity (len 6, all 4 classes) and must return 200; body: {0}", rawBody);
+        TryProp(root, "successed", out var successed).Should().BeTrue("body: {0}", rawBody);
+        successed.GetBoolean().Should().BeTrue("Successed must be true for minimum-valid password; body: {0}", rawBody);
+    }
+
+    // ===========================================================================
+    // BE-TC-12 — language not in {ar,en} — additional sub-runs
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-12b: language='EN' (wrong case, must be lowercase) → 422")]
+    public async Task BETC12b_Language_UppercaseEN_Returns422()
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        var body = ValidChildBody(UniqueEmail("child"), language: "EN");
+
+        var (resp, root, rawBody) = await AddChildAsync(parentToken, body);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "language='EN' (uppercase, rule is exact-match lowercase) must return 422; body: {0}", rawBody);
+        TryProp(root, "successed", out var successed).Should().BeTrue("body: {0}", rawBody);
+        successed.GetBoolean().Should().BeFalse("body: {0}", rawBody);
+    }
+
+    [Fact(DisplayName = "BE-TC-12c: language='' (empty) → 422")]
+    public async Task BETC12c_Language_Empty_Returns422()
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        var body = ValidChildBody(UniqueEmail("child"), language: "");
+
+        var (resp, root, rawBody) = await AddChildAsync(parentToken, body);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "empty language must return 422; body: {0}", rawBody);
+        TryProp(root, "errors", out var errors).Should().BeTrue("body: {0}", rawBody);
+        errors.GetArrayLength().Should().BeGreaterThan(0, "Errors[] must be populated; body: {0}", rawBody);
+    }
+
+    // ===========================================================================
+    // BE-TC-13 — learningLanguage empty string sub-run
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-13c: learningLanguage='' (empty string) → 422")]
+    public async Task BETC13c_LearningLanguage_Empty_Returns422()
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        var body = new
+        {
+            FullName = "Test Child",
+            Email = UniqueEmail("child"),
+            Password = ValidChildPassword,
+            Grade = 3,
+            Language = "ar",
+            Country = "EG",
+            LearningLanguage = "",
+        };
+
+        var (resp, root, rawBody) = await AddChildAsync(parentToken, body);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "empty LearningLanguage must return 422; body: {0}", rawBody);
+        TryProp(root, "errors", out var errors).Should().BeTrue("body: {0}", rawBody);
+        errors.GetArrayLength().Should().BeGreaterThan(0, "Errors[] must be populated; body: {0}", rawBody);
+    }
+
+    // ===========================================================================
+    // BE-TC-14 — Malformed email additional sub-runs
+    // ===========================================================================
+
+    [Theory(DisplayName = "BE-TC-14: malformed email sub-runs → 422")]
+    [InlineData("foo@", "trailing @ with no domain")]
+    [InlineData("@bar.com", "leading @ with no local part")]
+    public async Task BETC14_MalformedEmail_SubRuns_Returns422(string email, string description)
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        var body = new
+        {
+            FullName = "Test Child",
+            Email = email,
+            Password = ValidChildPassword,
+            Grade = 3,
+            Language = "ar",
+            Country = "EG",
+            LearningLanguage = "ar",
+        };
+
+        var (resp, root, rawBody) = await AddChildAsync(parentToken, body);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "email '{0}' ({1}) is malformed and must return 422; body: {2}", email, description, rawBody);
+        TryProp(root, "errors", out var errors).Should().BeTrue("body: {0}", rawBody);
+        errors.GetArrayLength().Should().BeGreaterThan(0, "Errors[] must be populated; body: {0}", rawBody);
+    }
+
+    // ===========================================================================
+    // BE-TC-16 — Expired/malformed JWT → 401
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-16: garbage bearer token → 401")]
+    public async Task BETC16_GarbageBearerToken_Returns401()
+    {
+        var body = ValidChildBody(UniqueEmail("child"));
+        var (resp, _, rawBody) = await SendAsync(_client, HttpMethod.Post, AddChildUrl, body, "not.a.valid.jwt.at.all");
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized,
+            "a garbage bearer token must return 401; body: {0}", rawBody);
+    }
+
+    // ===========================================================================
+    // BE-TC-18 — Body cannot inject role or parentId (mass-assignment / privilege escalation)
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-18: extra role/roles/parentId fields in body are ignored; child is Student, not elevated")]
+    public async Task BETC18_ExtraRoleFields_AreIgnored_ChildIsStudent()
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        var childEmail = UniqueEmail("child");
+
+        // Body with extra fields that must be silently ignored
+        var body = new
+        {
+            FullName = "Test Child",
+            Email = childEmail,
+            Password = ValidChildPassword,
+            Grade = 3,
+            Language = "ar",
+            Country = "EG",
+            LearningLanguage = "ar",
+            Role = "Admin",            // extra field — must be ignored
+            Roles = new[] { "SuperAdmin" },  // extra field — must be ignored
+            IsStudent = false,         // extra field — must be ignored
+            ParentId = 999999,         // extra field — must be ignored
+        };
+
+        var (resp, root, rawBody) = await AddChildAsync(parentToken, body);
+
+        // Must succeed
+        resp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "extra fields in body must be ignored; Add-Child must still succeed; body: {0}", rawBody);
+        TryProp(root, "successed", out var successed).Should().BeTrue("body: {0}", rawBody);
+        successed.GetBoolean().Should().BeTrue("Successed must be true; body: {0}", rawBody);
+
+        // Verify the child is Student role (not Admin/SuperAdmin)
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<IdentityModuleDbContext>();
+        var childUser = db.Users.SingleOrDefault(u => u.Email == childEmail);
+        childUser.Should().NotBeNull("child must be created; email: {0}", childEmail);
+
+        var studentRole = db.Roles.SingleOrDefault(r => r.Name == "Student");
+        studentRole.Should().NotBeNull("'Student' role must exist");
+        var adminRole = db.Roles.SingleOrDefault(r => r.Name == "Admin");
+        var superAdminRole = db.Roles.SingleOrDefault(r => r.Name == "SuperAdmin");
+
+        var hasStudent = db.UserRoles.Any(ur => ur.UserId == childUser!.Id && ur.RoleId == studentRole!.Id);
+        hasStudent.Should().BeTrue("child must have Student role regardless of body role injection attempt");
+
+        if (adminRole is not null)
+        {
+            var hasAdmin = db.UserRoles.Any(ur => ur.UserId == childUser!.Id && ur.RoleId == adminRole.Id);
+            hasAdmin.Should().BeFalse("role injection must not grant Admin role; body: {0}", rawBody);
+        }
+
+        if (superAdminRole is not null)
+        {
+            var hasSuperAdmin = db.UserRoles.Any(ur => ur.UserId == childUser!.Id && ur.RoleId == superAdminRole.Id);
+            hasSuperAdmin.Should().BeFalse("role injection must not grant SuperAdmin role; body: {0}", rawBody);
+        }
+    }
+
+    // ===========================================================================
+    // BE-TC-20 — Child created by Parent-A does NOT appear under Parent-B (family scope)
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-20: child added by Parent-A does NOT appear in Parent-B My-Children (no cross-family leakage)")]
+    public async Task BETC20_CrossFamilyScope_ChildNotVisibleUnderOtherParent()
+    {
+        var parentAToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parentA"));
+        var parentBToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parentB"));
+        var childEmail = UniqueEmail("child");
+
+        // Parent-A adds a child
+        var (addResp, _, addBody) = await AddChildAsync(parentAToken, ValidChildBody(childEmail));
+        addResp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "Parent-A's Add-Child must succeed; body: {0}", addBody);
+
+        // Parent-B's My-Children must NOT contain Parent-A's child
+        var (listResp, listRoot, listBody) = await MyChildrenAsync(parentBToken);
+        listResp.StatusCode.Should().Be(HttpStatusCode.OK, "My-Children must return 200; body: {0}", listBody);
+        TryProp(listRoot, "data", out var data).Should().BeTrue("body: {0}", listBody);
+        var emails = data.EnumerateArray()
+            .Select(c => TryProp(c, "email", out var ep) ? ep.GetString() : null)
+            .ToList();
+        emails.Should().NotContain(childEmail,
+            "Parent-A's child must not appear in Parent-B's My-Children (no cross-family leakage); body: {0}", listBody);
+    }
+
+    // ===========================================================================
+    // BE-TC-21 — Grade boundaries 1 and 6 persist correctly
+    // ===========================================================================
+
+    [Theory(DisplayName = "BE-TC-21: grade boundaries 1 and 6 → 200 and persisted")]
+    [InlineData(1)]
+    [InlineData(6)]
+    public async Task BETC21_GradeBoundaries_PersistedCorrectly(int grade)
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail($"parent_b{grade}"));
+        var childEmail = UniqueEmail($"child_b{grade}");
+        var body = ValidChildBody(childEmail, grade: grade);
+
+        var (resp, root, rawBody) = await AddChildAsync(parentToken, body);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "grade={0} is a valid boundary and must return 200; body: {1}", grade, rawBody);
+        TryProp(root, "successed", out var successed).Should().BeTrue("body: {0}", rawBody);
+        successed.GetBoolean().Should().BeTrue("Successed must be true; body: {0}", rawBody);
+
+        // Verify the grade persisted via My-Children
+        var (listResp, listRoot, listBody) = await MyChildrenAsync(parentToken);
+        listResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", listBody);
+        TryProp(listRoot, "data", out var data).Should().BeTrue("body: {0}", listBody);
+        var child = data.EnumerateArray()
+            .FirstOrDefault(c => TryProp(c, "email", out var ep) && ep.GetString() == childEmail);
+        child.ValueKind.Should().NotBe(JsonValueKind.Undefined,
+            "the added child must appear in My-Children; body: {0}", listBody);
+        TryProp(child, "grade", out var gradeProp).Should().BeTrue("data must have grade; body: {0}", listBody);
+        gradeProp.GetInt32().Should().Be(grade, "grade must be persisted as {0}; body: {1}", grade, listBody);
+    }
+
+    // ===========================================================================
+    // BE-TC-22 — Child sign-in JWT carries learning_language claim (P8-01)
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-22: signed-in child JWT carries a learning_language claim (P8-01)")]
+    public async Task BETC22_ChildSignIn_JWT_CarriesLearningLanguageClaim()
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        var childEmail = UniqueEmail("child");
+
+        var (addResp, _, addBody) = await AddChildAsync(parentToken, ValidChildBody(childEmail, learningLanguage: "en"));
+        addResp.StatusCode.Should().Be(HttpStatusCode.OK, "Add-Child must succeed; body: {0}", addBody);
+
+        var (signInResp, signInRoot, signInBody) = await SendAsync(_client, HttpMethod.Post, SignInUrl,
+            new { UserName = childEmail, Password = ValidChildPassword });
+        signInResp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "child sign-in must succeed; body: {0}", signInBody);
+
+        TryProp(signInRoot, "data", out var data).Should().BeTrue("body: {0}", signInBody);
+        TryProp(data, "accessToken", out var tokenProp).Should().BeTrue("body: {0}", signInBody);
+        var jwtString = tokenProp.GetString()!;
+        jwtString.Should().NotBeNullOrWhiteSpace("body: {0}", signInBody);
+
+        // Decode JWT payload (middle segment, base64url)
+        var parts = jwtString.Split('.');
+        parts.Should().HaveCount(3, "JWT must have 3 segments; token: {0}", jwtString);
+        var payload = parts[1];
+        // Pad base64url to standard base64 (switch expression needs explicit parentheses for modulo)
+        int rem = payload.Length % 4;
+        string padded;
+        if (rem == 2) padded = payload + "==";
+        else if (rem == 3) padded = payload + "=";
+        else padded = payload;
+        var base64 = padded.Replace('-', '+').Replace('_', '/');
+        var jsonBytes = Convert.FromBase64String(base64);
+        var payloadDoc = JsonDocument.Parse(jsonBytes).RootElement;
+
+        // The learning_language claim should be present (P8-01)
+        var hasLearningLanguage = payloadDoc.TryGetProperty("learning_language", out var llClaim);
+        hasLearningLanguage.Should().BeTrue(
+            "the child's JWT must carry a 'learning_language' claim per P8-01; token payload: {0}",
+            System.Text.Encoding.UTF8.GetString(jsonBytes));
+        llClaim.GetString().Should().Be("en",
+            "learning_language claim must match the submitted value 'en'; token payload: {0}",
+            System.Text.Encoding.UTF8.GetString(jsonBytes));
+    }
+
+    // ===========================================================================
+    // BE-TC-03 — Grade/language/country/learningLanguage all persisted (explicit named test)
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-03: grade=4, language='en', country='SA', learningLanguage='ar' → all persisted in My-Children")]
+    public async Task BETC03_AllProfileFields_PersistedAndListedInMyChildren()
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        var childEmail = UniqueEmail("child");
+        var body = new
+        {
+            FullName = "Test Child",
+            Email = childEmail,
+            Password = ValidChildPassword,
+            Grade = 4,
+            Language = "en",
+            Country = "SA",
+            LearningLanguage = "ar",
+        };
+
+        var (addResp, _, addBody) = await AddChildAsync(parentToken, body);
+        addResp.StatusCode.Should().Be(HttpStatusCode.OK, "Add-Child must succeed; body: {0}", addBody);
+
+        var (listResp, listRoot, listBody) = await MyChildrenAsync(parentToken);
+        listResp.StatusCode.Should().Be(HttpStatusCode.OK, "My-Children must return 200; body: {0}", listBody);
+        TryProp(listRoot, "data", out var data).Should().BeTrue("body: {0}", listBody);
+
+        var child = data.EnumerateArray()
+            .FirstOrDefault(c => TryProp(c, "email", out var ep) && ep.GetString() == childEmail);
+        child.ValueKind.Should().NotBe(JsonValueKind.Undefined,
+            "the added child must appear in My-Children; body: {0}", listBody);
+
+        TryProp(child, "grade", out var gradeProp).Should().BeTrue("body: {0}", listBody);
+        gradeProp.GetInt32().Should().Be(4, "grade must be persisted as 4; body: {0}", listBody);
+
+        TryProp(child, "language", out var langProp).Should().BeTrue("body: {0}", listBody);
+        langProp.GetString().Should().Be("en",
+            "language must be normalized to short code 'en' in My-Children; body: {0}", listBody);
+
+        TryProp(child, "country", out var countryProp).Should().BeTrue("body: {0}", listBody);
+        countryProp.GetString().Should().Be("SA", "country must be persisted as 'SA'; body: {0}", listBody);
+
+        TryProp(child, "learningLanguage", out var llProp).Should().BeTrue("body: {0}", listBody);
+        llProp.GetString().Should().NotBeNullOrWhiteSpace(
+            "learningLanguage must be present in My-Children; body: {0}", listBody);
+        llProp.GetString().Should().ContainEquivalentOf("ar",
+            "learningLanguage must reflect the submitted value 'ar'; body: {0}", listBody);
+    }
+
+    // ===========================================================================
+    // BE-TC-24 — Duplicate response same regardless of whose email it is (no cross-family info leak)
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-24: duplicate email response is the same regardless of whose email it is (no enumeration)")]
+    public async Task BETC24_DuplicateEmailResponse_SameRegardlessOfOwner()
+    {
+        var parentAToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parentA"));
+        var parentBToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parentB"));
+        var parentAEmail = UniqueEmail("parentAEmail");
+        // Register a third parent to get a "parent email" we can try to use
+        await RegisterParentAndGetTokenAsync(parentAEmail);
+
+        var emailOfParentBChild = UniqueEmail("childOfB");
+        var emailOfParentAChild = UniqueEmail("childOfA");
+
+        // Parent-B adds a child
+        var (r1, _, b1) = await AddChildAsync(parentBToken, ValidChildBody(emailOfParentBChild));
+        r1.StatusCode.Should().Be(HttpStatusCode.OK, "Parent-B's Add-Child must succeed; body: {0}", b1);
+
+        // Parent-A adds their own child
+        var (r2, _, b2) = await AddChildAsync(parentAToken, ValidChildBody(emailOfParentAChild));
+        r2.StatusCode.Should().Be(HttpStatusCode.OK, "Parent-A's Add-Child must succeed; body: {0}", b2);
+
+        // Now Parent-A tries duplicates with:
+        // (a) Parent-B's child email
+        var (ra, rootA, bodyA) = await AddChildAsync(parentAToken, ValidChildBody(emailOfParentBChild));
+        ra.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            "duplicate of Parent-B's child email must return 400; body: {0}", bodyA);
+        TryProp(rootA, "message", out var msgA).Should().BeTrue("body: {0}", bodyA);
+        var messageA = msgA.GetString() ?? string.Empty;
+        messageA.Should().NotBeNullOrWhiteSpace("must have a message; body: {0}", bodyA);
+
+        // (b) Parent-A's own child email
+        var (rb, rootB, bodyB) = await AddChildAsync(parentAToken, ValidChildBody(emailOfParentAChild));
+        rb.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            "duplicate of own child's email must return 400; body: {0}", bodyB);
+        TryProp(rootB, "message", out var msgB).Should().BeTrue("body: {0}", bodyB);
+        var messageB = msgB.GetString() ?? string.Empty;
+
+        // (c) A parent's account email
+        var (rc, rootC, bodyC) = await AddChildAsync(parentAToken, ValidChildBody(parentAEmail));
+        rc.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            "duplicate of a parent's email must return 400; body: {0}", bodyC);
+        TryProp(rootC, "message", out var msgC).Should().BeTrue("body: {0}", bodyC);
+        var messageC = msgC.GetString() ?? string.Empty;
+
+        // All three must return the same message (no cross-family info leak)
+        messageA.Should().Be(messageB,
+            "duplicate message must be the same for a foreign child's email as for own child's email");
+        messageA.Should().Be(messageC,
+            "duplicate message must be the same for a parent email as for a child email");
+    }
+
+    // ===========================================================================
+    // BE-TC-25 — Blank fullName whitespace-only sub-run
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-25b: fullName whitespace-only → 422")]
+    public async Task BETC25b_WhitespaceOnlyFullName_Returns422()
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        var body = new
+        {
+            FullName = "   ",
+            Email = UniqueEmail("child"),
+            Password = ValidChildPassword,
+            Grade = 3,
+            Language = "ar",
+            Country = "EG",
+            LearningLanguage = "ar",
+        };
+
+        var (resp, root, rawBody) = await AddChildAsync(parentToken, body);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "whitespace-only FullName must return 422; body: {0}", rawBody);
+        TryProp(root, "errors", out var errors).Should().BeTrue("body: {0}", rawBody);
+        errors.GetArrayLength().Should().BeGreaterThan(0, "Errors[] must be populated; body: {0}", rawBody);
+    }
+
+    // ===========================================================================
+    // BE-TC-28 — No anonymous / child self-onboard path exists
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-28: Add-Child requires auth (no anonymous child-create path)")]
+    public async Task BETC28_AddChild_RequiresAuth_NoAnonymousChildCreate()
+    {
+        // Call Add-Child without any auth → must be 401
+        var body = ValidChildBody(UniqueEmail("child"));
+        var (resp, _, rawBody) = await SendAsync(_client, HttpMethod.Post, AddChildUrl, body);
+        resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized,
+            "Add-Child must require auth; no anonymous child-create path exists; body: {0}", rawBody);
+
+        // Also confirm Register-Parent is the only anonymous account-creation endpoint
+        // (anonymous GET to Add-Child is 405 or 401, not 200; this is already covered by BE-TC-15)
+        // No action needed here beyond the 401 above — the anonymous path is confirmed absent.
+    }
+
+    // ===========================================================================
+    // BE-TC-12b — country whitespace-only → document behavior
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-12b: country whitespace-only → 422 (NotEmpty treats whitespace as empty)")]
+    public async Task BETC12b_CountryWhitespaceOnly_Returns422()
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        var body = new
+        {
+            FullName = "Test Child",
+            Email = UniqueEmail("child"),
+            Password = ValidChildPassword,
+            Grade = 3,
+            Language = "ar",
+            Country = "   ",
+            LearningLanguage = "ar",
+        };
+
+        var (resp, root, rawBody) = await AddChildAsync(parentToken, body);
+
+        // FluentValidation's NotEmpty() treats whitespace-only strings as empty for strings
+        resp.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "whitespace-only country must be treated as empty by NotEmpty() → 422; body: {0}", rawBody);
+        TryProp(root, "errors", out var errors).Should().BeTrue("body: {0}", rawBody);
+        errors.GetArrayLength().Should().BeGreaterThan(0, "Errors[] must be populated; body: {0}", rawBody);
+    }
+
+    // ===========================================================================
+    // BE-TC-29 — Admin/SuperAdmin token can call Add-Child (support flow) — extended
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-29: SuperAdmin token Add-Child creates child linked to SuperAdmin's JWT id")]
+    public async Task BETC29_SuperAdmin_AddChild_ChildLinkedToSuperAdmin()
+    {
+        var adminToken = await SignInAndGetTokenAsync(SuperAdminUserName, SuperAdminPassword);
+        var childEmail = UniqueEmail("child_sa");
+        var body = ValidChildBody(childEmail);
+
+        var (resp, root, rawBody) = await SendAsync(_client, HttpMethod.Post, AddChildUrl, body, adminToken);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "SuperAdmin must be allowed to call Add-Child (gate: Parent,Admin,SuperAdmin); body: {0}", rawBody);
+        TryProp(root, "successed", out var successed).Should().BeTrue("body: {0}", rawBody);
+        successed.GetBoolean().Should().BeTrue("body: {0}", rawBody);
+
+        TryProp(root, "data", out var data).Should().BeTrue("body: {0}", rawBody);
+        TryProp(data, "id", out var idProp).Should().BeTrue("body: {0}", rawBody);
+        idProp.GetInt32().Should().BeGreaterThan(0, "child Id must be positive; body: {0}", rawBody);
+
+        // The child must appear in the SuperAdmin's My-Children (linked to the JWT-resolved acting id)
+        var (listResp, listRoot, listBody) = await MyChildrenAsync(adminToken);
+        listResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", listBody);
+        TryProp(listRoot, "data", out var listData).Should().BeTrue("body: {0}", listBody);
+        var emails = listData.EnumerateArray()
+            .Select(c => TryProp(c, "email", out var ep) ? ep.GetString() : null)
+            .ToList();
+        emails.Should().Contain(childEmail,
+            "child must be linked to the SuperAdmin's JWT id and appear in their My-Children; body: {0}", listBody);
+    }
+
+    // ===========================================================================
+    // BE-TC-30 — Oversized inputs are handled gracefully (no 500)
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-30: oversized fullName (~10000 chars) → clean 422/400/200 (no unhandled 500)")]
+    public async Task BETC30_OversizedFullName_NoUnhandled500()
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        var longName = new string('A', 10_000);
+        var body = new
+        {
+            FullName = longName,
+            Email = UniqueEmail("child"),
+            Password = ValidChildPassword,
+            Grade = 3,
+            Language = "ar",
+            Country = "EG",
+            LearningLanguage = "ar",
+        };
+
+        var (resp, _, rawBody) = await AddChildAsync(parentToken, body);
+
+        // Must NEVER be an unhandled 500 — accept 200 (if no max-length rule), 422, or 400
+        ((int)resp.StatusCode).Should().NotBe(500,
+            "an oversized fullName must never cause an unhandled 500; body: {0}", rawBody);
+    }
+
+    // ===========================================================================
+    // BE-TC-27 — BLOCKED: role-assign failure triggers compensating delete
+    // ===========================================================================
+    // This case cannot be triggered from the pure HTTP surface without a fault-injection hook.
+    // The seam (IChildAccountService) performs a compensating DeleteAsync on AddToRoleAsync failure,
+    // but there is no HTTP-level fault seam to force AddToRoleAsync to fail.
+    // Marked BLOCKED with this reason in the execution report.
+    // No test method is generated — the case is documented here as a reminder.
+    // BLOCKED: BE-TC-27 — no fault-injection hook exists to force AddToRoleAsync failure from the HTTP layer.
 }

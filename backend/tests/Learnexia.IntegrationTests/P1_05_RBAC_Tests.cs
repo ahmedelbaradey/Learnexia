@@ -1,3 +1,4 @@
+using System.IO;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -458,5 +459,324 @@ public sealed class P1_05_RBAC_Tests : IAsyncLifetime
         ((int)resp.StatusCode).Should().Be(403,
             "a 403 must be a real HTTP 403. The ASP.NET Core authorization middleware " +
             "short-circuits with 403 Forbidden when authenticated but not authorized.");
+    }
+
+    // ===========================================================================
+    // BE-TC-03 — UserManagement AddUser, no token → 401
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-03 UserManagement/AddUser: no token → 401 Unauthorized")]
+    public async Task BeTc03_UserManagementAddUser_NoToken_Returns401()
+    {
+        var body = new
+        {
+            Email = UniqueEmail("tc03"),
+            UserName = $"tc03_{Guid.NewGuid():N}"[..20],
+            FullName = "TC03 User",
+            Roles = new[] { "Student" }
+        };
+
+        var (resp, _, respBody) = await SendAsync(_client, HttpMethod.Post,
+            "api/Users/UserManagement/AddUser", body);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized,
+            "UserManagementController is class-level AdminOnly; no token → 401. body: {0}", respBody);
+    }
+
+    // ===========================================================================
+    // BE-TC-04 — Parent My-Children, no token → 401
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-04 Parent/My-Children: no token → 401 Unauthorized")]
+    public async Task BeTc04_ParentMyChildren_NoToken_Returns401()
+    {
+        var (resp, _, body) = await SendAsync(_client, HttpMethod.Get, "api/Parent/My-Children");
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized,
+            "ParentController is class-level [Authorize(Roles=...)]; no token → 401. body: {0}", body);
+    }
+
+    // ===========================================================================
+    // BE-TC-09 — UserManagement AddUser with non-admin (Parent) token → 403
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-09 UserManagement/AddUser: Parent token → 403 Forbidden")]
+    public async Task BeTc09_UserManagementAddUser_ParentToken_Returns403()
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync();
+
+        var body = new
+        {
+            Email = UniqueEmail("tc09"),
+            UserName = $"tc09_{Guid.NewGuid():N}"[..20],
+            FullName = "TC09 User",
+            Roles = new[] { "Student" }
+        };
+
+        var (resp, _, respBody) = await SendAsync(_client, HttpMethod.Post,
+            "api/Users/UserManagement/AddUser", body, parentToken);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden,
+            "UserManagementController is AdminOnly; Parent token is not Admin/SuperAdmin → 403. body: {0}", respBody);
+    }
+
+    [Fact(DisplayName = "BE-TC-09b UserManagement/AddUser: Basic token → 403 Forbidden")]
+    public async Task BeTc09b_UserManagementAddUser_BasicToken_Returns403()
+    {
+        var basicToken = await SignInAndGetTokenAsync(BasicUserName, BasicUserPassword);
+
+        var body = new
+        {
+            Email = UniqueEmail("tc09b"),
+            UserName = $"tc09b_{Guid.NewGuid():N}"[..20],
+            FullName = "TC09b User",
+            Roles = new[] { "Student" }
+        };
+
+        var (resp, _, respBody) = await SendAsync(_client, HttpMethod.Post,
+            "api/Users/UserManagement/AddUser", body, basicToken);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden,
+            "UserManagementController is AdminOnly; Basic token is not Admin/SuperAdmin → 403. body: {0}", respBody);
+    }
+
+    // ===========================================================================
+    // BE-TC-10 — UserManagement AddUser with Admin token → not 401/403
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-10 UserManagement/AddUser: Admin token → not 401 or 403 (authz passes)")]
+    public async Task BeTc10_UserManagementAddUser_AdminToken_PassesAuthz()
+    {
+        var adminToken = await SignInAndGetTokenAsync(AdminUserName, AdminPassword);
+
+        var body = new
+        {
+            Email = UniqueEmail("tc10"),
+            UserName = $"tc10_{Guid.NewGuid():N}"[..20],
+            FullName = "TC10 Admin Test",
+            Roles = new[] { "Student" }
+        };
+
+        var (resp, _, respBody) = await SendAsync(_client, HttpMethod.Post,
+            "api/Users/UserManagement/AddUser", body, adminToken);
+
+        var sc = (int)resp.StatusCode;
+        sc.Should().NotBe(401,
+            "Admin must pass AdminOnly gate on AddUser; must not get 401. Got {0}. body: {1}", sc, respBody);
+        sc.Should().NotBe(403,
+            "Admin must pass AdminOnly gate on AddUser; must not get 403. Got {0}. body: {1}", sc, respBody);
+    }
+
+    // ===========================================================================
+    // BE-TC-17 — Actor is resolved from JWT, not request body (self-scope integrity)
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-17 Parent B My-Children resolves actor from JWT (not body) — sees only own children")]
+    public async Task BeTc17_ParentB_ActorFromJwt_SeesOnlyOwnChildren()
+    {
+        // Arrange: Parent A links a child via admin-created student
+        var adminToken = await SignInAndGetTokenAsync(AdminUserName, AdminPassword);
+
+        var studentEmail = UniqueEmail("tc17stu");
+        var studentUserName = $"tc17_{Guid.NewGuid():N}"[..20];
+        await SendAsync(_client, HttpMethod.Post, "api/Users/UserManagement/AddUser",
+            new { Email = studentEmail, UserName = studentUserName, FullName = "TC17 Student", Roles = new[] { "Student" } },
+            adminToken);
+
+        var parentAToken = await RegisterParentAndGetTokenAsync();
+        var (linkResp, _, linkBody) = await SendAsync(_client, HttpMethod.Post, "api/Parent/Link-Child",
+            new { ChildEmail = studentEmail }, parentAToken);
+        linkResp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "parent A must link child; body: {0}", linkBody);
+
+        // Parent B issues GET My-Children using their own token
+        // Even if they could supply a spoofed parent identifier in a query param, the handler resolves
+        // the actor from the JWT. There is no body/query param for My-Children — the actor IS the JWT.
+        var parentBToken = await RegisterParentAndGetTokenAsync();
+        var (listResp, listRoot, listBody) = await SendAsync(_client, HttpMethod.Get,
+            "api/Parent/My-Children", null, parentBToken);
+
+        listResp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "My-Children must return 200 for any authenticated Parent; body: {0}", listBody);
+
+        TryProp(listRoot, "data", out var data).Should().BeTrue("body: {0}", listBody);
+
+        // Parent B must see 0 children — actor resolved from JWT, not from any body/param
+        data.GetArrayLength().Should().Be(0,
+            "Parent B's JWT identifies Parent B; handler must return Parent B's children (0), " +
+            "never Parent A's — confirms no parameter can override JWT-derived identity. body: {0}", listBody);
+    }
+
+    // ===========================================================================
+    // BE-TC-19 — Parent token on Student-only quiz route → 403
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-19 Quizzes/{lessonId}/Attempt: Parent token → 403 (Student-only route)")]
+    public async Task BeTc19_QuizzesAttempt_ParentToken_Returns403()
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync();
+
+        // Use a placeholder lessonId — the gate fires before any business lookup
+        var (resp, _, body) = await SendAsync(_client, HttpMethod.Post,
+            "api/Learning/Quizzes/999/Attempt", null, parentToken);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden,
+            "QuizzesController StartAttempt is [Authorize(Roles = \"Student\")]; " +
+            "a Parent token must be denied with 403. body: {0}", body);
+    }
+
+    // ===========================================================================
+    // BE-TC-19b — Permission policies registered only for real modules (Learning, Parent)
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-19b Claims.GenerateModules() returns exactly {Learning, Parent} — no Catalog")]
+    public async Task BeTc19b_GenerateModules_IsLearningAndParentOnly()
+    {
+        // White-box / config assertion — no HTTP call needed.
+        // Verifies that the policy generation source does not reference removed modules.
+        var modules = Learnexia.Modules.Identity.Domain.Constants.Claims.GenerateModules();
+
+        modules.Should().HaveCount(2,
+            "Claims.GenerateModules() must return exactly 2 modules: Learning and Parent. " +
+            "Catalog was removed; no dead policy should be registered.");
+        modules.Should().Contain("Learning",
+            "Learning module must be in the registered permission set.");
+        modules.Should().Contain("Parent",
+            "Parent module must be in the registered permission set.");
+        modules.Should().NotContain("Catalog",
+            "Catalog module was removed; it must not appear in GenerateModules() or registered policies.");
+    }
+
+    // ===========================================================================
+    // BE-TC-20 — GradesController curriculum-authoring is fully anonymous (SECURITY GAP)
+    // This test documents the ACTUAL (insecure) behavior. It is expected to PASS because
+    // the gap is real — it records the current state, not the desired state.
+    // The test name and comments make the defect unmistakable.
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-20 [SECURITY-GAP] GradesController: GET List is anonymous (no 401 without token)")]
+    public async Task BeTc20_Grades_List_NoToken_IsAnonymous_SecurityGap()
+    {
+        // SECURITY BUG: GradesController has no [Authorize] — curriculum reads are world-readable.
+        // EXPECTED (desired): 401 without token.
+        // ACTUAL (current insecure behavior): 200 — handler executes without authentication.
+        // This test documents the gap; it passes when the gap is present.
+        var (resp, _, body) = await SendAsync(_client, HttpMethod.Get, "api/learning/Grades/List");
+
+        // Assert current ACTUAL behavior (not the desired behavior)
+        ((int)resp.StatusCode).Should().NotBe(401,
+            "SECURITY-GAP: GradesController/List has no [Authorize] — it is world-readable. " +
+            "This test documents the gap (actual 200, desired 401). body: {0}", body);
+
+        ((int)resp.StatusCode).Should().Be(200,
+            "SECURITY-GAP: curriculum grades list is anonymous — returns 200 without any token. " +
+            "Desired behavior is 401. Fix: add [Authorize] to GradesController. body: {0}", body);
+    }
+
+    [Fact(DisplayName = "BE-TC-20b [SECURITY-GAP] GradesController: POST Create is anonymous (no 401 without token)")]
+    public async Task BeTc20b_Grades_Create_NoToken_IsAnonymous_SecurityGap()
+    {
+        // SECURITY BUG: GradesController has no [Authorize] — curriculum writes are world-writable.
+        // DESIRED: 401 (no token) / 403 (non-admin token).
+        // ACTUAL: handler executes — the create may succeed (200/201) or return a validation
+        // error (422/400), but it must NOT return 401 (no auth gate fires).
+        var gradeBody = new { Number = 99, DisplayName = "SecurityGapTestGrade" };
+        var (resp, _, body) = await SendAsync(_client, HttpMethod.Post,
+            "api/learning/Grades/Create", gradeBody);
+
+        ((int)resp.StatusCode).Should().NotBe(401,
+            "SECURITY-GAP: GradesController/Create has no [Authorize] — it is world-writable. " +
+            "This test documents the gap. Fix: add [Authorize(Policy=AdminOnly)] to GradesController. " +
+            "body: {0}", body);
+
+        // The response is NOT a 401 auth challenge — it reaches the handler
+        var sc = (int)resp.StatusCode;
+        (sc == 200 || sc == 201 || sc == 400 || sc == 422 || sc == 500).Should().BeTrue(
+            "SECURITY-GAP: without auth gate, the handler runs and returns a business-layer result " +
+            "(200/201/400/422). Got {0}. body: {1}", sc, body);
+    }
+
+    [Fact(DisplayName = "BE-TC-20c [SECURITY-GAP] GradesController: DELETE is anonymous (no 401 without token)")]
+    public async Task BeTc20c_Grades_Delete_NoToken_IsAnonymous_SecurityGap()
+    {
+        // SECURITY BUG: DELETE on Grades (no auth gate).
+        var (resp, _, body) = await SendAsync(_client, HttpMethod.Delete,
+            "api/learning/Grades?id=99999");
+
+        ((int)resp.StatusCode).Should().NotBe(401,
+            "SECURITY-GAP: GradesController DELETE has no [Authorize]. " +
+            "Without a token the handler still executes (returns 404/424/200). " +
+            "Desired behavior: 401. Fix: add [Authorize(Policy=AdminOnly)] to GradesController. " +
+            "body: {0}", body);
+    }
+
+    // ===========================================================================
+    // BE-TC-22 — 401 on ParentController is real HTTP 401, not fake 200
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-22 Envelope: 401 on Parent/My-Children is real HTTP 401 (not fake 200)")]
+    public async Task BeTc22_Envelope_401_OnParentController_IsRealHttp401()
+    {
+        var (resp, _, _) = await SendAsync(_client, HttpMethod.Get, "api/Parent/My-Children");
+
+        ((int)resp.StatusCode).Should().Be(401,
+            "ParentController is role-gated; a real HTTP 401 bearer challenge must fire for no-token requests, " +
+            "not a 200 envelope with successed=false.");
+    }
+
+    // ===========================================================================
+    // BE-TC-24 — Committed appsettings.json carries the CHANGE_ME placeholder (not a real secret)
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-24 appsettings.json JWT secret is the CHANGE_ME placeholder (not a real key)")]
+    public async Task BeTc24_AppsettingsJson_JwtSecret_IsPlaceholder()
+    {
+        // Config-inspection case: read the committed appsettings.json directly.
+        // Confirms the secret committed to the repo is the documented placeholder,
+        // and GuardJwtSecret is the enforcement layer for Production/Staging.
+
+        // appsettings.json lives in src/Host/Learnexia.Host/ relative to the solution root
+        // (which is the backend/ directory containing Learnexia.Modular.sln).
+        const string appsettingsRelative =
+            "src/Host/Learnexia.Host/appsettings.json";
+
+        // Resolve relative to the solution root (the directory containing Learnexia.Modular.sln).
+        var solutionRoot = FindSolutionRoot();
+        var fullPath = System.IO.Path.Combine(solutionRoot, appsettingsRelative);
+
+        System.IO.File.Exists(fullPath).Should().BeTrue(
+            "appsettings.json must exist at the expected path for the config-inspection case. " +
+            "Solution root: {0}. Resolved path: {1}", solutionRoot, fullPath);
+
+        var json = await System.IO.File.ReadAllTextAsync(fullPath);
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+
+        doc.RootElement.TryGetProperty("JwtSettings", out var jwtSettings).Should().BeTrue(
+            "appsettings.json must contain a JwtSettings section. body: {0}", json);
+
+        jwtSettings.TryGetProperty("Secret", out var secretProp).Should().BeTrue(
+            "JwtSettings must contain a Secret property. body: {0}", json);
+
+        var secret = secretProp.GetString();
+        secret.Should().Be("CHANGE_ME_super_secret_key_at_least_32_chars_long_0123456789",
+            "The committed secret must be exactly the documented placeholder, " +
+            "not a real/strong key. A real key in committed config is a security defect.");
+    }
+
+    /// <summary>
+    /// Walks up from the test binary's directory until it finds Learnexia.Modular.sln,
+    /// which marks the solution root. Falls back to the current directory if not found.
+    /// </summary>
+    private static string FindSolutionRoot()
+    {
+        var dir = System.IO.Path.GetDirectoryName(
+            System.Reflection.Assembly.GetExecutingAssembly().Location)!;
+        while (dir != null)
+        {
+            if (System.IO.File.Exists(System.IO.Path.Combine(dir, "Learnexia.Modular.sln")))
+                return dir;
+            dir = System.IO.Path.GetDirectoryName(dir);
+        }
+        return Directory.GetCurrentDirectory();
     }
 }
