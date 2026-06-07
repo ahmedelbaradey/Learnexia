@@ -93,6 +93,8 @@ tasks/
 
 The Gamification module (`gamification` schema) reacting to the P4-01 learning domain events. **Backend XP/streak/hearts/badges are merged to `main`; missions (P4-06) are in progress; the rest of BE and all gamification FE are not started.** FE lands in `apps/student-app` reusing the shared `packages/`; **P4-08** is the dedicated screens-&-motion epic that the per-story FE widgets feed into.
 
+> **Carry-over into this wave (Phase 1/2 gap closure):** [Backend/Phase-3-Gamification/CARRYOVER-P1-P2-gaps-BE.md](Backend/Phase-3-Gamification/CARRYOVER-P1-P2-gaps-BE.md) (quiz Matching type) + [Frontend/student-app/Phase-3-Gamification/CARRYOVER-P1-P2-gaps-FE.md](Frontend/student-app/Phase-3-Gamification/CARRYOVER-P1-P2-gaps-FE.md) (Reports, account-locked message, Register CAPTCHA, landing ar/RTL, Matching UI).
+
 | Story | Title | Frontend | Backend | Status |
 |---|---|---|---|---|
 | P4-01 | Emit learning domain events *(technical enabler)* | — | [BE](Backend/Phase-3-Gamification/P4-01-BE.md) | BE ✅ |

@@ -58,6 +58,7 @@
 
 ## Phase 3 — Gamification *(story IDs `P4-xx`)*
 > Backend XP/streak/hearts/badges/missions/leagues shipped. **Gamification FE is mostly not started** — only the P4-07 dashboard LeaguePreview flip is merged (🟡), and P4-08 motion/screens is unmerged WIP on `feat/P4-08-gamification-screens-motion`. Task tree under `tasks/Frontend/student-app/Phase-3-Gamification/`.
+> **Carry-over (Phase 1/2 gap closure scheduled into this wave):** `Backend/Phase-3-Gamification/CARRYOVER-P1-P2-gaps-BE.md` (quiz Matching type) + `Frontend/student-app/Phase-3-Gamification/CARRYOVER-P1-P2-gaps-FE.md` (Reports build, account-locked message, Register CAPTCHA, landing ar/RTL, Matching UI).
 | Story | Title | Backend | Frontend |
 |---|---|:--:|:--:|
 | P4-01 | Emit learning domain events | ✅ | — |
