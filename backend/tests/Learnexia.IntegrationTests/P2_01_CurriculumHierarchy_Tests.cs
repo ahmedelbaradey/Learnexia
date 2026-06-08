@@ -28,8 +28,11 @@ namespace Learnexia.IntegrationTests;
 ///   Grades Create/Update/Delete — requires Admin or SuperAdmin
 ///                               ([Authorize(Policy = AdminOnly)]);
 ///                               anonymous → 401, non-admin → 403.
-///   All other aggregate controllers (Subjects/Units/Lessons/Concepts/Skills) — unchanged:
-///                               anonymous access is permitted.
+///   Subjects/Units/Lessons/Concepts/Skills Create/Update/Delete — requires Admin or
+///                               SuperAdmin ([Authorize(Policy = AdminOnly)]);
+///                               anonymous → 401, non-admin → 403.
+///   Subjects/Units/Lessons/Concepts/Skills List / GetById — unchanged: anonymous access
+///                               is permitted (no [Authorize] on those actions).
 ///
 /// JSON Response Structure (OBSERVED from actual API):
 ///   List → BaseResponse&lt;PaginatedResult&lt;T&gt;&gt;
@@ -386,56 +389,56 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
         int gradeId = await FindIdInList("/api/learning/grades/List?PageNumber=1&PageSize=200",
             "displayName", gradeName, "grade", _adminToken);
 
-        // STEP 2: Create Subject — anonymous allowed
+        // STEP 2: Create Subject — requires Admin JWT
         var subjName = $"Math {Guid.NewGuid():N}";
         var (subjResp, subjRoot, subjBody) = await PostAsync("/api/learning/subjects/Create",
-            new { Name = subjName, Country = "EG", GradeId = gradeId });
+            new { Name = subjName, Country = "EG", GradeId = gradeId }, _adminToken);
         AssertCreateSuccess(subjResp, subjRoot, subjBody);
 
         int subjectId = await FindIdInList(
             $"/api/learning/subjects/List?PageNumber=1&PageSize=200&GradeId={gradeId}",
             "name", subjName, "subject");
 
-        // STEP 3: Create Unit — anonymous allowed
+        // STEP 3: Create Unit — requires Admin JWT
         var unitName = $"Algebra {Guid.NewGuid():N}";
         var (unitResp, unitRoot, unitBody) = await PostAsync("/api/learning/units/Create",
-            new { Name = unitName, SequenceOrder = 1, SubjectId = subjectId });
+            new { Name = unitName, SequenceOrder = 1, SubjectId = subjectId }, _adminToken);
         AssertCreateSuccess(unitResp, unitRoot, unitBody);
 
         int unitId = await FindIdInList(
             $"/api/learning/units/List?PageNumber=1&PageSize=200&SubjectId={subjectId}",
             "name", unitName, "unit");
 
-        // STEP 4: Create Concept — anonymous allowed
+        // STEP 4: Create Concept — requires Admin JWT
         var conceptName = $"Variables {Guid.NewGuid():N}";
         var (conceptResp, conceptRoot, conceptBody) = await PostAsync("/api/learning/concepts/Create",
-            new { Name = conceptName, Description = "Intro to variables", DifficultyLevel = 1 /* Easy */, SubjectId = subjectId });
+            new { Name = conceptName, Description = "Intro to variables", DifficultyLevel = 1 /* Easy */, SubjectId = subjectId }, _adminToken);
         AssertCreateSuccess(conceptResp, conceptRoot, conceptBody);
 
         int conceptId = await FindIdInList(
             $"/api/learning/concepts/List?PageNumber=1&PageSize=200&SubjectId={subjectId}",
             "name", conceptName, "concept");
 
-        // STEP 5: Create Skill — anonymous allowed
+        // STEP 5: Create Skill — requires Admin JWT
         var skillName = $"Solve Equations {Guid.NewGuid():N}";
         var (skillResp, skillRoot, skillBody) = await PostAsync("/api/learning/skills/Create",
-            new { Name = skillName, MasteryThreshold = 80, EstimatedTimeMinutes = 30, ConceptId = conceptId });
+            new { Name = skillName, MasteryThreshold = 80, EstimatedTimeMinutes = 30, ConceptId = conceptId }, _adminToken);
         AssertCreateSuccess(skillResp, skillRoot, skillBody);
 
         int skillId = await FindIdInList(
             $"/api/learning/skills/List?PageNumber=1&PageSize=200&ConceptId={conceptId}",
             "name", skillName, "skill");
 
-        // STEP 6: Create Lesson WITHOUT SkillId (null is allowed) — anonymous allowed
+        // STEP 6: Create Lesson WITHOUT SkillId (null is allowed) — requires Admin JWT
         var lesson1Name = $"Intro Lesson {Guid.NewGuid():N}";
         var (lesson1Resp, lesson1Root, lesson1Body) = await PostAsync("/api/learning/lessons/Create",
-            new { Name = lesson1Name, Difficulty = 1 /* Easy */, SequenceOrder = 1, IsLocked = false, UnitId = unitId });
+            new { Name = lesson1Name, Difficulty = 1 /* Easy */, SequenceOrder = 1, IsLocked = false, UnitId = unitId }, _adminToken);
         AssertCreateSuccess(lesson1Resp, lesson1Root, lesson1Body);
 
-        // STEP 7: Create Lesson WITH SkillId — anonymous allowed
+        // STEP 7: Create Lesson WITH SkillId — requires Admin JWT
         var lesson2Name = $"Linked Lesson {Guid.NewGuid():N}";
         var (lesson2Resp, lesson2Root, lesson2Body) = await PostAsync("/api/learning/lessons/Create",
-            new { Name = lesson2Name, Difficulty = 2 /* Medium */, SequenceOrder = 2, IsLocked = false, UnitId = unitId, SkillId = skillId });
+            new { Name = lesson2Name, Difficulty = 2 /* Medium */, SequenceOrder = 2, IsLocked = false, UnitId = unitId, SkillId = skillId }, _adminToken);
         AssertCreateSuccess(lesson2Resp, lesson2Root, lesson2Body);
 
         // Verify lessons appear in filtered list — anonymous allowed
@@ -460,7 +463,7 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
 
         var lessonName = $"Hard Lesson {Guid.NewGuid():N}";
         var (createResp, _, createBody) = await PostAsync("/api/learning/lessons/Create",
-            new { Name = lessonName, Difficulty = 3 /* Hard */, SequenceOrder = 1, IsLocked = false, UnitId = unitId });
+            new { Name = lessonName, Difficulty = 3 /* Hard */, SequenceOrder = 1, IsLocked = false, UnitId = unitId }, _adminToken);
         AssertCreateSuccess(createResp, default, createBody);
 
         var (listResp, listRoot, listBody) = await GetAsync(
@@ -496,7 +499,7 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
 
         var conceptName = $"Medium Concept {Guid.NewGuid():N}";
         var (createResp, _, createBody) = await PostAsync("/api/learning/concepts/Create",
-            new { Name = conceptName, DifficultyLevel = 2 /* Medium */, SubjectId = subjectId });
+            new { Name = conceptName, DifficultyLevel = 2 /* Medium */, SubjectId = subjectId }, _adminToken);
         AssertCreateSuccess(createResp, default, createBody);
 
         var (listResp, listRoot, listBody) = await GetAsync(
@@ -571,8 +574,9 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-3 Validation: Subject Create with empty Name → 422")]
     public async Task AC3_Subject_EmptyName_Returns422()
     {
+        // Admin JWT required so the auth gate passes and FluentValidation fires.
         var (response, root, body) = await PostAsync("/api/learning/subjects/Create",
-            new { Name = "", GradeId = 1 });
+            new { Name = "", GradeId = 1 }, _adminToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
             "empty Name must trigger validation → 422; body: {0}", body);
@@ -583,8 +587,9 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-3 Validation: Subject Create with GradeId=0 → 422 (GreaterThan(0) rule)")]
     public async Task AC3_Subject_ZeroGradeId_Returns422()
     {
+        // Admin JWT required so the auth gate passes and FluentValidation fires.
         var (response, root, body) = await PostAsync("/api/learning/subjects/Create",
-            new { Name = "Science", GradeId = 0 });
+            new { Name = "Science", GradeId = 0 }, _adminToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
             "GradeId=0 violates GreaterThan(0) → 422; body: {0}", body);
@@ -597,8 +602,9 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-3 Validation: Unit Create with empty Name → 422")]
     public async Task AC3_Unit_EmptyName_Returns422()
     {
+        // Admin JWT required so the auth gate passes and FluentValidation fires.
         var (response, root, body) = await PostAsync("/api/learning/units/Create",
-            new { Name = "", SequenceOrder = 1, SubjectId = 1 });
+            new { Name = "", SequenceOrder = 1, SubjectId = 1 }, _adminToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
             "empty Name must trigger validation → 422; body: {0}", body);
@@ -609,8 +615,9 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-3 Validation: Lesson Create with empty Name → 422")]
     public async Task AC3_Lesson_EmptyName_Returns422()
     {
+        // Admin JWT required so the auth gate passes and FluentValidation fires.
         var (response, root, body) = await PostAsync("/api/learning/lessons/Create",
-            new { Name = "", Difficulty = 1, SequenceOrder = 1, IsLocked = false, UnitId = 1 });
+            new { Name = "", Difficulty = 1, SequenceOrder = 1, IsLocked = false, UnitId = 1 }, _adminToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
             "empty Name must trigger validation → 422; body: {0}", body);
@@ -621,9 +628,10 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-3 Validation: Lesson Create with Difficulty=0 (not in DifficultyLevel enum) → 422")]
     public async Task AC3_Lesson_InvalidDifficulty_Zero_Returns422()
     {
-        // DifficultyLevel: Easy=1, Medium=2, Hard=3 — 0 is outside the enum
+        // DifficultyLevel: Easy=1, Medium=2, Hard=3 — 0 is outside the enum.
+        // Admin JWT required so the auth gate passes and FluentValidation fires.
         var (response, root, body) = await PostAsync("/api/learning/lessons/Create",
-            new { Name = "Valid Lesson", Difficulty = 0, SequenceOrder = 1, IsLocked = false, UnitId = 1 });
+            new { Name = "Valid Lesson", Difficulty = 0, SequenceOrder = 1, IsLocked = false, UnitId = 1 }, _adminToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
             "Difficulty=0 not in DifficultyLevel enum (Easy=1,Medium=2,Hard=3) → IsInEnum() → 422; body: {0}", body);
@@ -634,8 +642,9 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-3 Validation: Concept Create with empty Name → 422")]
     public async Task AC3_Concept_EmptyName_Returns422()
     {
+        // Admin JWT required so the auth gate passes and FluentValidation fires.
         var (response, root, body) = await PostAsync("/api/learning/concepts/Create",
-            new { Name = "", DifficultyLevel = 1, SubjectId = 1 });
+            new { Name = "", DifficultyLevel = 1, SubjectId = 1 }, _adminToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
             "empty Name must trigger validation → 422; body: {0}", body);
@@ -646,8 +655,9 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-3 Validation: Concept Create with DifficultyLevel=99 (not in enum) → 422")]
     public async Task AC3_Concept_InvalidDifficultyLevel_Returns422()
     {
+        // Admin JWT required so the auth gate passes and FluentValidation fires.
         var (response, root, body) = await PostAsync("/api/learning/concepts/Create",
-            new { Name = "Valid Concept", DifficultyLevel = 99, SubjectId = 1 });
+            new { Name = "Valid Concept", DifficultyLevel = 99, SubjectId = 1 }, _adminToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
             "DifficultyLevel=99 not valid → IsInEnum() → 422; body: {0}", body);
@@ -658,8 +668,9 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-3 Validation: Skill Create with empty Name → 422")]
     public async Task AC3_Skill_EmptyName_Returns422()
     {
+        // Admin JWT required so the auth gate passes and FluentValidation fires.
         var (response, root, body) = await PostAsync("/api/learning/skills/Create",
-            new { Name = "", MasteryThreshold = 80, EstimatedTimeMinutes = 30, ConceptId = 1 });
+            new { Name = "", MasteryThreshold = 80, EstimatedTimeMinutes = 30, ConceptId = 1 }, _adminToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
             "empty Name must trigger validation → 422; body: {0}", body);
@@ -670,8 +681,9 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-3 Validation: Skill Create with MasteryThreshold=101 (out of 0–100) → 422")]
     public async Task AC3_Skill_MasteryThresholdOutOfRange_Returns422()
     {
+        // Admin JWT required so the auth gate passes and FluentValidation fires.
         var (response, root, body) = await PostAsync("/api/learning/skills/Create",
-            new { Name = "Valid Skill", MasteryThreshold = 101, EstimatedTimeMinutes = 30, ConceptId = 1 });
+            new { Name = "Valid Skill", MasteryThreshold = 101, EstimatedTimeMinutes = 30, ConceptId = 1 }, _adminToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
             "MasteryThreshold=101 out of InclusiveBetween(0,100) → 422; body: {0}", body);
@@ -719,8 +731,9 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     {
         // GradeId=999999 passes validator (GreaterThan(0)) but doesn't exist in DB.
         // FK violation raised at SaveChanges in UnitOfWorkBehavior → propagates to handler catch → ServerError() → HTTP 500.
+        // Admin JWT required — Create now has [Authorize(Policy = AdminOnly)].
         var (response, root, body) = await PostAsync("/api/learning/subjects/Create",
-            new { Name = "Orphan Subject", GradeId = 999999 });
+            new { Name = "Orphan Subject", GradeId = 999999 }, _adminToken);
 
         var statusCode = (int)response.StatusCode;
         statusCode.Should().NotBe(200, "non-existent GradeId must not return 200; body: {0}", body);
@@ -752,7 +765,7 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
         int unitId = await CreateUnitGetId(subjectId);
 
         var (createResp, createRoot, createBody) = await PostAsync("/api/learning/lessons/Create",
-            new { Name = $"No-Skill Lesson {Guid.NewGuid():N}", Difficulty = 1, SequenceOrder = 1, IsLocked = false, UnitId = unitId });
+            new { Name = $"No-Skill Lesson {Guid.NewGuid():N}", Difficulty = 1, SequenceOrder = 1, IsLocked = false, UnitId = unitId }, _adminToken);
 
         AssertCreateSuccess(createResp, createRoot, createBody);
     }
@@ -773,7 +786,7 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
             UnitId = unitId,
             SkillId = (int?)null
         };
-        var (createResp, createRoot, createBody) = await PostAsync("/api/learning/lessons/Create", payload);
+        var (createResp, createRoot, createBody) = await PostAsync("/api/learning/lessons/Create", payload, _adminToken);
 
         AssertCreateSuccess(createResp, createRoot, createBody);
     }
@@ -791,7 +804,7 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
 
         var skillName = $"Field Skill {Guid.NewGuid():N}";
         var (createResp, _, createBody) = await PostAsync("/api/learning/skills/Create",
-            new { Name = skillName, MasteryThreshold = 75, EstimatedTimeMinutes = 45, ConceptId = conceptId });
+            new { Name = skillName, MasteryThreshold = 75, EstimatedTimeMinutes = 45, ConceptId = conceptId }, _adminToken);
         AssertCreateSuccess(createResp, default, createBody);
 
         var (listResp, listRoot, listBody) = await GetAsync(
@@ -854,16 +867,16 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
         var gradeAId = await CreateGradeGetId();
         var gradeBId = await CreateGradeGetId();
 
-        // Create one subject per grade with unique names — Subjects are anonymous
+        // Create one subject per grade with unique names — requires Admin JWT
         var nameA = $"SubjA {Guid.NewGuid():N}";
         var nameB = $"SubjB {Guid.NewGuid():N}";
 
         var (sAResp, sARoot, sABody) = await PostAsync("/api/learning/subjects/Create",
-            new { Name = nameA, GradeId = gradeAId });
+            new { Name = nameA, GradeId = gradeAId }, _adminToken);
         AssertCreateSuccess(sAResp, sARoot, sABody);
 
         var (sBResp, sBRoot, sBBody) = await PostAsync("/api/learning/subjects/Create",
-            new { Name = nameB, GradeId = gradeBId });
+            new { Name = nameB, GradeId = gradeBId }, _adminToken);
         AssertCreateSuccess(sBResp, sBRoot, sBBody);
 
         // List subjects filtered by GradeA — anonymous allowed
@@ -920,7 +933,7 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     {
         var name = $"Setup Subject {Guid.NewGuid():N}";
         var (resp, _, body) = await PostAsync("/api/learning/subjects/Create",
-            new { Name = name, GradeId = gradeId });
+            new { Name = name, GradeId = gradeId }, _adminToken);
         resp.StatusCode.Should().Be(HttpStatusCode.OK, "prereq subject create failed; body: {0}", body);
         return await FindIdInList(
             $"/api/learning/subjects/List?PageNumber=1&PageSize=200&GradeId={gradeId}",
@@ -931,7 +944,7 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     {
         var name = $"Setup Unit {Guid.NewGuid():N}";
         var (resp, _, body) = await PostAsync("/api/learning/units/Create",
-            new { Name = name, SequenceOrder = 1, SubjectId = subjectId });
+            new { Name = name, SequenceOrder = 1, SubjectId = subjectId }, _adminToken);
         resp.StatusCode.Should().Be(HttpStatusCode.OK, "prereq unit create failed; body: {0}", body);
         return await FindIdInList(
             $"/api/learning/units/List?PageNumber=1&PageSize=200&SubjectId={subjectId}",
@@ -942,7 +955,7 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     {
         var name = $"Setup Concept {Guid.NewGuid():N}";
         var (resp, _, body) = await PostAsync("/api/learning/concepts/Create",
-            new { Name = name, DifficultyLevel = 1, SubjectId = subjectId });
+            new { Name = name, DifficultyLevel = 1, SubjectId = subjectId }, _adminToken);
         resp.StatusCode.Should().Be(HttpStatusCode.OK, "prereq concept create failed; body: {0}", body);
         return await FindIdInList(
             $"/api/learning/concepts/List?PageNumber=1&PageSize=200&SubjectId={subjectId}",

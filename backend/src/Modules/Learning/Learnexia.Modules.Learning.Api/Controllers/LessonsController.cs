@@ -5,6 +5,7 @@ using Learnexia.Modules.Learning.Application.Features.Lessons.Commands.Edit;
 using Learnexia.Modules.Learning.Application.Features.Lessons.Dtos;
 using Learnexia.Modules.Learning.Application.Features.Lessons.Queries.Get;
 using Learnexia.Modules.Learning.Application.Features.Lessons.Queries.List;
+using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Responses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -41,14 +42,17 @@ public class LessonsController : AppControllerBase
         => NewResult(await Mediator.Send(new GetLessonQuery { Id = id }));
 
     [HttpPost("Create")]
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
     public async Task<IActionResult> Create([FromBody] AddLessonCommand command)
         => NewResult(await Mediator.Send(command));
 
     [HttpPut("Update")]
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
     public async Task<IActionResult> Update([FromBody] EditLessonCommand command)
         => NewResult(await Mediator.Send(command));
 
     [HttpDelete]
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
     public async Task<IActionResult> Delete(int id)
         => NewResult(await Mediator.Send(new DeleteLessonCommand { Id = id }));
 }
