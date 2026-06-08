@@ -8,12 +8,12 @@
 
 | Field | Value |
 |---|---|
-| Date / time | 2026-06-07 |
+| Date / time | 2026-06-08 (reconciliation run after Batch-3 fixes) |
 | Tester (agent) | frontend-e2e-tester (Claude Sonnet 4.6) |
-| Backend up at `:5080` | yes (external, Development) |
-| Expo web at `:8081` | external (reused, reuseExistingServer=true) |
+| Backend up at `:5080` | yes (external, Development, with Link-Child 409 fix) |
+| Expo web at `:8081` | external (reused, reuseExistingServer=true, latest FE code) |
 | Browser projects | chromium |
-| Commit / branch under test | main @ 8a8124c (Batch-2/3 merge) |
+| Commit / branch under test | main (post Batch-2/3 merge, useGroupGuard + locale fix + cache invalidation + 409) |
 | Seed actors available | self-seeded via UI (register + add-child per test) |
 | Run command | `npx playwright test specs/P1-09-FE.spec.ts --project=chromium --reporter=line --workers=1` |
 
@@ -23,17 +23,17 @@
 |---|---|
 | Total cases | 22 |
 | Passed | 19 |
-| Failed | 2 (FE-TC-09, FE-TC-10 — real UI bugs) |
+| Failed | 2 (FE-TC-09, FE-TC-10 — locale-format mismatch, see below) |
 | Blocked / skipped | 1 (FE-TC-22 — native restart, web E2E cannot exercise) |
 | Not run | 0 |
 
 Final run output (verbatim):
 ```
-2 failed
-  [chromium] › specs/P1-09-FE.spec.ts:459:7 › Group C — Locale from Me.preferredLanguage › FE-TC-09
-  [chromium] › specs/P1-09-FE.spec.ts:504:7 › Group C — Locale from Me.preferredLanguage › FE-TC-10
-1 skipped
-19 passed (6.4m)
+  2 failed
+    [chromium] › specs/P1-09-FE.spec.ts:461:7 › Group C — Locale from Me.preferredLanguage › FE-TC-09 — Arabic child lands RTL (login UI was English)
+    [chromium] › specs/P1-09-FE.spec.ts:509:7 › Group C — Locale from Me.preferredLanguage › FE-TC-10 — English child lands LTR (login UI was Arabic)
+  1 skipped
+  19 passed (9.6m)
 ```
 
 ## Per-case results
@@ -48,8 +48,8 @@ Final run output (verbatim):
 | FE-TC-06 | Parent no children → onboarding | P0 | PASS | `add-child-form-card` visible after fresh parent register; URL contains `add-child` |
 | FE-TC-07 | Child → child home (dashboard-header) | P0 | PASS | `dashboard-header` visible after child login; URL not onboarding/add-child |
 | FE-TC-08 | Parent with children → dashboard; sign-out → Login | P0 | PASS | `parent-home` visible; sign-out redirects to /login; session cleared |
-| FE-TC-09 | Arabic child lands RTL (login UI was English) | P0 | FAIL | **BUG-D-LOCALE-OVERRIDE**: `html[dir]` stays `ltr` after child login when localStorage locale was 'en'. `useAuthRoute.setLocale('ar')` does not override the DOM direction. Actual: dir=ltr, lang=en. Expected: dir=rtl, lang=ar. See Defects table. |
-| FE-TC-10 | English child lands LTR (login UI was Arabic) | P1 | FAIL | **BUG-D-LOCALE-OVERRIDE**: `html[dir]` stays `rtl` after English child login when localStorage locale was 'ar'. `useAuthRoute.setLocale('en')` does not flip the DOM direction. Actual: dir=rtl, lang=ar. Expected: dir=ltr, lang=en. See Defects table. |
+| FE-TC-09 | Arabic child lands RTL (login UI was English) | P0 | FAIL | **BUG-D-LOCALE-FORMAT (residual, reconciliation run)**: Batch-3 added `applyWebDirection(me.preferredLanguage)` eagerly in `useGroupGuard`/`useAuthRoute`. However, the backend returns `Me.preferredLanguage = 'ar-EG'` (not `'ar'`). `LOCALES = ['ar', 'en']`, so `isLocale('ar-EG') === false` and `applyWebDirection` is never called. The DOM direction stays at the login-screen locale. Fix: normalize `'ar-EG' → 'ar'` in either the backend or the frontend guard. Actual: dir=ltr. Expected: dir=rtl. |
+| FE-TC-10 | English child lands LTR (login UI was Arabic) | P1 | FAIL | **BUG-D-LOCALE-FORMAT (residual, reconciliation run)**: Same root cause as FE-TC-09. Backend returns `'en-US'`, `isLocale('en-US') === false`. Fix: same normalization. Actual: dir=rtl. Expected: dir=ltr. |
 | FE-TC-11 | Default locale Arabic / RTL on first boot | P0 | PASS | `html[dir]=rtl`, `html[lang]=ar`; Arabic radio active (filled background) on fresh context |
 | FE-TC-12 | Switch ar→en flips LTR instantly (web) | P1 | PASS | After clicking `locale-switch-en`: dir=ltr, lang=en, English radio active; no page reload; no restart prompt |
 | FE-TC-13 | Switch en→ar flips RTL instantly (web) | P1 | PASS | Round-trip back to RTL: dir=rtl, lang=ar, Arabic radio active; no restart prompt on web |
@@ -67,7 +67,7 @@ Final run output (verbatim):
 
 | # | Severity | Case ref | Summary | Status |
 |---|---|---|---|---|
-| D-01 | HIGH | FE-TC-09, FE-TC-10 | `useAuthRoute` locale override from `Me.preferredLanguage` does not flip `html[dir]` after login. When the user switches the Login UI locale (e.g. to 'en') before signing in as a child, the `setLocale(me.preferredLanguage)` call in `useAuthRoute` updates the Zustand store but `html[dir]` and `html[lang]` remain at the pre-login locale. **Observed behavior**: Arabic child (preferredLanguage='ar') lands dir=ltr (Login was English). English child (preferredLanguage='en') lands dir=rtl (Login was Arabic). **Expected**: `applyWebDirection` in `LearnexiaProvider.useEffect([locale])` should fire and update the DOM. Possible causes: (a) the child's `Me.preferredLanguage` field is not being persisted correctly by the add-child flow (backend may not map the 'language' form field to preferredLanguage), or (b) there is a React render race between `setLocale` and the router.replace navigation causing `LearnexiaProvider` to re-render at the new route before the locale effect fires. Screenshots: `tests/e2e/test-results/P1-09-FE-Group-C-*/test-failed-1.png` | Open — back to `frontend` |
+| D-01 | HIGH | FE-TC-09, FE-TC-10 | **BUG-D-LOCALE-FORMAT (residual — NOT fixed by Batch-3)**: The Batch-3 fix added `applyWebDirection(me.preferredLanguage)` eagerly in `useGroupGuard` and `useAuthRoute`, which is the correct approach. However, root cause is a data mismatch: the backend returns `Me.preferredLanguage` as `'ar-EG'` (Arabic) / `'en-US'` (English). The frontend's `LOCALES = ['ar', 'en']` and `isLocale('ar-EG') === false`, so the `applyWebDirection` call is dead code for these values. **Fix**: either (a) normalize the backend to return `'ar'`/`'en'` from `Me.preferredLanguage`, or (b) add a normalization step in the frontend guard: `const baseLocale = me.data.preferredLanguage?.split('-')[0]` before the `isLocale()` check. The call sequence and direction mutation are correct — only the locale-format gate blocks the fix from taking effect. Screenshots: `tests/e2e/test-results/P1-09-FE-Group-C-*/test-failed-1.png` | OPEN (residual) — back to `frontend`/`backend` |
 
 ## Missing `testID`s requested (back to `frontend`)
 

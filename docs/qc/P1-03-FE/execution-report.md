@@ -3,8 +3,8 @@
 > Scaffolded empty by QC. **`frontend-e2e-tester` fills this after running** the Playwright specs derived from `frontend-test-cases.md`. QC does NOT fill results. Results feed the `reviewer` gate.
 
 ## Run metadata
-- Date / time (UTC): 2026-06-07
-- Branch / commit: main (8a8124c)
+- Date / time (UTC): 2026-06-08 (reconciliation run after Batch-3 fixes)
+- Branch / commit: main (post Batch-2/3 merge: useGroupGuard + cache invalidation fix)
 - Expo web base URL: `http://localhost:8081`
 - Backend base URL: `http://localhost:5080`
 - Browser projects run: chromium (desktop)
@@ -28,7 +28,12 @@ npx playwright test specs/P1-03-FE.spec.ts --project=chromium --reporter=line --
 | Blocked | 3 |
 | Skipped | 0 |
 
-**Final Playwright output:** `18 passed, 3 skipped (6.9m)`
+**Final Playwright output:** `18 passed, 3 skipped (7.0m)`
+
+### Reconciliation note (Batch-3 fixes verified)
+- **FE-TC-18** (cache-invalidation fix): PASS — child appears in `/children` via SPA nav without remount (useAddChild now invalidates `myChildren` on success).
+- **FE-TC-19** (auth guard fix): PASS — signed-out `goto('/add-child')` → redirected to `/login` (guard works); signed-in child `goto('/add-child')` → redirected to `/(child)` (role guard works).
+- **child-card-* selector fix**: New testIDs `child-card-edit-{localId}` and `child-card-remove-{localId}` (from Batch-3) broke the `[data-testid^="child-card-"]` selector in 4 tests. Fixed to `:not([data-testid*="edit"]):not([data-testid*="remove"])` exclusion pattern. All 18 cases now pass.
 
 ## Per-case results
 | Case ID | Title | Priority | Result (Pass/Fail/Blocked/Skipped) | Notes / defect ref |
@@ -50,8 +55,8 @@ npx playwright test specs/P1-03-FE.spec.ts --project=chromium --reporter=line --
 | FE-TC-15 | My Children empty state | P1 | BLOCKED | OQ-1: useAuthRoute routes 0-child parent to /(onboarding)/add-child. My-Children empty state for a childless parent is unreachable through normal navigation. BLOCKED. |
 | FE-TC-16 | My Children loading skeletons → loaded | P1 | PASS | Route-delayed first request; my-children-list container present during loading; real child cards appear after load completes. |
 | FE-TC-17 | My Children error state + retry | P1 | PASS | Route-intercepted with 500; error text "تعذر تحميل قائمة أطفالك." or similar present; retry button located and clicked; list reloads. (TanStack Query cache noted as a risk for this test.) |
-| FE-TC-18 | Added child persists in My Children after reload | P0 | PASS | Child added via UI onboarding; appears in /children; page.reload() confirms server-backed persistence (count preserved). OQ-5 confirmed and documented (see Defects). |
-| FE-TC-19 | No student self-register / self-onboard | P0 | PASS with defect documented | (a) Register screen has no student self-register link ✓ (b) Direct nav to /add-child while signed out renders form without redirect (DEF-P1-03-01 filed) (c) Child login correctly routes to /(child), not /add-child ✓ (d) Logged-in child direct nav to /add-child shows form instead of redirecting (same DEF-P1-03-01). Defects documented in test annotations; assertions that confirm the defect are soft-passed. |
+| FE-TC-18 | Newly added child appears via SPA nav + persists after reload (cache-fix) | P0 | PASS | Child added via UI onboarding; appears in /children via SPA nav (cache invalidated on mutation success — OQ-5 FIXED); page.reload() confirms server-backed persistence. DEF-P1-03-02 RESOLVED. |
+| FE-TC-19 | No student self-register / self-onboard | P0 | PASS | (a) Register screen has no student self-register link ✓ (b) Direct nav to /add-child while signed out → redirected to /login ✓ (DEF-P1-03-01 FIXED by useGroupGuard in (onboarding)/_layout.tsx) (c) Child login correctly routes to /(child), not /add-child ✓ (d) Logged-in child direct nav to /add-child → redirected to /(child) ✓ (same guard). All assertions now assert CORRECTED behavior and PASS. |
 | FE-TC-20 | Grade selector bounded 1–6 | P1 | PASS | Grade picker opens; exactly 6 radio options found; no Grade 7+/Grade 0/KG options in label text. |
 | FE-TC-21 | Only ar/en languages; no teacher role | P2 | PASS | Learning language picker has exactly 2 options (Arabic, English); no French/Spanish; no teacher/instructor text anywhere on the onboarding/My-Children surfaces. |
 

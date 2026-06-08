@@ -443,18 +443,20 @@ test.describe('Group C — Locale from Me.preferredLanguage', () => {
   /**
    * FE-TC-09 — Arabic child lands RTL even when login UI was English
    *
-   * BUG FOUND (D-locale-override): useAuthRoute sets locale from Me.preferredLanguage
-   * after login, but the locale override does NOT flip html[dir] when the localStorage
-   * locale was previously switched to 'en'. The child home renders in LTR/English
-   * even though the child's preferredLanguage='ar'.
+   * The Batch-3 fix added applyWebDirection(me.preferredLanguage) eagerly in
+   * useGroupGuard and useAuthRoute. However, the fix is blocked by a data mismatch:
    *
-   * Root cause: either (a) Me.preferredLanguage is returned as 'en' by the backend
-   * for this child (add-child language field may not map to preferredLanguage), or
-   * (b) setLocale('ar') is called but applyWebDirection('ar') does not override the
-   * persisted 'en' locale from localStorage in the same browser session.
+   *   BUG-REMAINING (D-locale-locale-format): Me.preferredLanguage is returned as
+   *   'ar-EG' by the backend, but LOCALES = ['ar', 'en'] on the frontend. The guard
+   *   function isLocale('ar-EG') returns false, so applyWebDirection is never called.
+   *   The DOM direction stays at the login-screen locale.
    *
-   * This test asserts CORRECT expected behavior per the Design Spec. It will FAIL
-   * until the frontend bug is fixed.
+   * Fix needed: either (a) normalize preferredLanguage in the backend to 'ar'/'en',
+   * or (b) normalize the value in isLocale() / in the useGroupGuard/useAuthRoute
+   * guard (e.g. take the first 2 chars: 'ar-EG' → 'ar').
+   *
+   * This test asserts CORRECT expected behavior per the Design Spec. It FAILS until
+   * the locale-format mismatch is fixed.
    */
   test('FE-TC-09 — Arabic child lands RTL (login UI was English)', async ({ browser }) => {
     const ctx = await browser.newContext({ storageState: { cookies: [], origins: [] } });
@@ -483,8 +485,10 @@ test.describe('Group C — Locale from Me.preferredLanguage', () => {
       const dashHeader = page.getByTestId('dashboard-header');
       await expect(dashHeader).toBeVisible({ timeout: 20_000 });
 
-      // Me.preferredLanguage='ar' should override → RTL
-      // BUG: Currently receives 'ltr' (locale-from-Me not overriding localStorage-persisted 'en')
+      // Me.preferredLanguage='ar' should override → RTL.
+      // STILL FAILING: Me.preferredLanguage = 'ar-EG' (not 'ar') from the backend.
+      // isLocale('ar-EG') === false → applyWebDirection is never called.
+      // The DOM stays at the login-screen locale (ltr).
       expect(await page.locator('html').getAttribute('dir')).toBe('rtl');
       expect(await page.locator('html').getAttribute('lang')).toBe('ar');
     } finally {
@@ -495,11 +499,12 @@ test.describe('Group C — Locale from Me.preferredLanguage', () => {
   /**
    * FE-TC-10 — English child lands LTR even when login UI was Arabic (default)
    *
-   * BUG FOUND (D-locale-override): Same root cause as FE-TC-09. When the child's
-   * preferredLanguage='en', useAuthRoute should call setLocale('en') which should
-   * flip the direction. But the direction stays at the login-screen locale ('ar' = RTL).
+   * Same root cause as FE-TC-09: Me.preferredLanguage = 'en-US' (not 'en').
+   * isLocale('en-US') === false → applyWebDirection is never called.
+   * The DOM stays at the login-screen locale (rtl).
    *
-   * This test asserts CORRECT expected behavior. It will FAIL until the bug is fixed.
+   * This test asserts CORRECT expected behavior per the Design Spec. It FAILS until
+   * the locale-format mismatch is fixed.
    */
   test('FE-TC-10 — English child lands LTR (login UI was Arabic)', async ({ browser }) => {
     const ctx = await browser.newContext({ storageState: { cookies: [], origins: [] } });
@@ -524,8 +529,10 @@ test.describe('Group C — Locale from Me.preferredLanguage', () => {
       const dashHeader = page.getByTestId('dashboard-header');
       await expect(dashHeader).toBeVisible({ timeout: 20_000 });
 
-      // Me.preferredLanguage='en' should override → LTR
-      // BUG: Currently receives 'rtl' (locale-from-Me not overriding login-screen locale)
+      // Me.preferredLanguage='en' should override → LTR.
+      // STILL FAILING: Me.preferredLanguage = 'en-US' (not 'en') from the backend.
+      // isLocale('en-US') === false → applyWebDirection is never called.
+      // The DOM stays at the login-screen locale (rtl).
       expect(await page.locator('html').getAttribute('dir')).toBe('ltr');
       expect(await page.locator('html').getAttribute('lang')).toBe('en');
     } finally {
