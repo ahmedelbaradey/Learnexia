@@ -4,9 +4,24 @@
 > Captures what's done, the decisions, the load-building config, and what's next. If you change any of these, update this file.
 > 2026-06-07: **E2E test stage added — `frontend-e2e-tester` agent + `tests/e2e/` Playwright harness (PR #99, branch `chore/e2e-playwright-harness`). See "Testing — E2E (Playwright)" directly below.**
 > 2026-06-07: **QC test-design + api-tester pass over all Phase-1 backend stories (branch `qc/phase-1-backend`) — ~329 designed cases, ~520 integration tests run; surfaced one HIGH security hole + several robustness/contract defects. See "QC — Phase-1 backend test pass + defects" directly below.**
-> 2026-06-08: **Phase 7 Admin Console — CURRICULUM WAVE (P7-01..05) BACKEND COMPLETE on `feat/phase-7-backend` (one shared branch, single wave PR). Plus a pre-req auth hotfix PR #104. See "Phase 7 — Curriculum wave (backend)" directly below. FE not started; P7-06..13 backend not started.**
+> 2026-06-08/09: **Phase 7 Admin Console — CURRICULUM WAVE (P7-01..05) + USER/ACCOUNT WAVE (P7-06..08) BACKEND COMPLETE on `feat/phase-7-backend` (one shared branch → wave PR #106). Plus a pre-req auth hotfix PR #104 (merge FIRST). 8 of 13 P7 backend stories done. Remaining: P7-12 (audit + Moderation scaffold), P7-09/10/11 (blocked on upstream phases), P7-13; all P7 FE not started. See the two sections directly below.**
 
-## Phase 7 — Curriculum wave (backend) — added 2026-06-08 (`feat/phase-7-backend`, single wave PR)
+## Phase 7 — User/account wave (backend) — added 2026-06-09 (`feat/phase-7-backend`, in wave PR #106)
+
+Built the **backend** for **P7-06/07/08** in the **`Identity` module** (commit `7105c40`); same shared branch + wave PR #106 as the curriculum wave. Full pipeline per the plan (`docs/plans/P7-user-account-wave.md`, briefs `docs/briefs/P7-0{6,7,8}.md`); **security-auditor was mandatory** (user + child data) — 2 blocking Highs fixed before merge. Integration tests authored + compile-only (no Docker locally — run in ubuntu CI); 231 Learning unit tests stay green.
+
+**Lead decisions locked this wave:** delete = **soft-delete only** (retain row + linked children + learning history; reversible); status via a new **`AccountStatus` enum {Active=0, Suspended=1, Deleted=2}** on `User` (migration `P7_07_*`, existing rows backfilled Active); suspend/delete **blocks future sign-in only (MVP)** — drops the Redis refresh token (`userrefreshtoken-{id}`) + tracked sessions, existing short-lived access JWTs expire naturally (the G2 gap, accepted); P7-08 grade override is **non-destructive** (preserves all progress, emits `ChildGradeChanged`, NO reset); admin views carry **minimal child PII**.
+
+**What shipped (all `api/Admin/Users`, `AdminOnly`):**
+- **P7-06** — `AdminUsersController`: DB-side paginated user search (free-text + role + `AccountStatus` filters, page-size ≤100), user detail, family (via new `IParentChildQuery.GetChildIdsForParentAsync`/`GetParentIdsForChildAsync` seams), activity summary (sign-in labelled "not tracked" — no `LastSignInAt` column). Lean list DTO omits child grade/nationality/language.
+- **P7-07** — Suspend/Reactivate/Delete commands: state-machine + **self-protection** + **super-admin protection**; delete is **424-confirm-gated** + **cascades to children in one explicit `IIdentityDbTransaction`** (rolls back together); sign-in now gated on **both** `IsActive` AND `AccountStatus`. New `Shared.Contracts` `AccountSuspended/Reactivated/Deleted` integration events (no PII — ids + status only) with **fail-soft no-op consumers** in Gamification/Parent/Learning.
+- **P7-08** — non-destructive `OverrideChildGrade` (emits `ChildGradeChangedIntegrationEvent`; the Learning consumer is a **no-op** because curriculum reads key off the request grade, not persisted grade-scoped state); admin `UpdateChildProfile`; admin learning-language change reusing the P8-04 service + 424 fresh-start. All P7-08 commands **reject non-child targets**.
+
+**Load-bearing:** sign-in rejects `AccountStatus ∈ {Suspended, Deleted}` (resilient to `IsActive` drift) — keep both in sync on any future user-write path. `AdminActionPerformedEvent` Details + the `Account*` integration events carry **NO names/emails/free-text** (ids + enum states only) — preserve this when P7-12 builds the durable audit store. Migration `P7_07_AddAccountStatus` NOT applied — run `dotnet ef database update`.
+
+**Tracked follow-ups (NOT done):** residual access-token window on suspend/delete (no `OnTokenValidated` hook — the G2 work, deferred); `AdminActionPerformedEvent` pre-commit publish (wave-wide, fix before P7-12 consumer).
+
+## Phase 7 — Curriculum wave (backend) — added 2026-06-08 (`feat/phase-7-backend`, wave PR #106)
 
 Built the **backend** for the Phase-7 Admin Console **curriculum wave: P7-01..P7-05**, all in the **`Learning` module** (no new module; matches the gap-analysis brief `docs/briefs/phase-7-admin-gap-analysis.md` + per-story briefs `docs/briefs/P7-0{1..5}.md` + plan `docs/plans/P7-curriculum-wave.md`). Each story ran the full pipeline (db-migration → backend-feature → api-tester → security-auditor → reviewer → committer). **Integration tests were AUTHORED + compile-verified but NOT executed locally (no Docker on this Windows checkout) — run them in ubuntu CI.** Unit suite (231 Learning) stayed green throughout.
 
