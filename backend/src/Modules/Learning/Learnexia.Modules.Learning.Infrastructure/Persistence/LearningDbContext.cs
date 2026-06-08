@@ -83,6 +83,27 @@ public class LearningDbContext : DbContext
         modelBuilder.Entity<KnowledgeNode>().HasQueryFilter(kn => kn.IsDeleted != true);
         modelBuilder.Entity<KnowledgeEdge>().HasQueryFilter(ke => ke.IsDeleted != true);
 
+        // P7-04: Soft-delete filters for QuizQuestion and StudentAnswer.
+        //
+        // QuizQuestion: IsActive is intentionally NOT in the global filter — admins must see inactive
+        // questions to re-activate them; student-facing quiz reads apply IsActive == true per-query.
+        // Adding this filter hides soft-deleted questions from the student quiz/attempt path
+        // (QuizzesController Start/Submit/Complete/Abandon) — that is the desired behaviour.
+        //
+        // Student-read regression point for api-tester: the existing Start/Submit attempt path reads
+        // QuizQuestion rows; after this filter is applied, soft-deleted questions will be invisible to
+        // those reads. Confirm this is desired and that no active question is accidentally soft-deleted.
+        modelBuilder.Entity<QuizQuestion>().HasQueryFilter(qq => qq.IsDeleted != true);
+
+        // StudentAnswer carries a required FK (QuestionId, DeleteBehavior.Restrict) to QuizQuestion.
+        // EF Core emits a model-validation warning when a dependent entity has a required FK to a
+        // principal entity that has a global query filter, unless the dependent also has its own filter.
+        // Adding the matching IsDeleted filter here satisfies EF's consistency check — the same pattern
+        // applied to KnowledgeNode/KnowledgeEdge above.
+        // StudentAnswer.AttemptId FK to Attempt (no filter) does NOT trigger the warning because
+        // Attempt has no global query filter.
+        modelBuilder.Entity<StudentAnswer>().HasQueryFilter(sa => sa.IsDeleted != true);
+
         base.OnModelCreating(modelBuilder);
     }
 

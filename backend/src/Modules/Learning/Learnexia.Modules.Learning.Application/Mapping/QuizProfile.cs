@@ -1,6 +1,7 @@
 using AutoMapper;
 using Learnexia.Modules.Learning.Application.Features.Attempts.Commands.SubmitAnswer;
 using Learnexia.Modules.Learning.Application.Features.Attempts.Dtos;
+using Learnexia.Modules.Learning.Application.Features.Questions.Dtos;
 using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
 
@@ -10,6 +11,10 @@ namespace Learnexia.Modules.Learning.Application.Mapping;
 /// AutoMapper profile for quiz entities in the Learning module.
 /// CorrectAnswer is explicitly IGNORED when mapping QuizQuestion → QuizQuestionDto
 /// so it is never exposed to the client.
+///
+/// P7-04: Added QuizQuestion → AdminQuestionDto mapping which INCLUDES CorrectAnswer.
+/// This map is used ONLY by AdminOnly-gated handlers (GetQuestionByIdQueryHandler,
+/// ListQuestionsForLessonQueryHandler). The student-facing map (QuizQuestionDto) is unchanged.
 /// </summary>
 public class QuizProfile : Profile
 {
@@ -24,6 +29,10 @@ public class QuizProfile : Profile
             .ForMember(dest => dest.QuestionText, opt => opt.MapFrom(src => src.QuestionText))
             .ForMember(dest => dest.Options, opt => opt.MapFrom(src => src.Options))
             .ForSourceMember(src => src.CorrectAnswer, opt => opt.DoNotValidate());
+
+        // P7-04: QuizQuestion → AdminQuestionDto — INCLUDES CorrectAnswer for admin authoring.
+        // SECURITY: This map is used ONLY in AdminOnly-gated handlers. Never use it on student routes.
+        CreateMap<QuizQuestion, AdminQuestionDto>();
 
         // SubmitAnswerCommand → StudentAnswer: AnswerPayload, TimeSpentSeconds, HintUsed, AttemptId,
         // QuestionId all map by name convention. IsCorrect is computed server-side in the handler

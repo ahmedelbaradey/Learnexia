@@ -1009,5 +1009,60 @@
         /// <summary>Returned on successful graph retrieval.</summary>
         public const string SkillGraphRetrievedSuccessfully = "SkillGraphRetrievedSuccessfully";
 
+        // ── P7-04 Quiz/Question authoring ─────────────────────────────────────────
+
+        /// <summary>Returned when a QuizQuestion to modify/delete is not found.</summary>
+        public const string QuizQuestionNotFound = "QuizQuestionNotFound";
+
+        /// <summary>Returned on successful question add.</summary>
+        public const string QuizQuestionAddedSuccessfully = "QuizQuestionAddedSuccessfully";
+
+        /// <summary>Returned on successful question update.</summary>
+        public const string QuizQuestionUpdatedSuccessfully = "QuizQuestionUpdatedSuccessfully";
+
+        /// <summary>Returned on successful question soft-delete.</summary>
+        public const string QuizQuestionDeletedSuccessfully = "QuizQuestionDeletedSuccessfully";
+
+        /// <summary>Returned on successful question reorder.</summary>
+        public const string QuizQuestionReorderedSuccessfully = "QuizQuestionReorderedSuccessfully";
+
+        /// <summary>Returned on successful question activation.</summary>
+        public const string QuizQuestionActivatedSuccessfully = "QuizQuestionActivatedSuccessfully";
+
+        /// <summary>Returned on successful question deactivation.</summary>
+        public const string QuizQuestionDeactivatedSuccessfully = "QuizQuestionDeactivatedSuccessfully";
+
+        /// <summary>Returned when a reorder request spans multiple lessons (cross-lesson reorder forbidden).</summary>
+        public const string QuizQuestionReorderCrossLessonForbidden = "QuizQuestionReorderCrossLessonForbidden";
+
+        /// <summary>Returned when QuestionText exceeds the maximum allowed length.</summary>
+        public const string QuizQuestionTextTooLong = "QuizQuestionTextTooLong";
+
+        /// <summary>Returned when the Options JSON string exceeds the maximum allowed length.</summary>
+        public const string QuizQuestionOptionsTooLong = "QuizQuestionOptionsTooLong";
+
+        /// <summary>Returned when the CorrectAnswer JSON string exceeds the maximum allowed length.</summary>
+        public const string QuizQuestionCorrectAnswerTooLong = "QuizQuestionCorrectAnswerTooLong";
+
+        /// <summary>Returned when QuestionText is empty or missing.</summary>
+        public const string QuizQuestionTextRequired = "QuizQuestionTextRequired";
+
+        /// <summary>Returned when the QuestionType enum value is invalid.</summary>
+        public const string QuizQuestionTypeInvalid = "QuizQuestionTypeInvalid";
+
+        /// <summary>Returned when the DifficultyLevel enum value is invalid.</summary>
+        public const string QuizQuestionDifficultyInvalid = "QuizQuestionDifficultyInvalid";
+
+        /// <summary>Returned when the GeneratedBy enum value is invalid.</summary>
+        public const string QuizQuestionGeneratedByInvalid = "QuizQuestionGeneratedByInvalid";
+
+        /// <summary>Returned on successful admin questions list retrieval.</summary>
+        public const string QuizQuestionsRetrievedSuccessfully = "QuizQuestionsRetrievedSuccessfully";
+
+        /// <summary>
+        /// Returned when one or more question IDs in a reorder request do not belong to the supplied LessonId anchor.
+        /// </summary>
+        public const string QuizQuestionReorderLessonMismatch = "QuizQuestionReorderLessonMismatch";
+
     }
 }

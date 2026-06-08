@@ -1,0 +1,109 @@
+using Learnexia.Modules.Learning.Application.Abstractions;
+using Learnexia.Modules.Learning.Domain.Entities;
+using Learnexia.Shared.Contracts.Admin;
+using Learnexia.Shared.Kernel.Abstractions;
+using Learnexia.Shared.Kernel.Messaging;
+using Learnexia.Shared.Kernel.Responses;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
+using Resources;
+
+namespace Learnexia.Modules.Learning.Application.Features.Questions.Commands.Add;
+
+/// <summary>
+/// Appends a new <see cref="QuizQuestion"/> to the lesson's implicit quiz.
+/// SequenceOrder is set to max(existing for lessonId) + 1 (append semantics).
+/// IsActive defaults to true (entity default — mass-assignment guard).
+/// Publishes <see cref="AdminActionPerformedEvent"/> post-commit, best-effort.
+/// </summary>
+public class AddQuestionCommandHandler
+    : BaseResponseHandler, ICommandHandler<AddQuestionCommand, BaseResponse<string>>
+{
+    private readonly ILoggerManager _logger;
+    private readonly ILearningRepositoryManager _repository;
+    private readonly ICurrentUserService _currentUser;
+    private readonly IPublisher _publisher;
+    private readonly IStringLocalizer<SharedResources> _localizer;
+
+    public AddQuestionCommandHandler(
+        ILearningRepositoryManager repository,
+        ICurrentUserService currentUser,
+        IPublisher publisher,
+        ILoggerManager logger,
+        IStringLocalizer<SharedResources> localizer)
+    {
+        _repository = repository;
+        _currentUser = currentUser;
+        _publisher = publisher;
+        _logger = logger;
+        _localizer = localizer;
+    }
+
+    public async Task<BaseResponse<string>> Handle(
+        AddQuestionCommand request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (request is null)
+                return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
+
+            // Verify the lesson exists (global IsDeleted filter active).
+            var lessonExists = await _repository.Learning
+                .AnyAsync<Lesson>(l => l.Id == request.LessonId);
+
+            if (!lessonExists)
+                return NotFound<string>(_localizer[SharedResourcesKey.LessonNotFound]);
+
+            // Determine the next SequenceOrder (append semantics: max + 1, or 0 if no questions yet).
+            var maxOrder = await _repository.Learning
+                .GetByCondition<QuizQuestion>(q => q.LessonId == request.LessonId, false)
+                .Select(q => (int?)q.SequenceOrder)
+                .MaxAsync(cancellationToken);
+
+            var sequenceOrder = (maxOrder ?? -1) + 1;
+
+            var question = new QuizQuestion
+            {
+                LessonId      = request.LessonId,
+                SkillId       = request.SkillId,
+                QuestionType  = request.QuestionType,
+                QuestionText  = request.QuestionText,
+                Options       = request.Options,
+                CorrectAnswer = request.CorrectAnswer,
+                Difficulty    = request.Difficulty,
+                GeneratedBy   = request.GeneratedBy,
+                SequenceOrder = sequenceOrder,
+                IsActive      = true   // explicit default — mass-assignment guard
+            };
+
+            await _repository.Learning.AddAsync(question, cancellationToken);
+
+            // Best-effort post-commit event publish.
+            try
+            {
+                await _publisher.Publish(new AdminActionPerformedEvent(
+                    EventId: Guid.NewGuid(),
+                    OccurredAtUtc: DateTime.UtcNow,
+                    AdminUserId: _currentUser.UserId.GetValueOrDefault(),
+                    Action: AdminActions.QuizQuestionAdded,
+                    TargetEntityType: nameof(QuizQuestion),
+                    TargetEntityId: 0,
+                    Details: $"LessonId={request.LessonId}, QuestionType={request.QuestionType}"),
+                    cancellationToken);
+            }
+            catch (Exception publishEx)
+            {
+                _logger.LogError(publishEx, "P7-04: AdminActionPerformedEvent publish failed for AddQuestionCommand");
+            }
+
+            return Success<string>(_localizer[SharedResourcesKey.QuizQuestionAddedSuccessfully]);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error: in AddQuestionCommand");
+            return ServerError<string>();
+        }
+    }
+}

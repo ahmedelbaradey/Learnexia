@@ -109,8 +109,10 @@ public class StartAttemptCommandHandler : BaseResponseHandler,
 
             if (existingAttempt is not null)
             {
+                // P7-04: Filter IsActive == true so deactivated questions do not appear in student quizzes.
+                // Soft-deleted questions are already excluded by the global query filter.
                 var questions = _repository.Learning
-                    .GetByCondition<QuizQuestion>(q => q.LessonId == request.LessonId, false)
+                    .GetByCondition<QuizQuestion>(q => q.LessonId == request.LessonId && q.IsActive, false)
                     .ToList();
 
                 var questionDtos = _mapper.Map<List<QuizQuestionDto>>(questions);
@@ -133,8 +135,10 @@ public class StartAttemptCommandHandler : BaseResponseHandler,
                 studentId.Value, request.LessonId, cancellationToken);
 
             // Load questions for the lesson (no correct answer included in the DTO).
+            // P7-04: Filter IsActive == true so deactivated questions do not appear in student quizzes.
+            // Soft-deleted questions are already excluded by the global query filter.
             var newQuestions = _repository.Learning
-                .GetByCondition<QuizQuestion>(q => q.LessonId == request.LessonId, false)
+                .GetByCondition<QuizQuestion>(q => q.LessonId == request.LessonId && q.IsActive, false)
                 .ToList();
 
             var newQuestionDtos = _mapper.Map<List<QuizQuestionDto>>(newQuestions);

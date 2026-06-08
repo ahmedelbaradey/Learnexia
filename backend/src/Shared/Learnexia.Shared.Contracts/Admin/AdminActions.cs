@@ -47,4 +47,12 @@ public static class AdminActions
     // ── P7-03 KnowledgeEdge ───────────────────────────────────────────────────
     public const string KnowledgeEdgeAdded   = "KnowledgeEdge.Added";
     public const string KnowledgeEdgeRemoved = "KnowledgeEdge.Removed";
+
+    // ── P7-04 QuizQuestion ────────────────────────────────────────────────────
+    public const string QuizQuestionAdded       = "QuizQuestion.Added";
+    public const string QuizQuestionUpdated     = "QuizQuestion.Updated";
+    public const string QuizQuestionDeleted     = "QuizQuestion.Deleted";
+    public const string QuizQuestionReordered   = "QuizQuestion.Reordered";
+    public const string QuizQuestionActivated   = "QuizQuestion.Activated";
+    public const string QuizQuestionDeactivated = "QuizQuestion.Deactivated";
 }

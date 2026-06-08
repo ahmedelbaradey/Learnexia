@@ -1858,4 +1858,55 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="SkillGraphRetrievedSuccessfully" xml:space="preserve">
     <value>Skill graph retrieved successfully.</value>
   </data>
+  <data name="QuizQuestionNotFound" xml:space="preserve">
+    <value>Quiz question not found.</value>
+  </data>
+  <data name="QuizQuestionAddedSuccessfully" xml:space="preserve">
+    <value>Quiz question added successfully.</value>
+  </data>
+  <data name="QuizQuestionUpdatedSuccessfully" xml:space="preserve">
+    <value>Quiz question updated successfully.</value>
+  </data>
+  <data name="QuizQuestionDeletedSuccessfully" xml:space="preserve">
+    <value>Quiz question deleted successfully.</value>
+  </data>
+  <data name="QuizQuestionReorderedSuccessfully" xml:space="preserve">
+    <value>Quiz questions reordered successfully.</value>
+  </data>
+  <data name="QuizQuestionActivatedSuccessfully" xml:space="preserve">
+    <value>Quiz question activated successfully.</value>
+  </data>
+  <data name="QuizQuestionDeactivatedSuccessfully" xml:space="preserve">
+    <value>Quiz question deactivated successfully.</value>
+  </data>
+  <data name="QuizQuestionReorderCrossLessonForbidden" xml:space="preserve">
+    <value>All questions in a reorder request must belong to the same lesson.</value>
+  </data>
+  <data name="QuizQuestionTextTooLong" xml:space="preserve">
+    <value>Question text must not exceed 4096 characters.</value>
+  </data>
+  <data name="QuizQuestionOptionsTooLong" xml:space="preserve">
+    <value>Options must not exceed 16384 characters.</value>
+  </data>
+  <data name="QuizQuestionCorrectAnswerTooLong" xml:space="preserve">
+    <value>Correct answer must not exceed 4096 characters.</value>
+  </data>
+  <data name="QuizQuestionTextRequired" xml:space="preserve">
+    <value>Question text is required.</value>
+  </data>
+  <data name="QuizQuestionTypeInvalid" xml:space="preserve">
+    <value>Invalid question type.</value>
+  </data>
+  <data name="QuizQuestionDifficultyInvalid" xml:space="preserve">
+    <value>Invalid difficulty level.</value>
+  </data>
+  <data name="QuizQuestionGeneratedByInvalid" xml:space="preserve">
+    <value>Invalid generated-by value.</value>
+  </data>
+  <data name="QuizQuestionsRetrievedSuccessfully" xml:space="preserve">
+    <value>Quiz questions retrieved successfully.</value>
+  </data>
+  <data name="QuizQuestionReorderLessonMismatch" xml:space="preserve">
+    <value>One or more question IDs do not belong to the specified lesson.</value>
+  </data>
 </root>

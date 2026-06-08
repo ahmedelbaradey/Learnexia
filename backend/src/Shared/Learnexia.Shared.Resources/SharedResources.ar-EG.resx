@@ -1857,4 +1857,55 @@
   <data name="SkillGraphRetrievedSuccessfully" xml:space="preserve">
     <value>تم استرجاع رسم مهارة المعرفة بنجاح.</value>
   </data>
+  <data name="QuizQuestionNotFound" xml:space="preserve">
+    <value>سؤال الاختبار غير موجود.</value>
+  </data>
+  <data name="QuizQuestionAddedSuccessfully" xml:space="preserve">
+    <value>تمت إضافة سؤال الاختبار بنجاح.</value>
+  </data>
+  <data name="QuizQuestionUpdatedSuccessfully" xml:space="preserve">
+    <value>تم تحديث سؤال الاختبار بنجاح.</value>
+  </data>
+  <data name="QuizQuestionDeletedSuccessfully" xml:space="preserve">
+    <value>تم حذف سؤال الاختبار بنجاح.</value>
+  </data>
+  <data name="QuizQuestionReorderedSuccessfully" xml:space="preserve">
+    <value>تم إعادة ترتيب أسئلة الاختبار بنجاح.</value>
+  </data>
+  <data name="QuizQuestionActivatedSuccessfully" xml:space="preserve">
+    <value>تم تفعيل سؤال الاختبار بنجاح.</value>
+  </data>
+  <data name="QuizQuestionDeactivatedSuccessfully" xml:space="preserve">
+    <value>تم إلغاء تفعيل سؤال الاختبار بنجاح.</value>
+  </data>
+  <data name="QuizQuestionReorderCrossLessonForbidden" xml:space="preserve">
+    <value>يجب أن تنتمي جميع الأسئلة في طلب إعادة الترتيب إلى الدرس نفسه.</value>
+  </data>
+  <data name="QuizQuestionTextTooLong" xml:space="preserve">
+    <value>يجب ألا يتجاوز نص السؤال 4096 حرفاً.</value>
+  </data>
+  <data name="QuizQuestionOptionsTooLong" xml:space="preserve">
+    <value>يجب ألا تتجاوز الخيارات 16384 حرفاً.</value>
+  </data>
+  <data name="QuizQuestionCorrectAnswerTooLong" xml:space="preserve">
+    <value>يجب ألا تتجاوز الإجابة الصحيحة 4096 حرفاً.</value>
+  </data>
+  <data name="QuizQuestionTextRequired" xml:space="preserve">
+    <value>نص السؤال مطلوب.</value>
+  </data>
+  <data name="QuizQuestionTypeInvalid" xml:space="preserve">
+    <value>نوع السؤال غير صالح.</value>
+  </data>
+  <data name="QuizQuestionDifficultyInvalid" xml:space="preserve">
+    <value>مستوى الصعوبة غير صالح.</value>
+  </data>
+  <data name="QuizQuestionGeneratedByInvalid" xml:space="preserve">
+    <value>قيمة المُنشئ غير صالحة.</value>
+  </data>
+  <data name="QuizQuestionsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع أسئلة الاختبار بنجاح.</value>
+  </data>
+  <data name="QuizQuestionReorderLessonMismatch" xml:space="preserve">
+    <value>معرف واحد أو أكثر من الأسئلة لا ينتمي إلى الدرس المحدد.</value>
+  </data>
 </root>

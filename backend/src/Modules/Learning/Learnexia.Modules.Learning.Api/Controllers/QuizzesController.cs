@@ -16,6 +16,7 @@ namespace Learnexia.Modules.Learning.Api.Controllers;
 /// Route: api/Learning/Quizzes
 /// </summary>
 [Route("api/Learning/[controller]")]
+[ApiController]
 public class QuizzesController : AppControllerBase
 {
     /// <summary>
