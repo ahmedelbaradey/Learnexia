@@ -67,6 +67,7 @@ export default function SplashScreen() {
 
   return (
     <GradientBox
+      testID="splash-screen"
       flex={1}
       stops={gradientStops.splashBg.colors}
       angle={gradientStops.splashBg.angle}
@@ -174,7 +175,7 @@ export default function SplashScreen() {
             />
           </Stack>
 
-          <Text fontFamily={bodyFont} fontSize={14} color={FG2_ALPHA} textAlign="center">
+          <Text testID="splash-loading" fontFamily={bodyFont} fontSize={14} color={FG2_ALPHA} textAlign="center">
             {t('common.splash.loading')}
           </Text>
         </Stack>
@@ -203,7 +204,7 @@ export default function SplashScreen() {
       {hasFlash && flashKey ? (
         <Stack position="absolute" bottom={24} left={0} right={0} alignItems="center">
           <Stack width="80%" alignItems="center">
-            <Card variant="soft">
+            <Card testID="session-expired-flash" variant="soft">
               <Text color="$fg2" fontSize={14} textAlign="center" writingDirection={direction}>
                 {t(flashKey)}
               </Text>

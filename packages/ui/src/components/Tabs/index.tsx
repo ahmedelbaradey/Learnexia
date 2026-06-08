@@ -27,6 +27,8 @@ export interface TabItem {
   label: string;
   /** Optional leading glyph (decorative). */
   icon?: string;
+  /** Optional testID for the tab row (non-user-facing technical identifier). */
+  testID?: string;
 }
 
 export interface TabsProps {
@@ -64,6 +66,7 @@ export function Tabs({
         return (
           <XStack
             key={item.value}
+            testID={item.testID}
             flexDirection={rowDir}
             alignItems="center"
             gap="$3"

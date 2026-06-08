@@ -57,6 +57,13 @@ public class BaseResponseHandler
         Message = message ?? "UnAuthorized",
     };
 
+    public BaseResponse<T> Conflict<T>(string? message = null) => new()
+    {
+        StatusCode = HttpStatusCode.Conflict,
+        Successed = false,
+        Message = message ?? "Conflict.",
+    };
+
     public BaseResponse<T> Forbidden<T>(string? message = null) => new()
     {
         StatusCode = HttpStatusCode.Forbidden,

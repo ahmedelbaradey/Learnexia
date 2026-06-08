@@ -8,12 +8,14 @@ import type { Direction } from '@learnexia/shared';
 export interface ServerErrorBannerProps {
   message: string | null;
   direction?: Direction;
+  testID?: string;
 }
 
-export function ServerErrorBanner({ message, direction = 'ltr' }: ServerErrorBannerProps) {
+export function ServerErrorBanner({ message, direction = 'ltr', testID }: ServerErrorBannerProps) {
   if (!message) return null;
   return (
     <Stack
+      testID={testID}
       backgroundColor="$dangerSoft"
       borderRadius="$sm"
       padding="$3"

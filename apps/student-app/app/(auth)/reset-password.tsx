@@ -288,6 +288,7 @@ function ResetPasswordForm({ direction, email, token }: ResetPasswordFormProps) 
   if (isSuccess) {
     return (
       <Stack
+        testID="reset-password-success"
         backgroundColor="$successSoft"
         borderRadius="$card"
         padding="$5"
@@ -325,6 +326,7 @@ function ResetPasswordForm({ direction, email, token }: ResetPasswordFormProps) 
         forceLtr
         disabled
         direction={direction}
+        testID="reset-password-email"
       />
 
       {/* New password + strength meter */}
@@ -345,6 +347,7 @@ function ResetPasswordForm({ direction, email, token }: ResetPasswordFormProps) 
                 error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
                 direction={direction}
                 disabled={disabled}
+                testID="reset-password-new"
               />
               {field.value ? (
                 <PasswordStrengthMeter
@@ -382,11 +385,12 @@ function ResetPasswordForm({ direction, email, token }: ResetPasswordFormProps) 
             error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
             direction={direction}
             disabled={disabled}
+            testID="reset-password-confirm"
           />
         )}
       />
 
-      <ServerErrorBanner message={serverMessage} direction={direction} />
+      <ServerErrorBanner message={serverMessage} direction={direction} testID="reset-password-error" />
 
       <Button
         variant="primary"
@@ -395,6 +399,7 @@ function ResetPasswordForm({ direction, email, token }: ResetPasswordFormProps) 
         loading={resetPassword.isPending}
         disabled={disabled || formState.isSubmitting}
         onPress={onSubmit}
+        testID="reset-password-submit"
       >
         {t('auth.resetPassword.submitButton')}
       </Button>
@@ -422,6 +427,7 @@ function TokenErrorBlock({
 
   return (
     <Stack
+      testID="reset-password-token-error"
       backgroundColor="$warningSoft"
       borderRadius="$card"
       padding="$5"

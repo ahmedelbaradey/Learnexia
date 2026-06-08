@@ -697,6 +697,9 @@
         // specific reasons; differing messages would leak whether an email exists.
         public const string CannotLinkChild = "CannotLinkChild";
         public const string ChildLinkedSuccessfully = "ChildLinkedSuccessfully";
+        // Returned (HTTP 409 Conflict) when a parent re-links a child that is already in THEIR
+        // OWN family. This is not an enumeration risk: the parent knows they own this child.
+        public const string ChildAlreadyLinked = "ChildAlreadyLinked";
 
         // Add-Child Validation Messages (P1-03)
         public const string GradeOutOfRange = "GradeOutOfRange";

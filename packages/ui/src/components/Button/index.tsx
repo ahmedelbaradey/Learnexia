@@ -104,6 +104,7 @@ export interface ButtonProps extends Omit<GetProps<typeof ButtonFrame>, 'variant
   iconBefore?: React.ReactNode;
   iconAfter?: React.ReactNode;
   children?: React.ReactNode;
+  testID?: string;
 }
 
 export function Button({
@@ -116,6 +117,7 @@ export function Button({
   iconAfter,
   children,
   onPress,
+  testID,
   ...rest
 }: ButtonProps) {
   const effectiveVariant: ButtonVariant = disabled ? 'disabled' : variant;
@@ -132,6 +134,9 @@ export function Button({
       aria-label={accessibilityLabel}
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: !isInteractive, busy: loading }}
+      aria-busy={loading}
+      aria-disabled={!isInteractive}
+      testID={testID}
       onPress={isInteractive ? onPress : undefined}
       {...rest}
     >

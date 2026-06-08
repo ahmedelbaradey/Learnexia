@@ -20,6 +20,9 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: [['html', { open: 'never' }], ['list']],
+  // Global test timeout — applies to tests AND beforeAll/beforeEach hooks.
+  // P1-11-FE setup flows (register + add-child) can take up to 2 minutes per group.
+  timeout: 180_000,
   use: {
     baseURL: WEB_URL,
     trace: 'on-first-retry',
@@ -32,7 +35,7 @@ export default defineConfig({
     { name: 'mobile', use: { ...devices['Pixel 7'] } },
   ],
   webServer: {
-    command: 'npx expo start --port 8081',
+    command: 'EXPO_OFFLINE=1 npx expo start --port 8081',
     cwd: '../../apps/student-app',
     url: WEB_URL,
     reuseExistingServer: !process.env.CI,

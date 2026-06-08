@@ -21,7 +21,7 @@ export default function ParentDashboardScreen() {
   const { signOut, isPending } = useSignOutAction();
 
   return (
-    <Stack flex={1} backgroundColor="$bg" paddingTop={insets.top}>
+    <Stack testID="parent-home" flex={1} backgroundColor="$bg" paddingTop={insets.top}>
       <Stack
         height={56}
         paddingHorizontal="$6"
@@ -31,6 +31,7 @@ export default function ParentDashboardScreen() {
       >
         <Image source={assets.logoMark} style={{ width: 32, height: 32, resizeMode: 'contain' }} accessibilityElementsHidden />
         <Stack
+          testID="sign-out-button"
           minHeight={48}
           justifyContent="center"
           cursor="pointer"

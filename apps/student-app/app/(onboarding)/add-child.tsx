@@ -117,7 +117,7 @@ export default function AddChildScreen() {
           </Stack>
 
           {/* Add-child form card */}
-          <Stack backgroundColor="$cardSoft" borderRadius="$card" padding="$4">
+          <Stack testID="add-child-form-card" backgroundColor="$cardSoft" borderRadius="$card" padding="$4">
             <AddChildForm submitLabel={t('onboarding.addChild.addToListButton')} onAdd={addToList} />
           </Stack>
 
@@ -130,6 +130,9 @@ export default function AddChildScreen() {
               {drafts.map((draft) => (
                 <ChildCard
                   key={draft.localId}
+                  testID={`child-card-${draft.localId}`}
+                  editTestID={`child-card-edit-${draft.localId}`}
+                  removeTestID={`child-card-remove-${draft.localId}`}
                   variant={draft.status === 'idle' || draft.status === 'pending' ? 'editable' : 'status'}
                   child={{ fullName: draft.values.fullName, meta: childMeta(draft.values) }}
                   status={draft.status === 'success' ? 'success' : draft.status === 'error' ? 'error' : 'idle'}
@@ -154,6 +157,7 @@ export default function AddChildScreen() {
             loading={submitting}
             disabled={!canSubmit}
             onPress={submitAll}
+            testID="add-child-submit"
           >
             {t('onboarding.addChild.submitButton', { count: drafts.length })}
           </Button>

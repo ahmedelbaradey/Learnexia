@@ -63,11 +63,12 @@ public class LinkChildCommandHandler : BaseResponseHandler, ICommandHandler<Link
                 return genericFailure;
             }
 
-            // Already linked to THIS parent → idempotent success: no duplicate, return the summary.
+            // Already linked to THIS parent → 409 Conflict (BUG-P104-02 fix).
+            // This is the parent's own child so it is safe to confirm the link exists — no enumeration risk.
             if (await _linkService.IsLinkedAsync(parentId.Value, child.Id, cancellationToken))
             {
-                _logger.LogInfo($"Link-Child no-op: child {child.Id} already linked to parent {parentId}.");
-                return await BuildResponseAsync(child.Id, cancellationToken);
+                _logger.LogInfo($"Link-Child rejected: child {child.Id} already linked to parent {parentId}.");
+                return Conflict<LinkedChildResponse>(_localizer[SharedResourcesKey.ChildAlreadyLinked]);
             }
 
             // Cross-family guard: a parent may only link a child they CREATED, or a child not yet linked to

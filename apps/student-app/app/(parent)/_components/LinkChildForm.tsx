@@ -63,6 +63,7 @@ export function LinkChildForm() {
           child={{ fullName: linked.fullName ?? '', meta: linked.email }}
           direction={direction}
           accessibilityLabel={linked.fullName ?? ''}
+          testID="link-child-success"
         />
         <Text color="$success" fontSize={18} fontWeight="700" fontFamily="$heading" textAlign="center" writingDirection={direction}>
           {t('parent.linkChild.successTitle')}
@@ -92,10 +93,11 @@ export function LinkChildForm() {
             error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
             direction={direction}
             disabled={linkChild.isPending}
+            testID="link-child-email"
           />
         )}
       />
-      <ServerErrorBanner message={serverMessage} direction={direction} />
+      <ServerErrorBanner message={serverMessage} direction={direction} testID="link-child-error" />
       <Button
         variant="primary"
         size="full"
@@ -103,6 +105,7 @@ export function LinkChildForm() {
         loading={linkChild.isPending}
         disabled={linkChild.isPending || formState.isSubmitting}
         onPress={onSubmit}
+        testID="link-child-submit"
       >
         {t('parent.linkChild.submitButton')}
       </Button>

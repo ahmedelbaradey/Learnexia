@@ -36,7 +36,7 @@ namespace Learnexia.IntegrationTests;
 ///
 /// Acceptance criteria covered:
 ///   AC-2   Happy path — link an existing child → 200, Successed=true, child summary returned
-///   AC-6   Idempotent re-link of the same child → 200, no duplicate row, no error
+///   BUG-P104-02  Re-link already-linked child (own family) → 409 Conflict, Successed=false
 ///   AC-3   My-Children family isolation — parent B never sees parent A's children
 ///   AC-4   Many-to-many — a parent may be linked to multiple children
 ///   AC-5   Non-existent email → generic failure (no email enumeration)
@@ -50,6 +50,7 @@ namespace Learnexia.IntegrationTests;
 ///   My-Children — parent with no children → 200, empty list
 ///   My-Children — parent with 2 children → 200, list of 2
 ///   Parent-id from JWT: body field cannot change who links
+///   Anti-enumeration: non-existent email and non-student return the SAME generic failure shape (no 409)
 /// </summary>
 [Collection("IntegrationTests")]
 public sealed class P1_04_LinkParentChild_Tests : IAsyncLifetime
@@ -266,66 +267,57 @@ public sealed class P1_04_LinkParentChild_Tests : IAsyncLifetime
     }
 
     // ===========================================================================
-    // AC-6 Idempotent re-link — no duplicate row, still returns 200
+    // BUG-P104-02 Re-link already-linked child → 409 Conflict
     // ===========================================================================
 
-    [Fact(DisplayName = "AC-6 Idempotent: re-linking the same child → 200 Successed=true, no duplicate DB row")]
-    public async Task AC6_RelinkSameChild_IsIdempotent_NoError_NoDbDuplicate()
+    [Fact(DisplayName = "BUG-P104-02: re-linking an already-linked child (own family) → 409 Conflict, Successed=false")]
+    public async Task BugP10402_RelinkAlreadyLinkedChild_Returns409_Conflict()
     {
         // Arrange
         var adminToken = await SignInAndGetTokenAsync(DefaultAdminUserName, DefaultAdminPassword);
         var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
         var childEmail = await CreateStudentViaAdminAsync(adminToken);
 
-        // First link
+        // First link must succeed with 200.
         var (resp1, _, body1) = await LinkChildAsync(parentToken, childEmail);
         resp1.StatusCode.Should().Be(HttpStatusCode.OK, "first link must succeed; body: {0}", body1);
 
-        // Second link (idempotent)
+        // Second link on the SAME (parent, child) pair must return 409 Conflict.
         var (resp2, root2, body2) = await LinkChildAsync(parentToken, childEmail);
 
-        // Assert HTTP layer
-        resp2.StatusCode.Should().Be(HttpStatusCode.OK,
-            "re-linking the same child must still return 200 (idempotent); body: {0}", body2);
+        resp2.StatusCode.Should().Be(HttpStatusCode.Conflict,
+            "re-linking the same child must return 409 Conflict (BUG-P104-02); body: {0}", body2);
+
         TryProp(root2, "successed", out var successed2).Should().BeTrue("body: {0}", body2);
-        successed2.GetBoolean().Should().BeTrue("Successed must be true on idempotent re-link; body: {0}", body2);
+        successed2.GetBoolean().Should().BeFalse("Successed must be false on 409; body: {0}", body2);
 
-        // Assert DB: only one ParentStudents row for (parent, child)
-        // The composite PK (ParentId, StudentId) prevents duplicates at the DB level.
-        // We verify by counting rows for the child — should be exactly 1 regardless of
-        // how many times Link-Child was called with the same (parent, child) pair.
-        using var scope = _factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<IdentityModuleDbContext>();
-
-        var childUser = db.Users.SingleOrDefault(u => u.Email == childEmail);
-        childUser.Should().NotBeNull("the student user must exist in the DB; email: {0}", childEmail);
-
-        // P2-12: the ParentStudent link table moved out of Identity into the Parent module (schema
-        // "parent"); this Identity-DbContext duplicate-row assertion no longer applies. Idempotency is
-        // still asserted at the HTTP level above (re-link returns 200/Successed) and via the My-Children
-        // single-entry test below. The Parent-module composite-PK guarantee is revalidated by the P2-12
-        // api-tester batch against the new /api/Parent routes.
+        // The 409 message must acknowledge the duplicate (it is NOT generic — no enumeration risk
+        // because this is the parent's own family child).
+        TryProp(root2, "message", out var msg2).Should().BeTrue("body: {0}", body2);
+        msg2.GetString().Should().NotBeNullOrWhiteSpace("409 response must carry a message; body: {0}", body2);
     }
 
-    /// <summary>
-    /// A cleaner idempotency verification: after two Link-Child POSTs, My-Children returns exactly 1 child.
-    /// </summary>
-    [Fact(DisplayName = "AC-6 Idempotent: My-Children shows exactly 1 entry after two link POSTs")]
-    public async Task AC6_RelinkSameChild_MyChildrenCountIs1()
+    [Fact(DisplayName = "BUG-P104-02: first link succeeds, re-link is 409, My-Children still shows exactly 1 child")]
+    public async Task BugP10402_RelinkAlreadyLinkedChild_MyChildrenStillHasOneEntry()
     {
         var adminToken = await SignInAndGetTokenAsync(DefaultAdminUserName, DefaultAdminPassword);
         var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
         var childEmail = await CreateStudentViaAdminAsync(adminToken);
 
-        await LinkChildAsync(parentToken, childEmail);   // first link
-        await LinkChildAsync(parentToken, childEmail);   // idempotent second
+        // First link — must succeed.
+        var (r1, _, b1) = await LinkChildAsync(parentToken, childEmail);
+        r1.StatusCode.Should().Be(HttpStatusCode.OK, "first link must succeed; body: {0}", b1);
 
+        // Second link — must 409.
+        var (r2, _, b2) = await LinkChildAsync(parentToken, childEmail);
+        r2.StatusCode.Should().Be(HttpStatusCode.Conflict, "re-link must be 409; body: {0}", b2);
+
+        // DB state: My-Children must still return exactly one entry (no duplicate row created).
         var (resp, root, body) = await MyChildrenAsync(parentToken);
-
         resp.StatusCode.Should().Be(HttpStatusCode.OK, "My-Children must return 200; body: {0}", body);
         TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);
         data.GetArrayLength().Should().Be(1,
-            "exactly one child must appear in My-Children after two idempotent link calls; body: {0}", body);
+            "exactly one child must appear in My-Children — 409 must not have created a duplicate row; body: {0}", body);
     }
 
     // ===========================================================================

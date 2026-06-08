@@ -4,14 +4,17 @@
  * Wraps the NSwag `addChild` method and unwraps to the typed `AddedChildResponse`.
  * The acting parent is resolved server-side from the JWT — never sent in the
  * body. The Add-Child screen calls this once per child (sequential loop) with
- * per-child success/failure feedback (Design Spec Screen 5). On success, callers
- * should invalidate the My-Children query.
+ * per-child success/failure feedback (Design Spec Screen 5). On success,
+ * `queryKeys.family.myChildren()` is invalidated automatically so the
+ * My-Children list is always fresh regardless of the navigation path taken
+ * after onboarding (fresh-mount path AND SPA navigation path).
  */
 
-import { useMutation, type UseMutationResult } from '@tanstack/react-query';
+import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query';
 
 import { useTypedClient } from './apiClientContext';
 import { unwrapEnvelope } from '../client/typedClient';
+import { queryKeys } from '../query/queryKeys';
 import type { AddChildCommand, AddedChildResponse } from '../schemas';
 
 export function useAddChild(): UseMutationResult<
@@ -20,8 +23,14 @@ export function useAddChild(): UseMutationResult<
   AddChildCommand
 > {
   const client = useTypedClient();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: AddChildCommand): Promise<AddedChildResponse> =>
       unwrapEnvelope(client.addChild(input)) as Promise<AddedChildResponse>,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.family.myChildren(),
+      });
+    },
   });
 }

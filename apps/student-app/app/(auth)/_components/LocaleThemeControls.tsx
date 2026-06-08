@@ -72,6 +72,7 @@ export function LocaleThemeControls({ direction = 'ltr' }: LocaleThemeControlsPr
           return (
             <Stack
               key={loc}
+              testID={`locale-switch-${loc}`}
               height={32}
               paddingHorizontal="$3"
               alignItems="center"
@@ -101,6 +102,7 @@ export function LocaleThemeControls({ direction = 'ltr' }: LocaleThemeControlsPr
 
       {/* Theme toggle */}
       <Stack
+        testID="theme-toggle"
         width={36}
         height={36}
         alignItems="center"

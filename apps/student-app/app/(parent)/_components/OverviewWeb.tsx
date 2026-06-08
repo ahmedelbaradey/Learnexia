@@ -127,9 +127,9 @@ export function OverviewWeb() {
   const dateRange = t('parent.overview.dateRange');
 
   return (
-    <Stack flexDirection="column" gap="$6" padding="$6" width="100%">
+    <Stack testID="overview-root" flexDirection="column" gap="$6" padding="$6" width="100%">
       {/* Header */}
-      <Stack flexDirection={rowDir} alignItems="flex-start" justifyContent="space-between" gap="$4" flexWrap="wrap">
+      <Stack testID="overview-header" flexDirection={rowDir} alignItems="flex-start" justifyContent="space-between" gap="$4" flexWrap="wrap">
         <Stack flexDirection="column" gap="$1">
           <Text
             color="$fg1"
@@ -221,7 +221,7 @@ function OverviewBody({ childId, childName, rowDir, direction, locale }: Overvie
   return (
     <>
       {/* 4 KPI cards (inline by decision GAP-04 — no new KPIStatCard variant). */}
-      <Stack flexDirection={rowDir} flexWrap="wrap" gap={14} alignItems="stretch">
+      <Stack testID="overview-kpi-region" flexDirection={rowDir} flexWrap="wrap" gap={14} alignItems="stretch">
         {kpis.map((k) => (
           <Stack
             key={k.label}
@@ -295,7 +295,7 @@ function OverviewBody({ childId, childName, rowDir, direction, locale }: Overvie
         <Stack flex={2} minWidth={320}>
           <DailyActivityCard direction={direction} rowDir={rowDir} />
         </Stack>
-        <Stack flex={1} minWidth={280}>
+        <Stack testID="overview-mastery-region" flex={1} minWidth={280}>
           <SubjectMasteryCard childId={seed} direction={direction} />
         </Stack>
       </Stack>

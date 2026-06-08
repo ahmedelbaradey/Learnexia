@@ -27,6 +27,7 @@ export interface PersonaToggleProps {
   accessibilityLabel: string;
   direction?: Direction;
   disabled?: boolean;
+  testID?: string;
 }
 
 /** i18n key for a persona's tab label — caller resolves with `t(...)`. */
@@ -41,9 +42,11 @@ export function PersonaToggle({
   accessibilityLabel,
   direction = 'ltr',
   disabled = false,
+  testID,
 }: PersonaToggleProps) {
   return (
     <Stack
+      testID={testID}
       flexDirection={direction === 'rtl' ? 'row-reverse' : 'row'}
       backgroundColor="$card"
       borderRadius="$button"

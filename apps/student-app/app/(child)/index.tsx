@@ -227,6 +227,7 @@ export default function ChildHomeScreen() {
         />
         {/* Sign-out — ghost CTA, not a primary action (AC12) */}
         <TamStack
+          testID="sign-out-button"
           minHeight={48}
           justifyContent="center"
           cursor="pointer"

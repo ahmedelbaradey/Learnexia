@@ -118,7 +118,7 @@ export function RegisterForm() {
   const disabled = register.isPending;
 
   return (
-    <Stack gap="$4">
+    <Stack testID="register-form" gap="$4">
       {/* Full name + Country — two-column row at tablet+, stacked on phone. */}
       <Stack
         gap="$4"
@@ -136,6 +136,7 @@ export function RegisterForm() {
                 autoCapitalize="words"
                 direction={direction}
                 disabled={disabled}
+                testID="register-fullname"
               />
             )}
           />
@@ -154,6 +155,7 @@ export function RegisterForm() {
                 error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
                 direction={direction}
                 disabled={disabled}
+                testID="register-country"
               />
             )}
           />
@@ -175,6 +177,7 @@ export function RegisterForm() {
             error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
             direction={direction}
             disabled={disabled}
+            testID="register-email"
           />
         )}
       />
@@ -195,6 +198,7 @@ export function RegisterForm() {
                 error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
                 direction={direction}
                 disabled={disabled}
+                testID="register-password"
               />
               {field.value ? (
                 <PasswordStrengthMeter
@@ -243,13 +247,14 @@ export function RegisterForm() {
                 error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
                 direction={direction}
                 disabled={disabled}
+                testID="register-terms"
               />
             </Stack>
           );
         }}
       />
 
-      <ServerErrorBanner message={serverMessage} direction={direction} />
+      <ServerErrorBanner message={serverMessage} direction={direction} testID="register-error" />
 
       <Button
         variant="primary"
@@ -258,6 +263,7 @@ export function RegisterForm() {
         loading={register.isPending}
         disabled={disabled || formState.isSubmitting}
         onPress={onSubmit}
+        testID="register-submit"
       >
         {t('auth.register.submitButton')}
       </Button>
@@ -267,6 +273,7 @@ export function RegisterForm() {
           {t('auth.register.haveAccount')}
         </Text>
         <Text
+          testID="register-sign-in-link"
           color="$primaryLight"
           fontSize={14}
           fontWeight="800"

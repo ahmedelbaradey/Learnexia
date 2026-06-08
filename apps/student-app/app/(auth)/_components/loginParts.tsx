@@ -130,6 +130,7 @@ export interface SocialButtonProps {
    * Use this for Latin brand names (Google) that must not flip in RTL.
    */
   labelLtr?: boolean;
+  testID?: string;
 }
 
 export function SocialButton({
@@ -140,12 +141,14 @@ export function SocialButton({
   loading = false,
   disabled = false,
   labelLtr = false,
+  testID,
 }: SocialButtonProps) {
   const isInteractive = !loading && !disabled;
   const labelDirection = labelLtr ? 'ltr' : direction;
 
   return (
     <Stack
+      testID={testID}
       flex={1}
       height={48}
       flexDirection={direction === 'rtl' ? 'row-reverse' : 'row'}

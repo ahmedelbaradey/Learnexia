@@ -5,6 +5,9 @@
  * The current step is derived from the active route segment so each step screen
  * stays simple. Back is hidden on step 1. RTL: back chevron flips; step dots do
  * not (progress order is universal).
+ *
+ * Auth/role guard: signed-out users and students (ROLES.Student) are redirected
+ * away before any onboarding content is rendered (useGroupGuard).
  */
 import { ProgressSteps } from '@learnexia/ui';
 import { Stack, Text } from '@tamagui/core';
@@ -12,6 +15,7 @@ import { Slot, useRouter, useSegments } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useGroupGuard } from '../../src/hooks/useGroupGuard';
 import { useLocale } from '../../src/hooks/useLocale';
 
 const TOTAL_STEPS = 2;
@@ -27,11 +31,15 @@ export default function OnboardingLayout() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const segments = useSegments();
+  const { isResolving } = useGroupGuard('(onboarding)');
 
   // segments e.g. ['(onboarding)', 'add-child'] — the leaf is the step.
   const leaf = segments[segments.length - 1];
   const currentStep = stepForRoute(leaf);
   const showBack = currentStep > 1;
+
+  // Render nothing while the guard is resolving auth/role (prevents content flash).
+  if (isResolving) return null;
 
   return (
     <Stack flex={1} backgroundColor="$bg">
