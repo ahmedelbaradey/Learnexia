@@ -13,4 +13,10 @@ public record LessonDto : BaseDto
 
     /// <summary>Optional — a lesson teaches at most one skill (Lesson *—o1 Skill).</summary>
     public int? SkillId { get; set; }
+
+    /// <summary>
+    /// P7-02: Estimated lesson duration in minutes. 0 when not yet set.
+    /// Writable via EditLessonCommand; guarded from mass-assignment on IsActive/SequenceOrder.
+    /// </summary>
+    public int EstimatedMinutes { get; set; }
 }

@@ -1764,4 +1764,58 @@
   <data name="ReorderListTooLong" xml:space="preserve">
     <value>تجاوزت قائمة إعادة الترتيب الحد الأقصى المسموح به.</value>
   </data>
+  <data name="LessonActivatedSuccessfully" xml:space="preserve">
+    <value>تم تفعيل الدرس بنجاح.</value>
+  </data>
+  <data name="LessonDeactivatedSuccessfully" xml:space="preserve">
+    <value>تم تعطيل الدرس بنجاح.</value>
+  </data>
+  <data name="ContentBlockNotFound" xml:space="preserve">
+    <value>لم يتم العثور على كتلة المحتوى.</value>
+  </data>
+  <data name="ContentBlockPayloadInvalid" xml:space="preserve">
+    <value>محتوى كتلة المحتوى غير صالح أو تنقصه حقول مطلوبة لهذا النوع.</value>
+  </data>
+  <data name="ContentBlockTypeInvalid" xml:space="preserve">
+    <value>نوع كتلة المحتوى غير صالح.</value>
+  </data>
+  <data name="ContentBlockTextPayloadRequired" xml:space="preserve">
+    <value>يجب أن تحتوي كتلة النص على حقل markdown غير فارغ.</value>
+  </data>
+  <data name="ContentBlockImageUrlRequired" xml:space="preserve">
+    <value>يجب أن تحتوي كتلة الصورة على حقل url غير فارغ.</value>
+  </data>
+  <data name="ContentBlockVideoUrlRequired" xml:space="preserve">
+    <value>يجب أن تحتوي كتلة الفيديو على حقل url غير فارغ.</value>
+  </data>
+  <data name="ContentBlockCalloutVariantRequired" xml:space="preserve">
+    <value>يجب أن تحتوي كتلة التنبيه على نوع (info أو warning أو tip).</value>
+  </data>
+  <data name="ContentBlockCalloutVariantInvalid" xml:space="preserve">
+    <value>يجب أن يكون نوع التنبيه أحد القيم: info أو warning أو tip.</value>
+  </data>
+  <data name="ContentBlockCalloutMarkdownRequired" xml:space="preserve">
+    <value>يجب أن تحتوي كتلة التنبيه على حقل markdown غير فارغ.</value>
+  </data>
+  <data name="ContentBlockAddedSuccessfully" xml:space="preserve">
+    <value>تمت إضافة كتلة المحتوى بنجاح.</value>
+  </data>
+  <data name="ContentBlockUpdatedSuccessfully" xml:space="preserve">
+    <value>تم تحديث كتلة المحتوى بنجاح.</value>
+  </data>
+  <data name="ContentBlockReorderedSuccessfully" xml:space="preserve">
+    <value>تمت إعادة ترتيب كتل المحتوى بنجاح.</value>
+  </data>
+  <data name="ContentBlockReorderCrossLessonForbidden" xml:space="preserve">
+    <value>يجب أن تنتمي جميع كتل المحتوى في طلب إعادة الترتيب إلى نفس الدرس.</value>
+  </data>
+  <data name="EstimatedMinutesMustBeNonNegative" xml:space="preserve">
+    <value>يجب أن تكون الدقائق المقدرة صفراً أو رقماً موجباً.</value>
+  </data>
+  <data name="ContentBlockPayloadTooLong" xml:space="preserve">
+    <value>يجب ألا يتجاوز محتوى كتلة المحتوى 65536 حرفاً.</value>
+  </data>
+  <data name="ContentBlockUrlInvalid" xml:space="preserve">
+    <value>يجب أن يكون الرابط عنوان HTTPS مطلقاً يشير إلى مضيف عام. لا يُسمح بالبروتوكولات غير الآمنة ولا بالعناوين الخاصة أو المحلية.</value>
+  </data>
 </root>

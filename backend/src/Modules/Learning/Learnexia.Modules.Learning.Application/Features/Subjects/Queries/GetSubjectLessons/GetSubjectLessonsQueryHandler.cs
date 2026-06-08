@@ -144,6 +144,7 @@ public class GetSubjectLessonsQueryHandler
                     Name          = u.Name,
                     SequenceOrder = u.SequenceOrder,
                     Lessons       = u.Lessons
+                                     .Where(l => l.IsActive)
                                      .OrderBy(l => l.SequenceOrder)
                                      .Select(l =>
                                      {
@@ -196,6 +197,7 @@ public class GetSubjectLessonsQueryHandler
                     Name          = u.Name,
                     SequenceOrder = u.SequenceOrder,
                     Lessons       = u.Lessons
+                                     .Where(l => l.IsActive)
                                      .OrderBy(l => l.SequenceOrder)
                                      .Select(l => new LessonInUnitDto
                                      {

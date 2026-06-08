@@ -59,8 +59,10 @@ public class GetLessonQueryHandler
         try
         {
             // Load the lesson by id. AsNoTracking — query handler; no writes.
+            // P7-02: Student-facing reads must only see active (IsActive=true) lessons.
+            // Inactive lessons return NotFound (same as deleted) so no admin info is leaked.
             var lesson = await _repository.Learning
-                .GetByCondition<Lesson>(l => l.Id == request.Id, false)
+                .GetByCondition<Lesson>(l => l.Id == request.Id && l.IsActive, false)
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (lesson is null)

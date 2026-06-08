@@ -886,5 +886,73 @@
         /// </summary>
         public const string ReorderListTooLong = "ReorderListTooLong";
 
+        // ── P7-02 Lesson management ────────────────────────────────────────────────
+
+        /// <summary>Returned on successful Lesson activation.</summary>
+        public const string LessonActivatedSuccessfully = "LessonActivatedSuccessfully";
+
+        /// <summary>Returned on successful Lesson deactivation.</summary>
+        public const string LessonDeactivatedSuccessfully = "LessonDeactivatedSuccessfully";
+
+        // ── P7-02 ContentBlock management ─────────────────────────────────────────
+
+        /// <summary>Returned when a ContentBlock to modify/delete is not found.</summary>
+        public const string ContentBlockNotFound = "ContentBlockNotFound";
+
+        /// <summary>Returned when a ContentBlock's payload JSON is empty or missing required fields for its type.</summary>
+        public const string ContentBlockPayloadInvalid = "ContentBlockPayloadInvalid";
+
+        /// <summary>Returned when the ContentBlock type is not a valid enum member.</summary>
+        public const string ContentBlockTypeInvalid = "ContentBlockTypeInvalid";
+
+        /// <summary>Returned when a Text block is missing the required markdown field.</summary>
+        public const string ContentBlockTextPayloadRequired = "ContentBlockTextPayloadRequired";
+
+        /// <summary>Returned when an Image block is missing the required url field.</summary>
+        public const string ContentBlockImageUrlRequired = "ContentBlockImageUrlRequired";
+
+        /// <summary>Returned when a Video block is missing the required url field.</summary>
+        public const string ContentBlockVideoUrlRequired = "ContentBlockVideoUrlRequired";
+
+        /// <summary>Returned when a Callout block is missing the required variant field.</summary>
+        public const string ContentBlockCalloutVariantRequired = "ContentBlockCalloutVariantRequired";
+
+        /// <summary>Returned when a Callout block variant is not one of: info, warning, tip.</summary>
+        public const string ContentBlockCalloutVariantInvalid = "ContentBlockCalloutVariantInvalid";
+
+        /// <summary>Returned when a Callout block is missing the required markdown field.</summary>
+        public const string ContentBlockCalloutMarkdownRequired = "ContentBlockCalloutMarkdownRequired";
+
+        /// <summary>Returned on successful ContentBlock add.</summary>
+        public const string ContentBlockAddedSuccessfully = "ContentBlockAddedSuccessfully";
+
+        /// <summary>Returned on successful ContentBlock update.</summary>
+        public const string ContentBlockUpdatedSuccessfully = "ContentBlockUpdatedSuccessfully";
+
+        /// <summary>Returned on successful ContentBlock reorder.</summary>
+        public const string ContentBlockReorderedSuccessfully = "ContentBlockReorderedSuccessfully";
+
+        /// <summary>
+        /// Returned when a ContentBlock reorder request contains IDs that do not all belong to the same Lesson.
+        /// </summary>
+        public const string ContentBlockReorderCrossLessonForbidden = "ContentBlockReorderCrossLessonForbidden";
+
+        /// <summary>Returned when EstimatedMinutes is negative.</summary>
+        public const string EstimatedMinutesMustBeNonNegative = "EstimatedMinutesMustBeNonNegative";
+
+        // P7-SEC-2 (post security-audit) — ContentBlock payload size + URL safety
+
+        /// <summary>
+        /// Returned when the ContentBlock Payload exceeds the maximum allowed length (65536 chars).
+        /// </summary>
+        public const string ContentBlockPayloadTooLong = "ContentBlockPayloadTooLong";
+
+        /// <summary>
+        /// Returned when an Image or Video url field is not a valid absolute HTTPS URI,
+        /// uses a disallowed scheme (http/javascript/data/file), or points at a loopback/
+        /// link-local/private address. Children's platform — only public HTTPS URLs allowed.
+        /// </summary>
+        public const string ContentBlockUrlInvalid = "ContentBlockUrlInvalid";
+
     }
 }

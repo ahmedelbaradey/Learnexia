@@ -22,4 +22,18 @@ public static class AdminActions
     public const string UnitReordered    = "Unit.Reordered";
     public const string UnitActivated    = "Unit.Activated";
     public const string UnitDeactivated  = "Unit.Deactivated";
+
+    // ── P7-02 Lesson ─────────────────────────────────────────────────────────
+    public const string LessonCreated    = "Lesson.Created";
+    public const string LessonUpdated    = "Lesson.Updated";
+    public const string LessonDeleted    = "Lesson.Deleted";
+    public const string LessonReordered  = "Lesson.Reordered";
+    public const string LessonActivated  = "Lesson.Activated";
+    public const string LessonDeactivated = "Lesson.Deactivated";
+
+    // ── P7-02 ContentBlock ────────────────────────────────────────────────────
+    public const string ContentBlockAdded    = "ContentBlock.Added";
+    public const string ContentBlockUpdated  = "ContentBlock.Updated";
+    public const string ContentBlockDeleted  = "ContentBlock.Deleted";
+    public const string ContentBlockReordered = "ContentBlock.Reordered";
 }

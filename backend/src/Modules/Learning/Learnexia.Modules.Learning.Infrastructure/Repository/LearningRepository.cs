@@ -222,9 +222,11 @@ public class LearningRepository : ILearningRepository
     /// <inheritdoc/>
     public async Task<IReadOnlyList<Lesson>> GetSubjectLessonsAsync(
         int subjectId, CancellationToken ct = default)
+        // P7-02: Filter IsActive — student-facing reads must not see inactive lessons.
+        // The global IsDeleted filter already excludes soft-deleted rows.
         => await RepositoryContext.Lessons
             .AsNoTracking()
-            .Where(l => l.Unit.SubjectId == subjectId)
+            .Where(l => l.Unit.SubjectId == subjectId && l.IsActive)
             .ToListAsync(ct);
 
     /// <inheritdoc/>

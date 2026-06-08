@@ -146,6 +146,61 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
                     b.ToTable("Concepts", "learning");
                 });
 
+            modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.ContentBlock", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BlockType")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool?>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("LessonId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<int>("SequenceOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId", "SequenceOrder")
+                        .HasDatabaseName("IX_ContentBlocks_LessonId_SequenceOrder");
+
+                    b.ToTable("ContentBlocks", "learning");
+                });
+
             modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.Grade", b =>
                 {
                     b.Property<int>("Id")
@@ -334,8 +389,18 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
                     b.Property<int>("Difficulty")
                         .HasColumnType("integer");
 
+                    b.Property<int>("EstimatedMinutes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
                     b.Property<string>("Explanation")
                         .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
                     b.Property<bool>("IsBoss")
                         .HasColumnType("boolean");
@@ -702,6 +767,17 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
                     b.Navigation("Subject");
                 });
 
+            modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.ContentBlock", b =>
+                {
+                    b.HasOne("Learnexia.Modules.Learning.Domain.Entities.Lesson", "Lesson")
+                        .WithMany("ContentBlocks")
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Lesson");
+                });
+
             modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.KnowledgeEdge", b =>
                 {
                     b.HasOne("Learnexia.Modules.Learning.Domain.Entities.KnowledgeNode", "SourceNode")
@@ -833,6 +909,11 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
                     b.Navigation("SourceEdges");
 
                     b.Navigation("TargetEdges");
+                });
+
+            modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.Lesson", b =>
+                {
+                    b.Navigation("ContentBlocks");
                 });
 
             modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.QuizQuestion", b =>

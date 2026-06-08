@@ -6,6 +6,11 @@ namespace Learnexia.Modules.Learning.Domain.Entities;
 /// <summary>
 /// A lesson within a <see cref="Unit"/>. A lesson optionally teaches one <see cref="Skill"/>
 /// (Lesson *—o1 Skill; <see cref="SkillId"/> nullable).
+///
+/// P7-02: Added <see cref="IsActive"/> (admin-controlled active/inactive toggle) and
+/// <see cref="EstimatedMinutes"/> (estimated lesson duration in minutes). Soft-delete
+/// (<c>IsDeleted</c> + <c>DeletedAt</c>) is inherited from <see cref="AggregateRoot"/>
+/// via <c>FullAuditedEntity</c> — no new columns required for soft-delete.
 /// </summary>
 public class Lesson : AggregateRoot
 {
@@ -13,6 +18,18 @@ public class Lesson : AggregateRoot
     public DifficultyLevel Difficulty { get; set; }
     public int SequenceOrder { get; set; }
     public bool IsLocked { get; set; }
+
+    /// <summary>
+    /// P7-02: Admin-controlled active/inactive toggle. Inactive lessons are hidden from
+    /// student-facing reads but are NOT deleted (use <c>IsDeleted</c> for soft-delete).
+    /// Default <c>true</c>.
+    /// </summary>
+    public bool IsActive { get; set; } = true;
+
+    /// <summary>
+    /// P7-02: Estimated lesson duration in minutes. Default 0 (backfill-safe for existing rows).
+    /// </summary>
+    public int EstimatedMinutes { get; set; }
 
     public int UnitId { get; set; }
     public Unit Unit { get; set; } = null!;
@@ -43,4 +60,10 @@ public class Lesson : AggregateRoot
     /// (a boss lesson can still be Locked, Available, or Completed).
     /// </summary>
     public bool IsBoss { get; set; }
+
+    /// <summary>
+    /// P7-02: Ordered content blocks for this lesson. Navigated via <see cref="ContentBlock.LessonId"/>.
+    /// Loaded on demand — not included in the default lesson query.
+    /// </summary>
+    public List<ContentBlock> ContentBlocks { get; set; } = new();
 }

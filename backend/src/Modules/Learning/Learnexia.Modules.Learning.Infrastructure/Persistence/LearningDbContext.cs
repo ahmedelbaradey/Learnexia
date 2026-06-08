@@ -41,6 +41,9 @@ public class LearningDbContext : DbContext
     public DbSet<Attempt> Attempts => Set<Attempt>();
     public DbSet<StudentAnswer> StudentAnswers => Set<StudentAnswer>();
 
+    // P7-02: Lesson content blocks
+    public DbSet<ContentBlock> ContentBlocks => Set<ContentBlock>();
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 
@@ -49,13 +52,15 @@ public class LearningDbContext : DbContext
         modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(LearningDbContext).Assembly);
 
-        // P7-01: Global soft-delete filters — rows with IsDeleted == true are invisible to all
+        // P7-01/P7-02: Global soft-delete filters — rows with IsDeleted == true are invisible to all
         // standard EF queries. Uses != true (not == false) because the column is nullable bool?.
         // Admin reads that need to see soft-deleted rows must use .IgnoreQueryFilters().
         // IsActive is intentionally NOT in the global filter — admins must see inactive items
         // to reactivate them; student-facing reads apply IsActive == true per-query.
         modelBuilder.Entity<Subject>().HasQueryFilter(s => s.IsDeleted != true);
         modelBuilder.Entity<Unit>().HasQueryFilter(u => u.IsDeleted != true);
+        modelBuilder.Entity<Lesson>().HasQueryFilter(l => l.IsDeleted != true);
+        modelBuilder.Entity<ContentBlock>().HasQueryFilter(cb => cb.IsDeleted != true);
 
         base.OnModelCreating(modelBuilder);
     }

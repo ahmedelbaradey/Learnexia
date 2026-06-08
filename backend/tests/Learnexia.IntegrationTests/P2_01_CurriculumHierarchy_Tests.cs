@@ -31,8 +31,8 @@ namespace Learnexia.IntegrationTests;
 ///   Subjects/Units/Lessons/Concepts/Skills Create/Update/Delete — requires Admin or
 ///                               SuperAdmin ([Authorize(Policy = AdminOnly)]);
 ///                               anonymous → 401, non-admin → 403.
-///   Subjects/Units List / GetById — AdminOnly (P7-SEC: expose admin DTOs; locked down post P7-01).
-///   Lessons/Concepts/Skills List / GetById — unchanged: anonymous access is permitted.
+///   Subjects/Units/Lessons List — AdminOnly (P7-SEC: expose admin DTOs; locked down post P7-01/P7-SEC-1).
+///   Concepts/Skills List / GetById — unchanged: anonymous access is permitted.
 ///
 /// JSON Response Structure (OBSERVED from actual API):
 ///   List → BaseResponse&lt;PaginatedResult&lt;T&gt;&gt;
@@ -56,7 +56,9 @@ namespace Learnexia.IntegrationTests;
 ///   AC-3 : Validation → 422 on empty Name, GradeId=0, out-of-range enum, out-of-range MasteryThreshold
 ///   AC-4 : Non-existent GradeId fails gracefully (not a naked exception, non-2xx)
 ///   AC-5 : DifficultyLevel enum persists and round-trips as int in JSON
-///   AC-6 : Grades List requires authentication (401 anonymous); other five list endpoints are anonymous
+///   AC-6 : Grades List requires authentication (401 anonymous); Concepts/Skills list endpoints are anonymous
+///   AC-6b: Subjects/Units List endpoints now require AdminOnly (P7-SEC post P7-01)
+///   AC-6c: Lessons List endpoint now requires AdminOnly (P7-SEC-1 post P7-02 security audit)
 /// </summary>
 [Collection("IntegrationTests")]
 public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
@@ -247,14 +249,14 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
             "Authenticated user must receive 200 on Grades List; body: {0}", body);
     }
 
-    [Theory(DisplayName = "AC-6: Lessons/Concepts/Skills List endpoints remain anonymous (200 without JWT)")]
-    [InlineData("/api/learning/lessons/List?PageNumber=1&PageSize=10")]
+    [Theory(DisplayName = "AC-6: Concepts/Skills List endpoints remain anonymous (200 without JWT)")]
     [InlineData("/api/learning/concepts/List?PageNumber=1&PageSize=10")]
     [InlineData("/api/learning/skills/List?PageNumber=1&PageSize=10")]
     public async Task AC6_NonGradeListEndpoints_AreAnonymous(string url)
     {
-        // No token — lessons/concepts/skills list endpoints must still return 200 (unchanged contract).
-        // NOTE: Subjects/List and Units/List were locked to AdminOnly in P7-SEC (expose admin DTOs).
+        // No token — concepts/skills list endpoints must still return 200 (unchanged contract).
+        // NOTE: Subjects/List and Units/List were locked to AdminOnly in P7-SEC (P7-01).
+        //       Lessons/List was locked to AdminOnly in P7-SEC-1 (P7-02 security audit).
         var (response, _, body) = await GetAsync(url);
 
         ((int)response.StatusCode).Should().NotBe(401,
@@ -265,7 +267,7 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
             "Non-grade List endpoint {0} must return 200 for anonymous requests; body: {1}", url, body);
     }
 
-    [Theory(DisplayName = "AC-6b: Subjects/Units List endpoints now require AdminOnly (P7-SEC)")]
+    [Theory(DisplayName = "AC-6b: Subjects/Units List endpoints now require AdminOnly (P7-SEC post P7-01)")]
     [InlineData("/api/learning/subjects/List?PageNumber=1&PageSize=10")]
     [InlineData("/api/learning/units/List?PageNumber=1&PageSize=10")]
     public async Task AC6b_SubjectsUnitsListEndpoints_RequireAdminOnly(string url)
@@ -274,6 +276,25 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
         var (anonResp, _, anonBody) = await GetAsync(url);
         ((int)anonResp.StatusCode).Should().Be(401,
             "P7-SEC: Subjects/Units List must require auth; url={0}; body: {1}", url, anonBody);
+    }
+
+    [Fact(DisplayName = "AC-6c: GET /api/learning/lessons/List requires AdminOnly (P7-SEC-1 post P7-02 security audit) — anonymous → 401")]
+    public async Task AC6c_LessonsListEndpoint_RequiresAdminOnly_Anonymous401()
+    {
+        // No token — Lessons/List was locked to AdminOnly in P7-02 security-audit remediation.
+        // It exposes admin metadata (EstimatedMinutes, UnitId, SequenceOrder, SkillId) and
+        // returns inactive lessons. Students use GET /Subjects/{id}/Lessons instead.
+        var (anonResp, _, anonBody) = await GetAsync("/api/learning/lessons/List?PageNumber=1&PageSize=10");
+        ((int)anonResp.StatusCode).Should().Be(401,
+            "P7-SEC-1: Lessons/List must require auth; anonymous → 401; body: {0}", anonBody);
+    }
+
+    [Fact(DisplayName = "AC-6c: GET /api/learning/lessons/List requires AdminOnly — admin token → 200")]
+    public async Task AC6c_LessonsListEndpoint_AdminToken_Returns200()
+    {
+        var (adminResp, _, adminBody) = await GetAsync("/api/learning/lessons/List?PageNumber=1&PageSize=10", _adminToken);
+        adminResp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "P7-SEC-1: Lessons/List with admin token must return 200; body: {0}", adminBody);
     }
 
     // =========================================================================
@@ -451,9 +472,9 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
             new { Name = lesson2Name, Difficulty = 2 /* Medium */, SequenceOrder = 2, IsLocked = false, UnitId = unitId, SkillId = skillId }, _adminToken);
         AssertCreateSuccess(lesson2Resp, lesson2Root, lesson2Body);
 
-        // Verify lessons appear in filtered list — anonymous allowed
+        // Verify lessons appear in filtered list — admin token required (P7-SEC-1: Lessons/List is AdminOnly)
         var (lessonListResp, lessonListRoot, lessonListBody) = await GetAsync(
-            $"/api/learning/lessons/List?PageNumber=1&PageSize=200&UnitId={unitId}");
+            $"/api/learning/lessons/List?PageNumber=1&PageSize=200&UnitId={unitId}", _adminToken);
         lessonListResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", lessonListBody);
         var lessons = ExtractItems(lessonListRoot, lessonListBody);
         lessons.Should().HaveCountGreaterThanOrEqualTo(2,
@@ -476,8 +497,9 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
             new { Name = lessonName, Difficulty = 3 /* Hard */, SequenceOrder = 1, IsLocked = false, UnitId = unitId }, _adminToken);
         AssertCreateSuccess(createResp, default, createBody);
 
+        // P7-SEC-1: Lessons/List is AdminOnly — must send admin token
         var (listResp, listRoot, listBody) = await GetAsync(
-            $"/api/learning/lessons/List?PageNumber=1&PageSize=200&UnitId={unitId}");
+            $"/api/learning/lessons/List?PageNumber=1&PageSize=200&UnitId={unitId}", _adminToken);
         listResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", listBody);
         var lessons = ExtractItems(listRoot, listBody);
 
