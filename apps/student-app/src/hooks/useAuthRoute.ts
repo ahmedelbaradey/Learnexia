@@ -23,6 +23,7 @@ import {
   type Locale,
   LOCALES,
 } from '@learnexia/shared';
+import { applyWebDirection } from '@learnexia/shared/i18n';
 import { useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 
@@ -64,6 +65,11 @@ export function useAuthRoute(): AuthRouteState {
       preferredLocale: me.data.preferredLanguage ?? null,
     });
     if (isLocale(me.data.preferredLanguage)) {
+      // Eagerly apply to the DOM before the React render chain propagates the
+      // new locale through LearnexiaProvider (prevents the timing race where
+      // router.replace fires before applyWebDirection runs via useEffect in
+      // LearnexiaProvider).
+      applyWebDirection(me.data.preferredLanguage);
       setLocale(me.data.preferredLanguage);
     }
   }, [signedIn, me.data, setUser, setLocale]);

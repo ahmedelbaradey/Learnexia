@@ -43,6 +43,10 @@ export interface ChildCardProps {
   locale?: string;
   accessibilityLabel: string;
   testID?: string;
+  /** testID for the edit icon button (editable variant). */
+  editTestID?: string;
+  /** testID for the remove icon button (editable variant). */
+  removeTestID?: string;
 }
 
 function resolveDirection(direction?: Direction, locale?: string): Direction {
@@ -100,14 +104,17 @@ function IconButton({
   color,
   label,
   onPress,
+  testID,
 }: {
   glyph: string;
   color: TextColor;
   label: string;
   onPress?: () => void;
+  testID?: string;
 }) {
   return (
     <Stack
+      testID={testID}
       minWidth={48}
       minHeight={48}
       alignItems="center"
@@ -141,6 +148,8 @@ export function ChildCard({
   locale,
   accessibilityLabel,
   testID,
+  editTestID,
+  removeTestID,
 }: ChildCardProps) {
   const dir = resolveDirection(direction, locale);
   const rowDir = dir === 'rtl' ? 'row-reverse' : 'row';
@@ -214,8 +223,8 @@ export function ChildCard({
           {/* Actions */}
           {variant === 'editable' ? (
             <XStack gap="$2" flexDirection={rowDir}>
-              <IconButton glyph="✎" color="$fg3" label="Edit child" onPress={onEdit} />
-              <IconButton glyph="🗑" color="$danger" label="Remove child" onPress={onRemove} />
+              <IconButton glyph="✎" color="$fg3" label="Edit child" onPress={onEdit} testID={editTestID} />
+              <IconButton glyph="🗑" color="$danger" label="Remove child" onPress={onRemove} testID={removeTestID} />
             </XStack>
           ) : null}
 

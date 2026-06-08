@@ -122,6 +122,7 @@ export default function LoginScreen() {
             {t('auth.login.newParent')}
           </Text>
           <Text
+            testID="login-create-account-link"
             color="$primaryLight"
             fontSize={14}
             fontWeight="800"

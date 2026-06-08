@@ -95,6 +95,7 @@ export function SettingsWeb() {
     value: key,
     label: t(TAB_LABEL_KEY[key]),
     icon: TAB_ICON[key],
+    testID: `settings-tab-${key}`,
   }));
 
   return (
@@ -529,6 +530,7 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
             autoCapitalize="words"
             direction={direction}
             disabled={updateProfile.isPending}
+            testID="profile-fullname"
           />
         </Stack>
         <Stack flex={1} minWidth={240}>
@@ -560,6 +562,7 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
             direction={direction}
             forceLtr
             disabled={updateProfile.isPending}
+            testID="profile-phone"
           />
         </Stack>
         <Stack flex={1} minWidth={240}>

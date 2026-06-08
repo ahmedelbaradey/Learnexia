@@ -273,6 +273,7 @@ export function RegisterForm() {
           {t('auth.register.haveAccount')}
         </Text>
         <Text
+          testID="register-sign-in-link"
           color="$primaryLight"
           fontSize={14}
           fontWeight="800"

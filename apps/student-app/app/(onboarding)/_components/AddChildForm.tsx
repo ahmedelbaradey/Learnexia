@@ -256,6 +256,7 @@ export function AddChildForm({ initialValues, submitLabel, onAdd }: AddChildForm
             autoCapitalize="words"
             error={errText(fieldState.error?.message)}
             direction={direction}
+            testID="add-child-country"
           />
         )}
       />

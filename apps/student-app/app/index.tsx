@@ -204,7 +204,7 @@ export default function SplashScreen() {
       {hasFlash && flashKey ? (
         <Stack position="absolute" bottom={24} left={0} right={0} alignItems="center">
           <Stack width="80%" alignItems="center">
-            <Card variant="soft">
+            <Card testID="session-expired-flash" variant="soft">
               <Text color="$fg2" fontSize={14} textAlign="center" writingDirection={direction}>
                 {t(flashKey)}
               </Text>

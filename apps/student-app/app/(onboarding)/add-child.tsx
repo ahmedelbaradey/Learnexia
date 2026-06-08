@@ -131,6 +131,8 @@ export default function AddChildScreen() {
                 <ChildCard
                   key={draft.localId}
                   testID={`child-card-${draft.localId}`}
+                  editTestID={`child-card-edit-${draft.localId}`}
+                  removeTestID={`child-card-remove-${draft.localId}`}
                   variant={draft.status === 'idle' || draft.status === 'pending' ? 'editable' : 'status'}
                   child={{ fullName: draft.values.fullName, meta: childMeta(draft.values) }}
                   status={draft.status === 'success' ? 'success' : draft.status === 'error' ? 'error' : 'idle'}
