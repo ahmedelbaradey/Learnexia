@@ -2,8 +2,11 @@ using Learnexia.Modules.Learning.Api.Bases;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Commands.Add;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Commands.Delete;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Commands.Edit;
+using Learnexia.Modules.Learning.Application.Features.Subjects.Commands.Reorder;
+using Learnexia.Modules.Learning.Application.Features.Subjects.Commands.SetActive;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Dtos;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Queries.Get;
+using Learnexia.Modules.Learning.Application.Features.Subjects.Queries.GetLanguageCoverage;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Queries.GetSubjectLessons;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Queries.GetSubjectsForGrade;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Queries.GetSubjectSkillTree;
@@ -21,17 +24,19 @@ namespace Learnexia.Modules.Learning.Api.Controllers;
 public class SubjectsController : AppControllerBase
 {
     [HttpGet("List")]
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
     public async Task<IActionResult> List([FromQuery] ListSubjectsQuery query)
         => NewResult(await Mediator.Send(query));
 
     [HttpGet]
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
     public async Task<IActionResult> GetById(int id)
         => NewResult(await Mediator.Send(new GetSubjectQuery { Id = id }));
 
-    // ── Student-facing browse endpoints (P2-02) ─────��─────────────────────────
+    // ── Student-facing browse endpoints (P2-02) ───────────────────────────────
 
     /// <summary>
-    /// Returns all subjects for a given grade number (1–6).
+    /// Returns all ACTIVE subjects for a given grade number (1–6).
     /// GET /api/learning/Subjects/ForGrade?grade={n}
     /// </summary>
     [HttpGet("ForGrade")]
@@ -41,7 +46,7 @@ public class SubjectsController : AppControllerBase
         => NewResult(await Mediator.Send(new GetSubjectsForGradeQuery { Grade = grade }));
 
     /// <summary>
-    /// Returns a subject's units with nested lessons, both ordered by SequenceOrder.
+    /// Returns a subject's ACTIVE units with nested lessons, both ordered by SequenceOrder.
     /// GET /api/learning/Subjects/{id}/Lessons
     /// </summary>
     [HttpGet("{id:int}/Lessons")]
@@ -76,4 +81,39 @@ public class SubjectsController : AppControllerBase
     [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
     public async Task<IActionResult> Delete(int id)
         => NewResult(await Mediator.Send(new DeleteSubjectCommand { Id = id }));
+
+    // ── P7-01 Admin management endpoints ─────────────────────────────────────
+
+    /// <summary>
+    /// Batch-reorders subjects within the same (GradeId, Language) tree.
+    /// PUT /api/learning/Subjects/Reorder
+    /// Body: { subjectIds: [3, 1, 2] } — position = new SequenceOrder.
+    /// </summary>
+    [HttpPut("Reorder")]
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
+    [ProducesResponseType(typeof(BaseResponse<string>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Reorder([FromBody] ReorderSubjectsCommand command)
+        => NewResult(await Mediator.Send(command));
+
+    /// <summary>
+    /// Activates or deactivates a subject. Inactive subjects are hidden from student reads.
+    /// PUT /api/learning/Subjects/{id}/Active
+    /// Body: { subjectId: 1, isActive: false }
+    /// </summary>
+    [HttpPut("{id:int}/Active")]
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
+    [ProducesResponseType(typeof(BaseResponse<string>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SetActive(int id, [FromBody] SetSubjectActiveCommand command)
+        => NewResult(await Mediator.Send(command with { SubjectId = id }));
+
+    /// <summary>
+    /// Returns the language-coverage report for a grade — which (SubjectCode, Language) trees
+    /// exist, which are missing, and their active state.
+    /// GET /api/learning/Subjects/Coverage?gradeId={n}
+    /// </summary>
+    [HttpGet("Coverage")]
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
+    [ProducesResponseType(typeof(BaseResponse<SubjectLanguageCoverageReportDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetCoverage([FromQuery] int gradeId)
+        => NewResult(await Mediator.Send(new GetSubjectLanguageCoverageQuery { GradeId = gradeId }));
 }

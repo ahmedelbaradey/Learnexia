@@ -1731,4 +1731,223 @@
   <data name="LearningLanguageUpdateFailed" xml:space="preserve">
     <value>فشل تحديث لغة التعلم. يرجى المحاولة مرة أخرى.</value>
   </data>
+  <data name="UnitNotFound" xml:space="preserve">
+    <value>الوحدة غير موجودة.</value>
+  </data>
+  <data name="UnitNotEmpty" xml:space="preserve">
+    <value>لا يمكن حذف هذه الوحدة لأنها تحتوي على دروس نشطة. قم بإزالة جميع الدروس أو تعطيلها أولاً.</value>
+  </data>
+  <data name="SubjectNotEmpty" xml:space="preserve">
+    <value>لا يمكن حذف هذه المادة لأنها تحتوي على وحدات نشطة. قم بإزالة جميع الوحدات أو تعطيلها أولاً.</value>
+  </data>
+  <data name="SubjectDuplicateTree" xml:space="preserve">
+    <value>توجد بالفعل شجرة مادة بهذا الرمز واللغة لهذه المرحلة الدراسية.</value>
+  </data>
+  <data name="SubjectSoftDeletedTreeExists" xml:space="preserve">
+    <value>توجد شجرة مادة محذوفة بشكل ناعم بهذا الرمز واللغة لهذه المرحلة الدراسية. قم باستعادتها بدلاً من إنشاء واحدة جديدة.</value>
+  </data>
+  <data name="InvalidSubjectCode" xml:space="preserve">
+    <value>يجب أن يكون رمز المادة أحد القيم الأربع المسموح بها: MATH أو SCIENCE أو ARABIC أو ENGLISH.</value>
+  </data>
+  <data name="ReorderCrossTreeForbidden" xml:space="preserve">
+    <value>يجب أن تنتمي جميع العناصر في طلب إعادة الترتيب إلى نفس المرحلة الدراسية وشجرة اللغة.</value>
+  </data>
+  <data name="SubjectActivatedSuccessfully" xml:space="preserve">
+    <value>تم تفعيل المادة بنجاح.</value>
+  </data>
+  <data name="SubjectDeactivatedSuccessfully" xml:space="preserve">
+    <value>تم تعطيل المادة بنجاح.</value>
+  </data>
+  <data name="UnitActivatedSuccessfully" xml:space="preserve">
+    <value>تم تفعيل الوحدة بنجاح.</value>
+  </data>
+  <data name="UnitDeactivatedSuccessfully" xml:space="preserve">
+    <value>تم تعطيل الوحدة بنجاح.</value>
+  </data>
+  <data name="ReorderListTooLong" xml:space="preserve">
+    <value>تجاوزت قائمة إعادة الترتيب الحد الأقصى المسموح به.</value>
+  </data>
+  <data name="LessonActivatedSuccessfully" xml:space="preserve">
+    <value>تم تفعيل الدرس بنجاح.</value>
+  </data>
+  <data name="LessonDeactivatedSuccessfully" xml:space="preserve">
+    <value>تم تعطيل الدرس بنجاح.</value>
+  </data>
+  <data name="ContentBlockNotFound" xml:space="preserve">
+    <value>لم يتم العثور على كتلة المحتوى.</value>
+  </data>
+  <data name="ContentBlockPayloadInvalid" xml:space="preserve">
+    <value>محتوى كتلة المحتوى غير صالح أو تنقصه حقول مطلوبة لهذا النوع.</value>
+  </data>
+  <data name="ContentBlockTypeInvalid" xml:space="preserve">
+    <value>نوع كتلة المحتوى غير صالح.</value>
+  </data>
+  <data name="ContentBlockTextPayloadRequired" xml:space="preserve">
+    <value>يجب أن تحتوي كتلة النص على حقل markdown غير فارغ.</value>
+  </data>
+  <data name="ContentBlockImageUrlRequired" xml:space="preserve">
+    <value>يجب أن تحتوي كتلة الصورة على حقل url غير فارغ.</value>
+  </data>
+  <data name="ContentBlockVideoUrlRequired" xml:space="preserve">
+    <value>يجب أن تحتوي كتلة الفيديو على حقل url غير فارغ.</value>
+  </data>
+  <data name="ContentBlockCalloutVariantRequired" xml:space="preserve">
+    <value>يجب أن تحتوي كتلة التنبيه على نوع (info أو warning أو tip).</value>
+  </data>
+  <data name="ContentBlockCalloutVariantInvalid" xml:space="preserve">
+    <value>يجب أن يكون نوع التنبيه أحد القيم: info أو warning أو tip.</value>
+  </data>
+  <data name="ContentBlockCalloutMarkdownRequired" xml:space="preserve">
+    <value>يجب أن تحتوي كتلة التنبيه على حقل markdown غير فارغ.</value>
+  </data>
+  <data name="ContentBlockAddedSuccessfully" xml:space="preserve">
+    <value>تمت إضافة كتلة المحتوى بنجاح.</value>
+  </data>
+  <data name="ContentBlockUpdatedSuccessfully" xml:space="preserve">
+    <value>تم تحديث كتلة المحتوى بنجاح.</value>
+  </data>
+  <data name="ContentBlockReorderedSuccessfully" xml:space="preserve">
+    <value>تمت إعادة ترتيب كتل المحتوى بنجاح.</value>
+  </data>
+  <data name="ContentBlockReorderCrossLessonForbidden" xml:space="preserve">
+    <value>يجب أن تنتمي جميع كتل المحتوى في طلب إعادة الترتيب إلى نفس الدرس.</value>
+  </data>
+  <data name="EstimatedMinutesMustBeNonNegative" xml:space="preserve">
+    <value>يجب أن تكون الدقائق المقدرة صفراً أو رقماً موجباً.</value>
+  </data>
+  <data name="ContentBlockPayloadTooLong" xml:space="preserve">
+    <value>يجب ألا يتجاوز محتوى كتلة المحتوى 65536 حرفاً.</value>
+  </data>
+  <data name="ContentBlockUrlInvalid" xml:space="preserve">
+    <value>يجب أن يكون الرابط عنوان HTTPS مطلقاً يشير إلى مضيف عام. لا يُسمح بالبروتوكولات غير الآمنة ولا بالعناوين الخاصة أو المحلية.</value>
+  </data>
+  <data name="SkillNotFound" xml:space="preserve">
+    <value>لم يتم العثور على المهارة.</value>
+  </data>
+  <data name="SkillActivatedSuccessfully" xml:space="preserve">
+    <value>تم تفعيل المهارة بنجاح.</value>
+  </data>
+  <data name="SkillDeactivatedSuccessfully" xml:space="preserve">
+    <value>تم إلغاء تفعيل المهارة بنجاح.</value>
+  </data>
+  <data name="SkillNodeAutoCreateFailed" xml:space="preserve">
+    <value>تعذّر إنشاء عقدة الرسم البياني للمهارة: لم يتمكن النظام من تحديد المفهوم أو الموضوع أو الصف الخاص بالمهارة.</value>
+  </data>
+  <data name="KnowledgeEdgeNotFound" xml:space="preserve">
+    <value>لم يتم العثور على حافة المعرفة.</value>
+  </data>
+  <data name="KnowledgeEdgeAddedSuccessfully" xml:space="preserve">
+    <value>تمت إضافة حافة المعرفة بنجاح.</value>
+  </data>
+  <data name="KnowledgeEdgeRemovedSuccessfully" xml:space="preserve">
+    <value>تمت إزالة حافة المعرفة بنجاح.</value>
+  </data>
+  <data name="KnowledgeEdgeCrossLanguageForbidden" xml:space="preserve">
+    <value>يجب أن تنتمي عقدتا الحافة إلى نفس شجرة اللغة. لا يُسمح بالحواف بين لغتين مختلفتين.</value>
+  </data>
+  <data name="KnowledgeEdgeWouldCreateCycle" xml:space="preserve">
+    <value>إضافة هذه الحافة ستُشكّل دورة في رسم المتطلبات الأساسية وتم رفضها.</value>
+  </data>
+  <data name="KnowledgeEdgeDuplicate" xml:space="preserve">
+    <value>توجد بالفعل حافة بنفس العقدة المصدر والهدف ونوع العلاقة.</value>
+  </data>
+  <data name="KnowledgeNodeSubjectNotResolvable" xml:space="preserve">
+    <value>تعذّر تحديد الموضوع المالك لعقدة المعرفة. تم رفض العملية.</value>
+  </data>
+  <data name="KnowledgeEdgeStrengthOutOfRange" xml:space="preserve">
+    <value>يجب أن تكون قوة الحافة بين 0.0 و1.0 شاملتين.</value>
+  </data>
+  <data name="SkillGraphRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع رسم مهارة المعرفة بنجاح.</value>
+  </data>
+  <data name="QuizQuestionNotFound" xml:space="preserve">
+    <value>سؤال الاختبار غير موجود.</value>
+  </data>
+  <data name="QuizQuestionAddedSuccessfully" xml:space="preserve">
+    <value>تمت إضافة سؤال الاختبار بنجاح.</value>
+  </data>
+  <data name="QuizQuestionUpdatedSuccessfully" xml:space="preserve">
+    <value>تم تحديث سؤال الاختبار بنجاح.</value>
+  </data>
+  <data name="QuizQuestionDeletedSuccessfully" xml:space="preserve">
+    <value>تم حذف سؤال الاختبار بنجاح.</value>
+  </data>
+  <data name="QuizQuestionReorderedSuccessfully" xml:space="preserve">
+    <value>تم إعادة ترتيب أسئلة الاختبار بنجاح.</value>
+  </data>
+  <data name="QuizQuestionActivatedSuccessfully" xml:space="preserve">
+    <value>تم تفعيل سؤال الاختبار بنجاح.</value>
+  </data>
+  <data name="QuizQuestionDeactivatedSuccessfully" xml:space="preserve">
+    <value>تم إلغاء تفعيل سؤال الاختبار بنجاح.</value>
+  </data>
+  <data name="QuizQuestionReorderCrossLessonForbidden" xml:space="preserve">
+    <value>يجب أن تنتمي جميع الأسئلة في طلب إعادة الترتيب إلى الدرس نفسه.</value>
+  </data>
+  <data name="QuizQuestionTextTooLong" xml:space="preserve">
+    <value>يجب ألا يتجاوز نص السؤال 4096 حرفاً.</value>
+  </data>
+  <data name="QuizQuestionOptionsTooLong" xml:space="preserve">
+    <value>يجب ألا تتجاوز الخيارات 16384 حرفاً.</value>
+  </data>
+  <data name="QuizQuestionCorrectAnswerTooLong" xml:space="preserve">
+    <value>يجب ألا تتجاوز الإجابة الصحيحة 4096 حرفاً.</value>
+  </data>
+  <data name="QuizQuestionTextRequired" xml:space="preserve">
+    <value>نص السؤال مطلوب.</value>
+  </data>
+  <data name="QuizQuestionTypeInvalid" xml:space="preserve">
+    <value>نوع السؤال غير صالح.</value>
+  </data>
+  <data name="QuizQuestionDifficultyInvalid" xml:space="preserve">
+    <value>مستوى الصعوبة غير صالح.</value>
+  </data>
+  <data name="QuizQuestionGeneratedByInvalid" xml:space="preserve">
+    <value>قيمة المُنشئ غير صالحة.</value>
+  </data>
+  <data name="QuizQuestionsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع أسئلة الاختبار بنجاح.</value>
+  </data>
+  <data name="QuizQuestionReorderLessonMismatch" xml:space="preserve">
+    <value>معرف واحد أو أكثر من الأسئلة لا ينتمي إلى الدرس المحدد.</value>
+  </data>
+  <data name="IllegalLifecycleTransition" xml:space="preserve">
+    <value>الانتقال المطلوب في دورة حياة المحتوى غير مسموح به من الحالة الحالية.</value>
+  </data>
+  <data name="ContentPublishedSuccessfully" xml:space="preserve">
+    <value>تم نشر المحتوى بنجاح.</value>
+  </data>
+  <data name="ContentArchivedSuccessfully" xml:space="preserve">
+    <value>تم أرشفة المحتوى بنجاح.</value>
+  </data>
+  <data name="ContentUnpublishedSuccessfully" xml:space="preserve">
+    <value>تم إعادة المحتوى إلى حالة المسودة بنجاح.</value>
+  </data>
+  <data name="ContentRolledBackSuccessfully" xml:space="preserve">
+    <value>تم استعادة المحتوى إلى الإصدار المطلوب بنجاح.</value>
+  </data>
+  <data name="VersionedEntityNotFound" xml:space="preserve">
+    <value>عنصر المنهج الدراسي المحدد غير موجود.</value>
+  </data>
+  <data name="ContentVersionNotFound" xml:space="preserve">
+    <value>إصدار المحتوى المطلوب غير موجود.</value>
+  </data>
+  <data name="InvalidVersionedEntityType" xml:space="preserve">
+    <value>نوع الكيان غير صالح. القيم المسموح بها: موضوع، وحدة، درس، سؤال.</value>
+  </data>
+  <data name="VersionHistoryRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع سجل الإصدارات بنجاح.</value>
+  </data>
+  <data name="PreviewRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع المعاينة بنجاح.</value>
+  </data>
+  <data name="PublicationCoverageRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع تقرير تغطية النشر بنجاح.</value>
+  </data>
+  <data name="EntityIdRequired" xml:space="preserve">
+    <value>معرف الكيان مطلوب ويجب أن يكون صحيحاً.</value>
+  </data>
+  <data name="VersionNumberMustBePositive" xml:space="preserve">
+    <value>رقم الإصدار يجب أن يكون أكبر من الصفر.</value>
+  </data>
 </root>

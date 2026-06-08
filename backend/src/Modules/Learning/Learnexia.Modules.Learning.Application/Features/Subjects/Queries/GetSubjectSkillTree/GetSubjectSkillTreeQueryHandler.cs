@@ -58,8 +58,10 @@ public class GetSubjectSkillTreeQueryHandler
         try
         {
             // Load the subject to verify it exists and to check its language.
+            // P7-01: IsActive == true filter — inactive subject returns 404 for students.
+            // P7-05: LifecycleState == Published filter — Draft/Archived subjects not served to students.
             var subject = await _repository.Learning
-                .GetByCondition<Subject>(s => s.Id == request.SubjectId, false)
+                .GetByCondition<Subject>(s => s.Id == request.SubjectId && s.IsActive && s.LifecycleState == LifecycleState.Published, false)
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (subject is null)
@@ -73,11 +75,15 @@ public class GetSubjectSkillTreeQueryHandler
             // correct-language tree for the same SubjectCode in the same Grade.
             if (subject.Language != resolved)
             {
+                // P7-01: Also require IsActive on the redirected subject (student path).
+                // P7-05: Also require LifecycleState == Published on the redirected subject.
                 var correctSubject = await _repository.Learning
                     .GetByCondition<Subject>(
                         s => s.GradeId == subject.GradeId
                           && s.SubjectCode == subject.SubjectCode
-                          && s.Language == resolved,
+                          && s.Language == resolved
+                          && s.IsActive
+                          && s.LifecycleState == LifecycleState.Published,
                         trackChanges: false)
                     .FirstOrDefaultAsync(cancellationToken);
 
@@ -98,10 +104,15 @@ public class GetSubjectSkillTreeQueryHandler
 
             var effectiveSubjectId = subject.Id;
 
+            // P7-03: Include only active skills (IsActive == true) in the student-facing tree.
+            // The global EF query filter only excludes soft-deleted skills (IsDeleted != true);
+            // inactive skills must be filtered explicitly here so students cannot see them.
+            // P7-05: Include only Published lessons in the skill tree — Draft/Archived lessons
+            // are not served to students.
             var concepts = await _repository.Learning
                 .GetByCondition<Concept>(c => c.SubjectId == effectiveSubjectId, false)
-                .Include(c => c.Skills)
-                    .ThenInclude(sk => sk.Lessons)
+                .Include(c => c.Skills.Where(sk => sk.IsActive))
+                    .ThenInclude(sk => sk.Lessons.Where(l => l.IsActive && l.LifecycleState == LifecycleState.Published))
                 .OrderBy(c => c.Id)
                 .ToListAsync(cancellationToken);
 

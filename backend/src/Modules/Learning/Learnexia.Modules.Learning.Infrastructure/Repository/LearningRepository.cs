@@ -222,9 +222,12 @@ public class LearningRepository : ILearningRepository
     /// <inheritdoc/>
     public async Task<IReadOnlyList<Lesson>> GetSubjectLessonsAsync(
         int subjectId, CancellationToken ct = default)
+        // P7-02: Filter IsActive — student-facing reads must not see inactive lessons.
+        // P7-05: Filter LifecycleState == Published — Draft/Archived lessons not served to students.
+        // The global IsDeleted filter already excludes soft-deleted rows.
         => await RepositoryContext.Lessons
             .AsNoTracking()
-            .Where(l => l.Unit.SubjectId == subjectId)
+            .Where(l => l.Unit.SubjectId == subjectId && l.IsActive && l.LifecycleState == LifecycleState.Published)
             .ToListAsync(ct);
 
     /// <inheritdoc/>
@@ -258,4 +261,203 @@ public class LearningRepository : ILearningRepository
                 .FirstOrDefault())
             .FirstOrDefaultAsync(ct);
     }
+
+    // ── P7-03 Knowledge-graph admin authoring ──────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public async Task<KnowledgeNode?> GetNodeBySkillIdAsync(int skillId, CancellationToken ct = default)
+        => await RepositoryContext.KnowledgeNodes
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(n => n.SkillId == skillId, ct);
+
+    /// <inheritdoc/>
+    public async Task<List<KnowledgeEdge>> GetEdgesForNodeAsync(int nodeId, bool trackChanges, CancellationToken ct = default)
+    {
+        var query = trackChanges
+            ? RepositoryContext.KnowledgeEdges
+            : RepositoryContext.KnowledgeEdges.AsNoTracking();
+
+        return await query
+            .Where(e => e.SourceNodeId == nodeId || e.TargetNodeId == nodeId)
+            .ToListAsync(ct);
+    }
+
+    /// <inheritdoc/>
+    public async Task<List<KnowledgeEdge>> GetAllPrerequisiteEdgesAsync(CancellationToken ct = default)
+        => await RepositoryContext.KnowledgeEdges
+            .AsNoTracking()
+            .Where(e => e.RelationshipType == EdgeRelationshipType.Prerequisite)
+            .ToListAsync(ct);
+
+    /// <inheritdoc/>
+    public async Task<Subject?> GetSubjectForNodeAsync(int nodeId, CancellationToken ct = default)
+    {
+        var node = await RepositoryContext.KnowledgeNodes
+            .AsNoTracking()
+            .FirstOrDefaultAsync(n => n.Id == nodeId, ct);
+
+        if (node is null)
+            return null;
+
+        return await RepositoryContext.Subjects
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(s => s.Id == node.SubjectId, ct);
+    }
+
+    /// <inheritdoc/>
+    public async Task<KnowledgeNode?> GetKnowledgeNodeByIdAsync(int nodeId, bool trackChanges, CancellationToken ct = default)
+    {
+        var query = trackChanges
+            ? RepositoryContext.KnowledgeNodes
+            : RepositoryContext.KnowledgeNodes.AsNoTracking();
+
+        return await query.FirstOrDefaultAsync(n => n.Id == nodeId, ct);
+    }
+
+    /// <inheritdoc/>
+    public async Task<KnowledgeEdge?> GetKnowledgeEdgeByIdAsync(int edgeId, bool trackChanges, CancellationToken ct = default)
+    {
+        var query = trackChanges
+            ? RepositoryContext.KnowledgeEdges
+            : RepositoryContext.KnowledgeEdges.AsNoTracking();
+
+        return await query.FirstOrDefaultAsync(e => e.Id == edgeId, ct);
+    }
+
+    /// <inheritdoc/>
+    public async Task<bool> KnowledgeEdgeDuplicateExistsAsync(int sourceNodeId, int targetNodeId, int relationshipType, CancellationToken ct = default)
+        => await RepositoryContext.KnowledgeEdges
+            .AnyAsync(e =>
+                e.SourceNodeId == sourceNodeId &&
+                e.TargetNodeId == targetNodeId &&
+                (int)e.RelationshipType == relationshipType, ct);
+
+    /// <inheritdoc/>
+    public async Task<List<KnowledgeNode>> GetGraphNodesAsync(int subjectId, CancellationToken ct = default)
+        => await RepositoryContext.KnowledgeNodes
+            .AsNoTracking()
+            .Where(n => n.SubjectId == subjectId)
+            .ToListAsync(ct);
+
+    /// <inheritdoc/>
+    public async Task<List<KnowledgeEdge>> GetGraphEdgesAsync(int subjectId, CancellationToken ct = default)
+    {
+        var nodeIds = await RepositoryContext.KnowledgeNodes
+            .AsNoTracking()
+            .Where(n => n.SubjectId == subjectId)
+            .Select(n => n.Id)
+            .ToListAsync(ct);
+
+        var nodeIdSet = nodeIds.ToHashSet();
+
+        return await RepositoryContext.KnowledgeEdges
+            .AsNoTracking()
+            .Where(e => nodeIdSet.Contains(e.SourceNodeId) && nodeIdSet.Contains(e.TargetNodeId))
+            .ToListAsync(ct);
+    }
+
+    /// <inheritdoc/>
+    public async Task<Subject?> GetSubjectByConceptIdAsync(int conceptId, CancellationToken ct = default)
+    {
+        var concept = await RepositoryContext.Concepts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == conceptId, ct);
+
+        if (concept is null)
+            return null;
+
+        return await RepositoryContext.Subjects
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Id == concept.SubjectId, ct);
+    }
+
+    // ── P7-05 Content lifecycle / versioning ──────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public async Task<int> GetMaxVersionNumberAsync(VersionedEntityType entityType, int entityId, CancellationToken ct = default)
+        => await RepositoryContext.ContentVersions
+            .AsNoTracking()
+            .Where(cv => cv.EntityType == entityType && cv.EntityId == entityId)
+            .Select(cv => (int?)cv.VersionNumber)
+            .MaxAsync(ct) ?? 0;
+
+    /// <inheritdoc/>
+    public async Task<List<ContentVersion>> GetVersionHistoryAsync(VersionedEntityType entityType, int entityId, CancellationToken ct = default)
+        => await RepositoryContext.ContentVersions
+            .AsNoTracking()
+            .Where(cv => cv.EntityType == entityType && cv.EntityId == entityId)
+            .OrderByDescending(cv => cv.VersionNumber)
+            .ToListAsync(ct);
+
+    /// <inheritdoc/>
+    public async Task<ContentVersion?> GetVersionAsync(VersionedEntityType entityType, int entityId, int versionNumber, CancellationToken ct = default)
+        => await RepositoryContext.ContentVersions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(cv => cv.EntityType == entityType && cv.EntityId == entityId && cv.VersionNumber == versionNumber, ct);
+
+    /// <inheritdoc/>
+    public async Task<Subject?> GetOwningSubjectAsync(VersionedEntityType entityType, int entityId, CancellationToken ct = default)
+    {
+        // Walk the ownership chain per entity type.
+        switch (entityType)
+        {
+            case VersionedEntityType.Subject:
+                return await RepositoryContext.Subjects
+                    .AsNoTracking()
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(s => s.Id == entityId, ct);
+
+            case VersionedEntityType.Unit:
+            {
+                var unit = await RepositoryContext.Units
+                    .AsNoTracking()
+                    .IgnoreQueryFilters()
+                    .Include(u => u.Subject)
+                    .FirstOrDefaultAsync(u => u.Id == entityId, ct);
+                return unit?.Subject;
+            }
+
+            case VersionedEntityType.Lesson:
+            {
+                var lesson = await RepositoryContext.Lessons
+                    .AsNoTracking()
+                    .IgnoreQueryFilters()
+                    .Include(l => l.Unit)
+                        .ThenInclude(u => u.Subject)
+                    .FirstOrDefaultAsync(l => l.Id == entityId, ct);
+                return lesson?.Unit?.Subject;
+            }
+
+            case VersionedEntityType.QuizQuestion:
+            {
+                var question = await RepositoryContext.QuizQuestions
+                    .AsNoTracking()
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(q => q.Id == entityId, ct);
+
+                if (question is null)
+                    return null;
+
+                var lesson = await RepositoryContext.Lessons
+                    .AsNoTracking()
+                    .IgnoreQueryFilters()
+                    .Include(l => l.Unit)
+                        .ThenInclude(u => u.Subject)
+                    .FirstOrDefaultAsync(l => l.Id == question.LessonId, ct);
+
+                return lesson?.Unit?.Subject;
+            }
+
+            default:
+                return null;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<List<Subject>> GetSubjectsForCoverageAsync(int gradeId, CancellationToken ct = default)
+        => await RepositoryContext.Subjects
+            .AsNoTracking()
+            .Where(s => s.GradeId == gradeId)
+            .ToListAsync(ct);
 }

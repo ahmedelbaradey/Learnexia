@@ -4,6 +4,7 @@ using Learnexia.Modules.Learning.Application.Features.Attempts.Dtos;
 using Learnexia.Modules.Learning.Application.Features.Lessons.Dtos;
 using Learnexia.Modules.Learning.Application.Helpers;
 using Learnexia.Modules.Learning.Domain.Entities;
+using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Modules.Learning.Domain.Services;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
@@ -59,8 +60,11 @@ public class GetLessonQueryHandler
         try
         {
             // Load the lesson by id. AsNoTracking — query handler; no writes.
+            // P7-02: Student-facing reads must only see active (IsActive=true) lessons.
+            // Inactive lessons return NotFound (same as deleted) so no admin info is leaked.
+            // P7-05: LifecycleState == Published filter — Draft/Archived lessons not served to students.
             var lesson = await _repository.Learning
-                .GetByCondition<Lesson>(l => l.Id == request.Id, false)
+                .GetByCondition<Lesson>(l => l.Id == request.Id && l.IsActive && l.LifecycleState == LifecycleState.Published, false)
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (lesson is null)

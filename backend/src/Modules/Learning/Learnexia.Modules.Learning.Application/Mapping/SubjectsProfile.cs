@@ -10,8 +10,19 @@ public class SubjectsProfile : Profile
 {
     public SubjectsProfile()
     {
-        CreateMap<AddSubjectCommand, Subject>();
-        CreateMap<EditSubjectCommand, Subject>();
+        // P7-SEC-4: IsActive and SequenceOrder must not be settable via Create/Update —
+        // those are controlled exclusively by SetActive and Reorder endpoints.
+        // IsActive defaults to true (entity default); SequenceOrder defaults to 0.
+        CreateMap<AddSubjectCommand, Subject>()
+            .ForMember(d => d.IsActive, opt => opt.Ignore())
+            .ForMember(d => d.SequenceOrder, opt => opt.Ignore());
+        CreateMap<EditSubjectCommand, Subject>()
+            .ForMember(d => d.IsActive, opt => opt.Ignore())
+            .ForMember(d => d.SequenceOrder, opt => opt.Ignore());
+
+        // P7-01: Subject → SubjectDto (admin DTO with code/language/order/active).
+        // SingleSubjectResponse inherits SubjectDto so this mapping covers it.
+        CreateMap<Subject, SubjectDto>();
         CreateMap<Subject, SingleSubjectResponse>();
     }
 }

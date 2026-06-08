@@ -26,7 +26,7 @@ public class GetSkillQueryHandler : BaseResponseHandler, IQueryHandler<GetSkillQ
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error: in GetSkillQuery");
-            return ServerError<SingleSkillResponse>(ex.Message);
+            return ServerError<SingleSkillResponse>();
         }
     }
 }

@@ -3,6 +3,7 @@ using Learnexia.Modules.Learning.Application.Features.Attempts.Queries.GetSkillS
 using Learnexia.Modules.Learning.Application.Features.Skills.Commands.Add;
 using Learnexia.Modules.Learning.Application.Features.Skills.Commands.Delete;
 using Learnexia.Modules.Learning.Application.Features.Skills.Commands.Edit;
+using Learnexia.Modules.Learning.Application.Features.Skills.Commands.SetActive;
 using Learnexia.Modules.Learning.Application.Features.Skills.Queries.Get;
 using Learnexia.Modules.Learning.Application.Features.Skills.Queries.List;
 using Learnexia.Shared.Kernel.Abstractions;
@@ -15,11 +16,23 @@ namespace Learnexia.Modules.Learning.Api.Controllers;
 [ApiController]
 public class SkillsController : AppControllerBase
 {
+    /// <summary>
+    /// Admin-only flat list of all skills (including inactive ones). Paginated.
+    /// Anonymous access is intentionally blocked — this endpoint exposes admin metadata
+    /// (MasteryThreshold, IsActive, ConceptId). Students do not use this endpoint directly.
+    /// P7-SEC: gated post security-audit (mirrors Subjects/Units/Lessons List contract).
+    /// </summary>
     [HttpGet("List")]
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
     public async Task<IActionResult> List([FromQuery] ListSkillsQuery query)
         => NewResult(await Mediator.Send(query));
 
+    /// <summary>
+    /// Admin-only: returns a single skill by ID.
+    /// P7-SEC: gated to prevent leaking admin skill metadata to anonymous callers.
+    /// </summary>
     [HttpGet]
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
     public async Task<IActionResult> GetById(int id)
         => NewResult(await Mediator.Send(new GetSkillQuery { Id = id }));
 
@@ -37,6 +50,16 @@ public class SkillsController : AppControllerBase
     [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
     public async Task<IActionResult> Delete(int id)
         => NewResult(await Mediator.Send(new DeleteSkillCommand { Id = id }));
+
+    /// <summary>
+    /// Activates or deactivates a skill. Inactive skills are hidden from student reads.
+    /// PUT /api/learning/Skills/{id}/Active
+    /// Body: { skillId: 1, isActive: false }
+    /// </summary>
+    [HttpPut("{id:int}/Active")]
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
+    public async Task<IActionResult> SetActive(int id, [FromBody] SetSkillActiveCommand command)
+        => NewResult(await Mediator.Send(command with { SkillId = id }));
 
     /// <summary>
     /// Returns per-student, per-skill aggregated statistics (accuracy, avg time, hint usage).

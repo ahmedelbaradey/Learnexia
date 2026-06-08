@@ -13,5 +13,9 @@ public class EditLessonValidation : AbstractValidator<EditLessonCommand>
 
         RuleFor(x => x.Id)
             .GreaterThan(0).WithMessage(localizer[SharedResourcesKey.EmptyIdValidation]);
+
+        // P7-02: EstimatedMinutes must be non-negative.
+        RuleFor(x => x.EstimatedMinutes)
+            .GreaterThanOrEqualTo(0).WithMessage(localizer[SharedResourcesKey.EstimatedMinutesMustBeNonNegative]);
     }
 }

@@ -1,4 +1,5 @@
 using Learnexia.Modules.Learning.Domain.Entities;
+using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Modules.Learning.Domain.Services;
 using Learnexia.Shared.Kernel.Abstractions;
 
@@ -88,4 +89,105 @@ public interface ILearningRepository : IGenericRepository
     /// Returns null if the student has no Attempt rows. AsNoTracking.
     /// </summary>
     Task<int?> GetMostRecentActivitySubjectIdAsync(int studentId, CancellationToken ct = default);
+
+    // ── P7-03 Knowledge-graph admin authoring ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns the <see cref="KnowledgeNode"/> whose <c>SkillId == skillId</c>, or null if none exists.
+    /// Uses IgnoreQueryFilters because soft-deleted nodes must still be visible here (cascade-delete path).
+    /// </summary>
+    Task<KnowledgeNode?> GetNodeBySkillIdAsync(int skillId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all live (non-deleted) <see cref="KnowledgeEdge"/> rows where either
+    /// <c>SourceNodeId == nodeId</c> or <c>TargetNodeId == nodeId</c>.
+    /// Used by the skill soft-delete cascade to find edges that reference the skill's node.
+    /// </summary>
+    Task<List<KnowledgeEdge>> GetEdgesForNodeAsync(int nodeId, bool trackChanges, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all live (non-deleted) Prerequisite-typed <see cref="KnowledgeEdge"/> rows.
+    /// Used by the acyclic validator — must include ALL existing edges so the DFS is complete.
+    /// </summary>
+    Task<List<KnowledgeEdge>> GetAllPrerequisiteEdgesAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the <see cref="Subject"/> (with <c>Language</c> populated) that owns the given
+    /// <see cref="KnowledgeNode"/> (via <c>KnowledgeNode.SubjectId</c>). Returns null if the
+    /// node or its subject cannot be found. AsNoTracking, IgnoreQueryFilters on Subject so that
+    /// subjects of any state can be resolved (language derivation is structural).
+    /// </summary>
+    Task<Subject?> GetSubjectForNodeAsync(int nodeId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns a single <see cref="KnowledgeNode"/> by id (trackChanges=false or true).
+    /// Returns null if the node does not exist (after soft-delete filter).
+    /// </summary>
+    Task<KnowledgeNode?> GetKnowledgeNodeByIdAsync(int nodeId, bool trackChanges, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns a single <see cref="KnowledgeEdge"/> by id (trackChanges determines EF tracking).
+    /// Returns null if the edge does not exist (after soft-delete filter).
+    /// </summary>
+    Task<KnowledgeEdge?> GetKnowledgeEdgeByIdAsync(int edgeId, bool trackChanges, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns true if a live <see cref="KnowledgeEdge"/> with the same
+    /// (SourceNodeId, TargetNodeId, RelationshipType) triple already exists.
+    /// Used by AddKnowledgeEdgeCommandHandler to enforce the composite-unique constraint gracefully.
+    /// </summary>
+    Task<bool> KnowledgeEdgeDuplicateExistsAsync(int sourceNodeId, int targetNodeId, int relationshipType, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all live <see cref="KnowledgeNode"/>s for the given subject, optionally including
+    /// inactive skills' nodes (admin view). Used by <c>GetGraphQueryHandler</c>.
+    /// </summary>
+    Task<List<KnowledgeNode>> GetGraphNodesAsync(int subjectId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all live <see cref="KnowledgeEdge"/>s where both source and target belong to the
+    /// given subject. Used by <c>GetGraphQueryHandler</c>.
+    /// </summary>
+    Task<List<KnowledgeEdge>> GetGraphEdgesAsync(int subjectId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Resolves the <see cref="Subject"/> for a <see cref="Concept"/> (via Concept.SubjectId).
+    /// Used by the auto-create-node logic in AddSkillCommandHandler. AsNoTracking.
+    /// </summary>
+    Task<Subject?> GetSubjectByConceptIdAsync(int conceptId, CancellationToken ct = default);
+
+    // ── P7-05 Content lifecycle / versioning ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns the maximum VersionNumber for a given (EntityType, EntityId) partition, or 0 when no
+    /// version rows exist yet. Used by <c>PublishContentCommandHandler</c> to assign the next version number.
+    /// </summary>
+    Task<int> GetMaxVersionNumberAsync(VersionedEntityType entityType, int entityId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all <see cref="ContentVersion"/> rows for the given (EntityType, EntityId), ordered
+    /// descending by VersionNumber (newest first). Used by <c>GetVersionHistoryQueryHandler</c>.
+    /// </summary>
+    Task<List<ContentVersion>> GetVersionHistoryAsync(VersionedEntityType entityType, int entityId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns a single <see cref="ContentVersion"/> row by (EntityType, EntityId, VersionNumber),
+    /// or null when not found. Used by <c>RollbackToVersionCommandHandler</c>.
+    /// </summary>
+    Task<ContentVersion?> GetVersionAsync(VersionedEntityType entityType, int entityId, int versionNumber, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the <see cref="Subject"/> that owns the entity hierarchy for the given entity.
+    /// Used to resolve the <see cref="ContentLanguage"/> tag to stamp on the new <see cref="ContentVersion"/>.
+    /// Walks the chain: for Subject → self; for Unit → Unit.Subject; for Lesson → Lesson.Unit.Subject;
+    /// for QuizQuestion → QuizQuestion.Lesson.Unit.Subject. AsNoTracking. Returns null when not resolvable.
+    /// </summary>
+    Task<Subject?> GetOwningSubjectAsync(VersionedEntityType entityType, int entityId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all published <see cref="Subject"/> rows for the given GradeId, grouped as a coverage
+    /// report across (SubjectCode, Language) slots. Used by <c>GetPublicationCoverageQueryHandler</c>.
+    /// Admin read — no IsActive filter applied; global IsDeleted filter is still active.
+    /// </summary>
+    Task<List<Subject>> GetSubjectsForCoverageAsync(int gradeId, CancellationToken ct = default);
 }

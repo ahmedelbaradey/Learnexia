@@ -146,6 +146,124 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
                     b.ToTable("Concepts", "learning");
                 });
 
+            modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.ContentBlock", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BlockType")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool?>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("LessonId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<int>("SequenceOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId", "SequenceOrder")
+                        .HasDatabaseName("IX_ContentBlocks_LessonId_SequenceOrder");
+
+                    b.ToTable("ContentBlocks", "learning");
+                });
+
+            modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.ContentVersion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("EntityId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("EntityType")
+                        .HasColumnType("integer");
+
+                    b.Property<bool?>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Language")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("PublishedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("PublishedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Snapshot")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("VersionNumber")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EntityType", "EntityId")
+                        .HasDatabaseName("IX_ContentVersions_EntityType_EntityId");
+
+                    b.HasIndex("EntityType", "EntityId", "VersionNumber")
+                        .IsUnique()
+                        .HasDatabaseName("IX_ContentVersions_EntityType_EntityId_VersionNumber");
+
+                    b.ToTable("ContentVersions", "learning");
+                });
+
             modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.Grade", b =>
                 {
                     b.Property<int>("Id")
@@ -334,8 +452,18 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
                     b.Property<int>("Difficulty")
                         .HasColumnType("integer");
 
+                    b.Property<int>("EstimatedMinutes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
                     b.Property<string>("Explanation")
                         .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
                     b.Property<bool>("IsBoss")
                         .HasColumnType("boolean");
@@ -345,6 +473,11 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
 
                     b.Property<bool>("IsLocked")
                         .HasColumnType("boolean");
+
+                    b.Property<int>("LifecycleState")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(2);
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -413,11 +546,21 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
                     b.Property<int>("GeneratedBy")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
                     b.Property<bool?>("IsDeleted")
                         .HasColumnType("boolean");
 
                     b.Property<int>("LessonId")
                         .HasColumnType("integer");
+
+                    b.Property<int>("LifecycleState")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(2);
 
                     b.Property<string>("Options")
                         .IsRequired()
@@ -429,6 +572,11 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
 
                     b.Property<int>("QuestionType")
                         .HasColumnType("integer");
+
+                    b.Property<int>("SequenceOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
 
                     b.Property<int?>("SkillId")
                         .HasColumnType("integer");
@@ -446,6 +594,9 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
 
                     b.HasIndex("SkillId")
                         .HasDatabaseName("IX_QuizQuestions_SkillId");
+
+                    b.HasIndex("LessonId", "SequenceOrder")
+                        .HasDatabaseName("IX_QuizQuestions_LessonId_SequenceOrder");
 
                     b.ToTable("QuizQuestions", "learning");
                 });
@@ -475,6 +626,11 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
 
                     b.Property<int>("EstimatedTimeMinutes")
                         .HasColumnType("integer");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
                     b.Property<bool?>("IsDeleted")
                         .HasColumnType("boolean");
@@ -592,15 +748,30 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
                     b.Property<int>("GradeId")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
                     b.Property<bool?>("IsDeleted")
                         .HasColumnType("boolean");
 
                     b.Property<int>("Language")
                         .HasColumnType("integer");
 
+                    b.Property<int>("LifecycleState")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(2);
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("SequenceOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
 
                     b.Property<int>("SubjectCode")
                         .HasColumnType("integer");
@@ -615,6 +786,9 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
 
                     b.HasIndex("GradeId")
                         .HasDatabaseName("IX_Subjects_GradeId");
+
+                    b.HasIndex("GradeId", "SequenceOrder")
+                        .HasDatabaseName("IX_Subjects_GradeId_SequenceOrder");
 
                     b.HasIndex("GradeId", "SubjectCode", "Language")
                         .IsUnique()
@@ -643,8 +817,18 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
                     b.Property<int?>("DeletedBy")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
                     b.Property<bool?>("IsDeleted")
                         .HasColumnType("boolean");
+
+                    b.Property<int>("LifecycleState")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(2);
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -682,6 +866,17 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Subject");
+                });
+
+            modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.ContentBlock", b =>
+                {
+                    b.HasOne("Learnexia.Modules.Learning.Domain.Entities.Lesson", "Lesson")
+                        .WithMany("ContentBlocks")
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Lesson");
                 });
 
             modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.KnowledgeEdge", b =>
@@ -815,6 +1010,11 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
                     b.Navigation("SourceEdges");
 
                     b.Navigation("TargetEdges");
+                });
+
+            modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.Lesson", b =>
+                {
+                    b.Navigation("ContentBlocks");
                 });
 
             modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.QuizQuestion", b =>

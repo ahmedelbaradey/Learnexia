@@ -26,9 +26,15 @@ public class ListLessonsQueryHandler : BaseResponseHandler, IQueryHandler<ListLe
     {
         try
         {
+            // P7-SEC-1 (post security-audit): this handler backs the admin-only
+            // GET /api/learning/Lessons/List endpoint. Admins must see inactive lessons
+            // too (so they can re-activate them). IsActive filtering was removed here;
+            // the [Authorize(Policy=AdminOnly)] attribute on the controller action is the
+            // guard. Students use GET /Subjects/{id}/Lessons (GetSubjectLessonsQueryHandler)
+            // which retains its own IsActive filter.
             var result = request.UnitId.HasValue
                 ? _service.LessonService.GetAllByConditionAsync(l => l.UnitId == request.UnitId.Value, false)
-                : _service.LessonService.GetAllAsync(false);
+                : _service.LessonService.GetAllByConditionAsync(l => true, false);
 
             if (!result.Any())
                 return EmptyCollection(PaginatedResult<SingleLessonResponse>.Success(new List<SingleLessonResponse>(), 0, 0, 0));
@@ -39,7 +45,7 @@ public class ListLessonsQueryHandler : BaseResponseHandler, IQueryHandler<ListLe
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error: in ListLessonsQuery");
-            return ServerError<PaginatedResult<SingleLessonResponse>>(ex.Message);
+            return ServerError<PaginatedResult<SingleLessonResponse>>();
         }
     }
 }

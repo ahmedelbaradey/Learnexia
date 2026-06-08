@@ -71,9 +71,16 @@ public class StartAttemptCommandHandler : BaseResponseHandler,
             if (studentId is null)
                 return Unauthorized<StartAttemptResponse>(_localizer[SharedResourcesKey.Unauthorized]);
 
-            // [F7] Verify the lesson exists before any write.
+            // [F7] Verify the lesson exists AND is Published+Active before any write.
+            // Security #1: Without the lifecycle/active guard a student could start an attempt on a
+            // Draft or Archived lesson even though its questions are filtered later.
+            // Mirror GetLessonQueryHandler's guard exactly.
             var lesson = await _repository.Learning
-                .GetByCondition<Lesson>(l => l.Id == request.LessonId, false)
+                .GetByCondition<Lesson>(
+                    l => l.Id == request.LessonId
+                      && l.IsActive
+                      && l.LifecycleState == LifecycleState.Published,
+                    false)
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (lesson is null)
@@ -109,8 +116,11 @@ public class StartAttemptCommandHandler : BaseResponseHandler,
 
             if (existingAttempt is not null)
             {
+                // P7-04: Filter IsActive == true so deactivated questions do not appear in student quizzes.
+                // P7-05: Filter LifecycleState == Published — Draft/Archived questions excluded from attempts.
+                // Soft-deleted questions are already excluded by the global query filter.
                 var questions = _repository.Learning
-                    .GetByCondition<QuizQuestion>(q => q.LessonId == request.LessonId, false)
+                    .GetByCondition<QuizQuestion>(q => q.LessonId == request.LessonId && q.IsActive && q.LifecycleState == LifecycleState.Published, false)
                     .ToList();
 
                 var questionDtos = _mapper.Map<List<QuizQuestionDto>>(questions);
@@ -133,8 +143,11 @@ public class StartAttemptCommandHandler : BaseResponseHandler,
                 studentId.Value, request.LessonId, cancellationToken);
 
             // Load questions for the lesson (no correct answer included in the DTO).
+            // P7-04: Filter IsActive == true so deactivated questions do not appear in student quizzes.
+            // P7-05: Filter LifecycleState == Published — Draft/Archived questions excluded from attempts.
+            // Soft-deleted questions are already excluded by the global query filter.
             var newQuestions = _repository.Learning
-                .GetByCondition<QuizQuestion>(q => q.LessonId == request.LessonId, false)
+                .GetByCondition<QuizQuestion>(q => q.LessonId == request.LessonId && q.IsActive && q.LifecycleState == LifecycleState.Published, false)
                 .ToList();
 
             var newQuestionDtos = _mapper.Map<List<QuizQuestionDto>>(newQuestions);

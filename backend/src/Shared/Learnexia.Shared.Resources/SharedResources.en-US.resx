@@ -1732,4 +1732,223 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="LearningLanguageUpdateFailed" xml:space="preserve">
     <value>Failed to update the learning language. Please try again.</value>
   </data>
+  <data name="UnitNotFound" xml:space="preserve">
+    <value>Unit not found.</value>
+  </data>
+  <data name="UnitNotEmpty" xml:space="preserve">
+    <value>Cannot delete this unit because it still has active lessons. Remove or deactivate all lessons first.</value>
+  </data>
+  <data name="SubjectNotEmpty" xml:space="preserve">
+    <value>Cannot delete this subject because it still has active units. Remove or deactivate all units first.</value>
+  </data>
+  <data name="SubjectDuplicateTree" xml:space="preserve">
+    <value>A subject tree with this code and language already exists for this grade.</value>
+  </data>
+  <data name="SubjectSoftDeletedTreeExists" xml:space="preserve">
+    <value>A soft-deleted subject tree with this code and language exists for this grade. Restore it instead of creating a new one.</value>
+  </data>
+  <data name="InvalidSubjectCode" xml:space="preserve">
+    <value>Subject code must be one of the 4 allowed values: MATH, SCIENCE, ARABIC, ENGLISH.</value>
+  </data>
+  <data name="ReorderCrossTreeForbidden" xml:space="preserve">
+    <value>All items in a reorder request must belong to the same grade and language tree.</value>
+  </data>
+  <data name="SubjectActivatedSuccessfully" xml:space="preserve">
+    <value>Subject activated successfully.</value>
+  </data>
+  <data name="SubjectDeactivatedSuccessfully" xml:space="preserve">
+    <value>Subject deactivated successfully.</value>
+  </data>
+  <data name="UnitActivatedSuccessfully" xml:space="preserve">
+    <value>Unit activated successfully.</value>
+  </data>
+  <data name="UnitDeactivatedSuccessfully" xml:space="preserve">
+    <value>Unit deactivated successfully.</value>
+  </data>
+  <data name="ReorderListTooLong" xml:space="preserve">
+    <value>The reorder list exceeds the maximum allowed count.</value>
+  </data>
+  <data name="LessonActivatedSuccessfully" xml:space="preserve">
+    <value>Lesson activated successfully.</value>
+  </data>
+  <data name="LessonDeactivatedSuccessfully" xml:space="preserve">
+    <value>Lesson deactivated successfully.</value>
+  </data>
+  <data name="ContentBlockNotFound" xml:space="preserve">
+    <value>Content block not found.</value>
+  </data>
+  <data name="ContentBlockPayloadInvalid" xml:space="preserve">
+    <value>The content block payload is invalid or missing required fields for its type.</value>
+  </data>
+  <data name="ContentBlockTypeInvalid" xml:space="preserve">
+    <value>The content block type is invalid.</value>
+  </data>
+  <data name="ContentBlockTextPayloadRequired" xml:space="preserve">
+    <value>Text block must include a non-empty markdown field.</value>
+  </data>
+  <data name="ContentBlockImageUrlRequired" xml:space="preserve">
+    <value>Image block must include a non-empty url field.</value>
+  </data>
+  <data name="ContentBlockVideoUrlRequired" xml:space="preserve">
+    <value>Video block must include a non-empty url field.</value>
+  </data>
+  <data name="ContentBlockCalloutVariantRequired" xml:space="preserve">
+    <value>Callout block must include a variant (info, warning, or tip).</value>
+  </data>
+  <data name="ContentBlockCalloutVariantInvalid" xml:space="preserve">
+    <value>Callout variant must be one of: info, warning, tip.</value>
+  </data>
+  <data name="ContentBlockCalloutMarkdownRequired" xml:space="preserve">
+    <value>Callout block must include a non-empty markdown field.</value>
+  </data>
+  <data name="ContentBlockAddedSuccessfully" xml:space="preserve">
+    <value>Content block added successfully.</value>
+  </data>
+  <data name="ContentBlockUpdatedSuccessfully" xml:space="preserve">
+    <value>Content block updated successfully.</value>
+  </data>
+  <data name="ContentBlockReorderedSuccessfully" xml:space="preserve">
+    <value>Content blocks reordered successfully.</value>
+  </data>
+  <data name="ContentBlockReorderCrossLessonForbidden" xml:space="preserve">
+    <value>All content blocks in a reorder request must belong to the same lesson.</value>
+  </data>
+  <data name="EstimatedMinutesMustBeNonNegative" xml:space="preserve">
+    <value>Estimated minutes must be zero or a positive number.</value>
+  </data>
+  <data name="ContentBlockPayloadTooLong" xml:space="preserve">
+    <value>The content block payload must not exceed 65536 characters.</value>
+  </data>
+  <data name="ContentBlockUrlInvalid" xml:space="preserve">
+    <value>The URL must be an absolute HTTPS address pointing to a public host. Insecure schemes and private/loopback addresses are not allowed.</value>
+  </data>
+  <data name="SkillNotFound" xml:space="preserve">
+    <value>Skill not found.</value>
+  </data>
+  <data name="SkillActivatedSuccessfully" xml:space="preserve">
+    <value>Skill activated successfully.</value>
+  </data>
+  <data name="SkillDeactivatedSuccessfully" xml:space="preserve">
+    <value>Skill deactivated successfully.</value>
+  </data>
+  <data name="SkillNodeAutoCreateFailed" xml:space="preserve">
+    <value>Could not create the skill graph node: the skill's concept, subject, or grade could not be resolved.</value>
+  </data>
+  <data name="KnowledgeEdgeNotFound" xml:space="preserve">
+    <value>Knowledge edge not found.</value>
+  </data>
+  <data name="KnowledgeEdgeAddedSuccessfully" xml:space="preserve">
+    <value>Knowledge edge added successfully.</value>
+  </data>
+  <data name="KnowledgeEdgeRemovedSuccessfully" xml:space="preserve">
+    <value>Knowledge edge removed successfully.</value>
+  </data>
+  <data name="KnowledgeEdgeCrossLanguageForbidden" xml:space="preserve">
+    <value>Both nodes of an edge must belong to the same language tree. Cross-language edges are not allowed.</value>
+  </data>
+  <data name="KnowledgeEdgeWouldCreateCycle" xml:space="preserve">
+    <value>Adding this edge would create a cycle in the prerequisite graph and was rejected.</value>
+  </data>
+  <data name="KnowledgeEdgeDuplicate" xml:space="preserve">
+    <value>An edge with the same source, target, and relationship type already exists.</value>
+  </data>
+  <data name="KnowledgeNodeSubjectNotResolvable" xml:space="preserve">
+    <value>The knowledge node's owning subject could not be resolved. Operation rejected.</value>
+  </data>
+  <data name="KnowledgeEdgeStrengthOutOfRange" xml:space="preserve">
+    <value>Edge strength must be between 0.0 and 1.0 inclusive.</value>
+  </data>
+  <data name="SkillGraphRetrievedSuccessfully" xml:space="preserve">
+    <value>Skill graph retrieved successfully.</value>
+  </data>
+  <data name="QuizQuestionNotFound" xml:space="preserve">
+    <value>Quiz question not found.</value>
+  </data>
+  <data name="QuizQuestionAddedSuccessfully" xml:space="preserve">
+    <value>Quiz question added successfully.</value>
+  </data>
+  <data name="QuizQuestionUpdatedSuccessfully" xml:space="preserve">
+    <value>Quiz question updated successfully.</value>
+  </data>
+  <data name="QuizQuestionDeletedSuccessfully" xml:space="preserve">
+    <value>Quiz question deleted successfully.</value>
+  </data>
+  <data name="QuizQuestionReorderedSuccessfully" xml:space="preserve">
+    <value>Quiz questions reordered successfully.</value>
+  </data>
+  <data name="QuizQuestionActivatedSuccessfully" xml:space="preserve">
+    <value>Quiz question activated successfully.</value>
+  </data>
+  <data name="QuizQuestionDeactivatedSuccessfully" xml:space="preserve">
+    <value>Quiz question deactivated successfully.</value>
+  </data>
+  <data name="QuizQuestionReorderCrossLessonForbidden" xml:space="preserve">
+    <value>All questions in a reorder request must belong to the same lesson.</value>
+  </data>
+  <data name="QuizQuestionTextTooLong" xml:space="preserve">
+    <value>Question text must not exceed 4096 characters.</value>
+  </data>
+  <data name="QuizQuestionOptionsTooLong" xml:space="preserve">
+    <value>Options must not exceed 16384 characters.</value>
+  </data>
+  <data name="QuizQuestionCorrectAnswerTooLong" xml:space="preserve">
+    <value>Correct answer must not exceed 4096 characters.</value>
+  </data>
+  <data name="QuizQuestionTextRequired" xml:space="preserve">
+    <value>Question text is required.</value>
+  </data>
+  <data name="QuizQuestionTypeInvalid" xml:space="preserve">
+    <value>Invalid question type.</value>
+  </data>
+  <data name="QuizQuestionDifficultyInvalid" xml:space="preserve">
+    <value>Invalid difficulty level.</value>
+  </data>
+  <data name="QuizQuestionGeneratedByInvalid" xml:space="preserve">
+    <value>Invalid generated-by value.</value>
+  </data>
+  <data name="QuizQuestionsRetrievedSuccessfully" xml:space="preserve">
+    <value>Quiz questions retrieved successfully.</value>
+  </data>
+  <data name="QuizQuestionReorderLessonMismatch" xml:space="preserve">
+    <value>One or more question IDs do not belong to the specified lesson.</value>
+  </data>
+  <data name="IllegalLifecycleTransition" xml:space="preserve">
+    <value>The requested lifecycle transition is not allowed from the current state.</value>
+  </data>
+  <data name="ContentPublishedSuccessfully" xml:space="preserve">
+    <value>Content published successfully.</value>
+  </data>
+  <data name="ContentArchivedSuccessfully" xml:space="preserve">
+    <value>Content archived successfully.</value>
+  </data>
+  <data name="ContentUnpublishedSuccessfully" xml:space="preserve">
+    <value>Content moved back to draft successfully.</value>
+  </data>
+  <data name="ContentRolledBackSuccessfully" xml:space="preserve">
+    <value>Content rolled back to the requested version successfully.</value>
+  </data>
+  <data name="VersionedEntityNotFound" xml:space="preserve">
+    <value>The specified curriculum entity was not found.</value>
+  </data>
+  <data name="ContentVersionNotFound" xml:space="preserve">
+    <value>The requested content version was not found.</value>
+  </data>
+  <data name="InvalidVersionedEntityType" xml:space="preserve">
+    <value>Invalid entity type. Allowed values: Subject, Unit, Lesson, QuizQuestion.</value>
+  </data>
+  <data name="VersionHistoryRetrievedSuccessfully" xml:space="preserve">
+    <value>Version history retrieved successfully.</value>
+  </data>
+  <data name="PreviewRetrievedSuccessfully" xml:space="preserve">
+    <value>Preview retrieved successfully.</value>
+  </data>
+  <data name="PublicationCoverageRetrievedSuccessfully" xml:space="preserve">
+    <value>Publication coverage report retrieved successfully.</value>
+  </data>
+  <data name="EntityIdRequired" xml:space="preserve">
+    <value>A valid entity ID is required.</value>
+  </data>
+  <data name="VersionNumberMustBePositive" xml:space="preserve">
+    <value>Version number must be greater than zero.</value>
+  </data>
 </root>

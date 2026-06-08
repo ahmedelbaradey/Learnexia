@@ -835,5 +835,281 @@
         /// </summary>
         public const string LearningLanguageUpdateFailed = "LearningLanguageUpdateFailed";
 
+        // ── P7-01 Subject/Unit admin management ──────────────────────────────────────────────
+
+        /// <summary>Returned when a unit to delete or modify is not found.</summary>
+        public const string UnitNotFound = "UnitNotFound";
+
+        /// <summary>
+        /// Returned when an admin tries to soft-delete a Unit that still has non-deleted Lessons.
+        /// </summary>
+        public const string UnitNotEmpty = "UnitNotEmpty";
+
+        /// <summary>
+        /// Returned when an admin tries to soft-delete a Subject that still has non-deleted Units.
+        /// </summary>
+        public const string SubjectNotEmpty = "SubjectNotEmpty";
+
+        /// <summary>
+        /// Returned when a Create/Update would produce a duplicate (GradeId, SubjectCode, Language) tree.
+        /// </summary>
+        public const string SubjectDuplicateTree = "SubjectDuplicateTree";
+
+        /// <summary>
+        /// Returned when a soft-deleted tree with the same (GradeId, SubjectCode, Language) natural key
+        /// already exists — the admin must restore it instead of creating a new one.
+        /// </summary>
+        public const string SubjectSoftDeletedTreeExists = "SubjectSoftDeletedTreeExists";
+
+        /// <summary>
+        /// Returned when a SubjectCode value is not one of the 4 allowed codes
+        /// (MATH, SCIENCE, ARABIC, ENGLISH).
+        /// </summary>
+        public const string InvalidSubjectCode = "InvalidSubjectCode";
+
+        /// <summary>Returned when a reorder request spans multiple language trees or grades.</summary>
+        public const string ReorderCrossTreeForbidden = "ReorderCrossTreeForbidden";
+
+        /// <summary>Returned on successful Subject activation.</summary>
+        public const string SubjectActivatedSuccessfully = "SubjectActivatedSuccessfully";
+
+        /// <summary>Returned on successful Subject deactivation.</summary>
+        public const string SubjectDeactivatedSuccessfully = "SubjectDeactivatedSuccessfully";
+
+        /// <summary>Returned on successful Unit activation.</summary>
+        public const string UnitActivatedSuccessfully = "UnitActivatedSuccessfully";
+
+        /// <summary>Returned on successful Unit deactivation.</summary>
+        public const string UnitDeactivatedSuccessfully = "UnitDeactivatedSuccessfully";
+
+        // P7-SEC-5: Reorder list upper-bound guards (subjects: max 12; units: max 200).
+        /// <summary>
+        /// Returned when the reorder ID list exceeds the allowed upper bound.
+        /// (Subjects: 12; Units: 200.)
+        /// </summary>
+        public const string ReorderListTooLong = "ReorderListTooLong";
+
+        // ── P7-02 Lesson management ────────────────────────────────────────────────
+
+        /// <summary>Returned on successful Lesson activation.</summary>
+        public const string LessonActivatedSuccessfully = "LessonActivatedSuccessfully";
+
+        /// <summary>Returned on successful Lesson deactivation.</summary>
+        public const string LessonDeactivatedSuccessfully = "LessonDeactivatedSuccessfully";
+
+        // ── P7-02 ContentBlock management ─────────────────────────────────────────
+
+        /// <summary>Returned when a ContentBlock to modify/delete is not found.</summary>
+        public const string ContentBlockNotFound = "ContentBlockNotFound";
+
+        /// <summary>Returned when a ContentBlock's payload JSON is empty or missing required fields for its type.</summary>
+        public const string ContentBlockPayloadInvalid = "ContentBlockPayloadInvalid";
+
+        /// <summary>Returned when the ContentBlock type is not a valid enum member.</summary>
+        public const string ContentBlockTypeInvalid = "ContentBlockTypeInvalid";
+
+        /// <summary>Returned when a Text block is missing the required markdown field.</summary>
+        public const string ContentBlockTextPayloadRequired = "ContentBlockTextPayloadRequired";
+
+        /// <summary>Returned when an Image block is missing the required url field.</summary>
+        public const string ContentBlockImageUrlRequired = "ContentBlockImageUrlRequired";
+
+        /// <summary>Returned when a Video block is missing the required url field.</summary>
+        public const string ContentBlockVideoUrlRequired = "ContentBlockVideoUrlRequired";
+
+        /// <summary>Returned when a Callout block is missing the required variant field.</summary>
+        public const string ContentBlockCalloutVariantRequired = "ContentBlockCalloutVariantRequired";
+
+        /// <summary>Returned when a Callout block variant is not one of: info, warning, tip.</summary>
+        public const string ContentBlockCalloutVariantInvalid = "ContentBlockCalloutVariantInvalid";
+
+        /// <summary>Returned when a Callout block is missing the required markdown field.</summary>
+        public const string ContentBlockCalloutMarkdownRequired = "ContentBlockCalloutMarkdownRequired";
+
+        /// <summary>Returned on successful ContentBlock add.</summary>
+        public const string ContentBlockAddedSuccessfully = "ContentBlockAddedSuccessfully";
+
+        /// <summary>Returned on successful ContentBlock update.</summary>
+        public const string ContentBlockUpdatedSuccessfully = "ContentBlockUpdatedSuccessfully";
+
+        /// <summary>Returned on successful ContentBlock reorder.</summary>
+        public const string ContentBlockReorderedSuccessfully = "ContentBlockReorderedSuccessfully";
+
+        /// <summary>
+        /// Returned when a ContentBlock reorder request contains IDs that do not all belong to the same Lesson.
+        /// </summary>
+        public const string ContentBlockReorderCrossLessonForbidden = "ContentBlockReorderCrossLessonForbidden";
+
+        /// <summary>Returned when EstimatedMinutes is negative.</summary>
+        public const string EstimatedMinutesMustBeNonNegative = "EstimatedMinutesMustBeNonNegative";
+
+        // P7-SEC-2 (post security-audit) — ContentBlock payload size + URL safety
+
+        /// <summary>
+        /// Returned when the ContentBlock Payload exceeds the maximum allowed length (65536 chars).
+        /// </summary>
+        public const string ContentBlockPayloadTooLong = "ContentBlockPayloadTooLong";
+
+        /// <summary>
+        /// Returned when an Image or Video url field is not a valid absolute HTTPS URI,
+        /// uses a disallowed scheme (http/javascript/data/file), or points at a loopback/
+        /// link-local/private address. Children's platform — only public HTTPS URLs allowed.
+        /// </summary>
+        public const string ContentBlockUrlInvalid = "ContentBlockUrlInvalid";
+
+        // ── P7-03 Skill & Knowledge-graph management ──────────────────────────────────────────
+
+        /// <summary>Returned when a Skill to modify or delete is not found.</summary>
+        public const string SkillNotFound = "SkillNotFound";
+
+        /// <summary>Returned on successful Skill activation.</summary>
+        public const string SkillActivatedSuccessfully = "SkillActivatedSuccessfully";
+
+        /// <summary>Returned on successful Skill deactivation.</summary>
+        public const string SkillDeactivatedSuccessfully = "SkillDeactivatedSuccessfully";
+
+        /// <summary>
+        /// Returned when auto-creating a KnowledgeNode for a new Skill fails because
+        /// the Skill's Concept, Subject, or Grade cannot be resolved.
+        /// </summary>
+        public const string SkillNodeAutoCreateFailed = "SkillNodeAutoCreateFailed";
+
+        /// <summary>Returned when a KnowledgeEdge to remove is not found.</summary>
+        public const string KnowledgeEdgeNotFound = "KnowledgeEdgeNotFound";
+
+        /// <summary>Returned on successful edge add.</summary>
+        public const string KnowledgeEdgeAddedSuccessfully = "KnowledgeEdgeAddedSuccessfully";
+
+        /// <summary>Returned on successful edge remove (soft-delete).</summary>
+        public const string KnowledgeEdgeRemovedSuccessfully = "KnowledgeEdgeRemovedSuccessfully";
+
+        /// <summary>
+        /// Returned when both endpoints of a proposed edge do not belong to the same
+        /// language tree (AR ↔ EN cross-language edge rejected).
+        /// </summary>
+        public const string KnowledgeEdgeCrossLanguageForbidden = "KnowledgeEdgeCrossLanguageForbidden";
+
+        /// <summary>
+        /// Returned when a proposed edge would introduce a cycle in the Prerequisite graph.
+        /// The message should include the cycle details from SkillGraphValidator.
+        /// </summary>
+        public const string KnowledgeEdgeWouldCreateCycle = "KnowledgeEdgeWouldCreateCycle";
+
+        /// <summary>
+        /// Returned when a (SourceNodeId, TargetNodeId, RelationshipType) triple already exists.
+        /// </summary>
+        public const string KnowledgeEdgeDuplicate = "KnowledgeEdgeDuplicate";
+
+        /// <summary>
+        /// Returned when an edge's source or target node cannot resolve its owning Subject
+        /// (dangling SubjectId). Fail-closed guard — never 500.
+        /// </summary>
+        public const string KnowledgeNodeSubjectNotResolvable = "KnowledgeNodeSubjectNotResolvable";
+
+        /// <summary>Returned when the Strength value is outside the allowed range [0.0, 1.0].</summary>
+        public const string KnowledgeEdgeStrengthOutOfRange = "KnowledgeEdgeStrengthOutOfRange";
+
+        /// <summary>Returned on successful graph retrieval.</summary>
+        public const string SkillGraphRetrievedSuccessfully = "SkillGraphRetrievedSuccessfully";
+
+        // ── P7-04 Quiz/Question authoring ─────────────────────────────────────────
+
+        /// <summary>Returned when a QuizQuestion to modify/delete is not found.</summary>
+        public const string QuizQuestionNotFound = "QuizQuestionNotFound";
+
+        /// <summary>Returned on successful question add.</summary>
+        public const string QuizQuestionAddedSuccessfully = "QuizQuestionAddedSuccessfully";
+
+        /// <summary>Returned on successful question update.</summary>
+        public const string QuizQuestionUpdatedSuccessfully = "QuizQuestionUpdatedSuccessfully";
+
+        /// <summary>Returned on successful question soft-delete.</summary>
+        public const string QuizQuestionDeletedSuccessfully = "QuizQuestionDeletedSuccessfully";
+
+        /// <summary>Returned on successful question reorder.</summary>
+        public const string QuizQuestionReorderedSuccessfully = "QuizQuestionReorderedSuccessfully";
+
+        /// <summary>Returned on successful question activation.</summary>
+        public const string QuizQuestionActivatedSuccessfully = "QuizQuestionActivatedSuccessfully";
+
+        /// <summary>Returned on successful question deactivation.</summary>
+        public const string QuizQuestionDeactivatedSuccessfully = "QuizQuestionDeactivatedSuccessfully";
+
+        /// <summary>Returned when a reorder request spans multiple lessons (cross-lesson reorder forbidden).</summary>
+        public const string QuizQuestionReorderCrossLessonForbidden = "QuizQuestionReorderCrossLessonForbidden";
+
+        /// <summary>Returned when QuestionText exceeds the maximum allowed length.</summary>
+        public const string QuizQuestionTextTooLong = "QuizQuestionTextTooLong";
+
+        /// <summary>Returned when the Options JSON string exceeds the maximum allowed length.</summary>
+        public const string QuizQuestionOptionsTooLong = "QuizQuestionOptionsTooLong";
+
+        /// <summary>Returned when the CorrectAnswer JSON string exceeds the maximum allowed length.</summary>
+        public const string QuizQuestionCorrectAnswerTooLong = "QuizQuestionCorrectAnswerTooLong";
+
+        /// <summary>Returned when QuestionText is empty or missing.</summary>
+        public const string QuizQuestionTextRequired = "QuizQuestionTextRequired";
+
+        /// <summary>Returned when the QuestionType enum value is invalid.</summary>
+        public const string QuizQuestionTypeInvalid = "QuizQuestionTypeInvalid";
+
+        /// <summary>Returned when the DifficultyLevel enum value is invalid.</summary>
+        public const string QuizQuestionDifficultyInvalid = "QuizQuestionDifficultyInvalid";
+
+        /// <summary>Returned when the GeneratedBy enum value is invalid.</summary>
+        public const string QuizQuestionGeneratedByInvalid = "QuizQuestionGeneratedByInvalid";
+
+        /// <summary>Returned on successful admin questions list retrieval.</summary>
+        public const string QuizQuestionsRetrievedSuccessfully = "QuizQuestionsRetrievedSuccessfully";
+
+        /// <summary>
+        /// Returned when one or more question IDs in a reorder request do not belong to the supplied LessonId anchor.
+        /// </summary>
+        public const string QuizQuestionReorderLessonMismatch = "QuizQuestionReorderLessonMismatch";
+
+        // ── P7-05 Content Lifecycle / Versioning ──────────────────────────────────────────
+
+        /// <summary>Returned when a lifecycle transition is illegal (e.g. Archived → Published without going through Draft).</summary>
+        public const string IllegalLifecycleTransition = "IllegalLifecycleTransition";
+
+        /// <summary>Returned when a publish operation completes successfully.</summary>
+        public const string ContentPublishedSuccessfully = "ContentPublishedSuccessfully";
+
+        /// <summary>Returned when an archive operation completes successfully.</summary>
+        public const string ContentArchivedSuccessfully = "ContentArchivedSuccessfully";
+
+        /// <summary>Returned when an unpublish (Published→Draft) operation completes successfully.</summary>
+        public const string ContentUnpublishedSuccessfully = "ContentUnpublishedSuccessfully";
+
+        /// <summary>Returned when a rollback operation completes successfully.</summary>
+        public const string ContentRolledBackSuccessfully = "ContentRolledBackSuccessfully";
+
+        /// <summary>Returned when the versioned entity (Subject/Unit/Lesson/QuizQuestion) is not found.</summary>
+        public const string VersionedEntityNotFound = "VersionedEntityNotFound";
+
+        /// <summary>Returned when the requested ContentVersion (by EntityType+EntityId+VersionNumber) is not found.</summary>
+        public const string ContentVersionNotFound = "ContentVersionNotFound";
+
+        /// <summary>Returned when a VersionedEntityType enum value is invalid or unrecognised.</summary>
+        public const string InvalidVersionedEntityType = "InvalidVersionedEntityType";
+
+        /// <summary>Returned when version history is retrieved successfully.</summary>
+        public const string VersionHistoryRetrievedSuccessfully = "VersionHistoryRetrievedSuccessfully";
+
+        /// <summary>Returned when a preview query is completed successfully.</summary>
+        public const string PreviewRetrievedSuccessfully = "PreviewRetrievedSuccessfully";
+
+        /// <summary>Returned when the publication coverage report is retrieved successfully.</summary>
+        public const string PublicationCoverageRetrievedSuccessfully = "PublicationCoverageRetrievedSuccessfully";
+
+        /// <summary>Returned when the EntityId is missing or invalid (zero or negative) in a lifecycle command.</summary>
+        public const string EntityIdRequired = "EntityIdRequired";
+
+        /// <summary>
+        /// Returned by <see cref="RollbackToVersionCommandValidator"/> when VersionNumber is zero or negative.
+        /// Replaces the incorrect re-use of <see cref="ContentVersionNotFound"/> on the validation rule.
+        /// </summary>
+        public const string VersionNumberMustBePositive = "VersionNumberMustBePositive";
+
     }
 }

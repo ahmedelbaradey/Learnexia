@@ -39,7 +39,7 @@ public class ListUnitsQueryHandler : BaseResponseHandler, IQueryHandler<ListUnit
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error: in ListUnitsQuery");
-            return ServerError<PaginatedResult<SingleUnitResponse>>(ex.Message);
+            return ServerError<PaginatedResult<SingleUnitResponse>>();
         }
     }
 }
