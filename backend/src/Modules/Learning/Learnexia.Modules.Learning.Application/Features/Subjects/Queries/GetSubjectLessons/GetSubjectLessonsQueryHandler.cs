@@ -59,8 +59,9 @@ public class GetSubjectLessonsQueryHandler
         {
             // Load the subject to verify it exists and to check its language.
             // P7-01: IsActive == true filter — inactive subject returns 404 for students.
+            // P7-05: LifecycleState == Published filter — Draft/Archived subjects not served to students.
             var subject = await _repository.Learning
-                .GetByCondition<Subject>(s => s.Id == request.SubjectId && s.IsActive, false)
+                .GetByCondition<Subject>(s => s.Id == request.SubjectId && s.IsActive && s.LifecycleState == LifecycleState.Published, false)
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (subject is null)
@@ -75,12 +76,14 @@ public class GetSubjectLessonsQueryHandler
             if (subject.Language != resolved)
             {
                 // P7-01: Also require IsActive on the redirected subject (student path).
+                // P7-05: Also require LifecycleState == Published on the redirected subject.
                 var correctSubject = await _repository.Learning
                     .GetByCondition<Subject>(
                         s => s.GradeId == subject.GradeId
                           && s.SubjectCode == subject.SubjectCode
                           && s.Language == resolved
-                          && s.IsActive,
+                          && s.IsActive
+                          && s.LifecycleState == LifecycleState.Published,
                         trackChanges: false)
                     .FirstOrDefaultAsync(cancellationToken);
 
@@ -100,8 +103,9 @@ public class GetSubjectLessonsQueryHandler
             var effectiveSubjectId = subject.Id;
 
             // P7-01: IsActive == true filter — inactive units hidden from student reads.
+            // P7-05: LifecycleState == Published filter — Draft/Archived units not served to students.
             var units = await _repository.Learning
-                .GetByCondition<Unit>(u => u.SubjectId == effectiveSubjectId && u.IsActive, false)
+                .GetByCondition<Unit>(u => u.SubjectId == effectiveSubjectId && u.IsActive && u.LifecycleState == LifecycleState.Published, false)
                 .Include(u => u.Lessons)
                 .OrderBy(u => u.SequenceOrder)
                 .ToListAsync(cancellationToken);
@@ -144,7 +148,7 @@ public class GetSubjectLessonsQueryHandler
                     Name          = u.Name,
                     SequenceOrder = u.SequenceOrder,
                     Lessons       = u.Lessons
-                                     .Where(l => l.IsActive)
+                                     .Where(l => l.IsActive && l.LifecycleState == LifecycleState.Published)
                                      .OrderBy(l => l.SequenceOrder)
                                      .Select(l =>
                                      {
@@ -197,7 +201,7 @@ public class GetSubjectLessonsQueryHandler
                     Name          = u.Name,
                     SequenceOrder = u.SequenceOrder,
                     Lessons       = u.Lessons
-                                     .Where(l => l.IsActive)
+                                     .Where(l => l.IsActive && l.LifecycleState == LifecycleState.Published)
                                      .OrderBy(l => l.SequenceOrder)
                                      .Select(l => new LessonInUnitDto
                                      {

@@ -1064,5 +1064,49 @@
         /// </summary>
         public const string QuizQuestionReorderLessonMismatch = "QuizQuestionReorderLessonMismatch";
 
+        // ── P7-05 Content Lifecycle / Versioning ──────────────────────────────────────────
+
+        /// <summary>Returned when a lifecycle transition is illegal (e.g. Archived → Published without going through Draft).</summary>
+        public const string IllegalLifecycleTransition = "IllegalLifecycleTransition";
+
+        /// <summary>Returned when a publish operation completes successfully.</summary>
+        public const string ContentPublishedSuccessfully = "ContentPublishedSuccessfully";
+
+        /// <summary>Returned when an archive operation completes successfully.</summary>
+        public const string ContentArchivedSuccessfully = "ContentArchivedSuccessfully";
+
+        /// <summary>Returned when an unpublish (Published→Draft) operation completes successfully.</summary>
+        public const string ContentUnpublishedSuccessfully = "ContentUnpublishedSuccessfully";
+
+        /// <summary>Returned when a rollback operation completes successfully.</summary>
+        public const string ContentRolledBackSuccessfully = "ContentRolledBackSuccessfully";
+
+        /// <summary>Returned when the versioned entity (Subject/Unit/Lesson/QuizQuestion) is not found.</summary>
+        public const string VersionedEntityNotFound = "VersionedEntityNotFound";
+
+        /// <summary>Returned when the requested ContentVersion (by EntityType+EntityId+VersionNumber) is not found.</summary>
+        public const string ContentVersionNotFound = "ContentVersionNotFound";
+
+        /// <summary>Returned when a VersionedEntityType enum value is invalid or unrecognised.</summary>
+        public const string InvalidVersionedEntityType = "InvalidVersionedEntityType";
+
+        /// <summary>Returned when version history is retrieved successfully.</summary>
+        public const string VersionHistoryRetrievedSuccessfully = "VersionHistoryRetrievedSuccessfully";
+
+        /// <summary>Returned when a preview query is completed successfully.</summary>
+        public const string PreviewRetrievedSuccessfully = "PreviewRetrievedSuccessfully";
+
+        /// <summary>Returned when the publication coverage report is retrieved successfully.</summary>
+        public const string PublicationCoverageRetrievedSuccessfully = "PublicationCoverageRetrievedSuccessfully";
+
+        /// <summary>Returned when the EntityId is missing or invalid (zero or negative) in a lifecycle command.</summary>
+        public const string EntityIdRequired = "EntityIdRequired";
+
+        /// <summary>
+        /// Returned by <see cref="RollbackToVersionCommandValidator"/> when VersionNumber is zero or negative.
+        /// Replaces the incorrect re-use of <see cref="ContentVersionNotFound"/> on the validation rule.
+        /// </summary>
+        public const string VersionNumberMustBePositive = "VersionNumberMustBePositive";
+
     }
 }

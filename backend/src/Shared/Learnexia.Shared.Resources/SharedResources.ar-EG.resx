@@ -1908,4 +1908,43 @@
   <data name="QuizQuestionReorderLessonMismatch" xml:space="preserve">
     <value>معرف واحد أو أكثر من الأسئلة لا ينتمي إلى الدرس المحدد.</value>
   </data>
+  <data name="IllegalLifecycleTransition" xml:space="preserve">
+    <value>الانتقال المطلوب في دورة حياة المحتوى غير مسموح به من الحالة الحالية.</value>
+  </data>
+  <data name="ContentPublishedSuccessfully" xml:space="preserve">
+    <value>تم نشر المحتوى بنجاح.</value>
+  </data>
+  <data name="ContentArchivedSuccessfully" xml:space="preserve">
+    <value>تم أرشفة المحتوى بنجاح.</value>
+  </data>
+  <data name="ContentUnpublishedSuccessfully" xml:space="preserve">
+    <value>تم إعادة المحتوى إلى حالة المسودة بنجاح.</value>
+  </data>
+  <data name="ContentRolledBackSuccessfully" xml:space="preserve">
+    <value>تم استعادة المحتوى إلى الإصدار المطلوب بنجاح.</value>
+  </data>
+  <data name="VersionedEntityNotFound" xml:space="preserve">
+    <value>عنصر المنهج الدراسي المحدد غير موجود.</value>
+  </data>
+  <data name="ContentVersionNotFound" xml:space="preserve">
+    <value>إصدار المحتوى المطلوب غير موجود.</value>
+  </data>
+  <data name="InvalidVersionedEntityType" xml:space="preserve">
+    <value>نوع الكيان غير صالح. القيم المسموح بها: موضوع، وحدة، درس، سؤال.</value>
+  </data>
+  <data name="VersionHistoryRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع سجل الإصدارات بنجاح.</value>
+  </data>
+  <data name="PreviewRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع المعاينة بنجاح.</value>
+  </data>
+  <data name="PublicationCoverageRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع تقرير تغطية النشر بنجاح.</value>
+  </data>
+  <data name="EntityIdRequired" xml:space="preserve">
+    <value>معرف الكيان مطلوب ويجب أن يكون صحيحاً.</value>
+  </data>
+  <data name="VersionNumberMustBePositive" xml:space="preserve">
+    <value>رقم الإصدار يجب أن يكون أكبر من الصفر.</value>
+  </data>
 </root>

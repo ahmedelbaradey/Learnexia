@@ -16,6 +16,11 @@ namespace Learnexia.Modules.Learning.Domain.Entities;
 /// <see cref="IsActive"/> (admin-controlled active/inactive toggle; inactive = hidden from students).
 /// Soft-delete (<c>IsDeleted</c> + <c>DeletedAt</c>) is inherited from <see cref="AggregateRoot"/>
 /// via <c>FullAuditedEntity</c> — no new columns required for soft-delete.
+///
+/// P7-05: Added <see cref="LifecycleState"/> (draft/published/archived editorial lifecycle).
+/// The DB column defaults to <c>2</c> (Published) so all existing rows backfill to Published and remain
+/// visible to students. The C# initializer below defaults to <see cref="LifecycleState.Draft"/> so
+/// new instances created by admin handlers start as Draft and must be explicitly published.
 /// </summary>
 public class Subject : AggregateRoot
 {
@@ -43,6 +48,14 @@ public class Subject : AggregateRoot
     /// reads but are NOT deleted (use <c>IsDeleted</c> for soft-delete). Default <c>true</c>.
     /// </summary>
     public bool IsActive { get; set; } = true;
+
+    /// <summary>
+    /// P7-05: Editorial lifecycle state (Draft / Published / Archived).
+    /// DB column defaults to 2 (Published) — all existing rows backfill to Published.
+    /// C# initializer is Draft — new instances start as Draft (override DB DEFAULT on insert).
+    /// Stored as int via HasConversion&lt;int&gt;() in SubjectConfig.
+    /// </summary>
+    public LifecycleState LifecycleState { get; set; } = LifecycleState.Draft;
 
     public List<Unit> Units { get; set; } = null!;
     public List<Concept> Concepts { get; set; } = null!;

@@ -1,4 +1,5 @@
 using Learnexia.Modules.Learning.Domain.Entities;
+using Learnexia.Modules.Learning.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -45,6 +46,13 @@ public class LessonConfig : IEntityTypeConfiguration<Lesson>
         builder.Property(x => x.EstimatedMinutes)
             .IsRequired()
             .HasDefaultValue(0);
+
+        // P7-05: LifecycleState — editorial lifecycle. DB DEFAULT 2 (Published) backfills existing rows.
+        // C# initializer Draft ensures new inserts default to Draft at the application layer.
+        builder.Property(x => x.LifecycleState)
+            .IsRequired()
+            .HasConversion<int>()
+            .HasDefaultValue(LifecycleState.Published);
 
         builder.HasOne(l => l.Unit)
             .WithMany(u => u.Lessons)

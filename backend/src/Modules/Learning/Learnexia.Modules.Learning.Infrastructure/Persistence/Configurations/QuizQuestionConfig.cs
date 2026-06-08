@@ -69,6 +69,13 @@ public class QuizQuestionConfig : IEntityTypeConfiguration<QuizQuestion>
             .IsRequired()
             .HasDefaultValue(true);
 
+        // P7-05: LifecycleState — editorial lifecycle. DB DEFAULT 2 (Published) backfills existing rows.
+        // C# initializer Draft ensures new inserts default to Draft at the application layer.
+        builder.Property(x => x.LifecycleState)
+            .IsRequired()
+            .HasConversion<int>()
+            .HasDefaultValue(LifecycleState.Published);
+
         builder.HasIndex(x => x.LessonId)
             .HasDatabaseName("IX_QuizQuestions_LessonId");
 

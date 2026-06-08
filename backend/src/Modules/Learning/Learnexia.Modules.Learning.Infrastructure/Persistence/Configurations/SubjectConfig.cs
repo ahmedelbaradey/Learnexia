@@ -1,4 +1,5 @@
 using Learnexia.Modules.Learning.Domain.Entities;
+using Learnexia.Modules.Learning.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -53,6 +54,16 @@ public class SubjectConfig : IEntityTypeConfiguration<Subject>
         builder.Property(x => x.IsActive)
             .IsRequired()
             .HasDefaultValue(true);
+
+        // P7-05: LifecycleState — editorial draft/published/archived lifecycle.
+        // DB DEFAULT 2 (Published) backfills all existing rows to Published so live curriculum stays visible.
+        // The C# entity initializer is Draft — new inserts always send the C# value (Draft=1), overriding
+        // the DB DEFAULT. EF only applies HasDefaultValue when the property has the CLR default (0/null);
+        // because the entity initializer sets it to Draft (=1, non-zero), EF sends the C# value on insert.
+        builder.Property(x => x.LifecycleState)
+            .IsRequired()
+            .HasConversion<int>()
+            .HasDefaultValue(LifecycleState.Published);
 
         builder.HasIndex(x => x.GradeId)
             .HasDatabaseName("IX_Subjects_GradeId");

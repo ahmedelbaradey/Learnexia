@@ -44,6 +44,9 @@ public class LearningDbContext : DbContext
     // P7-02: Lesson content blocks
     public DbSet<ContentBlock> ContentBlocks => Set<ContentBlock>();
 
+    // P7-05: Publish-time version snapshots
+    public DbSet<ContentVersion> ContentVersions => Set<ContentVersion>();
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 
@@ -103,6 +106,17 @@ public class LearningDbContext : DbContext
         // StudentAnswer.AttemptId FK to Attempt (no filter) does NOT trigger the warning because
         // Attempt has no global query filter.
         modelBuilder.Entity<StudentAnswer>().HasQueryFilter(sa => sa.IsDeleted != true);
+
+        // P7-05: Global soft-delete filter for ContentVersion.
+        //
+        // ContentVersion derives from FullAuditedEntity (not AggregateRoot) and carries IsDeleted.
+        // Soft-deleted version rows are invisible to all standard EF queries; admin reads that need
+        // to see soft-deleted rows must use .IgnoreQueryFilters().
+        //
+        // Required-relationship-filter warning analysis: ContentVersion has NO required FK navigations
+        // to other entities with global query filters (EntityId is a loose plain int, no navigation
+        // properties). Therefore no required-relationship-filter warning is expected here.
+        modelBuilder.Entity<ContentVersion>().HasQueryFilter(cv => cv.IsDeleted != true);
 
         base.OnModelCreating(modelBuilder);
     }

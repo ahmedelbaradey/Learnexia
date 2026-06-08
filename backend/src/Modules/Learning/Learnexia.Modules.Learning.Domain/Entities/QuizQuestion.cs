@@ -62,5 +62,13 @@ public class QuizQuestion : AggregateRoot
     /// </summary>
     public bool IsActive { get; set; } = true;
 
+    /// <summary>
+    /// P7-05: Editorial lifecycle state (Draft / Published / Archived).
+    /// DB column defaults to 2 (Published) — all existing rows backfill to Published.
+    /// C# initializer is Draft — new instances start as Draft.
+    /// Stored as int via HasConversion&lt;int&gt;() in QuizQuestionConfig.
+    /// </summary>
+    public LifecycleState LifecycleState { get; set; } = LifecycleState.Draft;
+
     public ICollection<StudentAnswer> StudentAnswers { get; set; } = new List<StudentAnswer>();
 }

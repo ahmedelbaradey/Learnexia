@@ -223,10 +223,11 @@ public class LearningRepository : ILearningRepository
     public async Task<IReadOnlyList<Lesson>> GetSubjectLessonsAsync(
         int subjectId, CancellationToken ct = default)
         // P7-02: Filter IsActive — student-facing reads must not see inactive lessons.
+        // P7-05: Filter LifecycleState == Published — Draft/Archived lessons not served to students.
         // The global IsDeleted filter already excludes soft-deleted rows.
         => await RepositoryContext.Lessons
             .AsNoTracking()
-            .Where(l => l.Unit.SubjectId == subjectId && l.IsActive)
+            .Where(l => l.Unit.SubjectId == subjectId && l.IsActive && l.LifecycleState == LifecycleState.Published)
             .ToListAsync(ct);
 
     /// <inheritdoc/>
@@ -370,4 +371,93 @@ public class LearningRepository : ILearningRepository
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.Id == concept.SubjectId, ct);
     }
+
+    // ── P7-05 Content lifecycle / versioning ──────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public async Task<int> GetMaxVersionNumberAsync(VersionedEntityType entityType, int entityId, CancellationToken ct = default)
+        => await RepositoryContext.ContentVersions
+            .AsNoTracking()
+            .Where(cv => cv.EntityType == entityType && cv.EntityId == entityId)
+            .Select(cv => (int?)cv.VersionNumber)
+            .MaxAsync(ct) ?? 0;
+
+    /// <inheritdoc/>
+    public async Task<List<ContentVersion>> GetVersionHistoryAsync(VersionedEntityType entityType, int entityId, CancellationToken ct = default)
+        => await RepositoryContext.ContentVersions
+            .AsNoTracking()
+            .Where(cv => cv.EntityType == entityType && cv.EntityId == entityId)
+            .OrderByDescending(cv => cv.VersionNumber)
+            .ToListAsync(ct);
+
+    /// <inheritdoc/>
+    public async Task<ContentVersion?> GetVersionAsync(VersionedEntityType entityType, int entityId, int versionNumber, CancellationToken ct = default)
+        => await RepositoryContext.ContentVersions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(cv => cv.EntityType == entityType && cv.EntityId == entityId && cv.VersionNumber == versionNumber, ct);
+
+    /// <inheritdoc/>
+    public async Task<Subject?> GetOwningSubjectAsync(VersionedEntityType entityType, int entityId, CancellationToken ct = default)
+    {
+        // Walk the ownership chain per entity type.
+        switch (entityType)
+        {
+            case VersionedEntityType.Subject:
+                return await RepositoryContext.Subjects
+                    .AsNoTracking()
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(s => s.Id == entityId, ct);
+
+            case VersionedEntityType.Unit:
+            {
+                var unit = await RepositoryContext.Units
+                    .AsNoTracking()
+                    .IgnoreQueryFilters()
+                    .Include(u => u.Subject)
+                    .FirstOrDefaultAsync(u => u.Id == entityId, ct);
+                return unit?.Subject;
+            }
+
+            case VersionedEntityType.Lesson:
+            {
+                var lesson = await RepositoryContext.Lessons
+                    .AsNoTracking()
+                    .IgnoreQueryFilters()
+                    .Include(l => l.Unit)
+                        .ThenInclude(u => u.Subject)
+                    .FirstOrDefaultAsync(l => l.Id == entityId, ct);
+                return lesson?.Unit?.Subject;
+            }
+
+            case VersionedEntityType.QuizQuestion:
+            {
+                var question = await RepositoryContext.QuizQuestions
+                    .AsNoTracking()
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(q => q.Id == entityId, ct);
+
+                if (question is null)
+                    return null;
+
+                var lesson = await RepositoryContext.Lessons
+                    .AsNoTracking()
+                    .IgnoreQueryFilters()
+                    .Include(l => l.Unit)
+                        .ThenInclude(u => u.Subject)
+                    .FirstOrDefaultAsync(l => l.Id == question.LessonId, ct);
+
+                return lesson?.Unit?.Subject;
+            }
+
+            default:
+                return null;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<List<Subject>> GetSubjectsForCoverageAsync(int gradeId, CancellationToken ct = default)
+        => await RepositoryContext.Subjects
+            .AsNoTracking()
+            .Where(s => s.GradeId == gradeId)
+            .ToListAsync(ct);
 }

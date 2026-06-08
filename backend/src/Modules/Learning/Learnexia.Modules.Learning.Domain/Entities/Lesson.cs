@@ -11,6 +11,10 @@ namespace Learnexia.Modules.Learning.Domain.Entities;
 /// <see cref="EstimatedMinutes"/> (estimated lesson duration in minutes). Soft-delete
 /// (<c>IsDeleted</c> + <c>DeletedAt</c>) is inherited from <see cref="AggregateRoot"/>
 /// via <c>FullAuditedEntity</c> — no new columns required for soft-delete.
+///
+/// P7-05: Added <see cref="LifecycleState"/> (draft/published/archived editorial lifecycle).
+/// DB defaults to 2 (Published) — all existing rows backfill to Published.
+/// C# initializer is Draft — new instances start as Draft.
 /// </summary>
 public class Lesson : AggregateRoot
 {
@@ -60,6 +64,14 @@ public class Lesson : AggregateRoot
     /// (a boss lesson can still be Locked, Available, or Completed).
     /// </summary>
     public bool IsBoss { get; set; }
+
+    /// <summary>
+    /// P7-05: Editorial lifecycle state (Draft / Published / Archived).
+    /// DB column defaults to 2 (Published) — all existing rows backfill to Published.
+    /// C# initializer is Draft — new instances start as Draft.
+    /// Stored as int via HasConversion&lt;int&gt;() in LessonConfig.
+    /// </summary>
+    public LifecycleState LifecycleState { get; set; } = LifecycleState.Draft;
 
     /// <summary>
     /// P7-02: Ordered content blocks for this lesson. Navigated via <see cref="ContentBlock.LessonId"/>.

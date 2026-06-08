@@ -1,4 +1,5 @@
 using Learnexia.Modules.Learning.Domain.Entities;
+using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Modules.Learning.Domain.Services;
 using Learnexia.Shared.Kernel.Abstractions;
 
@@ -154,4 +155,39 @@ public interface ILearningRepository : IGenericRepository
     /// Used by the auto-create-node logic in AddSkillCommandHandler. AsNoTracking.
     /// </summary>
     Task<Subject?> GetSubjectByConceptIdAsync(int conceptId, CancellationToken ct = default);
+
+    // ── P7-05 Content lifecycle / versioning ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns the maximum VersionNumber for a given (EntityType, EntityId) partition, or 0 when no
+    /// version rows exist yet. Used by <c>PublishContentCommandHandler</c> to assign the next version number.
+    /// </summary>
+    Task<int> GetMaxVersionNumberAsync(VersionedEntityType entityType, int entityId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all <see cref="ContentVersion"/> rows for the given (EntityType, EntityId), ordered
+    /// descending by VersionNumber (newest first). Used by <c>GetVersionHistoryQueryHandler</c>.
+    /// </summary>
+    Task<List<ContentVersion>> GetVersionHistoryAsync(VersionedEntityType entityType, int entityId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns a single <see cref="ContentVersion"/> row by (EntityType, EntityId, VersionNumber),
+    /// or null when not found. Used by <c>RollbackToVersionCommandHandler</c>.
+    /// </summary>
+    Task<ContentVersion?> GetVersionAsync(VersionedEntityType entityType, int entityId, int versionNumber, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the <see cref="Subject"/> that owns the entity hierarchy for the given entity.
+    /// Used to resolve the <see cref="ContentLanguage"/> tag to stamp on the new <see cref="ContentVersion"/>.
+    /// Walks the chain: for Subject → self; for Unit → Unit.Subject; for Lesson → Lesson.Unit.Subject;
+    /// for QuizQuestion → QuizQuestion.Lesson.Unit.Subject. AsNoTracking. Returns null when not resolvable.
+    /// </summary>
+    Task<Subject?> GetOwningSubjectAsync(VersionedEntityType entityType, int entityId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all published <see cref="Subject"/> rows for the given GradeId, grouped as a coverage
+    /// report across (SubjectCode, Language) slots. Used by <c>GetPublicationCoverageQueryHandler</c>.
+    /// Admin read — no IsActive filter applied; global IsDeleted filter is still active.
+    /// </summary>
+    Task<List<Subject>> GetSubjectsForCoverageAsync(int gradeId, CancellationToken ct = default);
 }

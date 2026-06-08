@@ -108,11 +108,12 @@ public class GetDashboardQueryHandler
             var recentSubjectId = await _repository.Learning
                 .GetMostRecentActivitySubjectIdAsync(studentId, cancellationToken);
 
-            // ── Step 3: Load all Grade-1 ACTIVE subjects for the cross-subject fallback ───────
+            // ── Step 3: Load all Grade-1 ACTIVE + PUBLISHED subjects for the cross-subject fallback ────
             // Loaded once here and passed down to avoid repeated DB round-trips.
             // P7-01: IsActive == true — inactive subjects hidden from student-facing dashboard.
+            // P7-05: LifecycleState == Published — Draft/Archived subjects not served to students.
             var allGrade1Subjects = await _repository.Learning
-                .GetByCondition<Subject>(s => s.Grade.Number == 1 && s.IsActive, trackChanges: false)
+                .GetByCondition<Subject>(s => s.Grade.Number == 1 && s.IsActive && s.LifecycleState == LifecycleState.Published, trackChanges: false)
                 .Include(s => s.Grade)
                 .ToListAsync(cancellationToken);
 

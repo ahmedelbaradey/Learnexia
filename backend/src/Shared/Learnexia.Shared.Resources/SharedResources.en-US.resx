@@ -1909,4 +1909,43 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="QuizQuestionReorderLessonMismatch" xml:space="preserve">
     <value>One or more question IDs do not belong to the specified lesson.</value>
   </data>
+  <data name="IllegalLifecycleTransition" xml:space="preserve">
+    <value>The requested lifecycle transition is not allowed from the current state.</value>
+  </data>
+  <data name="ContentPublishedSuccessfully" xml:space="preserve">
+    <value>Content published successfully.</value>
+  </data>
+  <data name="ContentArchivedSuccessfully" xml:space="preserve">
+    <value>Content archived successfully.</value>
+  </data>
+  <data name="ContentUnpublishedSuccessfully" xml:space="preserve">
+    <value>Content moved back to draft successfully.</value>
+  </data>
+  <data name="ContentRolledBackSuccessfully" xml:space="preserve">
+    <value>Content rolled back to the requested version successfully.</value>
+  </data>
+  <data name="VersionedEntityNotFound" xml:space="preserve">
+    <value>The specified curriculum entity was not found.</value>
+  </data>
+  <data name="ContentVersionNotFound" xml:space="preserve">
+    <value>The requested content version was not found.</value>
+  </data>
+  <data name="InvalidVersionedEntityType" xml:space="preserve">
+    <value>Invalid entity type. Allowed values: Subject, Unit, Lesson, QuizQuestion.</value>
+  </data>
+  <data name="VersionHistoryRetrievedSuccessfully" xml:space="preserve">
+    <value>Version history retrieved successfully.</value>
+  </data>
+  <data name="PreviewRetrievedSuccessfully" xml:space="preserve">
+    <value>Preview retrieved successfully.</value>
+  </data>
+  <data name="PublicationCoverageRetrievedSuccessfully" xml:space="preserve">
+    <value>Publication coverage report retrieved successfully.</value>
+  </data>
+  <data name="EntityIdRequired" xml:space="preserve">
+    <value>A valid entity ID is required.</value>
+  </data>
+  <data name="VersionNumberMustBePositive" xml:space="preserve">
+    <value>Version number must be greater than zero.</value>
+  </data>
 </root>

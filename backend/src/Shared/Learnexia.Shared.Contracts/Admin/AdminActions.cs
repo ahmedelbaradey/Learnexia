@@ -55,4 +55,10 @@ public static class AdminActions
     public const string QuizQuestionReordered   = "QuizQuestion.Reordered";
     public const string QuizQuestionActivated   = "QuizQuestion.Activated";
     public const string QuizQuestionDeactivated = "QuizQuestion.Deactivated";
+
+    // ── P7-05 Content Lifecycle ───────────────────────────────────────────────
+    public const string ContentPublished   = "Content.Published";
+    public const string ContentArchived    = "Content.Archived";
+    public const string ContentUnpublished = "Content.Unpublished";
+    public const string ContentRolledBack  = "Content.RolledBack";
 }
