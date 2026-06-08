@@ -859,6 +859,9 @@
   <data name="ProfileCountryTooLong" xml:space="preserve">
     <value>يجب ألا تتجاوز الدولة 100 حرف.</value>
   </data>
+  <data name="ProfileEmailTooLong" xml:space="preserve">
+    <value>يجب ألا يتجاوز عنوان البريد الإلكتروني 254 حرفًا.</value>
+  </data>
   <data name="ProfileSystemErrorSavingData" xml:space="preserve">
     <value>لم يتم حفظ البيانات، حدث خطأ بالنظام.</value>
   </data>

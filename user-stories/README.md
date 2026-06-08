@@ -134,6 +134,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P7-10 Platform analytics & KPI dashboard
 - P7-11 AI-safety & quality monitoring dashboard
 - P7-12 Admin action audit log
+- P7-13 Gamification admin overrides — league tier override, badge/mission catalog editors, timed-event write endpoints, streak-freeze grants *(new; the Phase-3 gamification admin overrides deferred to P7)*
 
 ### Phase 8 — Localization
 *Learning language (medium of instruction) is a per-student attribute, separate from UI language. Math/Science follow the learning language; the Arabic and English subjects are pinned to their own language. See [../docs/architecture/localization-architecture.md](../docs/architecture/localization-architecture.md).*

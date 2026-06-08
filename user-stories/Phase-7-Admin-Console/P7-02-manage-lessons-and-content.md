@@ -13,6 +13,7 @@ As an admin, I want to create and edit lessons within a unit and author their co
 
 ## Acceptance Criteria
 - Given a unit, when the admin creates/edits a lesson, then it persists with title, difficulty, estimated time, sequence order, and lock state scoped to the unit.
+- Given a lesson (or its content blocks), then its **`Language` is inherited from the owning Subject tree** and is **not editable on the lesson** — the editor shows the language for context but offers no field to change it; a lesson always belongs to exactly one `(SubjectCode, Language)` tree.
 - Given a lesson, when the admin adds content blocks (e.g. text, image, video, callout), then blocks persist with a type, payload, and ordering within the lesson.
 - Given a lesson's content blocks, when the admin reorders or removes a block, then the new order/removal is saved and reflected on reload.
 - Given a lesson, when the admin reorders lessons within the unit, then each lesson's `SequenceOrder` updates accordingly.
@@ -22,4 +23,4 @@ As an admin, I want to create and edit lessons within a unit and author their co
 ## Notes
 - Surface: **Next.js `admin-dashboard`** app, built on the P1-10 admin shell.
 - Depends on: P7-01 (subjects/units), P2-01 (`Lesson`), P1-10 (admin shell), P1-05 (Admin policy).
-- Content blocks are an additive child of `Lesson` in the `learning` module; multi-write block reordering uses an explicit transaction (no Unit of Work). Admin-only per SRS §3.
+- Content blocks are an additive child of `Lesson` in the `learning` module; multi-write block reordering uses an explicit transaction (no Unit of Work). Curriculum is now **bilingual parallel trees** — a lesson and its content inherit `Language` from the owning Subject (`SubjectCode` + `Language`, ar/en); language is set by tree placement, never edited on the lesson. Admin-only per SRS §3.

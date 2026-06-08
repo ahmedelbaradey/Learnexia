@@ -12,14 +12,15 @@
 As an admin, I want an immutable log of every admin action recording who did what, when, and the before/after state, so that all governance activity is traceable, accountable, and reviewable for compliance.
 
 ## Acceptance Criteria
-- Every admin action (moderation decisions, curriculum uploads, role/config changes) writes an audit entry capturing actor, action, target, timestamp, and before/after snapshot.
+- Every admin action (moderation decisions, curriculum uploads, role/config changes, **gamification overrides from P7-13** — league-tier override, badge/mission catalog edits, timed-event writes, streak-freeze grants — and a child's **learning-language change from P7-08**) writes an audit entry capturing actor, action, target, timestamp, and before/after snapshot.
 - The audit log is **append-only and immutable** — no edit or delete path exists in the API or UI.
 - A paginated log view is searchable and filterable by actor, action type, target, and date range.
 - Admins can export the filtered log (CSV/JSON) for compliance.
 - Only admins can read the log; non-admin → 403/redirect; the read UI is view-only.
-- Entries are written by **domain/integration events** emitted when admin actions occur (fed by all P7-xx actions), not by direct caller writes; the entry derives from `FullAuditedEntity`.
+- Entries are written by **domain/integration events** emitted when admin actions occur (fed by all P7-xx actions, including **P7-13 gamification overrides** and the **P7-08 learning-language change**), not by direct caller writes; the entry derives from `FullAuditedEntity`.
+- Given a learning-language change or a gamification override targeting a child, then the before/after snapshot records **only what accountability needs** (e.g. old/new `LearningLanguage`, league tier, granted badge id) and **does not leak child PII** (no progress dumps, no personal content beyond identifiers).
 
 ## Notes
 - Surface: **Next.js `admin-dashboard`** app, built on the P1-10 admin shell.
-- Depends on: P1-10 (admin shell), P1-05 (Admin policy). The audit log is written by all P7-xx admin actions (notably P7-09 review actions).
+- Depends on: P1-10 (admin shell), P1-05 (Admin policy). The audit log is written by all P7-xx admin actions (notably P7-09 review actions, **P7-13 gamification overrides**, and the **P7-08 learning-language change**).
 - For P7-12: the log is the system of record for admin governance; immutability is the core invariant. Before/after snapshots must avoid leaking sensitive child data beyond what is needed for accountability.

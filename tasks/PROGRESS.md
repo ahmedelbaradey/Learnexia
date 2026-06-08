@@ -18,6 +18,7 @@
 - **Wave 13 (BE):** P4-06 (daily/weekly missions � Phase 3 Gamification 5th story: AddMissionDefinitionStudentMissionProgressLog migration (MissionDefinitions catalog + StudentMissions per-period instance + MissionProgressLogs idempotency ledger) + XpReason.MissionCompleted=6 + MissionTargetType enum + MissionPeriodCalculator pure static UTC + ISO 8601 week math + StudentXpProfile.RecordMissionCompleted domain mutation raising MissionCompletedDomainEvent + StudentMission.ApplyProgress/MarkCompleted mutations + IncrementMissionProgressCommand (row-lock after probe, dual-layer idempotency, inline completion to avoid nested-tx) + 3 notification handlers (LessonCompletedMissionHandler/AnswerSubmittedMissionHandler/StreakAdvancedMissionHandler, each in own try/catch per ADR 0002 �3) + MissionSeeder idempotent atomic seed of 8 missions at startup + IStudentMissionsQuery cross-module seam with LAZY INSTANTIATION on dashboard read + DashboardDto.DailyMissions[] + WeeklyMission (replaces old DailyMission placeholder) + GET /api/Gamification/Missions/Me endpoint + MissionStatusDto/MissionTargetTypeDto/MissionTypeDto drift enums in Shared.Contracts + MissionRolloverJob Hangfire @ 5 0 * * * daily + 10 0 * * 1 weekly bulk ExecuteUpdateAsync; lead-approved 8 missions/lazy/PM-counts/daily-list+weekly-single + graph-nav 4th instance (AttachStudentMission); 19 unit tests + 23 integration tests + 62/62 P4-02/03/04/05 regression; security PASS with F1 comment + F2 narrowed catch + F3 DTO enums + F5 lock placement + reviewer F2-cleanup applied) � open as PR on feat/P4-06-missions
 
 ## Phase 1 — Foundation
+> **Per-task detail added 2026-06-07:** each P1 task file now carries a Status column (✅/🟡/🔲). Story-level cells below are unchanged. Open sub-task gaps inside otherwise-shipped stories: **P1-10-FE-6** (admin account-locked message) 🔲, **P1-11-FE-15/16** (sign-in lockout msg + Register CAPTCHA) 🔲, **P1-12-FE-*** Batch-2 wiring 🟡 + **FE-4** forgot/reset-password screens 🔲. Their backend deps (P1-12-BE, P1-13-BE-1/2/4) are merged, so all are unblocked.
 | Story | Title | Backend | Frontend |
 |---|---|:--:|:--:|
 | — | Monorepo, api-client & shared (foundation) | — | ✅ |
@@ -39,6 +40,7 @@
 | P1-13b | Backend hardening pass — BE-1 rate-limiting (PR #50); rest → P6-06 | ✅ | — |
 
 ## Phase 2 — Learning Core
+> **Per-task detail added 2026-06-07:** each P2 task file now carries a Status column (✅/🟡/🔲). Story-level cells below are unchanged. One open sub-task gap inside an otherwise-shipped story: **quiz Matching** is incomplete on both stacks — **P2-06-FE-2** 🟡 (UI stub) and **P2-06-BE-3** 🟡 (answer-shape TODO, unseeded). Note: P2-06's "assessment module" was deliberately folded into the **Learning** module per the no-new-module decision.
 | Story | Title | Backend | Frontend |
 |---|---|:--:|:--:|
 | P2-01 | Model the curriculum hierarchy | ✅ | — |
@@ -56,6 +58,7 @@
 
 ## Phase 3 — Gamification *(story IDs `P4-xx`)*
 > Backend XP/streak/hearts/badges/missions/leagues shipped. **Gamification FE is mostly not started** — only the P4-07 dashboard LeaguePreview flip is merged (🟡), and P4-08 motion/screens is unmerged WIP on `feat/P4-08-gamification-screens-motion`. Task tree under `tasks/Frontend/student-app/Phase-3-Gamification/`.
+> **Carry-over (Phase 1/2 gap closure scheduled into this wave):** `Backend/Phase-3-Gamification/CARRYOVER-P1-P2-gaps-BE.md` (quiz Matching type) + `Frontend/student-app/Phase-3-Gamification/CARRYOVER-P1-P2-gaps-FE.md` (Reports build, account-locked message, Register CAPTCHA, landing ar/RTL, Matching UI).
 | Story | Title | Backend | Frontend |
 |---|---|:--:|:--:|
 | P4-01 | Emit learning domain events | ✅ | — |
@@ -122,6 +125,7 @@
 | P7-10 | Platform analytics & KPI dashboard | 🔲 | 🔲 |
 | P7-11 | AI-safety & quality monitoring dashboard | 🔲 | 🔲 |
 | P7-12 | Admin action audit log | 🔲 | 🔲 |
+| P7-13 | Gamification admin overrides (tier / badge & mission catalog / timed-event write / streak-freeze) | 🔲 | 🔲 |
 
 ## Phase 8 — Localization
 > Learning language (medium of instruction) vs UI language; bilingual curriculum as parallel ar/en trees. Design: `docs/architecture/localization-architecture.md`.

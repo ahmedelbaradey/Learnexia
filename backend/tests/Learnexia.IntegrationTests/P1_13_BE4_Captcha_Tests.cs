@@ -820,4 +820,81 @@ public sealed class P1_13_BE4_Captcha_Tests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
             "invalid email must return 422 from ValidationBehavior regardless of CAPTCHA; body: {0}", bodyStr);
     }
+
+    // ---------------------------------------------------------------------------
+    // BE-TC-32: Register-Parent cannot inject a role (product override: no Student/Teacher self-register)
+    //
+    // The RegisterParentCommand has no Roles/Role/IsActive field; extra JSON fields are ignored by
+    // the model binder. The account is assigned only the server-side 'Parent' role, never
+    // Admin/Student/Teacher/SuperAdmin via the anonymous registration path.
+    // ---------------------------------------------------------------------------
+
+    [Fact(DisplayName = "BE-TC-32: Over-posting Roles/IsActive in Register-Parent body → ignored; account gets only 'Parent' role (product override: no Student/Teacher self-register)")]
+    public async Task BeTc32_RegisterParent_IgnoresRoleOverPost_OnlyParentRoleAssigned()
+    {
+        _factory.FakeVerifier.SetResult(true);
+
+        var email = UniqueEmail("tc32-role-inject");
+        const string password = "Str0ng@Pass";
+
+        // Attempt over-posting of Role / Roles / IsActive — these fields do not exist on
+        // RegisterParentCommand; model binding ignores extra JSON fields.
+        var body = new
+        {
+            Email = email,
+            Password = password,
+            AcceptedTerms = true,
+            CaptchaToken = "valid-token",
+            // Over-post attempts — must be ignored by the model binder
+            Role = "Admin",
+            Roles = new[] { "Admin", "SuperAdmin", "Student" },
+            IsActive = true
+        };
+
+        var (regResponse, regRoot, regBody) = await PostRegisterAsync(body);
+
+        // Registration must succeed (extra fields ignored)
+        regResponse.StatusCode.Should().Be(HttpStatusCode.OK,
+            "BE-TC-32: Register-Parent with extra role fields must succeed (extra fields are ignored); body: {0}", regBody);
+
+        TryProp(regRoot, "successed", out var regSucceeded).Should().BeTrue("body: {0}", regBody);
+        regSucceeded.GetBoolean().Should().BeTrue(
+            "BE-TC-32: Successed must be true on successful registration; body: {0}", regBody);
+
+        TryProp(regRoot, "data", out var regData).Should().BeTrue("body: {0}", regBody);
+        TryProp(regData, "accessToken", out var tokenProp).Should().BeTrue("body: {0}", regBody);
+        var accessToken = tokenProp.GetString()!;
+        accessToken.Should().NotBeNullOrWhiteSpace("BE-TC-32: accessToken must be present; body: {0}", regBody);
+
+        // Call GET /Me to inspect the roles actually assigned
+        var (meResponse, meRoot, meBody) = await GetMeAsync(accessToken);
+
+        meResponse.StatusCode.Should().Be(HttpStatusCode.OK,
+            "BE-TC-32: GET /Me must return 200 for the just-registered account; body: {0}", meBody);
+
+        TryProp(meRoot, "data", out var meData).Should().BeTrue("body: {0}", meBody);
+        TryProp(meData, "roles", out var rolesProp).Should().BeTrue(
+            "BE-TC-32: Me.data must contain 'roles'; body: {0}", meBody);
+
+        var roles = rolesProp.EnumerateArray()
+            .Select(r => r.GetString())
+            .ToList();
+
+        // Must contain exactly Parent (server-assigned) — no injected roles
+        roles.Should().Contain(r => r != null && r.Equals("Parent", StringComparison.OrdinalIgnoreCase),
+            "BE-TC-32: account must have the 'Parent' role (server-assigned); roles: [{0}]; body: {1}",
+            string.Join(", ", roles), meBody);
+
+        roles.Should().NotContain(r => r != null && r.Equals("Admin", StringComparison.OrdinalIgnoreCase),
+            "BE-TC-32: over-posted 'Admin' role must be ignored; roles: [{0}]; body: {1}",
+            string.Join(", ", roles), meBody);
+
+        roles.Should().NotContain(r => r != null && r.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase),
+            "BE-TC-32: over-posted 'SuperAdmin' role must be ignored; roles: [{0}]; body: {1}",
+            string.Join(", ", roles), meBody);
+
+        roles.Should().NotContain(r => r != null && r.Equals("Student", StringComparison.OrdinalIgnoreCase),
+            "BE-TC-32: over-posted 'Student' role must be ignored; roles: [{0}]; body: {1}",
+            string.Join(", ", roles), meBody);
+    }
 }

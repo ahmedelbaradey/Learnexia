@@ -518,27 +518,44 @@ public sealed class P1_02_RefreshAndSignOut_Tests : IAsyncLifetime
         errors.EnumerateArray().ToList().Should().NotBeEmpty("body: {0}", body);
     }
 
-    [Fact(DisplayName = "AC-7c BothMissing_Returns422: both AccessToken and RefreshToken empty → 422 Errors[]")]
+    [Fact(DisplayName = "AC-7c / BE-TC-24 BothMissing_Returns422: both AccessToken and RefreshToken empty → 422, one error per field")]
     public async Task AC7c_BothMissing_Returns422()
     {
         var (response, root, body) = await PostJsonAsync("/api/Users/Authentication/Refresh-Token",
             new { AccessToken = "", RefreshToken = "" });
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
-            "AC-7: both fields empty must return 422; body: {0}", body);
+            "BE-TC-24: both fields empty must return 422; body: {0}", body);
 
         TryProp(root, "errors", out var errors).Should().BeTrue("body: {0}", body);
         var errArray = errors.EnumerateArray().ToList();
-        errArray.Should().NotBeEmpty("AC-7: Errors[] must contain at least one item; body: {0}", body);
+        errArray.Should().NotBeEmpty("BE-TC-24: Errors[] must contain at least one item; body: {0}", body);
 
         // Each error item must have PropertyName and ErrorMessage.
         foreach (var err in errArray)
         {
             TryProp(err, "propertyName", out _).Should().BeTrue(
-                "each Errors[] item must have 'propertyName'; body: {0}", body);
+                "BE-TC-24: each Errors[] item must have 'propertyName'; body: {0}", body);
             TryProp(err, "errorMessage", out _).Should().BeTrue(
-                "each Errors[] item must have 'errorMessage'; body: {0}", body);
+                "BE-TC-24: each Errors[] item must have 'errorMessage'; body: {0}", body);
         }
+
+        // BE-TC-24 specific: errors must reference BOTH AccessToken and RefreshToken fields.
+        var propertyNames = errArray
+            .Select(e =>
+            {
+                TryProp(e, "propertyName", out var pn);
+                return pn.GetString() ?? string.Empty;
+            })
+            .ToList();
+
+        propertyNames.Should().Contain(p =>
+            string.Equals(p, "AccessToken", StringComparison.OrdinalIgnoreCase),
+            "BE-TC-24: Errors[] must include an entry for 'AccessToken' when it is empty; body: {0}", body);
+
+        propertyNames.Should().Contain(p =>
+            string.Equals(p, "RefreshToken", StringComparison.OrdinalIgnoreCase),
+            "BE-TC-24: Errors[] must include an entry for 'RefreshToken' when it is empty; body: {0}", body);
     }
 
     // =========================================================================
@@ -614,6 +631,283 @@ public sealed class P1_02_RefreshAndSignOut_Tests : IAsyncLifetime
         TryProp(data, "accessToken", out var at).Should().BeTrue("body: {0}", body);
         at.GetString().Should().NotBeNullOrWhiteSpace(
             "access token must be non-empty on regression sign-in; body: {0}", body);
+    }
+
+    // =========================================================================
+    // BE-TC-06 — New access token from refresh is a readable, valid JWT
+    // =========================================================================
+
+    [Fact(DisplayName = "BE-TC-06 NewAccessToken_IsReadableJwt: refreshed access token is a valid JWT with same identity")]
+    public async Task BeTc06_NewAccessToken_IsReadableJwt()
+    {
+        // Precondition: seam guard — BE-TC-05 logic: expired token must reach 200.
+        var (accessToken, refreshTokenStr) = await SignInSuperAdminAsync();
+        var expiredAccessToken = CreateExpiredAccessToken(accessToken);
+
+        var (refreshResponse, refreshRoot, refreshBody) = await PostJsonAsync("/api/Users/Authentication/Refresh-Token",
+            new { AccessToken = expiredAccessToken, RefreshToken = refreshTokenStr });
+
+        // Seam guard: if this fails, the expired-JWT forge is broken — dependent cases below are unreliable.
+        refreshResponse.StatusCode.Should().Be(HttpStatusCode.OK,
+            "BE-TC-06 seam guard (BE-TC-05): expired-token forge must reach 200; if 401 the test signing key drifted. body: {0}", refreshBody);
+
+        TryProp(refreshRoot, "data", out var data).Should().BeTrue("body: {0}", refreshBody);
+        TryProp(data, "accessToken", out var newAtProp).Should().BeTrue("body: {0}", refreshBody);
+
+        var newAccessToken = newAtProp.GetString();
+        newAccessToken.Should().NotBeNullOrWhiteSpace("BE-TC-06: new access token must be non-empty; body: {0}", refreshBody);
+
+        // New access token must be a readable JWT (parseable by JwtSecurityTokenHandler).
+        var handler = new JwtSecurityTokenHandler();
+        handler.CanReadToken(newAccessToken).Should().BeTrue(
+            "BE-TC-06: new access token from refresh must be a valid readable JWT; token: {0}", newAccessToken);
+
+        // Decode both tokens and verify the identity claim (Id) is the same user.
+        var originalJwt = handler.ReadJwtToken(accessToken);
+        var newJwt = handler.ReadJwtToken(newAccessToken);
+
+        var originalUserId = originalJwt.Claims.FirstOrDefault(c => c.Type == "Id")?.Value;
+        var newUserId = newJwt.Claims.FirstOrDefault(c => c.Type == "Id")?.Value;
+
+        originalUserId.Should().NotBeNullOrWhiteSpace("original token must carry an 'Id' claim");
+        newUserId.Should().Be(originalUserId,
+            "BE-TC-06: refreshed access token must carry the same user Id claim as the original; body: {0}", refreshBody);
+
+        TryProp(refreshRoot, "successed", out var successed).Should().BeTrue("body: {0}", refreshBody);
+        successed.GetBoolean().Should().BeTrue("BE-TC-06: successed must be true; body: {0}", refreshBody);
+    }
+
+    // =========================================================================
+    // BE-TC-07 — Refresh preserves identity claims (same user)
+    // =========================================================================
+
+    [Fact(DisplayName = "BE-TC-07 Refresh_PreservesIdentityClaims: new token carries same Id and NameIdentifier")]
+    public async Task BeTc07_Refresh_PreservesIdentityClaims()
+    {
+        var (accessToken, refreshTokenStr) = await RegisterAndGetTokensAsync("idclaims");
+        var expiredAccessToken = CreateExpiredAccessToken(accessToken);
+
+        var (refreshResponse, refreshRoot, refreshBody) = await PostJsonAsync("/api/Users/Authentication/Refresh-Token",
+            new { AccessToken = expiredAccessToken, RefreshToken = refreshTokenStr });
+
+        // Seam guard.
+        refreshResponse.StatusCode.Should().Be(HttpStatusCode.OK,
+            "BE-TC-07 seam guard: must reach 200 to test claim preservation; body: {0}", refreshBody);
+
+        TryProp(refreshRoot, "data", out var data).Should().BeTrue("body: {0}", refreshBody);
+        TryProp(data, "accessToken", out var newAtProp).Should().BeTrue("body: {0}", refreshBody);
+
+        var newAccessToken = newAtProp.GetString()!;
+        var handler = new JwtSecurityTokenHandler();
+
+        var originalJwt = handler.ReadJwtToken(accessToken);
+        var newJwt = handler.ReadJwtToken(newAccessToken);
+
+        // Id claim: uniquely identifies the DB user record.
+        var originalId = originalJwt.Claims.FirstOrDefault(c => c.Type == "Id")?.Value;
+        var newId = newJwt.Claims.FirstOrDefault(c => c.Type == "Id")?.Value;
+        originalId.Should().NotBeNullOrWhiteSpace("original token must carry an 'Id' claim");
+        newId.Should().Be(originalId,
+            "BE-TC-07: refreshed token must carry the same user 'Id' claim; body: {0}", refreshBody);
+
+        // NameIdentifier: username identity claim.
+        var originalNameId = originalJwt.Claims.FirstOrDefault(c =>
+            c.Type == System.Security.Claims.ClaimTypes.NameIdentifier ||
+            c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
+        var newNameId = newJwt.Claims.FirstOrDefault(c =>
+            c.Type == System.Security.Claims.ClaimTypes.NameIdentifier ||
+            c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
+
+        originalNameId.Should().NotBeNullOrWhiteSpace("original token must carry a NameIdentifier claim");
+        newNameId.Should().Be(originalNameId,
+            "BE-TC-07: refreshed token must carry the same NameIdentifier claim; body: {0}", refreshBody);
+    }
+
+    // =========================================================================
+    // BE-TC-10 — No stored token (signed out) → 401 RefreshTokenNotFound
+    // =========================================================================
+
+    [Fact(DisplayName = "BE-TC-10 NoStoredToken_Returns401: after sign-out, refresh token → 401 (RefreshTokenNotFound)")]
+    public async Task BeTc10_NoStoredToken_Returns401()
+    {
+        // Step 1: register a fresh parent and capture tokens.
+        var (accessToken, refreshTokenStr) = await RegisterAndGetTokensAsync("nostoredtoken");
+
+        // Step 2: sign out (clears the stored cache entry).
+        var (signOutResponse, _, signOutBody) = await PostJsonWithBearerAsync(
+            "/api/Users/Authentication/Sign-Out", new { }, accessToken);
+        signOutResponse.StatusCode.Should().Be(HttpStatusCode.OK,
+            "BE-TC-10 setup: Sign-Out must succeed to clear the stored entry; body: {0}", signOutBody);
+
+        // Step 3: forge an expired access token and attempt to refresh.
+        var expiredAccessToken = CreateExpiredAccessToken(accessToken);
+
+        var (refreshResponse, refreshRoot, refreshBody) = await PostJsonAsync("/api/Users/Authentication/Refresh-Token",
+            new { AccessToken = expiredAccessToken, RefreshToken = refreshTokenStr });
+
+        // Must be 401 (RefreshTokenNotFound path) — not 500, not 200.
+        refreshResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized,
+            "BE-TC-10: refreshing after sign-out (no stored entry) must return 401; body: {0}", refreshBody);
+
+        ((int)refreshResponse.StatusCode).Should().NotBe(500,
+            "BE-TC-10: must never be 500; body: {0}", refreshBody);
+
+        TryProp(refreshRoot, "successed", out var successed).Should().BeTrue("body: {0}", refreshBody);
+        successed.GetBoolean().Should().BeFalse(
+            "BE-TC-10: successed must be false when no stored token exists; body: {0}", refreshBody);
+    }
+
+    // =========================================================================
+    // BE-TC-15 — Revoked (signed-out) refresh token → 401 (explicit behavioural contract)
+    // =========================================================================
+
+    [Fact(DisplayName = "BE-TC-15 RevokedRefreshToken_Returns401: signed-out token cannot be re-exchanged")]
+    public async Task BeTc15_RevokedRefreshToken_Returns401()
+    {
+        // Step 1: register a fresh parent; capture token pair.
+        var (accessToken, refreshTokenStr) = await RegisterAndGetTokensAsync("revoked");
+
+        // Step 2: sign out → revokes the stored refresh token.
+        var (signOutResponse, _, signOutBody) = await PostJsonWithBearerAsync(
+            "/api/Users/Authentication/Sign-Out", new { }, accessToken);
+        signOutResponse.StatusCode.Should().Be(HttpStatusCode.OK,
+            "BE-TC-15: Sign-Out must return 200 before revocation test; body: {0}", signOutBody);
+
+        // Step 3: forge expired access token; attempt refresh with the pre-sign-out refresh token.
+        var expiredAccessToken = CreateExpiredAccessToken(accessToken);
+
+        var (refreshResponse, refreshRoot, refreshBody) = await PostJsonAsync("/api/Users/Authentication/Refresh-Token",
+            new { AccessToken = expiredAccessToken, RefreshToken = refreshTokenStr });
+
+        // The revoked (deleted) refresh token must be rejected with 401.
+        refreshResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized,
+            "BE-TC-15: revoked (sign-out deleted) refresh token must not be re-exchangeable; must 401; body: {0}", refreshBody);
+
+        TryProp(refreshRoot, "successed", out var successed).Should().BeTrue("body: {0}", refreshBody);
+        successed.GetBoolean().Should().BeFalse(
+            "BE-TC-15: successed must be false when refresh token was revoked by sign-out; body: {0}", refreshBody);
+    }
+
+    // =========================================================================
+    // BE-TC-17 — Rotation: new refresh token carries a 7-day expireAt
+    // =========================================================================
+
+    [Fact(DisplayName = "BE-TC-17 Rotation_NewRefreshToken_Carries7DayExpiry: rotated token has fresh 7-day expireAt")]
+    public async Task BeTc17_Rotation_NewRefreshToken_Carries7DayExpiry()
+    {
+        var (accessToken, refreshTokenStr) = await SignInSuperAdminAsync();
+        var expiredAccessToken = CreateExpiredAccessToken(accessToken);
+
+        var before = DateTime.UtcNow;
+
+        var (refreshResponse, refreshRoot, refreshBody) = await PostJsonAsync("/api/Users/Authentication/Refresh-Token",
+            new { AccessToken = expiredAccessToken, RefreshToken = refreshTokenStr });
+
+        var after = DateTime.UtcNow;
+
+        // Seam guard.
+        refreshResponse.StatusCode.Should().Be(HttpStatusCode.OK,
+            "BE-TC-17 seam guard: expired-token forge must reach 200; body: {0}", refreshBody);
+
+        TryProp(refreshRoot, "data", out var data).Should().BeTrue("body: {0}", refreshBody);
+        TryProp(data, "refreshToken", out var newRt).Should().BeTrue("body: {0}", refreshBody);
+        TryProp(newRt, "expireAt", out var expireAtProp).Should().BeTrue(
+            "BE-TC-17: rotated refreshToken must carry 'expireAt'; body: {0}", refreshBody);
+
+        var expireAt = expireAtProp.GetDateTime();
+        var midpoint = before + (after - before) / 2;
+        var expectedExpiry = midpoint.AddDays(7);
+
+        // Rotated token must carry a FRESH 7-day window (not a residual from the original issuance).
+        var diffSeconds = Math.Abs((expireAt - expectedExpiry).TotalSeconds);
+        diffSeconds.Should().BeLessThan(60,
+            "BE-TC-17: rotated refresh token expireAt must be ≈ UtcNow + 7 days (±60 s); " +
+            "actual={0}, expected≈{1}; body: {2}", expireAt.ToString("o"), expectedExpiry.ToString("o"), refreshBody);
+    }
+
+    // =========================================================================
+    // BE-TC-26 — Sign-Out with malformed/garbage Bearer → 401
+    // =========================================================================
+
+    [Fact(DisplayName = "BE-TC-26 SignOut_MalformedBearer_Returns401: Sign-Out with garbage JWT → 401")]
+    public async Task BeTc26_SignOut_MalformedBearer_Returns401()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/Users/Authentication/Sign-Out");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "not-a-real-jwt-this-is-garbage");
+        request.Content = JsonContent.Create(new { });
+
+        var response = await _client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized,
+            "BE-TC-26: Sign-Out with an unparseable/invalid Bearer token must return 401; " +
+            "the JWT middleware must reject it before reaching the handler, never 500");
+
+        ((int)response.StatusCode).Should().NotBe(500,
+            "BE-TC-26: must never be 500 for a malformed Bearer token");
+    }
+
+    // =========================================================================
+    // BE-TC-27 — Sign-Out is idempotent (second sign-out with same token no 500)
+    // =========================================================================
+
+    [Fact(DisplayName = "BE-TC-27 SignOut_Idempotent_SecondCallNoServerError: double sign-out never 500")]
+    public async Task BeTc27_SignOut_Idempotent_SecondCallNoServerError()
+    {
+        // Register a parent so the access token is fresh and within its 30-min TTL.
+        var (accessToken, _) = await RegisterAndGetTokensAsync("idempotent");
+
+        // First sign-out: must succeed.
+        var (firstResponse, _, firstBody) = await PostJsonWithBearerAsync(
+            "/api/Users/Authentication/Sign-Out", new { }, accessToken);
+        firstResponse.StatusCode.Should().Be(HttpStatusCode.OK,
+            "BE-TC-27: first Sign-Out must succeed; body: {0}", firstBody);
+
+        // Second sign-out with the SAME (still within 30-min TTL) access token.
+        // The access token is still valid (Live-Token Window per Lead Decision 5).
+        // RemoveAsync on an absent cache key must not throw → must not 500.
+        var (secondResponse, _, secondBody) = await PostJsonWithBearerAsync(
+            "/api/Users/Authentication/Sign-Out", new { }, accessToken);
+
+        // Accept either 200 (idempotent success) or 401 (if the framework rejects the already-used
+        // access token), but NEVER 500.
+        ((int)secondResponse.StatusCode).Should().NotBe(500,
+            "BE-TC-27: second Sign-Out must never return 500; RemoveAsync on absent key must be safe; body: {0}", secondBody);
+
+        var acceptableStatuses = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized };
+        acceptableStatuses.Should().Contain(secondResponse.StatusCode,
+            "BE-TC-27: second Sign-Out must be either 200 (idempotent) or 401 (token rejected), never 500; body: {0}", secondBody);
+    }
+
+    // =========================================================================
+    // BE-TC-03 — Refresh token persistence round-trip through cache
+    // (Explicit persistence test — the happy-path canary BE-TC-05 proves the same
+    //  thing implicitly, but this test isolates the persistence contract.)
+    // =========================================================================
+
+    [Fact(DisplayName = "BE-TC-03 RefreshToken_PersistenceRoundTrip: issued token is retrievable at /Refresh-Token")]
+    public async Task BeTc03_RefreshToken_PersistenceRoundTrip()
+    {
+        // Step 1: register a parent → capture access + refresh token.
+        var (accessToken, refreshTokenStr) = await RegisterAndGetTokensAsync("persistence");
+
+        refreshTokenStr.Should().NotBeNullOrWhiteSpace("prerequisite: Register-Parent must return a refresh token");
+        accessToken.Should().NotBeNullOrWhiteSpace("prerequisite: Register-Parent must return an access token");
+
+        // Step 2: forge an expired access token (same claims, past exp).
+        var expiredAccessToken = CreateExpiredAccessToken(accessToken);
+
+        // Step 3: call Refresh-Token with the original refresh token — if the token was actually
+        // persisted to the cache during registration, this must succeed (200). If it was only
+        // returned in the body and never stored, it fails with RefreshTokenNotFound (401).
+        var (refreshResponse, refreshRoot, refreshBody) = await PostJsonAsync("/api/Users/Authentication/Refresh-Token",
+            new { AccessToken = expiredAccessToken, RefreshToken = refreshTokenStr });
+
+        refreshResponse.StatusCode.Should().Be(HttpStatusCode.OK,
+            "BE-TC-03: the refresh token issued at Register-Parent must be persisted in the cache; " +
+            "if this 401s, the token was returned in the body but never stored; body: {0}", refreshBody);
+
+        TryProp(refreshRoot, "successed", out var successed).Should().BeTrue("body: {0}", refreshBody);
+        successed.GetBoolean().Should().BeTrue("BE-TC-03: successed must be true on persistence round-trip; body: {0}", refreshBody);
     }
 
     // =========================================================================

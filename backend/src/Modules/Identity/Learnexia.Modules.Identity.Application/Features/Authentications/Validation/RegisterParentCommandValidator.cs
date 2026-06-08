@@ -29,6 +29,7 @@ public class RegisterParentCommandValidator : AbstractValidator<RegisterParentCo
     {
         RuleFor(x => x.Email)
             .NotEmpty().WithMessage(_localizer[SharedResourcesKey.ProfileRequiredField])
+            .MaximumLength(254).WithMessage(_localizer[SharedResourcesKey.ProfileEmailTooLong])
             .EmailAddress().WithMessage(_localizer[SharedResourcesKey.ProfileInvalidEmailFormat])
             .MustAsync(BeUniqueEmail).WithMessage(_localizer[SharedResourcesKey.ProfileDuplicateEmail]);
 

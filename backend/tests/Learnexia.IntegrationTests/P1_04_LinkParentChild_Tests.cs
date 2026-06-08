@@ -4,6 +4,10 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
+using Learnexia.Modules.Identity.Infrastructure.Persistence;
+using Learnexia.Modules.Parent.Domain.Entities;
+using Learnexia.Modules.Parent.Infrastructure.Persistence;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Learnexia.IntegrationTests;
@@ -59,12 +63,16 @@ public sealed class P1_04_LinkParentChild_Tests : IAsyncLifetime
     // ---------------------------------------------------------------------------
     private const string LinkChildUrl = "api/Parent/Link-Child";
     private const string MyChildrenUrl = "api/Parent/My-Children";
+    private const string UnlinkChildUrl = "api/Parent/Unlink-Child";
+    private const string AddChildUrl = "api/Parent/Add-Child";
+    private const string MeUrl = "api/Users/Me";
     private const string RegisterParentUrl = "api/Users/Authentication/Register-Parent";
     private const string SignInUrl = "api/Users/Authentication/Sign-In";
     private const string AddUserUrl = "api/Users/UserManagement/AddUser";
     private const string DefaultPassword = "Str0ng@Pass";
     private const string DefaultAdminUserName = "superadmin";
     private const string DefaultAdminPassword = "123Pa$$word!";
+    private const string ValidChildPassword = "Child@Pass1";
 
     public P1_04_LinkParentChild_Tests(LearnexiaWebAppFactory factory)
     {
@@ -189,6 +197,40 @@ public sealed class P1_04_LinkParentChild_Tests : IAsyncLifetime
     private Task<(HttpResponseMessage Response, JsonElement Root, string Body)>
         MyChildrenAsync(string parentToken)
         => SendAsync(_client, HttpMethod.Get, MyChildrenUrl, null, parentToken);
+
+    /// <summary>
+    /// Calls DELETE Unlink-Child and returns the raw (response, root, body) tuple.
+    /// </summary>
+    private Task<(HttpResponseMessage Response, JsonElement Root, string Body)>
+        UnlinkChildAsync(string parentToken, int childId)
+        => SendAsync(_client, HttpMethod.Delete, UnlinkChildUrl, new { ChildId = childId }, parentToken);
+
+    /// <summary>
+    /// Adds a child via Add-Child (parent-creates-student), returns (childId, childEmail).
+    /// The auto-link creates a ParentStudent row for the caller.
+    /// </summary>
+    private async Task<(int ChildId, string ChildEmail)> AddChildAndGetIdAsync(string parentToken)
+    {
+        var email = UniqueEmail("child");
+        var (resp, root, body) = await SendAsync(_client, HttpMethod.Post, AddChildUrl,
+            new
+            {
+                FullName = "Test Child",
+                Email = email,
+                Password = ValidChildPassword,
+                Grade = 3,
+                Language = "ar",
+                Country = "EG",
+                LearningLanguage = "ar"
+            },
+            parentToken);
+        var statusInt = (int)resp.StatusCode;
+        statusInt.Should().BeOneOf(new[] { 200, 201 },
+            $"Add-Child must succeed; body: {body}");
+        TryProp(root, "data", out var data).Should().BeTrue($"body: {body}");
+        TryProp(data, "id", out var idProp).Should().BeTrue($"body: {body}");
+        return (idProp.GetInt32(), email);
+    }
 
     // ===========================================================================
     // AC-2 Happy path — link an existing student
@@ -754,5 +796,648 @@ public sealed class P1_04_LinkParentChild_Tests : IAsyncLifetime
             "envelope must have 'data'; body: {0}", body);
         data.ValueKind.Should().NotBe(JsonValueKind.Null,
             "data must not be null on success; body: {0}", body);
+    }
+
+    // ===========================================================================
+    // BE-TC-03 — Linked child summary fields populated (AC-2 contract for FE)
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-03: Link-Child response data contains id, fullName, email, learningLanguage, grade, language, country")]
+    public async Task BeTc03_LinkChildResponse_HasAllSummaryFields()
+    {
+        var adminToken = await SignInAndGetTokenAsync(DefaultAdminUserName, DefaultAdminPassword);
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        var childEmail = await CreateStudentViaAdminAsync(adminToken);
+
+        var (resp, root, body) = await LinkChildAsync(parentToken, childEmail);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK, "link must succeed; body: {0}", body);
+        TryProp(root, "data", out var d).Should().BeTrue("body: {0}", body);
+
+        // Required fields
+        TryProp(d, "id", out var idProp).Should().BeTrue("data.id must be present; body: {0}", body);
+        idProp.GetInt32().Should().BeGreaterThan(0, "body: {0}", body);
+
+        TryProp(d, "fullName", out var fullNameProp).Should().BeTrue("data.fullName must be present; body: {0}", body);
+        fullNameProp.GetString().Should().NotBeNullOrWhiteSpace("fullName must not be blank; body: {0}", body);
+
+        TryProp(d, "email", out var emailProp).Should().BeTrue("data.email must be present; body: {0}", body);
+        emailProp.GetString().Should().Be(childEmail, "body: {0}", body);
+
+        TryProp(d, "learningLanguage", out _).Should().BeTrue("data.learningLanguage must be present; body: {0}", body);
+
+        // grade may be null (student created via admin with no grade)
+        TryProp(d, "grade", out _).Should().BeTrue("data.grade key must exist (null or int); body: {0}", body);
+
+        TryProp(d, "language", out var langProp).Should().BeTrue("data.language must be present; body: {0}", body);
+        var langVal = langProp.GetString();
+        new[] { "ar", "en" }.Should().Contain(langVal,
+            "language must be short code 'ar' or 'en', never 'en-US'/'ar-EG'; body: {0}", body);
+
+        TryProp(d, "country", out _).Should().BeTrue("data.country must be present; body: {0}", body);
+    }
+
+    // ===========================================================================
+    // BE-TC-08 — Anti-enumeration: all four rejections share status + message
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-08: All four Link-Child rejections return 400 + identical generic message (anti-enumeration)")]
+    public async Task BeTc08_AllFourRejections_Return400_SameMessage()
+    {
+        var adminToken = await SignInAndGetTokenAsync(DefaultAdminUserName, DefaultAdminPassword);
+        var parentAToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parentA"));
+        var parentBToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parentB"));
+        var parentBEmail = UniqueEmail("parentB_self");
+        var parentBSelfToken = await RegisterParentAndGetTokenAsync(parentBEmail);
+
+        // Create a student and link it to parent A so parent B cannot claim it
+        var ownedChildEmail = await CreateStudentViaAdminAsync(adminToken);
+        var (linkResp, _, linkBody) = await LinkChildAsync(parentAToken, ownedChildEmail);
+        linkResp.StatusCode.Should().Be(HttpStatusCode.OK, "setup link must succeed; body: {0}", linkBody);
+
+        // 1 — ghost email (non-existent)
+        var (r1, root1, b1) = await LinkChildAsync(parentBToken, UniqueEmail("ghost"));
+        r1.StatusCode.Should().Be(HttpStatusCode.BadRequest, "ghost email must return 400; body: {0}", b1);
+        TryProp(root1, "message", out var msg1).Should().BeTrue("body: {0}", b1);
+
+        // 2 — admin email (non-student)
+        var (r2, root2, b2) = await LinkChildAsync(parentBToken, "superadmin@gmail.com");
+        r2.StatusCode.Should().Be(HttpStatusCode.BadRequest, "admin email must return 400; body: {0}", b2);
+        TryProp(root2, "message", out var msg2).Should().BeTrue("body: {0}", b2);
+
+        // 3 — self-link
+        var (r3, root3, b3) = await LinkChildAsync(parentBSelfToken, parentBEmail);
+        r3.StatusCode.Should().Be(HttpStatusCode.BadRequest, "self-link must return 400; body: {0}", b3);
+        TryProp(root3, "message", out var msg3).Should().BeTrue("body: {0}", b3);
+
+        // 4 — cross-family (student already linked to parent A)
+        var (r4, root4, b4) = await LinkChildAsync(parentBToken, ownedChildEmail);
+        r4.StatusCode.Should().Be(HttpStatusCode.BadRequest, "cross-family must return 400; body: {0}", b4);
+        TryProp(root4, "message", out var msg4).Should().BeTrue("body: {0}", b4);
+
+        // All four must have the same HTTP status (400) — already asserted above.
+        // All four messages must be identical.
+        var messages = new[] { msg1.GetString(), msg2.GetString(), msg3.GetString(), msg4.GetString() };
+        messages.Distinct().Should().HaveCount(1,
+            "all four rejections must return the SAME generic message; messages: {0}",
+            string.Join(" | ", messages));
+
+        // No discriminating phrases must appear in any body
+        foreach (var b in new[] { b1, b2, b3, b4 })
+        {
+            b.Should().NotContainEquivalentOf("not found", "body must not say 'not found'; body: {0}", b);
+            b.Should().NotContainEquivalentOf("already linked", "body must not say 'already linked'; body: {0}", b);
+            b.Should().NotContainEquivalentOf("does not exist", "body must not say 'does not exist'; body: {0}", b);
+        }
+    }
+
+    // ===========================================================================
+    // BE-TC-15 — My-Children does not leak other-family children (AC-3)
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-15: My-Children does not leak other-family children — each parent sees only their own")]
+    public async Task BeTc15_MyChildren_NoLeakBetweenFamilies()
+    {
+        var adminToken = await SignInAndGetTokenAsync(DefaultAdminUserName, DefaultAdminPassword);
+
+        // Parent A links student S_A; Parent B links student S_B
+        var parentAToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parentA"));
+        var parentBToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parentB"));
+        var sAEmail = await CreateStudentViaAdminAsync(adminToken);
+        var sBEmail = await CreateStudentViaAdminAsync(adminToken);
+
+        var (rA, _, bA) = await LinkChildAsync(parentAToken, sAEmail);
+        rA.StatusCode.Should().Be(HttpStatusCode.OK, "parent A links S_A; body: {0}", bA);
+        var (rB, _, bB) = await LinkChildAsync(parentBToken, sBEmail);
+        rB.StatusCode.Should().Be(HttpStatusCode.OK, "parent B links S_B; body: {0}", bB);
+
+        // Parent A's list must contain only S_A, never S_B
+        var (respA, rootA, bodyA) = await MyChildrenAsync(parentAToken);
+        respA.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", bodyA);
+        TryProp(rootA, "data", out var dataA).Should().BeTrue("body: {0}", bodyA);
+        var listA = dataA.EnumerateArray().ToList();
+        listA.Should().HaveCount(1, "parent A must see exactly 1 child; body: {0}", bodyA);
+        TryProp(listA[0], "email", out var emailA).Should().BeTrue("body: {0}", bodyA);
+        emailA.GetString().Should().Be(sAEmail, "parent A must see S_A; body: {0}", bodyA);
+
+        // Parent B's list must contain only S_B, never S_A
+        var (respB, rootB, bodyB) = await MyChildrenAsync(parentBToken);
+        respB.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", bodyB);
+        TryProp(rootB, "data", out var dataB).Should().BeTrue("body: {0}", bodyB);
+        var listB = dataB.EnumerateArray().ToList();
+        listB.Should().HaveCount(1, "parent B must see exactly 1 child; body: {0}", bodyB);
+        TryProp(listB[0], "email", out var emailB).Should().BeTrue("body: {0}", bodyB);
+        emailB.GetString().Should().Be(sBEmail, "parent B must see S_B; body: {0}", bodyB);
+    }
+
+    // ===========================================================================
+    // BE-TC-16 — Child linked by two parents (M:N child side) — SCHEMA ONLY
+    // ===========================================================================
+    // NOTE: No product HTTP path exists for a second parent to claim a child via Link-Child
+    // (the cross-family guard blocks it once any parent is linked). The only sanctioned
+    // two-parent path is Add-Child (creating the child sets CreatedByParentId to that parent).
+    // This test validates the schema SUPPORTS M:N by seeding a second row directly.
+    [Fact(DisplayName = "BE-TC-16: ParentStudent schema supports M:N — two parents can share one child (schema seed)")]
+    public async Task BeTc16_Schema_SupportsManyToMany_TwoParentsOneChild()
+    {
+        var parentAToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parentA"));
+
+        // Parent A creates a child (auto-link creates first row)
+        var (childId, _) = await AddChildAndGetIdAsync(parentAToken);
+
+        // Seed a second parent link directly (no HTTP path exists for cross-family self-claim)
+        const int seededParentBId = 888_888;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ParentDbContext>();
+            db.Set<ParentStudent>().Add(new ParentStudent
+            {
+                ParentId = seededParentBId,
+                StudentId = childId,
+                CreatedAt = DateTime.UtcNow,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        // Verify via DB: two rows for the same childId (composite PK allows it)
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ParentDbContext>();
+            var rows = db.Set<ParentStudent>().Where(ps => ps.StudentId == childId).ToList();
+            rows.Should().HaveCountGreaterOrEqualTo(2,
+                "schema must hold 2 ParentStudent rows for the same child (M:N composite PK allows it)");
+        }
+
+        // Parent A still sees the child via My-Children (their row is intact)
+        var (listResp, listRoot, listBody) = await MyChildrenAsync(parentAToken);
+        listResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", listBody);
+        TryProp(listRoot, "data", out var listData).Should().BeTrue("body: {0}", listBody);
+        listData.GetArrayLength().Should().BeGreaterOrEqualTo(1,
+            "parent A must still see the child; body: {0}", listBody);
+    }
+
+    // ===========================================================================
+    // BE-TC-17 — My-Children returns exactly the caller's children, not more (AC-3, AC-4)
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-17: My-Children returns exactly the caller's 2 children; parent Q's child is absent")]
+    public async Task BeTc17_MyChildren_ReturnsExactlyCallerChildren_NotOthers()
+    {
+        var adminToken = await SignInAndGetTokenAsync(DefaultAdminUserName, DefaultAdminPassword);
+        var parentPToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parentP"));
+        var parentQToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parentQ"));
+
+        var s1Email = await CreateStudentViaAdminAsync(adminToken);
+        var s2Email = await CreateStudentViaAdminAsync(adminToken);
+        var s3Email = await CreateStudentViaAdminAsync(adminToken);
+
+        // P links S1 and S2; Q links S3
+        var (r1, _, b1) = await LinkChildAsync(parentPToken, s1Email);
+        r1.StatusCode.Should().Be(HttpStatusCode.OK, "P links S1; body: {0}", b1);
+        var (r2, _, b2) = await LinkChildAsync(parentPToken, s2Email);
+        r2.StatusCode.Should().Be(HttpStatusCode.OK, "P links S2; body: {0}", b2);
+        var (r3, _, b3) = await LinkChildAsync(parentQToken, s3Email);
+        r3.StatusCode.Should().Be(HttpStatusCode.OK, "Q links S3; body: {0}", b3);
+
+        // P's My-Children must have exactly {S1, S2} and NOT S3
+        var (resp, root, body) = await MyChildrenAsync(parentPToken);
+        resp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", body);
+        TryProp(root, "data", out var d).Should().BeTrue("body: {0}", body);
+
+        var emails = d.EnumerateArray()
+            .Select(e => { TryProp(e, "email", out var ep); return ep.GetString(); })
+            .ToList();
+        emails.Should().HaveCount(2, "P must see exactly 2 children; body: {0}", body);
+        emails.Should().Contain(s1Email, "S1 must be in P's list; body: {0}", body);
+        emails.Should().Contain(s2Email, "S2 must be in P's list; body: {0}", body);
+        emails.Should().NotContain(s3Email, "S3 (Q's child) must NOT appear in P's list; body: {0}", body);
+    }
+
+    // ===========================================================================
+    // BE-TC-19 — Cross-family: B's My-Children unchanged after failed claim (AC-7, AC-3)
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-19: After B fails to claim A's child, B's My-Children is still empty")]
+    public async Task BeTc19_CrossFamily_FailedClaim_DoesNotCreateRowForB()
+    {
+        var adminToken = await SignInAndGetTokenAsync(DefaultAdminUserName, DefaultAdminPassword);
+        var parentAToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parentA"));
+        var parentBToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parentB"));
+        var childEmail = await CreateStudentViaAdminAsync(adminToken);
+
+        // A links the child
+        var (rA, _, bA) = await LinkChildAsync(parentAToken, childEmail);
+        rA.StatusCode.Should().Be(HttpStatusCode.OK, "parent A links successfully; body: {0}", bA);
+
+        // B attempts to claim — must fail
+        var (rB, rootB, bB) = await LinkChildAsync(parentBToken, childEmail);
+        rB.StatusCode.Should().Be(HttpStatusCode.BadRequest, "cross-family claim must return 400; body: {0}", bB);
+
+        // B's My-Children must be empty (no row was created)
+        var (resp, root, body) = await MyChildrenAsync(parentBToken);
+        resp.StatusCode.Should().Be(HttpStatusCode.OK, "My-Children must return 200; body: {0}", body);
+        TryProp(root, "data", out var d).Should().BeTrue("body: {0}", body);
+        d.GetArrayLength().Should().Be(0,
+            "B must have 0 children after the failed claim — no row created; body: {0}", body);
+    }
+
+    // ===========================================================================
+    // BE-TC-22b — HasChildren flips true after Link-Child (routing signal) (AC-1/AC-2)
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-22b: Me.hasChildren flips from false to true after Link-Child")]
+    public async Task BeTc22b_HasChildren_FlipsTrueAfterLinkChild()
+    {
+        var adminToken = await SignInAndGetTokenAsync(DefaultAdminUserName, DefaultAdminPassword);
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        var childEmail = await CreateStudentViaAdminAsync(adminToken);
+
+        // Before link: hasChildren must be false
+        var (r1, root1, b1) = await SendAsync(_client, HttpMethod.Get, MeUrl, null, parentToken);
+        r1.StatusCode.Should().Be(HttpStatusCode.OK, "Me must return 200; body: {0}", b1);
+        TryProp(root1, "data", out var d1).Should().BeTrue("body: {0}", b1);
+        TryProp(d1, "hasChildren", out var hc1).Should().BeTrue("data.hasChildren must be present; body: {0}", b1);
+        hc1.GetBoolean().Should().BeFalse("freshly-registered parent has no children; body: {0}", b1);
+
+        // Link the child
+        var (rLink, _, bLink) = await LinkChildAsync(parentToken, childEmail);
+        rLink.StatusCode.Should().Be(HttpStatusCode.OK, "link must succeed; body: {0}", bLink);
+
+        // After link: hasChildren must be true
+        var (r2, root2, b2) = await SendAsync(_client, HttpMethod.Get, MeUrl, null, parentToken);
+        r2.StatusCode.Should().Be(HttpStatusCode.OK, "Me must return 200 after link; body: {0}", b2);
+        TryProp(root2, "data", out var d2).Should().BeTrue("body: {0}", b2);
+        TryProp(d2, "hasChildren", out var hc2).Should().BeTrue("data.hasChildren must be present; body: {0}", b2);
+        hc2.GetBoolean().Should().BeTrue("hasChildren must be true after linking a child; body: {0}", b2);
+    }
+
+    // ===========================================================================
+    // BE-TC-23 — Admin role permitted to call Link-Child (gate level) (P2)
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-23: SuperAdmin token on Link-Child → not 401/403 (gate permits)")]
+    public async Task BeTc23_SuperAdmin_LinkChild_IsPermittedByGate()
+    {
+        var adminToken = await SignInAndGetTokenAsync(DefaultAdminUserName, DefaultAdminPassword);
+        // Admin linking a student to their own admin identity (semantic correctness is a product Q,
+        // but the gate must NOT return 401 or 403).
+        var studentEmail = await CreateStudentViaAdminAsync(adminToken);
+
+        var (resp, _, body) = await LinkChildAsync(adminToken, studentEmail);
+
+        ((int)resp.StatusCode).Should().NotBe(401, "gate must not block SuperAdmin with 401; body: {0}", body);
+        ((int)resp.StatusCode).Should().NotBe(403, "gate must not block SuperAdmin with 403; body: {0}", body);
+        // Result is 200 (success) or 400 (handler guard for cross-family semantics) — both acceptable.
+    }
+
+    // ===========================================================================
+    // BE-TC-31 — Link rejection is exactly 400 (status precision, not 404/422) (P0)
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-31: Link-Child guard rejection is exactly HTTP 400 (not 404, not 422)")]
+    public async Task BeTc31_LinkChildRejection_IsExactly400()
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+
+        // Ghost email passes validation (is a valid email format) but fails the handler guard
+        var ghostEmail = UniqueEmail("ghost");
+        var (resp, root, body) = await LinkChildAsync(parentToken, ghostEmail);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            "guard rejection (non-existent email) must return exactly 400, not 404 or 422; body: {0}", body);
+
+        TryProp(root, "statusCode", out var sc).Should().BeTrue("body: {0}", body);
+        sc.GetInt32().Should().Be(400, "statusCode in envelope must be 400; body: {0}", body);
+
+        TryProp(root, "successed", out var s).Should().BeTrue("body: {0}", body);
+        s.GetBoolean().Should().BeFalse("body: {0}", body);
+    }
+
+    // ===========================================================================
+    // BE-TC-32 — All Link-Child failures carry identical generic message (P0)
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-32: Ghost/admin/self/cross-family rejections all carry the identical CannotLinkChild message")]
+    public async Task BeTc32_AllRejections_HaveIdenticalGenericMessage()
+    {
+        var adminToken = await SignInAndGetTokenAsync(DefaultAdminUserName, DefaultAdminPassword);
+        var parentAToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parentA"));
+        var parentBToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parentB"));
+        var parentSelfEmail = UniqueEmail("parentSelf");
+        var parentSelfToken = await RegisterParentAndGetTokenAsync(parentSelfEmail);
+
+        var ownedChildEmail = await CreateStudentViaAdminAsync(adminToken);
+        var (rSetup, _, bSetup) = await LinkChildAsync(parentAToken, ownedChildEmail);
+        rSetup.StatusCode.Should().Be(HttpStatusCode.OK, "setup; body: {0}", bSetup);
+
+        // Collect messages for all four rejection classes
+        string GetMsg(JsonElement root)
+        {
+            TryProp(root, "message", out var m);
+            return m.GetString() ?? string.Empty;
+        }
+
+        var (_, r1, _) = await LinkChildAsync(parentBToken, UniqueEmail("ghost"));
+        var (_, r2, _) = await LinkChildAsync(parentBToken, "superadmin@gmail.com");
+        var (_, r3, _) = await LinkChildAsync(parentSelfToken, parentSelfEmail);
+        var (_, r4, _) = await LinkChildAsync(parentBToken, ownedChildEmail);
+
+        var msgs = new[] { GetMsg(r1), GetMsg(r2), GetMsg(r3), GetMsg(r4) };
+        msgs.Distinct().Should().HaveCount(1,
+            "all four rejection classes must return the SAME generic message; messages: {0}",
+            string.Join(" | ", msgs));
+
+        // None should contain discriminating phrases
+        foreach (var m in msgs)
+        {
+            m.Should().NotContainEquivalentOf("not found", "message must not say 'not found'");
+            m.Should().NotContainEquivalentOf("already linked", "message must not say 'already linked'");
+            m.Should().NotContainEquivalentOf("does not exist", "message must not say 'does not exist'");
+        }
+    }
+
+    // ===========================================================================
+    // BE-TC-33 — Oversized/whitespace ChildEmail → 422, never 500 (P2)
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-33: Oversized ChildEmail (5000 chars) → 422 (FluentValidation), never 500")]
+    public async Task BeTc33_OversizedEmail_Returns422_Not500()
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+
+        // 5000-char string: invalid email format → FluentValidation rejects it → 422
+        var oversized = new string('a', 4990) + "@x.co";
+        var (resp, root, body) = await LinkChildAsync(parentToken, oversized);
+
+        // Must NOT be 500 under any circumstances
+        ((int)resp.StatusCode).Should().NotBe(500,
+            "oversized input must never cause an unhandled 500; body: {0}", body);
+
+        // Expected: FluentValidation's EmailAddress rule rejects the oversized/malformed email → 422
+        // (If the implementation allows a valid-format oversized email through to the handler, it returns 400.
+        //  Both are acceptable; the critical assertion is no 500.)
+        var statusInt = (int)resp.StatusCode;
+        statusInt.Should().BeOneOf(new[] { 400, 422 },
+            "oversized email must return 422 (validation) or 400 (handler guard), never 500; body: {0}", body);
+
+        TryProp(root, "successed", out var s).Should().BeTrue("body: {0}", body);
+        s.GetBoolean().Should().BeFalse("Successed must be false; body: {0}", body);
+    }
+
+    [Fact(DisplayName = "BE-TC-33b: Whitespace-wrapped valid email → no 500 (document trim/reject behavior)")]
+    public async Task BeTc33b_WhitespaceWrappedEmail_NoUnhandled500()
+    {
+        var adminToken = await SignInAndGetTokenAsync(DefaultAdminUserName, DefaultAdminPassword);
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        var childEmail = await CreateStudentViaAdminAsync(adminToken);
+
+        // Email with leading/trailing whitespace
+        var wrappedEmail = $"  {childEmail}  ";
+        var (resp, _, body) = await LinkChildAsync(parentToken, wrappedEmail);
+
+        // Must NOT be 500
+        ((int)resp.StatusCode).Should().NotBe(500,
+            "whitespace-wrapped email must never cause an unhandled 500; body: {0}", body);
+        // Acceptable outcomes: 200 (trim applied), 400 (guard failed), 422 (validator rejects with-spaces email)
+    }
+
+    // ===========================================================================
+    // BE-TC-34 — Case-insensitive email match (document actual behavior) (P2)
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-34: Link-Child with different email casing → document ASP.NET Identity normalization behavior")]
+    public async Task BeTc34_CaseInsensitiveEmail_DocumentsBehavior()
+    {
+        var adminToken = await SignInAndGetTokenAsync(DefaultAdminUserName, DefaultAdminPassword);
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+
+        // Create a student with a mixed-case email
+        var baseName = $"casetest_{Guid.NewGuid():N}"[..16];
+        var studentEmail = $"{baseName}@Test.Local";
+        var userName = $"stu_{Guid.NewGuid():N}"[..20];
+        var (addResp, addRoot, addBody) = await SendAsync(_client, HttpMethod.Post, AddUserUrl,
+            new
+            {
+                Email = studentEmail,
+                UserName = userName,
+                FullName = $"Case Test Student",
+                Roles = new[] { "Student" }
+            },
+            adminToken);
+        ((int)addResp.StatusCode).Should().BeOneOf(new[] { 200, 201 },
+            $"student creation must succeed; body: {addBody}");
+        TryProp(addRoot, "successed", out var addS).Should().BeTrue("body: {0}", addBody);
+        addS.GetBoolean().Should().BeTrue("AddUser must succeed; body: {0}", addBody);
+
+        // Try linking with lowercased email
+        var lowerEmail = studentEmail.ToLowerInvariant();
+        var (resp, root, body) = await LinkChildAsync(parentToken, lowerEmail);
+
+        // ASP.NET Identity normalizes emails to uppercase (NormalizedEmail).
+        // FindLinkableChildByEmailAsync uses FindByEmailAsync which performs normalized lookup.
+        // EXPECTED: 200 (case-insensitive match via Identity normalization).
+        // If the implementation is case-sensitive, this returns 400 — flag that as a UX concern.
+        var statusInt = (int)resp.StatusCode;
+        statusInt.Should().NotBe(500,
+            "case-insensitive email lookup must never produce a 500; body: {0}", body);
+
+        if (statusInt == 200)
+        {
+            // Identity normalized the email — correct, expected behavior
+            TryProp(root, "successed", out var s).Should().BeTrue("body: {0}", body);
+            s.GetBoolean().Should().BeTrue("case-insensitive link must succeed; body: {0}", body);
+        }
+        else
+        {
+            // If 400: the handler's FindLinkableChildByEmailAsync treated the email as case-sensitive.
+            // This is a UX concern — flag it. The test documents but does not enforce either behavior.
+            statusInt.Should().Be(400,
+                "if case-sensitive, must return 400 (not 404/422/500); body: {0}", body);
+        }
+    }
+
+    // ===========================================================================
+    // BE-TC-01 — Auto-link on Add-Child surfaces in My-Children (delegated AC-1)
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-01: Add-Child auto-links; child appears in My-Children (confirming AC-1 — primary coverage in P1-03)")]
+    public async Task BeTc01_AddChild_AutoLink_AppearsInMyChildren()
+    {
+        // Primary coverage of AC-1 is in P1_03_AddChild_Tests.AC5_AutoLink_ChildAppearsInMyChildren.
+        // This is a thin confirming assertion from the P1-04 perspective (same endpoint, same link table).
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+
+        var (childId, childEmail) = await AddChildAndGetIdAsync(parentToken);
+
+        // Auto-link must have been created
+        var (listResp, listRoot, listBody) = await MyChildrenAsync(parentToken);
+        listResp.StatusCode.Should().Be(HttpStatusCode.OK, "My-Children must return 200; body: {0}", listBody);
+        TryProp(listRoot, "data", out var d).Should().BeTrue("body: {0}", listBody);
+
+        var children = d.EnumerateArray().ToList();
+        children.Should().HaveCountGreaterOrEqualTo(1, "child must appear in My-Children after Add-Child; body: {0}", listBody);
+        var foundChild = children.Any(c =>
+        {
+            TryProp(c, "email", out var ep);
+            return string.Equals(ep.GetString(), childEmail, StringComparison.OrdinalIgnoreCase);
+        });
+        foundChild.Should().BeTrue("the Add-Child child must appear in My-Children; email: {0}", childEmail);
+    }
+
+    // ===========================================================================
+    // BE-TC-05 (tighten) — Non-existent email → exactly 400 (not just non-2xx)
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-05 (exact status): non-existent email → exactly 400 (guard rejection precision)")]
+    public async Task BeTc05_NonExistentEmail_ReturnsExactly400()
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        var ghostEmail = UniqueEmail("ghost");
+
+        var (resp, root, body) = await LinkChildAsync(parentToken, ghostEmail);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            "non-existent email must return exactly 400 (guard rejection); body: {0}", body);
+        TryProp(root, "successed", out var s).Should().BeTrue("body: {0}", body);
+        s.GetBoolean().Should().BeFalse("body: {0}", body);
+    }
+
+    // ===========================================================================
+    // BE-TC-06 (tighten) — Non-student (Admin) target → exactly 400
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-06 (exact status): non-student (Admin) target → exactly 400")]
+    public async Task BeTc06_NonStudentTarget_ReturnsExactly400()
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+
+        var (resp, root, body) = await LinkChildAsync(parentToken, "superadmin@gmail.com");
+
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            "non-student target must return exactly 400; body: {0}", body);
+        TryProp(root, "successed", out var s).Should().BeTrue("body: {0}", body);
+        s.GetBoolean().Should().BeFalse("body: {0}", body);
+    }
+
+    // ===========================================================================
+    // BE-TC-07 (tighten) — Self-link → exactly 400
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-07 (exact status): self-link → exactly 400 (generic guard rejection)")]
+    public async Task BeTc07_SelfLink_ReturnsExactly400()
+    {
+        var parentEmail = UniqueEmail("parent");
+        var parentToken = await RegisterParentAndGetTokenAsync(parentEmail);
+
+        var (resp, root, body) = await LinkChildAsync(parentToken, parentEmail);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            "self-link must return exactly 400; body: {0}", body);
+        TryProp(root, "successed", out var s).Should().BeTrue("body: {0}", body);
+        s.GetBoolean().Should().BeFalse("body: {0}", body);
+    }
+
+    // ===========================================================================
+    // BE-TC-11 (tighten) — Cross-family IDOR → exactly 400
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-11 (exact status): cross-family IDOR → exactly 400 (guard rejection precision)")]
+    public async Task BeTc11_CrossFamilyIDOR_ReturnsExactly400()
+    {
+        var adminToken = await SignInAndGetTokenAsync(DefaultAdminUserName, DefaultAdminPassword);
+        var parentAToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parentA"));
+        var parentBToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parentB"));
+        var childEmail = await CreateStudentViaAdminAsync(adminToken);
+
+        var (rA, _, bA) = await LinkChildAsync(parentAToken, childEmail);
+        rA.StatusCode.Should().Be(HttpStatusCode.OK, "parent A links child; body: {0}", bA);
+
+        var (resp, root, body) = await LinkChildAsync(parentBToken, childEmail);
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            "cross-family IDOR must return exactly 400; body: {0}", body);
+        TryProp(root, "successed", out var s).Should().BeTrue("body: {0}", body);
+        s.GetBoolean().Should().BeFalse("body: {0}", body);
+    }
+
+    // ===========================================================================
+    // BE-TC-25 — Unlink a child NOT linked to caller → 404 generic [Unlink/P2-12]
+    // NOTE: Primary coverage in P2_12_AccountSettings_Tests (PAR-8). This is a
+    // regression assertion from P1-04's family-scope perspective.
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-25 [Unlink/P2-12]: parent B cannot unlink parent A's child → exactly 404 generic")]
+    public async Task BeTc25_Unlink_NonLinkedChild_Returns404_NoOwnershipLeak()
+    {
+        var parentAToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parentA"));
+        var parentBToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parentB"));
+
+        // Parent A creates child (auto-link)
+        var (childId, _) = await AddChildAndGetIdAsync(parentAToken);
+
+        // Parent B attempts to unlink a child they are not linked to
+        var (resp, root, body) = await UnlinkChildAsync(parentBToken, childId);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.NotFound,
+            "unlink of non-linked child must return exactly 404; body: {0}", body);
+        TryProp(root, "successed", out var s).Should().BeTrue("body: {0}", body);
+        s.GetBoolean().Should().BeFalse("body: {0}", body);
+
+        // Body must not disclose ownership / existence
+        body.Should().NotContainEquivalentOf("parent A", "body must not disclose ownership; body: {0}", body);
+        body.Should().NotContainEquivalentOf("belongs to", "body must not disclose family; body: {0}", body);
+
+        // Parent A's link must be unaffected
+        var (listResp, listRoot, listBody) = await MyChildrenAsync(parentAToken);
+        listResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", listBody);
+        TryProp(listRoot, "data", out var d).Should().BeTrue("body: {0}", listBody);
+        d.GetArrayLength().Should().Be(1,
+            "parent A must still see their child after B's failed unlink; body: {0}", listBody);
+    }
+
+    // ===========================================================================
+    // BE-TC-25b — Unlink validation: zero ChildId → 422 [Unlink/P2-12]
+    // UnlinkChildCommandValidator requires ChildId > 0.
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-25b [Unlink/P2-12]: Unlink with ChildId = 0 → 422 (validator requires > 0)")]
+    public async Task BeTc25b_Unlink_ZeroChildId_Returns422()
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+
+        var (resp, root, body) = await UnlinkChildAsync(parentToken, 0);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "ChildId = 0 must return 422 (UnlinkChildCommandValidator requires > 0); body: {0}", body);
+        TryProp(root, "successed", out var s).Should().BeTrue("body: {0}", body);
+        s.GetBoolean().Should().BeFalse("body: {0}", body);
+        TryProp(root, "errors", out var errors).Should().BeTrue("422 must have errors[]; body: {0}", body);
+        errors.GetArrayLength().Should().BeGreaterThan(0, "errors[] must be non-empty; body: {0}", body);
+    }
+
+    // ===========================================================================
+    // BE-TC-27 — Unlink blocked when caller is last parent → 400 [Unlink/P2-12]
+    // NOTE: Primary coverage in P2_12_AccountSettings_Tests (PAR-7).
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-27 [Unlink/P2-12]: unlink blocked when caller is last parent → exactly 400 + link still present")]
+    public async Task BeTc27_Unlink_LastParent_Returns400_LinkPreserved()
+    {
+        var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        var (childId, _) = await AddChildAndGetIdAsync(parentToken);
+
+        // Caller is the only parent → must be blocked
+        var (resp, root, body) = await UnlinkChildAsync(parentToken, childId);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            "last-parent unlink must return exactly 400; body: {0}", body);
+        TryProp(root, "successed", out var s).Should().BeTrue("body: {0}", body);
+        s.GetBoolean().Should().BeFalse("body: {0}", body);
+
+        // The link must still be present (child is not orphaned)
+        var (listResp, listRoot, listBody) = await MyChildrenAsync(parentToken);
+        listResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", listBody);
+        TryProp(listRoot, "data", out var d).Should().BeTrue("body: {0}", listBody);
+        d.GetArrayLength().Should().Be(1,
+            "the link must still exist after the last-parent block; body: {0}", listBody);
     }
 }

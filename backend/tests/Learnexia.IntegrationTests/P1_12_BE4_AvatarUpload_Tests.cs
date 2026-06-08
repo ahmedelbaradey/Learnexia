@@ -628,6 +628,119 @@ public sealed class P1_12_BE4_AvatarUpload_Tests : IAsyncLifetime
     }
 
     // ===========================================================================
+    // BE-TC-14: SVG (image/svg+xml) is explicitly excluded → 422
+    // SVG must be rejected before magic-byte check (content-type allow-list gate)
+    // because inline SVG is an XSS vector.
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-14: POST with image/svg+xml content-type → 422 (SVG excluded — XSS vector)")]
+    public async Task Validation_SvgContentType_Rejected()
+    {
+        var token = await RegisterParentAsync(UniqueEmail("val-svg"));
+
+        // SVG payload with correct content-type — must be rejected by the content-type allow-list
+        var svgBytes = System.Text.Encoding.UTF8.GetBytes(
+            "<svg xmlns=\"http://www.w3.org/2000/svg\"><script>alert(1)</script></svg>");
+        using var form = BuildFileContent(svgBytes, "evil.svg", "image/svg+xml");
+        var (resp, root, body) = await SendAsync(_client, HttpMethod.Post, AvatarUrl, form, token);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "SVG (image/svg+xml) must be rejected with 422 — it is not in the allowed type list (png/jpeg/webp); body: {0}", body);
+
+        if (root.ValueKind != JsonValueKind.Undefined)
+        {
+            TryProp(root, "successed", out var succeededProp);
+            if (succeededProp.ValueKind != JsonValueKind.Undefined)
+                succeededProp.GetBoolean().Should().BeFalse(
+                    "Successed must be false for SVG rejection; body: {0}", body);
+        }
+    }
+
+    // ===========================================================================
+    // BE-TC-17: GIF (real but unsupported type) → 422
+    // GIF is not in the allow-list (only png/jpeg/webp). Real GIF magic bytes = 47 49 46 38.
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-17: POST with genuine GIF (image/gif) → 422 (gif not in allow-list)")]
+    public async Task Validation_GifContentType_Rejected()
+    {
+        var token = await RegisterParentAsync(UniqueEmail("val-gif"));
+
+        // Minimal GIF87a: magic bytes GIF87a (47 49 46 38 37 61)
+        var gifBytes = new byte[]
+        {
+            0x47, 0x49, 0x46, 0x38, 0x37, 0x61, // "GIF87a"
+            0x01, 0x00, 0x01, 0x00,             // logical screen (1x1)
+            0x00,                               // global color table flag = 0
+            0x00,                               // background color index
+            0x00,                               // aspect ratio
+            // (minimal — no global color table because flag=0)
+            0x3B                                // GIF trailer
+        };
+
+        using var form = BuildFileContent(gifBytes, "image.gif", "image/gif");
+        var (resp, root, body) = await SendAsync(_client, HttpMethod.Post, AvatarUrl, form, token);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "GIF (image/gif) must be rejected with 422 — GIF is not in the allowed MIME type list; body: {0}", body);
+
+        if (root.ValueKind != JsonValueKind.Undefined)
+        {
+            TryProp(root, "successed", out var succeededProp);
+            if (succeededProp.ValueKind != JsonValueKind.Undefined)
+                succeededProp.GetBoolean().Should().BeFalse("body: {0}", body);
+        }
+    }
+
+    // ===========================================================================
+    // BE-TC-21: IDOR — two users upload different avatars; /Me for each returns only
+    // their own avatarUrl. The endpoint is self-scoped via JWT; there is no id on the route.
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-21: Two users upload different avatars; each /Me returns only their own avatarUrl (no IDOR)")]
+    public async Task Upload_SelfScoped_NoIDOR_TwoUsers()
+    {
+        var tokenP1 = await RegisterParentAsync(UniqueEmail("idor-p1"));
+        var tokenP2 = await RegisterParentAsync(UniqueEmail("idor-p2"));
+
+        var pngBytes1 = BuildMinimalPng(); // same bytes but different users
+        var pngBytes2 = BuildMinimalPng();
+
+        // P1 uploads
+        using var form1 = BuildFileContent(pngBytes1, "avatar1.png", "image/png");
+        var (uploadResp1, uploadRoot1, uploadBody1) = await SendAsync(_client, HttpMethod.Post, AvatarUrl, form1, tokenP1);
+        uploadResp1.StatusCode.Should().Be(HttpStatusCode.OK, "P1 upload prerequisite; body: {0}", uploadBody1);
+
+        // P2 uploads
+        using var form2 = BuildFileContent(pngBytes2, "avatar2.png", "image/png");
+        var (uploadResp2, uploadRoot2, uploadBody2) = await SendAsync(_client, HttpMethod.Post, AvatarUrl, form2, tokenP2);
+        uploadResp2.StatusCode.Should().Be(HttpStatusCode.OK, "P2 upload prerequisite; body: {0}", uploadBody2);
+
+        // Get P1's avatarUrl from /Me
+        var (meResp1, meRoot1, meBody1) = await SendAsync(_client, HttpMethod.Get, MeUrl, bearerToken: tokenP1);
+        meResp1.StatusCode.Should().Be(HttpStatusCode.OK, "P1 /Me; body: {0}", meBody1);
+        TryProp(meRoot1, "data", out var meData1).Should().BeTrue("body: {0}", meBody1);
+        TryProp(meData1, "avatarUrl", out var avatarUrlProp1).Should().BeTrue("body: {0}", meBody1);
+        var avatarUrlP1 = avatarUrlProp1.GetString();
+        avatarUrlP1.Should().NotBeNullOrWhiteSpace("P1 avatarUrl must be non-null after upload; body: {0}", meBody1);
+
+        // Get P2's avatarUrl from /Me
+        var (meResp2, meRoot2, meBody2) = await SendAsync(_client, HttpMethod.Get, MeUrl, bearerToken: tokenP2);
+        meResp2.StatusCode.Should().Be(HttpStatusCode.OK, "P2 /Me; body: {0}", meBody2);
+        TryProp(meRoot2, "data", out var meData2).Should().BeTrue("body: {0}", meBody2);
+        TryProp(meData2, "avatarUrl", out var avatarUrlProp2).Should().BeTrue("body: {0}", meBody2);
+        var avatarUrlP2 = avatarUrlProp2.GetString();
+        avatarUrlP2.Should().NotBeNullOrWhiteSpace("P2 avatarUrl must be non-null after upload; body: {0}", meBody2);
+
+        // The URLs must be different objects (different object keys per user), confirming the
+        // endpoint is self-scoped: there is no route id, so each upload only affects the caller.
+        // Even if the byte content is identical, the S3 object key includes the user id.
+        avatarUrlP1.Should().NotBe(avatarUrlP2,
+            "P1's avatarUrl must be a DIFFERENT S3 key than P2's — each user's avatar is stored " +
+            "under their own user-id prefixed key; urls are P1={0}, P2={1}", avatarUrlP1, avatarUrlP2);
+    }
+
+    // ===========================================================================
     // Supplemental: JPEG upload also works (exercises the JPEG magic-byte branch)
     // ===========================================================================
 

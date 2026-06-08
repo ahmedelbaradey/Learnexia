@@ -679,6 +679,105 @@ public sealed class P1_12_AccountProfile_Tests : IAsyncLifetime
     }
 
     // ===========================================================================
+    // BE-TC-07: /Me role/grade shape for a parent account
+    // roles = ["Parent"], grade = null, learningLanguage present
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-07: /Me for a parent → roles=['Parent'], grade=null, preferredLanguage present")]
+    public async Task MeShape_ParentAccount_RolesGradeLearningLanguage()
+    {
+        var (token, _) = await RegisterParentAsync(UniqueEmail("me-role-shape"));
+
+        var (resp, root, body) = await GetMeAsync(token);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", body);
+        TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);
+
+        // roles must be ["Parent"] (PascalCase per convention; no Admin, no Student, no Teacher)
+        TryProp(data, "roles", out var rolesProp).Should().BeTrue(
+            "/Me data must have 'roles'; body: {0}", body);
+        rolesProp.ValueKind.Should().Be(JsonValueKind.Array, "roles must be an array; body: {0}", body);
+        var roles = rolesProp.EnumerateArray()
+            .Select(r => r.GetString())
+            .Where(r => r is not null)
+            .ToList();
+        roles.Should().Contain(r => string.Equals(r, "Parent", StringComparison.OrdinalIgnoreCase),
+            "roles must contain 'Parent' for a registered parent; roles={0}; body={1}",
+            string.Join(",", roles!), body);
+        roles.Should().NotContain(r => string.Equals(r, "Admin", StringComparison.OrdinalIgnoreCase),
+            "roles must NOT contain 'Admin' for a registered parent; body: {0}", body);
+        roles.Should().NotContain(r => string.Equals(r, "Teacher", StringComparison.OrdinalIgnoreCase),
+            "roles must NOT contain 'Teacher' — no teacher role in the product; body: {0}", body);
+        roles.Should().NotContain(r => string.Equals(r, "Student", StringComparison.OrdinalIgnoreCase),
+            "roles must NOT contain 'Student' for a parent account; body: {0}", body);
+
+        // grade: must be null for a parent (grade is a student property)
+        TryProp(data, "grade", out var gradeProp).Should().BeTrue(
+            "/Me data must have 'grade' key; body: {0}", body);
+        gradeProp.ValueKind.Should().Be(JsonValueKind.Null,
+            "grade must be null for a parent account; body: {0}", body);
+
+        // preferredLanguage (learningLanguage): must be present (DB default 'ar' or equivalent)
+        TryProp(data, "preferredLanguage", out var langProp).Should().BeTrue(
+            "/Me data must have 'preferredLanguage' (learningLanguage); body: {0}", body);
+        langProp.ValueKind.Should().NotBe(JsonValueKind.Undefined,
+            "preferredLanguage must be present; body: {0}", body);
+    }
+
+    // ===========================================================================
+    // BE-TC-09: Phone boundary acceptance — exactly 7 digits (min) and 15 digits (max) → 200
+    // ===========================================================================
+
+    [Fact(DisplayName = "BE-TC-09a: PUT /Profile with phone of exactly 7 digits → 200 (boundary min accepted)")]
+    public async Task BoundaryPhone_ExactlySevenDigits_Accepted()
+    {
+        var (token, _) = await RegisterParentAsync(UniqueEmail("phone-7"));
+
+        var (resp, root, body) = await PutProfileAsync(token,
+            new { FullName = "Boundary Phone 7", Phone = "1234567" }); // exactly 7 digits
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "phone of exactly 7 digits (minimum) must be accepted; body: {0}", body);
+
+        TryProp(root, "successed", out var succeeded).Should().BeTrue("body: {0}", body);
+        succeeded.GetBoolean().Should().BeTrue(
+            "Successed must be true for valid 7-digit phone; body: {0}", body);
+    }
+
+    [Fact(DisplayName = "BE-TC-09b: PUT /Profile with phone of exactly 15 digits → 200 (boundary max accepted)")]
+    public async Task BoundaryPhone_ExactlyFifteenDigits_Accepted()
+    {
+        var (token, _) = await RegisterParentAsync(UniqueEmail("phone-15"));
+
+        var (resp, root, body) = await PutProfileAsync(token,
+            new { FullName = "Boundary Phone 15", Phone = "123456789012345" }); // exactly 15 digits
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "phone of exactly 15 digits (maximum) must be accepted; body: {0}", body);
+
+        TryProp(root, "successed", out var succeeded).Should().BeTrue("body: {0}", body);
+        succeeded.GetBoolean().Should().BeTrue(
+            "Successed must be true for valid 15-digit phone; body: {0}", body);
+    }
+
+    [Fact(DisplayName = "BE-TC-09c: PUT /Profile with phone '+201234567' (format with + prefix, 7+ digits) → 200")]
+    public async Task BoundaryPhone_WithPlusPrefix_Accepted()
+    {
+        var (token, _) = await RegisterParentAsync(UniqueEmail("phone-plus"));
+
+        // '+' followed by 7 digits = 8 chars, matching ^\+?[0-9]{7,15}$
+        var (resp, root, body) = await PutProfileAsync(token,
+            new { FullName = "Boundary Phone Plus", Phone = "+1234567" });
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "phone starting with + followed by 7 digits must be accepted; body: {0}", body);
+
+        TryProp(root, "successed", out var succeeded).Should().BeTrue("body: {0}", body);
+        succeeded.GetBoolean().Should().BeTrue(
+            "Successed must be true for +XXXXXXX phone format; body: {0}", body);
+    }
+
+    // ===========================================================================
     // Supplemental: GET /Profile for fresh user returns null phone/country/avatarUrl
     // ===========================================================================
 

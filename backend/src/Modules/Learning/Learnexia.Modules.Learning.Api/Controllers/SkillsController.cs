@@ -5,6 +5,7 @@ using Learnexia.Modules.Learning.Application.Features.Skills.Commands.Delete;
 using Learnexia.Modules.Learning.Application.Features.Skills.Commands.Edit;
 using Learnexia.Modules.Learning.Application.Features.Skills.Queries.Get;
 using Learnexia.Modules.Learning.Application.Features.Skills.Queries.List;
+using Learnexia.Shared.Kernel.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,14 +24,17 @@ public class SkillsController : AppControllerBase
         => NewResult(await Mediator.Send(new GetSkillQuery { Id = id }));
 
     [HttpPost("Create")]
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
     public async Task<IActionResult> Create([FromBody] AddSkillCommand command)
         => NewResult(await Mediator.Send(command));
 
     [HttpPut("Update")]
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
     public async Task<IActionResult> Update([FromBody] EditSkillCommand command)
         => NewResult(await Mediator.Send(command));
 
     [HttpDelete]
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
     public async Task<IActionResult> Delete(int id)
         => NewResult(await Mediator.Send(new DeleteSkillCommand { Id = id }));
 
