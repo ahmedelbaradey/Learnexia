@@ -20,6 +20,9 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: [['html', { open: 'never' }], ['list']],
+  // Global test timeout — applies to tests AND beforeAll/beforeEach hooks.
+  // P1-11-FE setup flows (register + add-child) can take up to 2 minutes per group.
+  timeout: 180_000,
   use: {
     baseURL: WEB_URL,
     trace: 'on-first-retry',
