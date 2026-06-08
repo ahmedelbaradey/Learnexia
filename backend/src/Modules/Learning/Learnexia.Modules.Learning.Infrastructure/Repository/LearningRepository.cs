@@ -260,4 +260,114 @@ public class LearningRepository : ILearningRepository
                 .FirstOrDefault())
             .FirstOrDefaultAsync(ct);
     }
+
+    // ── P7-03 Knowledge-graph admin authoring ──────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public async Task<KnowledgeNode?> GetNodeBySkillIdAsync(int skillId, CancellationToken ct = default)
+        => await RepositoryContext.KnowledgeNodes
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(n => n.SkillId == skillId, ct);
+
+    /// <inheritdoc/>
+    public async Task<List<KnowledgeEdge>> GetEdgesForNodeAsync(int nodeId, bool trackChanges, CancellationToken ct = default)
+    {
+        var query = trackChanges
+            ? RepositoryContext.KnowledgeEdges
+            : RepositoryContext.KnowledgeEdges.AsNoTracking();
+
+        return await query
+            .Where(e => e.SourceNodeId == nodeId || e.TargetNodeId == nodeId)
+            .ToListAsync(ct);
+    }
+
+    /// <inheritdoc/>
+    public async Task<List<KnowledgeEdge>> GetAllPrerequisiteEdgesAsync(CancellationToken ct = default)
+        => await RepositoryContext.KnowledgeEdges
+            .AsNoTracking()
+            .Where(e => e.RelationshipType == EdgeRelationshipType.Prerequisite)
+            .ToListAsync(ct);
+
+    /// <inheritdoc/>
+    public async Task<Subject?> GetSubjectForNodeAsync(int nodeId, CancellationToken ct = default)
+    {
+        var node = await RepositoryContext.KnowledgeNodes
+            .AsNoTracking()
+            .FirstOrDefaultAsync(n => n.Id == nodeId, ct);
+
+        if (node is null)
+            return null;
+
+        return await RepositoryContext.Subjects
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(s => s.Id == node.SubjectId, ct);
+    }
+
+    /// <inheritdoc/>
+    public async Task<KnowledgeNode?> GetKnowledgeNodeByIdAsync(int nodeId, bool trackChanges, CancellationToken ct = default)
+    {
+        var query = trackChanges
+            ? RepositoryContext.KnowledgeNodes
+            : RepositoryContext.KnowledgeNodes.AsNoTracking();
+
+        return await query.FirstOrDefaultAsync(n => n.Id == nodeId, ct);
+    }
+
+    /// <inheritdoc/>
+    public async Task<KnowledgeEdge?> GetKnowledgeEdgeByIdAsync(int edgeId, bool trackChanges, CancellationToken ct = default)
+    {
+        var query = trackChanges
+            ? RepositoryContext.KnowledgeEdges
+            : RepositoryContext.KnowledgeEdges.AsNoTracking();
+
+        return await query.FirstOrDefaultAsync(e => e.Id == edgeId, ct);
+    }
+
+    /// <inheritdoc/>
+    public async Task<bool> KnowledgeEdgeDuplicateExistsAsync(int sourceNodeId, int targetNodeId, int relationshipType, CancellationToken ct = default)
+        => await RepositoryContext.KnowledgeEdges
+            .AnyAsync(e =>
+                e.SourceNodeId == sourceNodeId &&
+                e.TargetNodeId == targetNodeId &&
+                (int)e.RelationshipType == relationshipType, ct);
+
+    /// <inheritdoc/>
+    public async Task<List<KnowledgeNode>> GetGraphNodesAsync(int subjectId, CancellationToken ct = default)
+        => await RepositoryContext.KnowledgeNodes
+            .AsNoTracking()
+            .Where(n => n.SubjectId == subjectId)
+            .ToListAsync(ct);
+
+    /// <inheritdoc/>
+    public async Task<List<KnowledgeEdge>> GetGraphEdgesAsync(int subjectId, CancellationToken ct = default)
+    {
+        var nodeIds = await RepositoryContext.KnowledgeNodes
+            .AsNoTracking()
+            .Where(n => n.SubjectId == subjectId)
+            .Select(n => n.Id)
+            .ToListAsync(ct);
+
+        var nodeIdSet = nodeIds.ToHashSet();
+
+        return await RepositoryContext.KnowledgeEdges
+            .AsNoTracking()
+            .Where(e => nodeIdSet.Contains(e.SourceNodeId) && nodeIdSet.Contains(e.TargetNodeId))
+            .ToListAsync(ct);
+    }
+
+    /// <inheritdoc/>
+    public async Task<Subject?> GetSubjectByConceptIdAsync(int conceptId, CancellationToken ct = default)
+    {
+        var concept = await RepositoryContext.Concepts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == conceptId, ct);
+
+        if (concept is null)
+            return null;
+
+        return await RepositoryContext.Subjects
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Id == concept.SubjectId, ct);
+    }
 }

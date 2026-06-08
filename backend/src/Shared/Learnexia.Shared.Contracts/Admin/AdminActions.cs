@@ -36,4 +36,15 @@ public static class AdminActions
     public const string ContentBlockUpdated  = "ContentBlock.Updated";
     public const string ContentBlockDeleted  = "ContentBlock.Deleted";
     public const string ContentBlockReordered = "ContentBlock.Reordered";
+
+    // ── P7-03 Skill ───────────────────────────────────────────────────────────
+    public const string SkillCreated     = "Skill.Created";
+    public const string SkillUpdated     = "Skill.Updated";
+    public const string SkillDeleted     = "Skill.Deleted";
+    public const string SkillActivated   = "Skill.Activated";
+    public const string SkillDeactivated = "Skill.Deactivated";
+
+    // ── P7-03 KnowledgeEdge ───────────────────────────────────────────────────
+    public const string KnowledgeEdgeAdded   = "KnowledgeEdge.Added";
+    public const string KnowledgeEdgeRemoved = "KnowledgeEdge.Removed";
 }

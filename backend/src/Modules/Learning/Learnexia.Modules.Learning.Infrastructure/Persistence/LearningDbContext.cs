@@ -62,6 +62,27 @@ public class LearningDbContext : DbContext
         modelBuilder.Entity<Lesson>().HasQueryFilter(l => l.IsDeleted != true);
         modelBuilder.Entity<ContentBlock>().HasQueryFilter(cb => cb.IsDeleted != true);
 
+        // P7-03: Soft-delete filters for Skill and the graph entities.
+        //
+        // Skill: required so that KnowledgeNode.SkillId (SetNull FK) + Lesson.SkillId (nullable FK)
+        // don't reference a ghost row that happens to be soft-deleted.
+        modelBuilder.Entity<Skill>().HasQueryFilter(sk => sk.IsDeleted != true);
+
+        // KnowledgeNode / KnowledgeEdge: both derive from AggregateRoot → FullAuditedEntity and carry
+        // IsDeleted. Adding the filter here means soft-deleted nodes/edges are invisible to standard
+        // graph queries without extra .IgnoreQueryFilters().
+        //
+        // Required-relationship FK warning mitigation: KnowledgeNode has required FKs to Subject
+        // (which now has a soft-delete filter) and Grade (no filter). KnowledgeEdge has required FKs
+        // to KnowledgeNode (which now has its own filter). Giving every entity in the chain its own
+        // matching IsDeleted filter satisfies EF Core's required-relationship-filter consistency
+        // requirement and avoids the model-validation warning:
+        //   "Entity type 'X' has a global query filter and has a required relationship with 'Y'
+        //    that also has a global query filter."
+        // With all three entities filtered, EF's own consistency check is satisfied.
+        modelBuilder.Entity<KnowledgeNode>().HasQueryFilter(kn => kn.IsDeleted != true);
+        modelBuilder.Entity<KnowledgeEdge>().HasQueryFilter(ke => ke.IsDeleted != true);
+
         base.OnModelCreating(modelBuilder);
     }
 

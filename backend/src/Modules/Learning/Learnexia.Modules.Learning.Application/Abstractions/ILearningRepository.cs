@@ -88,4 +88,70 @@ public interface ILearningRepository : IGenericRepository
     /// Returns null if the student has no Attempt rows. AsNoTracking.
     /// </summary>
     Task<int?> GetMostRecentActivitySubjectIdAsync(int studentId, CancellationToken ct = default);
+
+    // ── P7-03 Knowledge-graph admin authoring ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns the <see cref="KnowledgeNode"/> whose <c>SkillId == skillId</c>, or null if none exists.
+    /// Uses IgnoreQueryFilters because soft-deleted nodes must still be visible here (cascade-delete path).
+    /// </summary>
+    Task<KnowledgeNode?> GetNodeBySkillIdAsync(int skillId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all live (non-deleted) <see cref="KnowledgeEdge"/> rows where either
+    /// <c>SourceNodeId == nodeId</c> or <c>TargetNodeId == nodeId</c>.
+    /// Used by the skill soft-delete cascade to find edges that reference the skill's node.
+    /// </summary>
+    Task<List<KnowledgeEdge>> GetEdgesForNodeAsync(int nodeId, bool trackChanges, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all live (non-deleted) Prerequisite-typed <see cref="KnowledgeEdge"/> rows.
+    /// Used by the acyclic validator — must include ALL existing edges so the DFS is complete.
+    /// </summary>
+    Task<List<KnowledgeEdge>> GetAllPrerequisiteEdgesAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the <see cref="Subject"/> (with <c>Language</c> populated) that owns the given
+    /// <see cref="KnowledgeNode"/> (via <c>KnowledgeNode.SubjectId</c>). Returns null if the
+    /// node or its subject cannot be found. AsNoTracking, IgnoreQueryFilters on Subject so that
+    /// subjects of any state can be resolved (language derivation is structural).
+    /// </summary>
+    Task<Subject?> GetSubjectForNodeAsync(int nodeId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns a single <see cref="KnowledgeNode"/> by id (trackChanges=false or true).
+    /// Returns null if the node does not exist (after soft-delete filter).
+    /// </summary>
+    Task<KnowledgeNode?> GetKnowledgeNodeByIdAsync(int nodeId, bool trackChanges, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns a single <see cref="KnowledgeEdge"/> by id (trackChanges determines EF tracking).
+    /// Returns null if the edge does not exist (after soft-delete filter).
+    /// </summary>
+    Task<KnowledgeEdge?> GetKnowledgeEdgeByIdAsync(int edgeId, bool trackChanges, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns true if a live <see cref="KnowledgeEdge"/> with the same
+    /// (SourceNodeId, TargetNodeId, RelationshipType) triple already exists.
+    /// Used by AddKnowledgeEdgeCommandHandler to enforce the composite-unique constraint gracefully.
+    /// </summary>
+    Task<bool> KnowledgeEdgeDuplicateExistsAsync(int sourceNodeId, int targetNodeId, int relationshipType, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all live <see cref="KnowledgeNode"/>s for the given subject, optionally including
+    /// inactive skills' nodes (admin view). Used by <c>GetGraphQueryHandler</c>.
+    /// </summary>
+    Task<List<KnowledgeNode>> GetGraphNodesAsync(int subjectId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all live <see cref="KnowledgeEdge"/>s where both source and target belong to the
+    /// given subject. Used by <c>GetGraphQueryHandler</c>.
+    /// </summary>
+    Task<List<KnowledgeEdge>> GetGraphEdgesAsync(int subjectId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Resolves the <see cref="Subject"/> for a <see cref="Concept"/> (via Concept.SubjectId).
+    /// Used by the auto-create-node logic in AddSkillCommandHandler. AsNoTracking.
+    /// </summary>
+    Task<Subject?> GetSubjectByConceptIdAsync(int conceptId, CancellationToken ct = default);
 }

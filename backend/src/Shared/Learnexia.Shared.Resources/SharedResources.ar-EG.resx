@@ -1818,4 +1818,43 @@
   <data name="ContentBlockUrlInvalid" xml:space="preserve">
     <value>يجب أن يكون الرابط عنوان HTTPS مطلقاً يشير إلى مضيف عام. لا يُسمح بالبروتوكولات غير الآمنة ولا بالعناوين الخاصة أو المحلية.</value>
   </data>
+  <data name="SkillNotFound" xml:space="preserve">
+    <value>لم يتم العثور على المهارة.</value>
+  </data>
+  <data name="SkillActivatedSuccessfully" xml:space="preserve">
+    <value>تم تفعيل المهارة بنجاح.</value>
+  </data>
+  <data name="SkillDeactivatedSuccessfully" xml:space="preserve">
+    <value>تم إلغاء تفعيل المهارة بنجاح.</value>
+  </data>
+  <data name="SkillNodeAutoCreateFailed" xml:space="preserve">
+    <value>تعذّر إنشاء عقدة الرسم البياني للمهارة: لم يتمكن النظام من تحديد المفهوم أو الموضوع أو الصف الخاص بالمهارة.</value>
+  </data>
+  <data name="KnowledgeEdgeNotFound" xml:space="preserve">
+    <value>لم يتم العثور على حافة المعرفة.</value>
+  </data>
+  <data name="KnowledgeEdgeAddedSuccessfully" xml:space="preserve">
+    <value>تمت إضافة حافة المعرفة بنجاح.</value>
+  </data>
+  <data name="KnowledgeEdgeRemovedSuccessfully" xml:space="preserve">
+    <value>تمت إزالة حافة المعرفة بنجاح.</value>
+  </data>
+  <data name="KnowledgeEdgeCrossLanguageForbidden" xml:space="preserve">
+    <value>يجب أن تنتمي عقدتا الحافة إلى نفس شجرة اللغة. لا يُسمح بالحواف بين لغتين مختلفتين.</value>
+  </data>
+  <data name="KnowledgeEdgeWouldCreateCycle" xml:space="preserve">
+    <value>إضافة هذه الحافة ستُشكّل دورة في رسم المتطلبات الأساسية وتم رفضها.</value>
+  </data>
+  <data name="KnowledgeEdgeDuplicate" xml:space="preserve">
+    <value>توجد بالفعل حافة بنفس العقدة المصدر والهدف ونوع العلاقة.</value>
+  </data>
+  <data name="KnowledgeNodeSubjectNotResolvable" xml:space="preserve">
+    <value>تعذّر تحديد الموضوع المالك لعقدة المعرفة. تم رفض العملية.</value>
+  </data>
+  <data name="KnowledgeEdgeStrengthOutOfRange" xml:space="preserve">
+    <value>يجب أن تكون قوة الحافة بين 0.0 و1.0 شاملتين.</value>
+  </data>
+  <data name="SkillGraphRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع رسم مهارة المعرفة بنجاح.</value>
+  </data>
 </root>

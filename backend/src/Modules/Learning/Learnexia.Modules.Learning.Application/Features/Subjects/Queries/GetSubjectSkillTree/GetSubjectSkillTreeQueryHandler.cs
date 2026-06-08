@@ -101,9 +101,12 @@ public class GetSubjectSkillTreeQueryHandler
 
             var effectiveSubjectId = subject.Id;
 
+            // P7-03: Include only active skills (IsActive == true) in the student-facing tree.
+            // The global EF query filter only excludes soft-deleted skills (IsDeleted != true);
+            // inactive skills must be filtered explicitly here so students cannot see them.
             var concepts = await _repository.Learning
                 .GetByCondition<Concept>(c => c.SubjectId == effectiveSubjectId, false)
-                .Include(c => c.Skills)
+                .Include(c => c.Skills.Where(sk => sk.IsActive))
                     .ThenInclude(sk => sk.Lessons)
                 .OrderBy(c => c.Id)
                 .ToListAsync(cancellationToken);

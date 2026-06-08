@@ -954,5 +954,60 @@
         /// </summary>
         public const string ContentBlockUrlInvalid = "ContentBlockUrlInvalid";
 
+        // ── P7-03 Skill & Knowledge-graph management ──────────────────────────────────────────
+
+        /// <summary>Returned when a Skill to modify or delete is not found.</summary>
+        public const string SkillNotFound = "SkillNotFound";
+
+        /// <summary>Returned on successful Skill activation.</summary>
+        public const string SkillActivatedSuccessfully = "SkillActivatedSuccessfully";
+
+        /// <summary>Returned on successful Skill deactivation.</summary>
+        public const string SkillDeactivatedSuccessfully = "SkillDeactivatedSuccessfully";
+
+        /// <summary>
+        /// Returned when auto-creating a KnowledgeNode for a new Skill fails because
+        /// the Skill's Concept, Subject, or Grade cannot be resolved.
+        /// </summary>
+        public const string SkillNodeAutoCreateFailed = "SkillNodeAutoCreateFailed";
+
+        /// <summary>Returned when a KnowledgeEdge to remove is not found.</summary>
+        public const string KnowledgeEdgeNotFound = "KnowledgeEdgeNotFound";
+
+        /// <summary>Returned on successful edge add.</summary>
+        public const string KnowledgeEdgeAddedSuccessfully = "KnowledgeEdgeAddedSuccessfully";
+
+        /// <summary>Returned on successful edge remove (soft-delete).</summary>
+        public const string KnowledgeEdgeRemovedSuccessfully = "KnowledgeEdgeRemovedSuccessfully";
+
+        /// <summary>
+        /// Returned when both endpoints of a proposed edge do not belong to the same
+        /// language tree (AR ↔ EN cross-language edge rejected).
+        /// </summary>
+        public const string KnowledgeEdgeCrossLanguageForbidden = "KnowledgeEdgeCrossLanguageForbidden";
+
+        /// <summary>
+        /// Returned when a proposed edge would introduce a cycle in the Prerequisite graph.
+        /// The message should include the cycle details from SkillGraphValidator.
+        /// </summary>
+        public const string KnowledgeEdgeWouldCreateCycle = "KnowledgeEdgeWouldCreateCycle";
+
+        /// <summary>
+        /// Returned when a (SourceNodeId, TargetNodeId, RelationshipType) triple already exists.
+        /// </summary>
+        public const string KnowledgeEdgeDuplicate = "KnowledgeEdgeDuplicate";
+
+        /// <summary>
+        /// Returned when an edge's source or target node cannot resolve its owning Subject
+        /// (dangling SubjectId). Fail-closed guard — never 500.
+        /// </summary>
+        public const string KnowledgeNodeSubjectNotResolvable = "KnowledgeNodeSubjectNotResolvable";
+
+        /// <summary>Returned when the Strength value is outside the allowed range [0.0, 1.0].</summary>
+        public const string KnowledgeEdgeStrengthOutOfRange = "KnowledgeEdgeStrengthOutOfRange";
+
+        /// <summary>Returned on successful graph retrieval.</summary>
+        public const string SkillGraphRetrievedSuccessfully = "SkillGraphRetrievedSuccessfully";
+
     }
 }

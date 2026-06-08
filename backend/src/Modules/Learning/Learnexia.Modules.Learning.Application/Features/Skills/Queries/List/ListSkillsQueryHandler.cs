@@ -39,7 +39,7 @@ public class ListSkillsQueryHandler : BaseResponseHandler, IQueryHandler<ListSki
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error: in ListSkillsQuery");
-            return ServerError<PaginatedResult<SingleSkillResponse>>(ex.Message);
+            return ServerError<PaginatedResult<SingleSkillResponse>>();
         }
     }
 }

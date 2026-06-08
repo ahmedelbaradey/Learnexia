@@ -1819,4 +1819,43 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="ContentBlockUrlInvalid" xml:space="preserve">
     <value>The URL must be an absolute HTTPS address pointing to a public host. Insecure schemes and private/loopback addresses are not allowed.</value>
   </data>
+  <data name="SkillNotFound" xml:space="preserve">
+    <value>Skill not found.</value>
+  </data>
+  <data name="SkillActivatedSuccessfully" xml:space="preserve">
+    <value>Skill activated successfully.</value>
+  </data>
+  <data name="SkillDeactivatedSuccessfully" xml:space="preserve">
+    <value>Skill deactivated successfully.</value>
+  </data>
+  <data name="SkillNodeAutoCreateFailed" xml:space="preserve">
+    <value>Could not create the skill graph node: the skill's concept, subject, or grade could not be resolved.</value>
+  </data>
+  <data name="KnowledgeEdgeNotFound" xml:space="preserve">
+    <value>Knowledge edge not found.</value>
+  </data>
+  <data name="KnowledgeEdgeAddedSuccessfully" xml:space="preserve">
+    <value>Knowledge edge added successfully.</value>
+  </data>
+  <data name="KnowledgeEdgeRemovedSuccessfully" xml:space="preserve">
+    <value>Knowledge edge removed successfully.</value>
+  </data>
+  <data name="KnowledgeEdgeCrossLanguageForbidden" xml:space="preserve">
+    <value>Both nodes of an edge must belong to the same language tree. Cross-language edges are not allowed.</value>
+  </data>
+  <data name="KnowledgeEdgeWouldCreateCycle" xml:space="preserve">
+    <value>Adding this edge would create a cycle in the prerequisite graph and was rejected.</value>
+  </data>
+  <data name="KnowledgeEdgeDuplicate" xml:space="preserve">
+    <value>An edge with the same source, target, and relationship type already exists.</value>
+  </data>
+  <data name="KnowledgeNodeSubjectNotResolvable" xml:space="preserve">
+    <value>The knowledge node's owning subject could not be resolved. Operation rejected.</value>
+  </data>
+  <data name="KnowledgeEdgeStrengthOutOfRange" xml:space="preserve">
+    <value>Edge strength must be between 0.0 and 1.0 inclusive.</value>
+  </data>
+  <data name="SkillGraphRetrievedSuccessfully" xml:space="preserve">
+    <value>Skill graph retrieved successfully.</value>
+  </data>
 </root>

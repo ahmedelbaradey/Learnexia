@@ -7,6 +7,10 @@ namespace Learnexia.Modules.Learning.Infrastructure.Persistence.Configurations;
 /// <summary>
 /// EF Core configuration for <see cref="Skill"/>. Skill *—1 Concept (Restrict).
 /// The optional Lesson—Skill relationship is configured on <see cref="LessonConfig"/>.
+///
+/// P7-03: Added <c>IsActive</c> (bool NOT NULL, DB default true). IsActive is NOT in the global
+/// soft-delete query filter — admin reads must see inactive skills to reactivate them; student-facing
+/// reads apply <c>.Where(s => s.IsActive)</c> per-query.
 /// </summary>
 public class SkillConfig : IEntityTypeConfiguration<Skill>
 {
@@ -24,6 +28,11 @@ public class SkillConfig : IEntityTypeConfiguration<Skill>
 
         builder.Property(x => x.EstimatedTimeMinutes)
             .IsRequired();
+
+        // P7-03: admin-controlled active/inactive toggle. Default true (safe backfill for existing rows).
+        builder.Property(x => x.IsActive)
+            .IsRequired()
+            .HasDefaultValue(true);
 
         builder.HasOne(s => s.Concept)
             .WithMany(c => c.Skills)
