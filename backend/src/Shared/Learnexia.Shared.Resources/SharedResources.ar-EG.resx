@@ -1728,4 +1728,40 @@
   <data name="LearningLanguageUpdateFailed" xml:space="preserve">
     <value>فشل تحديث لغة التعلم. يرجى المحاولة مرة أخرى.</value>
   </data>
+  <data name="UnitNotFound" xml:space="preserve">
+    <value>الوحدة غير موجودة.</value>
+  </data>
+  <data name="UnitNotEmpty" xml:space="preserve">
+    <value>لا يمكن حذف هذه الوحدة لأنها تحتوي على دروس نشطة. قم بإزالة جميع الدروس أو تعطيلها أولاً.</value>
+  </data>
+  <data name="SubjectNotEmpty" xml:space="preserve">
+    <value>لا يمكن حذف هذه المادة لأنها تحتوي على وحدات نشطة. قم بإزالة جميع الوحدات أو تعطيلها أولاً.</value>
+  </data>
+  <data name="SubjectDuplicateTree" xml:space="preserve">
+    <value>توجد بالفعل شجرة مادة بهذا الرمز واللغة لهذه المرحلة الدراسية.</value>
+  </data>
+  <data name="SubjectSoftDeletedTreeExists" xml:space="preserve">
+    <value>توجد شجرة مادة محذوفة بشكل ناعم بهذا الرمز واللغة لهذه المرحلة الدراسية. قم باستعادتها بدلاً من إنشاء واحدة جديدة.</value>
+  </data>
+  <data name="InvalidSubjectCode" xml:space="preserve">
+    <value>يجب أن يكون رمز المادة أحد القيم الأربع المسموح بها: MATH أو SCIENCE أو ARABIC أو ENGLISH.</value>
+  </data>
+  <data name="ReorderCrossTreeForbidden" xml:space="preserve">
+    <value>يجب أن تنتمي جميع العناصر في طلب إعادة الترتيب إلى نفس المرحلة الدراسية وشجرة اللغة.</value>
+  </data>
+  <data name="SubjectActivatedSuccessfully" xml:space="preserve">
+    <value>تم تفعيل المادة بنجاح.</value>
+  </data>
+  <data name="SubjectDeactivatedSuccessfully" xml:space="preserve">
+    <value>تم تعطيل المادة بنجاح.</value>
+  </data>
+  <data name="UnitActivatedSuccessfully" xml:space="preserve">
+    <value>تم تفعيل الوحدة بنجاح.</value>
+  </data>
+  <data name="UnitDeactivatedSuccessfully" xml:space="preserve">
+    <value>تم تعطيل الوحدة بنجاح.</value>
+  </data>
+  <data name="ReorderListTooLong" xml:space="preserve">
+    <value>تجاوزت قائمة إعادة الترتيب الحد الأقصى المسموح به.</value>
+  </data>
 </root>

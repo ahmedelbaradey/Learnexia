@@ -832,5 +832,59 @@
         /// </summary>
         public const string LearningLanguageUpdateFailed = "LearningLanguageUpdateFailed";
 
+        // ── P7-01 Subject/Unit admin management ──────────────────────────────────────────────
+
+        /// <summary>Returned when a unit to delete or modify is not found.</summary>
+        public const string UnitNotFound = "UnitNotFound";
+
+        /// <summary>
+        /// Returned when an admin tries to soft-delete a Unit that still has non-deleted Lessons.
+        /// </summary>
+        public const string UnitNotEmpty = "UnitNotEmpty";
+
+        /// <summary>
+        /// Returned when an admin tries to soft-delete a Subject that still has non-deleted Units.
+        /// </summary>
+        public const string SubjectNotEmpty = "SubjectNotEmpty";
+
+        /// <summary>
+        /// Returned when a Create/Update would produce a duplicate (GradeId, SubjectCode, Language) tree.
+        /// </summary>
+        public const string SubjectDuplicateTree = "SubjectDuplicateTree";
+
+        /// <summary>
+        /// Returned when a soft-deleted tree with the same (GradeId, SubjectCode, Language) natural key
+        /// already exists — the admin must restore it instead of creating a new one.
+        /// </summary>
+        public const string SubjectSoftDeletedTreeExists = "SubjectSoftDeletedTreeExists";
+
+        /// <summary>
+        /// Returned when a SubjectCode value is not one of the 4 allowed codes
+        /// (MATH, SCIENCE, ARABIC, ENGLISH).
+        /// </summary>
+        public const string InvalidSubjectCode = "InvalidSubjectCode";
+
+        /// <summary>Returned when a reorder request spans multiple language trees or grades.</summary>
+        public const string ReorderCrossTreeForbidden = "ReorderCrossTreeForbidden";
+
+        /// <summary>Returned on successful Subject activation.</summary>
+        public const string SubjectActivatedSuccessfully = "SubjectActivatedSuccessfully";
+
+        /// <summary>Returned on successful Subject deactivation.</summary>
+        public const string SubjectDeactivatedSuccessfully = "SubjectDeactivatedSuccessfully";
+
+        /// <summary>Returned on successful Unit activation.</summary>
+        public const string UnitActivatedSuccessfully = "UnitActivatedSuccessfully";
+
+        /// <summary>Returned on successful Unit deactivation.</summary>
+        public const string UnitDeactivatedSuccessfully = "UnitDeactivatedSuccessfully";
+
+        // P7-SEC-5: Reorder list upper-bound guards (subjects: max 12; units: max 200).
+        /// <summary>
+        /// Returned when the reorder ID list exceeds the allowed upper bound.
+        /// (Subjects: 12; Units: 200.)
+        /// </summary>
+        public const string ReorderListTooLong = "ReorderListTooLong";
+
     }
 }

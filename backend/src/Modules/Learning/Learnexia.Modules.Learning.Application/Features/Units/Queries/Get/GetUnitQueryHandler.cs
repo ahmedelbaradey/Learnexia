@@ -26,7 +26,7 @@ public class GetUnitQueryHandler : BaseResponseHandler, IQueryHandler<GetUnitQue
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error: in GetUnitQuery");
-            return ServerError<SingleUnitResponse>(ex.Message);
+            return ServerError<SingleUnitResponse>();
         }
     }
 }

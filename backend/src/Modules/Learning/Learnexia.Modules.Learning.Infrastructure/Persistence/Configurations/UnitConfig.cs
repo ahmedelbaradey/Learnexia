@@ -6,6 +6,10 @@ namespace Learnexia.Modules.Learning.Infrastructure.Persistence.Configurations;
 
 /// <summary>
 /// EF Core configuration for <see cref="Unit"/>. Unit *—1 Subject (Restrict); Unit 1—* Lesson.
+///
+/// P7-01: Added <c>IsActive</c> (bool, DEFAULT true) for admin-controlled active/inactive toggle.
+/// <c>SequenceOrder</c> was already present. Soft-delete columns are inherited from
+/// <c>FullAuditedEntity</c> and were already mapped by convention.
 /// </summary>
 public class UnitConfig : IEntityTypeConfiguration<Unit>
 {
@@ -20,6 +24,12 @@ public class UnitConfig : IEntityTypeConfiguration<Unit>
 
         builder.Property(x => x.SequenceOrder)
             .IsRequired();
+
+        // P7-01: IsActive — admin-controlled visible/hidden toggle (distinct from soft-delete).
+        // DEFAULT true so existing/backfilled rows remain visible without a data migration.
+        builder.Property(x => x.IsActive)
+            .IsRequired()
+            .HasDefaultValue(true);
 
         builder.HasOne(u => u.Subject)
             .WithMany(s => s.Units)

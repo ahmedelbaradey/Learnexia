@@ -10,8 +10,19 @@ public class UnitsProfile : Profile
 {
     public UnitsProfile()
     {
-        CreateMap<AddUnitCommand, Unit>();
-        CreateMap<EditUnitCommand, Unit>();
+        // P7-SEC-4: IsActive and SequenceOrder must not be settable via Create/Update —
+        // those are controlled exclusively by SetActive and Reorder endpoints.
+        // IsActive defaults to true (entity default); SequenceOrder defaults to 0.
+        CreateMap<AddUnitCommand, Unit>()
+            .ForMember(d => d.IsActive, opt => opt.Ignore())
+            .ForMember(d => d.SequenceOrder, opt => opt.Ignore());
+        CreateMap<EditUnitCommand, Unit>()
+            .ForMember(d => d.IsActive, opt => opt.Ignore())
+            .ForMember(d => d.SequenceOrder, opt => opt.Ignore());
+
+        // P7-01: Unit → UnitDto (admin DTO with IsActive).
+        // SingleUnitResponse inherits UnitDto so this mapping covers it.
+        CreateMap<Unit, UnitDto>();
         CreateMap<Unit, SingleUnitResponse>();
     }
 }

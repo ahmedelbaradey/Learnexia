@@ -1729,4 +1729,40 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="LearningLanguageUpdateFailed" xml:space="preserve">
     <value>Failed to update the learning language. Please try again.</value>
   </data>
+  <data name="UnitNotFound" xml:space="preserve">
+    <value>Unit not found.</value>
+  </data>
+  <data name="UnitNotEmpty" xml:space="preserve">
+    <value>Cannot delete this unit because it still has active lessons. Remove or deactivate all lessons first.</value>
+  </data>
+  <data name="SubjectNotEmpty" xml:space="preserve">
+    <value>Cannot delete this subject because it still has active units. Remove or deactivate all units first.</value>
+  </data>
+  <data name="SubjectDuplicateTree" xml:space="preserve">
+    <value>A subject tree with this code and language already exists for this grade.</value>
+  </data>
+  <data name="SubjectSoftDeletedTreeExists" xml:space="preserve">
+    <value>A soft-deleted subject tree with this code and language exists for this grade. Restore it instead of creating a new one.</value>
+  </data>
+  <data name="InvalidSubjectCode" xml:space="preserve">
+    <value>Subject code must be one of the 4 allowed values: MATH, SCIENCE, ARABIC, ENGLISH.</value>
+  </data>
+  <data name="ReorderCrossTreeForbidden" xml:space="preserve">
+    <value>All items in a reorder request must belong to the same grade and language tree.</value>
+  </data>
+  <data name="SubjectActivatedSuccessfully" xml:space="preserve">
+    <value>Subject activated successfully.</value>
+  </data>
+  <data name="SubjectDeactivatedSuccessfully" xml:space="preserve">
+    <value>Subject deactivated successfully.</value>
+  </data>
+  <data name="UnitActivatedSuccessfully" xml:space="preserve">
+    <value>Unit activated successfully.</value>
+  </data>
+  <data name="UnitDeactivatedSuccessfully" xml:space="preserve">
+    <value>Unit deactivated successfully.</value>
+  </data>
+  <data name="ReorderListTooLong" xml:space="preserve">
+    <value>The reorder list exceeds the maximum allowed count.</value>
+  </data>
 </root>

@@ -75,9 +75,10 @@ public class GetSubjectsForGradeQueryHandler
             // P8-03-BE-1: resolve the student's learning language from the JWT claim.
             var learnerLang = LearningLanguageClaimAccessor.GetLearningLanguage(_currentUser, _logger);
 
-            // Load all subjects for the grade once, then resolve per-code in memory.
+            // Load all ACTIVE subjects for the grade once, then resolve per-code in memory.
+            // P7-01: IsActive == true filter — inactive subjects hidden from student reads.
             var allGradeSubjects = await _repository.Learning
-                .GetByCondition<Subject>(s => s.GradeId == grade.Id, false)
+                .GetByCondition<Subject>(s => s.GradeId == grade.Id && s.IsActive, false)
                 .ToListAsync(cancellationToken);
 
             var dtos = new List<StudentSubjectDto>(AllSubjectCodes.Length);

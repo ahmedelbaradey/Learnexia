@@ -1,22 +1,42 @@
 using Learnexia.Modules.Learning.Application.Abstractions;
+using Learnexia.Modules.Learning.Domain.Entities;
+using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
+using LearningUnit = Learnexia.Modules.Learning.Domain.Entities.Unit;
 
 namespace Learnexia.Modules.Learning.Application.Features.Subjects.Commands.Delete;
 
+/// <summary>
+/// P7-01: Soft-deletes a Subject by setting IsDeleted = true (FullAuditedEntity pattern).
+/// The UnitOfWorkBehavior will stamp DeletedAt/DeletedBy after SaveChangesAsync.
+/// Blocks deletion when the Subject still has non-deleted Units ("Subject not empty" guard).
+/// Publishes <see cref="AdminActionPerformedEvent"/> post-commit, best-effort.
+/// </summary>
 public class DeleteSubjectCommandHandler : BaseResponseHandler, ICommandHandler<DeleteSubjectCommand, BaseResponse<string>>
 {
     private readonly ILoggerManager _logger;
-    private readonly ILearningServiceManager _service;
+    private readonly ILearningRepositoryManager _repository;
+    private readonly ICurrentUserService _currentUser;
+    private readonly IPublisher _publisher;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
-    public DeleteSubjectCommandHandler(ILearningServiceManager service, ILoggerManager logger, IStringLocalizer<SharedResources> localizer)
+    public DeleteSubjectCommandHandler(
+        ILearningRepositoryManager repository,
+        ICurrentUserService currentUser,
+        IPublisher publisher,
+        ILoggerManager logger,
+        IStringLocalizer<SharedResources> localizer)
     {
+        _repository = repository;
+        _currentUser = currentUser;
+        _publisher = publisher;
         _logger = logger;
-        _service = service;
         _localizer = localizer;
     }
 
@@ -27,12 +47,47 @@ public class DeleteSubjectCommandHandler : BaseResponseHandler, ICommandHandler<
             if (request is null)
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
-            return await _service.SubjectService.DeleteAsync(request.Id);
+            var subject = await _repository.Learning
+                .GetByCondition<Subject>(s => s.Id == request.Id, trackChanges: true)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (subject is null)
+                return NotFound<string>(_localizer[SharedResourcesKey.SubjectNotFound]);
+
+            // "Subject not empty" guard — block soft-delete when non-deleted Units still exist.
+            var hasUnits = await _repository.Learning
+                .AnyAsync<LearningUnit>(u => u.SubjectId == request.Id);
+
+            if (hasUnits)
+                return BadRequest<string>(_localizer[SharedResourcesKey.SubjectNotEmpty]);
+
+            // Soft-delete: set the flag; UnitOfWorkBehavior stamps DeletedAt/DeletedBy.
+            subject.IsDeleted = true;
+            await _repository.Learning.UpdateAsync(subject);
+
+            // Best-effort post-commit event publish.
+            try
+            {
+                await _publisher.Publish(new AdminActionPerformedEvent(
+                    EventId: Guid.NewGuid(),
+                    OccurredAtUtc: DateTime.UtcNow,
+                    AdminUserId: _currentUser.UserId.GetValueOrDefault(),
+                    Action: AdminActions.SubjectDeleted,
+                    TargetEntityType: nameof(Subject),
+                    TargetEntityId: request.Id,
+                    Details: null), cancellationToken);
+            }
+            catch (Exception publishEx)
+            {
+                _logger.LogError(publishEx, $"P7-01: AdminActionPerformedEvent publish failed for SubjectId={request.Id}");
+            }
+
+            return Success<string>(_localizer[SharedResourcesKey.ItemDeletedSuccessfully]);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error: in DeleteSubjectCommand");
-            return ServerError<string>(ex.Message);
+            return ServerError<string>();
         }
     }
 }

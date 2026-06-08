@@ -58,8 +58,9 @@ public class GetSubjectLessonsQueryHandler
         try
         {
             // Load the subject to verify it exists and to check its language.
+            // P7-01: IsActive == true filter — inactive subject returns 404 for students.
             var subject = await _repository.Learning
-                .GetByCondition<Subject>(s => s.Id == request.SubjectId, false)
+                .GetByCondition<Subject>(s => s.Id == request.SubjectId && s.IsActive, false)
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (subject is null)
@@ -73,11 +74,13 @@ public class GetSubjectLessonsQueryHandler
             // correct-language tree for the same SubjectCode in the same Grade.
             if (subject.Language != resolved)
             {
+                // P7-01: Also require IsActive on the redirected subject (student path).
                 var correctSubject = await _repository.Learning
                     .GetByCondition<Subject>(
                         s => s.GradeId == subject.GradeId
                           && s.SubjectCode == subject.SubjectCode
-                          && s.Language == resolved,
+                          && s.Language == resolved
+                          && s.IsActive,
                         trackChanges: false)
                     .FirstOrDefaultAsync(cancellationToken);
 
@@ -96,8 +99,9 @@ public class GetSubjectLessonsQueryHandler
 
             var effectiveSubjectId = subject.Id;
 
+            // P7-01: IsActive == true filter — inactive units hidden from student reads.
             var units = await _repository.Learning
-                .GetByCondition<Unit>(u => u.SubjectId == effectiveSubjectId, false)
+                .GetByCondition<Unit>(u => u.SubjectId == effectiveSubjectId && u.IsActive, false)
                 .Include(u => u.Lessons)
                 .OrderBy(u => u.SequenceOrder)
                 .ToListAsync(cancellationToken);

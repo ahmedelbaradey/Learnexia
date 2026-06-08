@@ -48,6 +48,15 @@ public class LearningDbContext : DbContext
     {
         modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(LearningDbContext).Assembly);
+
+        // P7-01: Global soft-delete filters — rows with IsDeleted == true are invisible to all
+        // standard EF queries. Uses != true (not == false) because the column is nullable bool?.
+        // Admin reads that need to see soft-deleted rows must use .IgnoreQueryFilters().
+        // IsActive is intentionally NOT in the global filter — admins must see inactive items
+        // to reactivate them; student-facing reads apply IsActive == true per-query.
+        modelBuilder.Entity<Subject>().HasQueryFilter(s => s.IsDeleted != true);
+        modelBuilder.Entity<Unit>().HasQueryFilter(u => u.IsDeleted != true);
+
         base.OnModelCreating(modelBuilder);
     }
 

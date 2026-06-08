@@ -39,7 +39,7 @@ public class ListSubjectsQueryHandler : BaseResponseHandler, IQueryHandler<ListS
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error: in ListSubjectsQuery");
-            return ServerError<PaginatedResult<SingleSubjectResponse>>(ex.Message);
+            return ServerError<PaginatedResult<SingleSubjectResponse>>();
         }
     }
 }

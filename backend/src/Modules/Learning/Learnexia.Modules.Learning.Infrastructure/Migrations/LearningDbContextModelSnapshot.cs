@@ -592,6 +592,11 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
                     b.Property<int>("GradeId")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
                     b.Property<bool?>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -601,6 +606,11 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("SequenceOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
 
                     b.Property<int>("SubjectCode")
                         .HasColumnType("integer");
@@ -615,6 +625,9 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
 
                     b.HasIndex("GradeId")
                         .HasDatabaseName("IX_Subjects_GradeId");
+
+                    b.HasIndex("GradeId", "SequenceOrder")
+                        .HasDatabaseName("IX_Subjects_GradeId_SequenceOrder");
 
                     b.HasIndex("GradeId", "SubjectCode", "Language")
                         .IsUnique()
@@ -642,6 +655,11 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
 
                     b.Property<int?>("DeletedBy")
                         .HasColumnType("integer");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
                     b.Property<bool?>("IsDeleted")
                         .HasColumnType("boolean");

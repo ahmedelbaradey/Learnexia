@@ -31,8 +31,8 @@ namespace Learnexia.IntegrationTests;
 ///   Subjects/Units/Lessons/Concepts/Skills Create/Update/Delete — requires Admin or
 ///                               SuperAdmin ([Authorize(Policy = AdminOnly)]);
 ///                               anonymous → 401, non-admin → 403.
-///   Subjects/Units/Lessons/Concepts/Skills List / GetById — unchanged: anonymous access
-///                               is permitted (no [Authorize] on those actions).
+///   Subjects/Units List / GetById — AdminOnly (P7-SEC: expose admin DTOs; locked down post P7-01).
+///   Lessons/Concepts/Skills List / GetById — unchanged: anonymous access is permitted.
 ///
 /// JSON Response Structure (OBSERVED from actual API):
 ///   List → BaseResponse&lt;PaginatedResult&lt;T&gt;&gt;
@@ -247,15 +247,14 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
             "Authenticated user must receive 200 on Grades List; body: {0}", body);
     }
 
-    [Theory(DisplayName = "AC-6: Subjects/Units/Lessons/Concepts/Skills List endpoints remain anonymous (200 without JWT)")]
-    [InlineData("/api/learning/subjects/List?PageNumber=1&PageSize=10")]
-    [InlineData("/api/learning/units/List?PageNumber=1&PageSize=10")]
+    [Theory(DisplayName = "AC-6: Lessons/Concepts/Skills List endpoints remain anonymous (200 without JWT)")]
     [InlineData("/api/learning/lessons/List?PageNumber=1&PageSize=10")]
     [InlineData("/api/learning/concepts/List?PageNumber=1&PageSize=10")]
     [InlineData("/api/learning/skills/List?PageNumber=1&PageSize=10")]
     public async Task AC6_NonGradeListEndpoints_AreAnonymous(string url)
     {
-        // No token — all non-grade list endpoints must still return 200 (unchanged contract).
+        // No token — lessons/concepts/skills list endpoints must still return 200 (unchanged contract).
+        // NOTE: Subjects/List and Units/List were locked to AdminOnly in P7-SEC (expose admin DTOs).
         var (response, _, body) = await GetAsync(url);
 
         ((int)response.StatusCode).Should().NotBe(401,
@@ -264,6 +263,17 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
             "endpoint {0} must not require a policy (unchanged); body: {1}", url, body);
         response.StatusCode.Should().Be(HttpStatusCode.OK,
             "Non-grade List endpoint {0} must return 200 for anonymous requests; body: {1}", url, body);
+    }
+
+    [Theory(DisplayName = "AC-6b: Subjects/Units List endpoints now require AdminOnly (P7-SEC)")]
+    [InlineData("/api/learning/subjects/List?PageNumber=1&PageSize=10")]
+    [InlineData("/api/learning/units/List?PageNumber=1&PageSize=10")]
+    public async Task AC6b_SubjectsUnitsListEndpoints_RequireAdminOnly(string url)
+    {
+        // Anonymous must get 401.
+        var (anonResp, _, anonBody) = await GetAsync(url);
+        ((int)anonResp.StatusCode).Should().Be(401,
+            "P7-SEC: Subjects/Units List must require auth; url={0}; body: {1}", url, anonBody);
     }
 
     // =========================================================================
@@ -397,7 +407,7 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
 
         int subjectId = await FindIdInList(
             $"/api/learning/subjects/List?PageNumber=1&PageSize=200&GradeId={gradeId}",
-            "name", subjName, "subject");
+            "name", subjName, "subject", _adminToken);
 
         // STEP 3: Create Unit — requires Admin JWT
         var unitName = $"Algebra {Guid.NewGuid():N}";
@@ -407,7 +417,7 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
 
         int unitId = await FindIdInList(
             $"/api/learning/units/List?PageNumber=1&PageSize=200&SubjectId={subjectId}",
-            "name", unitName, "unit");
+            "name", unitName, "unit", _adminToken);
 
         // STEP 4: Create Concept — requires Admin JWT
         var conceptName = $"Variables {Guid.NewGuid():N}";
@@ -879,9 +889,9 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
             new { Name = nameB, GradeId = gradeBId }, _adminToken);
         AssertCreateSuccess(sBResp, sBRoot, sBBody);
 
-        // List subjects filtered by GradeA — anonymous allowed
+        // List subjects filtered by GradeA — AdminOnly (P7-SEC: locked down from anonymous)
         var (listResp, listRoot, listBody) = await GetAsync(
-            $"/api/learning/subjects/List?PageNumber=1&PageSize=200&GradeId={gradeAId}");
+            $"/api/learning/subjects/List?PageNumber=1&PageSize=200&GradeId={gradeAId}", _adminToken);
         listResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", listBody);
         var subjectsA = ExtractItems(listRoot, listBody);
 
@@ -937,7 +947,7 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
         resp.StatusCode.Should().Be(HttpStatusCode.OK, "prereq subject create failed; body: {0}", body);
         return await FindIdInList(
             $"/api/learning/subjects/List?PageNumber=1&PageSize=200&GradeId={gradeId}",
-            "name", name, "subject");
+            "name", name, "subject", _adminToken);
     }
 
     private async Task<int> CreateUnitGetId(int subjectId)
@@ -948,7 +958,7 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
         resp.StatusCode.Should().Be(HttpStatusCode.OK, "prereq unit create failed; body: {0}", body);
         return await FindIdInList(
             $"/api/learning/units/List?PageNumber=1&PageSize=200&SubjectId={subjectId}",
-            "name", name, "unit");
+            "name", name, "unit", _adminToken);
     }
 
     private async Task<int> CreateConceptGetId(int subjectId)

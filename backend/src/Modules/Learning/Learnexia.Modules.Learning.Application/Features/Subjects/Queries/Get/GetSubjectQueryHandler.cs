@@ -26,7 +26,7 @@ public class GetSubjectQueryHandler : BaseResponseHandler, IQueryHandler<GetSubj
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error: in GetSubjectQuery");
-            return ServerError<SingleSubjectResponse>(ex.Message);
+            return ServerError<SingleSubjectResponse>();
         }
     }
 }
