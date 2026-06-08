@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using Learnexia.Modules.Identity.Domain.Enums;
 using Microsoft.AspNetCore.Identity;
 
 namespace Learnexia.Modules.Identity.Domain.Entities;
@@ -34,6 +35,38 @@ public class User : IdentityUser<int>
     public bool RegistrationIsCompleted { get; set; } = false;
     public bool IsActive { get; set; } = true;
     public DateTime? LastFailedLoginAttempt { get; set; }
+
+    // ── P7-07 account governance lifecycle ──────────────────────────────────
+    // Distinct from IsActive (mechanical sign-in gate, kept in sync by handlers)
+    // and from LockoutEnd (temporary automatic failed-login lockout, P1-13).
+    // New users created via registration are Active by default (both DB DEFAULT 0
+    // and this C# initializer agree — no Draft equivalent for users).
+
+    /// <summary>
+    /// Governance lifecycle state of the account.
+    /// Active = 0 (default) — backfills all existing rows via DB DEFAULT 0.
+    /// Handlers that set Suspended or Deleted must also set IsActive = false.
+    /// </summary>
+    public AccountStatus AccountStatus { get; set; } = AccountStatus.Active;
+
+    /// <summary>
+    /// Admin-supplied reason for the last status change (suspend/delete).
+    /// Nullable; max 500 chars (matches validator bound).
+    /// </summary>
+    public string? LastStatusReason { get; set; }
+
+    /// <summary>
+    /// UserId of the admin who performed the last status change.
+    /// Plain int — no cross-module FK; the acting admin is always an Identity user.
+    /// </summary>
+    public int? StatusChangedBy { get; set; }
+
+    /// <summary>
+    /// UTC timestamp of the last status change.
+    /// Persist as DateTime.UtcNow; apply .ToUniversalTime() at mapping boundaries
+    /// (Npgsql EnableLegacyTimestampBehavior=true — per P4-11 HANDOFF gotcha).
+    /// </summary>
+    public DateTime? StatusChangedAtUtc { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public int? CreatedBy { get; set; }

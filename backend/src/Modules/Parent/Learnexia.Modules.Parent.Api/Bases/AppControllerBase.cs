@@ -26,6 +26,7 @@ public class AppControllerBase : ControllerBase
         HttpStatusCode.Forbidden => new ObjectResult(response) { StatusCode = StatusCodes.Status403Forbidden },
         HttpStatusCode.NotFound => new NotFoundObjectResult(response),
         HttpStatusCode.Conflict => new ConflictObjectResult(response),
+        HttpStatusCode.FailedDependency => new ObjectResult(response) { StatusCode = StatusCodes.Status424FailedDependency },
         HttpStatusCode.InternalServerError => new ObjectResult(response) { StatusCode = StatusCodes.Status500InternalServerError },
         _ => new ObjectResult(response) { StatusCode = (int)response.StatusCode },
     };

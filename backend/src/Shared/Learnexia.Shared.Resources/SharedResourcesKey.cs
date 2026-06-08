@@ -1108,5 +1108,111 @@
         /// </summary>
         public const string VersionNumberMustBePositive = "VersionNumberMustBePositive";
 
+        // ── P7-06 Admin User Search & Inspect ────────────────────────────────────────────────
+
+        /// <summary>Returned when the admin user search list is retrieved successfully.</summary>
+        public const string AdminUserSearchRetrievedSuccessfully = "AdminUserSearchRetrievedSuccessfully";
+
+        /// <summary>Returned when a single admin user profile is retrieved successfully.</summary>
+        public const string AdminUserProfileRetrievedSuccessfully = "AdminUserProfileRetrievedSuccessfully";
+
+        /// <summary>Returned when a user's family linkage is retrieved successfully.</summary>
+        public const string AdminUserFamilyRetrievedSuccessfully = "AdminUserFamilyRetrievedSuccessfully";
+
+        /// <summary>Returned when a user's activity summary is retrieved successfully.</summary>
+        public const string AdminUserActivityRetrievedSuccessfully = "AdminUserActivityRetrievedSuccessfully";
+
+        /// <summary>Returned when PageNumber is less than 1.</summary>
+        public const string AdminUserInvalidPageNumber = "AdminUserInvalidPageNumber";
+
+        /// <summary>Returned when PageSize is outside the allowed range (1–100).</summary>
+        public const string AdminUserInvalidPageSize = "AdminUserInvalidPageSize";
+
+        // ── P7-07 Account Lifecycle (suspend / reactivate / delete) ─────────────────
+
+        /// <summary>Returned on successful account suspension.</summary>
+        public const string AccountSuspendedSuccessfully = "AccountSuspendedSuccessfully";
+
+        /// <summary>Returned on successful account reactivation.</summary>
+        public const string AccountReactivatedSuccessfully = "AccountReactivatedSuccessfully";
+
+        /// <summary>Returned on successful account soft-delete.</summary>
+        public const string AccountDeletedSuccessfully = "AccountDeletedSuccessfully";
+
+        /// <summary>
+        /// Returned (HTTP 424 FailedDependency) when DeleteAccountCommand is called
+        /// without <c>Confirm = true</c>. No state is changed when this fires.
+        /// Consistent with P8-04 ConfirmFreshStartRequired pattern.
+        /// </summary>
+        public const string ConfirmAccountDeletionRequired = "ConfirmAccountDeletionRequired";
+
+        /// <summary>
+        /// Returned when a suspend/reactivate/delete operation targets an account that is
+        /// already in the Deleted (terminal) state.
+        /// </summary>
+        public const string AccountAlreadyDeleted = "AccountAlreadyDeleted";
+
+        /// <summary>Returned when an account is already in the Suspended state.</summary>
+        public const string AccountAlreadySuspended = "AccountAlreadySuspended";
+
+        /// <summary>
+        /// Returned when a reactivate command targets an account that is already Active
+        /// (idempotency guard — no mutation or event is emitted for phantom transitions).
+        /// </summary>
+        public const string AccountAlreadyActive = "AccountAlreadyActive";
+
+        /// <summary>Returned when an admin tries to act on their own account (self-protection guard).</summary>
+        public const string CannotActOnOwnAccount = "CannotActOnOwnAccount";
+
+        /// <summary>Returned when the user id in a lifecycle command is missing or not positive.</summary>
+        public const string AccountLifecycleUserIdRequired = "AccountLifecycleUserIdRequired";
+
+        /// <summary>Returned when a required reason field is empty.</summary>
+        public const string AccountLifecycleReasonRequired = "AccountLifecycleReasonRequired";
+
+        /// <summary>Returned when the reason exceeds the maximum allowed length (500 chars).</summary>
+        public const string AccountLifecycleReasonTooLong = "AccountLifecycleReasonTooLong";
+
+        /// <summary>
+        /// Returned when a reactivate command targets an account that is in the Deleted state
+        /// (deleted is a terminal state — cannot be reactivated via this path).
+        /// </summary>
+        public const string CannotReactivateDeletedAccount = "CannotReactivateDeletedAccount";
+
+        /// <summary>Generic server-error for account lifecycle operations.</summary>
+        public const string AccountLifecycleSystemError = "AccountLifecycleSystemError";
+
+        /// <summary>Returned when a lifecycle operation targets a SuperAdmin account.</summary>
+        public const string CannotActOnSuperAdminAccount = "CannotActOnSuperAdminAccount";
+
+        // ── P7-08 Child Profile & Grade Override ─────────────────────────────────────
+
+        /// <summary>Returned on successful child profile update (PreferredLanguage + country).</summary>
+        public const string ChildProfileUpdatedSuccessfully = "ChildProfileUpdatedSuccessfully";
+
+        /// <summary>Returned when the target user is not a child (Student role required).</summary>
+        public const string TargetUserIsNotAChild = "TargetUserIsNotAChild";
+
+        /// <summary>Returned when the child id in a P7-08 command is missing or not positive.</summary>
+        public const string ChildIdRequired = "ChildIdRequired";
+
+        /// <summary>Returned on successful grade override (non-destructive, history preserved).</summary>
+        public const string ChildGradeOverriddenSuccessfully = "ChildGradeOverriddenSuccessfully";
+
+        /// <summary>Returned when OverrideChildGradeCommand.Confirm is false (soft UX guard, HTTP 400).</summary>
+        public const string ChildGradeOverrideConfirmRequired = "ChildGradeOverrideConfirmRequired";
+
+        /// <summary>Returned when the new grade is the same as the current grade (no-op rejected).</summary>
+        public const string ChildGradeUnchanged = "ChildGradeUnchanged";
+
+        /// <summary>Returned when grade value is outside the allowed range (1–6).</summary>
+        public const string ChildGradeOutOfRange = "ChildGradeOutOfRange";
+
+        /// <summary>Returned when the grade override reason exceeds max length (500 chars).</summary>
+        public const string ChildGradeOverrideReasonTooLong = "ChildGradeOverrideReasonTooLong";
+
+        /// <summary>Generic server-error for child profile/grade/language operations.</summary>
+        public const string ChildAdminOperationSystemError = "ChildAdminOperationSystemError";
+
     }
 }

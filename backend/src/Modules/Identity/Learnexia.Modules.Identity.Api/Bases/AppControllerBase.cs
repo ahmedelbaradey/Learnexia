@@ -27,6 +27,8 @@ public class AppControllerBase : ControllerBase
         HttpStatusCode.Unauthorized => new UnauthorizedObjectResult(response),
         HttpStatusCode.NotFound => new NotFoundObjectResult(response),
         HttpStatusCode.Conflict => new ConflictObjectResult(response),
+        // Finding #7 — explicit 424 FailedDependency mapping (BusinessValidation confirm-gate responses).
+        HttpStatusCode.FailedDependency => new ObjectResult(response) { StatusCode = StatusCodes.Status424FailedDependency },
         HttpStatusCode.InternalServerError => new ObjectResult(response) { StatusCode = StatusCodes.Status500InternalServerError },
         _ => new ObjectResult(response) { StatusCode = (int)response.StatusCode },
     };

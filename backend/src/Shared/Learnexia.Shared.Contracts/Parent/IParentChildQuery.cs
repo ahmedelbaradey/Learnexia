@@ -32,4 +32,19 @@ public interface IParentChildQuery
     /// account or pre-link state).
     /// </summary>
     Task<int?> FindParentForChildAsync(int childId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all student (child) user ids linked to the given parent.
+    /// Added for P7-06 admin inspect: lets Identity's family query surface the full
+    /// list of children for a parent without referencing the Parent module's projects.
+    /// Returns an empty list when the parent has no linked children.
+    /// </summary>
+    Task<IReadOnlyList<int>> GetChildIdsForParentAsync(int parentUserId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all parent user ids linked to the given child (student).
+    /// Added for P7-06 admin inspect: a child may have more than one parent.
+    /// Returns an empty list when the child has no linked parents (orphan state).
+    /// </summary>
+    Task<IReadOnlyList<int>> GetParentIdsForChildAsync(int childUserId, CancellationToken ct = default);
 }

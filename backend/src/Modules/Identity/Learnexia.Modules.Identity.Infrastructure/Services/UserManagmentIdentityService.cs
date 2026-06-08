@@ -1,20 +1,43 @@
 using System.Security.Claims;
 using Learnexia.Modules.Identity.Application.Abstractions;
 using Learnexia.Modules.Identity.Domain.Entities;
+using Learnexia.Modules.Identity.Infrastructure.Persistence;
 using Learnexia.Shared.Kernel.Abstractions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Learnexia.Modules.Identity.Infrastructure.Services;
+
+/// <summary>
+/// Thin wrapper around <see cref="IDbContextTransaction"/> that implements
+/// <see cref="IIdentityDbTransaction"/> for use in Application-layer handlers.
+/// </summary>
+internal sealed class IdentityDbTransactionWrapper : IIdentityDbTransaction
+{
+    private readonly IDbContextTransaction _inner;
+
+    public IdentityDbTransactionWrapper(IDbContextTransaction inner) => _inner = inner;
+
+    public Task CommitAsync(CancellationToken ct = default) => _inner.CommitAsync(ct);
+    public Task RollbackAsync(CancellationToken ct = default) => _inner.RollbackAsync(ct);
+
+    public ValueTask DisposeAsync() => _inner.DisposeAsync();
+}
 
 public class UserManagmentIdentityService : IUserManagmentService
 {
     private readonly UserManager<User> _userManager;
+    private readonly IdentityModuleDbContext _dbContext;
     private readonly ILoggerManager _logger;
 
-    public UserManagmentIdentityService(UserManager<User> userManager, ILoggerManager logger)
+    public UserManagmentIdentityService(
+        UserManager<User> userManager,
+        IdentityModuleDbContext dbContext,
+        ILoggerManager logger)
     {
         _userManager = userManager;
+        _dbContext = dbContext;
         _logger = logger;
     }
 
@@ -144,5 +167,18 @@ public class UserManagmentIdentityService : IUserManagmentService
             _logger.LogError(ex, $"Error getting users with only role {roleName}");
             return new List<User>();
         }
+    }
+
+    /// <summary>
+    /// Opens an explicit DB transaction on the shared <see cref="IdentityModuleDbContext"/>.
+    /// All subsequent <see cref="UserManager{TUser}.UpdateAsync"/> calls within the same EF
+    /// Core scope will participate in this transaction (they flush to the DB but the write is
+    /// not visible until <see cref="IIdentityDbTransaction.CommitAsync"/> is called).
+    /// Finding #4 — cascade-delete atomicity.
+    /// </summary>
+    public async Task<IIdentityDbTransaction> BeginTransactionAsync(CancellationToken ct = default)
+    {
+        var tx = await _dbContext.Database.BeginTransactionAsync(ct);
+        return new IdentityDbTransactionWrapper(tx);
     }
 }

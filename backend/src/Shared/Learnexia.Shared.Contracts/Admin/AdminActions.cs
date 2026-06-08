@@ -61,4 +61,18 @@ public static class AdminActions
     public const string ContentArchived    = "Content.Archived";
     public const string ContentUnpublished = "Content.Unpublished";
     public const string ContentRolledBack  = "Content.RolledBack";
+
+    // ── P7-06 Admin User Search & Inspect ────────────────────────────────────
+    public const string UserSearched = "User.Searched";
+    public const string UserViewed   = "User.Viewed";
+
+    // ── P7-07 Account Lifecycle ───────────────────────────────────────────────
+    public const string AccountSuspended   = "Account.Suspended";
+    public const string AccountReactivated = "Account.Reactivated";
+    public const string AccountDeleted     = "Account.Deleted";
+
+    // ── P7-08 Child Profile & Grade Override ─────────────────────────────────
+    public const string ChildProfileUpdated        = "Child.ProfileUpdated";
+    public const string ChildGradeOverridden       = "Child.GradeOverridden";
+    public const string ChildLearningLanguageChanged = "Child.LearningLanguageChanged";
 }

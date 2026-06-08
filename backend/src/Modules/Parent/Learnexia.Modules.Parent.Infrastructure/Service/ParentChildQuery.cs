@@ -30,4 +30,18 @@ public sealed class ParentChildQuery : IParentChildQuery
             .Where(ps => ps.StudentId == childId)
             .Select(ps => (int?)ps.ParentId)
             .FirstOrDefaultAsync(ct);
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<int>> GetChildIdsForParentAsync(int parentUserId, CancellationToken ct = default)
+        => await _dbContext.ParentStudents
+            .Where(ps => ps.ParentId == parentUserId)
+            .Select(ps => ps.StudentId)
+            .ToListAsync(ct);
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<int>> GetParentIdsForChildAsync(int childUserId, CancellationToken ct = default)
+        => await _dbContext.ParentStudents
+            .Where(ps => ps.StudentId == childUserId)
+            .Select(ps => ps.ParentId)
+            .ToListAsync(ct);
 }

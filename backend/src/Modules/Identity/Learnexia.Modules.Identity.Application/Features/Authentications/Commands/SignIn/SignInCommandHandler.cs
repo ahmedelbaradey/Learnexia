@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using Learnexia.Modules.Identity.Application.Abstractions;
 using Learnexia.Modules.Identity.Domain.Entities;
+using Learnexia.Modules.Identity.Domain.Enums;
 using Learnexia.Modules.Identity.Domain.Helpers;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
@@ -61,6 +62,12 @@ public class SignInCommandHandler : BaseResponseHandler, ICommandHandler<SignInC
             }
 
             if (!user.IsActive)
+                return BadRequest<JwtAuthResponse>(_localizer[SharedResourcesKey.LoginAccountDeactivated]);
+
+            // Account-status gate (Finding #1): authoritative AccountStatus check that catches
+            // Suspended and Deleted regardless of whether IsActive is already false.
+            // Both states map to the SAME generic "account deactivated" message — no state leak.
+            if (user.AccountStatus is AccountStatus.Suspended or AccountStatus.Deleted)
                 return BadRequest<JwtAuthResponse>(_localizer[SharedResourcesKey.LoginAccountDeactivated]);
 
             // Account lockout engaged (BE-1): lockoutOnFailure: true makes each failure count toward the

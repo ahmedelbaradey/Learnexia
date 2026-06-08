@@ -1947,4 +1947,92 @@
   <data name="VersionNumberMustBePositive" xml:space="preserve">
     <value>رقم الإصدار يجب أن يكون أكبر من الصفر.</value>
   </data>
+  <!-- P7-06 Admin User Search and Inspect -->
+  <data name="AdminUserSearchRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع نتائج البحث عن المستخدمين بنجاح.</value>
+  </data>
+  <data name="AdminUserProfileRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع ملف المستخدم بنجاح.</value>
+  </data>
+  <data name="AdminUserFamilyRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع معلومات عائلة المستخدم بنجاح.</value>
+  </data>
+  <data name="AdminUserActivityRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع ملخص نشاط المستخدم بنجاح.</value>
+  </data>
+  <data name="AdminUserInvalidPageNumber" xml:space="preserve">
+    <value>رقم الصفحة يجب أن يكون أكبر من أو يساوي 1.</value>
+  </data>
+  <data name="AdminUserInvalidPageSize" xml:space="preserve">
+    <value>حجم الصفحة يجب أن يكون بين 1 و 100.</value>
+  </data>
+  <data name="AccountSuspendedSuccessfully" xml:space="preserve">
+    <value>تم تعليق الحساب بنجاح.</value>
+  </data>
+  <data name="AccountReactivatedSuccessfully" xml:space="preserve">
+    <value>تم إعادة تفعيل الحساب بنجاح.</value>
+  </data>
+  <data name="AccountDeletedSuccessfully" xml:space="preserve">
+    <value>تم حذف الحساب بنجاح.</value>
+  </data>
+  <data name="ConfirmAccountDeletionRequired" xml:space="preserve">
+    <value>حذف الحساب لا يمكن التراجع عنه. قم بتعيين Confirm=true للمتابعة.</value>
+  </data>
+  <data name="AccountAlreadyDeleted" xml:space="preserve">
+    <value>هذا الحساب محذوف بالفعل ولا يمكن تعديله.</value>
+  </data>
+  <data name="AccountAlreadySuspended" xml:space="preserve">
+    <value>هذا الحساب معلق بالفعل.</value>
+  </data>
+  <data name="AccountAlreadyActive" xml:space="preserve">
+    <value>هذا الحساب نشط بالفعل.</value>
+  </data>
+  <data name="CannotActOnOwnAccount" xml:space="preserve">
+    <value>لا يمكن للمشرف تعليق أو حذف حسابه الخاص.</value>
+  </data>
+  <data name="AccountLifecycleUserIdRequired" xml:space="preserve">
+    <value>معرف مستخدم صالح مطلوب.</value>
+  </data>
+  <data name="AccountLifecycleReasonRequired" xml:space="preserve">
+    <value>السبب مطلوب لهذا الإجراء.</value>
+  </data>
+  <data name="AccountLifecycleReasonTooLong" xml:space="preserve">
+    <value>يجب ألا يتجاوز السبب 500 حرف.</value>
+  </data>
+  <data name="CannotReactivateDeletedAccount" xml:space="preserve">
+    <value>لا يمكن إعادة تفعيل حساب محذوف. الحذف حالة نهائية.</value>
+  </data>
+  <data name="AccountLifecycleSystemError" xml:space="preserve">
+    <value>حدث خطأ أثناء تنفيذ عملية دورة حياة الحساب.</value>
+  </data>
+  <data name="CannotActOnSuperAdminAccount" xml:space="preserve">
+    <value>حساب المشرف العام محمي ولا يمكن تعليقه أو حذفه.</value>
+  </data>
+  <data name="ChildProfileUpdatedSuccessfully" xml:space="preserve">
+    <value>تم تحديث ملف الطفل بنجاح.</value>
+  </data>
+  <data name="TargetUserIsNotAChild" xml:space="preserve">
+    <value>المستخدم المستهدف ليس حساب طفل. هذه العملية تتطلب دور الطالب.</value>
+  </data>
+  <data name="ChildIdRequired" xml:space="preserve">
+    <value>معرف الطفل الصالح مطلوب.</value>
+  </data>
+  <data name="ChildGradeOverriddenSuccessfully" xml:space="preserve">
+    <value>تم تغيير صف الطفل بنجاح. تم الحفاظ على سجل التعلم.</value>
+  </data>
+  <data name="ChildGradeOverrideConfirmRequired" xml:space="preserve">
+    <value>يرجى تأكيد تغيير الصف عن طريق تعيين Confirm=true.</value>
+  </data>
+  <data name="ChildGradeUnchanged" xml:space="preserve">
+    <value>صف الطفل مضبوط بالفعل على القيمة المطلوبة. لم يتم إجراء أي تغيير.</value>
+  </data>
+  <data name="ChildGradeOutOfRange" xml:space="preserve">
+    <value>يجب أن يكون الصف بين 1 و 6.</value>
+  </data>
+  <data name="ChildGradeOverrideReasonTooLong" xml:space="preserve">
+    <value>يجب ألا يتجاوز السبب 500 حرف.</value>
+  </data>
+  <data name="ChildAdminOperationSystemError" xml:space="preserve">
+    <value>حدث خطأ أثناء تنفيذ عملية إدارة الطفل.</value>
+  </data>
 </root>
