@@ -117,3 +117,15 @@ None of the seeder names match (grade suffix `(الصف 1)` / `(G1)` breaks the 
 - Expo web auto-started by Playwright `webServer` (took ~50s first bundle).
 - Backend returns `language: null` for all subjects (the `lang` field on `StudentSubjectDto` is not mapped to a non-null value by the current seeder / DTO), but this does not affect the current bug.
 - 4 subjects ARE returned by the backend for grade-1 ar child (confirmed by direct API call); the bug is entirely in the FE filtering layer.
+
+---
+## Post-fix re-run (after BUG-001 fixed) — 19 pass / 6 fail
+The subjects section now renders the 4 product subjects (BUG-001 fixed via `subjectCode`
+resolution). Re-run dropped failures 21 → 6. The remaining 6 are **spec-quality issues, NOT
+app bugs** (the page snapshot shows the section, the "موادك" heading, and subject rows all present):
+- FE-TC-01 + "header stable across loads": spec used `getByRole('header')` — invalid ARIA role;
+  should be `getByRole('heading')`. App renders the heading correctly.
+- 3 Group-B state cases (error-retry / subject-not-found / retry-to-4-rows): need `page.route`
+  mocking to trigger error/404 — the live backend returns 200. Route-mock or mark BLOCKED.
+- Group-C "detail returns to child home": back-nav assertion to refine.
+These are deferred spec refinements; the P2-02 browse flow itself is working.
