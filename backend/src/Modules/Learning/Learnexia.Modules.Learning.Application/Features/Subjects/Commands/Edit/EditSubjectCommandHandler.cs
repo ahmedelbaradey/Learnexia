@@ -44,14 +44,25 @@ public class EditSubjectCommandHandler : BaseResponseHandler, ICommandHandler<Ed
             if (request is null)
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
-            // P7-01: Check for a duplicate (GradeId, SubjectCode, Language) tree
-            // when the natural-key fields are being changed (exclude the current row).
+            // P2-QC-DEFECT-1 (immutability): SubjectCode and Language are ignored in the
+            // AutoMapper Edit mapping — they cannot be changed via this endpoint. Load the
+            // stored natural-key values so the duplicate check uses the ACTUAL key fields
+            // (not whatever SubjectCode/Language the client happened to submit).
+            var existing = await _repository.Learning
+                .GetByCondition<Subject>(s => s.Id == request.Id, trackChanges: false)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (existing is null)
+                return NotFound<string>(_localizer[SharedResourcesKey.SubjectNotFound]);
+
+            // P7-01: Detect a GradeId move that would collide with an existing tree slot.
+            // SubjectCode and Language come from the stored row — they cannot be changed.
             var conflict = await _repository.Learning
                 .AnyAsync<Subject>(s =>
                     s.Id != request.Id
                     && s.GradeId == request.GradeId
-                    && s.SubjectCode == request.SubjectCode
-                    && s.Language == request.Language);
+                    && s.SubjectCode == existing.SubjectCode
+                    && s.Language == existing.Language);
 
             if (conflict)
                 return BadRequest<string>(_localizer[SharedResourcesKey.SubjectDuplicateTree]);

@@ -959,6 +959,24 @@
 
         // ── P7-03 Skill & Knowledge-graph management ──────────────────────────────────────────
 
+        /// <summary>Returned when a Concept referenced by a parent-ID FK is not found (e.g. AddSkill with bad ConceptId).</summary>
+        public const string ConceptNotFound = "ConceptNotFound";
+
+        // ── QC-DEFECT fixes (Phase-2 backend QC pass) ─────────────────────────────────────────
+
+        /// <summary>
+        /// Generic validation-failed label used by ErrorHandlerMiddleWare for the FluentValidation
+        /// exception path (replaces the previous bare string literal "Validation Failed").
+        /// </summary>
+        public const string ValidationFailed = "ValidationFailed";
+
+        /// <summary>
+        /// Returned by ErrorHandlerMiddleWare as defense-in-depth when a DbUpdateException
+        /// carries a unique-constraint violation (SqlState 23505) that escaped the handler's
+        /// own pre-check (e.g. a race condition). Returns HTTP 422 with this message.
+        /// </summary>
+        public const string UniqueConstraintViolation = "UniqueConstraintViolation";
+
         /// <summary>Returned when a Skill to modify or delete is not found.</summary>
         public const string SkillNotFound = "SkillNotFound";
 

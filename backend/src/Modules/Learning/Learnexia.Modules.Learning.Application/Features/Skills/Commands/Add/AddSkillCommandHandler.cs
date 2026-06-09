@@ -49,6 +49,15 @@ public class AddSkillCommandHandler : BaseResponseHandler, ICommandHandler<AddSk
             if (request is null)
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
+            // DEFECT-2 fix: explicit Concept existence check before staging the insert.
+            // GetSubjectByConceptIdAsync returns null when the concept is missing, but making
+            // the 404 explicit here ensures the correct status code and message is returned.
+            var conceptExists = await _repository.Learning
+                .AnyAsync<Concept>(c => c.Id == request.ConceptId);
+
+            if (!conceptExists)
+                return NotFound<string>(_localizer[SharedResourcesKey.ConceptNotFound]);
+
             // Resolve the Concept → Subject chain needed for the auto-created KnowledgeNode.
             var subject = await _repository.Learning.GetSubjectByConceptIdAsync(request.ConceptId, cancellationToken);
 

@@ -1822,6 +1822,15 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="ContentBlockUrlInvalid" xml:space="preserve">
     <value>The URL must be an absolute HTTPS address pointing to a public host. Insecure schemes and private/loopback addresses are not allowed.</value>
   </data>
+  <data name="ConceptNotFound" xml:space="preserve">
+    <value>The requested concept was not found.</value>
+  </data>
+  <data name="ValidationFailed" xml:space="preserve">
+    <value>Validation Failed</value>
+  </data>
+  <data name="UniqueConstraintViolation" xml:space="preserve">
+    <value>A record with the same unique key already exists.</value>
+  </data>
   <data name="SkillNotFound" xml:space="preserve">
     <value>Skill not found.</value>
   </data>

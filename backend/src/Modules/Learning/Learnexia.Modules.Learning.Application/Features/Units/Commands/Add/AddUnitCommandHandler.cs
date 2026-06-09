@@ -41,6 +41,14 @@ public class AddUnitCommandHandler : BaseResponseHandler, ICommandHandler<AddUni
             if (request is null)
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
+            // DEFECT-2 fix: pre-check parent Subject existence before staging the insert.
+            // Without this, a bad SubjectId reaches SaveChangesAsync → FK violation → DbUpdateException → 500.
+            var subjectExists = await _repository.Learning
+                .AnyAsync<Subject>(s => s.Id == request.SubjectId);
+
+            if (!subjectExists)
+                return NotFound<string>(_localizer[SharedResourcesKey.SubjectNotFound]);
+
             var result = await _service.UnitService.AddAsync<AddUnitCommand>(request, cancellationToken);
 
             if (result.Successed)

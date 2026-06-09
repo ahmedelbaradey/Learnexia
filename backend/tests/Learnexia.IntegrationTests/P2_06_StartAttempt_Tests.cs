@@ -247,13 +247,15 @@ public sealed class P2_06_StartAttempt_Tests : IAsyncLifetime
 
         var lesson = new Lesson
         {
-            Name          = lessonName,
-            Difficulty    = DifficultyLevel.Easy,
-            SequenceOrder = 1,
-            IsLocked      = false,
-            UnitId        = unit.Id,
-            CreatedAt     = now,
-            CreatedBy     = 0,
+            Name           = lessonName,
+            Difficulty     = DifficultyLevel.Easy,
+            SequenceOrder  = 1,
+            IsLocked       = false,
+            UnitId         = unit.Id,
+            IsActive       = true,
+            LifecycleState = LifecycleState.Published,
+            CreatedAt      = now,
+            CreatedBy      = 0,
         };
         await db.Lessons.AddAsync(lesson);
         await db.SaveChangesAsync();
@@ -277,15 +279,17 @@ public sealed class P2_06_StartAttempt_Tests : IAsyncLifetime
         {
             var q = new QuizQuestion
             {
-                LessonId      = lessonId,
-                QuestionType  = QuestionType.MCQ,
-                QuestionText  = qText,
-                Options       = opts,
-                CorrectAnswer = correctAnswer,
-                Difficulty    = DifficultyLevel.Easy,
-                GeneratedBy   = GeneratedBy.Curated,   // enum has Curated=1, AI=2 — NOT Admin
-                CreatedAt     = now,
-                CreatedBy     = 0,
+                LessonId       = lessonId,
+                QuestionType   = QuestionType.MCQ,
+                QuestionText   = qText,
+                Options        = opts,
+                CorrectAnswer  = correctAnswer,
+                Difficulty     = DifficultyLevel.Easy,
+                GeneratedBy    = GeneratedBy.Curated,   // enum has Curated=1, AI=2 — NOT Admin
+                IsActive       = true,
+                LifecycleState = LifecycleState.Published,
+                CreatedAt      = now,
+                CreatedBy      = 0,
             };
             await db.QuizQuestions.AddAsync(q);
         }

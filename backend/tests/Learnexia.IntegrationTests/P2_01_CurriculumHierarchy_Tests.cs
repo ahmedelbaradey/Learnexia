@@ -468,9 +468,10 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
             new { Name = conceptName, Description = "Intro to variables", DifficultyLevel = 1 /* Easy */, SubjectId = subjectId }, _adminToken);
         AssertCreateSuccess(conceptResp, conceptRoot, conceptBody);
 
+        // P7-SEC: Concepts/List is now [Authorize(AdminOnly)] — must pass admin token.
         int conceptId = await FindIdInList(
             $"/api/learning/concepts/List?PageNumber=1&PageSize=200&SubjectId={subjectId}",
-            "name", conceptName, "concept");
+            "name", conceptName, "concept", _adminToken);
 
         // STEP 5: Create Skill — requires Admin JWT
         var skillName = $"Solve Equations {Guid.NewGuid():N}";
@@ -478,9 +479,10 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
             new { Name = skillName, MasteryThreshold = 80, EstimatedTimeMinutes = 30, ConceptId = conceptId }, _adminToken);
         AssertCreateSuccess(skillResp, skillRoot, skillBody);
 
+        // P7-SEC-2: Skills/List is [Authorize(AdminOnly)] — must pass admin token.
         int skillId = await FindIdInList(
             $"/api/learning/skills/List?PageNumber=1&PageSize=200&ConceptId={conceptId}",
-            "name", skillName, "skill");
+            "name", skillName, "skill", _adminToken);
 
         // STEP 6: Create Lesson WITHOUT SkillId (null is allowed) — requires Admin JWT
         var lesson1Name = $"Intro Lesson {Guid.NewGuid():N}";
@@ -780,18 +782,19 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     // AC-4 — FK behavior: non-existent GradeId fails gracefully
     // =========================================================================
 
-    [Fact(DisplayName = "AC-4 FK: Subject Create with non-existent GradeId=999999 fails gracefully (non-2xx, valid JSON envelope)")]
+    [Fact(DisplayName = "AC-4 FK / BE-TC-33: Subject Create with non-existent GradeId=999999 → 404 (DEFECT-2 RESOLVED: pre-existence check returns NotFound)")]
     public async Task AC4_Subject_NonExistentGradeId_FailsGracefully()
     {
         // GradeId=999999 passes validator (GreaterThan(0)) but doesn't exist in DB.
-        // FK violation raised at SaveChanges in UnitOfWorkBehavior → propagates to handler catch → ServerError() → HTTP 500.
-        // Admin JWT required — Create now has [Authorize(Policy = AdminOnly)].
+        // DEFECT-2 RESOLVED: handler pre-checks Grade existence → NotFound() → HTTP 404
+        // (previously: FK violation at SaveChanges → catch → ServerError() → HTTP 500).
         var (response, root, body) = await PostAsync("/api/learning/subjects/Create",
             new { Name = "Orphan Subject", GradeId = 999999 }, _adminToken);
 
         var statusCode = (int)response.StatusCode;
-        statusCode.Should().NotBe(200, "non-existent GradeId must not return 200; body: {0}", body);
-        statusCode.Should().NotBe(201, "non-existent GradeId must not return 201; body: {0}", body);
+        // DEFECT-2 RESOLVED: assert 404 (not just non-2xx)
+        statusCode.Should().Be(404,
+            "DEFECT-2 RESOLVED: non-existent GradeId must return 404 (pre-existence check); actual={0}; body: {1}", statusCode, body);
 
         // Response body must be valid JSON (envelope), not a naked exception page
         body.Should().NotBeNullOrWhiteSpace("response body must not be empty on FK failure; body: {0}", body);
@@ -803,7 +806,7 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
         if (root.ValueKind != JsonValueKind.Undefined && TryProp(root, "successed", out var succeededProp))
         {
             succeededProp.GetBoolean().Should().BeFalse(
-                "successed must be false when FK constraint is violated; body: {0}", body);
+                "successed must be false when parent not found; body: {0}", body);
         }
     }
 
@@ -861,8 +864,9 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
             new { Name = skillName, MasteryThreshold = 75, EstimatedTimeMinutes = 45, ConceptId = conceptId }, _adminToken);
         AssertCreateSuccess(createResp, default, createBody);
 
+        // P7-SEC-2: Skills/List is [Authorize(AdminOnly)] — must pass admin token.
         var (listResp, listRoot, listBody) = await GetAsync(
-            $"/api/learning/skills/List?PageNumber=1&PageSize=200&ConceptId={conceptId}");
+            $"/api/learning/skills/List?PageNumber=1&PageSize=200&ConceptId={conceptId}", _adminToken);
         listResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", listBody);
         var skills = ExtractItems(listRoot, listBody);
 
@@ -1011,8 +1015,9 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
         var (resp, _, body) = await PostAsync("/api/learning/concepts/Create",
             new { Name = name, DifficultyLevel = 1, SubjectId = subjectId }, _adminToken);
         resp.StatusCode.Should().Be(HttpStatusCode.OK, "prereq concept create failed; body: {0}", body);
+        // P7-SEC: Concepts/List is now [Authorize(AdminOnly)] — must pass admin token.
         return await FindIdInList(
             $"/api/learning/concepts/List?PageNumber=1&PageSize=200&SubjectId={subjectId}",
-            "name", name, "concept");
+            "name", name, "concept", _adminToken);
     }
 }

@@ -196,7 +196,7 @@ public sealed class P2_08_RecordGranularAnswers_Tests : IAsyncLifetime
         await db.Units.AddAsync(unit);
         await db.SaveChangesAsync();
 
-        var lesson = new Lesson { Name = lessonName, Difficulty = DifficultyLevel.Easy, SequenceOrder = 1, IsLocked = false, UnitId = unit.Id, CreatedAt = now, CreatedBy = 0 };
+        var lesson = new Lesson { Name = lessonName, Difficulty = DifficultyLevel.Easy, SequenceOrder = 1, IsLocked = false, UnitId = unit.Id, IsActive = true, LifecycleState = LifecycleState.Published, CreatedAt = now, CreatedBy = 0 };
         await db.Lessons.AddAsync(lesson);
         await db.SaveChangesAsync();
 
@@ -220,16 +220,18 @@ public sealed class P2_08_RecordGranularAnswers_Tests : IAsyncLifetime
         {
             var q = new QuizQuestion
             {
-                LessonId      = lessonId,
-                SkillId       = skillId,
-                QuestionType  = QuestionType.MCQ,
-                QuestionText  = qText,
-                Options       = opts,
-                CorrectAnswer = correctAnswer,
-                Difficulty    = DifficultyLevel.Easy,
-                GeneratedBy   = GeneratedBy.Curated,
-                CreatedAt     = now,
-                CreatedBy     = 0,
+                LessonId       = lessonId,
+                SkillId        = skillId,
+                QuestionType   = QuestionType.MCQ,
+                QuestionText   = qText,
+                Options        = opts,
+                CorrectAnswer  = correctAnswer,
+                Difficulty     = DifficultyLevel.Easy,
+                GeneratedBy    = GeneratedBy.Curated,
+                IsActive       = true,
+                LifecycleState = LifecycleState.Published,
+                CreatedAt      = now,
+                CreatedBy      = 0,
             };
             await db.QuizQuestions.AddAsync(q);
             await db.SaveChangesAsync();

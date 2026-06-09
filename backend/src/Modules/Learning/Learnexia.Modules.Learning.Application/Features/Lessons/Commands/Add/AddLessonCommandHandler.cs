@@ -44,6 +44,26 @@ public class AddLessonCommandHandler : BaseResponseHandler, ICommandHandler<AddL
             if (request is null)
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
+            // DEFECT-2 fix: pre-check parent Unit existence before staging the insert.
+            // Without this, a bad UnitId reaches SaveChangesAsync → FK violation → DbUpdateException → 500.
+            var unitExists = await _repository.Learning
+                .AnyAsync<Unit>(u => u.Id == request.UnitId);
+
+            if (!unitExists)
+                return NotFound<string>(_localizer[SharedResourcesKey.UnitNotFound]);
+
+            // DEFECT-2 fix: pre-check optional Skill FK when SkillId is supplied.
+            // SetNull behaviour only applies on Skill DELETE, not INSERT — the DB still enforces
+            // the FK constraint on insert, so a non-existent SkillId causes a 500 without this guard.
+            if (request.SkillId.HasValue)
+            {
+                var skillExists = await _repository.Learning
+                    .AnyAsync<Skill>(sk => sk.Id == request.SkillId.Value);
+
+                if (!skillExists)
+                    return NotFound<string>(_localizer[SharedResourcesKey.SkillNotFound]);
+            }
+
             var result = await _service.LessonService.AddAsync<AddLessonCommand>(request, cancellationToken);
 
             if (result.Successed)

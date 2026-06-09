@@ -41,8 +41,15 @@ public class QuizzesController : AppControllerBase
     [HttpPost("{attemptId}/Answers")]
     [Authorize(Roles = "Student")]
     [ProducesResponseType(typeof(BaseResponse<SubmitAnswerResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> SubmitAnswer([FromRoute] int attemptId, [FromBody] SubmitAnswerCommand command)
+    public async Task<IActionResult> SubmitAnswer([FromRoute] int attemptId, [FromBody] SubmitAnswerCommand? command)
     {
+        // D-P2-05-01 fix: when JSON body is malformed, the model binder yields null (with
+        // SuppressModelStateInvalidFilter=true). The `with` expression on a null record throws
+        // NullReferenceException → 500. Guard here so MediatR receives null → ArgumentNullException
+        // → ErrorHandlerMiddleWare returns 400 instead.
+        if (command is null)
+            return NewResult(await Mediator.Send((SubmitAnswerCommand)null!));
+
         command = command with { AttemptId = attemptId };
         return NewResult(await Mediator.Send(command));
     }

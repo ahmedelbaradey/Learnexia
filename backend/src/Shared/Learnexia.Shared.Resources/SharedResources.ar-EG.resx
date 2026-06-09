@@ -1821,6 +1821,15 @@
   <data name="ContentBlockUrlInvalid" xml:space="preserve">
     <value>يجب أن يكون الرابط عنوان HTTPS مطلقاً يشير إلى مضيف عام. لا يُسمح بالبروتوكولات غير الآمنة ولا بالعناوين الخاصة أو المحلية.</value>
   </data>
+  <data name="ConceptNotFound" xml:space="preserve">
+    <value>المفهوم المطلوب غير موجود.</value>
+  </data>
+  <data name="ValidationFailed" xml:space="preserve">
+    <value>فشل التحقق من الصحة</value>
+  </data>
+  <data name="UniqueConstraintViolation" xml:space="preserve">
+    <value>سجل بنفس المفتاح الفريد موجود بالفعل.</value>
+  </data>
   <data name="SkillNotFound" xml:space="preserve">
     <value>لم يتم العثور على المهارة.</value>
   </data>

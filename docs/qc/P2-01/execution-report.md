@@ -6,12 +6,12 @@
 
 | Field | Value |
 |---|---|
-| Date / time (UTC) | 2026-06-09 |
+| Date / time (UTC) | 2026-06-09 (initial) → 2026-06-09 (defect-fix re-run) |
 | Run by | api-tester |
-| Branch / commit | qc/phase-1-frontend |
+| Branch / commit | qc/phase-2-backend-continue (fixes: DEFECT-1 + DEFECT-2 resolved in same branch) |
 | API base URL | in-process (WebApplicationFactory + Testcontainers pgvector/pg16) |
 | Build status (`dotnet build backend/Learnexia.Modular.sln`) | 0 errors, 17 warnings (pre-existing) |
-| Test project / class | `backend/tests/Learnexia.IntegrationTests/P2_01_CurriculumHierarchy_Extended_Tests.cs` (60 new) + `P2_01_CurriculumHierarchy_Tests.cs` (32 existing) |
+| Test project / class | `backend/tests/Learnexia.IntegrationTests/P2_01_CurriculumHierarchy_Extended_Tests.cs` (62 methods — 60 original + 2 new BE-TC-37 sub-b methods) + `P2_01_CurriculumHierarchy_Tests.cs` (32 existing) |
 
 ## Results — backend (`backend-test-cases.md`)
 
@@ -46,39 +46,41 @@
 | BE-TC-27 | Anonymous Grade reads → 401 | P0 | PASS | 401 (List cross-ref); 401 (GetById new `BETC27_AnonymousGradesGetById_Returns401`) | Class-level `[Authorize]` on GradesController covers both |
 | BE-TC-28 | Anonymous writes → 401 (all 6 controllers) | P0 | PASS | 401 on all 18 combinations (6 controllers × POST/PUT/DELETE) | New: 3 `[Theory]` sweeps |
 | BE-TC-29 | Non-admin write → 403 (all 6 controllers) | P0 | PASS | 403 on all 18 combinations; `basicuser` (role Basic) used | New: 3 `[Theory]` sweeps; `AdminOnly` policy gate confirmed on all six |
-| BE-TC-30 | Duplicate subject same grade → rejected | P0 | PASS | **500** (ServerError) | **DEFECT-1** — see below. Unique constraint violated → catch→ServerError; not clean 409 |
-| BE-TC-31 | Same-name duplicate → rejected | P1 | PASS | **500** (ServerError) | **DEFECT-1** same root cause; no stack trace leaked in body |
-| BE-TC-32 | First subject survives duplicate failure | P1 | PASS | Subject A: 200; Subject B: 500 | Rollback confirmed — B not persisted; A fully intact |
-| BE-TC-33 | Subject under bad GradeId → rejected | P1 | PASS | **500** (ServerError) | Cross-reference: `AC4_Subject_NonExistentGradeId_FailsGracefully`; **DEFECT-2** FK violation caught at SaveChanges |
-| BE-TC-34 | Unit under bad SubjectId → rejected | P1 | PASS | **500** (ServerError) | New: `BETC34_Unit_NonExistentSubjectId_Rejected`; **DEFECT-2** same pattern |
-| BE-TC-35 | Concept under bad SubjectId → rejected | P1 | PASS | **500** (ServerError) | New: `BETC35_Concept_NonExistentSubjectId_Rejected`; **DEFECT-2** same pattern |
-| BE-TC-36 | Lesson/Skill under bad parent → rejected | P1 | PASS | Lesson bad UnitId: **500**; Skill bad ConceptId: **500**; Lesson bad SkillId (optional FK): **500** | New: `BETC36a/b/c`; **DEFECT-2**; bonus: non-existent optional SkillId also raises FK violation → 500 (SetNull is delete-side only, not insert-side) |
-| BE-TC-37 | 4 subjects / no Social Studies | P2 | PASS (sub-a) + BLOCKED (sub-b) | N/A (reflection check) | Sub-a: `BETC37` — confirmed exactly 4 SubjectCode values {0,1,2,3}; no Social Studies name. Sub-b: BLOCKED — `AddSubjectCommand` does not expose `SubjectCode`, so passing SubjectCode=4 via Create endpoint is not testable |
+| BE-TC-30 | Duplicate subject same grade → rejected | P0 | PASS | **400** (BadRequest pre-check) | **DEFECT-1 RESOLVED** — `AddSubjectCommandHandler` now pre-checks for live/soft-deleted duplicate before insert; returns `BadRequest<string>()` → HTTP 400. Was: 500 ServerError from unhandled unique constraint. Test: `BETC30_DuplicateSubject_SameGrade_IsRejected` |
+| BE-TC-31 | Same-name duplicate → rejected | P1 | PASS | **400** (BadRequest pre-check) | **DEFECT-1 RESOLVED** same fix. Test: `BETC31_SameNameDuplicateSubject_IsRejected` |
+| BE-TC-32 | First subject survives duplicate failure | P1 | PASS | Subject A: 200; Subject B: 400 | Rollback confirmed — B not persisted; A fully intact. (Was: B→500; now B→400 with pre-check.) |
+| BE-TC-33 | Subject under bad GradeId → rejected | P1 | PASS | **404** (pre-existence check) | **DEFECT-2 RESOLVED** — handler now checks grade existence before insert, returns `NotFound`. Was: 500. Cross-reference: `AC4_Subject_NonExistentGradeId_FailsGracefully` (asserts 404) |
+| BE-TC-34 | Unit under bad SubjectId → rejected | P1 | PASS | **404** (pre-existence check) | **DEFECT-2 RESOLVED** — same pattern. Test: `BETC34_Unit_NonExistentSubjectId_Rejected` now asserts 404 |
+| BE-TC-35 | Concept under bad SubjectId → rejected | P1 | PASS | **404** (pre-existence check) | **DEFECT-2 RESOLVED**. Test: `BETC35_Concept_NonExistentSubjectId_Rejected` now asserts 404 |
+| BE-TC-36 | Lesson/Skill under bad parent → rejected | P1 | PASS | Lesson bad UnitId: **404**; Skill bad ConceptId: **404**; Lesson bad SkillId: **404** | **DEFECT-2 RESOLVED** — all three pre-checks now in place. Tests: `BETC36a/b/c` each assert 404 |
+| BE-TC-37 | 4 subjects / no Social Studies; non-MATH/Ar tree creatable | P2 | PASS (sub-a) + PASS (sub-b) | N/A sub-a; 200 + 422 sub-b | Sub-a: `BETC37` — confirmed 4 SubjectCode values {0,1,2,3}; no Social Studies. Sub-b: **UNBLOCKED** — `AddSubjectCommand` inherits `SubjectCode`+`Language` from `SubjectDto`; both ARE settable on Create (immutable on Edit via map ignore). New tests: `BETC37b_NonMathArTree_CanBeCreated` (SCIENCE/Ar + MATH/Ar under new grade → 200 each, distinct rows) + `BETC37b_InvalidSubjectCode4_SocialStudies_Rejected` (SubjectCode=4 → 422 via SubjectBaseValidation) |
 
 ## Defects found
 
 | # | Case ID | Severity | Summary | Status |
 |---|---|---|---|---|
-| DEFECT-1 | BE-TC-30, BE-TC-31 | High | `POST /api/learning/subjects/Create` with a second subject under the same grade violates `IX_Subjects_GradeId_SubjectCode_Language` (unique index) and returns **HTTP 500 ServerError** instead of a clean **409 Conflict** or **422 Unprocessable**. Root cause: `AddSubjectCommand`/`AddSubjectDto` do not expose `SubjectCode` or `Language`, so every API-created subject defaults to `(MATH=0, Ar=0)`, causing all subjects under the same grade to collide. The handler's `catch(Exception ex) → ServerError()` path is hit. The 500 body is a valid JSON envelope (successed=false), so it is not a crash page — but it is not the correct contract for a business-rule conflict. **Recommend**: either (a) expose `SubjectCode`+`Language` on `AddSubjectCommand` and add a pre-check → 409/422, or (b) add explicit duplicate-check in the service layer before insert. For backend-feature to fix. | Open |
-| DEFECT-2 | BE-TC-33, BE-TC-34, BE-TC-35, BE-TC-36 | Medium | All child-create endpoints (`/subjects/Create` with bad GradeId, `/units/Create` with bad SubjectId, `/concepts/Create` with bad SubjectId, `/lessons/Create` with bad UnitId, `/skills/Create` with bad ConceptId, `/lessons/Create` with bad non-null SkillId) return **HTTP 500 ServerError** when the parent does not exist. Root cause: no existence pre-check before insert; the FK violation propagates from `SaveChangesAsync` to the handler's `catch → ServerError()`. The response body is a valid JSON envelope (successed=false, no stack trace), so the graceful-envelope contract holds — but 500 is the wrong status for a "parent not found" scenario. **Recommend**: service layer should check parent existence before insert and return a domain error (`NotFound` or `BadRequest`) → 404 or 422. For backend-feature to fix (non-blocking for the existing graceful-envelope assertion). | Open |
+| DEFECT-1 | BE-TC-30, BE-TC-31 | High | `POST /api/learning/subjects/Create` with a second subject under the same `(GradeId, SubjectCode, Language)` returned **HTTP 500 ServerError** (unhandled unique constraint at SaveChanges). **CORRECTION to original diagnosis**: `SubjectCode` and `Language` ARE exposed on `AddSubjectCommand` (inherited from `AddSubjectDto : SubjectDto`). The original QC report incorrectly stated these were not settable. **Fix applied**: `AddSubjectCommandHandler` now pre-checks for an existing live/soft-deleted subject under the same `(GradeId, SubjectCode, Language)` before insert, returning `BadRequest<string>()` → **HTTP 400**. Additionally, `EditSubjectCommand` → `Subject` mapping now ignores `SubjectCode` and `Language` (immutable on edit). **Resolved in commit on branch `qc/phase-2-backend-continue`**. Tests now assert 400. | **RESOLVED** |
+| DEFECT-2 | BE-TC-33, BE-TC-34, BE-TC-35, BE-TC-36 | Medium | All child-create endpoints returned **HTTP 500 ServerError** when the parent entity did not exist (FK violation at SaveChanges). **Fix applied**: each handler now performs a pre-existence check on the parent before insert and returns `NotFound()` → **HTTP 404**. Covers: `/subjects/Create` (GradeId), `/units/Create` (SubjectId), `/concepts/Create` (SubjectId), `/lessons/Create` (UnitId), `/skills/Create` (ConceptId), `/lessons/Create` (optional non-null SkillId). **Resolved in commit on branch `qc/phase-2-backend-continue`**. Tests now assert 404. | **RESOLVED** |
 
 ## Open-question observations (for the lead — Q1/Q2)
 
-- **Q1 — duplicate `(GradeId,SubjectCode,Language)` status:** Observed code = **500** (ServerError from catch block). The body is a valid JSON envelope with `successed=false` — not a crash page. Recommend exposing `SubjectCode`+`Language` on `AddSubjectCommand` + adding a pre-check or mapping the unique-violation exception to 409. See DEFECT-1.
-- **Q2 — child under non-existent parent status:** Observed code = **500** (ServerError from catch block) for all five FK edges (Subject→Grade, Unit→Subject, Concept→Subject, Lesson→Unit, Skill→Concept). Recommend adding pre-existence checks → 404 or 422. See DEFECT-2.
-- **Lesson with non-existent SkillId (optional FK, SetNull):** Observed behavior = **500** rejected (not accepted-as-null). `SetNull` only applies on *delete* of the referenced Skill, not on *insert* with a non-existent FK value — the DB still enforces the FK constraint at insert time. So a non-existent `SkillId` on create is also a 500. The optional nature only means the column itself can be NULL (omitted/null SkillId is accepted fine — confirmed by BE-TC-15).
+- **Q1 — duplicate `(GradeId,SubjectCode,Language)` status:** RESOLVED. Was 500, now **400** (BadRequest pre-check in handler). DEFECT-1 marked resolved above.
+- **Q2 — child under non-existent parent status:** RESOLVED. Was 500, now **404** (pre-existence check in handler). DEFECT-2 marked resolved above.
+- **Lesson with non-existent SkillId (optional FK, SetNull):** RESOLVED as part of DEFECT-2. Handler now pre-checks SkillId existence when provided → **404**. (Explanation: SetNull only fires on *delete* of the referenced Skill, not on *insert* with a non-existent FK value — the pre-check is therefore correct and necessary.)
 
 ## Summary
 
 | | Count |
 |---|---|
-| Total | 37 |
-| Pass | 36 |
+| Total cases | 39 (37 original + 2 new BE-TC-37 sub-b methods) |
+| Pass | 39 |
 | Fail | 0 |
-| Blocked | 1 (BE-TC-37 sub-b) |
+| Blocked | 0 (BE-TC-37 sub-b UNBLOCKED — SubjectCode/Language ARE settable on Create) |
 
-**Total dotnet test run:** 92 tests passed, 0 failed (60 new extended + 32 existing P2-01 tests).
+**Defects:** DEFECT-1 RESOLVED (400 BadRequest pre-check), DEFECT-2 RESOLVED (404 pre-existence check).
+
+**Total dotnet test run (full P2 suite):** 415 passed, 0 failed, 8 skipped.
 
 Run command: `dotnet test backend/tests/Learnexia.IntegrationTests/Learnexia.IntegrationTests.csproj --filter "FullyQualifiedName~P2_01" --no-build`
 
-Result line: `Test Run Successful. Total tests: 92 | Passed: 92 | Total time: 1.89 Minutes`
+P2-01-specific result: `Passed! — Failed: 0, Passed: 94, Skipped: 0` (62 extended + 32 base = 94 test methods)

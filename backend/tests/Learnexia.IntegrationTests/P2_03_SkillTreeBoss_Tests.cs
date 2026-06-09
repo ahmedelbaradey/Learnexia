@@ -268,12 +268,23 @@ public sealed class P2_03_SkillTreeBoss_Tests : IAsyncLifetime
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<LearningDbContext>();
 
-        var bossCount = await db.Lessons.CountAsync(l => l.IsBoss);
-        var unitCount = await db.Units.CountAsync();
+        // Scope to Published units only: seeder-planted units have LifecycleState=Published,
+        // whereas units created via admin API (e.g. by P2_01 tests earlier in the collection)
+        // default to LifecycleState=Draft.  API-created units never go through MarkBossLessonsAsync
+        // and should not be counted here — the invariant applies only to seeder-planted data.
+        var publishedUnitIds = await db.Units
+            .Where(u => u.LifecycleState == LifecycleState.Published)
+            .Select(u => u.Id)
+            .ToListAsync();
+
+        var unitCount = publishedUnitIds.Count;
+        var bossCount = await db.Lessons
+            .CountAsync(l => l.IsBoss && publishedUnitIds.Contains(l.UnitId));
 
         bossCount.Should().Be(unitCount,
-            "LearningSeeder.MarkBossLessonsAsync must mark exactly one lesson per unit as boss. " +
-            "Expected bossCount == unitCount == {0}; actual bossCount = {1}. " +
+            "LearningSeeder.MarkBossLessonsAsync must mark exactly one lesson per published unit as boss. " +
+            "Expected bossCount == publishedUnitCount == {0}; actual bossCount = {1}. " +
+            "Scoped to Published units to exclude API-created (Draft) units from other test classes. " +
             "Check that MarkBossLessonsAsync ran and that no unit has 0 or 2+ boss lessons.",
             unitCount, bossCount);
 
@@ -454,14 +465,24 @@ public sealed class P2_03_SkillTreeBoss_Tests : IAsyncLifetime
         using var scope1 = _factory.Services.CreateScope();
         var db1 = scope1.ServiceProvider.GetRequiredService<LearningDbContext>();
 
+        // Scope to Published units only: seeder-planted units have LifecycleState=Published,
+        // whereas units created via admin API (e.g. by P2_01 tests earlier in the collection)
+        // default to LifecycleState=Draft.  API-created units never go through MarkBossLessonsAsync
+        // and should not be counted here — the invariant applies only to seeder-planted data.
+        var publishedUnitIdsBefore = await db1.Units
+            .Where(u => u.LifecycleState == LifecycleState.Published)
+            .Select(u => u.Id)
+            .ToListAsync();
+
         // Count after the first seed (already done in InitializeAsync).
-        var bossCountBefore = await db1.Lessons.CountAsync(l => l.IsBoss);
+        var bossCountBefore = await db1.Lessons
+            .CountAsync(l => l.IsBoss && publishedUnitIdsBefore.Contains(l.UnitId));
         var totalLessons    = await db1.Lessons.CountAsync();
-        var unitCount       = await db1.Units.CountAsync();
+        var unitCount       = publishedUnitIdsBefore.Count;
 
         bossCountBefore.Should().Be(unitCount,
-            "one boss per unit must be present after the first SeedAsync in InitializeAsync; " +
-            "bossCount={0}, unitCount={1}", bossCountBefore, unitCount);
+            "one boss per published unit must be present after the first SeedAsync in InitializeAsync; " +
+            "bossCount={0}, publishedUnitCount={1}", bossCountBefore, unitCount);
 
         // Run SeedAsync a second time — must be idempotent.
         using var scope2 = _factory.Services.CreateScope();
@@ -470,7 +491,13 @@ public sealed class P2_03_SkillTreeBoss_Tests : IAsyncLifetime
         using var scope3 = _factory.Services.CreateScope();
         var db3 = scope3.ServiceProvider.GetRequiredService<LearningDbContext>();
 
-        var bossCountAfter     = await db3.Lessons.CountAsync(l => l.IsBoss);
+        var publishedUnitIdsAfter = await db3.Units
+            .Where(u => u.LifecycleState == LifecycleState.Published)
+            .Select(u => u.Id)
+            .ToListAsync();
+
+        var bossCountAfter     = await db3.Lessons
+            .CountAsync(l => l.IsBoss && publishedUnitIdsAfter.Contains(l.UnitId));
         var totalLessonsAfter  = await db3.Lessons.CountAsync();
         var nonBossCountAfter  = totalLessonsAfter - bossCountAfter;
 
