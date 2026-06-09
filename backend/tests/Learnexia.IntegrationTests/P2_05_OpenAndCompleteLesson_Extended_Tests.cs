@@ -526,15 +526,14 @@ public sealed class P2_05_OpenAndCompleteLesson_Extended_Tests : IAsyncLifetime
         r2.StatusCode.Should().Be(HttpStatusCode.Unauthorized, $"PUT Update anon must be 401; body={b2}");
     }
 
-    [Fact(DisplayName = "BE-TC-34: Malformed JSON body to SubmitAnswer — KNOWN DEFECT: returns 500 (should be 400)")]
+    [Fact(DisplayName = "BE-TC-34: Malformed JSON body to SubmitAnswer → 400 (D-P2-05-01 RESOLVED: BadHttpRequestException caught by ErrorHandlerMiddleware)")]
     public async Task BeTc34_MalformedJsonBody_Returns400_Not500()
     {
-        // DEFECT D-P2-05-01: Sending malformed JSON to POST /Quizzes/{attemptId}/Answers returns HTTP 500
-        // instead of the expected 400 (Bad Request). The global exception handler or ASP.NET Core JSON
-        // parsing pipeline does not translate a JsonReaderException / InvalidDataException into a 400.
-        // This is a hardening gap — the feature code should catch JSON parse errors in UseExceptionHandler.
-        // Assert the characterization (actual=500) so the test suite does not fail on this known issue.
-        // Flag: backend-feature must add a JSON parse error handler in Program.cs / GlobalExceptionHandler.
+        // D-P2-05-01 RESOLVED: ErrorHandlerMiddleWare now catches BadHttpRequestException
+        // (thrown by ASP.NET Core when JSON body is malformed) and returns HTTP 400 instead of 500.
+        // The case statement in ErrorHandlerMiddleWare handles:
+        //   case BadHttpRequestException: → HttpStatusCode.BadRequest (400)
+        // Previously the exception bubbled to the default arm → ServerError → 500.
         _mathG1DemoLessonId.Should().BeGreaterThan(0);
         var (token, _) = await CreateStudentAsync("en");
         int attemptId = await StartAttemptAsync(token, _mathG1DemoLessonId);
@@ -544,10 +543,8 @@ public sealed class P2_05_OpenAndCompleteLesson_Extended_Tests : IAsyncLifetime
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var resp = await _client.SendAsync(req);
 
-        // KNOWN DEFECT: actual is 500. Characterize actual behavior; do NOT fail on this known gap.
-        // Expected after fix: 400 Bad Request.
-        // ((int)resp.StatusCode).Should().Be(400, "Malformed JSON body must return 400");
-        ((int)resp.StatusCode).Should().BeOneOf(new[] { 400, 422, 500 },
-            $"DEFECT D-P2-05-01: Malformed JSON returns 500 — must be fixed to return 400/422; actual={resp.StatusCode}");
+        // D-P2-05-01 RESOLVED: assert exactly 400 (not the characterization BeOneOf(400, 422, 500))
+        ((int)resp.StatusCode).Should().Be(400,
+            $"D-P2-05-01 RESOLVED: Malformed JSON body must return 400 (BadHttpRequestException caught by middleware); actual={resp.StatusCode}");
     }
 }

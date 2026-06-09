@@ -782,18 +782,19 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
     // AC-4 — FK behavior: non-existent GradeId fails gracefully
     // =========================================================================
 
-    [Fact(DisplayName = "AC-4 FK: Subject Create with non-existent GradeId=999999 fails gracefully (non-2xx, valid JSON envelope)")]
+    [Fact(DisplayName = "AC-4 FK / BE-TC-33: Subject Create with non-existent GradeId=999999 → 404 (DEFECT-2 RESOLVED: pre-existence check returns NotFound)")]
     public async Task AC4_Subject_NonExistentGradeId_FailsGracefully()
     {
         // GradeId=999999 passes validator (GreaterThan(0)) but doesn't exist in DB.
-        // FK violation raised at SaveChanges in UnitOfWorkBehavior → propagates to handler catch → ServerError() → HTTP 500.
-        // Admin JWT required — Create now has [Authorize(Policy = AdminOnly)].
+        // DEFECT-2 RESOLVED: handler pre-checks Grade existence → NotFound() → HTTP 404
+        // (previously: FK violation at SaveChanges → catch → ServerError() → HTTP 500).
         var (response, root, body) = await PostAsync("/api/learning/subjects/Create",
             new { Name = "Orphan Subject", GradeId = 999999 }, _adminToken);
 
         var statusCode = (int)response.StatusCode;
-        statusCode.Should().NotBe(200, "non-existent GradeId must not return 200; body: {0}", body);
-        statusCode.Should().NotBe(201, "non-existent GradeId must not return 201; body: {0}", body);
+        // DEFECT-2 RESOLVED: assert 404 (not just non-2xx)
+        statusCode.Should().Be(404,
+            "DEFECT-2 RESOLVED: non-existent GradeId must return 404 (pre-existence check); actual={0}; body: {1}", statusCode, body);
 
         // Response body must be valid JSON (envelope), not a naked exception page
         body.Should().NotBeNullOrWhiteSpace("response body must not be empty on FK failure; body: {0}", body);
@@ -805,7 +806,7 @@ public sealed class P2_01_CurriculumHierarchy_Tests : IAsyncLifetime
         if (root.ValueKind != JsonValueKind.Undefined && TryProp(root, "successed", out var succeededProp))
         {
             succeededProp.GetBoolean().Should().BeFalse(
-                "successed must be false when FK constraint is violated; body: {0}", body);
+                "successed must be false when parent not found; body: {0}", body);
         }
     }
 

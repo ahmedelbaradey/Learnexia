@@ -52,13 +52,13 @@
 | BE-TC-31 | Seeder smoke: 4 demo lessons | P1 | `P205-C11` (base) | PASS | DB has ≥4 lessons with non-null Explanation+Visual + ≥4 QuizQuestions |
 | BE-TC-32 | Student creates lesson → 403 (AdminOnly) | P1 | `BeTc32` (extended) | PASS | 403 on POST /Lessons/Create with Student JWT |
 | BE-TC-33 | Lesson CRUD anonymous → 401 | P2 | `BeTc33` (extended) | PASS | 401 on anonymous CRUD requests |
-| BE-TC-34 | Malformed body → 400 (not 500) | P2 | `BeTc34` (extended) | PASS (characterization) | **DEFECT D-P2-05-01**: Malformed JSON → actual 500 (expected 400/422). Test asserts `BeOneOf(400, 422, 500)` to characterize. |
+| BE-TC-34 | Malformed body → 400 (not 500) | P2 | `BeTc34` (extended) | PASS | **D-P2-05-01 RESOLVED**: `ErrorHandlerMiddleWare` now catches `BadHttpRequestException` → HTTP 400. Test tightened to assert exactly 400 (was: `BeOneOf(400, 422, 500)` characterization). |
 
 ## Defects found
 
 | ID | Case(s) | Severity | Summary | Status |
 |---|---|---|---|---|
-| D-P2-05-01 | BE-TC-34 | Medium | Malformed JSON body to SubmitAnswer returns HTTP 500 instead of 400/422. No global JSON parse error handler. | Open — reported to `backend-feature` |
+| D-P2-05-01 | BE-TC-34 | Medium | Malformed JSON body to SubmitAnswer previously returned HTTP 500 instead of 400/422. No global JSON parse error handler. **Fix applied**: `ErrorHandlerMiddleWare` now handles `BadHttpRequestException` → HTTP 400. Test assertion tightened from `BeOneOf(400,422,500)` to exactly **400**. Resolved in commit on branch `qc/phase-2-backend-continue`. | **RESOLVED** |
 
 ## Regression check
 
@@ -82,4 +82,4 @@
 
 ## Verdict
 
-PASS — 33/34 cases green (28 test methods executed); 1 DEFECT D-P2-05-01 (malformed JSON → 500) characterized and open. All P0 cases green. KNOWN GAP R3 documented.
+PASS — 34/34 cases green (28 test methods executed). All P0 cases green. D-P2-05-01 RESOLVED (malformed JSON now 400, test assertion tightened). KNOWN GAP R3 documented.

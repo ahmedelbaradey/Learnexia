@@ -46,6 +46,14 @@ public class AddSubjectCommandHandler : BaseResponseHandler, ICommandHandler<Add
             if (request is null)
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
+            // DEFECT-2 fix: pre-check parent Grade existence before staging the insert.
+            // Without this, a bad GradeId reaches SaveChangesAsync → FK violation → DbUpdateException → 500.
+            var gradeExists = await _repository.Learning
+                .AnyAsync<Grade>(g => g.Id == request.GradeId);
+
+            if (!gradeExists)
+                return NotFound<string>(_localizer[SharedResourcesKey.GradeNotFound]);
+
             // P7-01: Check for a soft-deleted tree with the same natural key first.
             // The UNIQUE index on (GradeId, SubjectCode, Language) is unfiltered, so a
             // soft-deleted row with the same key would trigger a DbUpdateException rather than

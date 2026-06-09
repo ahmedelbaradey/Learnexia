@@ -629,20 +629,22 @@ public sealed class P1_05_RBAC_Tests : IAsyncLifetime
     // BE-TC-19b — Permission policies registered only for real modules (Learning, Parent)
     // ===========================================================================
 
-    [Fact(DisplayName = "BE-TC-19b Claims.GenerateModules() returns exactly {Learning, Parent} — no Catalog")]
+    [Fact(DisplayName = "BE-TC-19b Claims.GenerateModules() returns {Learning, Parent, Moderation} — no Catalog")]
     public async Task BeTc19b_GenerateModules_IsLearningAndParentOnly()
     {
         // White-box / config assertion — no HTTP call needed.
         // Verifies that the policy generation source does not reference removed modules.
         var modules = Learnexia.Modules.Identity.Domain.Constants.Claims.GenerateModules();
 
-        modules.Should().HaveCount(2,
-            "Claims.GenerateModules() must return exactly 2 modules: Learning and Parent. " +
-            "Catalog was removed; no dead policy should be registered.");
+        modules.Should().HaveCount(3,
+            "Claims.GenerateModules() must return exactly 3 modules: Learning, Parent, and Moderation " +
+            "(Moderation added in P7-12). Catalog was removed; no dead policy should be registered.");
         modules.Should().Contain("Learning",
             "Learning module must be in the registered permission set.");
         modules.Should().Contain("Parent",
             "Parent module must be in the registered permission set.");
+        modules.Should().Contain("Moderation",
+            "Moderation module (P7-12) must be in the registered permission set.");
         modules.Should().NotContain("Catalog",
             "Catalog module was removed; it must not appear in GenerateModules() or registered policies.");
     }
