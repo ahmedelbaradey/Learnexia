@@ -253,14 +253,16 @@ public sealed class P2_07_InstantAnswerFeedback_Tests : IAsyncLifetime
 
         var lesson = new Lesson
         {
-            Name          = lessonName,
-            Difficulty    = DifficultyLevel.Easy,
-            SequenceOrder = 1,
-            IsLocked      = false,
-            UnitId        = unit.Id,
-            SkillId       = skillId,   // null = no skill; non-null = lesson linked to a skill
-            CreatedAt     = now,
-            CreatedBy     = 0,
+            Name           = lessonName,
+            Difficulty     = DifficultyLevel.Easy,
+            SequenceOrder  = 1,
+            IsLocked       = false,
+            UnitId         = unit.Id,
+            SkillId        = skillId,   // null = no skill; non-null = lesson linked to a skill
+            IsActive       = true,
+            LifecycleState = LifecycleState.Published,
+            CreatedAt      = now,
+            CreatedBy      = 0,
         };
         await db.Lessons.AddAsync(lesson);
         await db.SaveChangesAsync();
@@ -285,16 +287,18 @@ public sealed class P2_07_InstantAnswerFeedback_Tests : IAsyncLifetime
         {
             var q = new QuizQuestion
             {
-                LessonId      = lessonId,
-                SkillId       = skillId,
-                QuestionType  = questionType,
-                QuestionText  = qText,
-                Options       = opts,
-                CorrectAnswer = correctAnswer,
-                Difficulty    = DifficultyLevel.Easy,
-                GeneratedBy   = GeneratedBy.Curated,
-                CreatedAt     = now,
-                CreatedBy     = 0,
+                LessonId       = lessonId,
+                SkillId        = skillId,
+                QuestionType   = questionType,
+                QuestionText   = qText,
+                Options        = opts,
+                CorrectAnswer  = correctAnswer,
+                Difficulty     = DifficultyLevel.Easy,
+                GeneratedBy    = GeneratedBy.Curated,
+                IsActive       = true,
+                LifecycleState = LifecycleState.Published,
+                CreatedAt      = now,
+                CreatedBy      = 0,
             };
             await db.QuizQuestions.AddAsync(q);
             await db.SaveChangesAsync();
