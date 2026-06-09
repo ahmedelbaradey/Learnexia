@@ -461,14 +461,16 @@ public static class LearningSeeder
                 // (e.g. "6" → "\"6\"") so it is valid JSON in the jsonb column.
                 var question = new QuizQuestion
                 {
-                    LessonId      = lesson.Id,
-                    SkillId       = lesson.SkillId,
-                    QuestionType  = QuestionType.MCQ,
-                    QuestionText  = demo.QuestionText,
-                    Options       = JsonSerializer.Serialize(demo.Options),
-                    CorrectAnswer = JsonSerializer.Serialize(demo.CorrectAnswer),
-                    Difficulty    = DifficultyLevel.Easy,
-                    GeneratedBy   = GeneratedBy.Curated,
+                    LessonId       = lesson.Id,
+                    SkillId        = lesson.SkillId,
+                    QuestionType   = QuestionType.MCQ,
+                    QuestionText   = demo.QuestionText,
+                    Options        = JsonSerializer.Serialize(demo.Options),
+                    CorrectAnswer  = JsonSerializer.Serialize(demo.CorrectAnswer),
+                    Difficulty     = DifficultyLevel.Easy,
+                    GeneratedBy    = GeneratedBy.Curated,
+                    LifecycleState = LifecycleState.Published,
+                    IsActive       = true,
                 };
                 await db.QuizQuestions.AddAsync(question);
                 addedQuestions++;
@@ -794,10 +796,12 @@ public static class LearningSeeder
 
         var subject = new Subject
         {
-            Name        = name,
-            GradeId     = gradeId,
-            SubjectCode = subjectCode,
-            Language    = language,
+            Name           = name,
+            GradeId        = gradeId,
+            SubjectCode    = subjectCode,
+            Language       = language,
+            LifecycleState = LifecycleState.Published,
+            IsActive       = true,
         };
         db.Subjects.Add(subject);
         await db.SaveChangesAsync(SystemUserId);
@@ -814,7 +818,14 @@ public static class LearningSeeder
         if (existing is not null)
             return existing.Id;
 
-        var unit = new Unit { Name = name, SequenceOrder = sequenceOrder, SubjectId = subjectId };
+        var unit = new Unit
+        {
+            Name           = name,
+            SequenceOrder  = sequenceOrder,
+            SubjectId      = subjectId,
+            LifecycleState = LifecycleState.Published,
+            IsActive       = true,
+        };
         db.Units.Add(unit);
         await db.SaveChangesAsync(SystemUserId);
         return unit.Id;
@@ -854,10 +865,11 @@ public static class LearningSeeder
 
         var skill = new Skill
         {
-            Name = name,
-            MasteryThreshold = masteryThreshold,
+            Name                 = name,
+            MasteryThreshold     = masteryThreshold,
             EstimatedTimeMinutes = estimatedTimeMinutes,
-            ConceptId = conceptId,
+            ConceptId            = conceptId,
+            IsActive             = true,
         };
         db.Skills.Add(skill);
         await db.SaveChangesAsync(SystemUserId);
@@ -882,12 +894,14 @@ public static class LearningSeeder
 
         var lesson = new Lesson
         {
-            Name = name,
-            Difficulty = difficulty,
-            SequenceOrder = sequenceOrder,
-            IsLocked = isLocked,
-            UnitId = unitId,
-            SkillId = skillId,
+            Name           = name,
+            Difficulty     = difficulty,
+            SequenceOrder  = sequenceOrder,
+            IsLocked       = isLocked,
+            UnitId         = unitId,
+            SkillId        = skillId,
+            LifecycleState = LifecycleState.Published,
+            IsActive       = true,
         };
         db.Lessons.Add(lesson);
         await db.SaveChangesAsync(SystemUserId);
