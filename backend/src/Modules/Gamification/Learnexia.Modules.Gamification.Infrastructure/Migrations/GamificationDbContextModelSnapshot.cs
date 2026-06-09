@@ -58,6 +58,11 @@ namespace Learnexia.Modules.Gamification.Infrastructure.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
 
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
                     b.Property<bool?>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -326,6 +331,11 @@ namespace Learnexia.Modules.Gamification.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
                     b.Property<bool?>("IsDeleted")
                         .HasColumnType("boolean");

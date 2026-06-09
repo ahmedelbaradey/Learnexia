@@ -2041,4 +2041,46 @@
   <data name="AuditLogNotFound" xml:space="preserve">
     <value>لم يتم العثور على إدخال سجل التدقيق.</value>
   </data>
+  <data name="GamificationConfirmRequired" xml:space="preserve">
+    <value>يرجى تأكيد هذا التعديل على التلعيب بتعيين Confirm=true.</value>
+  </data>
+  <data name="GamificationProfileNotFound" xml:space="preserve">
+    <value>لم يتم العثور على ملف التلعيب الخاص بالطالب.</value>
+  </data>
+  <data name="GamificationLeagueTierNoOp" xml:space="preserve">
+    <value>مستوى دوري الطالب مضبوط مسبقاً على القيمة المطلوبة. لم يتم إجراء أي تغيير.</value>
+  </data>
+  <data name="GamificationFreezeBalanceAtMax" xml:space="preserve">
+    <value>رصيد تجميد السلسلة لدى الطالب وصل بالفعل إلى الحد الأقصى المسموح به.</value>
+  </data>
+  <data name="GamificationBadgeNotFound" xml:space="preserve">
+    <value>لم يتم العثور على تعريف الشارة.</value>
+  </data>
+  <data name="GamificationBadgeCodeAlreadyExists" xml:space="preserve">
+    <value>توجد شارة بنفس الرمز مسبقاً.</value>
+  </data>
+  <data name="GamificationMissionNotFound" xml:space="preserve">
+    <value>لم يتم العثور على تعريف المهمة.</value>
+  </data>
+  <data name="GamificationMissionCodeAlreadyExists" xml:space="preserve">
+    <value>توجد مهمة بنفس الرمز مسبقاً.</value>
+  </data>
+  <data name="GamificationTimedEventNotFound" xml:space="preserve">
+    <value>لم يتم العثور على الحدث المحدد بزمن.</value>
+  </data>
+  <data name="GamificationTimedEventCodeAlreadyExists" xml:space="preserve">
+    <value>يوجد حدث محدد بزمن بنفس الرمز مسبقاً.</value>
+  </data>
+  <data name="GamificationTimedEventAlreadyActive" xml:space="preserve">
+    <value>الحدث المحدد بزمن نشط بالفعل.</value>
+  </data>
+  <data name="GamificationTimedEventAlreadyInactive" xml:space="preserve">
+    <value>الحدث المحدد بزمن غير نشط بالفعل.</value>
+  </data>
+  <data name="GamificationBadgeAlreadyInRequestedState" xml:space="preserve">
+    <value>تعريف الشارة في الحالة النشطة المطلوبة بالفعل. لم يتم إجراء أي تغيير.</value>
+  </data>
+  <data name="GamificationMissionAlreadyInRequestedState" xml:space="preserve">
+    <value>تعريف المهمة في الحالة النشطة المطلوبة بالفعل. لم يتم إجراء أي تغيير.</value>
+  </data>
 </root>

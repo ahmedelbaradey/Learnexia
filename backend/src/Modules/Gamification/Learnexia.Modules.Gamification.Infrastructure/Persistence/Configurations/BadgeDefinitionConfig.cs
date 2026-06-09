@@ -58,6 +58,11 @@ public class BadgeDefinitionConfig : IEntityTypeConfiguration<BadgeDefinition>
         builder.Property(x => x.RewardXp)
             .IsRequired();
 
+        // P7-13: admin-controlled active/inactive toggle. Default true (backfill existing rows to active).
+        builder.Property(x => x.IsActive)
+            .IsRequired()
+            .HasDefaultValue(true);
+
         // Stable code index — badge engine + tests reference by Code string.
         builder.HasIndex(x => x.Code)
             .IsUnique()

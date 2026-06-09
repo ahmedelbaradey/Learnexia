@@ -83,10 +83,66 @@ public sealed class GamificationRepository : IGamificationRepository
     // Badges (P4-05)
     // ---------------------------------------------------------------------------
 
+    // ── P7-13 Admin overrides ──────────────────────────────────────────────────
+
+    /// <inheritdoc />
+    public async Task<StudentXpProfile?> GetProfileByStudentIdTrackedAsync(
+        int studentId, CancellationToken ct = default)
+        => await _context.StudentXpProfiles
+            .FirstOrDefaultAsync(p => p.StudentId == studentId, ct);
+
+    /// <inheritdoc />
+    public async Task<BadgeDefinition?> GetBadgeDefinitionByIdAsync(int id, CancellationToken ct = default)
+        => await _context.BadgeDefinitions
+            .FirstOrDefaultAsync(d => d.Id == id, ct);
+
+    /// <inheritdoc />
+    public async Task<MissionDefinition?> GetMissionDefinitionByIdAsync(int id, CancellationToken ct = default)
+        => await _context.MissionDefinitions
+            .FirstOrDefaultAsync(d => d.Id == id, ct);
+
+    /// <inheritdoc />
+    public async Task<TimedEvent?> GetTimedEventByIdAsync(int id, CancellationToken ct = default)
+        => await _context.TimedEvents
+            .FirstOrDefaultAsync(e => e.Id == id, ct);
+
+    /// <inheritdoc />
+    public async Task<List<BadgeDefinition>> GetAllBadgeDefinitionsAdminAsync(CancellationToken ct = default)
+        => await _context.BadgeDefinitions
+            .AsNoTracking()
+            .OrderBy(d => d.SortOrder)
+            .ToListAsync(ct);
+
+    /// <inheritdoc />
+    public async Task<List<MissionDefinition>> GetAllMissionDefinitionsAdminAsync(CancellationToken ct = default)
+        => await _context.MissionDefinitions
+            .AsNoTracking()
+            .OrderBy(d => d.SortOrder)
+            .ToListAsync(ct);
+
+    /// <inheritdoc />
+    public async Task<bool> BadgeCodeExistsAsync(string code, CancellationToken ct = default)
+        => await _context.BadgeDefinitions
+            .AsNoTracking()
+            .AnyAsync(d => d.Code == code, ct);
+
+    /// <inheritdoc />
+    public async Task<bool> MissionCodeExistsAsync(string code, CancellationToken ct = default)
+        => await _context.MissionDefinitions
+            .AsNoTracking()
+            .AnyAsync(d => d.Code == code, ct);
+
+    /// <inheritdoc />
+    public async Task<bool> TimedEventCodeExistsAsync(string code, CancellationToken ct = default)
+        => await _context.TimedEvents
+            .AsNoTracking()
+            .AnyAsync(e => e.Code == code, ct);
+
     /// <inheritdoc />
     public async Task<List<BadgeDefinition>> GetAllBadgeDefinitionsAsync(CancellationToken ct = default)
         => await _context.BadgeDefinitions
             .AsNoTracking()
+            .Where(d => d.IsActive)   // F1: deactivated badges must not be awarded going forward
             .ToListAsync(ct);
 
     /// <inheritdoc />
@@ -94,7 +150,7 @@ public sealed class GamificationRepository : IGamificationRepository
         BadgeTriggerType triggerType, CancellationToken ct = default)
         => await _context.BadgeDefinitions
             .AsNoTracking()
-            .Where(d => d.TriggerType == triggerType)
+            .Where(d => d.TriggerType == triggerType && d.IsActive)   // F1: active filter — deactivated badges must not be awarded
             .ToListAsync(ct);
 
     /// <inheritdoc />

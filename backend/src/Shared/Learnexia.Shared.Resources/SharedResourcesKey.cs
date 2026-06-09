@@ -1222,5 +1222,62 @@
         /// <summary>Returned when an audit log entry is not found.</summary>
         public const string AuditLogNotFound = "AuditLogNotFound";
 
+        // ── P7-13 Gamification Admin Overrides ──────────────────────────────────────
+
+        /// <summary>
+        /// Returned when a destructive gamification admin command is called without <c>Confirm = true</c>.
+        /// </summary>
+        public const string GamificationConfirmRequired = "GamificationConfirmRequired";
+
+        /// <summary>Returned when the student's XpProfile is not found.</summary>
+        public const string GamificationProfileNotFound = "GamificationProfileNotFound";
+
+        /// <summary>
+        /// Returned when the requested league-tier override is the same as the student's current tier
+        /// (no-op guard — reject so audit trail reflects only real changes).
+        /// </summary>
+        public const string GamificationLeagueTierNoOp = "GamificationLeagueTierNoOp";
+
+        /// <summary>
+        /// Returned when a streak-freeze grant is requested but the student is already at MaxFreezes.
+        /// </summary>
+        public const string GamificationFreezeBalanceAtMax = "GamificationFreezeBalanceAtMax";
+
+        /// <summary>Returned when a BadgeDefinition with the requested Id is not found.</summary>
+        public const string GamificationBadgeNotFound = "GamificationBadgeNotFound";
+
+        /// <summary>Returned when a badge Code is already taken by another BadgeDefinition.</summary>
+        public const string GamificationBadgeCodeAlreadyExists = "GamificationBadgeCodeAlreadyExists";
+
+        /// <summary>Returned when a MissionDefinition with the requested Id is not found.</summary>
+        public const string GamificationMissionNotFound = "GamificationMissionNotFound";
+
+        /// <summary>Returned when a mission Code is already taken by another MissionDefinition.</summary>
+        public const string GamificationMissionCodeAlreadyExists = "GamificationMissionCodeAlreadyExists";
+
+        /// <summary>Returned when a TimedEvent with the requested Id is not found.</summary>
+        public const string GamificationTimedEventNotFound = "GamificationTimedEventNotFound";
+
+        /// <summary>Returned when a timed-event Code is already taken by another TimedEvent.</summary>
+        public const string GamificationTimedEventCodeAlreadyExists = "GamificationTimedEventCodeAlreadyExists";
+
+        /// <summary>Returned when an admin tries to activate a TimedEvent that is already active.</summary>
+        public const string GamificationTimedEventAlreadyActive = "GamificationTimedEventAlreadyActive";
+
+        /// <summary>Returned when an admin tries to expire a TimedEvent that is already inactive.</summary>
+        public const string GamificationTimedEventAlreadyInactive = "GamificationTimedEventAlreadyInactive";
+
+        /// <summary>
+        /// Returned when <c>SetBadgeDefinitionActive</c> is called but the badge's <c>IsActive</c>
+        /// already equals the requested value — no-op guard to suppress spurious audit rows (F6).
+        /// </summary>
+        public const string GamificationBadgeAlreadyInRequestedState = "GamificationBadgeAlreadyInRequestedState";
+
+        /// <summary>
+        /// Returned when <c>SetMissionDefinitionActive</c> is called but the mission's <c>IsActive</c>
+        /// already equals the requested value — no-op guard to suppress spurious audit rows (F6).
+        /// </summary>
+        public const string GamificationMissionAlreadyInRequestedState = "GamificationMissionAlreadyInRequestedState";
+
     }
 }

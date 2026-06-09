@@ -7,14 +7,13 @@ using Microsoft.EntityFrameworkCore;
 namespace Learnexia.Modules.Gamification.Infrastructure.Persistence.Seed;
 
 /// <summary>
-/// Idempotent upsert of the mission definition catalog (11 rows: 5 daily + 3 weekly + 3 weekly challenges).
+/// Idempotent SEED-IF-ABSENT of the mission definition catalog (11 rows: 5 daily + 3 weekly + 3 weekly challenges).
 /// Runs in ALL environments (missions are product-as-code catalog, not demo data — same
 /// convention as <c>BadgeSeeder</c>). Registered as Scoped via <c>AddGamificationInfrastructure</c>;
 /// wired into <c>GamificationModule.InitializeAsync</c> in Batch 4.
 ///
-/// Idempotency: checks by <see cref="MissionDefinition.Code"/>. Inserts missing rows; drift-corrects
-/// changed metadata (IconKey / TitleKey / Cadence / TargetType / Target / RewardXp / SortOrder) via
-/// <see cref="MissionDefinition.UpdateMetadata"/>. Code is immutable once seeded.
+/// P7-13 SEED-IF-ABSENT RULE: inserts rows that are missing-by-Code only.
+/// Does NOT drift-correct / overwrite existing rows — admin edits take precedence (AC8).
 ///
 /// P4-11 Batch 1-C: Three weekly challenge rows (CHALLENGE_* prefix) appended after the WEEKLY_* rows.
 /// These reuse <see cref="MissionType.Weekly"/> cadence so the existing <c>MissionRolloverJob</c>
@@ -57,7 +56,7 @@ public sealed class MissionSeeder
             ("CHALLENGE_5_DAY_NO_BREAK",  "icon.mission.challenge_streak",  "mission.challenge_5_day_streak.title", MissionType.Weekly, MissionTargetType.MaintainStreak,   5, 300, 160),
         };
 
-        int inserted = 0, updated = 0;
+        int inserted = 0;
 
         foreach (var (code, iconKey, titleKey, cadence, targetType, target, rewardXp, sortOrder) in catalog)
         {
@@ -66,31 +65,22 @@ public sealed class MissionSeeder
 
             if (existing is null)
             {
+                // P7-13 seed-if-absent: insert only when the row is missing; never overwrite.
                 _db.MissionDefinitions.Add(
                     MissionDefinition.Create(code, iconKey, titleKey, cadence, targetType, target, rewardXp, sortOrder));
                 inserted++;
             }
-            else if (existing.IconKey != iconKey
-                  || existing.TitleKey != titleKey
-                  || existing.Cadence != cadence
-                  || existing.TargetType != targetType
-                  || existing.Target != target
-                  || existing.RewardXp != rewardXp
-                  || existing.SortOrder != sortOrder)
-            {
-                existing.UpdateMetadata(iconKey, titleKey, cadence, targetType, target, rewardXp, sortOrder);
-                updated++;
-            }
+            // Existing rows are intentionally skipped — admin edits take precedence (AC8).
         }
 
-        if (inserted > 0 || updated > 0)
+        if (inserted > 0)
         {
             await _db.SaveChangesAsync(0);
-            _logger.LogInfo($"P4-11: MissionSeeder — inserted={inserted}, updated={updated}, total catalog={catalog.Length}.");
+            _logger.LogInfo($"P7-13/P4-11: MissionSeeder — inserted={inserted}, total catalog={catalog.Length}.");
         }
         else
         {
-            _logger.LogInfo($"P4-11: MissionSeeder — catalog already up-to-date ({catalog.Length} rows).");
+            _logger.LogInfo($"P7-13/P4-11: MissionSeeder — catalog already up-to-date ({catalog.Length} rows).");
         }
     }
 }

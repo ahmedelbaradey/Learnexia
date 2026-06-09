@@ -220,6 +220,24 @@ public class StudentXpProfile : AggregateRoot
     }
 
     /// <summary>
+    /// P7-13 admin grant: adds up to <paramref name="count"/> freezes, clamped at
+    /// <see cref="MaxFreezes"/>. Raises <see cref="StreakFreezeGrantedDomainEvent"/> once for the
+    /// final balance (or not at all if already at cap). Returns the actual number granted.
+    /// </summary>
+    public int GrantFreezes(int count, DateTime occurredAtUtc)
+    {
+        if (count <= 0) return 0;
+        if (FreezeBalance >= MaxFreezes) return 0;
+
+        int canGrant = MaxFreezes - FreezeBalance;
+        int actualGrant = Math.Min(count, canGrant);
+        FreezeBalance += actualGrant;
+
+        RaiseDomainEvent(new StreakFreezeGrantedDomainEvent(StudentId, FreezeBalance, occurredAtUtc));
+        return actualGrant;
+    }
+
+    /// <summary>
     /// Consumes 1 freeze. Raises <see cref="StreakFreezeConsumedDomainEvent"/> on success.
     /// Throws <see cref="InvalidOperationException"/> when <see cref="FreezeBalance"/> is 0.
     /// Callers MUST check <c>FreezeBalance &gt; 0</c> before calling (the StreakSweepJob's

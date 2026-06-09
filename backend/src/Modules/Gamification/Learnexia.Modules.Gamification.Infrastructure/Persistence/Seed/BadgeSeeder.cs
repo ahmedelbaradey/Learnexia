@@ -8,15 +8,15 @@ using Microsoft.EntityFrameworkCore;
 namespace Learnexia.Modules.Gamification.Infrastructure.Persistence.Seed;
 
 /// <summary>
-/// Idempotent upsert of the badge definition catalog (~10 rows).
+/// Idempotent SEED-IF-ABSENT of the badge definition catalog (~10 rows).
 /// Runs in ALL environments (badges are product-as-code catalog, not demo data — unlike
 /// <c>LearningSeeder</c> which is Development-only). Registered as Scoped via
 /// <c>AddGamificationInfrastructure()</c>; wired into <c>GamificationModule.InitializeAsync</c>
 /// in Batch 4.
 ///
-/// Idempotency: checks by <see cref="BadgeDefinition.Code"/>. Inserts missing rows; drift-corrects
-/// changed metadata (IconKey / Rarity / SortOrder / TriggerType / Threshold / RewardXp) via
-/// <see cref="BadgeDefinition.UpdateMetadata"/>. Code / Name / Description are immutable once seeded.
+/// P7-13 SEED-IF-ABSENT RULE: inserts rows that are missing-by-Code only.
+/// Does NOT drift-correct / overwrite existing rows — admin edits take precedence over seed data
+/// (AC8). This supersedes the previous drift-correct behaviour.
 ///
 /// System user id convention: 0 (same as <c>LearningSeeder.SystemUserId</c>).
 /// </summary>
@@ -48,7 +48,7 @@ public sealed class BadgeSeeder
             ("STREAK_100",    "Centurion",           "Maintain a 100-day streak",          "icon.streak_100",    BadgeRarity.Legendary, 33, BadgeTriggerType.StreakThreshold,  100,        GamificationConstants.XpRewards.BadgeEarned.Legendary),
         };
 
-        int inserted = 0, updated = 0;
+        int inserted = 0;
 
         foreach (var (code, name, description, iconKey, rarity, sortOrder, triggerType, threshold, rewardXp) in catalog)
         {
@@ -57,34 +57,22 @@ public sealed class BadgeSeeder
 
             if (existing is null)
             {
+                // P7-13 seed-if-absent: insert only when the row is missing; never overwrite.
                 var def = BadgeDefinition.Create(code, name, description, iconKey, rarity, sortOrder, triggerType, threshold, rewardXp);
                 _db.BadgeDefinitions.Add(def);
                 inserted++;
             }
-            else
-            {
-                // Drift-correct: if any mutable catalog metadata differs, upsert it.
-                if (existing.IconKey != iconKey
-                 || existing.Rarity != rarity
-                 || existing.SortOrder != sortOrder
-                 || existing.TriggerType != triggerType
-                 || existing.Threshold != threshold
-                 || existing.RewardXp != rewardXp)
-                {
-                    existing.UpdateMetadata(iconKey, rarity, sortOrder, triggerType, threshold, rewardXp);
-                    updated++;
-                }
-            }
+            // Existing rows are intentionally skipped — admin edits take precedence (AC8).
         }
 
-        if (inserted > 0 || updated > 0)
+        if (inserted > 0)
         {
             await _db.SaveChangesAsync(0);
-            _logger.LogInfo($"P4-05: BadgeSeeder — inserted={inserted}, updated={updated}, total catalog={catalog.Length}.");
+            _logger.LogInfo($"P7-13/P4-05: BadgeSeeder — inserted={inserted}, total catalog={catalog.Length}.");
         }
         else
         {
-            _logger.LogInfo($"P4-05: BadgeSeeder — catalog already up-to-date ({catalog.Length} rows).");
+            _logger.LogInfo($"P7-13/P4-05: BadgeSeeder — catalog already up-to-date ({catalog.Length} rows).");
         }
     }
 }

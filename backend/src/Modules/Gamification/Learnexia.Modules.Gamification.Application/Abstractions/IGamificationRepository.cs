@@ -14,10 +14,10 @@ public interface IGamificationRepository
 {
     // ─────────────────────────── Badges (P4-05) ───────────────────────────
 
-    /// <summary>Returns all catalog rows (no active filter — all are active in P4-05). Uses AsNoTracking.</summary>
+    /// <summary>Returns active catalog rows only (<c>IsActive == true</c>). Used by the award engine — deactivated badges are excluded so they cannot be granted going forward. Uses AsNoTracking.</summary>
     Task<List<BadgeDefinition>> GetAllBadgeDefinitionsAsync(CancellationToken ct = default);
 
-    /// <summary>Returns catalog rows for one trigger type (used by notification handlers). Uses AsNoTracking.</summary>
+    /// <summary>Returns active catalog rows for one trigger type (<c>IsActive == true &amp;&amp; TriggerType == triggerType</c>). Used by notification handlers — deactivated badges are excluded so they cannot be granted going forward. Uses AsNoTracking.</summary>
     Task<List<BadgeDefinition>> GetBadgeDefinitionsByTriggerAsync(BadgeTriggerType triggerType, CancellationToken ct = default);
 
     /// <summary>Returns earned BadgeDefinitionIds for a student (idempotency pre-check). Uses AsNoTracking.</summary>
@@ -56,6 +56,39 @@ public interface IGamificationRepository
     /// are picked up by the UoW before commit.
     /// </summary>
     Task<StudentXpProfile?> GetProfileByStudentIdAsync(int studentId, CancellationToken ct = default);
+
+    // ── P7-13 Admin overrides ──────────────────────────────────────────────────
+
+    /// <summary>
+    /// P7-13: Returns the XP profile for <paramref name="studentId"/> as a tracked entity for
+    /// admin mutation (league tier override, freeze grant). Mirrors <see cref="GetProfileByStudentIdAsync"/>
+    /// but always returns a tracked entity (no AsNoTracking). Returns <c>null</c> when no profile exists.
+    /// </summary>
+    Task<StudentXpProfile?> GetProfileByStudentIdTrackedAsync(int studentId, CancellationToken ct = default);
+
+    /// <summary>P7-13: Returns a single <see cref="BadgeDefinition"/> by PK, change-tracked. Returns <c>null</c> when not found.</summary>
+    Task<BadgeDefinition?> GetBadgeDefinitionByIdAsync(int id, CancellationToken ct = default);
+
+    /// <summary>P7-13: Returns a single <see cref="MissionDefinition"/> by PK, change-tracked. Returns <c>null</c> when not found.</summary>
+    Task<MissionDefinition?> GetMissionDefinitionByIdAsync(int id, CancellationToken ct = default);
+
+    /// <summary>P7-13: Returns a single <see cref="TimedEvent"/> by PK, change-tracked. Returns <c>null</c> when not found.</summary>
+    Task<TimedEvent?> GetTimedEventByIdAsync(int id, CancellationToken ct = default);
+
+    /// <summary>P7-13: Returns all <see cref="BadgeDefinition"/> rows including inactive ones. Uses AsNoTracking.</summary>
+    Task<List<BadgeDefinition>> GetAllBadgeDefinitionsAdminAsync(CancellationToken ct = default);
+
+    /// <summary>P7-13: Returns all <see cref="MissionDefinition"/> rows including inactive ones. Uses AsNoTracking.</summary>
+    Task<List<MissionDefinition>> GetAllMissionDefinitionsAdminAsync(CancellationToken ct = default);
+
+    /// <summary>P7-13: Returns <c>true</c> when a <see cref="BadgeDefinition"/> with the given Code already exists (uniqueness check).</summary>
+    Task<bool> BadgeCodeExistsAsync(string code, CancellationToken ct = default);
+
+    /// <summary>P7-13: Returns <c>true</c> when a <see cref="MissionDefinition"/> with the given Code already exists (uniqueness check).</summary>
+    Task<bool> MissionCodeExistsAsync(string code, CancellationToken ct = default);
+
+    /// <summary>P7-13: Returns <c>true</c> when a <see cref="TimedEvent"/> with the given Code already exists (uniqueness check).</summary>
+    Task<bool> TimedEventCodeExistsAsync(string code, CancellationToken ct = default);
 
     /// <summary>
     /// Acquires a <c>SELECT ... FOR UPDATE</c> row-lock on the profile row for

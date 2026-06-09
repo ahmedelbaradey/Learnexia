@@ -2042,4 +2042,46 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="AuditLogNotFound" xml:space="preserve">
     <value>Audit log entry not found.</value>
   </data>
+  <data name="GamificationConfirmRequired" xml:space="preserve">
+    <value>Please confirm this gamification override by setting Confirm=true.</value>
+  </data>
+  <data name="GamificationProfileNotFound" xml:space="preserve">
+    <value>The student's gamification profile was not found.</value>
+  </data>
+  <data name="GamificationLeagueTierNoOp" xml:space="preserve">
+    <value>The student's league tier is already set to the requested value. No change was made.</value>
+  </data>
+  <data name="GamificationFreezeBalanceAtMax" xml:space="preserve">
+    <value>The student's streak-freeze balance is already at the maximum allowed value.</value>
+  </data>
+  <data name="GamificationBadgeNotFound" xml:space="preserve">
+    <value>Badge definition not found.</value>
+  </data>
+  <data name="GamificationBadgeCodeAlreadyExists" xml:space="preserve">
+    <value>A badge with the same code already exists.</value>
+  </data>
+  <data name="GamificationMissionNotFound" xml:space="preserve">
+    <value>Mission definition not found.</value>
+  </data>
+  <data name="GamificationMissionCodeAlreadyExists" xml:space="preserve">
+    <value>A mission with the same code already exists.</value>
+  </data>
+  <data name="GamificationTimedEventNotFound" xml:space="preserve">
+    <value>Timed event not found.</value>
+  </data>
+  <data name="GamificationTimedEventCodeAlreadyExists" xml:space="preserve">
+    <value>A timed event with the same code already exists.</value>
+  </data>
+  <data name="GamificationTimedEventAlreadyActive" xml:space="preserve">
+    <value>The timed event is already active.</value>
+  </data>
+  <data name="GamificationTimedEventAlreadyInactive" xml:space="preserve">
+    <value>The timed event is already inactive.</value>
+  </data>
+  <data name="GamificationBadgeAlreadyInRequestedState" xml:space="preserve">
+    <value>The badge definition is already in the requested active state. No change was made.</value>
+  </data>
+  <data name="GamificationMissionAlreadyInRequestedState" xml:space="preserve">
+    <value>The mission definition is already in the requested active state. No change was made.</value>
+  </data>
 </root>

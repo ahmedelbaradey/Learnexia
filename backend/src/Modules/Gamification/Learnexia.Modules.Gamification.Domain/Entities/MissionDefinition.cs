@@ -14,7 +14,7 @@ namespace Learnexia.Modules.Gamification.Domain.Entities;
 /// <see cref="TitleKey"/> is an i18n key for the FE (e.g., "mission.daily_3_lessons.title").
 /// <see cref="IconKey"/> is an FE asset bundle key (e.g., "mission-book-3").
 /// </summary>
-public class MissionDefinition : FullAuditedEntity
+public class MissionDefinition : AggregateRoot
 {
     /// <summary>Stable, unique mission code — e.g. "DAILY_3_LESSONS". Max 40 chars.</summary>
     public string Code { get; private set; } = null!;
@@ -39,6 +39,13 @@ public class MissionDefinition : FullAuditedEntity
 
     /// <summary>UI sort order within cadence tier. Lower = first.</summary>
     public int SortOrder { get; private set; }
+
+    /// <summary>
+    /// P7-13: Admin-controlled active/inactive toggle. Inactive missions are excluded from the
+    /// generation engine for new students. Does NOT invalidate active <c>StudentMission</c> rows.
+    /// Default <c>true</c> — all existing rows backfill to active.
+    /// </summary>
+    public bool IsActive { get; private set; } = true;
 
     // ---------------------------------------------------------------------------
     // EF constructor
@@ -77,9 +84,32 @@ public class MissionDefinition : FullAuditedEntity
     // ---------------------------------------------------------------------------
 
     /// <summary>
-    /// Allows <c>MissionSeeder</c> to upsert mutable catalog metadata when the seeded definition
-    /// has drifted (e.g., RewardXp or Target changed). Code is immutable once seeded; other fields
-    /// may change via a re-seed. Mirrors <see cref="BadgeDefinition.UpdateMetadata"/>.
+    /// P7-13: Admin CRUD update — allows editing all mutable fields. <see cref="Code"/> stays immutable.
+    /// </summary>
+    public void AdminUpdate(
+        string iconKey,
+        string titleKey,
+        MissionType cadence,
+        MissionTargetType targetType,
+        int target,
+        int rewardXp,
+        int sortOrder)
+    {
+        IconKey = iconKey;
+        TitleKey = titleKey;
+        Cadence = cadence;
+        TargetType = targetType;
+        Target = target;
+        RewardXp = rewardXp;
+        SortOrder = sortOrder;
+    }
+
+    /// <summary>P7-13: Toggles <see cref="IsActive"/>. Idempotent.</summary>
+    public void SetActive(bool isActive) => IsActive = isActive;
+
+    /// <summary>
+    /// Seeder-only: drift-correct mutable catalog metadata. Kept for backward-compat;
+    /// P7-13 seed-if-absent means the seeder no longer calls this on existing rows.
     /// </summary>
     public void UpdateMetadata(
         string iconKey,
