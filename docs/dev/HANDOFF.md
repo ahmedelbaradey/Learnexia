@@ -5,14 +5,16 @@
 > 2026-06-07: **E2E test stage added — `frontend-e2e-tester` agent + `tests/e2e/` Playwright harness (PR #99, branch `chore/e2e-playwright-harness`). See "Testing — E2E (Playwright)" directly below.**
 > 2026-06-08: **Phase-1 QC + E2E pass complete (backend PR #100 + frontend PR #105) — ~173 FE e2e pass / 0 fail, several real bugs found + fixed (route guards, locale, cache, Link-Child 409). See "QC + E2E test pass — Phase 1 (report summary)" below.**
 > 2026-06-07: **QC test-design + api-tester pass over all Phase-1 backend stories (branch `qc/phase-1-backend`) — ~329 designed cases, ~520 integration tests run; surfaced one HIGH security hole + several robustness/contract defects. See "QC — Phase-1 backend test pass + defects" directly below.**
-> 2026-06-09: **Phase-2 QC designed (backend PR #107 ~319 cases · frontend PR #108 ~208 cases); api-tester implementation STARTED — only P2-01 done so far. See "QC — Phase-2 test pass (IN PROGRESS)" directly below.**
+> 2026-06-09: **Phase-2 QC designed (backend PR #107 ~319 cases · frontend PR #108 ~208 cases); api-tester implementation STARTED — P2-01 + P2-02 done so far. See "QC — Phase-2 test pass (IN PROGRESS)" directly below.**
 
 ## QC — Phase-2 test pass (IN PROGRESS) — added 2026-06-09
 
 `qc-test-designer` (Opus) designed full catalogs for Phase 2; `api-tester` implementation has only just begun. Status:
 
-- **Backend QC catalogs — PR #107** (`qc/phase-2-backend`): design-only `docs/qc/P2-01..P2-12/` (11 API-surface stories; P2-10 seeder excluded), **~319 BE-TC cases**. **api-tester implemented ONLY P2-01 so far** → `P2_01_CurriculumHierarchy_Extended_Tests.cs` (60 methods), `dotnet test --filter P2_01` = **92 pass / 0 fail / 1 blocked**. The other 10 stories (P2-02/03/04/05/06/07/08/09/11/12) are **catalogs only, NOT yet implemented** — resume by running api-tester per story (each has an existing `P2_*.cs` to extend; Docker daemon must be healthy for Testcontainers).
-  - ⚠️ **Uncommitted local draft:** `P2_02_BrowseSubjectsAndLessons_Extended_Tests.cs` (~1069 lines) exists in the working tree but was **interrupted before it ever ran** — unverified, NOT committed. Verify/run it (or delete + regenerate) before trusting it.
+- **Backend QC catalogs — PR #107** (`qc/phase-2-backend`): design-only `docs/qc/P2-01..P2-12/` (11 API-surface stories; P2-10 seeder excluded), **~319 BE-TC cases**. **api-tester implemented P2-01 + P2-02 so far:**
+  - **P2-01** → `P2_01_CurriculumHierarchy_Extended_Tests.cs` (60 methods), `--filter P2_01` = **92 pass / 0 fail / 1 blocked**.
+  - **P2-02** → `P2_02_BrowseSubjectsAndLessons_Extended_Tests.cs`, `--filter P2_02` = **39 pass / 2 skipped / 0 fail**. ⚠️ **`docs/qc/P2-02/execution-report.md` was NOT filled** (the agent was interrupted before reporting) — the tests are green but the per-case execution report is still the empty template; fill it on the next pass.
+  - The other 9 stories (P2-03/04/05/06/07/08/09/11/12) are **catalogs only, NOT yet implemented** — resume by running api-tester per story (each has an existing `P2_*.cs` to extend; Docker daemon must be healthy for Testcontainers).
 - **Frontend QC catalogs — PR #108** (`qc/phase-2-frontend`): design-only `docs/qc/P2-*-FE/` (7 student-app stories), **~208 FE-TC cases**. **NOT yet implemented** by `frontend-e2e-tester`.
 
 **Defects already surfaced (from the QC design + the P2-01 run) — for `backend-feature`, lead decisions pending:**
