@@ -4,7 +4,20 @@
 > Captures what's done, the decisions, the load-building config, and what's next. If you change any of these, update this file.
 > 2026-06-07: **E2E test stage added — `frontend-e2e-tester` agent + `tests/e2e/` Playwright harness (PR #99, branch `chore/e2e-playwright-harness`). See "Testing — E2E (Playwright)" directly below.**
 > 2026-06-07: **QC test-design + api-tester pass over all Phase-1 backend stories (branch `qc/phase-1-backend`) — ~329 designed cases, ~520 integration tests run; surfaced one HIGH security hole + several robustness/contract defects. See "QC — Phase-1 backend test pass + defects" directly below.**
-> 2026-06-08/09: **Phase 7 Admin Console — CURRICULUM (P7-01..05) + USER/ACCOUNT (P7-06..08) + AUDIT/MODERATION (P7-12) BACKEND COMPLETE on `feat/phase-7-backend` (one shared branch → wave PR #106). Plus a pre-req auth hotfix PR #104 (merge FIRST). 9 of 13 P7 backend stories done. Remaining: P7-09/10/11 (blocked on upstream phases), P7-13; all P7 FE not started. See the sections directly below.**
+> 2026-06-08/09: **Phase 7 Admin Console — CURRICULUM (P7-01..05) + USER/ACCOUNT (P7-06..08) + AUDIT/MODERATION (P7-12) + GAMIFICATION OVERRIDES (P7-13) BACKEND COMPLETE on `feat/phase-7-backend` (one shared branch → wave PR #106). Plus a pre-req auth hotfix PR #104 (merge FIRST). 10 of 13 P7 backend stories done — ALL the buildable ones. Remaining: P7-09/10/11 (BLOCKED on unbuilt upstream phases P3-02/BL-01, P5-03, P3-01/P6-02); all P7 FE not started. See the sections directly below.**
+
+## Phase 7 — Gamification admin overrides (P7-13 backend) — added 2026-06-09 (`feat/phase-7-backend`, in wave PR #106)
+
+Built **P7-13** in the **`Gamification` module** (commit `4b31fbc`). Scope = the story's **5 admin-config areas** (lead-confirmed; NOT per-student XP/hearts/badge-grant — those aren't in the story ACs): **league-tier override** (per student), **badge catalog CRUD** + activate/deactivate, **mission catalog CRUD** + activate/deactivate, **timed-event** write/transition, **streak-freeze grant**. All AdminOnly on `AdminGamificationController` (`api/Admin/Gamification`); each override takes a required `Reason`.
+
+- **`BadgeDefinition`/`MissionDefinition`/`TimedEvent` promoted to `AggregateRoot`** (lead-approved DDD change, no schema impact) so they raise `AdminActionPerformedDomainEvent` → relayed to the integration event **post-commit** → Moderation audit (same pattern as Learning).
+- **`IsActive` added to the badge + mission catalogs** (migration `P7_13_AddBadgeMissionIsActive`, existing rows backfilled active). **Deactivation actually takes effect** — the award engine (`GetAllBadgeDefinitionsAsync`/`GetBadgeDefinitionsByTriggerAsync`) and mission lazy-instantiation (`EnsureMissionsForPeriodAsync`) now filter `IsActive` (a security-audit High — without it, deactivate was a no-op). **No clawback** of already-earned badges/in-flight missions.
+- **Seeders are now seed-if-absent** (`BadgeSeeder`/`MissionSeeder` no longer drift-correct on boot) so **admin catalog edits survive a re-seed**.
+- Streak-freeze grant is **clamped at `MaxFreezes` (2)**; timed-event multiplier bounded 1.0–5.0 + window `start<end`; tier override sets only `StudentXpProfile.CurrentTier` (takes effect at next rollover — the risky `FinalizePromotion` call was removed per the audit). Admin `Reason` free-text is NOT persisted into the immutable audit `Details` (ids + values only).
+
+**Phase 7 backend is now feature-complete for everything buildable.** P7-09 (moderation queue — the `Moderation` module is scaffolded + ready for it), P7-10 (analytics), P7-11 (AI-safety) remain BLOCKED on unbuilt upstream phases. All Phase-7 FE (admin-dashboard Next.js) is not started.
+
+## Phase 7 — Audit log + Moderation module (P7-12 backend) — added 2026-06-09 (`feat/phase-7-backend`, in wave PR #106)
 
 ## Phase 7 — Audit log + Moderation module (P7-12 backend) — added 2026-06-09 (`feat/phase-7-backend`, in wave PR #106)
 
