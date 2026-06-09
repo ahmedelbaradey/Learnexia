@@ -20,8 +20,6 @@ Built **P7-13** in the **`Gamification` module** (commit `4b31fbc`). Scope = the
 
 ## Phase 7 — Audit log + Moderation module (P7-12 backend) — added 2026-06-09 (`feat/phase-7-backend`, in wave PR #106)
 
-## Phase 7 — Audit log + Moderation module (P7-12 backend) — added 2026-06-09 (`feat/phase-7-backend`, in wave PR #106)
-
 Built **P7-12** + the lead-approved **new `Moderation` module** + fixed the wave-wide audit-event timing (commit `5446a1d`).
 
 - **New `Moderation` module** (4 projects, schema `moderation`, full UoW scaffold — ready for the future P7-09 moderation queue). All Host wiring done: `.sln`, `Program.cs` (`AddModerationModule` + `InitializeAsync`), **`MediatRExtensions.AddCrossModuleMediatR`** (the load-bearing one — without it the audit consumer silently never runs), `Host.csproj`, `Claims.GenerateModules()`. **`Directory.Packages.props` needed no change** (CPM already covers the packages).
@@ -31,8 +29,6 @@ Built **P7-12** + the lead-approved **new `Moderation` module** + fixed the wave
 **Load-bearing:** the audit log is **best-effort** (fail-soft consumer, no outbox per ADR 0002 §5) — a persistence failure drops a row with a `LogWarn`, it is not a guaranteed-complete ledger. Migration `P7_12_*` (incl. the immutability trigger) NOT applied — run `dotnet ef database update`. The test factory (`LearnexiaWebAppFactory`) was extended to override `ModerationDbContext` + apply its migration.
 
 **Tracked follow-up (NOT done):** the audit-log **CSV/JSON export** endpoint (story AC #8, must use `Shared.Kernel.Storage.IStorageService` + a row cap) is deferred. The Identity read-path audit events (`UserViewed`/`UserSearched`) remain best-effort fire-and-forget (now decoupled from request-cancel).
-
-## Phase 7 — User/account wave (backend) — added 2026-06-09 (`feat/phase-7-backend`, in wave PR #106)
 
 ## Phase 7 — User/account wave (backend) — added 2026-06-09 (`feat/phase-7-backend`, in wave PR #106)
 
