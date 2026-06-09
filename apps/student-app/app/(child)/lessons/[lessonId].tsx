@@ -338,6 +338,7 @@ export default function LessonScreen() {
     >
       {/* Back chevron */}
       <Pressable
+        testID="lesson-back"
         onPress={() => {
           if (stage.kind === 'quiz') {
             // Abandon is handled by the useEffect cleanup on unmount.
@@ -361,6 +362,7 @@ export default function LessonScreen() {
       {/* Center: ProgressDots (quiz only) */}
       {showProgress && progressCurrent !== undefined && progressTotal !== undefined ? (
         <ProgressDots
+          testID="lesson-progress"
           current={progressCurrent}
           total={progressTotal}
           direction={direction}
@@ -391,7 +393,7 @@ export default function LessonScreen() {
     const isLocked = answerState.phase !== 'answering';
 
     return (
-      <YStack gap="$3" accessibilityRole="radiogroup">
+      <YStack testID="quiz-renderer-mcq" gap="$3" accessibilityRole="radiogroup">
         {options.map((opt, idx) => {
           let optionState: 'default' | 'selected' | 'correct' | 'incorrect' | 'locked-default' = 'default';
 
@@ -424,6 +426,7 @@ export default function LessonScreen() {
           return (
             <MCQOption
               key={`${question.id}-${idx}`}
+              testID={`quiz-mcq-option-${idx}`}
               label={opt}
               state={optionState}
               onPress={isLocked ? undefined : () => onSelect(opt)}
@@ -468,6 +471,9 @@ export default function LessonScreen() {
 
     return (
       <TrueFalseChoice
+        testID="quiz-renderer-truefalse"
+        trueTestID="quiz-truefalse-true"
+        falseTestID="quiz-truefalse-false"
         value={selectedBool}
         onChange={(val) => onSelect(val ? 'true' : 'false')}
         phase={answerState.phase === 'answering' ? 'answering' : 'feedback'}
@@ -498,15 +504,18 @@ export default function LessonScreen() {
         : 'default';
 
     return (
-      <FillInBlank
-        value={value}
-        onChange={onTextChange}
-        state={fieldState}
-        locked={answerState.phase !== 'answering'}
-        placeholder={t('child.quiz.fillPlaceholder')}
-        direction={direction}
-        locale={locale}
-      />
+      <YStack testID="quiz-renderer-fillblank">
+        <FillInBlank
+          testID="quiz-fillblank-input"
+          value={value}
+          onChange={onTextChange}
+          state={fieldState}
+          locked={answerState.phase !== 'answering'}
+          placeholder={t('child.quiz.fillPlaceholder')}
+          direction={direction}
+          locale={locale}
+        />
+      </YStack>
     );
   };
 
@@ -528,6 +537,7 @@ export default function LessonScreen() {
       default:
         return (
           <MatchingPanel
+            testID="quiz-renderer-matching"
             direction={direction}
             locale={locale}
             title={t('child.quiz.matchingStub')}
@@ -544,7 +554,7 @@ export default function LessonScreen() {
     if (lessonQuery.isPending) {
       // Loading shimmer skeleton.
       return (
-        <YStack flex={1} alignItems="center" justifyContent="center" paddingHorizontal="$6" gap="$6">
+        <YStack testID="lesson-loading" flex={1} alignItems="center" justifyContent="center" paddingHorizontal="$6" gap="$6">
           <TamStack
             width="100%"
             height={220}
@@ -560,12 +570,13 @@ export default function LessonScreen() {
       const errMsg = lessonQuery.error?.message ?? '';
       const is404 = errMsg.includes('404') || errMsg.toLowerCase().includes('not found');
       return (
-        <YStack flex={1} alignItems="center" justifyContent="center" paddingHorizontal="$6" gap="$4">
+        <YStack testID={is404 ? 'lesson-404' : 'lesson-error'} flex={1} alignItems="center" justifyContent="center" paddingHorizontal="$6" gap="$4">
           <Text color="$fg1" fontSize={18} fontWeight="700" fontFamily="$heading" textAlign="center" writingDirection={direction}>
             {is404 ? t('child.lessons.intro.notFound') : t('child.lessons.intro.errorRetry')}
           </Text>
           {!is404 ? (
             <Button
+              testID="lesson-error-retry"
               variant="primary"
               size="md"
               accessibilityLabel={t('child.lessons.intro.errorRetry')}
@@ -589,7 +600,7 @@ export default function LessonScreen() {
     // Empty lesson state (StartAttempt resolved with 0 questions).
     if (emptyLesson) {
       return (
-        <YStack flex={1} alignItems="center" justifyContent="center" paddingHorizontal="$6" gap="$4">
+        <YStack testID="lesson-empty" flex={1} alignItems="center" justifyContent="center" paddingHorizontal="$6" gap="$4">
           <Text fontSize={40} accessibilityElementsHidden>{'📭'}</Text>
           <Text color="$fg2" fontSize={18} fontWeight="700" fontFamily="$heading" textAlign="center" writingDirection={direction}>
             {t('child.lessons.intro.noQuestions')}
@@ -617,6 +628,7 @@ export default function LessonScreen() {
         <YStack gap="$6">
           {/* Hero card */}
           <TamStack
+            testID="lesson-intro"
             backgroundColor="$card"
             borderRadius={24}
             padding="$6"
@@ -654,6 +666,7 @@ export default function LessonScreen() {
 
             {/* Lesson title */}
             <Text
+              testID="lesson-title"
               color="$fg1"
               fontSize={24}
               fontWeight="800"
@@ -702,6 +715,7 @@ export default function LessonScreen() {
 
           {/* Start CTA */}
           <Button
+            testID="lesson-start-cta"
             variant="primary"
             size="full"
             accessibilityLabel={t('child.lessons.intro.startCta')}
@@ -753,6 +767,7 @@ export default function LessonScreen() {
     // Feedback strip
     const feedbackNode = feedbackState ? (
       <AnswerFeedbackStrip
+        testID="answer-feedback-strip"
         variant={feedbackState.isCorrect ? 'correct' : 'incorrect'}
         title={
           feedbackState.isCorrect
@@ -775,6 +790,7 @@ export default function LessonScreen() {
       if (isFeedback) {
         return (
           <Button
+            testID="feedback-continue"
             variant="primary"
             size="md"
             accessibilityLabel={t('child.quiz.next')}
@@ -788,6 +804,7 @@ export default function LessonScreen() {
       if (isMatching && isAnswering) {
         return (
           <Button
+            testID="quiz-submit"
             variant="primary"
             size="md"
             accessibilityLabel={t('child.quiz.next')}
@@ -859,6 +876,7 @@ export default function LessonScreen() {
       }
       return (
         <Button
+          testID="quiz-submit"
           variant="primary"
           size="md"
           accessibilityLabel={t('child.quiz.submit')}
@@ -916,6 +934,7 @@ export default function LessonScreen() {
 
           {/* QuestionCard */}
           <QuestionCard
+            testID="quiz-question-card"
             questionText={question.questionText ?? ''}
             feedback={feedbackNode}
             submitButton={submitNode}
@@ -944,6 +963,9 @@ export default function LessonScreen() {
         showsVerticalScrollIndicator={false}
       >
         <AttemptSummaryCard
+          testID="lesson-summary"
+          backButtonTestID="lesson-summary-continue"
+          retryButtonTestID="lesson-summary-retry"
           correct={correct}
           total={total}
           accuracyPercent={accuracy}
@@ -970,6 +992,7 @@ export default function LessonScreen() {
 
   return (
     <TamStack
+      testID="lesson-screen"
       flex={1}
       backgroundColor="$bg"
       paddingTop={insets.top}

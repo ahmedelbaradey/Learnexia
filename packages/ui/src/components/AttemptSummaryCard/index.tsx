@@ -42,6 +42,10 @@ export interface AttemptSummaryCardProps {
   durationLabel?: string;
   xpStubText?: string;
   testID?: string;
+  /** testID for the "Back to lessons" primary CTA (e2e hook). */
+  backButtonTestID?: string;
+  /** testID for the "Try again" secondary CTA (e2e hook). */
+  retryButtonTestID?: string;
 }
 
 export function AttemptSummaryCard({
@@ -61,6 +65,8 @@ export function AttemptSummaryCard({
   durationLabel,
   xpStubText,
   testID,
+  backButtonTestID,
+  retryButtonTestID,
 }: AttemptSummaryCardProps) {
   const isRtl = direction === 'rtl';
   const isAr = (locale ?? 'ar') === 'ar';
@@ -279,6 +285,7 @@ export function AttemptSummaryCard({
         {/* CTA stack */}
         <YStack gap={12} width="100%">
           <Button
+            testID={backButtonTestID}
             variant="primary"
             size="full"
             accessibilityLabel={displayBack}
@@ -287,6 +294,7 @@ export function AttemptSummaryCard({
             {displayBack}
           </Button>
           <Button
+            testID={retryButtonTestID}
             variant="ghost"
             size="full"
             accessibilityLabel={displayRetry}

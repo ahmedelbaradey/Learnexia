@@ -78,7 +78,7 @@ export function SubjectsListSection({
 
       {isLoading ? (
         /* Shimmer placeholders — 4 rows (W11 pattern) */
-        <YStack gap={10}>
+        <YStack testID="subjects-loading" gap={10}>
           {[0, 1, 2, 3].map((i) => (
             <SubjectRow
               key={i}
@@ -93,7 +93,7 @@ export function SubjectsListSection({
         </YStack>
       ) : subjectsQuery.isError ? (
         /* Error state — W11 path unchanged */
-        <YStack gap="$4" alignItems="center" paddingVertical="$8">
+        <YStack testID="subjects-error" gap="$4" alignItems="center" paddingVertical="$8">
           <Text
             color="$fg2"
             fontSize={16}
@@ -124,7 +124,7 @@ export function SubjectsListSection({
       ) : filteredSubjects.length === 0 ? (
         /* Empty state — W11 path (preserved; parent screen handles the combined
            empty + continue===null welcome-tile case at the dashboard level). */
-        <YStack gap="$3" alignItems="center" paddingVertical="$8">
+        <YStack testID="subjects-empty" gap="$3" alignItems="center" paddingVertical="$8">
           <Text
             color="$fg2"
             fontSize={18}
@@ -142,6 +142,7 @@ export function SubjectsListSection({
           {filteredSubjects.map(({ dto, key }) => (
             <SubjectRow
               key={dto.id}
+              testID={`subject-row-${key}`}
               subjectId={dto.id ?? 0}
               name={dto.name ?? ''}
               subjectKey={key}

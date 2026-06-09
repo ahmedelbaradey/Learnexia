@@ -150,6 +150,7 @@ export default function SkillTreeTab() {
       {/* Mastery header strip */}
       {!isLoading && !isError && concepts.length > 0 ? (
         <TamStack
+          testID="skill-tree-mastery-header"
           paddingHorizontal="$4"
           paddingVertical="$2"
           borderBottomWidth={1}
@@ -184,7 +185,7 @@ export default function SkillTreeTab() {
       >
         {/* Loading skeleton */}
         {isLoading ? (
-          <YStack gap="$8" alignItems="center" width="100%">
+          <YStack testID="skill-tree-loading" gap="$8" alignItems="center" width="100%">
             {[0, 1].map((ci) => (
               <YStack key={ci} alignItems="center" gap="$6">
                 <TamStack height={16} width={120} borderRadius="$card" backgroundColor="$cardSoft" />
@@ -202,7 +203,7 @@ export default function SkillTreeTab() {
           </YStack>
         ) : isError ? (
           /* Error + retry */
-          <YStack gap="$4" alignItems="center" paddingVertical="$8">
+          <YStack testID="skill-tree-error" gap="$4" alignItems="center" paddingVertical="$8">
             <Text
               color="$fg2"
               fontSize={16}
@@ -232,7 +233,7 @@ export default function SkillTreeTab() {
           </YStack>
         ) : concepts.length === 0 ? (
           /* Empty */
-          <YStack gap="$3" alignItems="center" paddingVertical="$8">
+          <YStack testID="skill-tree-empty" gap="$3" alignItems="center" paddingVertical="$8">
             <Text
               color="$fg2"
               fontSize={18}
@@ -293,6 +294,7 @@ export default function SkillTreeTab() {
                       return (
                         <SkillTreeNode
                           key={skill.skillId ?? skillIdx}
+                          testID={`skill-node-${skill.skillId ?? skillIdx}`}
                           skillId={skill.skillId ?? 0}
                           name={skill.name ?? ''}
                           state={stateVal}

@@ -118,6 +118,14 @@ const DEFAULT_SUBCAPTIONS = {
   bossBeaten: 'Boss Beaten',
 };
 
+// Map numeric state to the string used by data-state attribute.
+function stateToDataState(state: SkillNodeState, hasBoss: boolean): string {
+  if (hasBoss) return state === 0 ? 'locked' : state === 2 ? 'completed' : 'boss';
+  if (state === 0) return 'locked';
+  if (state === 2) return 'completed';
+  return 'available';
+}
+
 export function SkillTreeNode({
   skillId: _skillId,
   name,
@@ -135,6 +143,10 @@ export function SkillTreeNode({
 }: SkillTreeNodeProps) {
   const isLocked = state === 0;
   const isCompleted = state === 2;
+
+  // Web-only data attributes for E2E state assertions (non-user-facing).
+  const dataStateAttr = Platform.OS === 'web' ? stateToDataState(state, hasBoss) : undefined;
+  const dataBossAttr = Platform.OS === 'web' && hasBoss ? 'true' : undefined;
 
   const captions = subCaptionMap ?? DEFAULT_SUBCAPTIONS;
   const discStyle = getDiscStyle(state, hasBoss);
@@ -193,6 +205,10 @@ export function SkillTreeNode({
       testID={testID}
       alignItems="center"
       gap={6}
+      // @ts-ignore — data-* attributes are web-only, non-user-facing E2E hooks
+      data-state={dataStateAttr}
+      // @ts-ignore — data-* attributes are web-only, non-user-facing E2E hooks
+      data-boss={dataBossAttr}
     >
       {/* Disc */}
       <Stack
