@@ -8,7 +8,7 @@
 |---|---|
 | Date / time (UTC) | 2026-06-09 |
 | Run by | api-tester |
-| Branch / commit | qc/phase-1-frontend |
+| Branch / commit | qc/phase-2-backend-continue |
 | API base URL | in-process (WebApplicationFactory + Testcontainers pgvector/pg16) |
 | Build status (`dotnet build backend/Learnexia.Modular.sln`) | 0 errors, 17 warnings (pre-existing) |
 | Test project / class | `backend/tests/Learnexia.IntegrationTests/P2_01_CurriculumHierarchy_Extended_Tests.cs` (60 new) + `P2_01_CurriculumHierarchy_Tests.cs` (32 existing) |

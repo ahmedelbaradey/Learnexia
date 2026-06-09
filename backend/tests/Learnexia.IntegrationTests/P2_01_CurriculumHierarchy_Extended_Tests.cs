@@ -182,9 +182,10 @@ public sealed class P2_01_CurriculumHierarchy_Extended_Tests : IAsyncLifetime
         var (resp, _, body) = await PostAsync("/api/learning/subjects/Create",
             new { Name = name, GradeId = gradeId }, _adminToken);
         resp.StatusCode.Should().Be(HttpStatusCode.OK, "prereq subject create failed; body: {0}", body);
+        // P7: Subjects/List is [Authorize(AdminOnly)] — must pass admin token
         return await FindIdInList(
             $"/api/learning/subjects/List?PageNumber=1&PageSize=200&GradeId={gradeId}",
-            "name", name, "subject");
+            "name", name, "subject", _adminToken);
     }
 
     private async Task<int> CreateUnitGetId(int subjectId)
@@ -193,9 +194,10 @@ public sealed class P2_01_CurriculumHierarchy_Extended_Tests : IAsyncLifetime
         var (resp, _, body) = await PostAsync("/api/learning/units/Create",
             new { Name = name, SequenceOrder = 1, SubjectId = subjectId }, _adminToken);
         resp.StatusCode.Should().Be(HttpStatusCode.OK, "prereq unit create failed; body: {0}", body);
+        // P7: Units/List is [Authorize(AdminOnly)] — must pass admin token
         return await FindIdInList(
             $"/api/learning/units/List?PageNumber=1&PageSize=200&SubjectId={subjectId}",
-            "name", name, "unit");
+            "name", name, "unit", _adminToken);
     }
 
     private async Task<int> CreateConceptGetId(int subjectId)
@@ -204,9 +206,10 @@ public sealed class P2_01_CurriculumHierarchy_Extended_Tests : IAsyncLifetime
         var (resp, _, body) = await PostAsync("/api/learning/concepts/Create",
             new { Name = name, DifficultyLevel = 1, SubjectId = subjectId }, _adminToken);
         resp.StatusCode.Should().Be(HttpStatusCode.OK, "prereq concept create failed; body: {0}", body);
+        // P7: Concepts/List is [Authorize(AdminOnly)] — must pass admin token
         return await FindIdInList(
             $"/api/learning/concepts/List?PageNumber=1&PageSize=200&SubjectId={subjectId}",
-            "name", name, "concept");
+            "name", name, "concept", _adminToken);
     }
 
     private async Task<int> CreateSkillGetId(int conceptId)
@@ -215,9 +218,10 @@ public sealed class P2_01_CurriculumHierarchy_Extended_Tests : IAsyncLifetime
         var (resp, _, body) = await PostAsync("/api/learning/skills/Create",
             new { Name = name, MasteryThreshold = 80, EstimatedTimeMinutes = 30, ConceptId = conceptId }, _adminToken);
         resp.StatusCode.Should().Be(HttpStatusCode.OK, "prereq skill create failed; body: {0}", body);
+        // P7: Skills/List is [Authorize(AdminOnly)] — must pass admin token
         return await FindIdInList(
             $"/api/learning/skills/List?PageNumber=1&PageSize=200&ConceptId={conceptId}",
-            "name", name, "skill");
+            "name", name, "skill", _adminToken);
     }
 
     // =========================================================================
@@ -237,20 +241,21 @@ public sealed class P2_01_CurriculumHierarchy_Extended_Tests : IAsyncLifetime
             new { Name = unitName, SequenceOrder = 1, SubjectId = subjectId }, _adminToken);
         AssertCreateSuccess(createResp, createRoot, createBody);
 
-        // LIST filtered by SubjectId
+        // LIST filtered by SubjectId — P7: Units/List is [Authorize(AdminOnly)]
         var (listResp, listRoot, listBody) = await GetAsync(
-            $"/api/learning/units/List?PageNumber=1&PageSize=200&SubjectId={subjectId}");
+            $"/api/learning/units/List?PageNumber=1&PageSize=200&SubjectId={subjectId}", _adminToken);
         listResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", listBody);
         var items = ExtractItems(listRoot, listBody);
         bool foundInList = items.Any(u => TryProp(u, "name", out var n) && n.GetString() == unitName);
         foundInList.Should().BeTrue("created unit must appear in filtered list; body: {0}", listBody);
 
+        // P7: Units/List is [Authorize(AdminOnly)] — must pass admin token
         int unitId = await FindIdInList(
             $"/api/learning/units/List?PageNumber=1&PageSize=200&SubjectId={subjectId}",
-            "name", unitName, "unit");
+            "name", unitName, "unit", _adminToken);
 
-        // GETBYID
-        var (getResp, getRoot, getBody) = await GetAsync($"/api/learning/units?id={unitId}");
+        // GETBYID — P7: Units GetById is [Authorize(AdminOnly)]
+        var (getResp, getRoot, getBody) = await GetAsync($"/api/learning/units?id={unitId}", _adminToken);
         getResp.StatusCode.Should().Be(HttpStatusCode.OK, "GetById must succeed; body: {0}", getBody);
         TryProp(getRoot, "successed", out var getS).Should().BeTrue("body: {0}", getBody);
         getS.GetBoolean().Should().BeTrue("body: {0}", getBody);
@@ -263,8 +268,8 @@ public sealed class P2_01_CurriculumHierarchy_Extended_Tests : IAsyncLifetime
         TryProp(updateRoot, "successed", out var upS).Should().BeTrue("body: {0}", updateBody);
         upS.GetBoolean().Should().BeTrue("body: {0}", updateBody);
 
-        // GETBYID after update — verify name changed
-        var (getAfterResp, getAfterRoot, getAfterBody) = await GetAsync($"/api/learning/units?id={unitId}");
+        // GETBYID after update — verify name changed (P7: AdminOnly)
+        var (getAfterResp, getAfterRoot, getAfterBody) = await GetAsync($"/api/learning/units?id={unitId}", _adminToken);
         getAfterResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", getAfterBody);
         TryProp(getAfterRoot, "data", out var updatedData).Should().BeTrue("body: {0}", getAfterBody);
         TryProp(updatedData, "name", out var updatedNameProp).Should().BeTrue("body: {0}", getAfterBody);
@@ -276,11 +281,12 @@ public sealed class P2_01_CurriculumHierarchy_Extended_Tests : IAsyncLifetime
         TryProp(deleteRoot, "successed", out var delS).Should().BeTrue("body: {0}", deleteBody);
         delS.GetBoolean().Should().BeTrue("body: {0}", deleteBody);
 
-        // GETBYID after delete — must fail
-        var (getDeletedResp, getDeletedRoot, getDeletedBody) = await GetAsync($"/api/learning/units?id={unitId}");
+        // GETBYID after soft-delete — P7: soft-delete sets IsDeleted=true; global EF filter hides it.
+        // AdminOnly GetById still returns 404/non-200 because the entity is filtered by the global IsDeleted filter.
+        var (getDeletedResp, getDeletedRoot, getDeletedBody) = await GetAsync($"/api/learning/units?id={unitId}", _adminToken);
         var deletedStatusCode = (int)getDeletedResp.StatusCode;
         deletedStatusCode.Should().NotBe(200,
-            "GetById after delete must not return 200; body: {0}", getDeletedBody);
+            "GetById after soft-delete must not return 200 (global IsDeleted filter hides it); body: {0}", getDeletedBody);
         if (getDeletedRoot.ValueKind != JsonValueKind.Undefined && TryProp(getDeletedRoot, "successed", out var dS))
             dS.GetBoolean().Should().BeFalse("successed must be false for deleted entity; body: {0}", getDeletedBody);
     }
@@ -302,17 +308,18 @@ public sealed class P2_01_CurriculumHierarchy_Extended_Tests : IAsyncLifetime
             new { Name = conceptName, DifficultyLevel = 2, Description = "Integration test concept", SubjectId = subjectId }, _adminToken);
         AssertCreateSuccess(createResp, createRoot, createBody);
 
+        // P7: Concepts/List is [Authorize(AdminOnly)]
         int conceptId = await FindIdInList(
             $"/api/learning/concepts/List?PageNumber=1&PageSize=200&SubjectId={subjectId}",
-            "name", conceptName, "concept");
+            "name", conceptName, "concept", _adminToken);
 
-        // LIST
+        // LIST — P7: AdminOnly
         var (listResp, listRoot, listBody) = await GetAsync(
-            $"/api/learning/concepts/List?PageNumber=1&PageSize=200&SubjectId={subjectId}");
+            $"/api/learning/concepts/List?PageNumber=1&PageSize=200&SubjectId={subjectId}", _adminToken);
         listResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", listBody);
 
-        // GETBYID — verify description and difficultyLevel
-        var (getResp, getRoot, getBody) = await GetAsync($"/api/learning/concepts?id={conceptId}");
+        // GETBYID — verify description and difficultyLevel (P7: AdminOnly)
+        var (getResp, getRoot, getBody) = await GetAsync($"/api/learning/concepts?id={conceptId}", _adminToken);
         getResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", getBody);
         TryProp(getRoot, "successed", out var gs).Should().BeTrue("body: {0}", getBody);
         gs.GetBoolean().Should().BeTrue("body: {0}", getBody);
@@ -325,8 +332,8 @@ public sealed class P2_01_CurriculumHierarchy_Extended_Tests : IAsyncLifetime
         TryProp(updateRoot, "successed", out var us).Should().BeTrue("body: {0}", updateBody);
         us.GetBoolean().Should().BeTrue("body: {0}", updateBody);
 
-        // GETBYID after update — name changed
-        var (getAfterResp, getAfterRoot, getAfterBody) = await GetAsync($"/api/learning/concepts?id={conceptId}");
+        // GETBYID after update — name changed (P7: AdminOnly)
+        var (getAfterResp, getAfterRoot, getAfterBody) = await GetAsync($"/api/learning/concepts?id={conceptId}", _adminToken);
         getAfterResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", getAfterBody);
         TryProp(getAfterRoot, "data", out var afterData).Should().BeTrue("body: {0}", getAfterBody);
         TryProp(afterData, "name", out var afterName).Should().BeTrue("body: {0}", getAfterBody);
@@ -357,17 +364,18 @@ public sealed class P2_01_CurriculumHierarchy_Extended_Tests : IAsyncLifetime
             new { Name = skillName, MasteryThreshold = 80, EstimatedTimeMinutes = 30, ConceptId = conceptId }, _adminToken);
         AssertCreateSuccess(createResp, createRoot, createBody);
 
+        // P7: Skills/List is [Authorize(AdminOnly)]
         int skillId = await FindIdInList(
             $"/api/learning/skills/List?PageNumber=1&PageSize=200&ConceptId={conceptId}",
-            "name", skillName, "skill");
+            "name", skillName, "skill", _adminToken);
 
-        // LIST by ConceptId
+        // LIST by ConceptId — P7: AdminOnly
         var (listResp, listRoot, listBody) = await GetAsync(
-            $"/api/learning/skills/List?PageNumber=1&PageSize=200&ConceptId={conceptId}");
+            $"/api/learning/skills/List?PageNumber=1&PageSize=200&ConceptId={conceptId}", _adminToken);
         listResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", listBody);
 
-        // GETBYID
-        var (getResp, getRoot, getBody) = await GetAsync($"/api/learning/skills?id={skillId}");
+        // GETBYID — P7: AdminOnly
+        var (getResp, getRoot, getBody) = await GetAsync($"/api/learning/skills?id={skillId}", _adminToken);
         getResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", getBody);
         TryProp(getRoot, "successed", out var gs).Should().BeTrue("body: {0}", getBody);
         gs.GetBoolean().Should().BeTrue("body: {0}", getBody);
@@ -379,8 +387,8 @@ public sealed class P2_01_CurriculumHierarchy_Extended_Tests : IAsyncLifetime
         TryProp(updateRoot, "successed", out var us).Should().BeTrue("body: {0}", updateBody);
         us.GetBoolean().Should().BeTrue("body: {0}", updateBody);
 
-        // GETBYID after update — mastery threshold changed
-        var (getAfterResp, getAfterRoot, getAfterBody) = await GetAsync($"/api/learning/skills?id={skillId}");
+        // GETBYID after update — mastery threshold changed (P7: AdminOnly)
+        var (getAfterResp, getAfterRoot, getAfterBody) = await GetAsync($"/api/learning/skills?id={skillId}", _adminToken);
         getAfterResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", getAfterBody);
         TryProp(getAfterRoot, "data", out var afterData).Should().BeTrue("body: {0}", getAfterBody);
         TryProp(afterData, "masteryThreshold", out var mt).Should().BeTrue("data must have masteryThreshold; body: {0}", getAfterBody);
@@ -484,9 +492,9 @@ public sealed class P2_01_CurriculumHierarchy_Extended_Tests : IAsyncLifetime
             new { Name = unitYName, SequenceOrder = 1, SubjectId = subjectYId }, _adminToken);
         AssertCreateSuccess(uyR, default, uyB);
 
-        // Filter units by SubjectX
+        // Filter units by SubjectX — P7: Units/List is [Authorize(AdminOnly)]
         var (ulResp, ulRoot, ulBody) = await GetAsync(
-            $"/api/learning/units/List?PageNumber=1&PageSize=200&SubjectId={subjectXId}");
+            $"/api/learning/units/List?PageNumber=1&PageSize=200&SubjectId={subjectXId}", _adminToken);
         ulResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", ulBody);
         var unitsX = ExtractItems(ulRoot, ulBody);
         unitsX.Any(u => TryProp(u, "name", out var n) && n.GetString() == unitXName)
@@ -504,9 +512,9 @@ public sealed class P2_01_CurriculumHierarchy_Extended_Tests : IAsyncLifetime
             new { Name = conceptYName, DifficultyLevel = 1, SubjectId = subjectYId }, _adminToken);
         AssertCreateSuccess(cyR, default, cyB);
 
-        // Filter concepts by SubjectX
+        // Filter concepts by SubjectX — P7: Concepts/List is [Authorize(AdminOnly)]
         var (clResp, clRoot, clBody) = await GetAsync(
-            $"/api/learning/concepts/List?PageNumber=1&PageSize=200&SubjectId={subjectXId}");
+            $"/api/learning/concepts/List?PageNumber=1&PageSize=200&SubjectId={subjectXId}", _adminToken);
         clResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", clBody);
         var conceptsX = ExtractItems(clRoot, clBody);
         conceptsX.Any(c => TryProp(c, "name", out var n) && n.GetString() == conceptXName)
@@ -515,12 +523,13 @@ public sealed class P2_01_CurriculumHierarchy_Extended_Tests : IAsyncLifetime
             .Should().BeFalse("SubjectX filter must NOT include conceptY; body: {0}", clBody);
 
         // Skills: conceptX has skillX, conceptY has skillY
+        // P7: Concepts/List is [Authorize(AdminOnly)]
         int conceptXId = await FindIdInList(
             $"/api/learning/concepts/List?PageNumber=1&PageSize=200&SubjectId={subjectXId}",
-            "name", conceptXName, "conceptX");
+            "name", conceptXName, "conceptX", _adminToken);
         int conceptYId = await FindIdInList(
             $"/api/learning/concepts/List?PageNumber=1&PageSize=200&SubjectId={subjectYId}",
-            "name", conceptYName, "conceptY");
+            "name", conceptYName, "conceptY", _adminToken);
 
         var skillXName = $"SkillX {Guid.NewGuid():N}";
         var skillYName = $"SkillY {Guid.NewGuid():N}";
@@ -531,9 +540,9 @@ public sealed class P2_01_CurriculumHierarchy_Extended_Tests : IAsyncLifetime
             new { Name = skillYName, MasteryThreshold = 80, EstimatedTimeMinutes = 30, ConceptId = conceptYId }, _adminToken);
         AssertCreateSuccess(syR, default, syB);
 
-        // Filter skills by ConceptX
+        // Filter skills by ConceptX — P7: Skills/List is [Authorize(AdminOnly)]
         var (slResp, slRoot, slBody) = await GetAsync(
-            $"/api/learning/skills/List?PageNumber=1&PageSize=200&ConceptId={conceptXId}");
+            $"/api/learning/skills/List?PageNumber=1&PageSize=200&ConceptId={conceptXId}", _adminToken);
         slResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", slBody);
         var skillsX = ExtractItems(slRoot, slBody);
         skillsX.Any(s => TryProp(s, "name", out var n) && n.GetString() == skillXName)
@@ -542,12 +551,13 @@ public sealed class P2_01_CurriculumHierarchy_Extended_Tests : IAsyncLifetime
             .Should().BeFalse("ConceptX filter must NOT include skillY; body: {0}", slBody);
 
         // Lessons: unitX has lessonX, unitY has lessonY
+        // P7: Units/List is [Authorize(AdminOnly)]
         int unitXId = await FindIdInList(
             $"/api/learning/units/List?PageNumber=1&PageSize=200&SubjectId={subjectXId}",
-            "name", unitXName, "unitX");
+            "name", unitXName, "unitX", _adminToken);
         int unitYId = await FindIdInList(
             $"/api/learning/units/List?PageNumber=1&PageSize=200&SubjectId={subjectYId}",
-            "name", unitYName, "unitY");
+            "name", unitYName, "unitY", _adminToken);
 
         var lessonXName = $"LessonX {Guid.NewGuid():N}";
         var lessonYName = $"LessonY {Guid.NewGuid():N}";
@@ -558,9 +568,9 @@ public sealed class P2_01_CurriculumHierarchy_Extended_Tests : IAsyncLifetime
             new { Name = lessonYName, Difficulty = 1, SequenceOrder = 1, IsLocked = false, UnitId = unitYId }, _adminToken);
         AssertCreateSuccess(lyR, default, lyB);
 
-        // Filter lessons by UnitX
+        // Filter lessons by UnitX — P7: Lessons/List is [Authorize(AdminOnly)]
         var (llResp, llRoot, llBody) = await GetAsync(
-            $"/api/learning/lessons/List?PageNumber=1&PageSize=200&UnitId={unitXId}");
+            $"/api/learning/lessons/List?PageNumber=1&PageSize=200&UnitId={unitXId}", _adminToken);
         llResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", llBody);
         var lessonsX = ExtractItems(llRoot, llBody);
         lessonsX.Any(l => TryProp(l, "name", out var n) && n.GetString() == lessonXName)
@@ -938,9 +948,10 @@ public sealed class P2_01_CurriculumHierarchy_Extended_Tests : IAsyncLifetime
             new { Name = nameA, GradeId = gradeId }, _adminToken);
         AssertCreateSuccess(aResp, aRoot, aBody);
 
+        // P7: Subjects/List is [Authorize(AdminOnly)]
         int subjectAId = await FindIdInList(
             $"/api/learning/subjects/List?PageNumber=1&PageSize=200&GradeId={gradeId}",
-            "name", nameA, "subjectA");
+            "name", nameA, "subjectA", _adminToken);
 
         // Attempt duplicate B (will fail per BE-TC-30)
         var (bResp, _, bBody) = await PostAsync("/api/learning/subjects/Create",
@@ -948,8 +959,8 @@ public sealed class P2_01_CurriculumHierarchy_Extended_Tests : IAsyncLifetime
         ((int)bResp.StatusCode).Should().NotBe(200,
             "duplicate B must be rejected; body: {0}", bBody);
 
-        // GET subject A by id — must still return 200 with intact fields
-        var (getResp, getRoot, getBody) = await GetAsync($"/api/learning/subjects?id={subjectAId}");
+        // GET subject A by id — must still return 200 with intact fields (P7: AdminOnly)
+        var (getResp, getRoot, getBody) = await GetAsync($"/api/learning/subjects?id={subjectAId}", _adminToken);
         getResp.StatusCode.Should().Be(HttpStatusCode.OK,
             "subject A must still be retrievable after the duplicate failure; body: {0}", getBody);
         TryProp(getRoot, "successed", out var gs).Should().BeTrue("body: {0}", getBody);
@@ -958,9 +969,9 @@ public sealed class P2_01_CurriculumHierarchy_Extended_Tests : IAsyncLifetime
         TryProp(aData, "name", out var aName).Should().BeTrue("data must have name; body: {0}", getBody);
         aName.GetString().Should().Be(nameA, "subject A name must be intact; body: {0}", getBody);
 
-        // List subjects for the grade — should contain A but NOT B
+        // List subjects for the grade — should contain A but NOT B (P7: AdminOnly)
         var (listResp, listRoot, listBody) = await GetAsync(
-            $"/api/learning/subjects/List?PageNumber=1&PageSize=200&GradeId={gradeId}");
+            $"/api/learning/subjects/List?PageNumber=1&PageSize=200&GradeId={gradeId}", _adminToken);
         listResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", listBody);
         var subjectsInGrade = ExtractItems(listRoot, listBody);
 
