@@ -4,7 +4,21 @@
 > Captures what's done, the decisions, the load-building config, and what's next. If you change any of these, update this file.
 > 2026-06-07: **E2E test stage added — `frontend-e2e-tester` agent + `tests/e2e/` Playwright harness (PR #99, branch `chore/e2e-playwright-harness`). See "Testing — E2E (Playwright)" directly below.**
 > 2026-06-07: **QC test-design + api-tester pass over all Phase-1 backend stories (branch `qc/phase-1-backend`) — ~329 designed cases, ~520 integration tests run; surfaced one HIGH security hole + several robustness/contract defects. See "QC — Phase-1 backend test pass + defects" directly below.**
-> 2026-06-08/09: **Phase 7 Admin Console — CURRICULUM WAVE (P7-01..05) + USER/ACCOUNT WAVE (P7-06..08) BACKEND COMPLETE on `feat/phase-7-backend` (one shared branch → wave PR #106). Plus a pre-req auth hotfix PR #104 (merge FIRST). 8 of 13 P7 backend stories done. Remaining: P7-12 (audit + Moderation scaffold), P7-09/10/11 (blocked on upstream phases), P7-13; all P7 FE not started. See the two sections directly below.**
+> 2026-06-08/09: **Phase 7 Admin Console — CURRICULUM (P7-01..05) + USER/ACCOUNT (P7-06..08) + AUDIT/MODERATION (P7-12) BACKEND COMPLETE on `feat/phase-7-backend` (one shared branch → wave PR #106). Plus a pre-req auth hotfix PR #104 (merge FIRST). 9 of 13 P7 backend stories done. Remaining: P7-09/10/11 (blocked on upstream phases), P7-13; all P7 FE not started. See the sections directly below.**
+
+## Phase 7 — Audit log + Moderation module (P7-12 backend) — added 2026-06-09 (`feat/phase-7-backend`, in wave PR #106)
+
+Built **P7-12** + the lead-approved **new `Moderation` module** + fixed the wave-wide audit-event timing (commit `5446a1d`).
+
+- **New `Moderation` module** (4 projects, schema `moderation`, full UoW scaffold — ready for the future P7-09 moderation queue). All Host wiring done: `.sln`, `Program.cs` (`AddModerationModule` + `InitializeAsync`), **`MediatRExtensions.AddCrossModuleMediatR`** (the load-bearing one — without it the audit consumer silently never runs), `Host.csproj`, `Claims.GenerateModules()`. **`Directory.Packages.props` needed no change** (CPM already covers the packages).
+- **Audit log** — `AuditLog` is **append-only/immutable**: inherits `CreationAuditedEntity` (no soft-delete/update columns) and the migration `P7_12_InitialModeration` installs a **Postgres trigger blocking UPDATE/DELETE** on `moderation."AuditLogs"` (DB-enforced, not just app-layer). Idempotent (unique `EventId` index) fail-soft `INotificationHandler<AdminActionPerformedEvent>` consumer. Read-only AdminOnly API `GET /api/Admin/Audit/Log` (DB-side filter/paginate, newest-first, NO mutation endpoints). **No PII** in audit rows — only ids + enum states + the PII-safe `Details` string.
+- **✅ RESOLVED — the AdminActionPerformedEvent pre-commit follow-up.** The **32 Learning curriculum admin handlers** now raise an `AdminActionPerformedDomainEvent` on the tracked aggregate, dispatched **after commit** by `UnitOfWorkBehavior` (ADR 0002) and relayed to the integration event — so a rolled-back action can't write a phantom audit row. (Identity P7-06/07/08 handlers were already post-commit via eager `UserManager` commit — left unchanged.) `AggregateRoot.RaiseDomainEvent` was widened `protected`→`public` (accepted; convention: always source `AdminUserId` from `_currentUser`, never hardcode). **The earlier "fix AdminActionPerformedEvent to post-commit before P7-12" item in the two waves below is now DONE.**
+
+**Load-bearing:** the audit log is **best-effort** (fail-soft consumer, no outbox per ADR 0002 §5) — a persistence failure drops a row with a `LogWarn`, it is not a guaranteed-complete ledger. Migration `P7_12_*` (incl. the immutability trigger) NOT applied — run `dotnet ef database update`. The test factory (`LearnexiaWebAppFactory`) was extended to override `ModerationDbContext` + apply its migration.
+
+**Tracked follow-up (NOT done):** the audit-log **CSV/JSON export** endpoint (story AC #8, must use `Shared.Kernel.Storage.IStorageService` + a row cap) is deferred. The Identity read-path audit events (`UserViewed`/`UserSearched`) remain best-effort fire-and-forget (now decoupled from request-cancel).
+
+## Phase 7 — User/account wave (backend) — added 2026-06-09 (`feat/phase-7-backend`, in wave PR #106)
 
 ## Phase 7 — User/account wave (backend) — added 2026-06-09 (`feat/phase-7-backend`, in wave PR #106)
 
