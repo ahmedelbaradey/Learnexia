@@ -80,6 +80,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Parent.Ap
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Gamification", "Gamification", "{0C2D1973-9E3C-87F2-D183-4208730B413E}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Moderation", "Moderation", "{A0000060-0000-0000-0000-000000000060}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Gamification.Domain", "src\Modules\Gamification\Learnexia.Modules.Gamification.Domain\Learnexia.Modules.Gamification.Domain.csproj", "{3A9FBDFF-6EE7-4181-9367-6F9383D4CAEB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Gamification.Application", "src\Modules\Gamification\Learnexia.Modules.Gamification.Application\Learnexia.Modules.Gamification.Application.csproj", "{D5557542-F72E-4663-AFE4-D694ECDACA2C}"
@@ -87,6 +89,14 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Gamification.Infrastructure", "src\Modules\Gamification\Learnexia.Modules.Gamification.Infrastructure\Learnexia.Modules.Gamification.Infrastructure.csproj", "{053E94C7-A87E-49D5-A39D-B7FE8710E91E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Gamification.Api", "src\Modules\Gamification\Learnexia.Modules.Gamification.Api\Learnexia.Modules.Gamification.Api.csproj", "{3F081E28-7660-4435-8139-382AA5DD0EEB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Moderation.Domain", "src\Modules\Moderation\Learnexia.Modules.Moderation.Domain\Learnexia.Modules.Moderation.Domain.csproj", "{B0000061-0000-0000-0000-000000000061}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Moderation.Application", "src\Modules\Moderation\Learnexia.Modules.Moderation.Application\Learnexia.Modules.Moderation.Application.csproj", "{B0000062-0000-0000-0000-000000000062}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Moderation.Infrastructure", "src\Modules\Moderation\Learnexia.Modules.Moderation.Infrastructure\Learnexia.Modules.Moderation.Infrastructure.csproj", "{B0000063-0000-0000-0000-000000000063}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Moderation.Api", "src\Modules\Moderation\Learnexia.Modules.Moderation.Api\Learnexia.Modules.Moderation.Api.csproj", "{B0000064-0000-0000-0000-000000000064}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -434,6 +444,54 @@ Global
 		{3F081E28-7660-4435-8139-382AA5DD0EEB}.Release|x64.Build.0 = Release|Any CPU
 		{3F081E28-7660-4435-8139-382AA5DD0EEB}.Release|x86.ActiveCfg = Release|Any CPU
 		{3F081E28-7660-4435-8139-382AA5DD0EEB}.Release|x86.Build.0 = Release|Any CPU
+		{B0000061-0000-0000-0000-000000000061}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000061-0000-0000-0000-000000000061}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000061-0000-0000-0000-000000000061}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B0000061-0000-0000-0000-000000000061}.Debug|x64.Build.0 = Debug|Any CPU
+		{B0000061-0000-0000-0000-000000000061}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B0000061-0000-0000-0000-000000000061}.Debug|x86.Build.0 = Debug|Any CPU
+		{B0000061-0000-0000-0000-000000000061}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000061-0000-0000-0000-000000000061}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0000061-0000-0000-0000-000000000061}.Release|x64.ActiveCfg = Release|Any CPU
+		{B0000061-0000-0000-0000-000000000061}.Release|x64.Build.0 = Release|Any CPU
+		{B0000061-0000-0000-0000-000000000061}.Release|x86.ActiveCfg = Release|Any CPU
+		{B0000061-0000-0000-0000-000000000061}.Release|x86.Build.0 = Release|Any CPU
+		{B0000062-0000-0000-0000-000000000062}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000062-0000-0000-0000-000000000062}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000062-0000-0000-0000-000000000062}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B0000062-0000-0000-0000-000000000062}.Debug|x64.Build.0 = Debug|Any CPU
+		{B0000062-0000-0000-0000-000000000062}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B0000062-0000-0000-0000-000000000062}.Debug|x86.Build.0 = Debug|Any CPU
+		{B0000062-0000-0000-0000-000000000062}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000062-0000-0000-0000-000000000062}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0000062-0000-0000-0000-000000000062}.Release|x64.ActiveCfg = Release|Any CPU
+		{B0000062-0000-0000-0000-000000000062}.Release|x64.Build.0 = Release|Any CPU
+		{B0000062-0000-0000-0000-000000000062}.Release|x86.ActiveCfg = Release|Any CPU
+		{B0000062-0000-0000-0000-000000000062}.Release|x86.Build.0 = Release|Any CPU
+		{B0000063-0000-0000-0000-000000000063}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000063-0000-0000-0000-000000000063}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000063-0000-0000-0000-000000000063}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B0000063-0000-0000-0000-000000000063}.Debug|x64.Build.0 = Debug|Any CPU
+		{B0000063-0000-0000-0000-000000000063}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B0000063-0000-0000-0000-000000000063}.Debug|x86.Build.0 = Debug|Any CPU
+		{B0000063-0000-0000-0000-000000000063}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000063-0000-0000-0000-000000000063}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0000063-0000-0000-0000-000000000063}.Release|x64.ActiveCfg = Release|Any CPU
+		{B0000063-0000-0000-0000-000000000063}.Release|x64.Build.0 = Release|Any CPU
+		{B0000063-0000-0000-0000-000000000063}.Release|x86.ActiveCfg = Release|Any CPU
+		{B0000063-0000-0000-0000-000000000063}.Release|x86.Build.0 = Release|Any CPU
+		{B0000064-0000-0000-0000-000000000064}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000064-0000-0000-0000-000000000064}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000064-0000-0000-0000-000000000064}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B0000064-0000-0000-0000-000000000064}.Debug|x64.Build.0 = Debug|Any CPU
+		{B0000064-0000-0000-0000-000000000064}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B0000064-0000-0000-0000-000000000064}.Debug|x86.Build.0 = Debug|Any CPU
+		{B0000064-0000-0000-0000-000000000064}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000064-0000-0000-0000-000000000064}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0000064-0000-0000-0000-000000000064}.Release|x64.ActiveCfg = Release|Any CPU
+		{B0000064-0000-0000-0000-000000000064}.Release|x64.Build.0 = Release|Any CPU
+		{B0000064-0000-0000-0000-000000000064}.Release|x86.ActiveCfg = Release|Any CPU
+		{B0000064-0000-0000-0000-000000000064}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -475,5 +533,10 @@ Global
 		{D5557542-F72E-4663-AFE4-D694ECDACA2C} = {0C2D1973-9E3C-87F2-D183-4208730B413E}
 		{053E94C7-A87E-49D5-A39D-B7FE8710E91E} = {0C2D1973-9E3C-87F2-D183-4208730B413E}
 		{3F081E28-7660-4435-8139-382AA5DD0EEB} = {0C2D1973-9E3C-87F2-D183-4208730B413E}
+		{A0000060-0000-0000-0000-000000000060} = {CA253913-39DE-BFD0-C9A3-4B7EC6FBDF17}
+		{B0000061-0000-0000-0000-000000000061} = {A0000060-0000-0000-0000-000000000060}
+		{B0000062-0000-0000-0000-000000000062} = {A0000060-0000-0000-0000-000000000060}
+		{B0000063-0000-0000-0000-000000000063} = {A0000060-0000-0000-0000-000000000060}
+		{B0000064-0000-0000-0000-000000000064} = {A0000060-0000-0000-0000-000000000060}
 	EndGlobalSection
 EndGlobal

@@ -73,6 +73,12 @@ namespace Learnexia.Modules.Identity.Infrastructure.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
 
+                    b.Property<int>("AccountStatus")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasComment("Governance lifecycle state (0=Active, 1=Suspended, 2=Deleted). Distinct from IsActive (mechanical gate) and LockoutEnd (auto-lockout P1-13). DB DEFAULT 0 backfills all existing rows to Active.");
+
                     b.Property<int?>("Age")
                         .HasColumnType("integer")
                         .HasComment("Child's age in years; null when unknown");
@@ -141,6 +147,11 @@ namespace Learnexia.Modules.Identity.Infrastructure.Migrations
                     b.Property<DateTime?>("LastFailedLoginAttempt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("LastStatusReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasComment("Admin-supplied reason for the most recent status change (suspend/delete). Max 500 chars.");
+
                     b.Property<string>("LearningLanguage")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -205,6 +216,14 @@ namespace Learnexia.Modules.Identity.Infrastructure.Migrations
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("StatusChangedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasComment("UTC timestamp of the last status change. Persist as DateTime.UtcNow (Npgsql EnableLegacyTimestampBehavior=true — apply .ToUniversalTime() at mapping boundaries).");
+
+                    b.Property<int?>("StatusChangedBy")
+                        .HasColumnType("integer")
+                        .HasComment("UserId of the admin who performed the last status change. Plain int — no FK.");
+
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("boolean");
 
@@ -222,6 +241,9 @@ namespace Learnexia.Modules.Identity.Infrastructure.Migrations
                         .HasColumnType("character varying(256)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AccountStatus")
+                        .HasDatabaseName("IX_Users_AccountStatus_Performance");
 
                     b.HasIndex("CreatedBy");
 

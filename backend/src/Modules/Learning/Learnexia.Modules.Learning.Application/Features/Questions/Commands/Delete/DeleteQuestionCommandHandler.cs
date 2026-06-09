@@ -1,10 +1,10 @@
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Domain.Entities;
+using Learnexia.Modules.Learning.Domain.Events;
 using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
@@ -15,7 +15,8 @@ namespace Learnexia.Modules.Learning.Application.Features.Questions.Commands.Del
 /// Soft-deletes a <see cref="QuizQuestion"/> by setting <c>IsDeleted = true</c>.
 /// The global query filter excludes deleted questions from all subsequent reads,
 /// including student quiz/attempt reads.
-/// Publishes <see cref="AdminActionPerformedEvent"/> post-commit, best-effort.
+///
+/// P7-12: Domain event raised on the QuizQuestion aggregate — dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12 fix).
 /// </summary>
 public class DeleteQuestionCommandHandler
     : BaseResponseHandler, ICommandHandler<DeleteQuestionCommand, BaseResponse<string>>
@@ -23,19 +24,16 @@ public class DeleteQuestionCommandHandler
     private readonly ILoggerManager _logger;
     private readonly ILearningRepositoryManager _repository;
     private readonly ICurrentUserService _currentUser;
-    private readonly IPublisher _publisher;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public DeleteQuestionCommandHandler(
         ILearningRepositoryManager repository,
         ICurrentUserService currentUser,
-        IPublisher publisher,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
         _repository = repository;
         _currentUser = currentUser;
-        _publisher = publisher;
         _logger = logger;
         _localizer = localizer;
     }
@@ -60,23 +58,13 @@ public class DeleteQuestionCommandHandler
             question.IsDeleted = true;
             await _repository.Learning.UpdateAsync(question);
 
-            // Best-effort post-commit event publish.
-            try
-            {
-                await _publisher.Publish(new AdminActionPerformedEvent(
-                    EventId: Guid.NewGuid(),
-                    OccurredAtUtc: DateTime.UtcNow,
-                    AdminUserId: _currentUser.UserId.GetValueOrDefault(),
-                    Action: AdminActions.QuizQuestionDeleted,
-                    TargetEntityType: nameof(QuizQuestion),
-                    TargetEntityId: request.Id,
-                    Details: null),
-                    cancellationToken);
-            }
-            catch (Exception publishEx)
-            {
-                _logger.LogError(publishEx, $"P7-04: AdminActionPerformedEvent publish failed for DeleteQuestionCommand, QuestionId={request.Id}");
-            }
+            // Raise domain event on the tracked aggregate — dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12).
+            question.RaiseDomainEvent(new AdminActionPerformedDomainEvent(
+                AdminUserId: _currentUser.UserId.GetValueOrDefault(),
+                Action: AdminActions.QuizQuestionDeleted,
+                TargetEntityType: nameof(QuizQuestion),
+                TargetEntityId: request.Id,
+                Details: null));
 
             return Success<string>(_localizer[SharedResourcesKey.QuizQuestionDeletedSuccessfully]);
         }

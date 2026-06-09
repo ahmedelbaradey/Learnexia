@@ -19,7 +19,12 @@ public abstract class AggregateRoot : FullAuditedEntity
     [NotMapped]
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
-    protected void RaiseDomainEvent(IDomainEvent domainEvent) => _domainEvents.Add(domainEvent);
+    /// <remarks>
+    /// <c>protected</c> callers (entity behavioral methods, Gamification-style) and external callers
+    /// (Learning admin handlers that cannot embed audit logic inside thin CRUD entities) both use this.
+    /// Exposed as public for the domain-event relay pattern (ADR 0002 §2 / P7-12 post-commit fix).
+    /// </remarks>
+    public void RaiseDomainEvent(IDomainEvent domainEvent) => _domainEvents.Add(domainEvent);
 
     public void ClearDomainEvents() => _domainEvents.Clear();
 }

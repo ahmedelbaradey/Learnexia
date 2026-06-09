@@ -1951,4 +1951,140 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="VersionNumberMustBePositive" xml:space="preserve">
     <value>Version number must be greater than zero.</value>
   </data>
+  <!-- P7-06 Admin User Search and Inspect -->
+  <data name="AdminUserSearchRetrievedSuccessfully" xml:space="preserve">
+    <value>User search results retrieved successfully.</value>
+  </data>
+  <data name="AdminUserProfileRetrievedSuccessfully" xml:space="preserve">
+    <value>User profile retrieved successfully.</value>
+  </data>
+  <data name="AdminUserFamilyRetrievedSuccessfully" xml:space="preserve">
+    <value>User family information retrieved successfully.</value>
+  </data>
+  <data name="AdminUserActivityRetrievedSuccessfully" xml:space="preserve">
+    <value>User activity summary retrieved successfully.</value>
+  </data>
+  <data name="AdminUserInvalidPageNumber" xml:space="preserve">
+    <value>Page number must be greater than or equal to 1.</value>
+  </data>
+  <data name="AdminUserInvalidPageSize" xml:space="preserve">
+    <value>Page size must be between 1 and 100.</value>
+  </data>
+  <data name="AccountSuspendedSuccessfully" xml:space="preserve">
+    <value>Account suspended successfully.</value>
+  </data>
+  <data name="AccountReactivatedSuccessfully" xml:space="preserve">
+    <value>Account reactivated successfully.</value>
+  </data>
+  <data name="AccountDeletedSuccessfully" xml:space="preserve">
+    <value>Account deleted successfully.</value>
+  </data>
+  <data name="ConfirmAccountDeletionRequired" xml:space="preserve">
+    <value>Deleting an account is irreversible. Set Confirm=true to proceed.</value>
+  </data>
+  <data name="AccountAlreadyDeleted" xml:space="preserve">
+    <value>This account has already been deleted and cannot be modified.</value>
+  </data>
+  <data name="AccountAlreadySuspended" xml:space="preserve">
+    <value>This account is already suspended.</value>
+  </data>
+  <data name="AccountAlreadyActive" xml:space="preserve">
+    <value>This account is already active.</value>
+  </data>
+  <data name="CannotActOnOwnAccount" xml:space="preserve">
+    <value>An admin cannot suspend or delete their own account.</value>
+  </data>
+  <data name="AccountLifecycleUserIdRequired" xml:space="preserve">
+    <value>A valid user id is required.</value>
+  </data>
+  <data name="AccountLifecycleReasonRequired" xml:space="preserve">
+    <value>A reason is required for this action.</value>
+  </data>
+  <data name="AccountLifecycleReasonTooLong" xml:space="preserve">
+    <value>The reason must not exceed 500 characters.</value>
+  </data>
+  <data name="CannotReactivateDeletedAccount" xml:space="preserve">
+    <value>A deleted account cannot be reactivated. Deletion is a terminal state.</value>
+  </data>
+  <data name="AccountLifecycleSystemError" xml:space="preserve">
+    <value>An error occurred while performing the account lifecycle operation.</value>
+  </data>
+  <data name="CannotActOnSuperAdminAccount" xml:space="preserve">
+    <value>The super-admin account is protected and cannot be suspended or deleted.</value>
+  </data>
+  <data name="ChildProfileUpdatedSuccessfully" xml:space="preserve">
+    <value>Child profile updated successfully.</value>
+  </data>
+  <data name="TargetUserIsNotAChild" xml:space="preserve">
+    <value>The target user is not a child account. This operation requires a Student role.</value>
+  </data>
+  <data name="ChildIdRequired" xml:space="preserve">
+    <value>A valid child id is required.</value>
+  </data>
+  <data name="ChildGradeOverriddenSuccessfully" xml:space="preserve">
+    <value>Child grade overridden successfully. Learning history has been preserved.</value>
+  </data>
+  <data name="ChildGradeOverrideConfirmRequired" xml:space="preserve">
+    <value>Please confirm the grade override by setting Confirm=true.</value>
+  </data>
+  <data name="ChildGradeUnchanged" xml:space="preserve">
+    <value>The child's grade is already set to the requested value. No change was made.</value>
+  </data>
+  <data name="ChildGradeOutOfRange" xml:space="preserve">
+    <value>Grade must be between 1 and 6.</value>
+  </data>
+  <data name="ChildGradeOverrideReasonTooLong" xml:space="preserve">
+    <value>The reason must not exceed 500 characters.</value>
+  </data>
+  <data name="ChildAdminOperationSystemError" xml:space="preserve">
+    <value>An error occurred while performing the child admin operation.</value>
+  </data>
+  <data name="AuditLogRetrievedSuccessfully" xml:space="preserve">
+    <value>Audit log retrieved successfully.</value>
+  </data>
+  <data name="AuditLogNotFound" xml:space="preserve">
+    <value>Audit log entry not found.</value>
+  </data>
+  <data name="GamificationConfirmRequired" xml:space="preserve">
+    <value>Please confirm this gamification override by setting Confirm=true.</value>
+  </data>
+  <data name="GamificationProfileNotFound" xml:space="preserve">
+    <value>The student's gamification profile was not found.</value>
+  </data>
+  <data name="GamificationLeagueTierNoOp" xml:space="preserve">
+    <value>The student's league tier is already set to the requested value. No change was made.</value>
+  </data>
+  <data name="GamificationFreezeBalanceAtMax" xml:space="preserve">
+    <value>The student's streak-freeze balance is already at the maximum allowed value.</value>
+  </data>
+  <data name="GamificationBadgeNotFound" xml:space="preserve">
+    <value>Badge definition not found.</value>
+  </data>
+  <data name="GamificationBadgeCodeAlreadyExists" xml:space="preserve">
+    <value>A badge with the same code already exists.</value>
+  </data>
+  <data name="GamificationMissionNotFound" xml:space="preserve">
+    <value>Mission definition not found.</value>
+  </data>
+  <data name="GamificationMissionCodeAlreadyExists" xml:space="preserve">
+    <value>A mission with the same code already exists.</value>
+  </data>
+  <data name="GamificationTimedEventNotFound" xml:space="preserve">
+    <value>Timed event not found.</value>
+  </data>
+  <data name="GamificationTimedEventCodeAlreadyExists" xml:space="preserve">
+    <value>A timed event with the same code already exists.</value>
+  </data>
+  <data name="GamificationTimedEventAlreadyActive" xml:space="preserve">
+    <value>The timed event is already active.</value>
+  </data>
+  <data name="GamificationTimedEventAlreadyInactive" xml:space="preserve">
+    <value>The timed event is already inactive.</value>
+  </data>
+  <data name="GamificationBadgeAlreadyInRequestedState" xml:space="preserve">
+    <value>The badge definition is already in the requested active state. No change was made.</value>
+  </data>
+  <data name="GamificationMissionAlreadyInRequestedState" xml:space="preserve">
+    <value>The mission definition is already in the requested active state. No change was made.</value>
+  </data>
 </root>

@@ -21,7 +21,7 @@ public class IdentityServiceManager : IIdentityServiceManager
         _authorizationService = new Lazy<IAuthorizationService>(() =>
             new AuthorizationIdentityService(roleManager, userManager, logger));
         _userManagmentService = new Lazy<IUserManagmentService>(() =>
-            new UserManagmentIdentityService(userManager, logger));
+            new UserManagmentIdentityService(userManager, dbContext, logger));
     }
 
     public IAuthenticationService AuthenticationService => _authenticationService.Value;

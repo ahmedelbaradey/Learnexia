@@ -36,4 +36,21 @@ public interface IUserManagmentService
     Task<User?> FindActiveUserWithOnlyRoleAsync(string roleName, int? excludeUserId = null);
     Task<bool> UserHasMultipleRolesAsync(int userId);
     Task<List<User>> GetUsersWithOnlyRoleAsync(string roleName);
+
+    // ── Explicit transaction support (Finding #4 — cascade-delete atomicity) ──
+    // Identity module uses UserManager which commits per UpdateAsync call (no UoW).
+    // Multi-write operations that must be atomic (e.g. parent + cascade children delete)
+    // must open an explicit DB transaction via these methods.
+    Task<IIdentityDbTransaction> BeginTransactionAsync(CancellationToken ct = default);
+}
+
+/// <summary>
+/// Opaque handle to an open <c>IDbContextTransaction</c> for the Identity module DbContext.
+/// Returned by <see cref="IUserManagmentService.BeginTransactionAsync"/>.
+/// Dispose BEFORE CommitAsync/RollbackAsync; always dispose to free the connection.
+/// </summary>
+public interface IIdentityDbTransaction : IAsyncDisposable
+{
+    Task CommitAsync(CancellationToken ct = default);
+    Task RollbackAsync(CancellationToken ct = default);
 }

@@ -21,7 +21,7 @@ namespace Learnexia.Modules.Gamification.Domain.Entities;
 /// Derives from <see cref="FullAuditedEntity"/> (audit trail for ops edits via P7 admin).
 /// No cross-module FK constraints (module isolation rule 1).
 /// </summary>
-public class TimedEvent : FullAuditedEntity
+public class TimedEvent : AggregateRoot
 {
     /// <summary>
     /// Stable, unique event code — e.g. "DOUBLE_XP_WEEKEND", "RAMADAN_LEAGUE_BOOST".
@@ -144,5 +144,43 @@ public class TimedEvent : FullAuditedEntity
     public void Deactivate()
     {
         IsActive = false;
+    }
+
+    // ---------------------------------------------------------------------------
+    // Mutation — P7-13 admin write surface
+    // ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// P7-13: Admin update — replaces all mutable fields (copy, window, multiplier, scope).
+    /// Re-applies the same invariants as <see cref="Create"/>: <paramref name="startUtc"/> must be
+    /// strictly before <paramref name="endUtc"/> and <paramref name="multiplier"/> must be in [1.00 .. 5.00].
+    /// <see cref="Code"/> is immutable. <see cref="IsActive"/> is NOT changed here — use
+    /// <see cref="Activate"/>/<see cref="Deactivate"/> for state transitions.
+    /// </summary>
+    /// <exception cref="ArgumentException">Thrown when invariants are violated.</exception>
+    public void AdminUpdate(
+        string nameEn,
+        string nameAr,
+        string? descriptionEn,
+        string? descriptionAr,
+        DateTime startUtc,
+        DateTime endUtc,
+        decimal multiplier,
+        TimedEventScope scope)
+    {
+        if (startUtc >= endUtc)
+            throw new ArgumentException("StartUtc must be strictly before EndUtc.", nameof(startUtc));
+
+        if (multiplier < 1.0m || multiplier > 5.0m)
+            throw new ArgumentOutOfRangeException(nameof(multiplier), "Multiplier must be in [1.00 .. 5.00].");
+
+        NameEn = nameEn;
+        NameAr = nameAr;
+        DescriptionEn = descriptionEn;
+        DescriptionAr = descriptionAr;
+        StartUtc = startUtc;
+        EndUtc = endUtc;
+        Multiplier = multiplier;
+        Scope = scope;
     }
 }

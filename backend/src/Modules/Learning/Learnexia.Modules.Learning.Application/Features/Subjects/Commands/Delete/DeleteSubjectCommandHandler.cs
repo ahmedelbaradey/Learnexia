@@ -1,10 +1,10 @@
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Domain.Entities;
+using Learnexia.Modules.Learning.Domain.Events;
 using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
@@ -23,19 +23,16 @@ public class DeleteSubjectCommandHandler : BaseResponseHandler, ICommandHandler<
     private readonly ILoggerManager _logger;
     private readonly ILearningRepositoryManager _repository;
     private readonly ICurrentUserService _currentUser;
-    private readonly IPublisher _publisher;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public DeleteSubjectCommandHandler(
         ILearningRepositoryManager repository,
         ICurrentUserService currentUser,
-        IPublisher publisher,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
         _repository = repository;
         _currentUser = currentUser;
-        _publisher = publisher;
         _logger = logger;
         _localizer = localizer;
     }
@@ -65,22 +62,13 @@ public class DeleteSubjectCommandHandler : BaseResponseHandler, ICommandHandler<
             subject.IsDeleted = true;
             await _repository.Learning.UpdateAsync(subject);
 
-            // Best-effort post-commit event publish.
-            try
-            {
-                await _publisher.Publish(new AdminActionPerformedEvent(
-                    EventId: Guid.NewGuid(),
-                    OccurredAtUtc: DateTime.UtcNow,
-                    AdminUserId: _currentUser.UserId.GetValueOrDefault(),
-                    Action: AdminActions.SubjectDeleted,
-                    TargetEntityType: nameof(Subject),
-                    TargetEntityId: request.Id,
-                    Details: null), cancellationToken);
-            }
-            catch (Exception publishEx)
-            {
-                _logger.LogError(publishEx, $"P7-01: AdminActionPerformedEvent publish failed for SubjectId={request.Id}");
-            }
+            // Raise domain event on the tracked aggregate — dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12).
+            subject.RaiseDomainEvent(new AdminActionPerformedDomainEvent(
+                AdminUserId: _currentUser.UserId.GetValueOrDefault(),
+                Action: AdminActions.SubjectDeleted,
+                TargetEntityType: nameof(Subject),
+                TargetEntityId: request.Id,
+                Details: null));
 
             return Success<string>(_localizer[SharedResourcesKey.ItemDeletedSuccessfully]);
         }

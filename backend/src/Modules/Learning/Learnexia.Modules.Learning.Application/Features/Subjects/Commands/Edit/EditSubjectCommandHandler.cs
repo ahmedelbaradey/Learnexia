@@ -1,10 +1,10 @@
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Domain.Entities;
+using Learnexia.Modules.Learning.Domain.Events;
 using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
@@ -21,21 +21,18 @@ public class EditSubjectCommandHandler : BaseResponseHandler, ICommandHandler<Ed
     private readonly ILearningServiceManager _service;
     private readonly ILearningRepositoryManager _repository;
     private readonly ICurrentUserService _currentUser;
-    private readonly IPublisher _publisher;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public EditSubjectCommandHandler(
         ILearningServiceManager service,
         ILearningRepositoryManager repository,
         ICurrentUserService currentUser,
-        IPublisher publisher,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
         _service = service;
         _repository = repository;
         _currentUser = currentUser;
-        _publisher = publisher;
         _logger = logger;
         _localizer = localizer;
     }
@@ -63,22 +60,19 @@ public class EditSubjectCommandHandler : BaseResponseHandler, ICommandHandler<Ed
 
             if (result.Successed)
             {
-                try
-                {
-                    await _publisher.Publish(new AdminActionPerformedEvent(
-                        EventId: Guid.NewGuid(),
-                        OccurredAtUtc: DateTime.UtcNow,
-                        AdminUserId: _currentUser.UserId.GetValueOrDefault(),
-                        Action: AdminActions.SubjectUpdated,
-                        TargetEntityType: nameof(Subject),
-                        TargetEntityId: request.Id,
-                        Details: null),
-                        cancellationToken);
-                }
-                catch (Exception publishEx)
-                {
-                    _logger.LogError(publishEx, $"P7-01: AdminActionPerformedEvent publish failed for SubjectId={request.Id}");
-                }
+                // The service fetched the Subject with trackChanges=true — it is in the EF ChangeTracker.
+                // Query with trackChanges=true — EF's identity map returns the same tracked instance.
+                var tracked = await _repository.Learning
+                    .GetByCondition<Subject>(s => s.Id == request.Id, trackChanges: true)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                // Raise domain event on the tracked aggregate — dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12).
+                tracked?.RaiseDomainEvent(new AdminActionPerformedDomainEvent(
+                    AdminUserId: _currentUser.UserId.GetValueOrDefault(),
+                    Action: AdminActions.SubjectUpdated,
+                    TargetEntityType: nameof(Subject),
+                    TargetEntityId: request.Id,
+                    Details: null));
             }
 
             return result;

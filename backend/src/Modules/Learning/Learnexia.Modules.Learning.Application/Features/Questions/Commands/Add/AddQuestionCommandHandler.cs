@@ -1,10 +1,10 @@
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Domain.Entities;
+using Learnexia.Modules.Learning.Domain.Events;
 using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
@@ -15,7 +15,8 @@ namespace Learnexia.Modules.Learning.Application.Features.Questions.Commands.Add
 /// Appends a new <see cref="QuizQuestion"/> to the lesson's implicit quiz.
 /// SequenceOrder is set to max(existing for lessonId) + 1 (append semantics).
 /// IsActive defaults to true (entity default — mass-assignment guard).
-/// Publishes <see cref="AdminActionPerformedEvent"/> post-commit, best-effort.
+///
+/// P7-12: Domain event raised on the QuizQuestion aggregate — dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12 fix).
 /// </summary>
 public class AddQuestionCommandHandler
     : BaseResponseHandler, ICommandHandler<AddQuestionCommand, BaseResponse<string>>
@@ -23,19 +24,16 @@ public class AddQuestionCommandHandler
     private readonly ILoggerManager _logger;
     private readonly ILearningRepositoryManager _repository;
     private readonly ICurrentUserService _currentUser;
-    private readonly IPublisher _publisher;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public AddQuestionCommandHandler(
         ILearningRepositoryManager repository,
         ICurrentUserService currentUser,
-        IPublisher publisher,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
         _repository = repository;
         _currentUser = currentUser;
-        _publisher = publisher;
         _logger = logger;
         _localizer = localizer;
     }
@@ -80,23 +78,13 @@ public class AddQuestionCommandHandler
 
             await _repository.Learning.AddAsync(question, cancellationToken);
 
-            // Best-effort post-commit event publish.
-            try
-            {
-                await _publisher.Publish(new AdminActionPerformedEvent(
-                    EventId: Guid.NewGuid(),
-                    OccurredAtUtc: DateTime.UtcNow,
-                    AdminUserId: _currentUser.UserId.GetValueOrDefault(),
-                    Action: AdminActions.QuizQuestionAdded,
-                    TargetEntityType: nameof(QuizQuestion),
-                    TargetEntityId: 0,
-                    Details: $"LessonId={request.LessonId}, QuestionType={request.QuestionType}"),
-                    cancellationToken);
-            }
-            catch (Exception publishEx)
-            {
-                _logger.LogError(publishEx, "P7-04: AdminActionPerformedEvent publish failed for AddQuestionCommand");
-            }
+            // Raise domain event on the tracked QuizQuestion aggregate — dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12).
+            question.RaiseDomainEvent(new AdminActionPerformedDomainEvent(
+                AdminUserId: _currentUser.UserId.GetValueOrDefault(),
+                Action: AdminActions.QuizQuestionAdded,
+                TargetEntityType: nameof(QuizQuestion),
+                TargetEntityId: 0,
+                Details: $"LessonId={request.LessonId}, QuestionType={request.QuestionType}"));
 
             return Success<string>(_localizer[SharedResourcesKey.QuizQuestionAddedSuccessfully]);
         }

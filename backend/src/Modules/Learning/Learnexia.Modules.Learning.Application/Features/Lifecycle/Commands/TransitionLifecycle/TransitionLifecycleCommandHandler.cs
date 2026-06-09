@@ -2,11 +2,12 @@ using System.Text.Json;
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
+using Learnexia.Modules.Learning.Domain.Events;
 using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
+using Learnexia.Shared.Kernel.Entities;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
@@ -31,11 +32,13 @@ namespace Learnexia.Modules.Learning.Application.Features.Lifecycle.Commands.Tra
 /// - Serializes it to JSON as the snapshot.
 /// - Resolves the owning Subject language via <see cref="ILearningRepository.GetOwningSubjectAsync"/>.
 /// - Creates a new <see cref="ContentVersion"/> row (VersionNumber = maxExisting + 1).
-/// - Publishes AdminActionPerformedEvent best-effort post-commit.
 ///
 /// The UnitOfWorkBehavior wraps all staged writes in a single transaction.
 /// No manual BeginTransaction is needed — the UoW behavior owns the transaction boundary
 /// (per ADR 0001 §2; the UoW already opens a transaction and calls SaveChangesAsync once).
+///
+/// P7-12: Domain event raised on the tracked aggregate (post each switch branch) — dispatched
+/// post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12 fix).
 ///
 /// P7-05 security notes:
 /// - PublishedByUserId is read from JWT (_currentUser.UserId) — NEVER from the request body.
@@ -46,20 +49,17 @@ public class TransitionLifecycleCommandHandler
 {
     private readonly ILearningRepositoryManager _repository;
     private readonly ICurrentUserService _currentUser;
-    private readonly IPublisher _publisher;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public TransitionLifecycleCommandHandler(
         ILearningRepositoryManager repository,
         ICurrentUserService currentUser,
-        IPublisher publisher,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
         _repository = repository;
         _currentUser = currentUser;
-        _publisher = publisher;
         _logger = logger;
         _localizer = localizer;
     }
@@ -71,8 +71,8 @@ public class TransitionLifecycleCommandHandler
         try
         {
             // ── Load entity and current state via switch on EntityType ──────────────────
-            LifecycleState currentState;
             string entityTypeName;
+            AggregateRoot trackedAggregate;
 
             switch (request.EntityType)
             {
@@ -90,8 +90,7 @@ public class TransitionLifecycleCommandHandler
                     if (entity.IsDeleted == true)
                         return NotFound<string>(_localizer[SharedResourcesKey.VersionedEntityNotFound]);
 
-                    currentState = entity.LifecycleState;
-                    var validation = ValidateTransition(currentState, request.TargetState);
+                    var validation = ValidateTransition(entity.LifecycleState, request.TargetState);
                     if (validation is not null) return validation;
 
                     entity.LifecycleState = request.TargetState;
@@ -100,7 +99,8 @@ public class TransitionLifecycleCommandHandler
                     if (request.TargetState == LifecycleState.Published)
                         await CreateSnapshotAsync(request.EntityType, entity.Id, entity, cancellationToken);
 
-                    entityTypeName = nameof(Subject);
+                    entityTypeName   = nameof(Subject);
+                    trackedAggregate = entity;
                     break;
                 }
 
@@ -118,8 +118,7 @@ public class TransitionLifecycleCommandHandler
                     if (entity.IsDeleted == true)
                         return NotFound<string>(_localizer[SharedResourcesKey.VersionedEntityNotFound]);
 
-                    currentState = entity.LifecycleState;
-                    var validation = ValidateTransition(currentState, request.TargetState);
+                    var validation = ValidateTransition(entity.LifecycleState, request.TargetState);
                     if (validation is not null) return validation;
 
                     entity.LifecycleState = request.TargetState;
@@ -128,7 +127,8 @@ public class TransitionLifecycleCommandHandler
                     if (request.TargetState == LifecycleState.Published)
                         await CreateSnapshotAsync(request.EntityType, entity.Id, entity, cancellationToken);
 
-                    entityTypeName = nameof(LearningUnit);
+                    entityTypeName   = nameof(LearningUnit);
+                    trackedAggregate = entity;
                     break;
                 }
 
@@ -146,8 +146,7 @@ public class TransitionLifecycleCommandHandler
                     if (entity.IsDeleted == true)
                         return NotFound<string>(_localizer[SharedResourcesKey.VersionedEntityNotFound]);
 
-                    currentState = entity.LifecycleState;
-                    var validation = ValidateTransition(currentState, request.TargetState);
+                    var validation = ValidateTransition(entity.LifecycleState, request.TargetState);
                     if (validation is not null) return validation;
 
                     entity.LifecycleState = request.TargetState;
@@ -156,7 +155,8 @@ public class TransitionLifecycleCommandHandler
                     if (request.TargetState == LifecycleState.Published)
                         await CreateSnapshotAsync(request.EntityType, entity.Id, entity, cancellationToken);
 
-                    entityTypeName = nameof(Lesson);
+                    entityTypeName   = nameof(Lesson);
+                    trackedAggregate = entity;
                     break;
                 }
 
@@ -174,8 +174,7 @@ public class TransitionLifecycleCommandHandler
                     if (entity.IsDeleted == true)
                         return NotFound<string>(_localizer[SharedResourcesKey.VersionedEntityNotFound]);
 
-                    currentState = entity.LifecycleState;
-                    var validation = ValidateTransition(currentState, request.TargetState);
+                    var validation = ValidateTransition(entity.LifecycleState, request.TargetState);
                     if (validation is not null) return validation;
 
                     entity.LifecycleState = request.TargetState;
@@ -184,7 +183,8 @@ public class TransitionLifecycleCommandHandler
                     if (request.TargetState == LifecycleState.Published)
                         await CreateSnapshotAsync(request.EntityType, entity.Id, entity, cancellationToken);
 
-                    entityTypeName = nameof(QuizQuestion);
+                    entityTypeName   = nameof(QuizQuestion);
+                    trackedAggregate = entity;
                     break;
                 }
 
@@ -192,7 +192,7 @@ public class TransitionLifecycleCommandHandler
                     return BadRequest<string>(_localizer[SharedResourcesKey.InvalidVersionedEntityType]);
             }
 
-            // ── Best-effort post-commit event ──────────────────────────────────────
+            // ── Raise domain event on tracked aggregate — dispatched post-commit (ADR 0002 / P7-12) ──
             var action = request.TargetState switch
             {
                 LifecycleState.Published => AdminActions.ContentPublished,
@@ -201,23 +201,12 @@ public class TransitionLifecycleCommandHandler
                 _                        => AdminActions.ContentPublished
             };
 
-            try
-            {
-                await _publisher.Publish(new AdminActionPerformedEvent(
-                    EventId: Guid.NewGuid(),
-                    OccurredAtUtc: DateTime.UtcNow,
-                    AdminUserId: _currentUser.UserId.GetValueOrDefault(),
-                    Action: action,
-                    TargetEntityType: entityTypeName,
-                    TargetEntityId: request.EntityId,
-                    Details: $"EntityType={request.EntityType} TargetState={request.TargetState}"),
-                    cancellationToken);
-            }
-            catch (Exception publishEx)
-            {
-                _logger.LogError(publishEx,
-                    $"P7-05: AdminActionPerformedEvent publish failed for EntityType={request.EntityType} EntityId={request.EntityId}");
-            }
+            trackedAggregate.RaiseDomainEvent(new AdminActionPerformedDomainEvent(
+                AdminUserId: _currentUser.UserId.GetValueOrDefault(),
+                Action: action,
+                TargetEntityType: entityTypeName,
+                TargetEntityId: request.EntityId,
+                Details: $"EntityType={request.EntityType} TargetState={request.TargetState}"));
 
             var successMessage = request.TargetState switch
             {

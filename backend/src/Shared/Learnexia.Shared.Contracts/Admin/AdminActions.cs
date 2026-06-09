@@ -61,4 +61,37 @@ public static class AdminActions
     public const string ContentArchived    = "Content.Archived";
     public const string ContentUnpublished = "Content.Unpublished";
     public const string ContentRolledBack  = "Content.RolledBack";
+
+    // ── P7-06 Admin User Search & Inspect ────────────────────────────────────
+    public const string UserSearched = "User.Searched";
+    public const string UserViewed   = "User.Viewed";
+
+    // ── P7-07 Account Lifecycle ───────────────────────────────────────────────
+    public const string AccountSuspended   = "Account.Suspended";
+    public const string AccountReactivated = "Account.Reactivated";
+    public const string AccountDeleted     = "Account.Deleted";
+
+    // ── P7-08 Child Profile & Grade Override ─────────────────────────────────
+    public const string ChildProfileUpdated        = "Child.ProfileUpdated";
+    public const string ChildGradeOverridden       = "Child.GradeOverridden";
+    public const string ChildLearningLanguageChanged = "Child.LearningLanguageChanged";
+
+    // ── P7-13 Gamification Admin Overrides ────────────────────────────────────
+    public const string GamificationLeagueTierOverridden = "Gamification.LeagueTierOverridden";
+    public const string GamificationStreakFreezeGranted  = "Gamification.StreakFreezeGranted";
+
+    public const string BadgeCreated     = "Badge.Created";
+    public const string BadgeUpdated     = "Badge.Updated";
+    public const string BadgeActivated   = "Badge.Activated";
+    public const string BadgeDeactivated = "Badge.Deactivated";
+
+    public const string MissionCreated     = "Mission.Created";
+    public const string MissionUpdated     = "Mission.Updated";
+    public const string MissionActivated   = "Mission.Activated";
+    public const string MissionDeactivated = "Mission.Deactivated";
+
+    public const string TimedEventCreated    = "TimedEvent.Created";
+    public const string TimedEventUpdated    = "TimedEvent.Updated";
+    public const string TimedEventActivated  = "TimedEvent.Activated";
+    public const string TimedEventExpired    = "TimedEvent.Expired";
 }

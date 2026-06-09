@@ -54,6 +54,11 @@ public class MissionDefinitionConfig : IEntityTypeConfiguration<MissionDefinitio
             .HasDefaultValue(0)
             .IsRequired();
 
+        // P7-13: admin-controlled active/inactive toggle. Default true (backfill existing rows to active).
+        builder.Property(x => x.IsActive)
+            .IsRequired()
+            .HasDefaultValue(true);
+
         // Stable code index — mission engine + tests reference by Code string; backstop for seeder idempotency.
         builder.HasIndex(x => x.Code)
             .IsUnique()

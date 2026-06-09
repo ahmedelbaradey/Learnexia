@@ -112,9 +112,10 @@ internal sealed class PostgresStudentMissionsQuery : IStudentMissionsQuery
                         && m.PeriodKey == periodKey, ct);
         if (any) return;
 
-        // Load definitions for this cadence.
+        // Load active definitions for this cadence only.
+        // F2: deactivated missions must not be instantiated for new student periods.
         var definitions = await _db.MissionDefinitions
-            .Where(d => d.Cadence == cadence)
+            .Where(d => d.Cadence == cadence && d.IsActive)
             .ToListAsync(ct);
 
         if (definitions.Count == 0)

@@ -1,4 +1,5 @@
 using Learnexia.Modules.Identity.Domain.Entities;
+using Learnexia.Modules.Identity.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -78,6 +79,32 @@ public class UserEntityConfig : IEntityTypeConfiguration<User>
             .HasComment("Timestamp when the user was last updated");
 
         builder.Property(u => u.IsDeleted).HasDefaultValue(false).HasComment("Soft delete flag");
+
+        // ── P7-07 account governance lifecycle ──────────────────────────────────
+        // AccountStatus is stored as int (HasConversion<int>()) with DB DEFAULT 0 (Active).
+        // DEFAULT 0 ensures existing rows backfill to Active without a data-migration script.
+        // New users created via registration also initialise to AccountStatus.Active (C# default
+        // on the entity) — no Draft equivalent; registration always produces an Active account.
+        builder.Property(u => u.AccountStatus)
+            .IsRequired()
+            .HasConversion<int>()
+            .HasDefaultValue(AccountStatus.Active)
+            .HasComment("Governance lifecycle state (0=Active, 1=Suspended, 2=Deleted). " +
+                        "Distinct from IsActive (mechanical gate) and LockoutEnd (auto-lockout P1-13). " +
+                        "DB DEFAULT 0 backfills all existing rows to Active.");
+
+        builder.Property(u => u.LastStatusReason)
+            .HasMaxLength(500)
+            .HasComment("Admin-supplied reason for the most recent status change (suspend/delete). Max 500 chars.");
+
+        builder.Property(u => u.StatusChangedBy)
+            .HasComment("UserId of the admin who performed the last status change. Plain int — no FK.");
+
+        builder.Property(u => u.StatusChangedAtUtc)
+            .HasComment("UTC timestamp of the last status change. Persist as DateTime.UtcNow " +
+                        "(Npgsql EnableLegacyTimestampBehavior=true — apply .ToUniversalTime() at mapping boundaries).");
+
+        builder.HasIndex(u => u.AccountStatus).HasDatabaseName("IX_Users_AccountStatus_Performance");
 
         builder.HasIndex(u => u.FullName).HasDatabaseName("IX_Users_FullName_Performance");
         builder.HasIndex(u => u.PhoneNumber)
