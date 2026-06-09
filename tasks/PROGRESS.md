@@ -113,19 +113,19 @@
 ## Phase 7 â€” Admin Console *(post-MVP)*
 | Story | Title | Backend | Frontend |
 |---|---|:--:|:--:|
-| P7-01 | Manage subjects & units | ðŸ”² | ðŸ”² |
-| P7-02 | Manage lessons & lesson content | ðŸ”² | ðŸ”² |
-| P7-03 | Author skills & the skill dependency graph | ðŸ”² | ðŸ”² |
-| P7-04 | Manage quizzes & questions | ðŸ”² | ðŸ”² |
-| P7-05 | Publish, version & preview curriculum content | ðŸ”² | ðŸ”² |
-| P7-06 | Search & inspect users | ðŸ”² | ðŸ”² |
-| P7-07 | Suspend, reactivate & delete accounts | ðŸ”² | ðŸ”² |
-| P7-08 | Manage child profiles & grade overrides | ðŸ”² | ðŸ”² |
+| P7-01 | Manage subjects & units | âœ… | ðŸ”² |
+| P7-02 | Manage lessons & lesson content | âœ… | ðŸ”² |
+| P7-03 | Author skills & the skill dependency graph | âœ… | ðŸ”² |
+| P7-04 | Manage quizzes & questions | âœ… | ðŸ”² |
+| P7-05 | Publish, version & preview curriculum content | âœ… | ðŸ”² |
+| P7-06 | Search & inspect users | âœ… | ðŸ”² |
+| P7-07 | Suspend, reactivate & delete accounts | âœ… | ðŸ”² |
+| P7-08 | Manage child profiles & grade overrides | âœ… | ðŸ”² |
 | P7-09 | Content moderation queue & review actions | ðŸ”² | ðŸ”² |
 | P7-10 | Platform analytics & KPI dashboard | ðŸ”² | ðŸ”² |
 | P7-11 | AI-safety & quality monitoring dashboard | ðŸ”² | ðŸ”² |
-| P7-12 | Admin action audit log | ðŸ”² | ðŸ”² |
-| P7-13 | Gamification admin overrides (tier / badge & mission catalog / timed-event write / streak-freeze) | ðŸ”² | ðŸ”² |
+| P7-12 | Admin action audit log | âœ… | ðŸ”² |
+| P7-13 | Gamification admin overrides (tier / badge & mission catalog / timed-event write / streak-freeze) | âœ… | ðŸ”² |
 
 ## Phase 8 â€” Localization
 > Learning language (medium of instruction) vs UI language; bilingual curriculum as parallel ar/en trees. Design: `docs/architecture/localization-architecture.md`.
