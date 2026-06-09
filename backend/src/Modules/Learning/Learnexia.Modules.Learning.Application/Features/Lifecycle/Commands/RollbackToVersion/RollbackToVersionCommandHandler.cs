@@ -2,11 +2,12 @@ using System.Text.Json;
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
+using Learnexia.Modules.Learning.Domain.Events;
 using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
+using Learnexia.Shared.Kernel.Entities;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
@@ -31,6 +32,9 @@ namespace Learnexia.Modules.Learning.Application.Features.Lifecycle.Commands.Rol
 /// The UnitOfWorkBehavior wraps all staged writes in a single transaction.
 /// AdminOnly — enforced at the controller layer.
 ///
+/// P7-12: Domain event raised on the tracked aggregate (post switch) — dispatched
+/// post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12 fix).
+///
 /// P7-05 security notes:
 /// - PublishedByUserId on the new ContentVersion is from JWT — never from the snapshot.
 /// - Snapshot is read server-side from ContentVersions — never from the client request.
@@ -42,20 +46,17 @@ public class RollbackToVersionCommandHandler
 
     private readonly ILearningRepositoryManager _repository;
     private readonly ICurrentUserService _currentUser;
-    private readonly IPublisher _publisher;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public RollbackToVersionCommandHandler(
         ILearningRepositoryManager repository,
         ICurrentUserService currentUser,
-        IPublisher publisher,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
         _repository = repository;
         _currentUser = currentUser;
-        _publisher = publisher;
         _logger = logger;
         _localizer = localizer;
     }
@@ -74,6 +75,7 @@ public class RollbackToVersionCommandHandler
                 return NotFound<string>(_localizer[SharedResourcesKey.ContentVersionNotFound]);
 
             string entityTypeName;
+            AggregateRoot trackedAggregate;
 
             // Apply snapshot fields to the live entity via switch on EntityType.
             switch (request.EntityType)
@@ -97,7 +99,8 @@ public class RollbackToVersionCommandHandler
                     ApplySubjectSnapshot(live, versionRow.Snapshot);
                     live.LifecycleState = LifecycleState.Published;
                     await _repository.Learning.UpdateAsync(live);
-                    entityTypeName = nameof(Subject);
+                    entityTypeName   = nameof(Subject);
+                    trackedAggregate = live;
                     break;
                 }
 
@@ -118,7 +121,8 @@ public class RollbackToVersionCommandHandler
                     ApplyUnitSnapshot(live, versionRow.Snapshot);
                     live.LifecycleState = LifecycleState.Published;
                     await _repository.Learning.UpdateAsync(live);
-                    entityTypeName = nameof(LearningUnit);
+                    entityTypeName   = nameof(LearningUnit);
+                    trackedAggregate = live;
                     break;
                 }
 
@@ -139,7 +143,8 @@ public class RollbackToVersionCommandHandler
                     ApplyLessonSnapshot(live, versionRow.Snapshot);
                     live.LifecycleState = LifecycleState.Published;
                     await _repository.Learning.UpdateAsync(live);
-                    entityTypeName = nameof(Lesson);
+                    entityTypeName   = nameof(Lesson);
+                    trackedAggregate = live;
                     break;
                 }
 
@@ -160,7 +165,8 @@ public class RollbackToVersionCommandHandler
                     ApplyQuizQuestionSnapshot(live, versionRow.Snapshot);
                     live.LifecycleState = LifecycleState.Published;
                     await _repository.Learning.UpdateAsync(live);
-                    entityTypeName = nameof(QuizQuestion);
+                    entityTypeName   = nameof(QuizQuestion);
+                    trackedAggregate = live;
                     break;
                 }
 
@@ -188,24 +194,13 @@ public class RollbackToVersionCommandHandler
 
             await _repository.Learning.AddAsync(rollbackVersion, cancellationToken);
 
-            // Best-effort post-commit event.
-            try
-            {
-                await _publisher.Publish(new AdminActionPerformedEvent(
-                    EventId: Guid.NewGuid(),
-                    OccurredAtUtc: DateTime.UtcNow,
-                    AdminUserId: _currentUser.UserId.GetValueOrDefault(),
-                    Action: AdminActions.ContentRolledBack,
-                    TargetEntityType: entityTypeName,
-                    TargetEntityId: request.EntityId,
-                    Details: $"RolledBackToVersion={request.VersionNumber}"),
-                    cancellationToken);
-            }
-            catch (Exception publishEx)
-            {
-                _logger.LogError(publishEx,
-                    $"P7-05: AdminActionPerformedEvent publish failed for rollback EntityType={request.EntityType} EntityId={request.EntityId}");
-            }
+            // Raise domain event on the tracked aggregate — dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12).
+            trackedAggregate.RaiseDomainEvent(new AdminActionPerformedDomainEvent(
+                AdminUserId: _currentUser.UserId.GetValueOrDefault(),
+                Action: AdminActions.ContentRolledBack,
+                TargetEntityType: entityTypeName,
+                TargetEntityId: request.EntityId,
+                Details: $"RolledBackToVersion={request.VersionNumber}"));
 
             return Success<string>(_localizer[SharedResourcesKey.ContentRolledBackSuccessfully]);
         }

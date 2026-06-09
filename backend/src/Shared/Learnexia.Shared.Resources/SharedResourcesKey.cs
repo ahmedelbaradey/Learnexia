@@ -1214,5 +1214,13 @@
         /// <summary>Generic server-error for child profile/grade/language operations.</summary>
         public const string ChildAdminOperationSystemError = "ChildAdminOperationSystemError";
 
+        // ── P7-12 Audit Log (Moderation module) ─────────────────────────────────────
+
+        /// <summary>Returned when the audit log is retrieved successfully.</summary>
+        public const string AuditLogRetrievedSuccessfully = "AuditLogRetrievedSuccessfully";
+
+        /// <summary>Returned when an audit log entry is not found.</summary>
+        public const string AuditLogNotFound = "AuditLogNotFound";
+
     }
 }

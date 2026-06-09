@@ -2036,4 +2036,10 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="ChildAdminOperationSystemError" xml:space="preserve">
     <value>An error occurred while performing the child admin operation.</value>
   </data>
+  <data name="AuditLogRetrievedSuccessfully" xml:space="preserve">
+    <value>Audit log retrieved successfully.</value>
+  </data>
+  <data name="AuditLogNotFound" xml:space="preserve">
+    <value>Audit log entry not found.</value>
+  </data>
 </root>

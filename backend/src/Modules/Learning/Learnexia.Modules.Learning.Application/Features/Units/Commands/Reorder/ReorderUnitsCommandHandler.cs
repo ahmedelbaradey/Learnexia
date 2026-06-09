@@ -1,10 +1,10 @@
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Domain.Entities;
+using Learnexia.Modules.Learning.Domain.Events;
 using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
@@ -23,19 +23,16 @@ public class ReorderUnitsCommandHandler : BaseResponseHandler, ICommandHandler<R
     private readonly ILoggerManager _logger;
     private readonly ILearningRepositoryManager _repository;
     private readonly ICurrentUserService _currentUser;
-    private readonly IPublisher _publisher;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public ReorderUnitsCommandHandler(
         ILearningRepositoryManager repository,
         ICurrentUserService currentUser,
-        IPublisher publisher,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
         _repository = repository;
         _currentUser = currentUser;
-        _publisher = publisher;
         _logger = logger;
         _localizer = localizer;
     }
@@ -68,22 +65,14 @@ public class ReorderUnitsCommandHandler : BaseResponseHandler, ICommandHandler<R
                 await _repository.Learning.UpdateAsync(unitsById[request.UnitIds[i]]);
             }
 
-            // Best-effort post-commit event publish.
-            try
-            {
-                await _publisher.Publish(new AdminActionPerformedEvent(
-                    EventId: Guid.NewGuid(),
-                    OccurredAtUtc: DateTime.UtcNow,
-                    AdminUserId: _currentUser.UserId.GetValueOrDefault(),
-                    Action: AdminActions.UnitReordered,
-                    TargetEntityType: nameof(LearningUnit),
-                    TargetEntityId: 0,
-                    Details: $"Reordered {request.UnitIds.Count} units"), cancellationToken);
-            }
-            catch (Exception publishEx)
-            {
-                _logger.LogError(publishEx, $"P7-01: AdminActionPerformedEvent publish failed for UnitReorder");
-            }
+            // Raise domain event on the first tracked unit (representative for the batch).
+            // Dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12).
+            unitsById[request.UnitIds[0]].RaiseDomainEvent(new AdminActionPerformedDomainEvent(
+                AdminUserId: _currentUser.UserId.GetValueOrDefault(),
+                Action: AdminActions.UnitReordered,
+                TargetEntityType: nameof(LearningUnit),
+                TargetEntityId: 0,
+                Details: $"Reordered {request.UnitIds.Count} units"));
 
             return Success<string>(_localizer[SharedResourcesKey.OperationCompletedSuccessfully]);
         }

@@ -4,6 +4,7 @@ using Learnexia.Modules.Identity.Domain.Entities;
 using Learnexia.Modules.Identity.Infrastructure.Persistence;
 using Learnexia.Modules.Identity.Infrastructure.Persistence.Seed;
 using Learnexia.Modules.Learning.Infrastructure.Persistence;
+using Learnexia.Modules.Moderation.Infrastructure.Persistence;
 using Learnexia.Modules.Notifications.Application.Abstractions;
 using Learnexia.Modules.Notifications.Infrastructure.Persistence;
 using Learnexia.Modules.Parent.Infrastructure.Persistence;
@@ -57,6 +58,8 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
             ReplaceDbContext<LearningDbContext>(services, connectionString, "learning");
             ReplaceDbContext<ParentDbContext>(services, connectionString, "parent");
             ReplaceDbContext<GamificationDbContext>(services, connectionString, "gamification");
+            // P7-12 Moderation module: AuditLog lives in the "moderation" schema.
+            ReplaceDbContext<ModerationDbContext>(services, connectionString, "moderation");
 
             // Testing-host only: neutralise the IP rate limiter so the combined integration suite
             // (~250+ requests in well under a minute) never trips the production 200 req/min cap and
@@ -124,6 +127,10 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
         // Gamification: InitGamification migration creates gamification schema/tables (P4-02).
         var gamificationDb = sp.GetRequiredService<GamificationDbContext>();
         await gamificationDb.Database.MigrateAsync();
+
+        // Moderation: P7_12_InitialModeration creates moderation schema + AuditLogs table (P7-12).
+        var moderationDb = sp.GetRequiredService<ModerationDbContext>();
+        await moderationDb.Database.MigrateAsync();
 
         // Seed roles + superadmin (idempotent).
         await IdentityModule.SeedAsync(sp);

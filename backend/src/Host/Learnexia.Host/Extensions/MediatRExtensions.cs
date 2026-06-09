@@ -31,6 +31,10 @@ public static class MediatRExtensions
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Parent.Application.AssemblyReference>();
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Notifications.Application.AssemblyReference>();
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Gamification.Application.AssemblyReference>();
+            // CRITICAL: Moderation Application assembly MUST be registered here so that
+            // AuditLogEventHandler is discovered. Without this line, AdminActionPerformedEvent
+            // publishes into a void and the audit log silently stays empty with no error.
+            cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Moderation.Application.AssemblyReference>();
 
             // Independent fan-out: every handler runs, per-handler failures are caught + logged
             // (ADR 0002 §4). Replaces MediatR's default throw-on-first-failure publisher.

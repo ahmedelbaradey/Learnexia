@@ -68,7 +68,7 @@ public class GetAdminUserProfileQueryHandler : BaseResponseHandler, IQueryHandle
 
             // ── Audit emit: post-read, best-effort ──
             var adminUserId = _currentUserService.UserId ?? 0;
-            _ = PublishAuditEventAsync(adminUserId, AdminActions.UserViewed, user.Id, cancellationToken);
+            _ = PublishAuditEventAsync(adminUserId, AdminActions.UserViewed, user.Id, CancellationToken.None);
 
             _logger.LogInfo($"Admin profile read for userId={user.Id}");
             var response = Success(dto);

@@ -2035,4 +2035,10 @@
   <data name="ChildAdminOperationSystemError" xml:space="preserve">
     <value>حدث خطأ أثناء تنفيذ عملية إدارة الطفل.</value>
   </data>
+  <data name="AuditLogRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع سجل التدقيق بنجاح.</value>
+  </data>
+  <data name="AuditLogNotFound" xml:space="preserve">
+    <value>لم يتم العثور على إدخال سجل التدقيق.</value>
+  </data>
 </root>

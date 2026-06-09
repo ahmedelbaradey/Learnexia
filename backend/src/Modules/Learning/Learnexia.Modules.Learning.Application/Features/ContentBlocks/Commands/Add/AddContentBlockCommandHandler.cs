@@ -1,10 +1,10 @@
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Domain.Entities;
+using Learnexia.Modules.Learning.Domain.Events;
 using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
@@ -15,7 +15,10 @@ namespace Learnexia.Modules.Learning.Application.Features.ContentBlocks.Commands
 /// Appends a new <see cref="ContentBlock"/> to the lesson identified by <c>LessonId</c>.
 /// SequenceOrder is set to max(existing) + 1 so the block lands at the end.
 /// IsActive defaults to true (entity default — not mapped from command input).
-/// Publishes <see cref="AdminActionPerformedEvent"/> post-commit, best-effort.
+///
+/// P7-12: ContentBlock derives from FullAuditedEntity (not AggregateRoot) so cannot raise domain
+/// events directly. The domain event is raised on the parent Lesson aggregate instead.
+/// Dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12 fix).
 ///
 /// Media payloads: the caller provides the asset url/key in the Payload JSON.
 /// IStorageService is NOT called here — the asset must have been uploaded via the dedicated
@@ -28,19 +31,16 @@ public class AddContentBlockCommandHandler
     private readonly ILoggerManager _logger;
     private readonly ILearningRepositoryManager _repository;
     private readonly ICurrentUserService _currentUser;
-    private readonly IPublisher _publisher;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public AddContentBlockCommandHandler(
         ILearningRepositoryManager repository,
         ICurrentUserService currentUser,
-        IPublisher publisher,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
         _repository = repository;
         _currentUser = currentUser;
-        _publisher = publisher;
         _logger = logger;
         _localizer = localizer;
     }
@@ -54,11 +54,13 @@ public class AddContentBlockCommandHandler
             if (request is null)
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
-            // Verify the lesson exists (global IsDeleted filter active).
-            var lessonExists = await _repository.Learning
-                .AnyAsync<Lesson>(l => l.Id == request.LessonId);
+            // Verify the lesson exists (global IsDeleted filter active) and load it tracked so we
+            // can raise the domain event on it (ContentBlock is FullAuditedEntity, not AggregateRoot).
+            var lesson = await _repository.Learning
+                .GetByCondition<Lesson>(l => l.Id == request.LessonId, trackChanges: true)
+                .FirstOrDefaultAsync(cancellationToken);
 
-            if (!lessonExists)
+            if (lesson is null)
                 return NotFound<string>(_localizer[SharedResourcesKey.LessonNotFound]);
 
             // Determine the next SequenceOrder (append semantics: max + 1, or 0 if no blocks yet).
@@ -80,23 +82,14 @@ public class AddContentBlockCommandHandler
 
             await _repository.Learning.AddAsync(block, cancellationToken);
 
-            // Best-effort post-commit event publish.
-            try
-            {
-                await _publisher.Publish(new AdminActionPerformedEvent(
-                    EventId: Guid.NewGuid(),
-                    OccurredAtUtc: DateTime.UtcNow,
-                    AdminUserId: _currentUser.UserId.GetValueOrDefault(),
-                    Action: AdminActions.ContentBlockAdded,
-                    TargetEntityType: nameof(ContentBlock),
-                    TargetEntityId: 0,
-                    Details: $"LessonId={request.LessonId}, BlockType={request.BlockType}"),
-                    cancellationToken);
-            }
-            catch (Exception publishEx)
-            {
-                _logger.LogError(publishEx, "P7-02: AdminActionPerformedEvent publish failed for AddContentBlockCommand");
-            }
+            // ContentBlock is FullAuditedEntity (not AggregateRoot) — raise on the parent Lesson aggregate.
+            // Dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12).
+            lesson.RaiseDomainEvent(new AdminActionPerformedDomainEvent(
+                AdminUserId: _currentUser.UserId.GetValueOrDefault(),
+                Action: AdminActions.ContentBlockAdded,
+                TargetEntityType: nameof(ContentBlock),
+                TargetEntityId: 0,
+                Details: $"LessonId={request.LessonId}, BlockType={request.BlockType}"));
 
             return Success<string>(_localizer[SharedResourcesKey.ContentBlockAddedSuccessfully]);
         }

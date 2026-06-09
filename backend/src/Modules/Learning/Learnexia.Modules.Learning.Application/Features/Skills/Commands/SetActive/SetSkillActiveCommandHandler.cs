@@ -1,10 +1,10 @@
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Domain.Entities;
+using Learnexia.Modules.Learning.Domain.Events;
 using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
@@ -20,19 +20,16 @@ public class SetSkillActiveCommandHandler : BaseResponseHandler, ICommandHandler
     private readonly ILoggerManager _logger;
     private readonly ILearningRepositoryManager _repository;
     private readonly ICurrentUserService _currentUser;
-    private readonly IPublisher _publisher;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public SetSkillActiveCommandHandler(
         ILearningRepositoryManager repository,
         ICurrentUserService currentUser,
-        IPublisher publisher,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
         _repository = repository;
         _currentUser = currentUser;
-        _publisher = publisher;
         _logger = logger;
         _localizer = localizer;
     }
@@ -56,22 +53,13 @@ public class SetSkillActiveCommandHandler : BaseResponseHandler, ICommandHandler
 
             var action = request.IsActive ? AdminActions.SkillActivated : AdminActions.SkillDeactivated;
 
-            // Best-effort post-commit event publish.
-            try
-            {
-                await _publisher.Publish(new AdminActionPerformedEvent(
-                    EventId: Guid.NewGuid(),
-                    OccurredAtUtc: DateTime.UtcNow,
-                    AdminUserId: _currentUser.UserId.GetValueOrDefault(),
-                    Action: action,
-                    TargetEntityType: nameof(Skill),
-                    TargetEntityId: request.SkillId,
-                    Details: $"IsActive={request.IsActive}"), cancellationToken);
-            }
-            catch (Exception publishEx)
-            {
-                _logger.LogError(publishEx, $"P7-03: AdminActionPerformedEvent publish failed for SetSkillActiveCommand, SkillId={request.SkillId}");
-            }
+            // Raise domain event on the tracked aggregate — dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12).
+            skill.RaiseDomainEvent(new AdminActionPerformedDomainEvent(
+                AdminUserId: _currentUser.UserId.GetValueOrDefault(),
+                Action: action,
+                TargetEntityType: nameof(Skill),
+                TargetEntityId: request.SkillId,
+                Details: $"IsActive={request.IsActive}"));
 
             var message = request.IsActive
                 ? _localizer[SharedResourcesKey.SkillActivatedSuccessfully]

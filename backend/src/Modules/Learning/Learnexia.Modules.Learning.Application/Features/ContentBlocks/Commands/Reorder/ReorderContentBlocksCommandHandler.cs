@@ -1,10 +1,10 @@
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Domain.Entities;
+using Learnexia.Modules.Learning.Domain.Events;
 using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
@@ -14,7 +14,10 @@ namespace Learnexia.Modules.Learning.Application.Features.ContentBlocks.Commands
 /// <summary>
 /// Batch-updates SequenceOrder on the given ContentBlocks.
 /// All blocks must belong to the same LessonId — cross-lesson reorder is rejected.
-/// Publishes <see cref="AdminActionPerformedEvent"/> post-commit, best-effort.
+///
+/// P7-12: ContentBlock is FullAuditedEntity (not AggregateRoot) — domain event raised on the
+/// parent Lesson aggregate (representative for the batch).
+/// Dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12 fix).
 /// </summary>
 public class ReorderContentBlocksCommandHandler
     : BaseResponseHandler, ICommandHandler<ReorderContentBlocksCommand, BaseResponse<string>>
@@ -22,19 +25,16 @@ public class ReorderContentBlocksCommandHandler
     private readonly ILoggerManager _logger;
     private readonly ILearningRepositoryManager _repository;
     private readonly ICurrentUserService _currentUser;
-    private readonly IPublisher _publisher;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public ReorderContentBlocksCommandHandler(
         ILearningRepositoryManager repository,
         ICurrentUserService currentUser,
-        IPublisher publisher,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
         _repository = repository;
         _currentUser = currentUser;
-        _publisher = publisher;
         _logger = logger;
         _localizer = localizer;
     }
@@ -71,23 +71,18 @@ public class ReorderContentBlocksCommandHandler
                 await _repository.Learning.UpdateAsync(blocksById[request.ContentBlockIds[i]]);
             }
 
-            // Best-effort post-commit event publish.
-            try
-            {
-                await _publisher.Publish(new AdminActionPerformedEvent(
-                    EventId: Guid.NewGuid(),
-                    OccurredAtUtc: DateTime.UtcNow,
-                    AdminUserId: _currentUser.UserId.GetValueOrDefault(),
-                    Action: AdminActions.ContentBlockReordered,
-                    TargetEntityType: nameof(ContentBlock),
-                    TargetEntityId: 0,
-                    Details: $"Reordered {request.ContentBlockIds.Count} blocks in LessonId={lessonIds[0]}"),
-                    cancellationToken);
-            }
-            catch (Exception publishEx)
-            {
-                _logger.LogError(publishEx, "P7-02: AdminActionPerformedEvent publish failed for ReorderContentBlocksCommand");
-            }
+            // ContentBlock is FullAuditedEntity (not AggregateRoot) — raise on the parent Lesson aggregate.
+            // Dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12).
+            var lesson = await _repository.Learning
+                .GetByCondition<Lesson>(l => l.Id == lessonIds[0], trackChanges: true)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            lesson?.RaiseDomainEvent(new AdminActionPerformedDomainEvent(
+                AdminUserId: _currentUser.UserId.GetValueOrDefault(),
+                Action: AdminActions.ContentBlockReordered,
+                TargetEntityType: nameof(ContentBlock),
+                TargetEntityId: 0,
+                Details: $"Reordered {request.ContentBlockIds.Count} blocks in LessonId={lessonIds[0]}"));
 
             return Success<string>(_localizer[SharedResourcesKey.ContentBlockReorderedSuccessfully]);
         }

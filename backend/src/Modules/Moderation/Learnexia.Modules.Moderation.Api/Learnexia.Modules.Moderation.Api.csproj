@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Learnexia.Modules.Moderation.Api</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MediatR" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Learnexia.Modules.Moderation.Application\Learnexia.Modules.Moderation.Application.csproj" />
+    <ProjectReference Include="..\Learnexia.Modules.Moderation.Infrastructure\Learnexia.Modules.Moderation.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Learnexia.Shared.Kernel\Learnexia.Shared.Kernel.csproj" />
+  </ItemGroup>
+</Project>

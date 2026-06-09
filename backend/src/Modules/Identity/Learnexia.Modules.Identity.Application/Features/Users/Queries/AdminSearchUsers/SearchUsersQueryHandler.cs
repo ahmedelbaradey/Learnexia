@@ -114,7 +114,7 @@ public class SearchUsersQueryHandler : BaseResponseHandler, IQueryHandler<Search
             var adminUserId = _currentUserService.UserId ?? 0;
             var qLen = string.IsNullOrWhiteSpace(request.Q) ? 0 : request.Q.Trim().Length;
             _ = PublishAuditEventAsync(adminUserId, AdminActions.UserSearched, 0,
-                $"q-length={qLen};role={request.Role};status={request.Status}", cancellationToken);
+                $"q-length={qLen};role={request.Role};status={request.Status}", CancellationToken.None);
 
             _logger.LogInfo($"Admin user search completed: {total} result(s), page {pageNumber}/{pageSize}");
             return result;
