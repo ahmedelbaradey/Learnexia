@@ -92,10 +92,11 @@
 - **FE-TC-15 sign-out height**: `sign-out-button` bounding box height confirmed ≥ 44px (kid-UX NFR-6 met).
 
 ---
-## Lead correction (post-run verification) — D-01 is NOT a backend defect
-Direct API probes after the run disprove D-01: a freshly-seeded grade-1 child gets
-`/api/Users/Me` → `"grade": 1`; the FE `(child)/index.tsx` derives `grade` from it and
-passes it to `SubjectsListSection` → `useSubjectsForGrade(1)`; `GET /api/learning/Subjects/ForGrade?grade=1`
-returns the **4 product subjects**. The data path (backend + /Me + FE wiring) is all correct.
-The empty-subjects observation (FE-TC-22/24) was a **transient/timing artifact** in that 23-min run,
-not a missing-enrollment backend bug. Re-verify on a clean re-run; do NOT file as a backend defect.
+## Lead correction (post-run verification) — D-01 root cause is a FRONTEND bug, NOT backend, NOT transient
+The data path is fine (backend `/api/Users/Me` → `"grade":1`; `GET /api/learning/Subjects/ForGrade?grade=1`
+→ the **4 product subjects**). The real cause, root-caused during the P2-02-FE run, is **FE BUG-001**:
+`filterSubjects()` in `apps/student-app/app/(child)/_components/subjects.ts` resolved subjects by exact
+name-match, but seeded subject names carry grade suffixes (`الرياضيات (الصف 1)` / `English (G1)`) so all 4
+were dropped → empty subjects section. **FIXED** — `resolveSubjectKey` now keys off the stable `subjectCode`
+enum (0=math…3=english) with name-match fallback. FE-TC-22/24 should pass on a re-run. (My earlier
+"transient artifact" note was wrong — it is a deterministic FE bug.)
