@@ -109,3 +109,18 @@
 
 - OQ-1 — 3 testIDs still missing (see table above): `lesson-explanation`, `lesson-visual`, `quiz-progress-label`.
 - OQ-3 — resume scope + intended UX still open (blocks FE-TC-11).
+
+---
+## Lead notes (post-run)
+- **DEF-P205FE-02 (back button) — FIXED** in `apps/student-app/app/(child)/lessons/[lessonId].tsx`:
+  the quiz stage now uses `handleBack()` (router.replace to the subject) like the summary stage, so
+  exit works on a web deep-link / refresh where `router.back()` no-ops.
+- **DEF-P205FE-01 — confirmed a HIGH BACKEND grading defect (NOT just lesson 1).** Root cause:
+  `LearningSeeder` stores `CorrectAnswer = JsonSerializer.Serialize(value)` → jsonb-encoded `"6"`,
+  but `AnswerComparator.AreEqual` compares the raw column text (`"6"`, with quotes) to the student's
+  plain payload (`6`) WITHOUT decoding → **every MCQ/TrueFalse/FillInBlank grades incorrect** product-wide
+  (TrueFalse `bool.TryParse("\"true\"")` also fails). Options are returned to the student decoded, so the
+  student legitimately submits the plain value. Fix (backend-feature + api-tester P2-07/P2-08): JSON-decode
+  the jsonb `CorrectAnswer` in `AnswerComparator` (or at the read boundary) before the per-type compare.
+  Impact on FE e2e: the **correct-answer feedback path** in P2-06/P2-07 is BLOCKED on this until fixed;
+  the wrong-answer path + 4-type rendering are testable.

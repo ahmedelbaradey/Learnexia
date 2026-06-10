@@ -340,11 +340,11 @@ export default function LessonScreen() {
       <Pressable
         testID="lesson-back"
         onPress={() => {
-          if (stage.kind === 'quiz') {
-            // Abandon is handled by the useEffect cleanup on unmount.
-            // Navigate back — the cleanup will fire abandon.
-          }
-          if (stage.kind === 'summary') {
+          // quiz + summary use handleBack() (router.replace to the subject) so the
+          // exit works even on a web deep-link / refresh where the in-app nav stack
+          // is empty and router.back() would silently no-op (DEF-P205FE-02).
+          // Abandon (quiz stage) still fires via the unmount cleanup.
+          if (stage.kind === 'summary' || stage.kind === 'quiz') {
             handleBack();
           } else {
             router.back();
