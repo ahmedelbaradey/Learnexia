@@ -5,7 +5,7 @@ A hi-fi click-through recreation of the Learnexia student app on iPhone (402×87
 ## What's here
 
 - `index.html` — interactive demo. Use the pills at the top to jump screens or tap **Continue** on Home to walk Lesson → Quiz → Reward.
-- `Components.jsx` — small reusable primitives: `HudBar`, `Pill`, `XPBar`, `PrimaryButton`, `LessonCard`, `MissionRow`, `AnswerButton`, `TabBar`, `MascotAvatar`, `TutorBubble`.
+- `MobileComponents.jsx` — small reusable primitives: `HudBar`, `Pill`, `XPBar`, `PrimaryButton`, `LessonCard`, `MissionRow`, `AnswerButton`, `TabBar`, `MascotAvatar`, `TutorBubble`.
 - `Screens.jsx` — `HomeScreen`, `SkillTreeScreen`, `LessonScreen`, `QuizScreen`, `RewardScreen`.
 - `ios-frame.jsx` — iOS device chrome (status bar, dynamic island, home indicator).
 

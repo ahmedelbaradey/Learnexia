@@ -1,0 +1,3 @@
+/* Learnexia Design System — root stylesheet.
+   Imports all global styles so consumers only link this one file. */
+@import url('colors_and_type.css');
