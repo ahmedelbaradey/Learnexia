@@ -23,13 +23,13 @@ specs that "failed" en masse in batch-2 each **passed cleanly** in their isolate
 | P2-05-FE lesson player | **15 pass** / 1 fail / 5 blocked | 14 / 2 | ✅ ~consistent |
 | P2-06-FE quiz | **21 pass** / 13 blocked | 1 / 20 fail | ran 5th → Metro OOM; ignore batch-2 |
 | P2-07-FE feedback | **21 pass** / 5 blocked | 0 / 21 fail | ran 6th → Metro OOM; ignore batch-2 |
-| P2-12-FE settings | **clean run PENDING** (spec authored, 41 cases) | 0 / 38 fail | ran 7th → Metro OOM; needs an isolated re-run |
+| P2-12-FE settings | **37 pass** / 1 fail / 3 skip | 0 / 38 fail | ran 7th → Metro OOM in batch; **resolved** on a fresh Expo (P2-HARDENING) |
 
-**Authoritative total (6 stories, isolated): ~105 passing**, plus the documented blocked long-tail
-(copy-based assertions vs Arabic-default locale, route-mock-only states, unseeded question types,
-DEF-P205FE-01). P2-12 was authored but two isolated re-runs failed on Expo startup in the
-post-batch degraded environment — **re-run `specs/P2-12-FE.spec.ts` alone on a fresh stack** to get
-its real number.
+**Authoritative total (7 stories, isolated): ~142 passing** (23+19+6+15+21+21+37), plus the
+documented blocked long-tail (classified in `PHASE-2-FE-blocked-classification.md`). P2-12 was
+re-run on a **fresh Expo** in the P2-HARDENING exit-gate pass → **37 pass / 1 fail / 3 skip**
+(the 1 fail = FE-TC-23, an email-field LTR-bidi assertion inside an RTL card — minor). This
+confirms the earlier 0/38 was purely the degraded-environment artifact.
 
 ## Real bugs found across the Phase-2 FE e2e (see PR #110)
 - **BUG-001 (fixed):** child-home subjects resolved by name-match → all seeded (grade-suffixed)
