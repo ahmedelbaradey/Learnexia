@@ -5,7 +5,7 @@ A complete, navigable web app for parents (and the public marketing surface). 12
 ## What's here
 
 - `index.html` — multi-page demo with a crumb bar at the top to jump between pages.
-- `Components.jsx` — shared building blocks: `PDSidebar`, `PDHeader`, `PDStatCard`, `PDActivityChart`, `PDWeakAreas`, `PDPanel`, `PDRecommendation`.
+- `DashboardComponents.jsx` — shared building blocks: `PDSidebar`, `PDHeader`, `PDStatCard`, `PDActivityChart`, `PDWeakAreas`, `PDPanel`, `PDRecommendation`.
 - `PagesPublic.jsx` — pre-auth surfaces: `LandingPage`, `LoginWebPage`, `RegisterWebPage`.
 - `PagesApp.jsx` — in-app surfaces: `MyChildrenWebPage`, `ReportsWebPage`, `SettingsWebPage`, plus reusable `AppShell` (sidebar + content) and the Settings tab views.
 - `browser-window.jsx` — browser chrome (not currently used; inline chrome lives in `index.html`).

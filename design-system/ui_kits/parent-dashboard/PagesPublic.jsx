@@ -171,6 +171,260 @@ function LandingPage({ onLogin, onSignup }) {
         </div>
       </section>
 
+      {/* Parent value section */}
+      <section style={{ padding: '32px 48px 64px', background: '#0B1020' }}>
+        <div style={{ textAlign: 'center', marginBottom: 48 }}>
+          <div style={{ fontWeight: 800, fontSize: 12, color: '#22C55E', letterSpacing: '0.12em', textTransform: 'uppercase' }}>For parents</div>
+          <h2 style={{ margin: '8px 0 0', fontWeight: 900, fontSize: 44, letterSpacing: '-0.02em' }}>See exactly what they're learning.</h2>
+          <p style={{ margin: '12px auto 0', fontSize: 17, color: '#CBD5E1', maxWidth: 560, lineHeight: 1.55 }}>
+            No guesswork. Every lesson, streak and weak spot rolls up into a weekly picture you can act on.
+          </p>
+        </div>
+
+        {/* Row 1: benefits + activity chart */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr', gap: 20, marginBottom: 20, alignItems: 'stretch' }}>
+          {/* Benefits panel */}
+          <div style={{
+            position: 'relative', overflow: 'hidden', borderRadius: 28,
+            background: 'linear-gradient(165deg,#1E1B4B 0%,#3B2C8F 50%,#5B21B6 100%)',
+            padding: 36, display: 'flex', flexDirection: 'column', gap: 22,
+          }}>
+            <div style={{ fontSize: 52, lineHeight: 1, filter: 'drop-shadow(0 0 20px rgba(250,204,21,0.4))' }}>🎮</div>
+            <h3 style={{ margin: 0, fontWeight: 900, fontSize: 26, lineHeight: 1.2, color: '#fff' }}>Set up once. Watch them learn forever.</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {[
+                ['✨', 'AI explanations tailored to each child\'s grade'],
+                ['📊', 'Weekly reports show exactly what they\'ve mastered'],
+                ['🎯', 'Daily missions keep them coming back without nagging'],
+                ['🛡️', 'COPPA-compliant — no ads, no DMs, no data resold'],
+              ].map(([emoji, text], i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 15, color: 'rgba(255,255,255,0.92)' }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{emoji}</div>
+                  {text}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Activity chart */}
+          <div style={{ background: '#1E293B', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 28, padding: 28, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div>
+                <div style={{ fontWeight: 900, fontSize: 20, color: '#F8FAFC' }}>Sami's week at a glance</div>
+                <div style={{ fontSize: 13, color: '#94A3B8', marginTop: 2 }}>XP earned per day · today in indigo</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 9999, background: 'rgba(34,197,94,0.15)', color: '#22C55E', fontWeight: 800, fontSize: 13 }}>↑ 28% this week</div>
+            </div>
+            <div style={{ flex: 1, display: 'flex', gap: 12, alignItems: 'flex-end', minHeight: 220 }}>
+              {[
+                { day: 'Mon', xp: 45 }, { day: 'Tue', xp: 80 }, { day: 'Wed', xp: 30 },
+                { day: 'Thu', xp: 95 }, { day: 'Fri', xp: 50 }, { day: 'Sat', xp: 70 },
+                { day: 'Sun', xp: 110, today: true },
+              ].map((d, i) => (
+                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                  <div style={{
+                    width: '100%', height: `${(d.xp / 110) * 180}px`,
+                    background: d.today ? 'linear-gradient(180deg,#A855F7,#4F46E5)' : 'linear-gradient(180deg,#334155,#1E293B)',
+                    borderRadius: '10px 10px 4px 4px', position: 'relative',
+                    boxShadow: d.today ? '0 6px 18px rgba(99,102,241,0.4)' : 'none',
+                  }}>
+                    <div style={{ position: 'absolute', top: -22, left: '50%', transform: 'translateX(-50%)', fontSize: 12, fontWeight: 800, color: d.today ? '#A5B4FC' : '#64748B', fontVariantNumeric: 'tabular-nums' }}>{d.xp}</div>
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: d.today ? '#F8FAFC' : '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{d.day}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Row 2: AI tutor + child card */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 20, alignItems: 'stretch' }}>
+          {/* AI Tutor bubble */}
+          <div style={{ background: '#1E293B', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 28, padding: 32, display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div>
+              <div style={{ fontWeight: 900, fontSize: 20, color: '#F8FAFC' }}>A patient tutor, always on</div>
+              <div style={{ fontSize: 14, color: '#94A3B8', marginTop: 4 }}>Lexi explains with pictures and follow-ups — never just the answer.</div>
+            </div>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
+              <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg,#A78BFA,#6366F1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 8px 20px rgba(99,102,241,0.4)' }}>
+                <img src="../../assets/mascot-owl.svg" style={{ width: 46, height: 46 }}/>
+              </div>
+              <div style={{ background: 'rgba(15,23,42,0.7)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 22, borderBottomLeftRadius: 4, padding: '16px 20px', flex: 1 }}>
+                <div style={{ fontWeight: 800, fontSize: 11, color: '#A5B4FC', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Lexi · AI Tutor</div>
+                <div style={{ fontSize: 15, lineHeight: 1.55, color: '#F8FAFC' }}>When we compare two numbers, the one with more <b style={{ color: '#FACC15' }}>tens</b> is bigger. Want me to show you with blocks?</div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                  {['Yes, show me', 'Give a hint'].map((c, i) => (
+                    <div key={i} style={{ fontSize: 13, fontWeight: 600, color: '#A5B4FC', background: 'rgba(79,70,229,0.18)', border: '1px solid rgba(99,102,241,0.3)', padding: '6px 12px', borderRadius: 9999 }}>{c}</div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Child card */}
+          <div style={{ background: '#1E293B', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 28, padding: 28, display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <div style={{ fontWeight: 900, fontSize: 20, color: '#F8FAFC' }}>Every child, one tap away</div>
+            <div style={{
+              background: '#15161D', borderRadius: 20, padding: 18, border: '1px solid rgba(255,255,255,0.06)',
+              display: 'flex', flexDirection: 'column', gap: 14,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 52, height: 52, borderRadius: '50%', background: '#FB923C', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 22, boxShadow: 'inset 0 -2px 4px rgba(0,0,0,0.18)' }}>S</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontWeight: 900, fontSize: 18, color: '#F8FAFC' }}>Sami</span>
+                    <span style={{ padding: '2px 8px', borderRadius: 9999, background: 'rgba(79,70,229,0.18)', color: '#A5B4FC', fontWeight: 800, fontSize: 11 }}>Grade 3</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>sami@learnexia.com</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#22C55E', fontWeight: 700 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 6px rgba(34,197,94,0.6)' }}/>Active
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                <span style={{ fontWeight: 800, fontSize: 13, color: '#A855F7' }}>🧠 Lv 12</span>
+                <span style={{ fontWeight: 800, fontSize: 13, color: '#FACC15' }}>⭐ 1,240</span>
+                <span style={{ fontWeight: 800, fontSize: 13, color: '#FB923C' }}>🔥 7d</span>
+              </div>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Mastery</span>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: '#F8FAFC' }}>72%</span>
+                </div>
+                <div style={{ height: 8, background: '#0F172A', borderRadius: 9999, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: '72%', background: 'linear-gradient(90deg,#22C55E,#4F46E5)' }}/>
+                </div>
+              </div>
+            </div>
+            <div style={{ fontSize: 13, color: '#CBD5E1' }}><span style={{ color: '#94A3B8' }}>Weakest:</span> <b>Fractions</b> — Lexi is already adapting.</div>
+          </div>
+        </div>
+      </section>
+
+      {/* For Parents — value showcase */}
+      <section style={{ padding: '32px 48px 96px' }}>
+        <div style={{ textAlign: 'center', marginBottom: 56 }}>
+          <div style={{ fontWeight: 800, fontSize: 12, color: '#22C55E', letterSpacing: '0.12em', textTransform: 'uppercase' }}>For Parents</div>
+          <h2 style={{ margin: '8px 0 0', fontWeight: 900, fontSize: 44, letterSpacing: '-0.02em' }}>See exactly what your child gets out of it.</h2>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 32, alignItems: 'start' }}>
+          {/* Benefits panel */}
+          <div style={{
+            background: 'linear-gradient(165deg,#1E1B4B 0%,#3B2C8F 50%,#5B21B6 100%)',
+            borderRadius: 28, padding: 40,
+            display: 'flex', flexDirection: 'column', gap: 24,
+            boxShadow: '0 24px 60px rgba(91,33,182,0.35), inset 0 1px 0 rgba(255,255,255,0.15)',
+          }}>
+            <div style={{ fontSize: 64, lineHeight: 1, filter: 'drop-shadow(0 0 20px rgba(250,204,21,0.5))' }}>🎮</div>
+            <h3 style={{ margin: 0, fontWeight: 900, fontSize: 30, lineHeight: 1.15, letterSpacing: '-0.02em' }}>Set up once. Watch them learn forever.</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {[
+                ['✨', 'AI-powered explanations tailored to each child\'s grade'],
+                ['📊', 'Weekly reports show exactly what they\'ve mastered'],
+                ['🎯', 'Daily missions keep them coming back without nagging'],
+                ['🛡️', 'COPPA-compliant — no ads, no DMs, no data resold'],
+              ].map(([emoji, text], i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 15, color: 'rgba(255,255,255,0.92)' }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+                    background: 'rgba(255,255,255,0.1)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
+                  }}>{emoji}</div>
+                  {text}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Live demos column */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {/* Activity chart */}
+            <div style={{
+              background: '#1E293B', borderRadius: 24, padding: 24,
+              border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
+                <div style={{ fontWeight: 800, fontSize: 16 }}>Your weekly report</div>
+                <div style={{ fontSize: 12, color: '#22C55E', fontWeight: 800 }}>+28% vs last week</div>
+              </div>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', height: 120 }}>
+                {[45, 80, 30, 95, 50, 70, 110].map((xp, i) => (
+                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                    <div style={{
+                      width: '100%', height: `${(xp / 110) * 95}px`,
+                      background: i === 6 ? 'linear-gradient(180deg,#A855F7,#4F46E5)' : 'linear-gradient(180deg,#334155,#1E293B)',
+                      borderRadius: '8px 8px 3px 3px',
+                      boxShadow: i === 6 ? '0 6px 18px rgba(99,102,241,0.4)' : 'none',
+                    }}/>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: i === 6 ? '#F8FAFC' : '#64748B', textTransform: 'uppercase' }}>
+                      {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i]}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Tutor bubble */}
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: '50%', flexShrink: 0,
+                background: 'linear-gradient(135deg,#A78BFA,#6366F1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 8px 20px rgba(99,102,241,0.4)',
+              }}>
+                <img src="../../assets/mascot-owl.svg" style={{ width: 46, height: 46 }}/>
+              </div>
+              <div style={{
+                background: 'rgba(15,23,42,0.75)', backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 22, borderBottomLeftRadius: 4, padding: '16px 20px', flex: 1,
+              }}>
+                <div style={{ fontWeight: 800, fontSize: 11, color: '#A5B4FC', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Lexi · AI Tutor</div>
+                <div style={{ fontSize: 15, lineHeight: 1.55, color: '#F8FAFC' }}>
+                  When we compare two numbers, the one with more <b style={{ color: '#FACC15' }}>tens</b> is bigger. Want me to show you with blocks?
+                </div>
+              </div>
+            </div>
+
+            {/* Child card */}
+            <div style={{
+              background: '#15161D', borderRadius: 20, padding: 18,
+              border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              display: 'flex', flexDirection: 'column', gap: 14,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{
+                  width: 52, height: 52, borderRadius: '50%', background: '#FB923C', color: '#fff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontWeight: 900, fontSize: 22,
+                  boxShadow: 'inset 0 -2px 4px rgba(0,0,0,0.18)', flexShrink: 0,
+                }}>S</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontWeight: 900, fontSize: 18 }}>Sami</span>
+                    <span style={{ padding: '2px 8px', borderRadius: 9999, background: 'rgba(79,70,229,0.18)', color: '#A5B4FC', fontWeight: 800, fontSize: 11 }}>Grade 3</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>sami@learnexia.com</div>
+                </div>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  fontSize: 11, color: '#22C55E', fontWeight: 700,
+                }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 6px rgba(34,197,94,0.6)' }}/>
+                  Active today
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <span style={{ fontWeight: 800, fontSize: 13, color: '#A855F7' }}>🧠 Lv 12</span>
+                <span style={{ fontWeight: 800, fontSize: 13, color: '#FACC15' }}>⭐ 1,240</span>
+                <span style={{ fontWeight: 800, fontSize: 13, color: '#FB923C' }}>🔥 7d</span>
+                <span style={{ marginRight: 0, marginLeft: 'auto', color: '#A5B4FC', fontWeight: 700, fontSize: 12 }}>View progress →</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section style={{ padding: '32px 48px 96px' }}>
         <div style={{
