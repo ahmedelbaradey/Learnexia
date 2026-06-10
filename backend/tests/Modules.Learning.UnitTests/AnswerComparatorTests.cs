@@ -149,4 +149,56 @@ public sealed class AnswerComparatorTests
 
         result.Should().BeFalse();
     }
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    // DEF-P205FE-01 regression — CorrectAnswer is persisted as jsonb (JSON-encoded).
+    // The seeder/admin store the string "6" as the 3-char text "6" (with quotes); the
+    // student submits the raw value 6. The comparator must decode the JSON-string wrapping
+    // before comparing, otherwise EVERY MCQ/TrueFalse/FillInBlank graded incorrectly.
+    // ══════════════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public void MCQ_JsonEncodedCorrectAnswer_MatchesRawStudentPayload()
+    {
+        // correctAnswer stored as jsonb "6"; student submits 6 → must be correct.
+        var result = AnswerComparator.AreEqual(QuestionType.MCQ, studentPayload: "6", correctAnswer: "\"6\"");
+
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void MCQ_JsonEncodedCorrectAnswer_WrongOption_ReturnsFalse()
+    {
+        // correctAnswer jsonb "6"; student submits 5 → still incorrect (no false positives).
+        var result = AnswerComparator.AreEqual(QuestionType.MCQ, studentPayload: "5", correctAnswer: "\"6\"");
+
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void MCQ_JsonEncodedArabicCorrectAnswer_Matches()
+    {
+        // Arabic value round-trips through JSON decode (seeder stores "شجرة").
+        var result = AnswerComparator.AreEqual(QuestionType.MCQ, studentPayload: "شجرة", correctAnswer: "\"شجرة\"");
+
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void TrueFalse_JsonEncodedCorrectAnswer_Matches()
+    {
+        // correctAnswer jsonb "true"; bool.TryParse only works after the quotes are decoded.
+        var result = AnswerComparator.AreEqual(QuestionType.TrueFalse, studentPayload: "true", correctAnswer: "\"true\"");
+
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void FillInBlank_JsonEncodedCorrectAnswer_Matches()
+    {
+        // correctAnswer jsonb "Tree"; student submits Tree → correct after decode.
+        var result = AnswerComparator.AreEqual(QuestionType.FillInBlank, studentPayload: "Tree", correctAnswer: "\"Tree\"");
+
+        result.Should().BeTrue();
+    }
 }

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Learnexia.Modules.Learning.Domain.Enums;
 
 namespace Learnexia.Modules.Learning.Domain.Services;
@@ -25,25 +26,54 @@ public static class AnswerComparator
         if (string.IsNullOrWhiteSpace(studentPayload) || string.IsNullOrWhiteSpace(correctAnswer))
             return false;
 
+        // CorrectAnswer is persisted as jsonb (JSON-encoded): the string "6" is stored as the
+        // 3-char text "6", "true" as "true", etc. The student submits the RAW value (6 / true).
+        // Decode the JSON-string wrapping on both sides before comparing so MCQ / TrueFalse /
+        // FillInBlank grade correctly (fixes DEF-P205FE-01 — previously every answer graded wrong).
+        var student = NormalizeJsonScalar(studentPayload);
+        var correct = NormalizeJsonScalar(correctAnswer);
+
         return type switch
         {
             QuestionType.MCQ =>
-                string.Equals(studentPayload.Trim(), correctAnswer.Trim(), StringComparison.OrdinalIgnoreCase),
+                string.Equals(student, correct, StringComparison.OrdinalIgnoreCase),
 
             QuestionType.TrueFalse =>
-                bool.TryParse(studentPayload.Trim(), out var studentBool)
-                && bool.TryParse(correctAnswer.Trim(), out var correctBool)
+                bool.TryParse(student, out var studentBool)
+                && bool.TryParse(correct, out var correctBool)
                 && studentBool == correctBool,
 
             QuestionType.FillInBlank =>
-                string.Equals(studentPayload.Trim(), correctAnswer.Trim(), StringComparison.OrdinalIgnoreCase),
+                string.Equals(student, correct, StringComparison.OrdinalIgnoreCase),
 
             // TODO P2-07.b: define Matching answer payload shape with FE;
             // current behavior falls through to string compare until the wire-shape is defined.
             QuestionType.Matching =>
-                string.Equals(studentPayload.Trim(), correctAnswer.Trim(), StringComparison.OrdinalIgnoreCase),
+                string.Equals(student, correct, StringComparison.OrdinalIgnoreCase),
 
             _ => false,
         };
+    }
+
+    /// <summary>
+    /// Unwraps a JSON-encoded scalar string literal (<c>"6"</c> → <c>6</c>, <c>"true"</c> → <c>true</c>)
+    /// so a jsonb-stored <c>CorrectAnswer</c> compares equal to the student's raw payload.
+    /// Trims; leaves non-quoted values (and JSON arrays/objects, e.g. Matching) unchanged.
+    /// </summary>
+    private static string NormalizeJsonScalar(string value)
+    {
+        var trimmed = value.Trim();
+        if (trimmed.Length >= 2 && trimmed[0] == '"' && trimmed[^1] == '"')
+        {
+            try
+            {
+                return JsonSerializer.Deserialize<string>(trimmed)?.Trim() ?? trimmed;
+            }
+            catch (JsonException)
+            {
+                return trimmed;
+            }
+        }
+        return trimmed;
     }
 }
