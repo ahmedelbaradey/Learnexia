@@ -1,9 +1,11 @@
+import type { Locale } from '../../lib/copy';
+import { getCopy } from '../../lib/copy';
 import styles from './FeaturesSection.module.css';
-import { LANDING_COPY as C } from '../../lib/copy';
 
 /**
  * "Why Learnexia" feature grid — 3 columns at 1024+, 2 at 768, 1 at 390.
- * Matches `design-system/preview/web-feature-card.html`. Icon tint colour is
+ * Matches `design-system/preview/web-feature-card.html` (LTR) and
+ * `design-system/preview/ar-web-features.html` (RTL). Icon tint colour is
  * driven by a per-card `tone` token (purple / orange / green) mapped to a
  * CSS-module class, never an inline literal.
  */
@@ -13,8 +15,12 @@ const TONE_CLASS = {
   green: styles.toneGreen,
 } as const;
 
-export function FeaturesSection() {
-  const { features } = C;
+interface FeaturesSectionProps {
+  locale: Locale;
+}
+
+export function FeaturesSection({ locale }: FeaturesSectionProps) {
+  const { features } = getCopy(locale);
 
   return (
     <section id="how-it-works" className={styles.section}>

@@ -1,0 +1,45 @@
+/* LanguageSwitcher — two-segment pill toggle matching ar-web-nav.html styling.
+   Uses --lx-radius-button (16px) for consistency with the live nav buttons.
+   Design note: ar-web-nav.html uses 12px radius; spec intentionally deviates
+   to 16px for internal nav button consistency (Design Gap §12 item 5). */
+
+.switcher {
+  display: inline-flex;
+  height: 36px;
+  border-radius: var(--lx-radius-button);
+  border: 1px solid var(--lx-border-strong);
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--lx-font-display);
+  flex-shrink: 0;
+}
+
+.segment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  min-inline-size: 44px; /* touch target width per a11y note §10 */
+  color: var(--lx-fg2);
+  background: transparent;
+  text-decoration: none;
+  transition:
+    color var(--lx-dur-fast) var(--lx-ease-out),
+    background var(--lx-dur-fast) var(--lx-ease-out);
+  outline: none;
+}
+
+.segment:hover {
+  color: var(--lx-fg1);
+}
+
+.segment:focus-visible {
+  outline: 2px solid var(--lx-primary);
+  outline-offset: 2px;
+}
+
+.segment.active {
+  background: var(--lx-primary-soft);
+  color: var(--lx-indigo-200);
+}

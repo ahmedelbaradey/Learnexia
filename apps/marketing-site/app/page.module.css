@@ -114,11 +114,11 @@
   overflow: hidden;
 }
 
-/* Purple radial glow behind the hero copy (B-4) — LTR origin. */
+/* Purple radial glow behind the hero copy (B-4) — leading-edge origin. */
 .heroGlow {
   position: absolute;
   top: -80px;
-  left: -80px;
+  inset-inline-start: -80px;
   width: 480px;
   height: 480px;
   border-radius: var(--lx-radius-pill);

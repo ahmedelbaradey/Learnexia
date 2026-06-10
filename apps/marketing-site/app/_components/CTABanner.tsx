@@ -1,15 +1,21 @@
-import styles from './CTABanner.module.css';
-import { LANDING_COPY as C } from '../../lib/copy';
+import type { Locale } from '../../lib/copy';
+import { getCopy } from '../../lib/copy';
 import { REGISTER_URL } from '../../lib/config';
+import styles from './CTABanner.module.css';
 
 /**
  * Gradient CTA banner — indigo→purple, white "Create parent account" button.
- * Matches `design-system/preview/web-cta-banner.html`. The decorative 🌟 sits
+ * Matches `design-system/preview/web-cta-banner.html` (LTR) and
+ * `design-system/preview/ar-web-cta.html` (RTL). The decorative 🌟 sits
  * behind the content (aria-hidden) and pulses via the shared `lxpulse`
  * keyframe.
  */
-export function CTABanner() {
-  const { cta } = C;
+interface CTABannerProps {
+  locale: Locale;
+}
+
+export function CTABanner({ locale }: CTABannerProps) {
+  const { cta } = getCopy(locale);
 
   return (
     <section id="pricing" className={styles.section}>

@@ -1,5 +1,6 @@
+import type { Locale } from '../../lib/copy';
+import { getCopy } from '../../lib/copy';
 import styles from './SubjectsBand.module.css';
-import { LANDING_COPY as C } from '../../lib/copy';
 
 /**
  * Subjects band — 4-column grid (Math / Science / Arabic / English only; no
@@ -14,8 +15,12 @@ const TONE_CLASS = {
   purple: styles.tonePurple,
 } as const;
 
-export function SubjectsBand() {
-  const { subjects } = C;
+interface SubjectsBandProps {
+  locale: Locale;
+}
+
+export function SubjectsBand({ locale }: SubjectsBandProps) {
+  const { subjects } = getCopy(locale);
 
   return (
     <section id="subjects" className={styles.section}>
