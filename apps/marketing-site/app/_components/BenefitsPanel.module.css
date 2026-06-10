@@ -1,0 +1,92 @@
+/* BenefitsPanel — web-benefits-panel.html. Tokens only (new locals in globals.css §7). */
+
+.section {
+  background: var(--lx-grad-benefits);
+  border-top: 1px solid var(--lx-border-soft);
+}
+
+.inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--lx-space-8);
+  font-family: var(--lx-font-display);
+  color: var(--lx-fg1);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* 🎮 glyph */
+.glyph {
+  font-size: 60px;
+  line-height: 1;
+  filter: drop-shadow(0 0 20px var(--lx-xp-glow));
+}
+
+/* Bold heading */
+.heading {
+  margin: 0;
+  font-weight: 900;
+  font-size: 26px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--lx-fg1);
+  text-align: start;
+}
+
+/* List of 3 benefit rows */
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Single benefit row */
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--lx-space-3);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--lx-on-purple);
+}
+
+/* 34×34 rounded icon tile */
+.tile {
+  inline-size: 34px;
+  block-size: 34px;
+  border-radius: 10px;
+  background: var(--lx-on-purple-tile);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Responsive                                                           */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 900px) {
+  .inner {
+    padding: var(--lx-space-6);
+  }
+}
+
+@media (max-width: 600px) {
+  .inner {
+    padding: var(--lx-space-5);
+  }
+
+  .heading {
+    font-size: 22px;
+  }
+
+  .glyph {
+    font-size: 48px;
+  }
+}

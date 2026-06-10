@@ -1,15 +1,21 @@
 import Image from 'next/image';
 
+import type { Locale } from '../../lib/copy';
+import { getCopy } from '../../lib/copy';
 import styles from './SiteFooter.module.css';
-import { LANDING_COPY as C } from '../../lib/copy';
 
 /**
- * Two-column site footer — logo-mark + copyright (left), legal/support links
- * (right). Matches `design-system/preview/web-footer.html`. The "العربية"
- * link is the future language switch (AR is out of scope for now — it links to
- * the same surface as a placeholder, per the EN-only HANDOFF note).
+ * Two-column site footer — logo-mark + copyright (start), legal/support
+ * links (end). Matches `design-system/preview/web-footer.html`. The former
+ * العربية stub has been removed — language switching is now handled by the
+ * LanguageSwitcher in the top nav.
  */
-export function SiteFooter() {
+interface SiteFooterProps {
+  locale: Locale;
+}
+
+export function SiteFooter({ locale }: SiteFooterProps) {
+  const C = getCopy(locale);
   const { footer } = C;
 
   return (
@@ -29,9 +35,6 @@ export function SiteFooter() {
         <a href="#top">{footer.links.privacy}</a>
         <a href="#top">{footer.links.terms}</a>
         <a href="#top">{footer.links.support}</a>
-        <a href="#top" lang="ar" dir="rtl">
-          {footer.links.arabic}
-        </a>
       </nav>
     </footer>
   );

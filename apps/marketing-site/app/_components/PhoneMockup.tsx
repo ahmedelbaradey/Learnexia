@@ -1,5 +1,6 @@
+import type { Locale } from '../../lib/copy';
+import { getCopy } from '../../lib/copy';
 import styles from './PhoneMockup.module.css';
-import { LANDING_COPY as C } from '../../lib/copy';
 
 /**
  * Decorative phone mockup for the landing hero (right column). This is
@@ -9,9 +10,16 @@ import { LANDING_COPY as C } from '../../lib/copy';
  * "New badge!" reward chips, all expressed through `--lx-*` design tokens.
  *
  * Purely decorative → the parent <section> is `aria-hidden`.
+ *
+ * IMPORTANT: This file and PhoneMockup.module.css are the live hero component.
+ * Do NOT generalize this to accept children — that is ChildCardPhone's job.
  */
-export function PhoneMockup() {
-  const { phone, chips } = C;
+interface PhoneMockupProps {
+  locale: Locale;
+}
+
+export function PhoneMockup({ locale }: PhoneMockupProps) {
+  const { phone, chips } = getCopy(locale);
 
   return (
     <div className={styles.stage}>

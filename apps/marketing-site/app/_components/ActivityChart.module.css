@@ -1,0 +1,155 @@
+/* ActivityChart — web-activity-chart.html. Tokens only (new locals in globals.css §7). */
+
+.section {
+  background: var(--lx-bg-deep);
+  border-top: 1px solid var(--lx-border-soft);
+}
+
+.inner {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 96px var(--lx-space-12);
+}
+
+/* Dark chart card */
+.card {
+  background: var(--lx-card);
+  border-radius: var(--lx-radius-modal);
+  padding: 22px;
+  border: 1px solid var(--lx-border-soft);
+  box-shadow: var(--lx-shadow-soft);
+  font-family: var(--lx-font-display);
+}
+
+/* Header row: title+subtitle / export btn */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-block-end: 18px;
+  flex-wrap: wrap;
+  gap: var(--lx-space-3);
+}
+
+.title {
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--lx-fg1);
+}
+
+.subtitle {
+  font-size: 12px;
+  color: var(--lx-fg3);
+  margin-block-start: 2px;
+}
+
+/* Export CSV — decorative, inert */
+.exportBtn {
+  background: transparent;
+  border: 1px solid var(--lx-border-strong);
+  color: var(--lx-indigo-200);
+  padding: 6px 12px;
+  border-radius: var(--lx-radius-pill);
+  font-weight: 700;
+  font-size: 12px;
+  cursor: default;
+  font-family: var(--lx-font-display);
+}
+
+.exportBtn:focus-visible {
+  outline: 2px solid var(--lx-primary);
+  outline-offset: 2px;
+}
+
+/* Bars track — Mon→Sun left→right (LTR), reversed in RTL below */
+.bars {
+  display: flex;
+  gap: var(--lx-space-3);
+  align-items: flex-end;
+  height: 180px;
+}
+
+/* RTL: mirror bar order — Sun on the left */
+:global([dir='rtl']) .bars {
+  flex-direction: row-reverse;
+}
+
+/* Single column: bar + day label */
+.col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Default bar (Mon–Sat) */
+.bar {
+  inline-size: 100%;
+  background: var(--lx-grad-bar);
+  border-radius: 10px 10px 4px 4px;
+  position: relative;
+}
+
+/* Sunday highlighted bar */
+.barHi {
+  background: var(--lx-grad-levelup-180);
+  box-shadow: 0 6px 18px var(--lx-primary-glow);
+}
+
+/* Value label floating above bar */
+.value {
+  position: absolute;
+  inset-block-start: -22px;
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--lx-fg4);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Sunday value label color */
+.valueHi {
+  color: var(--lx-indigo-200);
+}
+
+/* Day label (default) */
+.day {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--lx-fg3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
+/* Sunday day label */
+.dayHi {
+  color: var(--lx-fg1);
+}
+
+/* ------------------------------------------------------------------ */
+/* Responsive                                                           */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 900px) {
+  .inner {
+    padding: 72px var(--lx-space-8);
+  }
+}
+
+@media (max-width: 600px) {
+  .inner {
+    padding: 56px var(--lx-space-6);
+  }
+
+  .card {
+    padding: var(--lx-space-4);
+  }
+
+  .bars {
+    height: 140px;
+  }
+}
