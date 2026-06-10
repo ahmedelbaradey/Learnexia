@@ -29,8 +29,32 @@ export const SUBJECT_NAME_MAP: Record<string, SubjectKey> = {
 
 const ALLOWED_KEYS: Set<SubjectKey> = new Set(['math', 'science', 'arabic', 'english']);
 
-/** Resolve a raw API subject name to a product SubjectKey, or null if unknown. */
-export function resolveSubjectKey(name: string | undefined): SubjectKey | null {
+/**
+ * Stable map from the `SubjectCode` enum (MATH=0, SCIENCE=1, ARABIC=2, ENGLISH=3)
+ * to SubjectKey. This is the PRIMARY resolution key — the API's display `name`
+ * carries grade suffixes (e.g. "الرياضيات (الصف 1)" / "English (G1)") that an
+ * exact name-match would drop, so we key off the code first.
+ */
+const SUBJECT_CODE_MAP: Record<number, SubjectKey> = {
+  0: 'math',
+  1: 'science',
+  2: 'arabic',
+  3: 'english',
+};
+
+/**
+ * Resolve an API subject to a product SubjectKey, or null if unknown.
+ * Prefers the stable `subjectCode` enum; falls back to a case-insensitive
+ * name match for resilience.
+ */
+export function resolveSubjectKey(
+  name: string | undefined,
+  subjectCode?: number | null,
+): SubjectKey | null {
+  if (subjectCode !== undefined && subjectCode !== null) {
+    const codeKey = SUBJECT_CODE_MAP[subjectCode];
+    if (codeKey && ALLOWED_KEYS.has(codeKey)) return codeKey;
+  }
   if (!name) return null;
   const normalized = name.trim().toLowerCase();
   const key = SUBJECT_NAME_MAP[normalized];
@@ -51,7 +75,7 @@ export function filterSubjects(
   const result: Array<{ dto: StudentSubjectDto; key: SubjectKey }> = [];
   const seen = new Set<SubjectKey>();
   for (const dto of subjects) {
-    const key = resolveSubjectKey(dto.name);
+    const key = resolveSubjectKey(dto.name, dto.subjectCode);
     if (key && !seen.has(key)) {
       seen.add(key);
       result.push({ dto, key });

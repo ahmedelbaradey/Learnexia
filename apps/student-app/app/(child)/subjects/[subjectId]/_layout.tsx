@@ -132,6 +132,7 @@ export default function SubjectLayout() {
           onChange={handleTabChange}
           direction={direction}
           accessibilityLabel={t('child.subjects.tabs.lessons') + ' / ' + t('child.subjects.tabs.tree')}
+          itemTestIDPrefix="segmented-tab"
         />
       </TamStack>
 

@@ -13,7 +13,7 @@
  * (Android) — screen-reader announces on mount. Design Spec §3.5.
  */
 import React, { useEffect, useRef } from 'react';
-import { Animated } from 'react-native';
+import { Animated, Platform } from 'react-native';
 import { Stack } from '@tamagui/core';
 
 import { XStack, YStack, Text } from '../../internal/primitives';
@@ -95,6 +95,8 @@ export function AnswerFeedbackStrip({
         borderStartColor={isCorrect ? '$success' : '$danger'}
         alignItems="flex-start"
         testID={testID}
+        // @ts-ignore — data-* attributes are web-only, non-user-facing E2E hooks
+        data-correct={Platform.OS === 'web' ? String(isCorrect) : undefined}
       >
         {/* Glyph disc */}
         <Stack

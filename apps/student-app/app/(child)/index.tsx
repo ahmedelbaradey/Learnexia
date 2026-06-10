@@ -290,6 +290,7 @@ export default function ChildHomeScreen() {
         {/* ---------------------------------------------------------------- */}
         {dashboardQuery.isError ? (
           <XStack
+            testID="dashboard-error"
             flexDirection={rowDir}
             marginTop={24}
             padding={12}
@@ -332,6 +333,7 @@ export default function ChildHomeScreen() {
 
             {/* Retry button (AC10) */}
             <TamStack
+              testID="dashboard-error-retry"
               minHeight={36}
               paddingHorizontal={12}
               paddingVertical={6}
@@ -402,7 +404,7 @@ export default function ChildHomeScreen() {
         {/* Full league screen + animations are P4-08.                         */}
         {/* ---------------------------------------------------------------- */}
         {!isHeaderLoading && dashboardQuery.data?.leaguePreview ? (
-          <TamStack marginTop={24}>
+          <TamStack testID="league-preview" marginTop={24}>
             <LeaguePreviewRow
               tierName={dashboardQuery.data.leaguePreview.tierName ?? null}
               rank={dashboardQuery.data.leaguePreview.rank ?? null}

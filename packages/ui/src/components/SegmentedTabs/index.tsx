@@ -44,6 +44,12 @@ export interface SegmentedTabsProps {
   /** a11y label for the tablist (already localized). */
   accessibilityLabel: string;
   testID?: string;
+  /**
+   * When provided, each tab segment receives `testID={itemTestIDPrefix}-{item.value}`.
+   * E.g. prefix="segmented-tab" → "segmented-tab-lessons", "segmented-tab-tree".
+   * Used by E2E harness to target individual segments without copy selectors.
+   */
+  itemTestIDPrefix?: string;
 }
 
 export function SegmentedTabs({
@@ -53,6 +59,7 @@ export function SegmentedTabs({
   direction = 'ltr',
   accessibilityLabel,
   testID,
+  itemTestIDPrefix,
 }: SegmentedTabsProps) {
   const isRtl = direction === 'rtl';
   const rowDir = isRtl ? 'row-reverse' : 'row';
@@ -76,9 +83,11 @@ export function SegmentedTabs({
     >
       {items.map((item) => {
         const isActive = item.value === value;
+        const itemTestID = itemTestIDPrefix ? `${itemTestIDPrefix}-${item.value}` : undefined;
         return (
           <Stack
             key={item.value}
+            testID={itemTestID}
             flex={1}
             height="100%"
             borderRadius="$nav"

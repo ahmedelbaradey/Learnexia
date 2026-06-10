@@ -136,6 +136,7 @@ export function WhyLockedSheet({
               return (
                 <XStack
                   key={prereq.prereqSkillId ?? idx}
+                  testID="why-locked-prereq-row"
                   flexDirection={rowDir}
                   alignItems="center"
                   gap="$3"
@@ -216,6 +217,7 @@ export function WhyLockedSheet({
 
       {/* Primary CTA — tokens only */}
       <TamStack
+        testID="why-locked-cta"
         width="100%"
         height={48}
         borderRadius={16}
@@ -265,6 +267,7 @@ export function WhyLockedSheet({
         accessibilityLabel={t('child.subjects.whyLocked.title')}
       >
         <Pressable
+          testID="why-locked-sheet"
           onPress={(e) => e.stopPropagation()}
           style={{
             width: '100%',
@@ -305,6 +308,7 @@ export function WhyLockedSheet({
         }}
       >
         <Pressable
+          testID="why-locked-sheet"
           onPress={(e) => e.stopPropagation()}
           style={{
             backgroundColor: colors.card,

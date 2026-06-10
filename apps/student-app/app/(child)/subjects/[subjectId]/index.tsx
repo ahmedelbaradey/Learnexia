@@ -92,7 +92,7 @@ export default function LessonsTab() {
       >
         {/* Loading skeleton */}
         {isLoading ? (
-          <YStack gap="$6">
+          <YStack testID="lessons-loading" gap="$6">
             {[0, 1, 2].map((unitIdx) => (
               <YStack key={unitIdx} gap="$3">
                 <TamStack height={20} width="60%" borderRadius="$card" backgroundColor="$cardSoft" />
@@ -109,7 +109,7 @@ export default function LessonsTab() {
           </YStack>
         ) : is404 ? (
           /* 404 — Subject not found */
-          <YStack gap="$4" alignItems="center" paddingVertical="$8">
+          <YStack testID="subject-not-found" gap="$4" alignItems="center" paddingVertical="$8">
             <Text
               color="$fg2"
               fontSize={18}
@@ -141,7 +141,7 @@ export default function LessonsTab() {
           </YStack>
         ) : isError ? (
           /* Generic error + retry */
-          <YStack gap="$4" alignItems="center" paddingVertical="$8">
+          <YStack testID="lessons-error" gap="$4" alignItems="center" paddingVertical="$8">
             <Text
               color="$fg2"
               fontSize={16}
@@ -171,7 +171,7 @@ export default function LessonsTab() {
           </YStack>
         ) : allEmpty ? (
           /* Coming-soon empty state */
-          <YStack gap="$3" alignItems="center" paddingVertical="$8" paddingHorizontal="$8">
+          <YStack testID="lessons-empty" gap="$3" alignItems="center" paddingVertical="$8" paddingHorizontal="$8">
             <Text
               color="$fg2"
               fontSize={18}
@@ -188,10 +188,11 @@ export default function LessonsTab() {
           <YStack gap="$6">
             {sortedUnits.map((unit, unitIdx) => {
               const sortedLessons = bySequence(unit.lessons ?? []);
+              const unitId = unit.unitId ?? unitIdx;
               return (
-                <YStack key={unit.unitId ?? unitIdx} gap="$3">
+                <YStack key={unitId} gap="$3">
                   {/* Unit eyebrow + name */}
-                  <YStack gap={8}>
+                  <YStack testID={`unit-header-${unitId}`} gap={8}>
                     <Text
                       color="$fg3"
                       fontSize={12}
@@ -220,6 +221,7 @@ export default function LessonsTab() {
                   {/* Lessons or empty unit placeholder */}
                   {sortedLessons.length === 0 ? (
                     <TamStack
+                      testID={`empty-unit-${unitId}`}
                       padding="$4"
                       borderRadius="$card"
                       borderWidth={1}
@@ -260,6 +262,7 @@ export default function LessonsTab() {
                         return (
                           <LessonCard
                             key={lesson.lessonId}
+                            testID={`lesson-card-${lesson.lessonId}`}
                             lessonId={lesson.lessonId ?? 0}
                             tag={tag}
                             tagLabel={tagLabel}

@@ -33,6 +33,10 @@ export interface TrueFalseChoiceProps {
   trueLabel?: string;
   falseLabel?: string;
   testID?: string;
+  /** testID for the True side (e2e hook). */
+  trueTestID?: string;
+  /** testID for the False side (e2e hook). */
+  falseTestID?: string;
 }
 
 type SideState = 'default' | 'selected' | 'correct' | 'incorrect' | 'locked-default';
@@ -104,9 +108,10 @@ interface SideProps {
   locked: boolean;
   direction: 'ltr' | 'rtl';
   accessibilityLabel: string;
+  testID?: string;
 }
 
-function Side({ sideValue, sideState, label, glyph, onPress, locked, direction, accessibilityLabel }: SideProps) {
+function Side({ sideValue, sideState, label, glyph, onPress, locked, direction, accessibilityLabel, testID }: SideProps) {
   const checked = sideState === 'selected' || sideState === 'correct' || sideState === 'incorrect';
   const inner = (
     <Stack
@@ -141,6 +146,7 @@ function Side({ sideValue, sideState, label, glyph, onPress, locked, direction, 
   if (locked) {
     return (
       <Stack
+        testID={testID}
         flex={1}
         accessible
         accessibilityRole="radio"
@@ -157,6 +163,7 @@ function Side({ sideValue, sideState, label, glyph, onPress, locked, direction, 
 
   return (
     <Pressable
+      testID={testID}
       style={{ flex: 1 }}
       onPress={onPress}
       accessible
@@ -181,6 +188,8 @@ export function TrueFalseChoice({
   trueLabel = 'True',
   falseLabel = 'False',
   testID,
+  trueTestID,
+  falseTestID,
 }: TrueFalseChoiceProps) {
   const isRtl = direction === 'rtl';
   const locked = phase === 'feedback';
@@ -205,6 +214,7 @@ export function TrueFalseChoice({
         locked={locked}
         direction={direction}
         accessibilityLabel={`${trueLabel}, ${trueState === 'selected' ? 'selected' : trueState === 'correct' ? 'correct answer' : trueState === 'incorrect' ? 'incorrect' : ''}`}
+        testID={trueTestID}
       />
       <Side
         sideValue={false}
@@ -215,6 +225,7 @@ export function TrueFalseChoice({
         locked={locked}
         direction={direction}
         accessibilityLabel={`${falseLabel}, ${falseState === 'selected' ? 'selected' : falseState === 'correct' ? 'correct answer' : falseState === 'incorrect' ? 'incorrect' : ''}`}
+        testID={falseTestID}
       />
     </XStack>
   );

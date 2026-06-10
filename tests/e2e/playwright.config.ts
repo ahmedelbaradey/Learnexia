@@ -28,6 +28,11 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    // Cap individual navigation + action timeouts so a slow dev server can't
+    // consume the entire test-level budget (test.setTimeout may raise test timeout
+    // to 480 s but page.goto should never wait that long).
+    navigationTimeout: 60_000,
+    actionTimeout: 30_000,
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
