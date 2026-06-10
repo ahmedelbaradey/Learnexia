@@ -78,3 +78,13 @@
 - _Route-interception used vs live backend per case:_ _TBD_
 - _Locale-switch approach for EN assertions:_ _TBD_
 - _Any case re-scoped or merged during implementation (note why):_ _TBD_
+
+---
+## Isolated run result (P2-HARDENING exit gate, fresh Expo) — 37 pass / 1 fail / 3 skip
+Run: `npx playwright test specs/P2-12-FE.spec.ts --project=chromium --workers=1` on a freshly-restarted
+Expo. **37 pass / 1 fail / 3 skip** (the combined batch-2 run's 0/38 was a Metro-OOM artifact, not real).
+- **1 FAIL — FE-TC-23:** in an RTL (ar) settings card, the email field's *computed* text direction is
+  expected `ltr` but resolved otherwise. Minor bidi/`unicode-bidi` styling assertion — file to `frontend`
+  to set the email field `direction: ltr` (or relax the assertion); not release-blocking.
+- 3 skips: route-mock-only / multi-session-seed cases (see classification doc categories F/I).
+- DEF-01 (aria-checked on the notification switch) noted in FE-TC-12 — see P2-09 retrofit follow-ups.
