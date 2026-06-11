@@ -1,0 +1,573 @@
+/* =============================================================================
+   ParentValueSection — "For Parents — value showcase"
+   Source: design-system/ui_kits/marketing/for-parents-section.md
+   Canonical JSX reference: PagesPublic.jsx 304–426 (EN) + index-ar.html 135–195 (AR)
+   Tokens: apps/marketing-site/app/globals.css (--lx-* mirror)
+   Logical CSS properties throughout; chart bars pinned direction:ltr per spec §4.2.
+   ============================================================================= */
+
+/* ── Section wrapper ─────────────────────────────────────────────── */
+
+.section {
+  /* No own background — inherits page --lx-bg (#0F172A). */
+  padding: var(--lx-space-8) var(--lx-space-12) 96px;
+}
+
+.inner {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+/* ── Centered header ─────────────────────────────────────────────── */
+
+.headerBlock {
+  text-align: center;
+  margin-bottom: 56px;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--lx-secondary);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.heading {
+  margin: var(--lx-space-2) 0 0;
+  font-family: var(--lx-font-display);
+  font-size: 44px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--lx-fg1);
+  line-height: 1.1;
+}
+
+/* ── 2-column grid ───────────────────────────────────────────────── */
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: var(--lx-space-8);
+  align-items: start;
+}
+
+/* ── LEFT: Benefits panel ────────────────────────────────────────── */
+
+.panel {
+  background: var(--lx-grad-benefits);
+  border-radius: var(--lx-radius-screen); /* 28px */
+  padding: var(--lx-space-10);            /* 40px */
+  display: flex;
+  flex-direction: column;
+  gap: var(--lx-space-6);                 /* 24px */
+  box-shadow: var(--lx-shadow-benefits);
+}
+
+.panelGlyph {
+  font-size: 64px;
+  line-height: 1;
+  /* Drop-shadow is a one-off per spec — 0.5 alpha, not the 0.45 token */
+  filter: drop-shadow(0 0 20px rgba(250, 204, 21, 0.5));
+}
+
+.panelHeading {
+  margin: 0;
+  font-family: var(--lx-font-display);
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--lx-fg1);
+}
+
+.bulletList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bulletRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 15px;
+  color: var(--lx-on-purple);
+}
+
+.bulletTile {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 12px;
+  background: var(--lx-on-purple-tile);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+/* ── RIGHT: Live-demos stacked column ────────────────────────────── */
+
+.demosCol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lx-space-5); /* 20px */
+}
+
+/* ── (1) Activity chart card ─────────────────────────────────────── */
+
+.chartCard {
+  background: var(--lx-card);
+  border-radius: var(--lx-radius-modal); /* 24px */
+  padding: var(--lx-space-6);            /* 24px */
+  border: 1px solid var(--lx-border-hair);
+  box-shadow: var(--lx-shadow-soft);
+}
+
+.chartHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--lx-space-4); /* 16px */
+}
+
+.chartTitle {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--lx-fg1);
+  font-family: var(--lx-font-display);
+}
+
+.chartDelta {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--lx-secondary);
+}
+
+/*
+ * Bars row: direction:ltr is pinned so bars never reverse in RTL.
+ * Per spec §4.2 + AR source index-ar.html line 156.
+ */
+.barsRow {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  height: 120px;
+  direction: ltr;
+}
+
+.barCol {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/*
+ * Bar grow-on-inview — grows from 0 to target height over 700ms ease-out.
+ * The keyframe scales from scaleY(0) so the bar grows upward from its base.
+ * Applied via .barsRowVisible on the parent (toggled by the `visible` state).
+ * Reduced-motion: bars are already at full height (no animation).
+ */
+@keyframes lxBarGrow {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+
+@keyframes lxBarGlowFlash {
+  0%   { box-shadow: none; }
+  60%  { box-shadow: var(--lx-shadow-bar-highlight); }
+  100% { box-shadow: var(--lx-shadow-bar-highlight); }
+}
+
+.bar {
+  width: 100%;
+  border-radius: 8px 8px 3px 3px; /* top radius = --lx-radius-sm */
+  background: var(--lx-grad-bar);
+  transform-origin: bottom;
+}
+
+/* Bars animate only when the section is visible (controlled by JS state). */
+.barsRowVisible .bar {
+  animation: lxBarGrow 700ms var(--lx-ease-out) forwards;
+}
+
+.barHi {
+  background: var(--lx-grad-levelup-180);
+}
+
+/* Sunday bar: grow first, then glow flash starts at ~70% through grow. */
+.barsRowVisible .barHi {
+  animation:
+    lxBarGrow    700ms var(--lx-ease-out) forwards,
+    lxBarGlowFlash 500ms var(--lx-ease-out) 500ms forwards;
+}
+
+/* Reduced-motion: skip animation; bars render at full height instantly. */
+@media (prefers-reduced-motion: reduce) {
+  .barsRowVisible .bar,
+  .barsRowVisible .barHi {
+    animation: none;
+    box-shadow: none;
+  }
+
+  .barHi {
+    box-shadow: var(--lx-shadow-bar-highlight);
+  }
+}
+
+.dayLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--lx-fg4);
+}
+
+.dayLabelHi {
+  color: var(--lx-fg1);
+}
+
+/* ── (2) AI tutor bubble ─────────────────────────────────────────── */
+
+.tutorRow {
+  display: flex;
+  gap: var(--lx-space-3); /* 12px */
+  align-items: flex-end;
+}
+
+.tutorAvatar {
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  border-radius: 50%;
+  background: var(--lx-grad-avatar);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--lx-shadow-avatar);
+  flex-shrink: 0;
+}
+
+.tutorBubble {
+  /* Exact 0.75 frost per spec §New tokens (--lx-overlay-frost is 0.7) */
+  background: var(--lx-overlay-frost-75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--lx-border-frost);
+  border-radius: 22px;
+  /* Tail corner: EN = bottom-left (border-end-start-radius via logical prop);
+     AR = bottom-right — handled via .tutorBubbleRtl override below */
+  border-end-start-radius: 4px;
+  padding: 16px 20px;
+  flex: 1;
+}
+
+/*
+ * RTL override: flip the tail to the bottom-right (border-end-end-radius:4px).
+ * border-end-start-radius is reset to 22px.
+ * Applied when [dir="rtl"] wraps this section.
+ * index-ar.html line 170: border-bottom-right-radius:4px
+ */
+[dir='rtl'] .tutorBubble {
+  border-end-start-radius: 22px;
+  border-end-end-radius: 4px;
+}
+
+.tutorLabel {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--lx-indigo-200);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+  font-family: var(--lx-font-display);
+}
+
+.tutorMsg {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--lx-fg1);
+}
+
+.tutorHighlight {
+  color: var(--lx-xp);
+  font-weight: 700;
+}
+
+/* ── (3) Child card ──────────────────────────────────────────────── */
+
+.childCard {
+  background: var(--lx-bg-card-deep); /* #15161D */
+  border-radius: var(--lx-radius-card); /* 20px */
+  padding: 18px;
+  border: 1px solid var(--lx-border-hair);
+  box-shadow: var(--lx-shadow-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.childRow1 {
+  display: flex;
+  align-items: center;
+  gap: var(--lx-space-3); /* 12px */
+}
+
+.childMonogram {
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  border-radius: 50%;
+  background: var(--lx-streak); /* #FB923C */
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 22px;
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.18);
+  flex-shrink: 0;
+  font-family: var(--lx-font-display);
+}
+
+.childInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.childNameRow {
+  display: flex;
+  align-items: center;
+  gap: var(--lx-space-2); /* 8px */
+}
+
+.childName {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--lx-fg1);
+  font-family: var(--lx-font-display);
+}
+
+.childGrade {
+  padding: 2px 8px;
+  border-radius: var(--lx-radius-pill);
+  background: var(--lx-primary-soft);
+  color: var(--lx-indigo-200);
+  font-size: 11px;
+  font-weight: 800;
+  font-family: var(--lx-font-display);
+  white-space: nowrap;
+}
+
+.childEmail {
+  font-size: 12px;
+  color: var(--lx-fg3);
+  margin-top: 4px;
+  /* Always LTR + monospace — technical string stays direction-neutral */
+  direction: ltr;
+  text-align: start;
+  font-family: var(--lx-font-mono);
+  display: block;
+}
+
+.childActiveGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--lx-secondary);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.activeDot {
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  border-radius: 50%;
+  background: var(--lx-secondary);
+  box-shadow: 0 0 6px var(--lx-success-glow);
+  animation: lxActivePulse 2s ease-in-out infinite;
+}
+
+@keyframes lxActivePulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%  { transform: scale(1.04); opacity: 0.85; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activeDot {
+    animation: none;
+  }
+}
+
+.childRow2 {
+  display: flex;
+  align-items: center;
+  gap: var(--lx-space-4); /* 16px */
+}
+
+.statLv {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--lx-purple);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--lx-font-display);
+}
+
+.statXp {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--lx-xp);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--lx-font-display);
+}
+
+.statStreak {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--lx-streak);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--lx-font-display);
+}
+
+.viewProgress {
+  /* Trailing edge in both LTR and RTL */
+  margin-inline-start: auto;
+  color: var(--lx-indigo-200);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 44px; /* touch target */
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  transition: color var(--lx-dur-base) var(--lx-ease-out),
+              transform var(--lx-dur-base) var(--lx-ease-out);
+}
+
+.viewProgress:hover {
+  color: var(--lx-fg1);
+  /* LTR: nudge arrow 2px toward its trailing (right) edge. */
+  transform: translateX(2px);
+}
+
+/*
+ * RTL override: flip the nudge direction so the ← arrow moves toward its
+ * trailing (left) edge — translateX(-2px) in RTL.
+ */
+[dir='rtl'] .viewProgress:hover {
+  transform: translateX(-2px);
+}
+
+/* Focus ring for keyboard nav */
+.viewProgress:focus-visible {
+  outline: 2px solid var(--lx-primary);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+/* ── Section reveal animation ────────────────────────────────────── */
+
+.section {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 300ms var(--lx-ease-out),
+              transform 300ms var(--lx-ease-out);
+}
+
+.sectionVisible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/*
+ * Staggered entry for the three right-column demo cards.
+ * Each card starts hidden and slides up; delays are 60/120/180ms relative to
+ * the section becoming visible. `.demosColVisible` is set together with
+ * `.sectionVisible` (both toggled by the same `visible` state in JS).
+ * Reduced-motion: no animation, cards are instantly visible.
+ */
+.chartCard,
+.tutorRow,
+.childCard {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 280ms var(--lx-ease-out),
+              transform 280ms var(--lx-ease-out);
+}
+
+.demosColVisible .chartCard {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 60ms;
+}
+
+.demosColVisible .tutorRow {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 120ms;
+}
+
+.demosColVisible .childCard {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 180ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chartCard,
+  .tutorRow,
+  .childCard {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+
+/* 768px target — collapse to 1 column */
+@media (max-width: 900px) {
+  .section {
+    padding: var(--lx-space-8) var(--lx-space-8) 96px;
+  }
+
+  .heading {
+    font-size: 36px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 390px target */
+@media (max-width: 600px) {
+  .section {
+    padding: var(--lx-space-8) var(--lx-space-5) 64px;
+  }
+
+  .heading {
+    font-size: 28px;
+  }
+
+  .panel {
+    padding: var(--lx-space-6); /* 24px */
+  }
+}

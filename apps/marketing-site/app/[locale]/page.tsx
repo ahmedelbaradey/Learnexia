@@ -9,10 +9,7 @@ import { SubjectsBand } from '../_components/SubjectsBand';
 import { CTABanner } from '../_components/CTABanner';
 import { SiteFooter } from '../_components/SiteFooter';
 import { LanguageSwitcher } from '../_components/LanguageSwitcher';
-import { AITutorBubble } from '../_components/AITutorBubble';
-import { ChildCardPhone } from '../_components/ChildCardPhone';
-import { ActivityChart } from '../_components/ActivityChart';
-import { BenefitsPanel } from '../_components/BenefitsPanel';
+import { ParentValueSection } from '../_components/ParentValueSection';
 import styles from '../page.module.css';
 
 /**
@@ -123,15 +120,8 @@ export default async function LandingPage({ params }: PageProps) {
       <FeaturesSection locale={locale} />
       <SubjectsBand locale={locale} />
 
-      {/* ── Batch 2: product-proof + parent-proof sections ─────────── */}
-      {/* "See it in action" — AI tutor screenshot */}
-      <AITutorBubble locale={locale} />
-      {/* In-phone child card screenshot */}
-      <ChildCardPhone locale={locale} />
-      {/* Weekly activity strip */}
-      <ActivityChart locale={locale} />
-      {/* Purple benefits panel — visual break before CTA */}
-      <BenefitsPanel locale={locale} />
+      {/* ── "For Parents" composed value showcase ─────────────────── */}
+      <ParentValueSection locale={locale} />
       {/* ─────────────────────────────────────────────────────────────── */}
 
       <CTABanner locale={locale} />

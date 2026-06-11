@@ -138,50 +138,42 @@ const en = {
     },
   },
 
-  // Benefits panel (web-benefits-panel.html).
-  benefits: {
-    glyph: '🎮',
-    heading: 'Set up once. Watch them learn forever.',
-    items: [
-      { icon: '✨', text: "AI-powered explanations tailored to each child's grade" },
-      { icon: '📊', text: "Weekly reports show exactly what they've mastered" },
-      { icon: '🛡️', text: 'COPPA-compliant — no ads, no DMs, no data resold' },
-    ],
-  },
-
-  // Activity chart (web-activity-chart.html).
-  activityChart: {
-    title: 'Daily activity',
-    subtitle: 'XP earned per day',
-    exportBtn: 'Export CSV',
-    days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    // Western digits — bar heights come from CHART_VALUES in the component.
-    values: ['45', '80', '30', '95', '50', '70', '110'],
-  },
-
-  // AI Tutor Bubble (components-tutor.html).
-  tutorBubble: {
-    name: 'Lexi · AI Tutor',
-    msgLead: 'When we compare two numbers, the one with more ',
-    msgHighlight: 'tens',
-    msgRest: ' is bigger. Want me to show you with blocks?',
-    chips: ['Yes, show me', 'Give a hint', 'Skip'],
-  },
-
-  // Child Card (mobile-child-card.html).
-  childCard: {
-    monogram: 'S',
-    name: 'Sami',
-    grade: 'Grade 3',
-    email: 'sami@learnexia.com',
-    chevron: '›',
-    statLevel: '🧠 Lv 12',
-    statXp: '⭐ 1,240',
-    statStreak: '🔥 7d',
-    statusActive: 'Active today',
-    langLabel: 'Language:',
-    langValue: '🇬🇧 English',
-    viewProgress: 'View progress →',
+  // "For Parents — value showcase" composed section (for-parents-section.md §3).
+  parentValue: {
+    eyebrow: 'For Parents',
+    heading: 'See exactly what your child gets out of it.',
+    panel: {
+      heading: 'Set up once. Watch them learn forever.',
+      bullets: [
+        { icon: '✨', text: "AI-powered explanations tailored to each child's grade" },
+        { icon: '📊', text: "Weekly reports show exactly what they've mastered" },
+        { icon: '🎯', text: 'Daily missions keep them coming back without nagging' },
+        { icon: '🛡️', text: 'COPPA-compliant — no ads, no DMs, no data resold' },
+      ],
+    },
+    chart: {
+      title: 'Your weekly report',
+      delta: '+28% vs last week',
+      // Day labels stay Latin in both locales per AR source (index-ar.html line 156).
+      days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const,
+    },
+    tutor: {
+      label: 'Lexi · AI Tutor',
+      msgLead: 'When we compare two numbers, the one with more ',
+      msgHighlight: 'tens',
+      msgRest: ' is bigger. Want me to show you with blocks?',
+    },
+    card: {
+      monogram: 'S',
+      name: 'Sami',
+      grade: 'Grade 3',
+      email: 'sami@learnexia.com',
+      active: 'Active today',
+      lv: '🧠 Lv 12',
+      xp: '⭐ 1,240',
+      streak: '🔥 7d',
+      cta: 'View progress →',
+    },
   },
 } as const;
 
@@ -304,50 +296,43 @@ const ar = {
     },
   },
 
-  // Benefits panel — AR translation from design spec §1.3
-  benefits: {
-    glyph: '🎮',
-    heading: 'أعِدّه مرة واحدة. وشاهدهم يتعلمون للأبد.',
-    items: [
-      { icon: '✨', text: 'شروحات بالذكاء الاصطناعي مصمّمة لمستوى كل طفل' },
-      { icon: '📊', text: 'تقارير أسبوعية تُظهر بالضبط ما أتقنوه' },
-      { icon: '🛡️', text: 'متوافق مع COPPA — بلا إعلانات، بلا رسائل، بلا بيع للبيانات' },
-    ],
-  },
-
-  // Activity chart — Arabic-Indic values from design spec §2.2
-  activityChart: {
-    title: 'النشاط اليومي',
-    subtitle: 'النقاط المكتسبة كل يوم',
-    exportBtn: 'تصدير CSV',
-    days: ['الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'],
-    // Arabic-Indic digit strings — bar heights always from numeric CHART_VALUES
-    values: ['٤٥', '٨٠', '٣٠', '٩٥', '٥٠', '٧٠', '١١٠'],
-  },
-
-  // AI Tutor Bubble — from ar-tutor.html + design spec §3.2
-  tutorBubble: {
-    name: 'ليكسي · المعلم الذكي',
-    msgLead: 'عندما نقارن عددين، الأكبر هو العدد الذي يحتوي على ',
-    msgHighlight: 'عشرات',
-    msgRest: ' أكثر. هل تريد أن أوضح لك ذلك بالمكعّبات؟',
-    chips: ['نعم، أرني', 'أعطني تلميحاً', 'تخطي'],
-  },
-
-  // Child Card — from ar-child-card.html
-  childCard: {
-    monogram: 'س',
-    name: 'سامي',
-    grade: 'الصف ٣',
-    email: 'sami@learnexia.com',
-    chevron: '‹',
-    statLevel: '🧠 المستوى ١٢',
-    statXp: '⭐ ١٬٢٤٠',
-    statStreak: '🔥 ٧ أيام',
-    statusActive: 'نشط اليوم',
-    langLabel: 'اللغة:',
-    langValue: '🇸🇦 العربية',
-    viewProgress: 'عرض التقدم ←',
+  // "For Parents — value showcase" composed section (AR) — ported from index-ar.html 135–192.
+  // Arabic-Indic numerals used; email + brand stay LTR; day labels stay Latin per AR source.
+  parentValue: {
+    eyebrow: 'لأولياء الأمور',
+    heading: 'شاهد بالضبط ما يستفيده طفلك.',
+    panel: {
+      heading: 'جهّز الحساب مرة. شاهدهم يتعلمون للأبد.',
+      bullets: [
+        { icon: '✨', text: 'شرح بالذكاء الاصطناعي مكيّف لصف كل طفل' },
+        { icon: '📊', text: 'تقارير أسبوعية تعرض ما أتقنوه بدقة' },
+        { icon: '🎯', text: 'مهام يومية تعيدهم للتطبيق دون إلحاح' },
+        { icon: '🛡️', text: 'متوافق مع COPPA — بلا إعلانات أو بيع بيانات' },
+      ],
+    },
+    chart: {
+      title: 'تقريرك الأسبوعي',
+      delta: '‎+٢٨٪ عن الأسبوع الماضي',
+      // Day labels stay Latin in both locales per AR source (index-ar.html line 156).
+      days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const,
+    },
+    tutor: {
+      label: 'ليكسي · المعلم الذكي',
+      msgLead: 'عندما نقارن عددين، الأكبر هو الذي يحتوي على ',
+      msgHighlight: 'عشرات',
+      msgRest: ' أكثر. هل تريد أن أوضح لك بالمكعّبات؟',
+    },
+    card: {
+      monogram: 'س',
+      name: 'سامي',
+      grade: 'الصف ٣',
+      email: 'sami@learnexia.com',
+      active: 'نشط اليوم',
+      lv: '🧠 المستوى ١٢',
+      xp: '⭐ ١٬٢٤٠',
+      streak: '🔥 ٧ أيام',
+      cta: 'عرض التقدم ←',
+    },
   },
 } as const;
 
