@@ -23,6 +23,7 @@ import { useTranslation } from 'react-i18next';
 
 import { assets } from '../../../src/assets';
 import { useLocale } from '../../../src/hooks/useLocale';
+import { formatNumber } from './ChildSwitcher';
 
 /** Fixed parent nav destinations (enum-style const, never raw literals). */
 export const NAV_ITEM = {
@@ -48,8 +49,8 @@ interface NavDef {
 }
 
 const NAV: readonly NavDef[] = [
-  { key: NAV_ITEM.MyChildren, icon: '👨‍👩‍👦', route: '/(parent)/children' },
   { key: NAV_ITEM.Overview, icon: '📊', route: '/(parent)/overview' },
+  { key: NAV_ITEM.MyChildren, icon: '👨‍👩‍👦', route: '/(parent)/children' },
   { key: NAV_ITEM.Reports, icon: '📝', route: '/(parent)/reports' },
   // TODO(P2+): wire activity/subjects to their own routes.
   { key: NAV_ITEM.Activity, icon: '🎯', route: '/(parent)/children' },
@@ -73,7 +74,7 @@ export interface SidebarProps {
 
 export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: SidebarProps) {
   const { t } = useTranslation();
-  const { direction, isRtl } = useLocale();
+  const { direction, isRtl, locale } = useLocale();
   const router = useRouter();
   const rowDir = isRtl ? 'row-reverse' : 'row';
 
@@ -127,7 +128,10 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
                 {activeChild.fullName}
               </Text>
               <Text color="$fg3" fontSize={11} fontFamily="$body" writingDirection={direction}>
-                {t('parent.childSelector.meta', { grade: activeChild.grade, level: activeChild.level })}
+                {t('parent.childSelector.meta', {
+                  grade: formatNumber(activeChild.grade, locale),
+                  level: formatNumber(activeChild.level, locale),
+                })}
               </Text>
             </Stack>
             <Text color="$fg3" fontSize={16} accessibilityElementsHidden>

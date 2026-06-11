@@ -47,6 +47,12 @@ export interface ChildCardProps {
   editTestID?: string;
   /** testID for the remove icon button (editable variant). */
   removeTestID?: string;
+  /**
+   * Border radius token for the card surface.
+   * Default: "$card" (20px — standalone cards).
+   * Use "$cardInner" (14px) for linked-children rows inside a panel per spec §D.4.
+   */
+  borderRadius?: React.ComponentProps<typeof Stack>['borderRadius'];
 }
 
 function resolveDirection(direction?: Direction, locale?: string): Direction {
@@ -150,6 +156,7 @@ export function ChildCard({
   testID,
   editTestID,
   removeTestID,
+  borderRadius = '$card',
 }: ChildCardProps) {
   const dir = resolveDirection(direction, locale);
   const rowDir = dir === 'rtl' ? 'row-reverse' : 'row';
@@ -162,7 +169,7 @@ export function ChildCard({
       <Stack
         testID={testID}
         minHeight={72}
-        borderRadius="$card"
+        borderRadius={borderRadius}
         borderWidth={1}
         borderColor="$border"
         backgroundColor={isActive ? '$bgElevated' : '$card'}

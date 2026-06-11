@@ -4,11 +4,12 @@
  * "This week" select + "Send Report"), four KPI stat cards, a "Daily activity"
  * card (header + "Export CSV" — the bar chart itself is DEFERRED to Phase 5 and
  * rendered as a placeholder), the "Subject mastery" card (4 product subjects),
- * and the "Areas to focus on" list.
+ * and the "Areas to focus on" list + "Recommendations from Lexi" panel side-by-side.
  *
- * The active child comes from `useMyChildren` (P1-04); every weekly stat
- * (KPIs / mastery / focus areas / date range) is a Phase-5 stub (TODO(P5)).
- * "Send Report" and "Export CSV" are no-op stubs until analytics ship.
+ * The active child comes from `useActiveChildStore` (set by the ChildSwitcher),
+ * falling back to `children[0]`. Every weekly stat (KPIs / mastery / focus areas /
+ * date range) is a Phase-5 stub (TODO(P5)). "Send Report" and "Export CSV" are
+ * no-op stubs until analytics ship.
  *
  * RTL + ar/en throughout; tokens only (no raw hex); reuses `@learnexia/ui`
  * primitives (KPIStatCard, MasteryBar) — no new design pattern.
@@ -16,13 +17,14 @@
 import { useMyChildren } from '@learnexia/api-client';
 import { Button, Select } from '@learnexia/ui';
 import { Stack, Text, type StackProps } from '@tamagui/core';
-import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useLocale } from '../../../src/hooks/useLocale';
+import { useActiveChildStore } from '../../../src/providers/activeChildStore';
 import { DailyActivityCard } from './DailyActivityCard';
 import { FocusAreasCard } from './FocusAreasCard';
+import { RecommendationsCard } from './RecommendationsCard';
 import { SubjectMasteryCard } from './SubjectMasteryCard';
 import { getOverviewKpiStub, type OverviewKpiStub } from './parentDashboardStubs';
 
@@ -110,16 +112,26 @@ function buildKpis(
   ];
 }
 
-export function OverviewWeb() {
+export interface OverviewWebProps {
+  /** Called when the "Add child" CTA is tapped (empty state). Opens the AddChildModal. */
+  onAddChild?: () => void;
+}
+
+export function OverviewWeb({ onAddChild }: OverviewWebProps) {
   const { t } = useTranslation();
   const { direction, isRtl, locale } = useLocale();
-  const router = useRouter();
   const query = useMyChildren();
   const [period, setPeriod] = useState<string>(REPORTING_PERIOD.ThisWeek);
 
   const rowDir = isRtl ? 'row-reverse' : 'row';
   const children = query.data ?? [];
-  const activeChild = children[0];
+
+  // Active child: from the child switcher store (fallback to first child).
+  const activeChildId = useActiveChildStore((s) => s.activeChildId);
+  const activeChild =
+    (activeChildId ? children.find((c) => String(c.id) === activeChildId) : null) ??
+    children[0];
+
   const childId = activeChild ? String(activeChild.id) : undefined;
   const childName = activeChild?.fullName ?? '';
 
@@ -190,7 +202,7 @@ export function OverviewWeb() {
           <Button
             variant="primary"
             accessibilityLabel={t('parent.myChildren.addChild')}
-            onPress={() => router.push('/(onboarding)/add-child')}
+            onPress={onAddChild ?? (() => {})}
           >
             {t('parent.myChildren.addChild')}
           </Button>
@@ -300,14 +312,34 @@ function OverviewBody({ childId, childName, rowDir, direction, locale }: Overvie
         </Stack>
       </Stack>
 
-      {/* Areas to focus on */}
-      <FocusAreasCard
-        childId={seed}
-        childName={childName}
-        direction={direction}
-        rowDir={rowDir}
-        locale={locale}
-      />
+      {/* 2-col row: "Areas to focus on" (1fr) + "Recommendations from Lexi" (1fr).
+          Uses flexWrap so it stacks to 1 column on narrow widths (<~680px).
+          Per spec C.2: flexDirection={rowDir}, gap=$5 (20), alignItems=flex-start,
+          each child flex=1 minWidth=320. */}
+      <Stack
+        testID="overview-focus-recommendations-row"
+        flexDirection={rowDir}
+        flexWrap="wrap"
+        gap="$5"
+        alignItems="flex-start"
+      >
+        <Stack flex={1} minWidth={320}>
+          <FocusAreasCard
+            childId={seed}
+            childName={childName}
+            direction={direction}
+            rowDir={rowDir}
+            locale={locale}
+          />
+        </Stack>
+        <Stack flex={1} minWidth={320}>
+          <RecommendationsCard
+            childName={childName}
+            direction={direction}
+            rowDir={rowDir}
+          />
+        </Stack>
+      </Stack>
     </>
   );
 }

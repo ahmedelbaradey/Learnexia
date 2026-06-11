@@ -1,0 +1,681 @@
+/**
+ * AddChildModal — centered modal overlay for adding a new child from the parent
+ * dashboard context (workstream E, parent-dashboard-uiux spec).
+ *
+ * Reuses the in-repo RN `Modal transparent` + `$overlay` scrim convention
+ * (same as `ChangeLearningLanguageModal` / `EditChildSheet`) — NOT a new pattern.
+ *
+ * Anatomy (top → bottom):
+ *   1. Header — mark + title/subtitle + ✕ close
+ *   2. Body (scrolls): photo upload, child name, login email, password,
+ *      grade tiles (6 plant-emoji, NEVER a <select>), app-language flag tiles
+ *      (2 flags), learning-language Select, country Select
+ *   3. Footer — Cancel (ghost) + personalized primary CTA ("Add {name} →")
+ *
+ * Submits via `useAddChild` → POST /api/Parent/Add-Child. On success: modal
+ * closes and TanStack Query invalidates `myChildren` automatically.
+ *
+ * RTL: card `direction` from locale; CTA arrow flips; email/country LTR-pinned;
+ * grade numerals Eastern-Arabic; 📷 badge on logical-end corner.
+ *
+ * Tokens only (no raw hex except the few sanctioned modal-surface values per spec).
+ * No new design pattern — mirrors the existing overlay convention.
+ */
+import { useAddChild, type AddChildCommand } from '@learnexia/api-client';
+import { COUNTRIES, type CountryCode, LOCALES } from '@learnexia/shared';
+import {
+  Avatar,
+  Button,
+  PasswordStrengthMeter,
+  PASSWORD_STRENGTH,
+  Select,
+  TextField,
+  LanguageSelect,
+  type PasswordStrength,
+} from '@learnexia/ui';
+import { Stack, Text } from '@tamagui/core';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Modal, Platform, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
+
+import { ServerErrorBanner } from '../../../src/components/ServerErrorBanner';
+import { useLocale } from '../../../src/hooks/useLocale';
+import { useServerError } from '../../../src/hooks/useServerError';
+
+export interface AddChildModalProps {
+  visible: boolean;
+  onClose: () => void;
+}
+
+/** Grade options with plant-emoji per spec (order: 🌱🌿🌳🌲🍃🌴). */
+const GRADE_PLANT: readonly string[] = ['🌱', '🌿', '🌳', '🌲', '🍃', '🌴'];
+
+/** Fixed grade set (1–6). */
+const GRADES = [1, 2, 3, 4, 5, 6] as const;
+
+/** Fixed accepted avatar MIME types (client-side guard only). */
+const AVATAR_ACCEPT = 'image/png,image/jpeg';
+const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
+
+/** Derive a simple password strength from the password string. */
+function derivePasswordStrength(password: string): PasswordStrength {
+  if (!password) return PASSWORD_STRENGTH.Empty;
+  let score = 0;
+  if (password.length >= 8) score += 1;
+  if (/[A-Z]/.test(password)) score += 1;
+  if (/[0-9]/.test(password)) score += 1;
+  if (/[^A-Za-z0-9]/.test(password)) score += 1;
+  if (score <= 1) return PASSWORD_STRENGTH.Weak;
+  if (score === 2) return PASSWORD_STRENGTH.Fair;
+  if (score === 3) return PASSWORD_STRENGTH.Good;
+  return PASSWORD_STRENGTH.Strong;
+}
+
+/** Maps the numeric strength score to its i18n label key (mirrors RegisterForm). */
+const STRENGTH_LABEL_KEY: Record<Exclude<PasswordStrength, 0>, string> = {
+  1: 'auth.register.strength.weak',
+  2: 'auth.register.strength.fair',
+  3: 'auth.register.strength.good',
+  4: 'auth.register.strength.strong',
+};
+
+function formatGradeNumber(grade: number, locale: string): string {
+  return new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US').format(grade);
+}
+
+export function AddChildModal({ visible, onClose }: AddChildModalProps) {
+  const { t } = useTranslation();
+  const { direction, isRtl, locale } = useLocale();
+  const insets = useSafeAreaInsets();
+  const addChild = useAddChild();
+  const resolveError = useServerError();
+
+  const rowDir = isRtl ? 'row-reverse' : 'row';
+
+  // Card pop-in animation (scale 0.92→1, ~280ms, spring overshoot).
+  // Mirrors AttemptSummaryCard entrance — RN Animated, useNativeDriver.
+  // The Modal animationType="fade" handles the scrim; this adds the card scale.
+  const cardScale = useRef(new Animated.Value(0.92)).current;
+  useEffect(() => {
+    if (visible) {
+      cardScale.setValue(0.92);
+      Animated.spring(cardScale, {
+        toValue: 1,
+        damping: 12,
+        stiffness: 180,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible, cardScale]);
+
+  // Form state
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [grade, setGrade] = useState<number | null>(null);
+  const [appLanguage, setAppLanguage] = useState<string | null>(null);
+  const [learningLanguage, setLearningLanguage] = useState<string | null>(null);
+  const [country, setCountry] = useState<CountryCode | null>(null);
+
+  // Photo state
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [photoPreviewUri, setPhotoPreviewUri] = useState<string | null>(null);
+  // photoFile is set on pick/reset and will be included in AddChildCommand once BE supports avatar upload.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
+  // Validation errors
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const passwordStrength = derivePasswordStrength(password);
+  const strengthLabel = passwordStrength > 0
+    ? t(STRENGTH_LABEL_KEY[passwordStrength as Exclude<PasswordStrength, 0>])
+    : '';
+
+  const countryOptions = COUNTRIES.map((c) => ({
+    value: c.code,
+    label: locale === 'ar' ? c.ar : c.en,
+  }));
+
+  const languageOptions = LOCALES.map((loc) => ({
+    value: loc,
+    label: loc === 'ar' ? t('common.prefs.switchToArabic') : t('common.prefs.switchToEnglish'),
+  }));
+
+  const serverMessage = addChild.isError
+    ? resolveError(addChild.error, {
+        byStatus: { 400: 'parent.addChildModal.errors.generic' },
+      })
+    : null;
+
+  function handlePhotoPress() {
+    if (Platform.OS === 'web' && fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!AVATAR_ACCEPT.split(',').includes(file.type)) {
+      setPhotoError(t('parent.settings.profile.avatar.wrongType'));
+      return;
+    }
+    if (file.size > AVATAR_MAX_BYTES) {
+      setPhotoError(t('parent.settings.profile.avatar.tooLarge'));
+      return;
+    }
+    setPhotoError(null);
+    setPhotoFile(file);
+    if (typeof URL !== 'undefined' && URL.createObjectURL) {
+      setPhotoPreviewUri(URL.createObjectURL(file));
+    }
+  }
+
+  function validate(): boolean {
+    const errors: Record<string, string> = {};
+    if (!fullName.trim()) errors.fullName = t('parent.addChildModal.errors.nameRequired');
+    if (!email.trim()) errors.email = t('parent.addChildModal.errors.emailRequired');
+    if (!password.trim()) errors.password = t('parent.addChildModal.errors.passwordRequired');
+    if (grade === null) errors.grade = t('parent.addChildModal.errors.gradeRequired');
+    if (!appLanguage) errors.appLanguage = t('parent.addChildModal.errors.languageRequired');
+    if (!learningLanguage) errors.learningLanguage = t('parent.addChildModal.errors.learningLanguageRequired');
+    if (!country) errors.country = t('parent.addChildModal.errors.countryRequired');
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  }
+
+  function resetForm() {
+    setFullName('');
+    setEmail('');
+    setPassword('');
+    setGrade(null);
+    setAppLanguage(null);
+    setLearningLanguage(null);
+    setCountry(null);
+    setPhotoPreviewUri(null);
+    setPhotoFile(null);
+    setPhotoError(null);
+    setFieldErrors({});
+    addChild.reset();
+  }
+
+  function handleClose() {
+    resetForm();
+    onClose();
+  }
+
+  async function handleSubmit() {
+    if (!validate()) return;
+    const cmd: AddChildCommand = {
+      fullName: fullName.trim(),
+      email: email.trim(),
+      password: password.trim(),
+      grade: grade!,
+      language: appLanguage!,
+      learningLanguage: learningLanguage!,
+      country: country!,
+    };
+    try {
+      await addChild.mutateAsync(cmd);
+      resetForm();
+      onClose();
+    } catch {
+      // Error shown via serverMessage.
+    }
+  }
+
+  const ctaLabel = fullName.trim()
+    ? t('parent.addChildModal.ctaWithName', { name: fullName.trim() })
+    : t('parent.addChildModal.ctaDefault');
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={handleClose}
+      statusBarTranslucent
+    >
+      {/* Scrim */}
+      <Stack
+        flex={1}
+        alignItems="center"
+        justifyContent="center"
+        style={{ backgroundColor: 'rgba(5,8,22,0.7)', backdropFilter: 'blur(4px)' }}
+        onPress={handleClose}
+        accessibilityViewIsModal
+        paddingHorizontal={16}
+        paddingVertical={insets.top + 16}
+      >
+        {/* Modal card — stop propagation of press to scrim; pop-in scale animation */}
+        <Animated.View style={{ transform: [{ scale: cardScale }] }}>
+        <Stack
+          testID="add-child-modal"
+          width={480}
+          style={{
+            backgroundColor: '#15161D',
+            borderRadius: 24,
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.08)',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)',
+            overflow: 'hidden',
+            // Web: constrain to 92vw so modal doesn't overflow on narrow viewports.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ...(Platform.OS === 'web' ? { maxWidth: '92vw' as any } : { maxWidth: '100%' }),
+          }}
+          onPress={(e) => e.stopPropagation?.()}
+          accessible
+        >
+          {/* Header */}
+          <Stack
+            flexDirection={rowDir}
+            alignItems="center"
+            gap="$3"
+            padding={22}
+            paddingBottom={16}
+            borderBottomWidth={1}
+            borderBottomColor="rgba(255,255,255,0.05)"
+          >
+            {/* Mark */}
+            <Stack
+              width={44}
+              height={44}
+              borderRadius="$cardInner"
+              alignItems="center"
+              justifyContent="center"
+              style={{
+                background: 'linear-gradient(135deg,#A855F7,#6366F1)',
+                boxShadow: '0 6px 16px rgba(99,102,241,0.4)',
+              }}
+            >
+              <Text fontSize={20} accessibilityElementsHidden>{'👶'}</Text>
+            </Stack>
+
+            {/* Title block */}
+            <Stack flexDirection="column" flex={1} gap="$0">
+              <Text
+                color="$fg1"
+                fontSize={18}
+                fontWeight="800"
+                fontFamily="$heading"
+                writingDirection={direction}
+              >
+                {t('parent.addChildModal.title')}
+              </Text>
+              <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction}>
+                {t('parent.addChildModal.subtitle')}
+              </Text>
+            </Stack>
+
+            {/* ✕ close */}
+            <Stack
+              width={32}
+              height={32}
+              borderRadius="$sm"
+              backgroundColor="rgba(255,255,255,0.05)"
+              alignItems="center"
+              justifyContent="center"
+              cursor="pointer"
+              pressStyle={{ scale: 0.95 }}
+              onPress={handleClose}
+              accessibilityRole="button"
+              accessible
+              accessibilityLabel={t('onboarding.close')}
+              aria-label={t('onboarding.close')}
+            >
+              <Text color="$fg3" fontSize={14} fontWeight="700">{'✕'}</Text>
+            </Stack>
+          </Stack>
+
+          {/* Body — scrollable. Web: 60vh for responsive short viewports; native: 540px. */}
+          <ScrollView
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            style={{ maxHeight: Platform.OS === 'web' ? ('60vh' as any) : 540 }}
+            contentContainerStyle={{ padding: 20, gap: 16, flexDirection: 'column' }}
+            showsVerticalScrollIndicator
+          >
+            {/* Web hidden file input */}
+            {Platform.OS === 'web' && (
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={AVATAR_ACCEPT}
+                style={{ display: 'none' }}
+                onChange={handleFileChange}
+                aria-hidden
+              />
+            )}
+
+            {/* Photo upload row */}
+            <Stack flexDirection={rowDir} alignItems="flex-start" gap={14}>
+              {/* Avatar circle 64×64 + 📷 badge */}
+              <Stack position="relative" width={64} height={64}>
+                <Avatar
+                  name={fullName || 'A'}
+                  uri={photoPreviewUri ?? undefined}
+                  size="lg"
+                  accessibilityLabel={t('parent.addChildModal.labelName')}
+                />
+                {/* 📷 badge */}
+                <Stack
+                  position="absolute"
+                  bottom={-2}
+                  {...(isRtl ? { left: -2 } : { right: -2 })}
+                  width={24}
+                  height={24}
+                  borderRadius={9999}
+                  backgroundColor="$primary"
+                  style={{ border: '2px solid #15161D' }}
+                  alignItems="center"
+                  justifyContent="center"
+                  cursor="pointer"
+                  onPress={handlePhotoPress}
+                  accessibilityElementsHidden
+                >
+                  <Text fontSize={11}>{'📷'}</Text>
+                </Stack>
+              </Stack>
+
+              {/* Dashed drop-zone */}
+              <Stack
+                flex={1}
+                style={{
+                  borderStyle: 'dashed',
+                  borderColor: 'rgba(99,102,241,0.45)',
+                  backgroundColor: 'rgba(79,70,229,0.05)',
+                  borderWidth: 1.5,
+                  borderRadius: 14,
+                  padding: '12px 14px',
+                  cursor: 'pointer',
+                  flexDirection: 'column',
+                  gap: 4,
+                }}
+                onPress={handlePhotoPress}
+                cursor="pointer"
+                accessible
+                accessibilityRole="button"
+                accessibilityLabel={t('parent.addChildModal.photoUpload')}
+              >
+                <Stack flexDirection={rowDir} alignItems="center" gap="$1">
+                  <Text fontSize={14} accessibilityElementsHidden>{'⬆️'}</Text>
+                  <Text color="$primaryLight" fontSize={13} fontWeight="700" fontFamily="$heading" writingDirection={direction}>
+                    {t('parent.addChildModal.photoUpload')}
+                  </Text>
+                </Stack>
+                <Text color="$fg3" fontSize={11} fontFamily="$body" writingDirection={direction}>
+                  {t('parent.addChildModal.photoSub')}
+                </Text>
+              </Stack>
+            </Stack>
+            {photoError ? (
+              <Text color="$danger" fontSize={12} fontFamily="$body" writingDirection={direction}>
+                {photoError}
+              </Text>
+            ) : null}
+
+            {/* Child name */}
+            <TextField
+              label={t('parent.addChildModal.labelName')}
+              value={fullName}
+              onChangeText={setFullName}
+              autoCapitalize="words"
+              direction={direction}
+              error={fieldErrors.fullName}
+              testID="add-child-name"
+            />
+
+            {/* Login email — LTR pinned */}
+            <TextField
+              label={t('parent.addChildModal.labelEmail')}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoComplete="email"
+              direction={direction}
+              forceLtr
+              error={fieldErrors.email}
+              testID="add-child-email"
+            />
+
+            {/* Password + strength meter */}
+            <Stack flexDirection="column" gap="$1">
+              <TextField
+                label={t('parent.addChildModal.labelPassword')}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                direction={direction}
+                error={fieldErrors.password}
+                testID="add-child-password"
+              />
+              {password.length > 0 ? (
+                <PasswordStrengthMeter
+                  score={passwordStrength}
+                  label={strengthLabel}
+                  direction={direction}
+                  accessibilityLabel={t('auth.register.strength.a11y', { label: strengthLabel })}
+                />
+              ) : null}
+            </Stack>
+
+            {/* Grade — 6 plant-emoji tiles (NEVER a select) */}
+            <Stack flexDirection="column" gap="$1">
+              <Text
+                color="$fg3"
+                fontSize={12}
+                fontWeight="700"
+                fontFamily="$heading"
+                writingDirection={direction}
+              >
+                {t('parent.addChildModal.labelGrade')}
+              </Text>
+              <Stack flexDirection={rowDir} gap={6} flexWrap="wrap">
+                {GRADES.map((g) => {
+                  const isSelected = grade === g;
+                  return (
+                    <Stack
+                      key={g}
+                      testID={`grade-tile-${g}`}
+                      height={46}
+                      minWidth={46}
+                      flex={1}
+                      borderRadius="$nav"
+                      alignItems="center"
+                      justifyContent="center"
+                      gap="$0"
+                      cursor="pointer"
+                      pressStyle={{ scale: 0.95 }}
+                      onPress={() => {
+                        setGrade(g);
+                        setFieldErrors((prev) => ({ ...prev, grade: '' }));
+                      }}
+                      accessibilityRole="radio"
+                      accessible
+                      accessibilityState={{ selected: isSelected }}
+                      accessibilityLabel={`${t('parent.addChildModal.labelGrade')} ${formatGradeNumber(g, locale)}`}
+                      style={isSelected
+                        ? { background: 'linear-gradient(135deg,#A855F7,#6366F1)', boxShadow: '0 4px 12px rgba(99,102,241,0.4)', border: 'none' }
+                        : { backgroundColor: '#0B0C12', border: '1px solid rgba(255,255,255,0.1)' }}
+                    >
+                      <Text fontSize={15} accessibilityElementsHidden>{GRADE_PLANT[g - 1]}</Text>
+                      <Text
+                        color={isSelected ? '#fff' : '$fg3'}
+                        fontSize={11}
+                        fontWeight="800"
+                        fontFamily="$heading"
+                        style={{ fontVariant: ['tabular-nums'] }}
+                      >
+                        {formatGradeNumber(g, locale)}
+                      </Text>
+                    </Stack>
+                  );
+                })}
+              </Stack>
+              {fieldErrors.grade ? (
+                <Text color="$danger" fontSize={12} fontFamily="$body" writingDirection={direction}>
+                  {fieldErrors.grade}
+                </Text>
+              ) : null}
+            </Stack>
+
+            {/* App language — 2 flag tiles */}
+            <Stack flexDirection="column" gap="$1">
+              <Text
+                color="$fg3"
+                fontSize={12}
+                fontWeight="700"
+                fontFamily="$heading"
+                writingDirection={direction}
+              >
+                {t('parent.addChildModal.labelAppLanguage')}
+              </Text>
+              <Stack flexDirection={rowDir} gap={8}>
+                {(['ar', 'en'] as const).map((lang) => {
+                  const isSelected = appLanguage === lang;
+                  const flag = lang === 'ar' ? '🇪🇬' : '🇺🇸';
+                  const label = lang === 'ar' ? t('parent.addChildModal.flagAr') : t('parent.addChildModal.flagEn');
+                  return (
+                    <Stack
+                      key={lang}
+                      testID={`app-lang-tile-${lang}`}
+                      flex={1}
+                      height={48}
+                      borderRadius="$nav"
+                      flexDirection={rowDir}
+                      alignItems="center"
+                      justifyContent="center"
+                      gap="$1"
+                      cursor="pointer"
+                      pressStyle={{ scale: 0.95 }}
+                      onPress={() => {
+                        setAppLanguage(lang);
+                        setFieldErrors((prev) => ({ ...prev, appLanguage: '' }));
+                      }}
+                      accessibilityRole="radio"
+                      accessible
+                      accessibilityState={{ selected: isSelected }}
+                      accessibilityLabel={label}
+                      style={isSelected
+                        ? { backgroundColor: 'rgba(79,70,229,0.18)', border: '1.5px solid #4F46E5' }
+                        : { backgroundColor: '#0B0C12', border: '1px solid rgba(255,255,255,0.1)' }}
+                    >
+                      <Text fontSize={18} accessibilityElementsHidden>{flag}</Text>
+                      <Text
+                        color={isSelected ? '$fg1' : '$fg3'}
+                        fontSize={14}
+                        fontWeight="700"
+                        fontFamily="$heading"
+                      >
+                        {label}
+                      </Text>
+                    </Stack>
+                  );
+                })}
+              </Stack>
+              {fieldErrors.appLanguage ? (
+                <Text color="$danger" fontSize={12} fontFamily="$body" writingDirection={direction}>
+                  {fieldErrors.appLanguage}
+                </Text>
+              ) : null}
+            </Stack>
+
+            {/* Learning language select (axis B, required) */}
+            <Stack flexDirection="column" gap="$1">
+              <LanguageSelect
+                label={t('parent.addChildModal.labelLearningLanguage')}
+                value={learningLanguage}
+                onChange={(v) => {
+                  setLearningLanguage(String(v));
+                  setFieldErrors((prev) => ({ ...prev, learningLanguage: '' }));
+                }}
+                options={languageOptions}
+                direction={direction}
+                accessibilityLabel={t('parent.addChildModal.labelLearningLanguage')}
+                error={fieldErrors.learningLanguage}
+                testID="add-child-learning-language"
+              />
+              <Text
+                color="$fg3"
+                fontSize={11}
+                fontFamily="$body"
+                writingDirection={direction}
+              >
+                {t('parent.addChildModal.learningLanguageHelper')}
+              </Text>
+            </Stack>
+
+            {/* Country select (required) */}
+            <Select
+              label={t('parent.addChildModal.labelCountry')}
+              value={country}
+              onChange={(v) => {
+                setCountry(v as CountryCode);
+                setFieldErrors((prev) => ({ ...prev, country: '' }));
+              }}
+              options={countryOptions}
+              placeholder={t('parent.addChildModal.countryPlaceholder')}
+              direction={direction}
+              accessibilityLabel={t('parent.addChildModal.labelCountry')}
+              error={fieldErrors.country}
+              testID="add-child-country"
+            />
+
+            {/* Server error */}
+            <ServerErrorBanner message={serverMessage} direction={direction} />
+          </ScrollView>
+
+          {/* Footer */}
+          <Stack
+            flexDirection={rowDir}
+            gap={10}
+            padding={22}
+            paddingTop={16}
+            borderTopWidth={1}
+            borderTopColor="rgba(255,255,255,0.05)"
+          >
+            {/* Cancel */}
+            <Stack
+              flex={1}
+              height={48}
+              borderRadius="$button"
+              alignItems="center"
+              justifyContent="center"
+              cursor="pointer"
+              pressStyle={{ scale: 0.95 }}
+              onPress={handleClose}
+              accessibilityRole="button"
+              accessible
+              accessibilityLabel={t('parent.addChildModal.cancel')}
+              style={{ border: '1px solid rgba(255,255,255,0.12)', backgroundColor: 'transparent' }}
+            >
+              <Text color="$fg2" fontSize={15} fontWeight="700" fontFamily="$heading" writingDirection={direction}>
+                {t('parent.addChildModal.cancel')}
+              </Text>
+            </Stack>
+
+            {/* Primary CTA */}
+            <Button
+              variant="primary"
+              size="md"
+              loading={addChild.isPending}
+              disabled={addChild.isPending}
+              accessibilityLabel={ctaLabel}
+              onPress={handleSubmit}
+              testID="add-child-submit"
+              style={{ flex: 2 }}
+            >
+              {ctaLabel}
+            </Button>
+          </Stack>
+        </Stack>
+        </Animated.View>
+      </Stack>
+    </Modal>
+  );
+}
+
+AddChildModal.displayName = 'AddChildModal';

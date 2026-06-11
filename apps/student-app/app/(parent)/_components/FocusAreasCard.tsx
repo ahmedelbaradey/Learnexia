@@ -94,7 +94,7 @@ export function FocusAreasCard({ childId, childName, direction, rowDir, locale }
         <Stack flexDirection="column" gap="$1" flex={1}>
           <Text
             color="$fg1"
-            fontSize={18}
+            fontSize={16}
             fontWeight="800"
             fontFamily="$heading"
             accessibilityRole="header"
