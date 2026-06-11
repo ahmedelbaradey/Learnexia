@@ -20,6 +20,11 @@ export const shadows = {
   cardHover: '0 8px 24px rgba(0, 0, 0, 0.25)', // alias of float (resolved var)
   popup: '0 24px 64px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12)',
   primaryGlow: '0 8px 24px rgba(99, 102, 241, 0.45)',
+  /** Stronger available-node glow (0.6 alpha, 28px spread — SkillTreeNode available state). */
+  primaryGlowStrong: '0 0 28px rgba(99, 102, 241, 0.6)',
+  successGlow: '0 8px 20px rgba(34, 197, 94, 0.45)',
+  /** Boss/danger node glow (0.55 alpha, 28px spread — SkillTreeNode boss state). */
+  dangerGlow: '0 0 28px rgba(239, 68, 68, 0.55)',
   xpGlow: '0 0 24px rgba(250, 204, 21, 0.45)',
   streakGlow: '0 0 24px rgba(251, 146, 60, 0.45)',
   heartGlow: '0 0 24px rgba(251, 113, 133, 0.45)',
@@ -35,6 +40,9 @@ export const nativeShadow = {
   float: { color: 'rgba(0,0,0,0.25)', offsetY: 8, radius: 24 },
   popup: { color: 'rgba(0,0,0,0.55)', offsetY: 24, radius: 64 },
   primaryGlow: { color: 'rgba(99,102,241,0.45)', offsetY: 8, radius: 24 },
+  primaryGlowStrong: { color: 'rgba(99,102,241,0.6)', offsetY: 0, radius: 28 },
+  successGlow: { color: 'rgba(34,197,94,0.45)', offsetY: 8, radius: 20 },
+  dangerGlow: { color: 'rgba(239,68,68,0.55)', offsetY: 0, radius: 28 },
   xpGlow: { color: 'rgba(250,204,21,0.45)', offsetY: 0, radius: 24 },
   streakGlow: { color: 'rgba(251,146,60,0.45)', offsetY: 0, radius: 24 },
   heartGlow: { color: 'rgba(251,113,133,0.45)', offsetY: 0, radius: 24 },

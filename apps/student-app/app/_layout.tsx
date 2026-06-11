@@ -15,7 +15,7 @@
  * runs inside the provider tree.
  */
 import { createApiClient, ApiClientProvider, createQueryClient } from '@learnexia/api-client';
-import { LearnexiaProvider, loadWebFonts, nativeFontMap } from '@learnexia/design-system';
+import { LearnexiaProvider, loadWebFonts, nativeFontMap, applyNativeRtl } from '@learnexia/design-system';
 import {
   initI18n,
   changeLocale,
@@ -28,7 +28,7 @@ import { useFonts } from 'expo-font';
 import { Slot } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useRef } from 'react';
-import { Platform } from 'react-native';
+import { I18nManager, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { resolveApiBaseUrl } from '../src/providers/apiBaseUrl';
@@ -84,6 +84,25 @@ export default function RootLayout() {
   // Keep i18n language in sync with the active locale (web flips dir instantly).
   useEffect(() => {
     void changeLocale(locale as Locale);
+  }, [locale]);
+
+  // NATIVE RTL — apply I18nManager.forceRTL from the app root so native layout
+  // direction matches the active locale. forceRTL only takes full effect after an
+  // app reload; `applyNativeRtl` returns true when the direction changed and a
+  // reload is needed. We do NOT auto-restart here to avoid restart loops — the
+  // language-switch action in settings (LanguagePanel) owns the restart prompt
+  // (via restartPromptStore). On web, direction is handled by `LearnexiaProvider`
+  // calling `applyWebDirection` — no double-flip risk because web direction is
+  // a DOM attribute, not a native module.
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    // Structural-type injection — avoids importing RN native modules in the
+    // design-system package. I18nManager is already imported from react-native.
+    applyNativeRtl(locale as Locale, I18nManager);
+    // NOTE: we intentionally omit the `restart` argument here; the app's
+    // LanguagePanel already triggers the restart prompt via restartPromptStore
+    // when the locale actually changes. Calling restart() here would cause a
+    // double-restart on the first locale change.
   }, [locale]);
 
   // NATIVE: hold the first render until the brand faces are loaded so text never

@@ -22,6 +22,7 @@
  *
  * A11y: accessibilityRole="button", accessibilityState.disabled on Locked.
  */
+import { colors, shadows } from '@learnexia/design-system';
 import React from 'react';
 import { Platform } from 'react-native';
 import { Stack } from '@tamagui/core';
@@ -64,13 +65,16 @@ export interface SkillTreeNodeProps {
 // Disc visual specs per state + boss composition (design spec §2)
 function getDiscStyle(state: SkillNodeState, hasBoss: boolean) {
   if (hasBoss) {
-    // Boss chrome: danger/red family gradient
+    // Boss chrome: danger/red family — bg uses $dangerSoft-strong (0.55 alpha)
+    // to approximate the radial gradient. Shadow uses the dangerGlow token.
     return {
-      bg: 'rgba(239,68,68,0.55)' as const, // approximation of radial — flat fallback
+      bg: colors.dangerSoftStrong,  // 0.55-alpha danger — muted boss disc (radial gradient fallback)
       glyph: state === 0 ? '🔒' : state === 2 ? '✓' : '🔥',
-      glyphColor: '#FFFFFF' as const,
+      glyphColor: colors.fg1,
       glyphSize: state === 1 ? 32 : 30,
-      shadowColor: state === 0 ? 'transparent' : 'rgba(239,68,68,0.55)',
+      // shadowColor drives CSS box-shadow string on web; nativeShadow used on native below.
+      shadowCss: state === 0 ? 'none' : shadows.dangerGlow,
+      shadowColor: state === 0 ? 'transparent' : colors.danger,
       shadowRadius: 28,
       hasPulse: state === 1,
     };
@@ -80,30 +84,35 @@ function getDiscStyle(state: SkillNodeState, hasBoss: boolean) {
       return {
         bg: '$cardSoft' as const,
         glyph: '🔒',
-        glyphColor: '$fg4' as string,
+        glyphColor: colors.fg4,
         glyphSize: 28,
+        shadowCss: 'none',
         shadowColor: 'transparent',
         shadowRadius: 0,
         hasPulse: false,
       };
     case 1:
       return {
-        bg: '#4F46E5' as const, // $primary — flat approximation of radial gradient
+        bg: colors.primary, // $primary — flat approximation of radial gradient
         glyph: '✏️',
-        glyphColor: '#FFFFFF' as const,
+        glyphColor: colors.fg1,
         glyphSize: 30,
-        shadowColor: 'rgba(99,102,241,0.6)',
+        // primaryGlowStrong: '0 0 28px rgba(99, 102, 241, 0.6)'
+        shadowCss: shadows.primaryGlowStrong,
+        shadowColor: colors.primaryHover,
         shadowRadius: 28,
         hasPulse: true,
       };
     case 2:
     default:
       return {
-        bg: '#22C55E' as const, // $success — flat approximation of radial gradient
+        bg: colors.secondary, // $secondary — flat approximation of radial gradient
         glyph: '✓',
-        glyphColor: '#FFFFFF' as const,
+        glyphColor: colors.fg1,
         glyphSize: 30,
-        shadowColor: 'rgba(34,197,94,0.45)',
+        // successGlow: '0 8px 20px rgba(34, 197, 94, 0.45)'
+        shadowCss: shadows.successGlow,
+        shadowColor: colors.success,
         shadowRadius: 20,
         hasPulse: false,
       };
@@ -127,7 +136,7 @@ function stateToDataState(state: SkillNodeState, hasBoss: boolean): string {
 }
 
 export function SkillTreeNode({
-  skillId: _skillId,
+  skillId: _skillId, // eslint-disable-line @typescript-eslint/no-unused-vars
   name,
   state,
   hasBoss = false,
@@ -189,25 +198,32 @@ export function SkillTreeNode({
     }
   };
 
-  // CSS pulse animation style for web (Available state, not Boss+Locked)
-  const pulseStyle =
-    Platform.OS === 'web' && discStyle.hasPulse
-      ? ({
-          animationName: 'lx-skill-pulse',
-          animationDuration: '2000ms',
-          animationTimingFunction: 'ease-out',
-          animationIterationCount: 'infinite',
-        } as Record<string, unknown>)
+  // CSS pulse animation style for web (Available state, not Boss+Locked).
+  // Also apply box-shadow on web using the design-system shadow token strings
+  // (CSS box-shadow is more accurate than RN's shadowColor/shadowRadius model).
+  const webDiscStyle: Record<string, unknown> | undefined =
+    Platform.OS === 'web'
+      ? {
+          ...(discStyle.shadowCss !== 'none' ? { boxShadow: discStyle.shadowCss } : {}),
+          ...(discStyle.hasPulse
+            ? {
+                animationName: 'lx-skill-pulse',
+                animationDuration: '2000ms',
+                animationTimingFunction: 'ease-out',
+                animationIterationCount: 'infinite',
+              }
+            : {}),
+        }
       : undefined;
+
+  const pulseStyle = webDiscStyle;
 
   return (
     <YStack
       testID={testID}
       alignItems="center"
       gap={6}
-      // @ts-ignore — data-* attributes are web-only, non-user-facing E2E hooks
       data-state={dataStateAttr}
-      // @ts-ignore — data-* attributes are web-only, non-user-facing E2E hooks
       data-boss={dataBossAttr}
     >
       {/* Disc */}
@@ -215,11 +231,12 @@ export function SkillTreeNode({
         width={72}
         height={72}
         borderRadius={36}
-        backgroundColor={discStyle.bg}
+        backgroundColor={discStyle.bg as never}
         alignItems="center"
         justifyContent="center"
-        // @ts-ignore — raw shadowColor string not typed as a token
-      shadowColor={discStyle.shadowColor}
+        // Native shadow — raw color string from design-system tokens (not web box-shadow).
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        shadowColor={discStyle.shadowColor as any}
         shadowRadius={discStyle.shadowRadius}
         shadowOffset={{ width: 0, height: discStyle.hasPulse ? 0 : 8 }}
         shadowOpacity={discStyle.shadowColor === 'transparent' ? 0 : 1}
@@ -234,7 +251,6 @@ export function SkillTreeNode({
         accessibilityState={{ disabled: isLocked }}
         accessibilityLabel={accessibilityLabel}
         aria-label={accessibilityLabel}
-        // @ts-ignore — platform-specific style for CSS keyframe pulse
         style={pulseStyle}
       >
         <Text

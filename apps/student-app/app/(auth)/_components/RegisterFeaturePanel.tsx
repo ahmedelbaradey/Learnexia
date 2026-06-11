@@ -66,7 +66,7 @@ export function RegisterFeaturePanel({ direction = 'ltr' }: RegisterFeaturePanel
             <Stack
               width={40}
               height={40}
-              borderRadius={12}
+              borderRadius="$nav"
               backgroundColor="$primaryHover"
               alignItems="center"
               justifyContent="center"

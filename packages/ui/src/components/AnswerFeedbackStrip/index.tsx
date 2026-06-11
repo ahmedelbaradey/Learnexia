@@ -16,7 +16,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Platform } from 'react-native';
 import { Stack } from '@tamagui/core';
 
-import { XStack, YStack, Text } from '../../internal/primitives';
+import { YStack, Text } from '../../internal/primitives';
 
 export interface AnswerFeedbackStripProps {
   variant: 'correct' | 'incorrect';
@@ -95,15 +95,14 @@ export function AnswerFeedbackStrip({
         borderStartColor={isCorrect ? '$success' : '$danger'}
         alignItems="flex-start"
         testID={testID}
-        // @ts-ignore — data-* attributes are web-only, non-user-facing E2E hooks
         data-correct={Platform.OS === 'web' ? String(isCorrect) : undefined}
       >
-        {/* Glyph disc */}
+        {/* Glyph disc — $successSoft/$dangerSoft (0.18 alpha) per design-system soft convention. */}
         <Stack
           width={32}
           height={32}
           borderRadius={9999}
-          backgroundColor={isCorrect ? 'rgba(34,197,94,0.28)' : 'rgba(239,68,68,0.28)'}
+          backgroundColor={isCorrect ? '$successSoft' : '$dangerSoft'}
           alignItems="center"
           justifyContent="center"
           accessibilityElementsHidden

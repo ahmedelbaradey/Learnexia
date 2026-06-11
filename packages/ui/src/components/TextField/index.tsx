@@ -98,10 +98,12 @@ export function TextField({
         ? '$borderStrong'
         : '$borderInput';
 
+  // Glow colors use design-system tokens: $dangerSoft (0.18) for error,
+  // $primarySoft (0.18) for focus — close to the visual 0.20/0.25 intent.
   const glowColor = hasError
-    ? 'rgba(239,68,68,0.20)'
+    ? colors.dangerSoft
     : focused
-      ? 'rgba(99,102,241,0.25)'
+      ? colors.primarySoft
       : 'transparent';
 
   return (

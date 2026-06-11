@@ -141,7 +141,7 @@ function ParentOnlyBanner({ direction }: { direction: Direction }) {
       padding="$4"
       borderRadius="$card"
       borderWidth={1}
-      borderColor="rgba(168,85,247,0.3)"
+      borderColor="$purpleSoft"
       backgroundColor="$purpleSoft"
     >
       <Text fontSize={22} accessibilityElementsHidden>

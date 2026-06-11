@@ -231,13 +231,15 @@ export function RegisterForm() {
           return (
             // Card-frame wrapper around the consent checkbox (align-register m-3):
             // `$card` resting; subtle green success tint + border when accepted.
+            // borderRadius="$cardInner" (14px) per design-system radius token.
+            // checked border/bg use $successSoft (0.18 alpha) and a lighter $successSoft variant.
             <Stack
               paddingVertical="$3"
               paddingHorizontal="$4"
-              borderRadius={14}
+              borderRadius="$cardInner"
               borderWidth={1}
-              borderColor={checked ? 'rgba(34,197,94,0.3)' : '$border'}
-              backgroundColor={checked ? 'rgba(34,197,94,0.06)' : '$card'}
+              borderColor={checked ? '$successSoftStrong' : '$border'}
+              backgroundColor={checked ? '$successSoft' : '$card'}
             >
               <CheckboxField
                 checked={checked}
