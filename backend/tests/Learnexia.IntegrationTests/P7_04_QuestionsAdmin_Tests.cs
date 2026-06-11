@@ -428,7 +428,7 @@ public sealed class P7_04_QuestionsAdmin_Tests : IAsyncLifetime
 
         // Re-read via GetById.
         var (getResp, getRoot, getBody) = await SendAsync(HttpMethod.Get,
-            $"/api/Learning/Questions/{qId}", _adminToken);
+            $"/api/Learning/Questions/{qId}", bearer: _adminToken);
         getResp.StatusCode.Should().Be(HttpStatusCode.OK, "GetById after edit must return 200; body: {0}", getBody);
         AssertSucceeded(getRoot, getBody);
 
@@ -457,7 +457,7 @@ public sealed class P7_04_QuestionsAdmin_Tests : IAsyncLifetime
         var qId = idProp.GetInt32();
 
         var (getResp, getRoot, getBody) = await SendAsync(HttpMethod.Get,
-            $"/api/Learning/Questions/{qId}", _adminToken);
+            $"/api/Learning/Questions/{qId}", bearer: _adminToken);
         getResp.StatusCode.Should().Be(HttpStatusCode.OK, "GetById must return 200; body: {0}", getBody);
         AssertSucceeded(getRoot, getBody);
 
@@ -489,7 +489,7 @@ public sealed class P7_04_QuestionsAdmin_Tests : IAsyncLifetime
         var qId = idProp.GetInt32();
 
         var (delResp, delRoot, delBody) = await SendAsync(HttpMethod.Delete,
-            $"/api/Learning/Questions/{qId}", _adminToken);
+            $"/api/Learning/Questions/{qId}", bearer: _adminToken);
         delResp.StatusCode.Should().Be(HttpStatusCode.OK, "Delete must return 200; body: {0}", delBody);
         AssertSucceeded(delRoot, delBody);
 
@@ -517,7 +517,7 @@ public sealed class P7_04_QuestionsAdmin_Tests : IAsyncLifetime
         var qIdToDelete = idProp.GetInt32();
 
         // Soft-delete the first question.
-        await SendAsync(HttpMethod.Delete, $"/api/Learning/Questions/{qIdToDelete}", _adminToken);
+        await SendAsync(HttpMethod.Delete, $"/api/Learning/Questions/{qIdToDelete}", bearer: _adminToken);
 
         // Create a student and start the attempt.
         var studentToken = await CreateStudentTokenAsync();
@@ -1330,7 +1330,7 @@ public sealed class P7_04_QuestionsAdmin_Tests : IAsyncLifetime
     public async Task GetById_NonExistentId_ReturnsNotFound()
     {
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
-            "/api/Learning/Questions/99999998", _adminToken);
+            "/api/Learning/Questions/99999998", bearer: _adminToken);
 
         ((int)resp.StatusCode).Should().NotBe(500,
             "non-existent question must not produce 500; body: {0}", body);
@@ -1588,7 +1588,7 @@ public sealed class P7_04_QuestionsAdmin_Tests : IAsyncLifetime
     private async Task<List<JsonElement>> GetAdminQuestionsAsync(int lessonId)
     {
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
-            $"/api/Learning/Questions/ByLesson/{lessonId}", _adminToken);
+            $"/api/Learning/Questions/ByLesson/{lessonId}", bearer: _adminToken);
         resp.StatusCode.Should().Be(HttpStatusCode.OK,
             "ByLesson must return 200; body: {0}", body);
 

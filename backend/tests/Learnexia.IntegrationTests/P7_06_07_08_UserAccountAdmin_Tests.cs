@@ -1342,6 +1342,7 @@ public sealed class P7_06_07_08_UserAccountAdmin_Tests : IAsyncLifetime
     /// <summary>Case-insensitive JSON property lookup (camelCase + PascalCase).</summary>
     private static bool TryProp(JsonElement element, string name, out JsonElement value)
     {
+        if (element.ValueKind != JsonValueKind.Object) { value = default; return false; }
         if (element.TryGetProperty(name, out value)) return true;
         var pascal = char.ToUpperInvariant(name[0]) + name[1..];
         if (element.TryGetProperty(pascal, out value)) return true;
