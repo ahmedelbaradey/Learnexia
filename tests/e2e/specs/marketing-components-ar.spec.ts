@@ -1,23 +1,29 @@
 /**
- * E2E spec — Marketing site: 4 design-system components + Arabic/RTL
+ * E2E spec — Marketing site: ParentValueSection + Arabic/RTL
  *
  * Story: marketing-components-ar (ad-hoc enhancement)
  * Plan:  docs/plans/marketing-components-ar.md (E2E-01, E2E-02)
  * Brief: docs/briefs/marketing-components-ar.md
- * Design spec: design-system/ui_kits/marketing/marketing-components-ar.md (§9 RTL)
+ * Design spec: design-system/ui_kits/marketing/for-parents-section.md
  *
  * Target: Next.js 15 marketing site on http://localhost:3002
  * Project: "marketing" / "marketing-mobile" (see playwright.config.ts)
  *
- * Groups (matching plan E2E-02 coverage table):
- *   A. Locale routing
- *   B. Language switcher
- *   C. BenefitsPanel
- *   D. ActivityChart
- *   E. AITutorBubble
- *   F. ChildCardPhone
- *   G. RTL layout at mobile width
- *   H. No console errors
+ * Groups:
+ *   A. Locale routing                (unchanged)
+ *   B. Language switcher             (unchanged)
+ *   C. ParentValueSection — section + header
+ *   D. ParentValueSection — Benefits panel
+ *   E. ParentValueSection — Activity chart
+ *   F. ParentValueSection — AI tutor bubble
+ *   G. ParentValueSection — Child card
+ *   H. RTL layout at mobile width    (updated to new testids)
+ *   I. No console errors             (unchanged, was H)
+ *
+ * NOTE: The four standalone components (BenefitsPanel, ActivityChart,
+ * AITutorBubble, ChildCardPhone) were removed from the page and replaced by
+ * the composed ParentValueSection. Groups C–G cover the new component;
+ * legacy testids are asserted ABSENT in C-05.
  */
 
 import { test, expect } from '@playwright/test';
@@ -29,7 +35,7 @@ import { test, expect } from '@playwright/test';
  *  a project context (e.g. `--project=chromium` by mistake). */
 const BASE = process.env.MARKETING_URL ?? 'http://localhost:3002';
 
-// Arabic-Indic digits spotted in bar value labels on /ar
+// Arabic-Indic digits (U+0660–U+0669)
 const AR_INDIC_PATTERN = /[٠-٩]/u;
 
 // ── Group A — Locale routing ───────────────────────────────────────────────────
@@ -152,366 +158,454 @@ test.describe('B. Language switcher', () => {
   });
 });
 
-// ── Group C — BenefitsPanel ────────────────────────────────────────────────────
+// ── Group C — ParentValueSection: section wrapper + header ────────────────────
 
-test.describe('C. BenefitsPanel', () => {
-  test('C-01: benefits-panel renders on /en', async ({ page }) => {
+test.describe('C. ParentValueSection — section + header', () => {
+  test('C-01: parent-value-section renders on /en', async ({ page }) => {
     await page.goto(`${BASE}/en`, { waitUntil: 'load' });
-    const panel = page.getByTestId('benefits-panel');
-    await expect(panel).toBeVisible();
+    // The section uses IntersectionObserver to reveal; scroll to it first.
+    const section = page.getByTestId('parent-value-section');
+    await section.scrollIntoViewIfNeeded();
+    await expect(section).toBeVisible();
   });
 
-  test('C-02: benefits-panel renders on /ar', async ({ page }) => {
+  test('C-02: parent-value-section renders on /ar', async ({ page }) => {
     await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
-    const panel = page.getByTestId('benefits-panel');
+    const section = page.getByTestId('parent-value-section');
+    await section.scrollIntoViewIfNeeded();
+    await expect(section).toBeVisible();
+  });
+
+  test('C-03: EN eyebrow "For Parents" is present', async ({ page }) => {
+    await page.goto(`${BASE}/en`, { waitUntil: 'load' });
+    const section = page.getByTestId('parent-value-section');
+    await section.scrollIntoViewIfNeeded();
+    await expect(section).toContainText('For Parents');
+  });
+
+  test('C-04: EN heading is present', async ({ page }) => {
+    await page.goto(`${BASE}/en`, { waitUntil: 'load' });
+    const section = page.getByTestId('parent-value-section');
+    await section.scrollIntoViewIfNeeded();
+    // EN heading from copy.ts parentValue.heading
+    await expect(section).toContainText('See exactly what your child gets out of it.');
+  });
+
+  test('C-05: AR eyebrow "لأولياء الأمور" is present', async ({ page }) => {
+    await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
+    const section = page.getByTestId('parent-value-section');
+    await section.scrollIntoViewIfNeeded();
+    await expect(section).toContainText('لأولياء الأمور');
+  });
+
+  test('C-06: AR heading is present', async ({ page }) => {
+    await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
+    const section = page.getByTestId('parent-value-section');
+    await section.scrollIntoViewIfNeeded();
+    // AR heading from copy.ts ar.parentValue.heading
+    await expect(section).toContainText('شاهد بالضبط ما يستفيده طفلك.');
+  });
+
+  test('C-07: deleted testids are absent — old standalone bands are gone', async ({ page }) => {
+    await page.goto(`${BASE}/en`, { waitUntil: 'load' });
+    // Sanity: the four removed standalone components must not appear anywhere on the page.
+    await expect(page.getByTestId('benefits-panel')).toHaveCount(0);
+    await expect(page.getByTestId('activity-chart')).toHaveCount(0);
+    await expect(page.getByTestId('ai-tutor-bubble')).toHaveCount(0);
+    await expect(page.getByTestId('child-card-phone')).toHaveCount(0);
+  });
+});
+
+// ── Group D — ParentValueSection: Benefits panel ──────────────────────────────
+
+test.describe('D. ParentValueSection — Benefits panel', () => {
+  test('D-01: parent-value-panel renders on /en', async ({ page }) => {
+    await page.goto(`${BASE}/en`, { waitUntil: 'load' });
+    const panel = page.getByTestId('parent-value-panel');
+    await panel.scrollIntoViewIfNeeded();
     await expect(panel).toBeVisible();
   });
 
-  test('C-03: EN heading text is present', async ({ page }) => {
+  test('D-02: parent-value-panel renders on /ar', async ({ page }) => {
+    await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
+    const panel = page.getByTestId('parent-value-panel');
+    await panel.scrollIntoViewIfNeeded();
+    await expect(panel).toBeVisible();
+  });
+
+  test('D-03: EN panel heading is present', async ({ page }) => {
     await page.goto(`${BASE}/en`, { waitUntil: 'load' });
-    const panel = page.getByTestId('benefits-panel');
-    // The exact EN heading from copy.ts §benefits.heading
+    const panel = page.getByTestId('parent-value-panel');
+    await panel.scrollIntoViewIfNeeded();
+    // EN heading from copy.ts parentValue.panel.heading
     await expect(panel).toContainText('Set up once. Watch them learn forever.');
   });
 
-  test('C-04: AR heading text is present', async ({ page }) => {
+  test('D-04: AR panel heading is present', async ({ page }) => {
     await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
-    const panel = page.getByTestId('benefits-panel');
-    // The exact AR heading from copy.ts §benefits.heading
-    await expect(panel).toContainText('أعِدّه مرة واحدة. وشاهدهم يتعلمون للأبد.');
+    const panel = page.getByTestId('parent-value-panel');
+    await panel.scrollIntoViewIfNeeded();
+    // AR heading from copy.ts ar.parentValue.panel.heading
+    await expect(panel).toContainText('جهّز الحساب مرة. شاهدهم يتعلمون للأبد.');
   });
 
-  test('C-05: benefits panel is not empty (has list items) on /en', async ({ page }) => {
+  test('D-05: EN panel has exactly 4 bullet rows', async ({ page }) => {
     await page.goto(`${BASE}/en`, { waitUntil: 'load' });
-    const panel = page.getByTestId('benefits-panel');
-    // 3-row benefit list — each item has an icon tile + text
+    const panel = page.getByTestId('parent-value-panel');
+    await panel.scrollIntoViewIfNeeded();
+    // 4 bullets per spec §LEFT — ✨ 📊 🎯 🛡️
     const items = panel.locator('[role="list"] li');
-    await expect(items).toHaveCount(3);
+    await expect(items).toHaveCount(4);
   });
 
-  test('C-06: benefits panel is not empty (has list items) on /ar', async ({ page }) => {
+  test('D-06: AR panel has exactly 4 bullet rows', async ({ page }) => {
     await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
-    const panel = page.getByTestId('benefits-panel');
+    const panel = page.getByTestId('parent-value-panel');
+    await panel.scrollIntoViewIfNeeded();
     const items = panel.locator('[role="list"] li');
-    await expect(items).toHaveCount(3);
+    await expect(items).toHaveCount(4);
   });
 });
 
-// ── Group D — ActivityChart ────────────────────────────────────────────────────
+// ── Group E — ParentValueSection: Activity chart ──────────────────────────────
 
-test.describe('D. ActivityChart', () => {
-  test('D-01: activity-chart renders on /en', async ({ page }) => {
+test.describe('E. ParentValueSection — Activity chart', () => {
+  test('E-01: parent-value-chart renders on /en', async ({ page }) => {
     await page.goto(`${BASE}/en`, { waitUntil: 'load' });
-    await expect(page.getByTestId('activity-chart')).toBeVisible();
+    const chart = page.getByTestId('parent-value-chart');
+    await chart.scrollIntoViewIfNeeded();
+    await expect(chart).toBeVisible();
   });
 
-  test('D-02: activity-chart renders on /ar', async ({ page }) => {
+  test('E-02: parent-value-chart renders on /ar', async ({ page }) => {
     await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
-    await expect(page.getByTestId('activity-chart')).toBeVisible();
+    const chart = page.getByTestId('parent-value-chart');
+    await chart.scrollIntoViewIfNeeded();
+    await expect(chart).toBeVisible();
   });
 
-  test('D-03: 7 bar columns are rendered', async ({ page }) => {
+  test('E-03: chart title "Your weekly report" is present on /en', async ({ page }) => {
     await page.goto(`${BASE}/en`, { waitUntil: 'load' });
-    // Each bar column has data-testid="activity-chart-col-N"
-    const bars = page.getByTestId('activity-chart-bars');
-    await expect(bars).toBeVisible();
-    // Verify 7 columns by checking cols 0–6 all exist
-    for (let i = 0; i < 7; i++) {
-      await expect(page.getByTestId(`activity-chart-col-${i}`)).toBeVisible();
-    }
+    const chart = page.getByTestId('parent-value-chart');
+    await chart.scrollIntoViewIfNeeded();
+    await expect(chart).toContainText('Your weekly report');
   });
 
-  test('D-04: Export CSV button is present but inert — no navigation on click', async ({
-    page,
-  }) => {
+  test('E-04: chart title is present in AR on /ar', async ({ page }) => {
+    await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
+    const chart = page.getByTestId('parent-value-chart');
+    await chart.scrollIntoViewIfNeeded();
+    await expect(chart).toContainText('تقريرك الأسبوعي');
+  });
+
+  test('E-05: delta "+28%" text is present on /en', async ({ page }) => {
     await page.goto(`${BASE}/en`, { waitUntil: 'load' });
-    const chart = page.getByTestId('activity-chart');
-    // Button is identified by aria-label set to exportBtn copy
-    const exportBtn = chart.getByRole('button', { name: /export csv/i });
-    await expect(exportBtn).toBeVisible();
-
-    // Click must not navigate away from /en
-    const urlBefore = page.url();
-    await exportBtn.click();
-    // Wait a tick in case any navigation was triggered
-    await page.waitForTimeout(500);
-    expect(page.url()).toBe(urlBefore);
+    const chart = page.getByTestId('parent-value-chart');
+    await chart.scrollIntoViewIfNeeded();
+    // EN delta: "+28% vs last week"
+    await expect(chart).toContainText('+28%');
   });
 
-  test('D-05: Export CSV button on /ar is present and inert', async ({ page }) => {
+  test('E-06: delta "↑28%" / Arabic variant text is present on /ar', async ({ page }) => {
     await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
-    const chart = page.getByTestId('activity-chart');
-    // AR label is 'تصدير CSV'
-    const exportBtn = chart.getByRole('button');
-    await expect(exportBtn).toBeVisible();
-
-    const urlBefore = page.url();
-    await exportBtn.click();
-    await page.waitForTimeout(500);
-    expect(page.url()).toBe(urlBefore);
-  });
-
-  test('D-06: /ar bar labels contain Arabic-Indic numerals', async ({ page }) => {
-    await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
-    // The value labels inside the bars (aria-hidden spans) should show ٤٥ etc.
-    // We use the bars track to scope the search.
-    const barsTrack = page.getByTestId('activity-chart-bars');
-    // Get the full text content of the bars section
-    const text = await barsTrack.textContent();
-    expect(text).toBeTruthy();
-    // At least one Arabic-Indic digit must be present
+    const chart = page.getByTestId('parent-value-chart');
+    await chart.scrollIntoViewIfNeeded();
+    // AR delta from copy.ts: '+٢٨٪ عن الأسبوع الماضي' — contains Arabic-Indic + ٪
+    const text = await chart.textContent();
+    // Must contain Arabic-Indic numeral(s) in the delta
     expect(AR_INDIC_PATTERN.test(text ?? '')).toBe(true);
   });
 
-  test('D-07: /en bar labels contain Western digits (not Arabic-Indic)', async ({ page }) => {
+  test('E-07: 7 bar columns are rendered in parent-value-chart-bars on /en', async ({ page }) => {
     await page.goto(`${BASE}/en`, { waitUntil: 'load' });
-    const barsTrack = page.getByTestId('activity-chart-bars');
-    // Find a visible value label — we check the first bar column
-    const firstCol = page.getByTestId('activity-chart-col-0');
-    const text = await firstCol.textContent();
-    expect(text).toBeTruthy();
-    // Western digit '4' is the first char of '45' (EN value for Mon)
-    expect(text).toContain('45');
-    // No Arabic-Indic digits in EN
-    expect(AR_INDIC_PATTERN.test(text ?? '')).toBe(false);
+    const barsRow = page.getByTestId('parent-value-chart-bars');
+    await barsRow.scrollIntoViewIfNeeded();
+    await expect(barsRow).toBeVisible();
+    // 7 direct children (one barCol per day Mon–Sun)
+    const barCols = barsRow.locator(':scope > div');
+    await expect(barCols).toHaveCount(7);
+  });
+
+  test('E-08: 7 bar columns are rendered in parent-value-chart-bars on /ar', async ({ page }) => {
+    await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
+    const barsRow = page.getByTestId('parent-value-chart-bars');
+    await barsRow.scrollIntoViewIfNeeded();
+    const barCols = barsRow.locator(':scope > div');
+    await expect(barCols).toHaveCount(7);
+  });
+
+  test('E-09: Sunday (last) bar has highlighted gradient class on /en', async ({ page }) => {
+    await page.goto(`${BASE}/en`, { waitUntil: 'load' });
+    const barsRow = page.getByTestId('parent-value-chart-bars');
+    await barsRow.scrollIntoViewIfNeeded();
+    // The 7th column (index 6) contains the highlighted bar with barHi CSS module class.
+    // The class name is mangled by Next.js CSS modules but the bar should have a
+    // distinct background from the Sunday gradient (--lx-grad-levelup-180).
+    // We verify the Sunday bar exists and is the tallest (height = 95px per spec).
+    const barCols = barsRow.locator(':scope > div');
+    const sundayCol = barCols.nth(6);
+    const bar = sundayCol.locator(':scope > div').first();
+    const height = await bar.evaluate((el: Element) => (el as HTMLElement).style.height);
+    // Spec: Sunday XP=110 → (110/110)*95 = 95px
+    expect(height).toBe('95px');
   });
 });
 
-// ── Group E — AITutorBubble ────────────────────────────────────────────────────
+// ── Group F — ParentValueSection: AI tutor bubble ─────────────────────────────
 
-test.describe('E. AITutorBubble', () => {
-  test('E-01: ai-tutor-bubble renders on /en', async ({ page }) => {
+test.describe('F. ParentValueSection — AI tutor bubble', () => {
+  test('F-01: parent-value-tutor renders on /en', async ({ page }) => {
     await page.goto(`${BASE}/en`, { waitUntil: 'load' });
-    await expect(page.getByTestId('ai-tutor-bubble')).toBeVisible();
+    const tutor = page.getByTestId('parent-value-tutor');
+    await tutor.scrollIntoViewIfNeeded();
+    await expect(tutor).toBeVisible();
   });
 
-  test('E-02: ai-tutor-bubble renders on /ar', async ({ page }) => {
+  test('F-02: parent-value-tutor renders on /ar', async ({ page }) => {
     await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
-    await expect(page.getByTestId('ai-tutor-bubble')).toBeVisible();
+    const tutor = page.getByTestId('parent-value-tutor');
+    await tutor.scrollIntoViewIfNeeded();
+    await expect(tutor).toBeVisible();
   });
 
-  test('E-03: mascot image loads without error (no broken img) on /en', async ({ page }) => {
-    // Collect any failed image requests
-    const failedImages: string[] = [];
-    page.on('requestfailed', (req) => {
-      if (req.resourceType() === 'image') failedImages.push(req.url());
-    });
-    await page.goto(`${BASE}/en`, { waitUntil: 'networkidle' });
-
-    // Check that the mascot-owl.svg image is present
-    const mascot = page.locator('img[src*="mascot-owl"]');
-    await expect(mascot).toBeVisible();
-
-    // Verify the image loaded successfully (naturalWidth > 0 means the browser
-    // decoded it; SVGs may report 0 for naturalWidth, so we check for not broken)
-    const isBroken = await mascot.evaluate(
-      (img: HTMLImageElement) => img.complete && img.naturalWidth === 0,
-    );
-    expect(isBroken).toBe(false);
-
-    // No failed image requests during load
-    const owlFailures = failedImages.filter((url) => url.includes('mascot-owl'));
-    expect(owlFailures).toHaveLength(0);
-  });
-
-  test('E-04: EN chip text is present (3 chips)', async ({ page }) => {
+  test('F-03: parent-value-tutor-bubble renders on /en', async ({ page }) => {
     await page.goto(`${BASE}/en`, { waitUntil: 'load' });
-    const chips = page.getByTestId('ai-tutor-chips');
-    await expect(chips).toBeVisible();
-    // Chips from copy.en.tutorBubble.chips
-    await expect(chips).toContainText('Yes, show me');
-    await expect(chips).toContainText('Give a hint');
-    await expect(chips).toContainText('Skip');
+    const bubble = page.getByTestId('parent-value-tutor-bubble');
+    await bubble.scrollIntoViewIfNeeded();
+    await expect(bubble).toBeVisible();
   });
 
-  test('E-05: AR chip text is present (3 chips)', async ({ page }) => {
+  test('F-04: EN tutor label "Lexi · AI Tutor" is present', async ({ page }) => {
+    await page.goto(`${BASE}/en`, { waitUntil: 'load' });
+    const bubble = page.getByTestId('parent-value-tutor-bubble');
+    await bubble.scrollIntoViewIfNeeded();
+    // From copy.ts en.parentValue.tutor.label
+    await expect(bubble).toContainText('Lexi · AI Tutor');
+  });
+
+  test('F-05: AR tutor label "ليكسي · المعلم الذكي" is present', async ({ page }) => {
     await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
-    const chips = page.getByTestId('ai-tutor-chips');
-    await expect(chips).toBeVisible();
-    // Chips from copy.ar.tutorBubble.chips
-    await expect(chips).toContainText('نعم، أرني');
-    await expect(chips).toContainText('أعطني تلميحاً');
-    await expect(chips).toContainText('تخطي');
+    const bubble = page.getByTestId('parent-value-tutor-bubble');
+    await bubble.scrollIntoViewIfNeeded();
+    // From copy.ts ar.parentValue.tutor.label
+    await expect(bubble).toContainText('ليكسي · المعلم الذكي');
   });
 
-  test('E-06: bubble tail uses logical property — data-dir reflects locale on /en', async ({
-    page,
-  }) => {
+  test('F-06: EN bubble message is present', async ({ page }) => {
     await page.goto(`${BASE}/en`, { waitUntil: 'load' });
-    // The .stage element gets data-dir="ltr" in EN (set in AITutorBubble.tsx)
-    const stage = page
-      .getByTestId('ai-tutor-bubble')
-      .locator('[data-dir]')
-      .first();
-    await expect(stage).toHaveAttribute('data-dir', 'ltr');
+    const bubble = page.getByTestId('parent-value-tutor-bubble');
+    await bubble.scrollIntoViewIfNeeded();
+    // Check that the message fragment is rendered (lead text)
+    await expect(bubble).toContainText('When we compare two numbers');
   });
 
-  test('E-07: bubble tail uses logical property — data-dir reflects locale on /ar', async ({
-    page,
-  }) => {
+  test('F-07: AR bubble message is present', async ({ page }) => {
     await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
-    const stage = page
-      .getByTestId('ai-tutor-bubble')
-      .locator('[data-dir]')
-      .first();
-    await expect(stage).toHaveAttribute('data-dir', 'rtl');
+    const bubble = page.getByTestId('parent-value-tutor-bubble');
+    await bubble.scrollIntoViewIfNeeded();
+    await expect(bubble).toContainText('عندما نقارن عددين');
   });
 
-  test('E-08: bubble border-end-start-radius resolves to bottom-left in LTR (EN)', async ({
-    page,
-  }) => {
+  test('F-08: bubble tail corner — border-end-start-radius is 4px in LTR/EN', async ({ page }) => {
     await page.goto(`${BASE}/en`, { waitUntil: 'load' });
-    const bubble = page.getByTestId('ai-tutor-bubble-inner');
-    // In LTR border-end-start-radius = bottom-left = borderBottomLeftRadius
-    // The spec says it should be 4px; the other corners should be 22px.
+    const bubble = page.getByTestId('parent-value-tutor-bubble');
+    await bubble.scrollIntoViewIfNeeded();
+    // In LTR: border-end-start-radius maps to borderBottomLeftRadius.
+    // Spec §(2): bubble has border-end-start-radius:4px (EN, avatar on leading/left).
     const computed = await bubble.evaluate((el: Element) => {
-      const style = window.getComputedStyle(el);
+      const s = window.getComputedStyle(el);
       return {
-        bottomLeft: style.borderBottomLeftRadius,
-        bottomRight: style.borderBottomRightRadius,
+        bottomLeft: s.borderBottomLeftRadius,
+        bottomRight: s.borderBottomRightRadius,
       };
     });
-    // bottom-left (end-start in LTR) should be the small tail corner (4px)
     expect(computed.bottomLeft).toBe('4px');
-    // bottom-right (end-end in LTR) should be the full radius (~22px)
     expect(computed.bottomRight).toBe('22px');
   });
 
-  test('E-09: bubble border-end-start-radius resolves to bottom-right in RTL (AR)', async ({
-    page,
-  }) => {
+  test('F-09: bubble tail corner flips — border-end-end-radius is 4px in RTL/AR', async ({ page }) => {
     await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
-    const bubble = page.getByTestId('ai-tutor-bubble-inner');
-    // In RTL border-end-start-radius = bottom-right = borderBottomRightRadius
+    const bubble = page.getByTestId('parent-value-tutor-bubble');
+    await bubble.scrollIntoViewIfNeeded();
+    // In RTL: border-end-end-radius maps to borderBottomRightRadius.
+    // Spec §4.3 + index-ar.html line 170: border-bottom-right-radius:4px in AR.
+    // The CSS uses [dir="rtl"] .tutorBubble { border-end-start-radius:22px; border-end-end-radius:4px }
     const computed = await bubble.evaluate((el: Element) => {
-      const style = window.getComputedStyle(el);
+      const s = window.getComputedStyle(el);
       return {
-        bottomLeft: style.borderBottomLeftRadius,
-        bottomRight: style.borderBottomRightRadius,
+        bottomLeft: s.borderBottomLeftRadius,
+        bottomRight: s.borderBottomRightRadius,
       };
     });
-    // bottom-right (end-start in RTL) should be the tail corner (4px)
     expect(computed.bottomRight).toBe('4px');
-    // bottom-left (end-end in RTL) should be the full radius (~22px)
     expect(computed.bottomLeft).toBe('22px');
+  });
+
+  test('F-10: no suggestion chips are rendered (spec: chips omitted in composed section)', async ({
+    page,
+  }) => {
+    await page.goto(`${BASE}/en`, { waitUntil: 'load' });
+    const tutor = page.getByTestId('parent-value-tutor');
+    await tutor.scrollIntoViewIfNeeded();
+    // The composed section must NOT render suggestion chips.
+    // The old standalone AITutorBubble had testid "ai-tutor-chips" — that element is absent.
+    await expect(page.getByTestId('ai-tutor-chips')).toHaveCount(0);
   });
 });
 
-// ── Group F — ChildCardPhone ───────────────────────────────────────────────────
+// ── Group G — ParentValueSection: Child card ──────────────────────────────────
 
-test.describe('F. ChildCardPhone', () => {
-  test('F-01: child-card-phone renders on /en', async ({ page }) => {
+test.describe('G. ParentValueSection — Child card', () => {
+  test('G-01: parent-value-child-card renders on /en', async ({ page }) => {
     await page.goto(`${BASE}/en`, { waitUntil: 'load' });
-    await expect(page.getByTestId('child-card-phone')).toBeVisible();
+    const card = page.getByTestId('parent-value-child-card');
+    await card.scrollIntoViewIfNeeded();
+    await expect(card).toBeVisible();
   });
 
-  test('F-02: child-card-phone renders on /ar', async ({ page }) => {
+  test('G-02: parent-value-child-card renders on /ar', async ({ page }) => {
     await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
-    await expect(page.getByTestId('child-card-phone')).toBeVisible();
+    const card = page.getByTestId('parent-value-child-card');
+    await card.scrollIntoViewIfNeeded();
+    await expect(card).toBeVisible();
   });
 
-  test('F-03: email element has direction: ltr in EN locale', async ({ page }) => {
+  test('G-03: email is "sami@learnexia.com" on /en', async ({ page }) => {
     await page.goto(`${BASE}/en`, { waitUntil: 'load' });
-    const email = page.getByTestId('child-card-email');
-    await expect(email).toBeVisible();
-    const direction = await email.evaluate(
-      (el: Element) => window.getComputedStyle(el).direction,
-    );
-    expect(direction).toBe('ltr');
-  });
-
-  test('F-04: email element has direction: ltr even in AR locale (pinned)', async ({ page }) => {
-    await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
-    const email = page.getByTestId('child-card-email');
-    await expect(email).toBeVisible();
-    const direction = await email.evaluate(
-      (el: Element) => window.getComputedStyle(el).direction,
-    );
-    // The CSS applies direction:ltr to .em in BOTH locales (technical string)
-    expect(direction).toBe('ltr');
-  });
-
-  test('F-05: email shows the expected address', async ({ page }) => {
-    await page.goto(`${BASE}/en`, { waitUntil: 'load' });
-    const email = page.getByTestId('child-card-email');
+    const email = page.getByTestId('parent-value-child-email');
+    await email.scrollIntoViewIfNeeded();
     await expect(email).toHaveText('sami@learnexia.com');
   });
 
-  test('F-06: footer contains › (right chevron) in EN', async ({ page }) => {
+  test('G-04: email is "sami@learnexia.com" on /ar (LTR-pinned, unchanged)', async ({ page }) => {
+    await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
+    const email = page.getByTestId('parent-value-child-email');
+    await email.scrollIntoViewIfNeeded();
+    // Email address never localises per spec §4.5
+    await expect(email).toHaveText('sami@learnexia.com');
+  });
+
+  test('G-05: email element has direction:ltr on /en', async ({ page }) => {
     await page.goto(`${BASE}/en`, { waitUntil: 'load' });
-    const footer = page.getByTestId('child-card-footer');
-    await expect(footer).toBeVisible();
-    // EN view-progress: "View progress →"; chevron row1: "›"
-    const row1 = page.getByTestId('child-card-row1');
-    const text = await row1.textContent();
-    expect(text).toContain('›');
+    const email = page.getByTestId('parent-value-child-email');
+    await email.scrollIntoViewIfNeeded();
+    const dir = await email.evaluate((el: Element) => window.getComputedStyle(el).direction);
+    expect(dir).toBe('ltr');
   });
 
-  test('F-07: footer contains ‹ (left chevron) in AR', async ({ page }) => {
+  test('G-06: email element has direction:ltr even on /ar (pinned per spec §4.5)', async ({
+    page,
+  }) => {
     await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
-    const row1 = page.getByTestId('child-card-row1');
-    const text = await row1.textContent();
-    expect(text).toContain('‹');
+    const email = page.getByTestId('parent-value-child-email');
+    await email.scrollIntoViewIfNeeded();
+    const dir = await email.evaluate((el: Element) => window.getComputedStyle(el).direction);
+    // The CSS class always sets direction:ltr (technical string) per spec §4.5
+    expect(dir).toBe('ltr');
   });
 
-  test('F-08: footer arrow is → in EN (View progress →)', async ({ page }) => {
+  test('G-07: "View progress →" CTA is present on /en', async ({ page }) => {
     await page.goto(`${BASE}/en`, { waitUntil: 'load' });
-    const footer = page.getByTestId('child-card-footer');
-    const text = await footer.textContent();
-    expect(text).toContain('View progress →');
+    const cta = page.getByTestId('parent-value-child-cta');
+    await cta.scrollIntoViewIfNeeded();
+    await expect(cta).toBeVisible();
+    await expect(cta).toContainText('View progress');
   });
 
-  test('F-09: footer arrow is ← in AR (عرض التقدم ←)', async ({ page }) => {
+  test('G-08: "عرض التقدم ←" CTA is present on /ar', async ({ page }) => {
     await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
-    const footer = page.getByTestId('child-card-footer');
-    const text = await footer.textContent();
-    expect(text).toContain('عرض التقدم ←');
+    const cta = page.getByTestId('parent-value-child-cta');
+    await cta.scrollIntoViewIfNeeded();
+    await expect(cta).toBeVisible();
+    await expect(cta).toContainText('عرض التقدم ←');
   });
 
-  test('F-10: stats row has Arabic-Indic numerals on /ar', async ({ page }) => {
-    await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
-    const stats = page.getByTestId('child-card-stats');
+  test('G-09: stats row has Western numerals on /en (1,240 / Lv 12 / 7d)', async ({ page }) => {
+    await page.goto(`${BASE}/en`, { waitUntil: 'load' });
+    const stats = page.getByTestId('parent-value-child-stats');
+    await stats.scrollIntoViewIfNeeded();
     const text = await stats.textContent();
-    // AR stats: المستوى ١٢ / ١٬٢٤٠ / ٧ أيام — all contain Arabic-Indic digits
+    // EN copy: "🧠 Lv 12", "⭐ 1,240", "🔥 7d"
+    expect(text).toContain('1,240');
+    expect(text).toContain('12');
+    expect(text).toContain('7');
+    // No Arabic-Indic numerals in the EN stats row
+    expect(AR_INDIC_PATTERN.test(text ?? '')).toBe(false);
+  });
+
+  test('G-10: stats row has Arabic-Indic numerals on /ar (١٬٢٤٠ / ١٢ / ٧)', async ({ page }) => {
+    await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
+    const stats = page.getByTestId('parent-value-child-stats');
+    await stats.scrollIntoViewIfNeeded();
+    const text = await stats.textContent();
+    // AR copy: "🧠 المستوى ١٢", "⭐ ١٬٢٤٠", "🔥 ٧ أيام"
     expect(AR_INDIC_PATTERN.test(text ?? '')).toBe(true);
+    // Specific expected AR-Indic values
+    expect(text).toContain('١٬٢٤٠');
+    expect(text).toContain('١٢');
+    expect(text).toContain('٧');
+  });
+
+  test('G-11: parent-value-child-status (Active today) is present on /en', async ({ page }) => {
+    await page.goto(`${BASE}/en`, { waitUntil: 'load' });
+    const status = page.getByTestId('parent-value-child-status');
+    await status.scrollIntoViewIfNeeded();
+    await expect(status).toBeVisible();
+    await expect(status).toContainText('Active today');
+  });
+
+  test('G-12: parent-value-child-status is present in AR on /ar', async ({ page }) => {
+    await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
+    const status = page.getByTestId('parent-value-child-status');
+    await status.scrollIntoViewIfNeeded();
+    await expect(status).toContainText('نشط اليوم');
   });
 });
 
-// ── Group G — RTL layout at mobile width ─────────────────────────────────────
+// ── Group H — RTL layout at mobile width (390px) ─────────────────────────────
+// Updated from old Group G: now references parent-value-* testids per the new
+// composed ParentValueSection (old standalone component testids removed from page).
 
-test.describe('G. RTL layout at mobile width (390px)', () => {
+test.describe('H. RTL layout at mobile width (390px)', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test('G-01: /en renders all 4 components without overflow at 390px', async ({ page }) => {
+  test('H-01: /en — parent-value-section + key sub-elements render without overflow at 390px', async ({
+    page,
+  }) => {
     await page.goto(`${BASE}/en`, { waitUntil: 'load' });
     for (const testId of [
-      'ai-tutor-bubble',
-      'child-card-phone',
-      'activity-chart',
-      'benefits-panel',
+      'parent-value-section',
+      'parent-value-panel',
+      'parent-value-chart',
+      'parent-value-tutor',
+      'parent-value-child-card',
     ]) {
       const el = page.getByTestId(testId);
+      await el.scrollIntoViewIfNeeded();
       await expect(el).toBeVisible();
-      // Check the element doesn't overflow the viewport
       const box = await el.boundingBox();
       expect(box).not.toBeNull();
       if (box) {
-        // Nothing should start before 0 (x) or be wider than viewport
-        expect(box.x).toBeGreaterThanOrEqual(-1); // allow 1px rounding
-        expect(box.width).toBeLessThanOrEqual(395); // 390 + 5px tolerance
+        // Nothing should start before 0 (x) or be wider than viewport (390px + 5px tolerance)
+        expect(box.x).toBeGreaterThanOrEqual(-1);
+        expect(box.width).toBeLessThanOrEqual(395);
       }
     }
   });
 
-  test('G-02: /ar renders all 4 components without overflow at 390px (RTL)', async ({ page }) => {
+  test('H-02: /ar — parent-value-section + key sub-elements render without overflow at 390px (RTL)', async ({
+    page,
+  }) => {
     await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
     for (const testId of [
-      'ai-tutor-bubble',
-      'child-card-phone',
-      'activity-chart',
-      'benefits-panel',
+      'parent-value-section',
+      'parent-value-panel',
+      'parent-value-chart',
+      'parent-value-tutor',
+      'parent-value-child-card',
     ]) {
       const el = page.getByTestId(testId);
+      await el.scrollIntoViewIfNeeded();
       await expect(el).toBeVisible();
       const box = await el.boundingBox();
       expect(box).not.toBeNull();
@@ -522,30 +616,34 @@ test.describe('G. RTL layout at mobile width (390px)', () => {
     }
   });
 
-  test('G-03: ActivityChart bars row-reverse in RTL at mobile width', async ({ page }) => {
+  test('H-03: chart bars row (parent-value-chart-bars) has direction:ltr in RTL/AR — bars never reverse', async ({
+    page,
+  }) => {
     await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
-    const barsTrack = page.getByTestId('activity-chart-bars');
-    const flexDir = await barsTrack.evaluate(
-      (el: Element) => window.getComputedStyle(el).flexDirection,
+    const barsRow = page.getByTestId('parent-value-chart-bars');
+    await barsRow.scrollIntoViewIfNeeded();
+    // Spec §4.2: AR source wraps bars in direction:ltr so Mon→Sun always reads L→R.
+    const dir = await barsRow.evaluate(
+      (el: Element) => window.getComputedStyle(el).direction,
     );
-    expect(flexDir).toBe('row-reverse');
+    expect(dir).toBe('ltr');
   });
 
-  test('G-04: ActivityChart bars are LTR in EN at mobile width', async ({ page }) => {
+  test('H-04: chart bars row has direction:ltr in LTR/EN as well', async ({ page }) => {
     await page.goto(`${BASE}/en`, { waitUntil: 'load' });
-    const barsTrack = page.getByTestId('activity-chart-bars');
-    const flexDir = await barsTrack.evaluate(
-      (el: Element) => window.getComputedStyle(el).flexDirection,
+    const barsRow = page.getByTestId('parent-value-chart-bars');
+    await barsRow.scrollIntoViewIfNeeded();
+    const dir = await barsRow.evaluate(
+      (el: Element) => window.getComputedStyle(el).direction,
     );
-    // Default row (not row-reverse) in LTR
-    expect(flexDir).toBe('row');
+    expect(dir).toBe('ltr');
   });
 });
 
-// ── Group H — No console errors ───────────────────────────────────────────────
+// ── Group I — No console errors ───────────────────────────────────────────────
 
-test.describe('H. No console errors', () => {
-  test('H-01: zero console errors on /en page load', async ({ page }) => {
+test.describe('I. No console errors', () => {
+  test('I-01: zero console errors on /en page load', async ({ page }) => {
     const errors: string[] = [];
     page.on('console', (msg) => {
       if (msg.type() === 'error') errors.push(msg.text());
@@ -567,7 +665,7 @@ test.describe('H. No console errors', () => {
     expect(realErrors, `Console errors on /en: ${realErrors.join('\n')}`).toHaveLength(0);
   });
 
-  test('H-02: zero console errors on /ar page load', async ({ page }) => {
+  test('I-02: zero console errors on /ar page load', async ({ page }) => {
     const errors: string[] = [];
     page.on('console', (msg) => {
       if (msg.type() === 'error') errors.push(msg.text());

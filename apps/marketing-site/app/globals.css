@@ -102,29 +102,42 @@
 
   /* ---- Local tokens added for Batch-1 nav/switcher + Batch-2 components ---- */
 
-  /* BenefitsPanel gradient (web-benefits-panel.html) */
+  /* ParentValueSection — left panel gradient (web-benefits-panel.html source) */
   --lx-grad-benefits: linear-gradient(165deg, #1e1b4b 0%, #3b2c8f 50%, #5b21b6 100%); /* local: benefits-panel gradient */
   /* Text and tile on purple panel */
   --lx-on-purple: rgba(255, 255, 255, 0.92); /* local: text on purple panel */
   --lx-on-purple-tile: rgba(255, 255, 255, 0.1); /* local: tile bg on purple panel */
 
-  /* ActivityChart bars */
+  /* ParentValueSection — activity chart bars */
   --lx-grad-bar: linear-gradient(180deg, var(--lx-card-soft), var(--lx-card)); /* local: chart bar = card-soft→card */
   --lx-grad-levelup-180: linear-gradient(180deg, var(--lx-purple), var(--lx-primary)); /* local: vertical level-up highlight bar */
 
-  /* Indigo-200 accent (chart export btn, chips, grade pill, view-progress link) */
+  /* Indigo-200 accent (grade pill, view-progress link, tutor label) */
   --lx-indigo-200: #a5b4fc; /* local: indigo-200 link/label accent */
 
-  /* AITutorBubble */
+  /* ParentValueSection — AI tutor bubble */
   --lx-grad-avatar: linear-gradient(135deg, #a78bfa, #6366f1); /* local: tutor/avatar gradient */
   --lx-overlay-frost: rgba(15, 23, 42, 0.7); /* local: frosted overlay (tutor bubble) */
   --lx-border-frost: rgba(255, 255, 255, 0.1); /* local: frosted bubble hairline */
   --lx-primary-chip-border: rgba(99, 102, 241, 0.3); /* local: tutor chip border */
 
-  /* ChildCardPhone */
-  --lx-bg-card-deep: #15161d; /* local: mobile child-card surface (mobile-child-card) — darker kit value, Design Gap §12 item 3 */
+  /* ParentValueSection — Sami child card */
+  --lx-bg-card-deep: #15161d; /* local: child-card surface — darker kit value, Design Gap §12 item 3 */
   --lx-success-glow: rgba(34, 197, 94, 0.6); /* local: success/active dot glow */
   --lx-font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace; /* local: technical strings (email) */
+
+  /* ---- New tokens for ParentValueSection (for-parents-section.md §New tokens) ---- */
+
+  /* Benefits panel shadow — outer purple glow + inner top highlight */
+  --lx-shadow-benefits: 0 24px 60px rgba(91, 33, 182, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  /* Hair-thin card border — 0.06 alpha (distinct from --lx-border 0.08) */
+  --lx-border-hair: rgba(255, 255, 255, 0.06);
+  /* Sunday highlighted bar glow */
+  --lx-shadow-bar-highlight: 0 6px 18px rgba(99, 102, 241, 0.4);
+  /* Frosted tutor bubble background — exact-match 0.75 (vs existing --lx-overlay-frost 0.7) */
+  --lx-overlay-frost-75: rgba(15, 23, 42, 0.75);
+  /* Tutor avatar shadow — exact-match 0 8 20 (vs existing --lx-shadow-primary-glow 0 8 24) */
+  --lx-shadow-avatar: 0 8px 20px rgba(99, 102, 241, 0.4);
 
   /* Fonts */
   --lx-font-en-display: 'Poppins', system-ui, sans-serif;
