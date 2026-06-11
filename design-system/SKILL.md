@@ -23,8 +23,9 @@ When invoked, read `README.md` first for the full design philosophy, then drill 
 | `preview/` | 80+ self-contained atomic component cards. Each is one HTML file you can clone into a new project (it only needs `colors_and_type.css`). English (unprefixed), Arabic (`ar-*`), mobile (`mobile-*`), web (`web-*`). |
 | `ui_kits/student-mobile/index.html` | Full English mobile click-through (18 screens) |
 | `ui_kits/student-mobile/index-ar.html` | Full Arabic RTL mobile click-through (18 screens) |
-| `ui_kits/parent-dashboard/index.html` | Full English web app (7 pages) |
-| `ui_kits/parent-dashboard/index-ar.html` | Full Arabic RTL web app (7 pages) |
+| `ui_kits/parent-dashboard/index.html` | Full English web app (7 pages) + working Add Child modal |
+| `ui_kits/parent-dashboard/index-ar.html` | Full Arabic RTL web app (7 pages) + Add Child modal |
+| `ui_kits/parent-dashboard/AddChildModal.jsx` | Reusable Add Child modal (photo upload, grade tiles, language flags) |
 | `screenshots/` | PNG captures of every screen and page, en + ar |
 
 ---
@@ -47,7 +48,7 @@ When invoked, read `README.md` first for the full design philosophy, then drill 
 ## Skill 1 — Build a new screen for the Learnexia mobile app
 
 1. Open `ui_kits/student-mobile/index.html` and find the screen closest to what you're building. Copy its structure as a starting point.
-2. Bring in reusable JSX from `Components.jsx` (`HudBar`, `XPBar`, `PrimaryButton`, `LessonCard`, `MissionRow`, `AnswerButton`, `TabBar`, `MascotAvatar`, `TutorBubble`). Don't reinvent.
+2. Bring in reusable JSX from `MobileComponents.jsx` (`HudBar`, `XPBar`, `PrimaryButton`, `LessonCard`, `MissionRow`, `AnswerButton`, `TabBar`, `MascotAvatar`, `TutorBubble`). Don't reinvent.
 3. Wrap content in `<ScreenShell>` (handles padding for status bar + tab bar). Add `padTop={56}` or `{70}` depending on whether you keep the HUD.
 4. Buttons should always be 16px radius and use `<PrimaryButton variant="primary|success|danger|secondary|purple|ghost">`.
 5. If the screen sits in the bottom-tab flow, include `<TabBar>` and update the `showsTabBar` allowlist in `index.html`.
@@ -104,6 +105,21 @@ Lift the HTML directly. Each file imports `_base.css` (or `_base-ar.css`) which 
 ## Skill 7 — Add a new tweak / feature flag
 
 If you're building a prototype the user wants to experiment with, use the standard `tweaks_panel.jsx` starter (see project-level patterns). Common Learnexia tweaks: button radius (16 vs pill), gradient palette swaps, dark/light surface, RTL toggle.
+
+## Skill 8 — Add Child form (or any add/edit-entity form)
+
+The reference implementations are `ui_kits/parent-dashboard/AddChildModal.jsx` (web React, en+ar via `ar` prop) and the `AddChildSheet` in `ui_kits/student-mobile/ScreensAuth.jsx` (mobile bottom sheet). Conventions to follow:
+
+1. **Photo upload** — circular avatar with a 📷 badge + a dashed "Upload a photo" drop-zone. Show a live preview via `URL.createObjectURL`; fall back to a colored initial when no photo.
+2. **Grade** — render as **6 plant-emoji tiles** (🌱🌿🌳🌲🍃🌴 for grades 1–6), selected tile gets the Level-Up gradient. Never a `<select>`.
+3. **Language** — **two flag tiles**: 🇪🇬 **AR** and 🇺🇸 **EN** (Egypt for Arabic, USA for English). Selected tile gets indigo border + tint.
+4. **Presentation** — centered **modal** over a blurred scrim on web; **bottom sheet** with a drag handle that slides up on mobile.
+5. **Footer** — Cancel (ghost) + a personalized primary CTA ("Add Layla →" / "أضف ليلى ←").
+
+## Skill 9 — Web page scaffolding (scrollbars + dense layouts)
+
+- Always include the **brand scrollbar** CSS (indigo gradient thumb, pill, 10px, lighter hover) — copy the `*::-webkit-scrollbar*` block from either web kit's `<style>`. Covers vertical + horizontal.
+- For paired analytical panels (e.g. weak-areas + recommendations), use a **2-column `grid` with `align-items: start`** so they sit in one row; let inner lists stack vertically rather than forcing a 3-up grid that wraps.
 
 ---
 

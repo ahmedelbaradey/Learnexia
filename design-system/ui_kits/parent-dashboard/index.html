@@ -61,6 +61,18 @@
     display: flex; align-items: center; gap: 8px; font-size: 12px; color: #94A3B8;
   }
   @keyframes lxpulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+
+  /* Custom scrollbars — brand-styled, both axes */
+  * { scrollbar-width: thin; scrollbar-color: #4F46E5 transparent; }
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 9999px; }
+  *::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #6366F1, #4F46E5);
+    border-radius: 9999px;
+    border: 2px solid #0F172A;
+  }
+  *::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #818CF8, #6366F1); }
+  *::-webkit-scrollbar-corner { background: transparent; }
 </style>
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
@@ -68,6 +80,7 @@
 <script type="text/babel" src="DashboardComponents.jsx"></script>
 <script type="text/babel" src="PagesPublic.jsx"></script>
 <script type="text/babel" src="PagesApp.jsx"></script>
+<script type="text/babel" src="AddChildModal.jsx"></script>
 </head>
 <body>
 <div id="root"></div>
@@ -120,19 +133,21 @@ function OverviewWebPage({ sidebarActive, onNav }) {
             </div>
           </PDPanel>
         </div>
-        <PDPanel title="Areas to focus on" sub="Topics where Sami is still building confidence" action="See all">
-          <PDWeakAreas items={weak}/>
-        </PDPanel>
-        <PDPanel title="Recommendations from Lexi" sub="Tailored to this week's activity">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
-            <PDRecommendation icon="🎯" accent="#4F46E5" title="Practice subtraction 5 min/day"
-              body="Short daily reps will lift accuracy from 42% in about a week." cta="Plan it"/>
-            <PDRecommendation icon="📖" accent="#A855F7" title="Read with a parent on Fridays"
-              body="Sami reads 28% faster when reading aloud with a grown-up." cta="Schedule"/>
-            <PDRecommendation icon="🎉" accent="#FACC15" title="Celebrate the 7-day streak"
-              body="A weekend reward keeps motivation high. Suggest a screen-time bonus." cta="Send praise"/>
-          </div>
-        </PDPanel>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'start' }}>
+          <PDPanel title="Areas to focus on" sub="Topics where Sami is still building confidence" action="See all">
+            <PDWeakAreas items={weak}/>
+          </PDPanel>
+          <PDPanel title="Recommendations from Lexi" sub="Tailored to this week's activity">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <PDRecommendation icon="🎯" accent="#4F46E5" title="Practice subtraction 5 min/day"
+                body="Short daily reps will lift accuracy from 42% in about a week." cta="Plan it"/>
+              <PDRecommendation icon="📖" accent="#A855F7" title="Read with a parent on Fridays"
+                body="Sami reads 28% faster when reading aloud with a grown-up." cta="Schedule"/>
+              <PDRecommendation icon="🎉" accent="#FACC15" title="Celebrate the 7-day streak"
+                body="A weekend reward keeps motivation high. Suggest a screen-time bonus." cta="Send praise"/>
+            </div>
+          </PDPanel>
+        </div>
       </div>
     </AppShell>
   );
@@ -140,6 +155,7 @@ function OverviewWebPage({ sidebarActive, onNav }) {
 
 function App() {
   const [page, setPage] = React.useState('landing');
+  const [addChildOpen, setAddChildOpen] = React.useState(false);
 
   // URL for the fake browser chrome
   const urlFor = (p) => ({
@@ -169,7 +185,7 @@ function App() {
     login:    <LoginWebPage onLogin={() => setPage('children')} onRegister={() => setPage('register')} onLanding={() => setPage('landing')}/>,
     register: <RegisterWebPage onRegister={() => setPage('children')} onLogin={() => setPage('login')} onLanding={() => setPage('landing')}/>,
     children: <MyChildrenWebPage sidebarActive={sidebarFor('children')} onNav={onNav}
-                onPick={() => setPage('overview')} onAddChild={() => setPage('settings')}/>,
+                onPick={() => setPage('overview')} onAddChild={() => setAddChildOpen(true)}/>,
     overview: <OverviewWebPage  sidebarActive={sidebarFor('overview')} onNav={onNav}/>,
     reports:  <ReportsWebPage   sidebarActive={sidebarFor('reports')}  onNav={onNav}/>,
     settings: <SettingsWebPage  sidebarActive={sidebarFor('settings')} onNav={onNav}/>,
@@ -205,6 +221,7 @@ function App() {
         </div>
         {pages[page]}
       </div>
+      <AddChildModal open={addChildOpen} onClose={() => setAddChildOpen(false)} ar={false}/>
     </div>
   );
 }
