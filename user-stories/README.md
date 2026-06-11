@@ -28,6 +28,7 @@ These intentional decisions diverge from the source docs; each affected story re
 | `Phase-6-Stabilization` | P6 | 9 | Testing, perf, prompt tuning, observability | NFR-1 perf met, prompts tuned, critical bugs cleared → launch-ready |
 | `Phase-7-Admin-Console` | P7 | post-MVP | Admin console: curriculum mgmt, user/account mgmt, moderation, analytics/AI oversight | Admins can manage curriculum, users, moderate content, and view platform + AI-safety dashboards |
 | `Phase-8-Localization` | P8 | post-MVP | Learning language (medium of instruction) vs UI language; bilingual curriculum (parallel ar/en trees) | A student gets Math/Science in their learning language; Arabic/English subjects pinned by subject |
+| `Phase-9-Notifications` | P9 | post-MVP | Push end-to-end (Expo FE) + full habit-forming notification catalog + arbitration, on the merged P4-09 engine | A child's device registers for push, nudges deep-link to the right screen, an in-app inbox exists, and many notification types are arbitrated to few daily sends |
 | `Backlog-Phase-2-Plus` | post-MVP | — | Curriculum Intelligence (ingestion, KG, RAG at scale) | Deferred; data model designed in MVP |
 
 ## How to load into Jira
@@ -142,6 +143,19 @@ These intentional decisions diverge from the source docs; each affected story re
 - P8-02 Author bilingual curriculum *(SubjectCode + Language on Subject; parallel ar/en trees) — Technical Enabler*
 - P8-03 Serve curriculum in the student's learning language *(read-path resolution + Arabic/English edge case)*
 - P8-04 Change a child's learning language *(parent-only, fresh-start reset of Math/Science progress)*
+
+### Phase 9 — Notifications
+*Make push notifications work end-to-end and build the full habit-forming notification catalog on top of the already-merged P4-09 nudge engine (ExpoPushSender, DevicesController, NudgeDispatcher, per-child preferences). The P4-09 backend handlers + Arabic templates for streak-danger, comeback and badge/achievement already exist — Phase 9 closes the **client side** (Gap A) and adds the missing categories + cross-category arbitration. See [../docs/business-gap-analysis-by-fable.md](../docs/business-gap-analysis-by-fable.md) (Gaps A, L).*
+- P9-01 Turn on push notifications *(Expo permission priming + device-token registration; FE)*
+- P9-02 Notification tap routing + foreground + web fallback *(per-category deep links; FE)*
+- P9-03 In-app notification inbox *(consumes existing InboxController; FE)*
+- P9-04 Parent per-child notification controls *(per-child toggles, quiet hours, daily cap; FE)*
+- P9-05 Light up the gamification events we already emit *(level-up, league, freeze, timed-event handlers; BE)*
+- P9-06 New habit-loop notification categories *(streak milestones, weekly challenge lifecycle, weekly recap; BE)*
+- P9-07 Many types, few sends *(cross-category arbitration + global daily push budget + cooldowns; BE)*
+- P9-08 Comeback escalation ladder *(day 2/5/14 tiered win-back; extends P4-09 LapseWinBack; BE)*
+- P9-09 Spaced-repetition review reminder — **BLOCKED by P3-10** *(captured for catalog completeness; BE)*
+- P9-10 Get every notification in my selected language *(localize push/in-app/email; welcome is hardcoded English today; coordinates with P6-06; BE — developed later)*
 
 ### Backlog (Phase 2+) — Curriculum Intelligence
 *Three-stage pipeline: Multimodal Parsing (BL-02) → Curriculum Ingestion (BL-05) → Knowledge Graph (BL-03).*

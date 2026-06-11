@@ -13,7 +13,8 @@ tasks/
 │   │   ├── Phase-2-Learning-Core/ P2-xx-FE.md
 │   │   ├── Phase-3-Gamification/  P4-xx-FE.md   (XP/streak/hearts/badges/missions/leagues/motion)
 │   │   ├── Phase-5-Parent-Analytics/ P5-xx-FE.md
-│   │   └── Phase-8-Localization/  P8-xx-FE.md   (add-child learning lang, parent change flow, app-shell fonts/RTL)
+│   │   ├── Phase-8-Localization/  P8-xx-FE.md   (add-child learning lang, parent change flow, app-shell fonts/RTL)
+│   │   └── Phase-9-Notifications/ P9-0x-FE.md   (expo push, deep links, in-app inbox, parent per-child controls)
 │   └── admin-dashboard/       Next.js admin screens
 │       ├── Phase-1-Foundation/    P1-10-FE.md   (admin sign-in & shell)
 │       └── Phase-7-Admin-Console/ P7-xx-FE.md   (admin feature screens)
@@ -23,7 +24,8 @@ tasks/
     ├── Phase-3-Gamification/ P4-xx-BE.md
     ├── Phase-6-Stabilization/ P6-06-BE.md
     ├── Phase-7-Admin-Console/ P7-xx-BE.md
-    └── Phase-8-Localization/  P8-xx-BE.md
+    ├── Phase-8-Localization/  P8-xx-BE.md
+    └── Phase-9-Notifications/ P9-0x-BE.md   (wire emitted events, new habit categories, arbitration, comeback ladder)
 ```
 
 > **Scope:** this tree covers **Phase 1 & 2** stories, the **Phase 3 — Gamification** breakdown (`P4-xx`, both stacks), the **Phase 7 — Admin Console** feature breakdown (`P7-xx`), plus the **Phase 6 — `P6-06`** backend security-hardening pass (relocated from P1-13b). The barrier-to-entry stories **P4-09** (re-engagement notifications), **P4-10** (Redis realtime gamification) and **P4-11** (streak freeze / timed events) are now decomposed in the Phase 3 tree below. The remaining barrier-to-entry stories — **P3-13** (adaptive student profile) and **P5-07** (data feedback / calibration) — are **pending task breakdown** and will be decomposed when their phase trees are built. The Phase-2 story **P2-11** (skill dependency graph) is broken down here. See [../docs/briefs/barrier-to-entry-gap-analysis.md](../docs/briefs/barrier-to-entry-gap-analysis.md).
