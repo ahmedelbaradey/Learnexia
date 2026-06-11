@@ -32,14 +32,14 @@ export function AddChildCard({ onPress }: AddChildCardProps) {
       minHeight={260}
       borderRadius="$modal"
       borderWidth={2}
-      borderColor="rgba(99,102,241,0.4)"
+      borderColor="$primarySoft"
       // dashed border (web). Native falls back to the solid indigo-tinted border.
       style={{ borderStyle: 'dashed' }}
       backgroundColor="transparent"
       padding={22}
       cursor="pointer"
       pressStyle={{ scale: 0.95 }}
-      hoverStyle={{ borderColor: '#4F46E5', backgroundColor: 'rgba(79,70,229,0.06)' }}
+      hoverStyle={{ borderColor: '$primary', backgroundColor: '$primarySoft' }}
       onPress={() => onPress()}
       accessibilityRole="button"
       accessible

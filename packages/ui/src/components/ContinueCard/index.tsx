@@ -19,6 +19,7 @@
  * Token-only: no raw hex. No physical left/right props.
  */
 
+import { colors, nativeShadow } from '@learnexia/design-system';
 import React from 'react';
 import { Pressable } from 'react-native';
 import { Stack } from '@tamagui/core';
@@ -27,9 +28,6 @@ import { Badge } from '../Badge';
 import { XStack, YStack, Text } from '../../internal/primitives';
 
 export type SubjectKey = 'math' | 'science' | 'arabic' | 'english';
-
-/** ContinueCard available vs completed chrome state. */
-type ContinueState = 'available' | 'completed';
 
 /** Subject tint map — token refs per brand design. */
 const SUBJECT_TINTS: Record<SubjectKey, { fg: string; soft: string; glyph: string }> = {
@@ -88,7 +86,7 @@ export function ContinueCard({
   ctaLabel,
   bossLabel = 'Boss',
   direction = 'ltr',
-  locale = 'en',
+  locale: _locale = 'en', // eslint-disable-line @typescript-eslint/no-unused-vars
   testID,
 }: ContinueCardProps) {
   const isRtl = direction === 'rtl';
@@ -121,8 +119,9 @@ export function ContinueCard({
           backgroundColor="$card"
           borderWidth={isAvailable ? 2 : 1}
           borderColor={isAvailable ? '$primary' : '$borderStrong'}
-          // Shadow resolved to raw rgba — $primaryGlow / soft shadow (design spec §4.4)
-          shadowColor={isAvailable ? 'rgba(99,102,241,0.45)' : 'rgba(0,0,0,0.15)'}
+          // Shadow uses design-system token colors: colors.primaryGlow for available,
+          // soft dark for completed — mirrors the shadows.primaryGlow token value.
+          shadowColor={isAvailable ? colors.primaryGlow : nativeShadow.soft.color}
           shadowOffset={{ width: 0, height: isAvailable ? 8 : 4 }}
           shadowOpacity={1}
           shadowRadius={isAvailable ? 24 : 12}

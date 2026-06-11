@@ -111,14 +111,16 @@ interface SideProps {
   testID?: string;
 }
 
-function Side({ sideValue, sideState, label, glyph, onPress, locked, direction, accessibilityLabel, testID }: SideProps) {
+function Side({ sideValue: _sideValue, sideState, label, glyph, onPress, locked, direction, accessibilityLabel, testID }: SideProps) { // eslint-disable-line @typescript-eslint/no-unused-vars
   const checked = sideState === 'selected' || sideState === 'correct' || sideState === 'incorrect';
   const inner = (
     <Stack
       flex={1}
       height={88}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       backgroundColor={BG[sideState] as any}
       borderWidth={BORDER_WIDTH[sideState]}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       borderColor={BORDER_COLOR[sideState] as any}
       borderRadius="$button"
       alignItems="center"
@@ -127,6 +129,7 @@ function Side({ sideValue, sideState, label, glyph, onPress, locked, direction, 
       padding={16}
       pointerEvents={locked ? 'none' : 'auto'}
     >
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <Text fontSize={28} color={GLYPH_COLOR[sideState] as any} accessibilityElementsHidden>
         {glyph}
       </Text>
@@ -134,6 +137,7 @@ function Side({ sideValue, sideState, label, glyph, onPress, locked, direction, 
         fontSize={16}
         fontWeight="800"
         fontFamily="$heading"
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         color={LABEL_COLOR[sideState] as any}
         textAlign="center"
         writingDirection={direction}

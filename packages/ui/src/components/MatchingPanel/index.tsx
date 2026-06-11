@@ -11,7 +11,6 @@
  * Design Spec §3.6 + §2.4.
  */
 import React from 'react';
-import { Stack } from '@tamagui/core';
 
 import { YStack, Text } from '../../internal/primitives';
 
@@ -31,7 +30,7 @@ export function MatchingPanel({
   subTitle = 'Tap Next to skip',
   testID,
 }: MatchingPanelProps) {
-  const isRtl = direction === 'rtl';
+  const isRtl = direction === 'rtl'; // eslint-disable-line @typescript-eslint/no-unused-vars
 
   return (
     <YStack

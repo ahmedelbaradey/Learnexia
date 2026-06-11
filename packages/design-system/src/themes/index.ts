@@ -40,29 +40,52 @@ export const darkTheme = {
   purple: colors.purple,
 } as const;
 
-/** Light theme — parent/print surface (secondary palette). */
+/**
+ * Light theme — parent/print surface (secondary palette).
+ *
+ * NOTE: SKILL.md specifies "dark by default" — this is a derived, contrast-safe
+ * palette for the parent dashboard and system light-mode preference. There is no
+ * canonical light-theme reference in the design kit; values below are derived by
+ * inverting the dark-theme surface role relationships onto a light canvas
+ * (#F8FAFC) while keeping all 5 primaries and 3 gradient accent colours
+ * identical (they read on both canvases). All brand/gamification accent tokens
+ * (primary, secondary, accent, danger, purple, xp, streak, heart) are the SAME
+ * concrete values as dark so interactive chrome (buttons, badges, chips) stays
+ * visually consistent across themes.
+ *
+ * Surface inversion rule (vs dark theme):
+ *   Dark:  bg(#0F172A) → card(#1E293B) → cardSoft(#334155) — step darker
+ *   Light: bg(#F8FAFC) → card(#FFFFFF) → cardSoft(#F1F5F9) — step lighter/elevated
+ *   Borders use dark-alpha (dark overlaid on light) rather than white-alpha.
+ *   Text uses near-black (#0F172A primary) with slate mid-tones for body/muted.
+ */
 export const lightTheme = {
-  background: colors.bgLight,
-  backgroundStrong: '#FFFFFF',
-  backgroundHover: '#F1F5F9',
-  backgroundPress: '#E2E8F0',
-  backgroundFocus: '#FFFFFF',
+  // ---- Surfaces ----
+  background: colors.bgLight,          // #F8FAFC — light canvas
+  backgroundStrong: '#FFFFFF',          // elevated card surface (white)
+  backgroundHover: '#F1F5F9',          // slate-100 hover state
+  backgroundPress: '#E2E8F0',          // slate-200 press state
+  backgroundFocus: '#FFFFFF',          // focused input / card bg
   backgroundTransparent: 'rgba(248, 250, 252, 0)',
 
-  color: colors.fgInverse,
-  colorHover: '#1E293B',
-  colorPress: '#334155',
+  // ---- Text ----
+  color: colors.fgInverse,             // #0F172A — primary text (near-black)
+  colorHover: '#1E293B',               // slate-800
+  colorPress: '#334155',               // slate-700
   colorFocus: colors.fgInverse,
-  colorMuted: '#64748B',
+  colorMuted: '#64748B',               // slate-500 — muted / placeholders
 
-  borderColor: 'rgba(0, 0, 0, 0.08)',
-  borderColorHover: 'rgba(0, 0, 0, 0.16)',
-  borderColorFocus: colors.borderFocus,
-  borderColorPress: 'rgba(0, 0, 0, 0.16)',
+  // ---- Borders (dark-alpha on light canvas) ----
+  borderColor: 'rgba(15, 23, 42, 0.08)',
+  borderColorHover: 'rgba(15, 23, 42, 0.16)',
+  borderColorFocus: colors.borderFocus,  // $primary — same on both themes
+  borderColorPress: 'rgba(15, 23, 42, 0.16)',
 
-  shadowColor: 'rgba(15, 23, 42, 0.18)',
-  shadowColorHover: 'rgba(15, 23, 42, 0.24)',
+  // ---- Elevation shadows ----
+  shadowColor: 'rgba(15, 23, 42, 0.10)',
+  shadowColorHover: 'rgba(15, 23, 42, 0.18)',
 
+  // ---- Brand / gamification accents — identical on both themes ----
   primary: colors.primary,
   primaryHover: colors.primaryHover,
   primaryPress: colors.primaryPress,

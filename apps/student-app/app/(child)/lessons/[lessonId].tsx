@@ -22,6 +22,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ScrollView, Pressable } from 'react-native';
 import { Stack as TamStack, Text as TamText, styled } from '@tamagui/core';
+import type { StackProps } from '@tamagui/core';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -40,9 +41,10 @@ import {
   type SubmitAnswerResponse,
 } from '@learnexia/api-client';
 
+import { gradientStops } from '@learnexia/design-system';
+
 import {
   Hearts,
-  ProgressDots,
   QuestionCard,
   MCQOption,
   TrueFalseChoice,
@@ -51,6 +53,7 @@ import {
   AnswerFeedbackStrip,
   AttemptSummaryCard,
   Button,
+  GradientBox,
 } from '@learnexia/ui';
 
 import { useLocale } from '../../../src/hooks/useLocale';
@@ -328,60 +331,125 @@ export default function LessonScreen() {
   };
 
   // ── TopBar ───────────────────────────────────────────────────────────────
-  const renderTopBar = (showProgress: boolean, progressCurrent?: number, progressTotal?: number) => (
-    <TamStack
-      height={56}
-      paddingHorizontal="$4"
-      flexDirection={isRtl ? 'row-reverse' : 'row'}
-      justifyContent="space-between"
-      alignItems="center"
-    >
-      {/* Back chevron */}
-      <Pressable
-        testID="lesson-back"
-        onPress={() => {
-          // quiz + summary use handleBack() (router.replace to the subject) so the
-          // exit works even on a web deep-link / refresh where the in-app nav stack
-          // is empty and router.back() would silently no-op (DEF-P205FE-02).
-          // Abandon (quiz stage) still fires via the unmount cleanup.
-          if (stage.kind === 'summary' || stage.kind === 'quiz') {
-            handleBack();
-          } else {
-            router.back();
-          }
-        }}
-        accessibilityRole="button"
-        accessibilityLabel={t('child.lessons.intro.back')}
-        style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
-      >
-        <Text color="$fg2" fontSize={22} fontFamily="$body">
-          {isRtl ? '›' : '‹'}
-        </Text>
-      </Pressable>
+  const renderTopBar = (showProgress: boolean, progressCurrent?: number, progressTotal?: number) => {
+    const hasProgressData =
+      showProgress && progressCurrent !== undefined && progressTotal !== undefined;
+    const progressRatio =
+      hasProgressData && progressTotal! > 0
+        ? Math.max(0, Math.min(1, progressCurrent! / progressTotal!))
+        : 0;
+    const progressPct = hasProgressData
+      ? `${Math.round(progressRatio * 100)}%`
+      : '';
 
-      {/* Center: ProgressDots (quiz only) */}
-      {showProgress && progressCurrent !== undefined && progressTotal !== undefined ? (
-        <ProgressDots
-          testID="lesson-progress"
-          current={progressCurrent}
-          total={progressTotal}
-          direction={direction}
-          locale={locale}
-          accessibilityLabel={renderProgressLabel(progressCurrent, progressTotal)}
-        />
-      ) : (
-        <TamStack flex={1} />
-      )}
+    return (
+      <YStack paddingHorizontal="$4" paddingBottom={hasProgressData ? '$2' : 0}>
+        {/* Row 1: back chevron + hearts */}
+        <TamStack
+          height={56}
+          flexDirection={isRtl ? 'row-reverse' : 'row'}
+          justifyContent="space-between"
+          alignItems="center"
+        >
+          {/* Back chevron */}
+          <Pressable
+            testID="lesson-back"
+            onPress={() => {
+              // quiz + summary use handleBack() (router.replace to the subject) so the
+              // exit works even on a web deep-link / refresh where the in-app nav stack
+              // is empty and router.back() would silently no-op (DEF-P205FE-02).
+              // Abandon (quiz stage) still fires via the unmount cleanup.
+              if (stage.kind === 'summary' || stage.kind === 'quiz') {
+                handleBack();
+              } else {
+                router.back();
+              }
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('child.lessons.intro.back')}
+            style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Text color="$fg2" fontSize={22} fontFamily="$body">
+              {isRtl ? '›' : '‹'}
+            </Text>
+          </Pressable>
 
-      {/* Hearts — static count=3 this wave (Phase 3 wires live value). */}
-      <Hearts
-        current={3}
-        maxHearts={3}
-        locale={locale}
-        accessibilityLabel={locale === 'ar' ? '٣ قلوب' : '3 of 3 hearts'}
-      />
-    </TamStack>
-  );
+          {/* Hearts — static count=3 this wave (Phase 3 wires live value). */}
+          <Hearts
+            current={3}
+            maxHearts={3}
+            locale={locale}
+            accessibilityLabel={locale === 'ar' ? '٣ قلوب' : '3 of 3 hearts'}
+          />
+        </TamStack>
+
+        {/* Row 2 + 3: gradient progress (quiz only) */}
+        {hasProgressData ? (
+          <YStack
+            gap={6}
+            accessible
+            accessibilityRole="progressbar"
+            accessibilityValue={{ now: progressCurrent, min: 1, max: progressTotal }}
+            accessibilityLabel={renderProgressLabel(progressCurrent!, progressTotal!)}
+            aria-label={renderProgressLabel(progressCurrent!, progressTotal!)}
+            aria-valuenow={progressCurrent}
+            aria-valuemin={1}
+            aria-valuemax={progressTotal}
+            testID="lesson-progress"
+          >
+            {/* Label row: "Question X of Y" + percentage */}
+            <TamStack
+              flexDirection={isRtl ? 'row-reverse' : 'row'}
+              justifyContent="space-between"
+              alignItems="center"
+            >
+              <Text
+                color="$fg2"
+                fontSize={13}
+                fontWeight="700"
+                fontFamily="$heading"
+                writingDirection={direction}
+              >
+                {renderProgressLabel(progressCurrent!, progressTotal!)}
+              </Text>
+              <Text
+                color="$fg3"
+                fontSize={13}
+                fontWeight="600"
+                fontFamily="$heading"
+              >
+                {progressPct}
+              </Text>
+            </TamStack>
+
+            {/* Gradient progress bar track */}
+            {/* SKILL.md rule 4.6: progress bars stay LTR in all locales */}
+            <TamStack
+              height={4}
+              borderRadius={9999}
+              backgroundColor="$border"
+              overflow="hidden"
+              flexDirection="row"
+            >
+              <TamStack
+                width={`${Math.round(progressRatio * 100)}%` as StackProps['width']}
+                height="100%"
+                borderRadius={9999}
+                overflow="hidden"
+              >
+                <GradientBox
+                  stops={gradientStops.gradReward.colors}
+                  angle={90}
+                  height="100%"
+                  width="100%"
+                />
+              </TamStack>
+            </TamStack>
+          </YStack>
+        ) : null}
+      </YStack>
+    );
+  };
 
   // ── Render: MCQ renderer ─────────────────────────────────────────────────
   const renderMCQ = (
@@ -432,6 +500,7 @@ export default function LessonScreen() {
               onPress={isLocked ? undefined : () => onSelect(opt)}
               direction={direction}
               locale={locale}
+              letterKey={letter}
               accessibilityLabel={`${locale === 'ar' ? 'خيار' : 'Option'} ${letter}: ${opt}${stateLabel ? `, ${stateLabel}` : ''}`}
             />
           );
@@ -919,19 +988,6 @@ export default function LessonScreen() {
         showsVerticalScrollIndicator={false}
       >
         <YStack gap="$3">
-          {/* Progress label */}
-          <Text
-            color="$fg3"
-            fontSize={12}
-            fontWeight="700"
-            fontFamily="$heading"
-            textTransform="uppercase"
-            letterSpacing={0.04}
-            textAlign="center"
-          >
-            {renderProgressLabel(currentIndex + 1, questions.length)}
-          </Text>
-
           {/* QuestionCard */}
           <QuestionCard
             testID="quiz-question-card"

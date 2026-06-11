@@ -72,7 +72,7 @@ const STATE_TAG_COLOR: Record<LessonState, string> = {
 };
 
 export function LessonCard({
-  lessonId: _lessonId,
+  lessonId: _lessonId, // eslint-disable-line @typescript-eslint/no-unused-vars
   tag,
   title,
   meta,

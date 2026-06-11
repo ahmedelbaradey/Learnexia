@@ -33,9 +33,13 @@ export const colors = {
   // semantic aliases (CSS uses var() — resolved to concrete values)
   success: '#22C55E', // var(--lx-secondary)
   successSoft: 'rgba(34, 197, 94, 0.18)',
+  /** Stronger consent-card border tint (0.30 alpha) — visible against successSoft bg. */
+  successSoftStrong: 'rgba(34, 197, 94, 0.30)',
   warning: '#F59E0B', // var(--lx-accent)
   warningSoft: 'rgba(245, 158, 11, 0.18)',
   dangerSoft: 'rgba(239, 68, 68, 0.18)',
+  /** Boss disc bg at 0.55-alpha — muted danger for radial gradient fallback (SkillTreeNode boss). */
+  dangerSoftStrong: 'rgba(239, 68, 68, 0.55)',
   purpleSoft: 'rgba(168, 85, 247, 0.18)',
 
   // ---- Gamification accents ----

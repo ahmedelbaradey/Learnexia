@@ -10,10 +10,15 @@
  * can announce the outcome ("Option B, incorrect").
  *
  * A11y: `accessibilityRole="radio"` + `accessibilityState={{ checked, disabled }}`.
- * Design Spec §3.2.
+ * Design Spec §3.2. components-quiz.html canonical spec.
+ *
+ * Visual: no radio disc (replaced by border-highlight selection + trailing letter key chip).
+ * The `letterKey` prop (e.g. "A", "B", "C", "D") renders as a trailing mono chip.
+ * In RTL the XStack row reverses so the chip sits on the correct mirrored edge automatically.
  */
+import { colors } from '@learnexia/design-system';
 import React from 'react';
-import { Pressable } from 'react-native';
+import { Pressable, Text as RNText } from 'react-native';
 import { Stack } from '@tamagui/core';
 
 import { XStack, Text } from '../../internal/primitives';
@@ -32,6 +37,12 @@ export interface MCQOptionProps {
   /** Already-localized a11y label, e.g. "Option B, 4, selected". */
   accessibilityLabel: string;
   testID?: string;
+  /**
+   * Trailing letter key chip (A / B / C / D …).
+   * Rendered in mono font, muted color, on the trailing side.
+   * Automatically mirrors to the correct edge in RTL via XStack row-reverse.
+   */
+  letterKey?: string;
 }
 
 const STATE_BG: Record<MCQOptionState, string> = {
@@ -87,44 +98,42 @@ export function MCQOption({
   direction = 'ltr',
   accessibilityLabel,
   testID,
+  letterKey,
 }: MCQOptionProps) {
   const locked = isLocked(state);
   const checked = isChecked(state);
   const isRtl = direction === 'rtl';
 
-  const radioDisc = (
+  // Letter key chip — mono font, muted color, subtle bg (per components-quiz.html).
+  // Rendered on the trailing side; XStack row-reverse in RTL auto-mirrors it.
+  // Uses RNText with inline style for font-family (no $mono token in design-system).
+  const keyChip = letterKey ? (
     <Stack
-      width={20}
-      height={20}
-      borderRadius={9999}
-      borderWidth={state === 'selected' ? 2 : 2}
-      borderColor={state === 'selected' ? '$primary' : state === 'correct' ? '$success' : state === 'incorrect' ? '$danger' : '$borderStrong'}
-      backgroundColor={state === 'selected' ? '$primarySoft' : 'transparent'}
+      paddingVertical={2}
+      paddingHorizontal={7}
+      borderRadius={6}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      backgroundColor={colors.borderSubtle as any}
       alignItems="center"
       justifyContent="center"
       accessibilityElementsHidden
+      minWidth={26}
     >
-      {state === 'selected' ? (
-        <Stack width={10} height={10} borderRadius={9999} backgroundColor="$primary" />
-      ) : null}
+      <RNText
+        style={{ fontFamily: 'monospace', fontSize: 11, lineHeight: 16, color: colors.fg3 }}
+        accessibilityElementsHidden
+      >
+        {letterKey}
+      </RNText>
     </Stack>
-  );
-
-  const trailingGlyph =
-    state === 'correct' ? (
-      <Text fontSize={18} color="$success" accessibilityElementsHidden>
-        {'✓'}
-      </Text>
-    ) : state === 'incorrect' ? (
-      <Text fontSize={18} color="$danger" accessibilityElementsHidden>
-        {'✕'}
-      </Text>
-    ) : null;
+  ) : null;
 
   const content = (
     <Stack
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       backgroundColor={STATE_BG[state] as any}
       borderWidth={STATE_BORDER_WIDTH[state]}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       borderColor={STATE_BORDER_COLOR[state] as any}
       borderRadius="$button"
       paddingVertical={14}
@@ -140,11 +149,11 @@ export function MCQOption({
         alignItems="center"
         gap={12}
       >
-        {radioDisc}
         <Text
           flex={1}
           fontSize={16}
           fontWeight={STATE_LABEL_WEIGHT[state]}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           color={STATE_LABEL_COLOR[state] as any}
           fontFamily="$heading"
           numberOfLines={2}
@@ -153,7 +162,7 @@ export function MCQOption({
         >
           {label}
         </Text>
-        {trailingGlyph}
+        {keyChip}
       </XStack>
     </Stack>
   );
