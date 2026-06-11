@@ -155,6 +155,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P9-07 Many types, few sends *(cross-category arbitration + global daily push budget + cooldowns; BE)*
 - P9-08 Comeback escalation ladder *(day 2/5/14 tiered win-back; extends P4-09 LapseWinBack; BE)*
 - P9-09 Spaced-repetition review reminder — **BLOCKED by P3-10** *(captured for catalog completeness; BE)*
+- P9-10 Get every notification in my selected language *(localize push/in-app/email; welcome is hardcoded English today; coordinates with P6-06; BE — developed later)*
 
 ### Backlog (Phase 2+) — Curriculum Intelligence
 *Three-stage pipeline: Multimodal Parsing (BL-02) → Curriculum Ingestion (BL-05) → Knowledge Graph (BL-03).*
