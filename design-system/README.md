@@ -199,8 +199,26 @@ Animations are **CRITICAL** for kids and should feel snappy and rewarding.
 
 | Product | Path | What it covers |
 |---|---|---|
-| **Student Mobile** | `ui_kits/student-mobile/` | iPhone 402×874. Click-thru: Home → Skill Tree → Lesson → Quiz → Reward. |
-| **Parent Dashboard** | `ui_kits/parent-dashboard/` | Web 1280px. KPIs, weekly activity, weak areas, Lexi recommendations. |
+| **Student Mobile** | `ui_kits/student-mobile/` | iPhone 402×874. 18-screen click-thru: Splash · Login · Register · Role/Grade/Subject onboarding · My Children · Home · Skill Tree · Lesson · Quiz · Reward · Mission Completed · Daily Mission · League · Badges · Hearts · Profile. Working **Add Child** bottom sheet (photo upload, grade tiles, language flags). Arabic RTL twin at `index-ar.html`. |
+| **Parent Web** | `ui_kits/parent-dashboard/` | Web 1280px, 7 pages: Landing · Login · Register · My Children · Dashboard · Reports · Settings. Working **Add Child** modal with photo upload. Arabic RTL twin at `index-ar.html`. |
+
+Each kit has its own `README.md` and exposes small reusable JSX components
+(`MobileComponents.jsx` / `DashboardComponents.jsx`, `Screens*.jsx`, `Pages*.jsx`, `AddChildModal.jsx`).
+
+### Bilingual parity
+Every screen exists in **English (LTR)** and **Arabic (RTL)** with identical layout + content — Cairo headings, Tajawal body, Eastern-Arabic numerals in prose, Latin for technical strings (`820 / 1000 XP`, emails, brand name). Screenshots for both in `screenshots/{mobile,web,mobile-ar,web-ar}/`.
+
+### Add Child form — conventions
+- **Photo upload** with live circular-avatar preview; falls back to a colored initial.
+- **Grade** picker = 6 plant-emoji **tiles** (🌱→🌴), not a dropdown.
+- **Language** = two **flag tiles**: 🇪🇬 **AR** and 🇺🇸 **EN**.
+- **Centered modal** on web, **bottom sheet** on mobile.
+
+### Dashboard layout
+"Areas to focus on" + "Recommendations from Lexi" sit **side by side** in a 2-column row (EN + AR); recommendation cards stack vertically within their column.
+
+### Scrollbars
+Both web kits ship a **brand-styled scrollbar** (indigo gradient thumb, pill shape, subtle track, lighter hover) for both axes. Reuse this in any new web page rather than the default OS scrollbar.
 
 Each kit has its own `README.md` and exposes small reusable JSX components.
 
