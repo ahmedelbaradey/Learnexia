@@ -105,7 +105,7 @@ export function useGroupGuard(group: GroupName): GroupGuardState {
         if (!data.hasChildren) {
           router.replace('/(onboarding)/add-child');
         } else {
-          router.replace('/(parent)');
+          router.replace('/(parent)/overview');
         }
       }
       // Correct group: student in (child) — no redirect.

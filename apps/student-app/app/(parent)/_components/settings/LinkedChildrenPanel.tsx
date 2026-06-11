@@ -42,9 +42,11 @@ import { useServerError } from '../../../../src/hooks/useServerError';
 import { COUNTRIES, type CountryCode } from '@learnexia/shared';
 import { ChangeLearningLanguageModal } from './ChangeLearningLanguageModal';
 
-interface LinkedChildrenPanelProps {
+export interface LinkedChildrenPanelProps {
   direction: 'ltr' | 'rtl';
   rowDir: 'row' | 'row-reverse';
+  /** Called when the user taps "Add child". Opens the AddChildModal overlay. */
+  onAddChild?: () => void;
 }
 
 function PanelSurface({ children }: { children: React.ReactNode }) {
@@ -620,10 +622,11 @@ function LearningLanguageRow({ child, direction, rowDir }: LearningLanguageRowPr
   );
 }
 
-export function LinkedChildrenPanel({ direction, rowDir }: LinkedChildrenPanelProps) {
+export function LinkedChildrenPanel({ direction, rowDir, onAddChild }: LinkedChildrenPanelProps) {
   const { t } = useTranslation();
   const { locale } = useLocale();
-  const router = useRouter();
+  // router kept for any future navigation needs (link-child, etc.)
+  const _router = useRouter();
 
   const childrenQuery = useMyChildren();
 
@@ -636,8 +639,14 @@ export function LinkedChildrenPanel({ direction, rowDir }: LinkedChildrenPanelPr
 
   const children = childrenQuery.data ?? [];
 
+  // Open the Add-Child modal (dashboard context). Falls back to onboarding route
+  // if no modal callback is provided (e.g. in a standalone context).
   function handleAddChild() {
-    router.push('/(onboarding)/add-child' as never);
+    if (onAddChild) {
+      onAddChild();
+    } else {
+      _router.push('/(onboarding)/add-child' as never);
+    }
   }
 
   const AddChildCTA = (
@@ -753,6 +762,7 @@ export function LinkedChildrenPanel({ direction, rowDir }: LinkedChildrenPanelPr
                   variant="editable"
                   child={{ fullName: child.fullName ?? '', meta: child.email }}
                   direction={direction}
+                  borderRadius="$cardInner"
                   accessibilityLabel={child.fullName ?? ''}
                   onEdit={() => {
                     setEditingId(isEditing ? null : childId);

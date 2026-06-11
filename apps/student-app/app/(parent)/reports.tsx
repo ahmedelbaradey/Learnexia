@@ -4,11 +4,11 @@
  *
  * TODO(P1-11-FE-9 / P5-05-FE): full Reports + charts.
  *
- * Reuses the parent responsive shell (Sidebar with "Reports" active ≥768; mobile
- * `ScreenHeader` below). Body is a clean empty-state: a title + a muted
- * "coming soon" message. RTL + ar/en; tokens only (no raw hex).
+ * Wide (≥768): The shell `_layout.tsx` owns the Sidebar + content ScrollView.
+ * This page just renders `<ReportsBody>` — no duplicate row/sidebar/scroll.
+ *
+ * Narrow (<768): Mobile `ScreenHeader` + local scroll.
  */
-import { useMyChildren } from '@learnexia/api-client';
 import { Stack, Text } from '@tamagui/core';
 import { useRouter } from 'expo-router';
 import { ScrollView, useWindowDimensions } from 'react-native';
@@ -17,8 +17,6 @@ import { useTranslation } from 'react-i18next';
 
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useLocale } from '../../src/hooks/useLocale';
-import { NAV_ITEM, Sidebar } from './_components/Sidebar';
-import { getChildStatsStub } from './_components/parentDashboardStubs';
 
 /** Sidebar appears at the tablet breakpoint and up (design-system `media`). */
 const WIDE_BREAKPOINT = 768;
@@ -56,33 +54,12 @@ export default function ReportsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const query = useMyChildren();
 
   const isWide = width >= WIDE_BREAKPOINT;
 
   if (isWide) {
-    const firstChild = (query.data ?? [])[0];
-    const activeChild = firstChild
-      ? (() => {
-          const id = String(firstChild.id);
-          const stats = getChildStatsStub(id);
-          return {
-            id,
-            fullName: firstChild.fullName ?? '',
-            grade: stats.grade,
-            level: stats.level,
-          };
-        })()
-      : undefined;
-
-    return (
-      <Stack flex={1} flexDirection="row" backgroundColor="$bg">
-        <Sidebar activeChild={activeChild} activeKey={NAV_ITEM.Reports} />
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingBottom: 48 }}>
-          <ReportsBody />
-        </ScrollView>
-      </Stack>
-    );
+    // Wide: shell owns sidebar + scroll; just render the body content.
+    return <ReportsBody />;
   }
 
   return (
