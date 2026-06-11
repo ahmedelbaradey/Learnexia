@@ -252,7 +252,7 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
     {
         var (resp, _, body) = await SendAsync(HttpMethod.Get,
             $"{LifecycleBase}/VersionHistory?entityType={VetLesson}&entityId=1",
-            _basicToken);
+            bearer: _basicToken);
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden,
             "VersionHistory is AdminOnly — basic user must get 403; body: {0}", body);
     }
@@ -262,7 +262,7 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
     {
         var (resp, _, body) = await SendAsync(HttpMethod.Get,
             $"{LifecycleBase}/Preview?entityType={VetLesson}&entityId=1",
-            _basicToken);
+            bearer: _basicToken);
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden,
             "Preview is AdminOnly — basic user must get 403; body: {0}", body);
     }
@@ -272,7 +272,7 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
     {
         var (resp, _, body) = await SendAsync(HttpMethod.Get,
             $"{LifecycleBase}/PublicationCoverage?gradeId=1",
-            _basicToken);
+            bearer: _basicToken);
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden,
             "PublicationCoverage is AdminOnly — basic user must get 403; body: {0}", body);
     }
@@ -282,7 +282,7 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
     {
         var (resp, _, body) = await SendAsync(HttpMethod.Get,
             $"{LifecycleBase}/Preview?entityType={VetLesson}&entityId=1",
-            _parentToken);
+            bearer: _parentToken);
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden,
             "Preview is AdminOnly — parent must get 403 (parent must never see Draft content); body: {0}", body);
     }
@@ -643,7 +643,7 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
         // So 0 passes routing/binding but the handler itself guards it.
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
             $"{LifecycleBase}/VersionHistory?entityType={VetLesson}&entityId=0",
-            _adminToken);
+            bearer: _adminToken);
 
         ((int)resp.StatusCode).Should().NotBe(500,
             "EntityId=0 must not produce a raw 500; body: {0}", body);
@@ -661,7 +661,7 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
 
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
             $"{LifecycleBase}/VersionHistory?entityType={VetLesson}&entityId={lessonId}",
-            _adminToken);
+            bearer: _adminToken);
 
         resp.StatusCode.Should().Be(HttpStatusCode.OK,
             "VersionHistory for unpublished entity must return 200; body: {0}", body);
@@ -687,7 +687,7 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
 
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
             $"{LifecycleBase}/Preview?entityType={VetLesson}&entityId={lessonId}",
-            _adminToken);
+            bearer: _adminToken);
 
         resp.StatusCode.Should().Be(HttpStatusCode.OK,
             "Admin Preview of Draft entity must return 200; body: {0}", body);
@@ -716,7 +716,7 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
 
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
             $"{LifecycleBase}/Preview?entityType={VetLesson}&entityId={lessonId}",
-            _adminToken);
+            bearer: _adminToken);
 
         resp.StatusCode.Should().Be(HttpStatusCode.OK,
             "Admin Preview of Published entity must return 200; body: {0}", body);
@@ -735,7 +735,7 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
         // A true student token could also be used but the key assertion is non-admin → 403.
         var (resp, _, body) = await SendAsync(HttpMethod.Get,
             $"{LifecycleBase}/Preview?entityType={VetLesson}&entityId=1",
-            _parentToken);
+            bearer: _parentToken);
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden,
             "Preview is AdminOnly — non-admin must get 403 (draft content must never leak); body: {0}", body);
     }
@@ -746,7 +746,7 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
         // Queries are not auto-validated; handler guard fires.
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
             $"{LifecycleBase}/Preview?entityType={VetLesson}&entityId=0",
-            _adminToken);
+            bearer: _adminToken);
 
         ((int)resp.StatusCode).Should().NotBe(500,
             "EntityId=0 must not produce 500; body: {0}", body);
@@ -760,7 +760,7 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
     {
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
             $"{LifecycleBase}/Preview?entityType={VetLesson}&entityId=99999902",
-            _adminToken);
+            bearer: _adminToken);
 
         ((int)resp.StatusCode).Should().NotBe(500,
             "Non-existent entity must not produce 500; body: {0}", body);
@@ -782,7 +782,7 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
 
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
             $"{LifecycleBase}/PublicationCoverage?gradeId={gradeId}",
-            _adminToken);
+            bearer: _adminToken);
 
         resp.StatusCode.Should().Be(HttpStatusCode.OK,
             "PublicationCoverage must return 200; body: {0}", body);
@@ -821,7 +821,7 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
 
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
             $"{LifecycleBase}/PublicationCoverage?gradeId={gradeId}",
-            _adminToken);
+            bearer: _adminToken);
 
         resp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", body);
         AssertSucceeded(root, body);
@@ -850,7 +850,7 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
 
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
             $"{LifecycleBase}/PublicationCoverage?gradeId={gradeId}",
-            _adminToken);
+            bearer: _adminToken);
 
         resp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", body);
         TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);
@@ -879,7 +879,7 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
     {
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
             $"{LifecycleBase}/PublicationCoverage?gradeId=99999903",
-            _adminToken);
+            bearer: _adminToken);
 
         ((int)resp.StatusCode).Should().NotBe(500,
             "Non-existent gradeId must not produce 500; body: {0}", body);
@@ -892,7 +892,7 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
     {
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
             $"{LifecycleBase}/PublicationCoverage?gradeId=0",
-            _adminToken);
+            bearer: _adminToken);
 
         ((int)resp.StatusCode).Should().NotBe(500,
             "gradeId=0 must not produce 500; body: {0}", body);
@@ -929,10 +929,15 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-LEAK-2 (CRITICAL): After Publish, Subject IS visible to student on ForGrade")]
     public async Task PublishedSubject_VisibleToStudentForGrade()
     {
-        var gradeId   = await CreateGradeGetIdAsync();
-        var gradeNum  = await GetGradeNumberAsync(gradeId);
+        // Use the FIRST existing grade with Number=1 so GetSubjectsForGradeQuery (which uses
+        // FirstOrDefaultAsync by Number) will return subjects from THIS grade. Tests that create a
+        // fresh Number=1 grade find that ForGrade returns the FIRST grade (not theirs), so their
+        // subject is invisible. Use SCIENCE/En (code=1,lang=1) to avoid conflict with
+        // AC5_SubjectDeactivate_HidesFromStudentForGrade (MATH/Ar) and AC6_SubjectReactivate (SCIENCE/Ar).
+        int gradeNum = 1;
+        var gradeId   = await GetFirstGradeIdByNumberAsync(gradeNum);
         var subjectId = await CreateSubjectGetIdAsync(gradeId,
-            $"P705 ToPublish Subject {Guid.NewGuid():N}", subjectCode: 0, language: 0);
+            $"P705 ToPublish Subject {Guid.NewGuid():N}", subjectCode: 1, language: 1);
 
         // Make it active (required for student visibility in addition to Published).
         await ActivateSubjectAsync(subjectId);
@@ -989,7 +994,7 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
         // Lesson remains in Draft (not published).
         var studentToken = await CreateStudentTokenAsync();
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
-            $"/api/learning/Subjects/{subjectId}/Lessons", studentToken);
+            $"/api/learning/Subjects/{subjectId}/Lessons", bearer: studentToken);
 
         // May return 200 with empty or 200 with units (lesson excluded from lesson list inside unit).
         if (resp.StatusCode == HttpStatusCode.OK && TryProp(root, "data", out var data))
@@ -1027,7 +1032,7 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
 
         var studentToken = await CreateStudentTokenAsync();
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
-            $"/api/learning/Subjects/{subjectId}/Lessons", studentToken);
+            $"/api/learning/Subjects/{subjectId}/Lessons", bearer: studentToken);
 
         resp.StatusCode.Should().Be(HttpStatusCode.OK,
             "Subjects/{id}/Lessons must return 200 after publish; body: {0}", body);
@@ -1062,7 +1067,7 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
         var studentToken = await CreateStudentTokenAsync();
 
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
-            $"/api/learning/Lessons/{lessonId}", studentToken);
+            $"/api/learning/Lessons/{lessonId}", bearer: studentToken);
 
         // Must return NotFound (404 or 200 Successed=false) — NOT the lesson body.
         ((int)resp.StatusCode).Should().NotBe(500,
@@ -1097,7 +1102,7 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
 
         var studentToken = await CreateStudentTokenAsync();
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
-            $"/api/learning/Lessons/{lessonId}", studentToken);
+            $"/api/learning/Lessons/{lessonId}", bearer: studentToken);
 
         resp.StatusCode.Should().Be(HttpStatusCode.OK,
             "Published lesson must be reachable via student GET /Lessons/{0}; body: {1}", lessonId, body);
@@ -1118,11 +1123,14 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
         //
         // We also verify that adding the LifecycleState filter did NOT break a round-trip
         // that was working before this story.
-
-        var gradeId   = await CreateGradeGetIdAsync();
-        var gradeNum  = await GetGradeNumberAsync(gradeId);
+        //
+        // Use the FIRST existing grade with Number=1 so ForGrade returns subjects from that grade.
+        // Use ENGLISH/En (code=3,lang=1) to avoid conflict with other tests in this run:
+        //   MATH/Ar (0,0) — P7-01 AC5; SCIENCE/Ar (1,0) — P7-01 AC6; SCIENCE/En (1,1) — P7-05 AC-LEAK-2.
+        int gradeNum = 1;
+        var gradeId   = await GetFirstGradeIdByNumberAsync(gradeNum);
         var subjectId = await CreateSubjectGetIdAsync(gradeId,
-            $"P705 Backfill Regression {Guid.NewGuid():N}", subjectCode: 2, language: 0); // ARABIC/Ar
+            $"P705 Backfill Regression {Guid.NewGuid():N}", subjectCode: 3, language: 1); // ENGLISH/En
 
         await ActivateSubjectAsync(subjectId);
         await TransitionAsync(VetSubject, subjectId, LsPublished);
@@ -1256,7 +1264,7 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
     {
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
             $"{LifecycleBase}/VersionHistory?entityType={entityType}&entityId={entityId}",
-            _adminToken);
+            bearer: _adminToken);
         resp.StatusCode.Should().Be(HttpStatusCode.OK,
             "VersionHistory must return 200; body: {0}", body);
 
@@ -1299,7 +1307,7 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
     private async Task<List<JsonElement>> GetStudentSubjectsForGradeAsync(int gradeNumber, string token)
     {
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
-            $"/api/learning/Subjects/ForGrade?grade={gradeNumber}", token);
+            $"/api/learning/Subjects/ForGrade?grade={gradeNumber}", bearer: token);
 
         // ForGrade may return 200 with empty collection (EmptyCollection helper) or 200 with data.
         if (resp.StatusCode != HttpStatusCode.OK)
@@ -1432,11 +1440,56 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
             "displayName", name, "grade", _adminToken);
     }
 
+    /// <summary>
+    /// Returns the ID of the FIRST grade with the given Number, as created by the seeder or prior tests.
+    /// GetSubjectsForGradeQuery uses FirstOrDefaultAsync by Number, so student ForGrade reads will
+    /// only serve subjects in the FIRST grade row with a given Number. Tests that verify ForGrade
+    /// visibility must therefore put their subjects in that grade, not a freshly-created one.
+    /// Falls back to creating a grade if none exists (makes the test self-contained when run in isolation).
+    /// </summary>
+    private async Task<int> GetFirstGradeIdByNumberAsync(int number)
+    {
+        var (resp, root, body) = await SendAsync(HttpMethod.Get,
+            $"/api/learning/grades/List?PageNumber=1&PageSize=200", bearer: _adminToken);
+        resp.StatusCode.Should().Be(HttpStatusCode.OK, "Grade list must return 200; body: {0}", body);
+
+        IEnumerable<JsonElement>? items = null;
+        if (TryProp(root, "data", out var outer))
+        {
+            if (TryProp(outer, "data", out var inner) && inner.ValueKind == JsonValueKind.Array)
+                items = inner.EnumerateArray();
+            else if (outer.ValueKind == JsonValueKind.Array)
+                items = outer.EnumerateArray();
+        }
+
+        items.Should().NotBeNull("grade list data must be an array; body: {0}", body);
+        var found = items!.FirstOrDefault(g =>
+            TryProp(g, "number", out var n) && n.GetInt32() == number);
+
+        // If no grade with the requested Number exists, create one so the test is self-contained.
+        if (found.ValueKind == JsonValueKind.Undefined)
+        {
+            var name = $"P705 ForGrade Seed {number} {Guid.NewGuid():N}";
+            var (createResp, _, createBody) = await SendAsync(HttpMethod.Post,
+                "/api/learning/grades/Create",
+                new { Number = number, DisplayName = name },
+                _adminToken);
+            createResp.StatusCode.Should().Be(HttpStatusCode.OK,
+                "Create grade fallback must succeed; body: {0}", createBody);
+            return await FindIdInListAsync(
+                $"/api/learning/grades/List?PageNumber=1&PageSize=200",
+                "displayName", name, "grade", _adminToken);
+        }
+
+        TryProp(found, "id", out var idProp).Should().BeTrue("body: {0}", body);
+        return idProp.GetInt32();
+    }
+
     /// <summary>Gets the grade Number (1-6) from its Id.</summary>
     private async Task<int> GetGradeNumberAsync(int gradeId)
     {
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
-            $"/api/learning/grades?id={gradeId}", _adminToken);
+            $"/api/learning/grades?id={gradeId}", bearer: _adminToken);
         resp.StatusCode.Should().Be(HttpStatusCode.OK,
             "GetGrade must succeed; body: {0}", body);
         TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);
@@ -1551,7 +1604,7 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
 
         // Retrieve the question id from the admin ByLesson list.
         var (listResp, listRoot, listBody) = await SendAsync(HttpMethod.Get,
-            $"/api/Learning/Questions/ByLesson/{lessonId}", _adminToken);
+            $"/api/Learning/Questions/ByLesson/{lessonId}", bearer: _adminToken);
         listResp.StatusCode.Should().Be(HttpStatusCode.OK,
             "ByLesson must return 200; body: {0}", listBody);
 
