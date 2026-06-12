@@ -4,24 +4,27 @@
  * B0-nav (carryover batch 2b): converted from `<Stack>` to expo-router `<Tabs>`
  * with the custom floating glass `ChildTabBar` (Design Spec
  * `design-system/ui_kits/student-app/B0-nav-tabbar.md`, the ONE lead-approved
- * new pattern — plan decision L3). Batch 2b is the SOLE owner of this file in
- * Batch 2; batch 3c (B-int) finalizes tab wiring + removes the stub bodies.
+ * new pattern — plan decision L3). Batch 2b owned this file in Batch 2;
+ * batch 3c (B-int) finalized the route wiring (this version).
  *
  * Tab roots (spec §1 — Home / Missions / League / Badges):
- *   index      — W13 home dashboard (content untouched; now the Home tab)
- *   missions   — stub (B5 / P4-06-FE fills the body in batch 3b)
- *   league     — stub (B6 / P4-07-FE)
- *   badges     — stub (B4 / P4-05-FE)
+ *   index      — W13 home dashboard + 3c gamification entry points (Home tab)
+ *   missions   — B5 / P4-06-FE missions screen (batch 3b)
+ *   league     — B6 / P4-07-FE league standings (batch 3b)
+ *   badges     — B4 / P4-05-FE badge collection (batch 3b)
  *
  * Non-tab push screens — registered with `href: null` so they never appear on
  * the bar; they render inside the same navigator and push on top of the active
  * tab (spec §3):
  *   subjects/[subjectId] — subject detail (bar stays VISIBLE here per spec §3)
  *   lessons/[lessonId]   — lesson player (bar HIDDEN — focus mode)
+ *   attempts             — A5 "My activity" history (bar HIDDEN, batch 2d)
+ *   xp / streak / hearts / events — Wave-B gamification secondary screens
+ *                          (bar HIDDEN, batches 3a/3b; registered by 3c)
  *
  * Bar visibility is the allowlist in `ChildTabBar` (`TAB_BAR_VISIBLE_ROUTES`):
- * Wave-B secondary screens (streak / hearts / xp / attempts) just add an
- * `href: null` <Tabs.Screen> here — the bar hides on them automatically.
+ * any `href: null` <Tabs.Screen> not in the allowlist hides the bar
+ * automatically — no per-screen wiring.
  *
  * Android hardware back on a non-home tab returns to the Home tab first —
  * the Tabs default backBehavior, kept deliberately (spec §3).
@@ -65,6 +68,14 @@ export default function ChildLayout() {
           technical identifier; not in the ChildTabBar allowlist, so the bar
           auto-hides here. Home-dashboard entry link is wired by 3c (B-int). */}
       <Tabs.Screen name="attempts" options={{ href: null }} />
+      {/* Wave-B gamification secondary screens (carryover 3c / B-int).
+          Route names are technical identifiers; none are in the ChildTabBar
+          allowlist, so the bar auto-hides on all of them (spec §3). Entry
+          points live on the Home dashboard (index.tsx). */}
+      <Tabs.Screen name="xp" options={{ href: null }} />
+      <Tabs.Screen name="streak" options={{ href: null }} />
+      <Tabs.Screen name="hearts" options={{ href: null }} />
+      <Tabs.Screen name="events" options={{ href: null }} />
     </Tabs>
   );
 }

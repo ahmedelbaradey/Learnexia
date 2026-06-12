@@ -11,8 +11,10 @@
  * `rewardXp`, `progress`, `status`). Percent toward target is computed
  * client-side as `progress / target` (clamped 0..1; completed rows pin to
  * 100%, `target <= 0` renders honestly at 0%). Weekly rows with the
- * `CHALLENGE_` code prefix are EXCLUDED — they belong to the B8 challenge
- * cards (spec §8.3).
+ * `CHALLENGE_` code prefix are EXCLUDED here — the Events screen
+ * (`(child)/events.tsx`) OWNS the §8.3 challenge cards, sourcing them from
+ * this same `useMyMissions().weekly` filtered to `CHALLENGE_*`; this tab
+ * renders only regular weekly missions.
  *
  * Mission titles come from the server-sent `titleKey` (an i18n key path,
  * e.g. "mission.daily_3_lessons.title") resolved inside the
@@ -74,7 +76,11 @@ const MissionTargetType = {
   MaintainStreak: MissionTargetTypeDto._3,
 } as const;
 
-/** B8 weekly-challenge discriminator (technical code prefix, spec §5.5/§8.3). */
+/**
+ * B8 weekly-challenge discriminator (technical code prefix, spec §5.5/§8.3).
+ * Rows with this prefix are excluded here and rendered as challenge cards on
+ * the Events screen (`(child)/events.tsx`).
+ */
 const CHALLENGE_CODE_PREFIX = 'CHALLENGE_';
 
 /* ------------------------------------------------------------------ */
@@ -426,7 +432,8 @@ export default function MissionsScreen() {
   };
 
   const daily = useMemo(() => data?.daily ?? [], [data]);
-  // Weekly rows EXCLUDING the B8 challenge cards (spec §5.5 / §8.3).
+  // Weekly rows EXCLUDING CHALLENGE_* — those render as challenge cards on
+  // the Events screen (`(child)/events.tsx`, spec §5.5 / §8.3).
   const weekly = useMemo(
     () => (data?.weekly ?? []).filter((m) => !(m.code ?? '').startsWith(CHALLENGE_CODE_PREFIX)),
     [data],
@@ -700,7 +707,7 @@ export default function MissionsScreen() {
               </YStack>
 
               {/* ---------------------------------------------------------- */}
-              {/* 5. Weekly section (spec §5.5; CHALLENGE_* excluded → B8)    */}
+              {/* 5. Weekly section (spec §5.5; CHALLENGE_* → events.tsx)     */}
               {/* ---------------------------------------------------------- */}
               {weeklyRows.length > 0 ? (
                 <YStack gap="$3" testID="missions-weekly">

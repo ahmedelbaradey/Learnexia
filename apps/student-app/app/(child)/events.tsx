@@ -8,26 +8,26 @@
  * (the Home timed-event banner + the ❄️ freeze count next to the streak chip
  * per spec §8.1/§8.2); until then the route is reachable by URL only.
  *
- * Data: typed `DashboardDto` via `useDashboard()` ONLY (never the AdminOnly
- * `GET /api/admin/timed-events` — spec §8.2):
- *   `freezeBalance`     → streak-freeze count. EARNED-only — NO purchase or
- *                         spend UI (no economy exists; plan B8 AC).
- *   `activeTimedEvents` → ActiveTimedEventDto[] {code, nameEn, nameAr,
- *                         multiplier, endUtc} — XP-multiplier event banners
- *                         with a live minute-tick countdown to `endUtc`.
- *   `weeklyMission`     → single MissionSummary (the dashboard exposes ONE
- *                         weekly summary, first by sort order). Rendered in
- *                         the weekly-challenge section ONLY when its code
- *                         carries the `CHALLENGE_` prefix (the spec §8.3
- *                         challenge discriminator). Honest-data rules:
- *                         - MissionSummary has NO rewardXp field → no reward
- *                           pill (do not fabricate XP amounts).
- *                         - When weeklyMission is null or a non-challenge
- *                           weekly mission, an honest empty card renders —
- *                           the full challenge list (useMyMissions().weekly
- *                           filtered to CHALLENGE_*) lives on the Missions
- *                           screen per spec §8.3; we do NOT duplicate or
- *                           invent it here.
+ * Data:
+ * - `useDashboard()` — typed `DashboardDto` (never the AdminOnly
+ *   `GET /api/admin/timed-events` — spec §8.2):
+ *     `freezeBalance`     → streak-freeze count. EARNED-only — NO purchase or
+ *                           spend UI (no economy exists; plan B8 AC).
+ *     `activeTimedEvents` → ActiveTimedEventDto[] {code, nameEn, nameAr,
+ *                           multiplier, endUtc} — XP-multiplier event banners
+ *                           with a live minute-tick countdown to `endUtc`.
+ * - `useMyMissions()` — typed `MyMissionsResponse.weekly: MissionStateDto[]`,
+ *   filtered to the `CHALLENGE_` code prefix → the §8.3 weekly-challenge
+ *   cards. THIS SCREEN OWNS the challenge cards: the Missions tab
+ *   (`(child)/missions.tsx`) EXCLUDES `CHALLENGE_*` weekly rows and renders
+ *   only regular weekly missions. `MissionStateDto` carries
+ *   `rewardXp`/`progress`/`target`/`status`, so each card renders a progress
+ *   bar + reward pill + status like the mission rows.
+ *   (`DashboardDto.weeklyMission` is NOT used for challenges — the backend
+ *   always fills it with the first `WEEKLY_*` row by sort order, never a
+ *   `CHALLENGE_*` row.) Honest empty state when no challenges are active;
+ *   the challenge section carries its own loading/error states so a
+ *   missions-endpoint failure never hides the freeze/timed sections.
  *
  * Countdown: a single `setInterval` ticks once per MINUTE (not per second —
  * battery, spec §8.2); events whose `endUtc` passed are filtered out on the
@@ -42,8 +42,9 @@
 import {
   MissionStatusDto,
   useDashboard,
+  useMyMissions,
   type ActiveTimedEventDto,
-  type MissionSummary,
+  type MissionStateDto,
 } from '@learnexia/api-client';
 import { gradientStops } from '@learnexia/design-system';
 import { Button, GradientBox } from '@learnexia/ui';
@@ -123,6 +124,11 @@ function intlLocale(locale: string): string {
 /** Eastern-Arabic numerals in ar, Latin in en (SKILL.md rule 5 prose counts). */
 function formatNumber(value: number, locale: string): string {
   return new Intl.NumberFormat(intlLocale(locale)).format(value);
+}
+
+/** XP counter: ALWAYS Latin digits (SKILL.md rule — even in AR). */
+function formatXp(value: number): string {
+  return new Intl.NumberFormat('en-US').format(value);
 }
 
 /** `endUtc` defensively to epoch ms (generated client sends Date; guard str). */
@@ -350,7 +356,9 @@ function TimedEventBanner({
 }
 
 /* ------------------------------------------------------------------ */
-/* Weekly-challenge card (spec §8.3 — MissionCard chrome, purple)       */
+/* Weekly-challenge card (spec §8.3 — MissionCard chrome, purple).      */
+/* Sourced from useMyMissions().weekly CHALLENGE_* rows (MissionStateDto */
+/* carries rewardXp/progress/target/status — full mission-row anatomy). */
 /* ------------------------------------------------------------------ */
 
 function WeeklyChallengeCard({
@@ -358,7 +366,7 @@ function WeeklyChallengeCard({
   locale,
   direction,
 }: {
-  mission: MissionSummary;
+  mission: MissionStateDto;
   locale: string;
   direction: 'ltr' | 'rtl';
 }) {
@@ -383,6 +391,7 @@ function WeeklyChallengeCard({
 
   const progress = mission.progress ?? 0;
   const target = Math.max(1, mission.target ?? 1);
+  const rewardXp = Math.max(0, mission.rewardXp ?? 0);
   const pct = isCompleted
     ? 100
     : Math.max(0, Math.min(100, Math.round((progress * 100) / target)));
@@ -397,7 +406,11 @@ function WeeklyChallengeCard({
           target: formatNumber(target, locale),
         });
 
-  const a11y = t('events.challenges.cardA11y', { title, status: statusText });
+  const a11y = t('events.challenges.cardA11y', {
+    title,
+    status: statusText,
+    xp: formatXp(rewardXp),
+  });
 
   return (
     <YStack
@@ -452,6 +465,29 @@ function WeeklyChallengeCard({
             {statusText}
           </Text>
         </YStack>
+
+        {/* Reward pill — "⭐ +50" $xp on $xpSoft; green when completed
+            (mission-row chrome, spec §5.4). XP keeps Latin digits + LTR
+            in BOTH locales (XP-counter exception). */}
+        <TamStack
+          backgroundColor={isCompleted ? '$successSoft' : '$xpSoft'}
+          borderRadius="$pill"
+          paddingHorizontal={10}
+          paddingVertical={6}
+          flexShrink={0}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          <Text
+            color={isCompleted ? '$success' : '$xp'}
+            fontSize={14}
+            fontWeight="800"
+            writingDirection="ltr"
+            style={{ fontVariant: ['tabular-nums'] }}
+          >
+            {t('events.challenges.reward', { xp: formatXp(rewardXp) })}
+          </Text>
+        </TamStack>
       </XStack>
 
       {/*
@@ -496,12 +532,14 @@ export default function EventsScreen() {
   const router = useRouter();
 
   const dashboardQuery = useDashboard();
+  // §8.3 challenge cards source — useMyMissions().weekly CHALLENGE_* rows.
+  // Section-local states: a missions failure never hides freeze/timed.
+  const missionsQuery = useMyMissions();
 
   const isLoading = dashboardQuery.isPending;
   const isError = dashboardQuery.isError;
 
   const freezeBalance = dashboardQuery.data?.freezeBalance ?? 0;
-  const weeklyMission = dashboardQuery.data?.weeklyMission ?? null;
 
   // --- Live minute tick (spec §8.2 — never per-second) ---------------
   const [nowMs, setNowMs] = React.useState(() => Date.now());
@@ -521,11 +559,15 @@ export default function EventsScreen() {
   const visibleEvents = activeEvents.slice(0, MAX_VISIBLE_EVENTS);
   const overflowCount = activeEvents.length - visibleEvents.length;
 
-  // Weekly challenge — ONLY a CHALLENGE_* weekly mission qualifies (§8.3).
-  const weeklyChallenge =
-    weeklyMission && (weeklyMission.code ?? '').startsWith(CHALLENGE_CODE_PREFIX)
-      ? weeklyMission
-      : null;
+  // Weekly challenges — ONLY CHALLENGE_*-prefixed weekly missions qualify
+  // (§8.3). This screen owns these cards; missions.tsx excludes them.
+  const weeklyChallenges = React.useMemo(
+    () =>
+      (missionsQuery.data?.weekly ?? []).filter((m) =>
+        (m.code ?? '').startsWith(CHALLENGE_CODE_PREFIX),
+      ),
+    [missionsQuery.data?.weekly],
+  );
 
   const rowDir = (isRtl ? 'row-reverse' : 'row') as 'row' | 'row-reverse';
   const backChevron = isRtl ? '→' : '←';
@@ -751,8 +793,11 @@ export default function EventsScreen() {
               </YStack>
 
               {/* -------------------------------------------------------- */}
-              {/* 3. Weekly challenge — purple chrome (§8.3); honest empty */}
-              {/* state when DashboardDto exposes no CHALLENGE_* summary.  */}
+              {/* 3. Weekly challenges — purple chrome (§8.3). Sourced from */}
+              {/* useMyMissions().weekly filtered to CHALLENGE_* — THIS     */}
+              {/* screen owns the challenge cards (missions.tsx excludes    */}
+              {/* them). Section-local loading/error; honest empty state    */}
+              {/* when no challenges are active.                            */}
               {/* -------------------------------------------------------- */}
               <YStack gap="$3" testID="events-challenges">
                 <SectionEyebrow
@@ -760,12 +805,54 @@ export default function EventsScreen() {
                   direction={direction}
                   color="$purple"
                 />
-                {weeklyChallenge ? (
-                  <WeeklyChallengeCard
-                    mission={weeklyChallenge}
-                    locale={locale}
-                    direction={direction}
+                {missionsQuery.isPending ? (
+                  /* Challenge skeleton at final card geometry. */
+                  <TamStack
+                    testID="events-challenges-loading"
+                    height={112}
+                    borderRadius="$card"
+                    backgroundColor="$cardSoft"
+                    opacity={0.6}
                   />
+                ) : missionsQuery.isError ? (
+                  /* Section-local error strip + retry (W13 pattern). */
+                  <YStack
+                    testID="events-challenges-error"
+                    backgroundColor="$dangerSoft"
+                    borderRadius="$card"
+                    padding="$4"
+                    gap="$3"
+                    alignItems="center"
+                  >
+                    <Text
+                      color="$fg1"
+                      fontSize={14}
+                      fontWeight="700"
+                      fontFamily="$body"
+                      textAlign="center"
+                      writingDirection={direction}
+                    >
+                      {`⚠️ ${t('events.challenges.error')}`}
+                    </Text>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      accessibilityLabel={t('common.retry')}
+                      onPress={() => missionsQuery.refetch()}
+                      testID="events-challenges-retry"
+                    >
+                      {t('common.retry')}
+                    </Button>
+                  </YStack>
+                ) : weeklyChallenges.length > 0 ? (
+                  weeklyChallenges.map((mission) => (
+                    <WeeklyChallengeCard
+                      key={mission.code ?? mission.titleKey ?? ''}
+                      mission={mission}
+                      locale={locale}
+                      direction={direction}
+                    />
+                  ))
                 ) : (
                   <EmptyCard
                     glyph={'🏆'}

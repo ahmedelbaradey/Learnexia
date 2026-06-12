@@ -732,6 +732,35 @@ export const en = {
         rankLabel: 'Rank {{rank}} of {{total}}',
         rankUnknown: 'Earning your rank…',
         a11y: '{{tier}} league, rank {{rank}} of {{total}}, {{xp}} XP this week',
+        hintA11y: 'Opens your league standings',
+      },
+      // 3c (B-int) — gamification entry points on the Home dashboard
+      // (Design Spec P4-08 §10: HUD-chip tap-throughs + event banner + activity link).
+      statsNav: {
+        hearts: '{{value}} hearts — see details',
+        streak: '{{value}} day streak — see details',
+        xp: '{{value}} XP this week — see details',
+        freeze: '{{value}} streak freezes — see events',
+      },
+      events: {
+        seeAll: 'See all →',
+        bannerA11y: '{{name}} — {{multiplier}} event. Opens events and challenges',
+      },
+      activity: {
+        seeAll: 'See all →',
+        a11y: 'My activity — see all your lesson attempts',
+      },
+      // 3c (B-int) — dashboard celebration popups (useDashboardDiff; level-up
+      // and mission-complete copy reuses xp.levelUp.* / missions.complete.*).
+      celebrate: {
+        cta: 'Keep Going',
+        badgeTitle: 'New Badge Unlocked!',
+        badgeA11y: 'New badge unlocked: {{name}}. You earned {{xp}} XP',
+        streakTitle: 'Streak Milestone!',
+        streakSubtitle_one: '{{value}}-day streak — keep it alive!',
+        streakSubtitle_other: '{{value}}-day streak — keep it alive!',
+        streakA11y_one: 'Streak milestone! {{value}} day streak. You earned {{xp}} XP',
+        streakA11y_other: 'Streak milestone! {{value}} days streak. You earned {{xp}} XP',
       },
     },
     subjects: {
@@ -1159,7 +1188,9 @@ export const en = {
       progressLabel: '{{progress}} of {{target}}',
       completed: 'Completed',
       expired: "Time's up — a new challenge is coming!",
-      cardA11y: '{{title}} — {{status}}',
+      reward: '⭐ +{{xp}}',
+      cardA11y: '{{title}} — {{status}} — reward {{xp}} XP',
+      error: 'We could not load your challenges. Try again!',
       titles: {
         lessons25: 'Finish 25 lessons this week',
         correct100: 'Get 100 answers right this week',
@@ -1878,6 +1909,43 @@ export const ar = {
         rankLabel: 'المرتبة {{rank}} من {{total}}',
         rankUnknown: 'جارٍ احتساب مرتبتك…',
         a11y: 'دوري {{tier}}، المرتبة {{rank}} من {{total}}، {{xp}} نقطة هذا الأسبوع',
+        hintA11y: 'يفتح ترتيب دوريك',
+      },
+      // 3c (B-int) — نقاط الدخول للتلعيب على لوحة الطفل الرئيسية
+      // (Design Spec P4-08 §10: الرقائق + لافتة الفعاليات + رابط النشاط).
+      statsNav: {
+        hearts: '{{value}} قلوب — اعرض التفاصيل',
+        streak: 'سلسلة {{value}} أيام — اعرض التفاصيل',
+        xp: '{{value}} نقطة هذا الأسبوع — اعرض التفاصيل',
+        freeze: '{{value}} مجمِّدات — اعرض الفعاليات',
+      },
+      events: {
+        seeAll: 'عرض الكل ←',
+        bannerA11y: '{{name}} — فعالية {{multiplier}}. يفتح الفعاليات والتحديات',
+      },
+      activity: {
+        seeAll: 'عرض الكل ←',
+        a11y: 'نشاطي — اعرض كل محاولاتك في الدروس',
+      },
+      // 3c (B-int) — نوافذ الاحتفال على اللوحة (useDashboardDiff؛ نص الارتقاء
+      // وإكمال المهمة يعيد استخدام xp.levelUp.* / missions.complete.*).
+      celebrate: {
+        cta: 'واصل التقدم',
+        badgeTitle: 'شارة جديدة!',
+        badgeA11y: 'شارة جديدة: {{name}}. كسبت {{xp}} نقطة',
+        streakTitle: 'محطة جديدة في السلسلة!',
+        streakSubtitle_zero: 'سلسلة {{value}} أيام — حافظ عليها!',
+        streakSubtitle_one: 'سلسلة يوم واحد — حافظ عليها!',
+        streakSubtitle_two: 'سلسلة يومين — حافظ عليها!',
+        streakSubtitle_few: 'سلسلة {{value}} أيام — حافظ عليها!',
+        streakSubtitle_many: 'سلسلة {{value}} يومًا — حافظ عليها!',
+        streakSubtitle_other: 'سلسلة {{value}} يوم — حافظ عليها!',
+        streakA11y_zero: 'محطة جديدة! سلسلة {{value}} أيام. كسبت {{xp}} نقطة',
+        streakA11y_one: 'محطة جديدة! سلسلة يوم واحد. كسبت {{xp}} نقطة',
+        streakA11y_two: 'محطة جديدة! سلسلة يومين. كسبت {{xp}} نقطة',
+        streakA11y_few: 'محطة جديدة! سلسلة {{value}} أيام. كسبت {{xp}} نقطة',
+        streakA11y_many: 'محطة جديدة! سلسلة {{value}} يومًا. كسبت {{xp}} نقطة',
+        streakA11y_other: 'محطة جديدة! سلسلة {{value}} يوم. كسبت {{xp}} نقطة',
       },
     },
     subjects: {
@@ -2332,7 +2400,9 @@ export const ar = {
       progressLabel: '{{progress}} من {{target}}',
       completed: 'اكتملت',
       expired: 'انتهى الوقت — تحدٍّ جديد قادم!',
-      cardA11y: '{{title}} — {{status}}',
+      reward: '⭐ +{{xp}}',
+      cardA11y: '{{title}} — {{status}} — المكافأة {{xp}} نقطة',
+      error: 'تعذّر تحميل التحديات. حاول مجددًا!',
       titles: {
         lessons25: 'أكمل ٢٥ درسًا هذا الأسبوع',
         correct100: 'أجب عن ١٠٠ سؤال إجابة صحيحة هذا الأسبوع',

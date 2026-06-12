@@ -46,7 +46,7 @@ import {
 import { Stack as TamStack, Text as TamText, styled } from '@tamagui/core';
 import { useRouter } from 'expo-router';
 import { MotiView } from 'moti';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -171,20 +171,29 @@ export default function XpScreen() {
   const [heroOverride, setHeroOverride] = useState<number | null>(null);
   const [countUp, setCountUp] = useState<{ from: number; to: number } | null>(null);
 
+  // Latest level/xp via ref — the trigger effect must depend ONLY on the
+  // diff identity (index.tsx precedent): `level`/`xp` update a render BEFORE
+  // `useDashboardDiff` re-emits, so depending on them re-runs this effect
+  // against a stale non-zero diff on a later xp-only refresh and re-fires
+  // the popup. Reading current values through the ref keeps it one popup
+  // per actual level-up.
+  const latestProgressRef = useRef<{ xp: number; level: number }>({ xp, level });
+  latestProgressRef.current = { xp, level };
+
   // Trigger: the dashboard diff reports a level increase across refreshes
   // (cold-start safe — first load always emits ZERO_DIFF).
   useEffect(() => {
     if (diff.levelDelta > 0) {
+      const { xp: currentXp, level: currentLevel } = latestProgressRef.current;
       const xpGained = Math.max(diff.xpDelta, 0);
       setCelebration({
-        fromLevel: level - diff.levelDelta,
-        toLevel: level,
-        fromXp: Math.max(0, xp - xpGained),
+        fromLevel: currentLevel - diff.levelDelta,
+        toLevel: currentLevel,
+        fromXp: Math.max(0, currentXp - xpGained),
         xpGained,
       });
     }
-    // `level`/`xp` change exactly when `diff` re-emits (same data source).
-  }, [diff, level, xp]);
+  }, [diff]);
 
   // Count-up motion: tick the hero number old → new over 600ms (spec §0.1).
   useEffect(() => {
