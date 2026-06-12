@@ -1627,6 +1627,9 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="AnswerPayloadRequired" xml:space="preserve">
     <value>Answer payload is required.</value>
   </data>
+  <data name="AnswerPayloadMalformedJson" xml:space="preserve">
+    <value>Answer payload is not valid JSON.</value>
+  </data>
   <data name="TimeSpentSecondsMustBeNonNegative" xml:space="preserve">
     <value>Time spent must be zero or greater.</value>
   </data>

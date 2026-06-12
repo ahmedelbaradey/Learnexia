@@ -102,6 +102,11 @@ export const en = {
       haveAccount: 'Already have an account?',
       signInLink: 'Sign in',
       backToSignIn: 'Back to Sign in',
+      captcha: {
+        a11y: 'Security check',
+        loadError:
+          "The security check couldn't load. Please refresh the page and try again.",
+      },
       errors: {
         duplicateEmail: 'An account with this email already exists.',
         weakPassword:
@@ -109,6 +114,7 @@ export const en = {
         invalidEmail: 'Please enter a valid email address.',
         countryRequired: 'Please select your country.',
         termsRequired: 'Please accept the Terms to continue.',
+        captchaFailed: 'Security check failed. Please try again.',
       },
     },
     login: {
@@ -138,8 +144,13 @@ export const en = {
         socialProof: '240,000+ kids learning today',
       },
       errors: {
+        // Anti-enumeration (P1-13): credential failures are ALWAYS this one
+        // uniform message — never a "no account found" variant.
         invalidCredentials: 'Incorrect username or password.',
-        notFound: 'No account found with this email.',
+        accountLocked:
+          'Too many failed attempts. Your account is temporarily locked — please try again later.',
+        accountDeactivated:
+          'This account has been deactivated. Please contact support for help.',
         socialFailed: "Couldn't sign in with Google. Please try again.",
       },
       social: {
@@ -846,6 +857,11 @@ export const ar = {
       haveAccount: 'لديك حساب بالفعل؟',
       signInLink: 'تسجيل الدخول',
       backToSignIn: 'العودة لتسجيل الدخول',
+      captcha: {
+        a11y: 'فحص الأمان',
+        loadError:
+          'تعذّر تحميل فحص الأمان. يرجى تحديث الصفحة والمحاولة مرة أخرى.',
+      },
       errors: {
         duplicateEmail: 'يوجد حساب بهذا البريد الإلكتروني بالفعل.',
         weakPassword:
@@ -853,6 +869,7 @@ export const ar = {
         invalidEmail: 'يرجى إدخال بريد إلكتروني صحيح.',
         countryRequired: 'يرجى اختيار دولتك.',
         termsRequired: 'يرجى الموافقة على الشروط للمتابعة.',
+        captchaFailed: 'فشل فحص الأمان. يرجى المحاولة مرة أخرى.',
       },
     },
     login: {
@@ -882,8 +899,13 @@ export const ar = {
         socialProof: 'أكثر من ٢٤٠٬٠٠٠ طفل يتعلمون اليوم',
       },
       errors: {
+        // Anti-enumeration (P1-13): credential failures are ALWAYS this one
+        // uniform message — never a "no account found" variant.
         invalidCredentials: 'اسم المستخدم أو كلمة المرور غير صحيحة.',
-        notFound: 'لا يوجد حساب بهذا البريد الإلكتروني.',
+        accountLocked:
+          'محاولات فاشلة كثيرة. تم قفل حسابك مؤقتاً — يرجى المحاولة لاحقاً.',
+        accountDeactivated:
+          'تم إيقاف هذا الحساب. يرجى التواصل مع الدعم للمساعدة.',
         socialFailed: 'تعذّر تسجيل الدخول عبر Google. حاول مرة أخرى.',
       },
       social: {

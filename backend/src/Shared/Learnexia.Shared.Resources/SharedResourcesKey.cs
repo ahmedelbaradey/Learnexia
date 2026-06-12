@@ -770,6 +770,8 @@
         public const string AttemptIdMustBePositive = "AttemptIdMustBePositive";
         public const string QuestionIdMustBePositive = "QuestionIdMustBePositive";
         public const string AnswerPayloadRequired = "AnswerPayloadRequired";
+        /// <summary>CO-BE-2: structured (JSON-looking) answer payload that fails to parse → 422.</summary>
+        public const string AnswerPayloadMalformedJson = "AnswerPayloadMalformedJson";
         public const string TimeSpentSecondsMustBeNonNegative = "TimeSpentSecondsMustBeNonNegative";
         public const string TimeSpentSecondsExceedsMaximum = "TimeSpentSecondsExceedsMaximum";
 

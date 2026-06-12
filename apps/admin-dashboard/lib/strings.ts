@@ -20,6 +20,8 @@ export interface AdminStrings {
   signInButton: string;
   signingInButton: string;
   errInvalidCredentials: string;
+  errAccountLocked: string;
+  errAccountDeactivated: string;
   errForbidden: string;
   errNetwork: string;
   finePrint: string;
@@ -52,6 +54,9 @@ const en: AdminStrings = {
   signInButton: 'Sign In',
   signingInButton: 'Signing In…',
   errInvalidCredentials: 'Incorrect username or password.',
+  errAccountLocked:
+    'Account temporarily locked after too many failed attempts. Please try again later.',
+  errAccountDeactivated: 'This account has been deactivated. Please contact your administrator.',
   errForbidden: 'Access denied. This portal is for administrators only.',
   errNetwork: 'Something went wrong. Please try again.',
   finePrint: 'Authorised personnel only. No self-registration.',
@@ -82,6 +87,8 @@ const ar: AdminStrings = {
   signInButton: 'تسجيل الدخول',
   signingInButton: 'جارٍ تسجيل الدخول…',
   errInvalidCredentials: 'اسم المستخدم أو كلمة المرور غير صحيحة.',
+  errAccountLocked: 'تم قفل الحساب مؤقتًا بعد عدة محاولات فاشلة. يرجى المحاولة لاحقًا.',
+  errAccountDeactivated: 'تم إلغاء تنشيط هذا الحساب. يرجى التواصل مع المسؤول.',
   errForbidden: 'الوصول مرفوض. هذه البوابة مخصصة للمسؤولين فقط.',
   errNetwork: 'حدث خطأ ما. يرجى المحاولة مرة أخرى.',
   finePrint: 'للموظفين المعتمدين فقط. لا يوجد تسجيل ذاتي.',

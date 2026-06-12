@@ -1626,6 +1626,9 @@
   <data name="AnswerPayloadRequired" xml:space="preserve">
     <value>محتوى الإجابة مطلوب.</value>
   </data>
+  <data name="AnswerPayloadMalformedJson" xml:space="preserve">
+    <value>محتوى الإجابة ليس بصيغة JSON صحيحة.</value>
+  </data>
   <data name="TimeSpentSecondsMustBeNonNegative" xml:space="preserve">
     <value>يجب أن يكون الوقت المستغرق صفراً أو أكثر.</value>
   </data>

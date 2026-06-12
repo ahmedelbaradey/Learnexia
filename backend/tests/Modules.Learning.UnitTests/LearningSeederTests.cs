@@ -429,6 +429,102 @@ public sealed class LearningSeederTests
     }
 
     // -------------------------------------------------------------------------
+    // CO-BE-3 AC-1: Grade-1 Math root lessons (Ar + En) carry all four question types
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task SeedAsync_Grade1MathRootLessons_HaveAllFourQuestionTypes()
+    {
+        var sp = BuildServiceProvider();
+        await LearningSeeder.SeedAsync(sp);
+
+        var db = GetDb(sp);
+
+        var mathRootLessonNames = new[] { "مقدمة في العد (ص1)", "Introduction to Counting (G1)" };
+
+        foreach (var lessonName in mathRootLessonNames)
+        {
+            var lesson = await db.Lessons.AsNoTracking().FirstOrDefaultAsync(l => l.Name == lessonName);
+            lesson.Should().NotBeNull($"demo lesson '{lessonName}' must be seeded");
+
+            var types = await db.QuizQuestions.AsNoTracking()
+                .Where(q => q.LessonId == lesson!.Id)
+                .Select(q => q.QuestionType)
+                .ToListAsync();
+
+            types.Should().BeEquivalentTo(
+                new[] { QuestionType.MCQ, QuestionType.TrueFalse, QuestionType.FillInBlank, QuestionType.Matching },
+                $"'{lessonName}' must carry exactly one question of each of the four types");
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // CO-BE-3 AC-2: Seeded Matching question content follows the CO-BE-1 contract
+    // and its CorrectAnswer grades as correct via AnswerComparator (pair-set equality).
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task SeedAsync_SeededMatchingQuestion_ContentMatchesContract_AndSelfGradesCorrect()
+    {
+        var sp = BuildServiceProvider();
+        await LearningSeeder.SeedAsync(sp);
+
+        var db = GetDb(sp);
+
+        var matchingQuestions = await db.QuizQuestions.AsNoTracking()
+            .Where(q => q.QuestionType == QuestionType.Matching)
+            .ToListAsync();
+
+        matchingQuestions.Should().NotBeEmpty("CO-BE-3 must seed at least one Matching question");
+
+        foreach (var question in matchingQuestions)
+        {
+            // Options must parse as {"left":[{"id","text"}],"right":[{"id","text"}]}.
+            using var optionsDoc = System.Text.Json.JsonDocument.Parse(question.Options);
+            optionsDoc.RootElement.TryGetProperty("left", out var left).Should().BeTrue();
+            optionsDoc.RootElement.TryGetProperty("right", out var right).Should().BeTrue();
+            left.GetArrayLength().Should().Be(right.GetArrayLength());
+            foreach (var item in left.EnumerateArray().Concat(right.EnumerateArray()))
+            {
+                item.TryGetProperty("id", out _).Should().BeTrue("every Matching item carries a stable id");
+                item.TryGetProperty("text", out _).Should().BeTrue("every Matching item carries display text");
+            }
+
+            // CorrectAnswer must parse as {"pairs":[...]} and grade itself correct via the comparator.
+            using var answerDoc = System.Text.Json.JsonDocument.Parse(question.CorrectAnswer);
+            answerDoc.RootElement.TryGetProperty("pairs", out var pairs).Should().BeTrue();
+            pairs.GetArrayLength().Should().Be(left.GetArrayLength());
+
+            Learnexia.Modules.Learning.Domain.Services.AnswerComparator
+                .AreEqual(QuestionType.Matching, question.CorrectAnswer, question.CorrectAnswer)
+                .Should().BeTrue("the seeded CorrectAnswer must satisfy its own pair-set comparison");
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // CO-BE-3 AC-3: Question seeding is idempotent — second run adds zero question rows
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task SeedAsync_QuizQuestions_AreIdempotent_SecondRunDoesNotDuplicate()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        var sp = BuildServiceProvider(dbName);
+
+        await LearningSeeder.SeedAsync(sp);
+
+        var db = GetDb(sp);
+        var questionsAfterFirst = await db.QuizQuestions.AsNoTracking().CountAsync();
+        questionsAfterFirst.Should().BeGreaterThan(0, "first run must seed demo questions");
+
+        await LearningSeeder.SeedAsync(sp);
+
+        var questionsAfterSecond = await db.QuizQuestions.AsNoTracking().CountAsync();
+        questionsAfterSecond.Should().Be(questionsAfterFirst,
+            "QuizQuestion count must not change on second seed (per (lesson, type) idempotency key)");
+    }
+
+    // -------------------------------------------------------------------------
     // AC-11: Expected subject root count across all grades = 6 × 6 = 36
     // -------------------------------------------------------------------------
 

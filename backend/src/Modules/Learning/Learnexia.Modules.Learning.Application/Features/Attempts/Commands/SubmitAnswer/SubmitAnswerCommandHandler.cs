@@ -100,7 +100,8 @@ public class SubmitAnswerCommandHandler : BaseResponseHandler,
 
             // Step 7 — Correctness check: per-QuestionType comparison via AnswerComparator.
             // P2-07 introduced per-type semantics (bool.TryParse for TrueFalse, trim+OrdinalIgnoreCase
-            // for FillInBlank, MCQ unchanged). Matching defers to string compare (TODO P2-07.b).
+            // for FillInBlank, MCQ unchanged). CO-BE-2: Matching uses order-independent pair-set
+            // equality on the {"pairs":[{"leftId","rightId"}]} contract (see AnswerComparator docs).
             var isCorrect = AnswerComparator.AreEqual(
                 question.QuestionType,
                 request.AnswerPayload,
