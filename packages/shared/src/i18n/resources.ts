@@ -15,6 +15,13 @@ export const NAMESPACES = [
   'child',
   'nav',
   'quiz',
+  'xp',
+  'streak',
+  'hearts',
+  'badges',
+  'missions',
+  'league',
+  'events',
 ] as const;
 export type Namespace = (typeof NAMESPACES)[number];
 
@@ -887,6 +894,90 @@ export const en = {
       pairJoin: ', ',
     },
   },
+  // B1 — XP & Level screen + level-up moment (Design Spec P4-08 §1).
+  // XP counters / "n / m XP" strings keep Latin digits + LTR in BOTH locales
+  // (SKILL.md numerals rule); level numbers are prose counts (locale digits).
+  xp: {
+    back: 'Back',
+    hero: {
+      eyebrow: 'Your level',
+      level: 'Level {{value}}',
+      a11y: 'You are level {{level}}',
+    },
+    progress: {
+      header: '📈 Level {{from}} → {{to}}',
+      counter: '{{current}} / {{total}} XP',
+      counterTotalOnly: '{{xp}} XP',
+      footerPercent: '{{percent}} to next level',
+      footerLeft: '{{xp}} XP left',
+      barA11y: '{{current}} of {{total}} XP to level {{next}}',
+    },
+    totalXp: {
+      label: 'Total XP',
+      a11y: 'Total XP {{xp}}',
+    },
+    levelUp: {
+      title: 'Level Up!',
+      subtitle: 'You reached Level {{level}}',
+      cta: 'Keep Going',
+      a11y: 'Level up! You reached level {{level}} and earned {{xp}} XP',
+    },
+    error: 'We could not load your XP. Try again!',
+  },
+  // B2 — Streak screen (Design Spec P4-08 §2). No per-day history endpoint
+  // (gap G-2) → milestone markers + honest "coming soon" calendar placeholder.
+  streak: {
+    back: 'Back',
+    eyebrow: 'Streak',
+    days_one: '{{value}} day',
+    days_other: '{{value}} days',
+    keepAlive: 'Keep it alive!',
+    zeroTitle: 'Start your streak today!',
+    freeze: {
+      title: 'Streak freezes',
+      explainer: 'Freezes save your streak automatically when you miss a day',
+      countA11y_zero: 'No streak freezes yet — keep learning to earn them!',
+      countA11y_one: '{{value}} streak freeze ready',
+      countA11y_other: '{{value}} streak freezes ready',
+    },
+    milestones: {
+      eyebrow: 'Milestones',
+      dayLabel: 'Day {{value}}',
+      next: 'Next stop: day {{target}}!',
+      allDone: 'You passed every milestone — amazing!',
+      reachedA11y: 'Day {{value}} milestone reached',
+      upcomingA11y: 'Day {{value}} milestone — coming up!',
+    },
+    history: {
+      comingSoon: 'Your streak calendar is coming soon!',
+      body: "Soon you'll see every day you practiced right here.",
+    },
+    error: 'We could not load your streak. Try again!',
+  },
+  // B3 — Hearts status screen + Practice Mode (Design Spec P4-08 §3.1).
+  // No refill-countdown field on DashboardDto (gap G-5) → static refillNote only.
+  hearts: {
+    back: 'Back',
+    title: 'Your Hearts',
+    sub: 'You lose one for each wrong answer',
+    subFull: 'All hearts full — go learn!',
+    rowA11y: '{{current}} of {{max}} hearts',
+    refillNote: 'Hearts come back over time — or earn them by practicing',
+    lost: {
+      title: 'You lost a heart',
+      sub: 'Take your time — try again',
+    },
+    practiceMode: {
+      title: 'Practice Mode is on',
+      body: "Practice answers don't cost hearts and earn them back — keep learning!",
+      cta: 'Practice Mode (no hearts)',
+    },
+    error: "Couldn't load your hearts. Try again",
+  },
+  badges: {},
+  missions: {},
+  league: {},
+  events: {},
 } as const;
 
 export const ar = {
@@ -1754,6 +1845,95 @@ export const ar = {
       pairJoin: '، ',
     },
   },
+  // B1 — شاشة النقاط والمستوى + لحظة الارتقاء (Design Spec P4-08 §1 — النص العربي وفق المواصفة).
+  // عدّادات XP بصيغة "n / m XP" تبقى بأرقام لاتينية واتجاه LTR (قاعدة الأرقام في SKILL.md)؛
+  // أرقام المستويات نصية وتُعرض بالأرقام الشرقية.
+  xp: {
+    back: 'رجوع',
+    hero: {
+      eyebrow: 'مستواك',
+      level: 'المستوى {{value}}',
+      a11y: 'أنت في المستوى {{level}}',
+    },
+    progress: {
+      header: '📈 المستوى {{from}} ← {{to}}',
+      counter: '{{current}} / {{total}} XP',
+      counterTotalOnly: '{{xp}} XP',
+      footerPercent: '{{percent}} للوصول للمستوى {{next}}',
+      footerLeft: 'متبقي {{xp}} نقطة',
+      barA11y: '{{current}} من {{total}} نقطة للوصول للمستوى {{next}}',
+    },
+    totalXp: {
+      label: 'إجمالي النقاط',
+      a11y: 'إجمالي النقاط {{xp}}',
+    },
+    levelUp: {
+      title: 'ارتقيت في المستوى!',
+      subtitle: 'وصلت إلى المستوى {{level}}',
+      cta: 'واصل التقدم',
+      a11y: 'ارتقيت في المستوى! وصلت إلى المستوى {{level}} وكسبت {{xp}} نقطة',
+    },
+    error: 'تعذّر تحميل نقاطك. حاول مجددًا!',
+  },
+  // B2 — شاشة السلسلة (Design Spec P4-08 §2 — النص العربي وفق المواصفة).
+  streak: {
+    back: 'رجوع',
+    eyebrow: 'السلسلة',
+    days_zero: '{{value}} أيام',
+    days_one: 'يوم واحد',
+    days_two: 'يومان',
+    days_few: '{{value}} أيام',
+    days_many: '{{value}} يومًا',
+    days_other: '{{value}} يوم',
+    keepAlive: 'حافظ عليها!',
+    zeroTitle: 'ابدأ سلسلتك اليوم!',
+    freeze: {
+      title: 'مجمِّدات السلسلة',
+      explainer: 'تحمي المجمِّدات سلسلتك تلقائيًا عند تفويت يوم',
+      countA11y_zero: 'لا مجمِّدات بعد — واصل التعلم لتكسبها!',
+      countA11y_one: 'مجمِّد واحد جاهز',
+      countA11y_two: 'مجمِّدان جاهزان',
+      countA11y_few: '{{value}} مجمِّدات جاهزة',
+      countA11y_many: '{{value}} مجمِّدًا جاهزًا',
+      countA11y_other: '{{value}} مجمِّد جاهز',
+    },
+    milestones: {
+      eyebrow: 'محطات السلسلة',
+      dayLabel: 'اليوم {{value}}',
+      next: 'المحطة التالية: اليوم {{target}}!',
+      allDone: 'تجاوزت كل المحطات — مذهل!',
+      reachedA11y: 'وصلت إلى محطة اليوم {{value}}',
+      upcomingA11y: 'محطة اليوم {{value}} — قريبًا!',
+    },
+    history: {
+      comingSoon: 'تقويم سلسلتك قادم قريبًا!',
+      body: 'قريبًا سترى هنا كل يوم تتدرب فيه.',
+    },
+    error: 'تعذر تحميل سلسلتك. حاول مجددًا!',
+  },
+  // B3 — شاشة القلوب + وضع التدريب (Design Spec P4-08 §3.1 — النص العربي وفق المواصفة).
+  hearts: {
+    back: 'رجوع',
+    title: 'قلوبك',
+    sub: 'تفقد قلبًا مع كل إجابة خاطئة',
+    subFull: 'قلوبك مكتملة — هيا نتعلم!',
+    rowA11y: '{{current}} من {{max}} قلوب',
+    refillNote: 'تعود القلوب مع الوقت — أو اكسبها بالتدريب',
+    lost: {
+      title: 'فقدت قلبًا',
+      sub: 'خذ وقتك — حاول مجددًا',
+    },
+    practiceMode: {
+      title: 'وضع التدريب مفعّل',
+      body: 'إجابات التدريب لا تُكلّف قلوبًا وتعيدها إليك — واصل التعلم!',
+      cta: 'وضع التدريب (بدون قلوب)',
+    },
+    error: 'تعذّر تحميل قلوبك. حاول مجددًا',
+  },
+  badges: {},
+  missions: {},
+  league: {},
+  events: {},
 } as const;
 
 export const resources = {
