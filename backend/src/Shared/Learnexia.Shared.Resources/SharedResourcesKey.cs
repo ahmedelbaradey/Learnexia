@@ -786,6 +786,9 @@
         public const string SkillIdMustBePositive = "SkillIdMustBePositive";
         public const string AttemptsRetrievedSuccessfully = "AttemptsRetrievedSuccessfully";
         public const string SkillStatsRetrievedSuccessfully = "SkillStatsRetrievedSuccessfully";
+        // Generic 403 for attempts reads (owning student or linked parent only) — anti-enumeration:
+        // same message whether the student id is unknown or simply not linked to the caller.
+        public const string AttemptsAccessForbidden = "AttemptsAccessForbidden";
 
         // Skill dependency graph — node queries (P2-11 BE-5).
         public const string KnowledgeNodeNotFound = "KnowledgeNodeNotFound";
