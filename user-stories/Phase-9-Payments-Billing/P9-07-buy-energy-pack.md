@@ -9,10 +9,10 @@
 - **Requirements:** FR-PAY-3 *(new — Phase 9)*
 
 ## Description
-As a parent, I want to buy a 500-energy pack for a specific child, so that they can keep using the Helper after their monthly energy runs out.
+As a parent, I want to buy a 1000-energy pack for a specific child, so that they can keep using the Helper after their monthly energy runs out.
 
 ## Acceptance Criteria
-- A parent buys a **500-credit pack** via the payment provider and **assigns it to a specific child**.
+- A parent buys a **1000-credit pack ($5)** via the payment provider and **assigns it to a specific child**.
 - Purchased credits land in `PurchasedBalance` and **never expire**.
 - A successful purchase is recorded as a **`Purchase`** transaction with the payment reference.
 - A **failed payment grants no credits** and is surfaced as an error (P9-09).

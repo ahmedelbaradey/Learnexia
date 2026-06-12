@@ -12,7 +12,7 @@
 As a parent on a plan, I want each of my children to receive their monthly energy automatically, so that they can use the AI Helper without me topping up every time.
 
 ## Acceptance Criteria
-- A scheduled job grants each active child their plan's monthly allotment on the billing-cycle date — **Free = 300**, **Premium = 3000** (config-driven, see P9-11).
+- A scheduled job grants each active child their plan's monthly allotment on the billing-cycle date — **Free = 100**, **Premium = 5000** (config-driven, see P9-11).
 - Granted credits are added to `GrantedBalance` and stamped with an **expiry = end of the current cycle**.
 - At cycle rollover, any unspent `GrantedBalance` **expires** (an `Expire` transaction); `PurchasedBalance` is untouched.
 - Re-running the grant for the same child + cycle is **idempotent** (no double-grant).

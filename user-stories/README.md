@@ -152,7 +152,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P9-04 Daily soft cap & low-energy warning *(bounded by the monthly pool)*
 - P9-05 Manage subscription plan *(Free vs Premium 199 EGP/month — parent)*
 - P9-06 Pay for a subscription *(payment provider — Paymob/Fawry DECISION; recurring; security-sensitive)*
-- P9-07 Buy an energy pack *(500 credits, never expire — parent, assigned to a child)*
+- P9-07 Buy an energy pack *(1000 credits / $5, never expire — parent, assigned to a child)*
 - P9-08 Billing history & receipts *(parent)*
 - P9-09 Failed payments & refunds *(dunning + clawback)*
 - P9-10 Kid-facing energy UI *(⚡ طاقة المساعد — read-only, the only student-app billing surface; distinct from hearts)*
