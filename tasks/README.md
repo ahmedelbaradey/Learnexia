@@ -14,10 +14,12 @@ tasks/
 │   │   ├── Phase-3-Gamification/  P4-xx-FE.md   (XP/streak/hearts/badges/missions/leagues/motion)
 │   │   ├── Phase-4-AI-Tutor/      P3-12-FE.md   (AI tutor UI — chat/explain/hints surface, streaming, RTL)
 │   │   ├── Phase-5-Parent-Analytics/ P5-xx-FE.md
-│   │   └── Phase-8-Localization/  P8-xx-FE.md   (add-child learning lang, parent change flow, app-shell fonts/RTL)
+│   │   ├── Phase-8-Localization/  P8-xx-FE.md   (add-child learning lang, parent change flow, app-shell fonts/RTL)
+│   │   └── Phase-9-Payments-Billing/ P9-xx-FE.md (parent: plan/checkout/packs/billing-history; child: ⚡ energy meter)
 │   └── admin-dashboard/       Next.js admin screens
 │       ├── Phase-1-Foundation/    P1-10-FE.md   (admin sign-in & shell)
-│       └── Phase-7-Admin-Console/ P7-xx-FE.md   (admin feature screens)
+│       ├── Phase-7-Admin-Console/ P7-xx-FE.md   (admin feature screens)
+│       └── Phase-9-Payments-Billing/ P9-11-FE.md (billing config: plans/grants/action-costs)
 └── Backend/
     ├── Phase-1-Foundation/   P1-xx-BE.md
     ├── Phase-2-Learning-Core/ P2-xx-BE.md
@@ -26,10 +28,11 @@ tasks/
     ├── Phase-6-Stabilization/ P6-06-BE.md
     ├── Phase-7-Admin-Console/ P7-xx-BE.md
     ├── Phase-8-Localization/  P8-xx-BE.md
+    ├── Phase-9-Payments-Billing/ P9-xx-BE.md  (credit ledger/grant/spend, subscriptions, payment provider, dunning/refunds, admin config)
     └── Backlog-Phase-2-Plus/ BL-xx-BE.md   (Curriculum Intelligence: schema/upload/parsing/ingestion/knowledge-graph — .NET + Python pipeline)
 ```
 
-> **Scope:** this tree covers **Phase 1 & 2** stories, the **Phase 3 — Gamification** breakdown (`P4-xx`, both stacks), the **Phase 4 — AI Tutor** breakdown (`P3-xx`, all 13 stories), the **Phase 7 — Admin Console** feature breakdown (`P7-xx`), the **Phase 6 — `P6-06`** backend security-hardening pass (relocated from P1-13b), plus the **Backlog (Phase 2+) — Curriculum Intelligence** breakdown (`BL-01..05`, .NET + Python pipeline). The barrier-to-entry stories **P4-09** (re-engagement notifications), **P4-10** (Redis realtime gamification) and **P4-11** (streak freeze / timed events) are decomposed in the Phase 3 tree below; **P3-13** (adaptive student profile, barrier-to-entry BE2) is now decomposed in the Phase 4 tree. The remaining barrier-to-entry story **P5-07** (data feedback / calibration) is **pending task breakdown** and will be decomposed when its phase tree is built. The Phase-2 story **P2-11** (skill dependency graph) is broken down here. See [../docs/briefs/barrier-to-entry-gap-analysis.md](../docs/briefs/barrier-to-entry-gap-analysis.md).
+> **Scope:** this tree covers **Phase 1 & 2** stories, the **Phase 3 — Gamification** breakdown (`P4-xx`, both stacks), the **Phase 4 — AI Tutor** breakdown (`P3-xx`, all 13 stories), the **Phase 7 — Admin Console** feature breakdown (`P7-xx`), the **Phase 6 — `P6-06`** backend security-hardening pass (relocated from P1-13b), the **Phase 9 — Payment, Billing & Credits** breakdown (`P9-01..11`, both stacks — AI credit economy + monetization), plus the **Backlog (Phase 2+) — Curriculum Intelligence** breakdown (`BL-01..05`, .NET + Python pipeline). The barrier-to-entry stories **P4-09** (re-engagement notifications), **P4-10** (Redis realtime gamification) and **P4-11** (streak freeze / timed events) are decomposed in the Phase 3 tree below; **P3-13** (adaptive student profile, barrier-to-entry BE2) is now decomposed in the Phase 4 tree. The remaining barrier-to-entry story **P5-07** (data feedback / calibration) is **pending task breakdown** and will be decomposed when its phase tree is built. The Phase-2 story **P2-11** (skill dependency graph) is broken down here. See [../docs/briefs/barrier-to-entry-gap-analysis.md](../docs/briefs/barrier-to-entry-gap-analysis.md).
 >
 > **Phase order (resequenced):** Phase 3 = **Gamification** (`P4-xx`), Phase 4 = **AI Tutor** (`P3-xx`) — Gamification builds before AI Tutor; story IDs were kept stable so the prefix no longer equals the phase number. See [../user-stories/README.md](../user-stories/README.md).
 
@@ -170,6 +173,26 @@ Learning language (medium of instruction) vs UI language; bilingual curriculum a
 | P8-03 | Serve curriculum in the learning language *(read-path resolution)* | — | [BE](Backend/Phase-8-Localization/P8-03-BE.md) |
 | P8-04 | Change a child's learning language *(parent-only, fresh start)* | [FE](Frontend/student-app/Phase-8-Localization/P8-04-FE.md) | [BE](Backend/Phase-8-Localization/P8-04-BE.md) |
 | P8-99 | App-shell language foundation *(FE-only: api-client regen, fonts, UI-language persistence, RTL/i18n pass — folds in P6-03 FE-relevant)* | [FE](Frontend/student-app/Phase-8-Localization/P8-99-FE.md) | — |
+
+### Phase 9 — Payment, Billing & Credits *(story IDs `P9-xx`, post-MVP)*
+
+The AI **credit economy** ("⚡ طاقة المساعد") + monetization. **Parent-driven: all purchasing/billing/payment is in the parent app/account** — the child only spends energy and sees a **read-only** meter (P9-10, the only student-app billing surface). Lives in a new **`Billing`** module (schema `billing`) owning the credit ledger (dual pool: monthly **granted**-expire vs **purchased**-persist), subscriptions, payments, and config; spend reaches the AI Gateway (P3-01) via a `Shared.Contracts` **`ICreditSpendService`** seam. **Charge-on-delivery**, cache-hits charged the same, no charge on refuse/error. Supersedes the AI-Helper MVP daily-cap guardrail. Parent billing FE lands in the **student-app parent area**; admin config FE in **admin-dashboard**. **Nothing built — all tasks 🔲.**
+
+> **Pre-dispatch gates (lead must clear):** new `Billing` module approval (CLAUDE.md ask-before-new-modules), **payment provider Paymob vs Fawry** (P9-06/07), refund **clawback policy** (P9-09), EGP/VAT **receipt fields** (finance, P9-08), Hangfire for grant/renewal/dunning jobs, and provider keys/webhook secrets provisioning. **P9-03 (spend) is hard-blocked on the AI Helper cluster (P3-01..06) merging first.** Full blocker lists live in each `docs/plans/P9-xx.md`. Security-auditor gate is mandatory on **P9-03, P9-06, P9-07, P9-09**.
+
+| Story | Title | Frontend | Backend |
+|---|---|---|---|
+| P9-01 | Credit (energy) account & ledger *(Technical Enabler — dual pool, append-only)* | — | [BE](Backend/Phase-9-Payments-Billing/P9-01-BE.md) |
+| P9-02 | Grant monthly energy per plan *(Hangfire; granted-expire)* | — | [BE](Backend/Phase-9-Payments-Billing/P9-02-BE.md) |
+| P9-03 | Spend energy on AI help *(charge-on-delivery; wires into P3-01)* | — | [BE](Backend/Phase-9-Payments-Billing/P9-03-BE.md) |
+| P9-04 | Daily soft cap & low-energy warning *(bounded by monthly pool)* | — | [BE](Backend/Phase-9-Payments-Billing/P9-04-BE.md) |
+| P9-05 | Manage subscription plan *(Free/Premium — parent)* | [FE](Frontend/student-app/Phase-9-Payments-Billing/P9-05-FE.md) | [BE](Backend/Phase-9-Payments-Billing/P9-05-BE.md) |
+| P9-06 | Pay for a subscription *(provider DECISION; recurring; security-sensitive)* | [FE](Frontend/student-app/Phase-9-Payments-Billing/P9-06-FE.md) | [BE](Backend/Phase-9-Payments-Billing/P9-06-BE.md) |
+| P9-07 | Buy an energy pack *(500, never expires — parent → child)* | [FE](Frontend/student-app/Phase-9-Payments-Billing/P9-07-FE.md) | [BE](Backend/Phase-9-Payments-Billing/P9-07-BE.md) |
+| P9-08 | Billing history & receipts *(parent)* | [FE](Frontend/student-app/Phase-9-Payments-Billing/P9-08-FE.md) | [BE](Backend/Phase-9-Payments-Billing/P9-08-BE.md) |
+| P9-09 | Failed payments & refunds *(dunning + clawback)* | [FE](Frontend/student-app/Phase-9-Payments-Billing/P9-09-FE.md) | [BE](Backend/Phase-9-Payments-Billing/P9-09-BE.md) |
+| P9-10 | Kid-facing energy UI *(⚡ طاقة المساعد — read-only; distinct from hearts)* | [FE](Frontend/student-app/Phase-9-Payments-Billing/P9-10-FE.md) | — |
+| P9-11 | Admin: configure plans, grants & action costs *(admin console)* | [FE](Frontend/admin-dashboard/Phase-9-Payments-Billing/P9-11-FE.md) | [BE](Backend/Phase-9-Payments-Billing/P9-11-BE.md) |
 
 ### Backlog (Phase 2+) — Curriculum Intelligence *(story IDs `BL-xx`)*
 

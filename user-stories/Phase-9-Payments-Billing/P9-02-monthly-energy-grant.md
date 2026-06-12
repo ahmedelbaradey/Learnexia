@@ -1,0 +1,23 @@
+# Grant monthly energy per plan
+
+- **Project:** Learnexia
+- **Sprint / Phase:** Phase 9 — Payment, Billing & Credits (post-MVP)
+- **Epic:** Payment, Billing & Credits
+- **Issue type:** Story
+- **Story Points:** 5 — scheduled grant + expiry + idempotency across plan tiers.
+- **Labels:** `billing`, `credits`, `backend`
+- **Requirements:** FR-CREDIT-2 *(new — Phase 9)*
+
+## Description
+As a parent on a plan, I want each of my children to receive their monthly energy automatically, so that they can use the AI Helper without me topping up every time.
+
+## Acceptance Criteria
+- A scheduled job grants each active child their plan's monthly allotment on the billing-cycle date — **Free = 300**, **Premium = 3000** (config-driven, see P9-11).
+- Granted credits are added to `GrantedBalance` and stamped with an **expiry = end of the current cycle**.
+- At cycle rollover, any unspent `GrantedBalance` **expires** (an `Expire` transaction); `PurchasedBalance` is untouched.
+- Re-running the grant for the same child + cycle is **idempotent** (no double-grant).
+- A plan change mid-cycle affects the **next** grant, not the current one (proration — open question).
+
+## Notes
+- Runs on **Hangfire** (per the infra decision). Blocked by **P9-01** and **P9-05** (plan is the source of the allotment).
+- Grant amounts are admin-configurable (**P9-11**).
