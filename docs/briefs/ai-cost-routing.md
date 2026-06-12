@@ -149,29 +149,33 @@ All OFFLINE generation goes through the Anthropic Batch API:
 - Required for: concept-explanation pre-generation, hint pre-generation, bulk question generation.
 - The gateway must expose a `SubmitBatchAsync(IReadOnlyList<AiRequest>) → BatchJobId` path (add to `IAiGateway` or a separate `IAiBatchGateway`).
 
-## 6. Per-Plan Token Budgets / Quotas
+## 6. Per-Plan Daily Request Cap (MVP Cost-Safety Guardrail)
 
-Enforce server-side in the gateway's usage ledger (the `AiUsageLogs` table, P7-11, or an interim per-plan counter):
+> **Scope:** This section describes a **minimal cost-safety guardrail only** — a daily request count cap, not a credit economy. The full credit economy (ledger, per-action pricing, purchasable credit packs, monthly grants/reset, billing) is deferred to **Phase 9 (`P9-*` — Payment, Billing & Credits)**. Phase 9 supersedes this guardrail and promotes the concept to a full `ai.AiUsageLedger` / `ai.AiCreditTransaction` system.
 
-| Plan | Monthly AI request budget (illustrative) | On exhaustion |
+Enforce server-side in the gateway via `IAiUsageBudget` (see P3-01-BE-14):
+
+| Plan | Daily runtime LLM request cap (illustrative) | On exhaustion |
 |---|---|---|
-| Free | ~50 runtime LLM calls (cached responses unlimited) | Serve cached/canned response |
-| Premium AI | ~500+ runtime LLM calls | Graceful degradation to lower tier, then cached |
+| Free | ~20 runtime LLM calls/day (cached responses unlimited) | Serve cached/canned response — never a hard error |
+| Premium AI | ~100 runtime LLM calls/day | Graceful degradation to lower tier model, then cached |
 
-Numbers are illustrative — product must set exact quotas. The mechanism is: each runtime gateway call checks the student's remaining budget; if exhausted, skip the LLM and serve the best available cached response. Never return an error to the student — degrade gracefully to the cached canned explanation.
+Cap values are illustrative and config-driven — product must set exact numbers (confirm in `AiGatewayOptions`). The mechanism: each runtime gateway call checks the student's remaining **daily request count**; if exhausted, skip the LLM and serve the best available cached response. Never return a hard error to the student — degrade gracefully to the cached canned explanation.
 
-Track consumed budget in the `AiUsageLogs` table (planned for P7-11) or an interim Redis/DB counter. The P3-01 usage ledger is the foundation; the quota-enforcement layer builds on top.
+Track consumed requests in the `AiUsageLogs` table (planned for P7-11) or an interim Redis/DB counter. This cap is a temporary guardrail; Phase 9 builds the full billing and credit-accounting system on top of it.
 
 ## 7. Eval-Driven Tier Mix Validation
 
 **Do NOT assume** Haiku is adequate for Arabic pedagogical explanation quality without measurement. The explanation floor is Sonnet (see routing table above). The illustrative mix (~60% Haiku / 35% Sonnet / 5% Opus) is a target that must be validated by an eval set before any cost optimization changes the routing table.
+
+**The tier-mix decision is gated by the AI evaluation dataset** — do not trust the 80% Haiku split for Arabic pedagogy until it is measured. See **[docs/briefs/ai-eval-gate.md](ai-eval-gate.md)** for the standing eval dataset that gates (a) this tier-mix decision, (b) safety/age-appropriateness, and (c) Arabic explanation/hint quality. The cost-routing tier split must not be promoted to production until the eval gate passes.
 
 This validation is the responsibility of **P6-02** (AI quality evaluation story). The eval set must cover:
 - Arabic explanation quality at Haiku vs Sonnet (acceptability threshold to be defined by the content team).
 - Hint quality for common wrong-answer patterns.
 - Question generation quality and diversity.
 
-Do not lower the Sonnet floor on `Explain` or `Hint` task kinds without passing the P6-02 eval.
+Do not lower the Sonnet floor on `Explain` or `Hint` task kinds without passing the P6-02 eval gate (see `docs/briefs/ai-eval-gate.md`).
 
 ## 8. Open Questions for the Lead
 

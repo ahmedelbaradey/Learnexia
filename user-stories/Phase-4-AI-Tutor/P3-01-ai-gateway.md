@@ -4,16 +4,16 @@
 - **Sprint / Phase:** Phase 4 — AI Tutor (Week 6–7)
 - **Epic:** AI Gateway
 - **Issue type:** Technical Enabler
-- **Story Points:** 5 — new FastAPI service + provider abstraction + model routing; foundation for all AI features.
+- **Story Points:** 5 — new `Ai` module (.NET in-process gateway) + provider abstraction + model routing; foundation for all AI features.
 - **Labels:** `ai`, `gateway`, `backend`
 - **Requirements:** NFR-2, NFR-9
 
 ## Description
-As an AI engineer, I want a Python FastAPI gateway sitting between the .NET backend and the LLM providers, so that all AI calls share one abstraction with provider routing and cost control.
+As an AI engineer, I want an in-process **`IAiGateway`** (a new `Ai` module in the .NET modular monolith) sitting between feature handlers and the LLM providers, so that all AI calls share one abstraction with provider routing and cost control.
 
 ## Acceptance Criteria
 - The .NET backend calls AI features only through the gateway, never an LLM directly.
-- The gateway abstracts GPT and Gemini behind one interface and routes by task (cheap model for hints/simple explanations, premium for hard reasoning).
+- The gateway abstracts LLM providers behind one interface (**Claude default**; GPT/Gemini swappable) and routes by task (cheap model for hints/simple explanations, premium for hard reasoning).
 - A provider outage or error returns a graceful, typed error to the backend (no raw stack traces).
 - Model/provider choice is configurable without code changes.
 
