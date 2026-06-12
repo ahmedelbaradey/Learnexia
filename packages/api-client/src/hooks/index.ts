@@ -77,3 +77,8 @@ export { useCompleteAttempt } from './useCompleteAttempt';
 export type { CompleteAttemptInput } from './useCompleteAttempt';
 export { useAbandonAttempt } from './useAbandonAttempt';
 export type { AbandonAttemptInput } from './useAbandonAttempt';
+
+// --- P4-08 carryover (batch 2a) — gamification /Me hooks ---
+export { useMyBadges } from './useMyBadges';
+export { useMyMissions } from './useMyMissions';
+export { useMyLeague } from './useMyLeague';

@@ -106,6 +106,21 @@ export type {
   ConceptNodeDtoListBaseResponse,
   SkillNodeDto,
   MissingPrerequisiteDto,
+  // P4-08 carryover (batch 2a) — gamification /Me responses + dashboard sub-DTOs
+  MyBadgesResponse,
+  MyBadgesResponseBaseResponse,
+  BadgeStateDto,
+  BadgeSummary,
+  MyMissionsResponse,
+  MyMissionsResponseBaseResponse,
+  MissionStateDto,
+  MyLeagueResponse,
+  MyLeagueResponseBaseResponse,
+  LeagueStandingDto,
+  ActiveTimedEventDto,
+  // P2-09 / A5 attempt-history (hook lands in batch 2d)
+  AttemptListItemDto,
+  AttemptListItemDtoListBaseResponse,
 } from './generated';
 
 export {
@@ -114,6 +129,17 @@ export {
   DifficultyLevel,
   // W12 quiz enum
   QuestionType,
+} from './generated';
+
+// P4-08 carryover (batch 2a) — gamification enums are VALUES (screens must
+// reference enum members, never raw numbers/strings — CLAUDE.md i18n/enum rule).
+export {
+  BadgeRarity,
+  BadgeRarityDto,
+  MissionStatusDto,
+  MissionTypeDto,
+  MissionTargetTypeDto,
+  LeagueTierDto,
 } from './generated';
 
 // NotificationCategory is an enum value (not just a type) — must be re-exported as a value.

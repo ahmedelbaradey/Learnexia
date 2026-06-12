@@ -1,10 +1,10 @@
 /**
  * i18n resources — ar (Arabic-first) + en.
  *
- * Namespaces: `common`, `auth`, `onboarding`, `parent`, `child`. All P1-09 auth
- * & onboarding copy slots from the Design Spec live here. `defaultNS` is
- * `common`. The `en` object is the canonical shape; `ar` mirrors it exactly so
- * no key is missing in either locale (the QA pass verifies this).
+ * Namespaces: `common`, `auth`, `onboarding`, `parent`, `child`, `nav`. All
+ * P1-09 auth & onboarding copy slots from the Design Spec live here.
+ * `defaultNS` is `common`. The `en` object is the canonical shape; `ar` mirrors
+ * it exactly so no key is missing in either locale (the QA pass verifies this).
  */
 
 export const NAMESPACES = [
@@ -13,6 +13,7 @@ export const NAMESPACES = [
   'onboarding',
   'parent',
   'child',
+  'nav',
 ] as const;
 export type Namespace = (typeof NAMESPACES)[number];
 
@@ -772,6 +773,19 @@ export const en = {
       xpStub: '+10 XP (coming soon)',
     },
   },
+  // B0-nav — child app bottom TabBar (Design Spec design-system/ui_kits/student-app/B0-nav-tabbar.md §1).
+  nav: {
+    tabs: {
+      home: 'Home',
+      missions: 'Missions',
+      league: 'League',
+      badges: 'Badges',
+      barLabel: 'Main navigation',
+    },
+    stub: {
+      comingSoon: 'Coming soon',
+    },
+  },
 } as const;
 
 export const ar = {
@@ -1522,6 +1536,19 @@ export const ar = {
       backToSubject: 'الرجوع إلى الدروس',
       tryAgain: 'حاول مجددًا',
       xpStub: '+١٠ نقطة خبرة (قريبًا)',
+    },
+  },
+  // B0-nav — شريط التنقّل السفلي لتطبيق الطفل (Design Spec §1 — AR copy is final per spec §4).
+  nav: {
+    tabs: {
+      home: 'الرئيسية',
+      missions: 'المهام',
+      league: 'الدوري',
+      badges: 'الشارات',
+      barLabel: 'التنقل الرئيسي',
+    },
+    stub: {
+      comingSoon: 'قريبًا',
     },
   },
 } as const;
