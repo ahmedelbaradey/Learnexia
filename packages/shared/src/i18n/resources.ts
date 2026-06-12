@@ -829,6 +829,36 @@ export const en = {
       tryAgain: 'Try again',
       xpStub: '+10 XP (coming soon)',
     },
+    // A5 child surface — "My activity" attempt-history push screen
+    // (Design Spec design-system/ui_kits/student-app/A5-attempt-history.md §2/§4).
+    attempts: {
+      title: 'My activity',
+      sub: "Look how much you've done!",
+      back: 'Back',
+      summary: {
+        attempts: 'Attempts',
+        completed: 'Completed',
+        best: 'Best score',
+      },
+      group: {
+        thisWeek: 'This week',
+        earlier: 'Earlier',
+      },
+      row: {
+        lessonFallback: 'Lesson {{n}}',
+        today: 'Today',
+        yesterday: 'Yesterday',
+        completed: 'Completed',
+        inProgress: 'In progress',
+      },
+      empty: {
+        title: 'No adventures yet — start your first lesson!',
+        cta: 'Start learning',
+      },
+      error: "Couldn't load your activity. Try again",
+      showMore: 'Show more',
+      listA11y: '{{count}} attempts',
+    },
   },
   // B0-nav — child app bottom TabBar (Design Spec design-system/ui_kits/student-app/B0-nav-tabbar.md §1).
   nav: {
@@ -1666,6 +1696,35 @@ export const ar = {
       backToSubject: 'الرجوع إلى الدروس',
       tryAgain: 'حاول مجددًا',
       xpStub: '+١٠ نقطة خبرة (قريبًا)',
+    },
+    // A5 — شاشة «نشاطي» لسجل المحاولات (Design Spec A5-attempt-history.md §2/§4 — النص العربي نهائي وفق المواصفة).
+    attempts: {
+      title: 'نشاطي',
+      sub: 'انظر كم أنجزت!',
+      back: 'رجوع',
+      summary: {
+        attempts: 'المحاولات',
+        completed: 'مكتملة',
+        best: 'أفضل نتيجة',
+      },
+      group: {
+        thisWeek: 'هذا الأسبوع',
+        earlier: 'سابقًا',
+      },
+      row: {
+        lessonFallback: 'الدرس {{n}}',
+        today: 'اليوم',
+        yesterday: 'أمس',
+        completed: 'مكتملة',
+        inProgress: 'قيد التنفيذ',
+      },
+      empty: {
+        title: 'لا مغامرات بعد — ابدأ أول درس!',
+        cta: 'ابدأ التعلم',
+      },
+      error: 'تعذر تحميل نشاطك. حاول مرة أخرى',
+      showMore: 'عرض المزيد',
+      listA11y: '{{count}} محاولة',
     },
   },
   // B0-nav — شريط التنقّل السفلي لتطبيق الطفل (Design Spec §1 — AR copy is final per spec §4).

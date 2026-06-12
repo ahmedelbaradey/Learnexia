@@ -61,6 +61,10 @@ export default function ChildLayout() {
       {/* Push screens — hidden from the bar (spec §3). */}
       <Tabs.Screen name={ChildPushRoute.SubjectDetail} options={{ href: null }} />
       <Tabs.Screen name={ChildPushRoute.LessonPlayer} options={{ href: null }} />
+      {/* A5 — "My activity" attempt history (carryover 2d). Route name is a
+          technical identifier; not in the ChildTabBar allowlist, so the bar
+          auto-hides here. Home-dashboard entry link is wired by 3c (B-int). */}
+      <Tabs.Screen name="attempts" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -7,10 +7,16 @@
  * parent Reports panel passes the active child's id (activeChildStore +
  * `useMyChildren` — never a free-form/user-supplied id).
  *
- * Authorization is SERVER-side (owning student / linked parent only). A 403 or
- * 404 rejects like any other error — callers must render the generic error
- * state and never branch on "exists but not yours" (no IDOR leakage).
- * `retry: false` so a denial is never retry-looped (security-auditor UX rule).
+ * Authorization is SERVER-side. NOTE (2026-06-12): the backend handler today
+ * authorizes ONLY the owning student (`studentId == JWT userId`); a parent↔child
+ * link check is NOT yet implemented (deferred to a backend follow-up — see
+ * HANDOFF "parent attempt-history authz"). Consequence: the parent Reports
+ * attempts panel is FAIL-CLOSED (renders the generic error/empty state) until
+ * that backend authz lands. The child "My activity" surface works today.
+ * Do NOT "fix" this with a role-only bypass — that would be a Critical IDOR
+ * (any parent reading any child). A 401/403/404 rejects like any other error —
+ * callers render the generic error state and never branch on "exists but not
+ * yours" (no IDOR leakage). `retry: false` so a denial is never retry-looped.
  *
  * The endpoint is unpaged today (spec gap G-3) — callers slice client-side.
  * Mirrors `useDashboard` (thin TanStack Query wrapper over the typed client).
