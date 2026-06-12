@@ -129,17 +129,18 @@ A single table in the `ai` schema, `ai.AiResponseCache`, holds all pre-generated
 | `Response` | text | The cached AI-generated content |
 | `Type` | smallint | Enum: `Explain=1`, `Hint=2`, `WhyWrong=3`, `Practice=4` |
 | `SkillKey` | varchar(256) | Stable semantic skill identifier (from curriculum versioning) |
+| `QuestionId` | int nullable | **Decision 4:** Populated for per-question types (`Hint`, `WhyWrong`); null for `Explain` and `Practice`. Enables targeted invalidation: `DELETE WHERE QuestionId = X` when a question's correct answer changes — more precise than scanning `CacheKey` hashes. Plain `int`, no cross-module FK. |
 | `CurriculumVersion` | varchar(64) | The `CurriculumVersion` at generation time |
 | `PromptVersion` | varchar(32) | The prompt-template version used; bump invalidates row |
 | `ModelVersion` | varchar(100) | Which model generated the response |
 | `ReviewStatus` | smallint | Enum: `PendingReview=0`, `Approved=1`, `Rejected=2` |
-| `Confidence` | decimal(5,4) nullable | Model-reported confidence (0.0–1.0); drives auto-approval threshold |
+| `Confidence` | decimal(5,4) nullable | Model-reported confidence (0.0–1.0); drives auto-approval threshold (see OQ-F resolution — default 0.85) |
 | `CreatedAt` | timestamptz | |
 | `ApprovedBy` | int nullable | Admin userId (plain int, no cross-module FK) who approved; null = auto-approved |
 | `ApprovedAt` | timestamptz nullable | |
 | `InvalidatedAt` | timestamptz nullable | Set on invalidation; invalidated rows not served |
 
-**Indexes:** UNIQUE on `CacheKey`; index on `(Type, ReviewStatus)` for admin queue filtering; index on `(SkillKey, CurriculumVersion)` for bulk invalidation.
+**Indexes:** UNIQUE on `CacheKey`; index on `(Type, ReviewStatus)` for admin queue filtering; index on `(SkillKey, CurriculumVersion)` for bulk invalidation; **index on `(QuestionId)` for targeted per-question invalidation (Decision 4)** — filters to non-null rows for `Hint`/`WhyWrong` types.
 
 ### Cache key per Type
 
@@ -162,7 +163,7 @@ Practice/similar-example entries use `Type=Practice`, keyed by `(SkillKey, Varia
 
 **Security-auditor note (R4):** the api-tester and security-auditor must verify that (a) no student receives the same fixed example on every request, (b) the variation pool is rotated rather than always returning index 0, and (c) the cache key cannot be predicted by a student to enumerate the full example pool.
 
-**AC-coverage note:** the acceptance criteria for P3-06 (similar-example, Part B) must include: (a) at least N=3 variations per skill pre-generated, (b) sequential requests from the same student return different variation indices with non-trivial probability, (c) the same variation may be served to different students (pool design, not per-student uniqueness).
+**AC-coverage note (Decision 3 — OQ-H resolved):** the acceptance criteria for P3-06 (similar-example, Part B) must include: (a) at least N=5 variations per skill pre-generated at MVP (pool size = 5; `VariationIndex` 0..4), (b) sequential requests from the same student return different variation indices with non-trivial probability, (c) the same variation may be served to different students (pool design, not per-student uniqueness). Bump to N ≥ 10 when the question bank is larger.
 
 ### Runtime review gate (R5) — only `Approved` entries amplified
 
@@ -172,8 +173,8 @@ A Redis cache **freezes one AI answer and amplifies it to thousands of children*
 
 On a runtime cache miss:
 1. Generate → Safety Layer → compute `Confidence`.
-2. If `Confidence ≥ threshold` AND safety passed → store with `ReviewStatus = Approved` (auto-approved; the auto-threshold is set in `AiGatewayOptions.AutoApprovalConfidenceThreshold`).
-3. Otherwise → store with `ReviewStatus = PendingReview` for human review; the **current student** receives the response (it passed safety), but it is NOT served as a cache hit to subsequent students until approved.
+2. If `Confidence ≥ 0.85` (default; configured via `AiGatewayOptions.AutoApprovalConfidenceThreshold`) AND safety passed → store with `ReviewStatus = Approved` (auto-approved). **Decision 1 (OQ-F resolved):** default threshold = 0.85; tuning guidance: raise toward 0.90 if reviewers find many mistakes; lower toward 0.80 if quality is excellent. Change via config — no code change required.
+3. Otherwise (`Confidence < 0.85` or safety edge case) → store with `ReviewStatus = PendingReview` for human review; the **current student** receives the response (it passed safety), but it is NOT served as a cache hit to subsequent students until approved.
 
 Offline pre-generated entries follow the same gate: they enter as `PendingReview`; the Opus QA pass sets them to `Approved`. Only then do they enter the cache-hit path.
 
@@ -187,7 +188,7 @@ Invalidation triggers — set `InvalidatedAt = NOW()` (soft-invalidation) on row
 
 | Trigger | Predicate | Action |
 |---|---|---|
-| Correct answer changes on a QuizQuestion | `Type IN (Hint, WhyWrong) AND <QuestionId match in CacheKey>` | Invalidate affected rows; re-generate via offline job |
+| Correct answer changes on a QuizQuestion | `Type IN (Hint, WhyWrong) AND QuestionId = <affected QuestionId>` | **Decision 4:** Invalidate by `QuestionId` column (indexed) — `UPDATE ai_response_cache SET InvalidatedAt = NOW() WHERE QuestionId = X AND Type IN (2, 3) AND InvalidatedAt IS NULL`; re-generate via offline job |
 | PromptVersion bumped | `PromptVersion = old_version` | Invalidate all rows with the old prompt version |
 | CurriculumVersion switch (new Active version) | `CurriculumVersion = archived_version` | Invalidate all rows for the archived version |
 | Manual "reported-bad" purge | Row-level or `SkillKey`-scoped admin action | Set `ReviewStatus = Rejected` + `InvalidatedAt` |
@@ -224,16 +225,16 @@ Do not lower the Sonnet floor on `Explain`, `Hint`, or `WhyWrong` task kinds wit
 
 ## 9. Open Questions for the Lead
 
-| # | Question | Recommendation |
+| # | Question | Resolution |
 |---|---|---|
-| OQ-A | **Cache module placement:** `ai.AiResponseCache` lives in the `Ai` module schema — confirmed. | Resolved: `ai` module schema. |
+| OQ-A | **Cache module placement:** `ai.AiResponseCache` lives in the `Ai` module schema — confirmed. | **RESOLVED:** `ai` module schema. |
 | OQ-B | **Batch job host:** Hangfire vs hosted `IHostedService` vs separate worker? | Confirm Hangfire presence/config before the offline batch pre-generation task is dispatched. |
 | OQ-C | **`IAiBatchGateway` vs extending `IAiGateway`:** should the Batch API path be a separate interface? | Separate `IAiBatchGateway` keeps the runtime and batch seams independent; confirm before P3-01 backend-feature is dispatched. |
 | OQ-D | **Quota store:** Redis counter (fast, ephemeral) vs DB column on the student/plan record vs the P7-11 `AiUsageLogs` table? | Interim: DB column on the plan/subscription record. P7-11 adds the analytics table on top. |
 | OQ-E | **Exact quota numbers per plan** (Free vs Premium AI monthly runtime call caps). | Product decision — block the quota-enforcement task until defined. |
-| OQ-F | **Auto-approval confidence threshold:** what is the minimum `Confidence` score for a runtime-generated response to be auto-approved? | Recommend 0.85 as a starting value; content team to review and calibrate from the `PendingReview` queue data. |
-| OQ-G | **WhyWrong cache pool or single entry?** Per R3, WhyWrong is cacheable by compound key — but it is student-answer-specific. Should there be a per-question hard cap on the number of distinct WhyWrong entries stored? | Recommend a cap of ~50 distinct wrong-answer variants per question to prevent unbounded cache growth; entries evicted LRU beyond the cap. |
-| OQ-H | **Practice pool size (N):** how many variation indices per skill should the offline job pre-generate? | Recommend N=5 as MVP; bump to N=10 when the question bank is larger. Confirm with product. |
+| OQ-F | **Auto-approval confidence threshold:** what is the minimum `Confidence` score for a runtime-generated response to be auto-approved? | **RESOLVED (Decision 1):** `Confidence ≥ 0.85` → auto-`Approved`; `< 0.85` → `PendingReview`. Configured via `AiGatewayOptions.AutoApprovalConfidenceThreshold` (default: `0.85`). Tuning guidance: raise toward `0.90` if reviewers find many mistakes; lower toward `0.80` if quality is excellent. This is config-driven and tunable without a code change. |
+| OQ-G | **WhyWrong cache pool or single entry?** Per R3, WhyWrong is cacheable by compound key — but it is student-answer-specific. Should there be a per-question hard cap on the number of distinct WhyWrong entries stored? | **RESOLVED (Decision 2):** Cap = **50 distinct normalized wrong-answer variants per `QuestionId`**, with **LRU eviction** beyond that cap. Prevents unbounded cache growth while preserving the highest-traffic error patterns. |
+| OQ-H | **Practice pool size (N):** how many variation indices per skill should the offline job pre-generate? | **RESOLVED (Decision 3):** **N = 5 variations per skill at MVP** (bump to N ≥ 10 when the question bank is larger). Enumeration is `VariationIndex` 0..4. |
 
 ## 10. Links
 
