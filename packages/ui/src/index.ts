@@ -111,13 +111,22 @@ export { FillInBlank } from './components/FillInBlank';
 export type { FillInBlankProps, FillInBlankState } from './components/FillInBlank';
 
 export { MatchingPanel } from './components/MatchingPanel';
-export type { MatchingPanelProps } from './components/MatchingPanel';
+export type {
+  MatchingPanelProps,
+  MatchingPanelPhase,
+  MatchingItem,
+  MatchingPairValue,
+} from './components/MatchingPanel';
 
 export { AnswerFeedbackStrip } from './components/AnswerFeedbackStrip';
 export type { AnswerFeedbackStripProps } from './components/AnswerFeedbackStrip';
 
 export { AttemptSummaryCard } from './components/AttemptSummaryCard';
 export type { AttemptSummaryCardProps } from './components/AttemptSummaryCard';
+
+// --- A5 attempt history row (CO-FE-7, carryover batch 2c/2d) ---
+export { AttemptRow } from './components/AttemptRow';
+export type { AttemptRowProps } from './components/AttemptRow';
 
 export { ProgressDots } from './components/ProgressDots';
 export type { ProgressDotsProps } from './components/ProgressDots';

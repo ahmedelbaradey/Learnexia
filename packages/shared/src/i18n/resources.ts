@@ -14,6 +14,7 @@ export const NAMESPACES = [
   'parent',
   'child',
   'nav',
+  'quiz',
 ] as const;
 export type Namespace = (typeof NAMESPACES)[number];
 
@@ -388,10 +389,66 @@ export const en = {
         },
       },
     },
+    // A4 Reports page (CO-FE-1 / P1-11-FE-9; charts deferred to P5-05).
     reports: {
-      // TODO(P1-11-FE-9 / P5-05-FE): full Reports + charts.
-      title: 'Reports',
-      comingSoon: 'Detailed reports and charts are on their way. Check back soon.',
+      title: "{{name}}'s reports",
+      subtitle: 'Detailed breakdown · Switch child in header',
+      range: {
+        label: 'Report range',
+        week: 'This week',
+        month: 'This month',
+        all: 'All time',
+      },
+      send: 'Send Report',
+      // L6: stub toast — real delivery ships with P5-04 / Phase-9 email.
+      sendToast: 'Report sent to your email — coming soon!',
+      kpi: {
+        time: 'Time learning',
+        xp: 'XP earned',
+        lessons: 'Lessons done',
+        accuracy: 'Avg. accuracy',
+        noActivity: 'No activity yet',
+        // G-2: no parent-readable child XP endpoint yet.
+        xpComingSoon: 'Coming with full reports',
+      },
+      delta: {
+        vsLastWeek: '{{value}}% vs last week',
+      },
+      mastery: {
+        title: 'Skills mastery',
+        sub: 'Mastery levels across subjects',
+        // G-1: no per-subject mastery endpoint yet (P5-05 aggregate).
+        empty: 'Mastery appears after the first lessons',
+      },
+      charts: {
+        xpTitle: 'Last 20 days · XP earned',
+        todTitle: 'Time of day',
+        comingSoon: 'Charts coming soon',
+      },
+      empty: {
+        firstWeek:
+          "{{name}} hasn't started yet — their first lesson will light this page up!",
+        addChild: 'Add a child to see reports',
+      },
+      loadError: 'Could not load reports. Tap to retry.',
+      // A5 parent surface — "Recent attempts" panel inside Reports.
+      attempts: {
+        title: 'Recent attempts',
+        sub: "{{name}}'s latest quizzes",
+        empty: 'No attempts in this period',
+        showAll: 'Show all',
+        showLess: 'Show less',
+        row: {
+          // G-1 (A5): the DTO has lessonId only — localized fallback.
+          lessonFallback: 'Lesson {{n}}',
+          today: 'Today',
+          yesterday: 'Yesterday',
+          completed: 'Completed',
+          inProgress: 'Not finished',
+          hints_one: '💡 {{count}} hint',
+          hints_other: '💡 {{count}} hints',
+        },
+      },
     },
     settings: {
       title: 'Settings',
@@ -786,6 +843,20 @@ export const en = {
       comingSoon: 'Coming soon',
     },
   },
+  // C5 — Matching tap-to-pair panel (Design Spec design-system/ui_kits/student-app/C5-matching-panel.md §5).
+  quiz: {
+    matching: {
+      instruction: 'Tap two cards to pair them',
+      promptHeader: 'Match these',
+      answerHeader: '…with these',
+      armedA11y: '{{text}}, selected, choose its match',
+      pairedA11y: '{{text}}, paired with {{partner}}, tap to unpair',
+      pairedAnnounce: 'Paired: {{a}} with {{b}}',
+      unpairedAnnounce: 'Unpaired: {{a}} and {{b}}',
+      pairFormat: '{{left}} – {{right}}',
+      pairJoin: ', ',
+    },
+  },
 } as const;
 
 export const ar = {
@@ -1153,10 +1224,69 @@ export const ar = {
         },
       },
     },
+    // A4 صفحة التقارير (CO-FE-1 / P1-11-FE-9؛ الرسوم البيانية مؤجلة إلى P5-05).
     reports: {
-      // TODO(P1-11-FE-9 / P5-05-FE): full Reports + charts.
-      title: 'التقارير',
-      comingSoon: 'التقارير التفصيلية والمخططات في الطريق. عُد قريباً للاطلاع عليها.',
+      title: 'تقارير {{name}}',
+      subtitle: 'تفاصيل كاملة · بدّل الطفل من الأعلى',
+      range: {
+        label: 'نطاق التقرير',
+        week: 'هذا الأسبوع',
+        month: 'هذا الشهر',
+        all: 'كل الوقت',
+      },
+      send: 'إرسال التقرير',
+      // L6: إشعار مؤقت — الإرسال الفعلي يصل مع P5-04 / المرحلة 9.
+      sendToast: 'سيصلك التقرير على بريدك — قريبًا!',
+      kpi: {
+        time: 'وقت التعلم',
+        xp: 'النقاط المكتسبة',
+        lessons: 'الدروس المكتملة',
+        accuracy: 'متوسط الدقة',
+        noActivity: 'لا يوجد نشاط بعد',
+        // G-2: لا توجد نقطة نهاية لنقاط الطفل للوالدين بعد.
+        xpComingSoon: 'يتوفر مع التقارير الكاملة',
+      },
+      delta: {
+        vsLastWeek: '{{value}}٪ عن الأسبوع الماضي',
+      },
+      mastery: {
+        title: 'إتقان المهارات',
+        sub: 'مستويات الإتقان حسب المادة',
+        // G-1: لا توجد نقطة نهاية لإتقان المواد بعد (P5-05).
+        empty: 'يظهر الإتقان بعد أولى الدروس',
+      },
+      charts: {
+        xpTitle: 'آخر ٢٠ يومًا · النقاط',
+        todTitle: 'أوقات اليوم',
+        comingSoon: 'الرسوم البيانية قريبًا',
+      },
+      empty: {
+        firstWeek: 'لم يبدأ {{name}} بعد — أول درس سيضيء هذه الصفحة!',
+        addChild: 'أضف طفلًا لعرض التقارير',
+      },
+      loadError: 'تعذّر تحميل التقارير. اضغط لإعادة المحاولة.',
+      // A5 واجهة الوالدين — لوحة «المحاولات الأخيرة» داخل التقارير.
+      attempts: {
+        title: 'المحاولات الأخيرة',
+        sub: 'آخر اختبارات {{name}}',
+        empty: 'لا توجد محاولات في هذه الفترة',
+        showAll: 'عرض الكل',
+        showLess: 'عرض أقل',
+        row: {
+          // G-1 (A5): الكائن يحمل lessonId فقط — نص بديل مترجم.
+          lessonFallback: 'الدرس {{n}}',
+          today: 'اليوم',
+          yesterday: 'أمس',
+          completed: 'مكتمل',
+          inProgress: 'غير مكتمل',
+          hints_zero: '💡 بدون تلميحات',
+          hints_one: '💡 تلميح واحد',
+          hints_two: '💡 تلميحان',
+          hints_few: '💡 {{count}} تلميحات',
+          hints_many: '💡 {{count}} تلميحًا',
+          hints_other: '💡 {{count}} تلميح',
+        },
+      },
     },
     settings: {
       title: 'الإعدادات',
@@ -1549,6 +1679,20 @@ export const ar = {
     },
     stub: {
       comingSoon: 'قريبًا',
+    },
+  },
+  // C5 — لوحة المطابقة بالنقر للوصل (Design Spec §5 — النص العربي نهائي وفق المواصفة).
+  quiz: {
+    matching: {
+      instruction: 'اضغط بطاقتين لتصل بينهما',
+      promptHeader: 'صِل هذه',
+      answerHeader: '…بهذه',
+      armedA11y: '{{text}}، مختار، اختر ما يطابقه',
+      pairedA11y: '{{text}}، موصول مع {{partner}}، اضغط لفك الوصل',
+      pairedAnnounce: 'تم الوصل: {{a}} مع {{b}}',
+      unpairedAnnounce: 'تم فك الوصل: {{a}} و{{b}}',
+      pairFormat: '{{left}} – {{right}}',
+      pairJoin: '، ',
     },
   },
 } as const;

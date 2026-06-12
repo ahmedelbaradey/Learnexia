@@ -51,6 +51,9 @@ export const queryKeys = {
     lesson: (lessonId: number) =>
       [...queryKeys.learning.all, 'lesson', lessonId] as const,
     dashboard: () => [...queryKeys.learning.all, 'dashboard'] as const,
+    // A5 attempt history (CO-FE-7) — per-student attempt list.
+    studentAttempts: (studentId: number | null) =>
+      [...queryKeys.learning.all, 'student-attempts', studentId] as const,
   },
   // P4-08 carryover (batch 2a) — gamification /Me hooks.
   gamification: {

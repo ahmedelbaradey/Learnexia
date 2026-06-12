@@ -68,6 +68,10 @@ export { useSubjectSkillTree } from './useSubjectSkillTree';
 // --- W13 dashboard hook (P2-09-FE) ---
 export { useDashboard } from './useDashboard';
 
+// --- A5 attempt history (CO-FE-7, carryover batch 2c/2d) ---
+export { useStudentAttempts, ATTEMPT_STATUS } from './useStudentAttempts';
+export type { AttemptStatusValue } from './useStudentAttempts';
+
 // --- W12 quiz hooks (P2-05-FE + P2-06-FE + P2-07-FE) ---
 export { useLesson } from './useLesson';
 export { useStartAttempt } from './useStartAttempt';
