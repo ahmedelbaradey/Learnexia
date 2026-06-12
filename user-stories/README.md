@@ -157,6 +157,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P9-09 Failed payments & refunds *(dunning + clawback)*
 - P9-10 Kid-facing energy UI *(⚡ طاقة المساعد — read-only, the only student-app billing surface; distinct from hearts)*
 - P9-11 Admin: configure plans, grants & action costs *(admin console; config-driven economy)*
+- P9-12 Runtime-configurable AI economy via Global Settings *(Technical Enabler — `IGlobalSettingsProvider`, DB-backed, Redis-cached, audited; values tunable without a deploy)*
 
 ### Backlog (Phase 2+) — Curriculum Intelligence
 *Three-stage pipeline: Multimodal Parsing (BL-02) → Curriculum Ingestion (BL-05) → Knowledge Graph (BL-03).*

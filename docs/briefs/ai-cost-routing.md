@@ -173,7 +173,7 @@ A Redis cache **freezes one AI answer and amplifies it to thousands of children*
 
 On a runtime cache miss:
 1. Generate → Safety Layer → compute `Confidence`.
-2. If `Confidence ≥ 0.85` (default; configured via `AiGatewayOptions.AutoApprovalConfidenceThreshold`) AND safety passed → store with `ReviewStatus = Approved` (auto-approved). **Decision 1 (OQ-F resolved):** default threshold = 0.85; tuning guidance: raise toward 0.90 if reviewers find many mistakes; lower toward 0.80 if quality is excellent. Change via config — no code change required.
+2. If `Confidence ≥ IGlobalSettingsProvider.GetDecimal("ai.cache.autoApprovalConfidence", 0.85m)` AND safety passed → store with `ReviewStatus = Approved` (auto-approved). **Decision 1 (OQ-F resolved):** bootstrap default = 0.85; tuning guidance: raise toward 0.90 if reviewers find many mistakes; lower toward 0.80 if quality is excellent. Read via `IGlobalSettingsProvider` at runtime — change via admin settings update post-P9-12, no deployment required. **Never read from `AiGatewayOptions.AutoApprovalConfidenceThreshold` or a hardcoded constant.**
 3. Otherwise (`Confidence < 0.85` or safety edge case) → store with `ReviewStatus = PendingReview` for human review; the **current student** receives the response (it passed safety), but it is NOT served as a cache hit to subsequent students until approved.
 
 Offline pre-generated entries follow the same gate: they enter as `PendingReview`; the Opus QA pass sets them to `Approved`. Only then do they enter the cache-hit path.
@@ -223,6 +223,25 @@ This validation is the responsibility of **P6-02** (AI quality evaluation story)
 
 Do not lower the Sonnet floor on `Explain`, `Hint`, or `WhyWrong` task kinds without passing the P6-02 eval gate (see `docs/briefs/ai-eval-gate.md`).
 
+## 8b. Everything is runtime-configurable (Global Settings)
+
+All model-routing-adjacent economy values and cache/review thresholds are read through **`IGlobalSettingsProvider`** — a contract declared in `Shared.Contracts` that ships with the AI Helper (Phase 4) as a bootstrap-default implementation, and is upgraded to a fully DB-backed, Redis-cached, audited, admin-editable implementation in **P9-12 (Global Settings enabler)**. Until P9-12 lands, `IGlobalSettingsProvider.Get*(key, defaultValue)` returns the code/appsettings default for any key absent from the DB. After P9-12, every value is tunable by Product/Admin via the admin console without a deployment.
+
+**Managed keys (cache/review thresholds — owned by P3-04/05/06):**
+
+| Setting key | `IGlobalSettingsProvider` call | Bootstrap default | Context |
+|---|---|---|---|
+| `ai.cache.autoApprovalConfidence` | `GetDecimal("ai.cache.autoApprovalConfidence", 0.85m)` | `0.85` | Minimum `Confidence` score for a runtime-generated response to be auto-approved (`Approved`); below this → `PendingReview`. Raise toward 0.90 if reviewers find many mistakes; lower toward 0.80 if quality is excellent. |
+| `ai.cache.whyWrongVariantCap` | `GetInt("ai.cache.whyWrongVariantCap", 50)` | `50` | Maximum distinct normalized wrong-answer variants stored per `QuestionId` in `AiResponseCache` (Type=WhyWrong); LRU eviction above this cap. Prevents unbounded table growth. |
+| `ai.cache.practicePoolSize` | `GetInt("ai.cache.practicePoolSize", 5)` | `5` | Number of similar-example variation indices (0..N-1) pre-generated per skill for the Practice pool. Bump to ≥10 when the question bank grows. |
+
+**Implementation rules:**
+- Code MUST read these values via `IGlobalSettingsProvider` — never from `AiGatewayOptions.*`, a hardcoded constant, or `appsettings.json` directly.
+- `appsettings.json` / `AiGatewayOptions` may carry the same bootstrap defaults for `IGlobalSettingsProvider`'s initial implementation, but they are the fallback, not the source of truth.
+- P9-12 upgrades the implementation; no calling code changes when that happens.
+
+**Broader economy values** (credit grants, per-action costs, daily caps, pack pricing) follow the same pattern and are also managed via `IGlobalSettingsProvider` in P9-12. See P9-12 user story for the full key inventory.
+
 ## 9. Open Questions for the Lead
 
 | # | Question | Resolution |
@@ -232,9 +251,9 @@ Do not lower the Sonnet floor on `Explain`, `Hint`, or `WhyWrong` task kinds wit
 | OQ-C | **`IAiBatchGateway` vs extending `IAiGateway`:** should the Batch API path be a separate interface? | Separate `IAiBatchGateway` keeps the runtime and batch seams independent; confirm before P3-01 backend-feature is dispatched. |
 | OQ-D | **Quota store:** Redis counter (fast, ephemeral) vs DB column on the student/plan record vs the P7-11 `AiUsageLogs` table? | Interim: DB column on the plan/subscription record. P7-11 adds the analytics table on top. |
 | OQ-E | **Exact quota numbers per plan** (Free vs Premium AI monthly runtime call caps). | Product decision — block the quota-enforcement task until defined. |
-| OQ-F | **Auto-approval confidence threshold:** what is the minimum `Confidence` score for a runtime-generated response to be auto-approved? | **RESOLVED (Decision 1):** `Confidence ≥ 0.85` → auto-`Approved`; `< 0.85` → `PendingReview`. Configured via `AiGatewayOptions.AutoApprovalConfidenceThreshold` (default: `0.85`). Tuning guidance: raise toward `0.90` if reviewers find many mistakes; lower toward `0.80` if quality is excellent. This is config-driven and tunable without a code change. |
-| OQ-G | **WhyWrong cache pool or single entry?** Per R3, WhyWrong is cacheable by compound key — but it is student-answer-specific. Should there be a per-question hard cap on the number of distinct WhyWrong entries stored? | **RESOLVED (Decision 2):** Cap = **50 distinct normalized wrong-answer variants per `QuestionId`**, with **LRU eviction** beyond that cap. Prevents unbounded cache growth while preserving the highest-traffic error patterns. |
-| OQ-H | **Practice pool size (N):** how many variation indices per skill should the offline job pre-generate? | **RESOLVED (Decision 3):** **N = 5 variations per skill at MVP** (bump to N ≥ 10 when the question bank is larger). Enumeration is `VariationIndex` 0..4. |
+| OQ-F | **Auto-approval confidence threshold:** what is the minimum `Confidence` score for a runtime-generated response to be auto-approved? | **RESOLVED (Decision 1):** `Confidence ≥ 0.85` (bootstrap default) → auto-`Approved`; `< 0.85` → `PendingReview`. Read via `IGlobalSettingsProvider.GetDecimal("ai.cache.autoApprovalConfidence", 0.85m)` — **never from `AiGatewayOptions.AutoApprovalConfidenceThreshold` or a hardcoded constant**. Tuning guidance: raise toward `0.90` if reviewers find many mistakes; lower toward `0.80` if quality is excellent. Tunable at runtime post-P9-12 without a deployment. |
+| OQ-G | **WhyWrong cache pool or single entry?** Per R3, WhyWrong is cacheable by compound key — but it is student-answer-specific. Should there be a per-question hard cap on the number of distinct WhyWrong entries stored? | **RESOLVED (Decision 2):** Cap = **`IGlobalSettingsProvider.GetInt("ai.cache.whyWrongVariantCap", 50)` distinct normalized wrong-answer variants per `QuestionId`**, with **LRU eviction** beyond that cap. Bootstrap default = 50. Runtime-configurable via P9-12 without a deployment. Prevents unbounded cache growth while preserving the highest-traffic error patterns. |
+| OQ-H | **Practice pool size (N):** how many variation indices per skill should the offline job pre-generate? | **RESOLVED (Decision 3):** **N = `IGlobalSettingsProvider.GetInt("ai.cache.practicePoolSize", 5)` variations per skill** (bootstrap default = 5; bump to N ≥ 10 when the question bank is larger via an admin settings update — no code change required). Enumeration is `VariationIndex` 0..N-1. Runtime-configurable via P9-12. |
 
 ## 10. Links
 

@@ -193,6 +193,7 @@ The AI **credit economy** ("⚡ طاقة المساعد") + monetization. **Pare
 | P9-09 | Failed payments & refunds *(dunning + clawback)* | [FE](Frontend/student-app/Phase-9-Payments-Billing/P9-09-FE.md) | [BE](Backend/Phase-9-Payments-Billing/P9-09-BE.md) |
 | P9-10 | Kid-facing energy UI *(⚡ طاقة المساعد — read-only; distinct from hearts)* | [FE](Frontend/student-app/Phase-9-Payments-Billing/P9-10-FE.md) | — |
 | P9-11 | Admin: configure plans, grants & action costs *(admin console)* | [FE](Frontend/admin-dashboard/Phase-9-Payments-Billing/P9-11-FE.md) | [BE](Backend/Phase-9-Payments-Billing/P9-11-BE.md) |
+| P9-12 | Runtime-configurable AI economy via Global Settings *(Technical Enabler — `IGlobalSettingsProvider`, DB-backed, Redis-cached, audited)* | — | [BE](Backend/Phase-9-Payments-Billing/P9-12-BE.md) |
 
 ### Backlog (Phase 2+) — Curriculum Intelligence *(story IDs `BL-xx`)*
 
