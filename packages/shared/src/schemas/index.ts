@@ -82,9 +82,9 @@ export type RegisterParentFormValues = z.infer<typeof registerParentSchema>;
 
 /**
  * Add-child form. Maps to `AddChildCommand`
- * (`{ fullName, email, password, grade, language, learningLanguage, country }`).
+ * (`{ fullName, email, password, grade, language, learningLanguage }`).
  * The acting parent is resolved server-side from the JWT — never sent by the
- * client.
+ * client. (Country is intentionally NOT collected for children.)
  *
  * `learningLanguage` — the medium of instruction for Math & Science (axis B).
  *   Required; no default so the parent must choose explicitly.
@@ -109,10 +109,6 @@ export const addChildSchema = z.object({
   language: z.enum(LOCALES, {
     errorMap: () => ({ message: 'onboarding.addChild.errors.languageRequired' }),
   }),
-  country: z
-    .string()
-    .trim()
-    .min(1, 'onboarding.addChild.errors.countryRequired'),
 });
 
 export type AddChildFormValues = z.infer<typeof addChildSchema>;

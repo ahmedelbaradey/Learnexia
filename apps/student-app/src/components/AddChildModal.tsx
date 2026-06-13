@@ -16,11 +16,10 @@
  *   1. Header — mark + title/subtitle + ✕ close
  *   2. Body (scrolls): [add-only: photo upload] child name, [add-only: login
  *      email, password], grade tiles (6 plant-emoji, NEVER a <select>),
- *      app-language flag tiles (2 flags), learning-language Select, country
- *      Select [always shown]
+ *      app-language flag tiles (2 flags), learning-language Select
  *   3. Footer — Cancel (ghost) + personalized primary CTA
  *
- * RTL: card `direction` from locale; CTA arrow flips; email/country LTR-pinned;
+ * RTL: card `direction` from locale; CTA arrow flips; email LTR-pinned;
  * grade numerals Eastern-Arabic; 📷 badge on logical-end corner.
  *
  * Tokens only (no raw hex except the few sanctioned modal-surface values per spec).
@@ -32,13 +31,12 @@ import {
   type AddChildCommand,
   type UpdateChildCommand,
 } from '@learnexia/api-client';
-import { COUNTRIES, type CountryCode, LOCALES } from '@learnexia/shared';
+import { LOCALES } from '@learnexia/shared';
 import {
   Avatar,
   Button,
   PasswordStrengthMeter,
   PASSWORD_STRENGTH,
-  Select,
   TextField,
   LanguageSelect,
   type PasswordStrength,
@@ -59,8 +57,6 @@ export interface EditChildInitialValues {
   grade: number;
   /** App-language code ('ar' | 'en'). */
   language: string;
-  /** Country code from COUNTRIES list. */
-  country: string;
   /** Learning-language code — shown but not editable in edit mode (update endpoint omits it). */
   learningLanguage?: string;
 }
@@ -151,9 +147,6 @@ export function AddChildModal({ visible, onClose, childId, initialValues }: AddC
   const [learningLanguage, setLearningLanguage] = useState<string | null>(
     initialValues?.learningLanguage ?? null,
   );
-  const [country, setCountry] = useState<CountryCode | null>(
-    (initialValues?.country as CountryCode) ?? null,
-  );
 
   // Re-seed form when initialValues change (modal re-opens for a different child).
   useEffect(() => {
@@ -161,7 +154,6 @@ export function AddChildModal({ visible, onClose, childId, initialValues }: AddC
       setFullName(initialValues.fullName);
       setGrade(initialValues.grade);
       setAppLanguage(initialValues.language);
-      setCountry((initialValues.country as CountryCode) ?? null);
       setLearningLanguage(initialValues.learningLanguage ?? null);
     }
   }, [visible, isEditMode, initialValues]);
@@ -181,11 +173,6 @@ export function AddChildModal({ visible, onClose, childId, initialValues }: AddC
   const strengthLabel = passwordStrength > 0
     ? t(STRENGTH_LABEL_KEY[passwordStrength as Exclude<PasswordStrength, 0>])
     : '';
-
-  const countryOptions = COUNTRIES.map((c) => ({
-    value: c.code,
-    label: locale === 'ar' ? c.ar : c.en,
-  }));
 
   const languageOptions = LOCALES.map((loc) => ({
     value: loc,
@@ -237,7 +224,6 @@ export function AddChildModal({ visible, onClose, childId, initialValues }: AddC
     if (!isEditMode && !learningLanguage) {
       errors.learningLanguage = t('parent.addChildModal.errors.learningLanguageRequired');
     }
-    if (!country) errors.country = t('parent.addChildModal.errors.countryRequired');
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   }
@@ -249,7 +235,6 @@ export function AddChildModal({ visible, onClose, childId, initialValues }: AddC
     setGrade(null);
     setAppLanguage(null);
     setLearningLanguage(null);
-    setCountry(null);
     setPhotoPreviewUri(null);
     setPhotoFile(null);
     setPhotoError(null);
@@ -272,7 +257,6 @@ export function AddChildModal({ visible, onClose, childId, initialValues }: AddC
           fullName: fullName.trim(),
           grade: grade!,
           language: appLanguage!,
-          country: country!,
         };
         await updateChild.mutateAsync(cmd);
       } else {
@@ -283,7 +267,6 @@ export function AddChildModal({ visible, onClose, childId, initialValues }: AddC
           grade: grade!,
           language: appLanguage!,
           learningLanguage: learningLanguage!,
-          country: country!,
         };
         await addChild.mutateAsync(cmd);
       }
@@ -702,22 +685,6 @@ export function AddChildModal({ visible, onClose, childId, initialValues }: AddC
                 </Text>
               </Stack>
             )}
-
-            {/* Country select — always shown; backend supports it in both add and update */}
-            <Select
-              label={t('parent.addChildModal.labelCountry')}
-              value={country}
-              onChange={(v) => {
-                setCountry(v as CountryCode);
-                setFieldErrors((prev) => ({ ...prev, country: '' }));
-              }}
-              options={countryOptions}
-              placeholder={t('parent.addChildModal.countryPlaceholder')}
-              direction={direction}
-              accessibilityLabel={t('parent.addChildModal.labelCountry')}
-              error={fieldErrors.country}
-              testID="add-child-country"
-            />
 
             {/* Server error */}
             <ServerErrorBanner message={serverMessage} direction={direction} />

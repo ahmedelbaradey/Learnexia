@@ -234,9 +234,9 @@ export function MyChildrenWeb() {
                   const id = String(child.id);
                   const childId = child.id ?? 0;
                   // Card stats (XP/mastery) remain Phase-5 stubs. The edit modal,
-                  // however, pre-fills the child's REAL grade/language/country (now
-                  // returned on LinkedChildResponse) so a save can't silently
-                  // overwrite them with placeholders.
+                  // however, pre-fills the child's REAL grade/language (returned on
+                  // LinkedChildResponse) so a save can't silently overwrite them
+                  // with placeholders.
                   const stub = getChildStatsStub(id);
                   return (
                     <ChildDashboardCard
@@ -252,7 +252,6 @@ export function MyChildrenWeb() {
                             fullName: child.fullName ?? '',
                             grade: child.grade ?? stub.grade,
                             language: child.language ?? 'ar',
-                            country: child.country ?? '',
                             learningLanguage: child.learningLanguage ?? undefined,
                           },
                         })
