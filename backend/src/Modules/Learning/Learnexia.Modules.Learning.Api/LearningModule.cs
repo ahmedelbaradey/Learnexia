@@ -25,7 +25,8 @@ public static class LearningModule
             .AddApplicationPart(typeof(LessonsController).Assembly)
             .AddApplicationPart(typeof(ConceptsController).Assembly)
             .AddApplicationPart(typeof(SkillsController).Assembly)
-            .AddApplicationPart(typeof(QuizzesController).Assembly);
+            .AddApplicationPart(typeof(QuizzesController).Assembly)
+            .AddApplicationPart(typeof(AdaptivityController).Assembly);
         return services;
     }
 

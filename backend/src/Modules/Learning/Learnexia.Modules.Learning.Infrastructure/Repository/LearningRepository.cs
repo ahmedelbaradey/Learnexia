@@ -461,6 +461,32 @@ public class LearningRepository : ILearningRepository
             .Where(s => s.GradeId == gradeId)
             .ToListAsync(ct);
 
+    // ── Adaptivity signal aggregation (P3-08) ─────────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public async Task<SkillAdaptivityAggregate> GetAdaptivitySignalsAsync(
+        int studentId, int skillId, CancellationToken ct = default)
+    {
+        // Fetch only the columns needed for the four FR-AD-1 signals.
+        // Mirrors GetSkillStatsQueryHandler's aggregation pattern (P2-08).
+        var answers = await RepositoryContext.StudentAnswers
+            .AsNoTracking()
+            .Where(sa => sa.Attempt.StudentId == studentId
+                      && sa.Question.SkillId == skillId)
+            .Select(sa => new { sa.IsCorrect, sa.TimeSpentSeconds, sa.HintUsed })
+            .ToListAsync(ct);
+
+        var total   = answers.Count;
+        var correct = answers.Count(a => a.IsCorrect);
+        var hints   = answers.Count(a => a.HintUsed);
+        var avgTime = total == 0 ? 0.0 : answers.Average(a => a.TimeSpentSeconds);
+
+        // RetryCount = extra answers beyond the first (proxy for repeated skill attempts).
+        var retries = Math.Max(total - 1, 0);
+
+        return new SkillAdaptivityAggregate(total, correct, avgTime, hints, retries);
+    }
+
     // ── Mastery (P3-09) ──────────────────────────────────────────────────────────────────────────────
 
     /// <inheritdoc/>

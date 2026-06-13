@@ -13,6 +13,7 @@
 
 ## Recently completed (newest first)
 - **P3-01 (Backend)** — AI Gateway (IAiGateway seam, Ai module, Claude + second provider, task-based model router) — committed
+- **P3-08 (Backend)** — Adaptivity Engine (weighted-score algorithm, 4-signal model, AdaptivityService seam, inspection endpoint + admin debug endpoint) — committed
 - **P3-09 (Backend)** - Student mastery engine (StudentSkillMastery table + MasteryEngine + write/read paths + IMasteryService seam) - committed (Wave 1, PR #126)
 - **2026-06-13 â€” P1/2/3 carryover (branch `feat/p1-p2-p3-carryover`):** gamification FE (all screens + TabBar + celebrations), Matching full-stack, parent Reports + attempt-history (both surfaces), auth messaging + CAPTCHA, parentâ†”child attempts authz; e2e 39/3-skip/0-fail; PR pending.
 - **2026-06-13 - AI-phase + Phase-10 planning breakdown (PLANNING ONLY, all 🔲; PR #124 `docs/ai-phase-task-breakdown -> main`):** authored the full task breakdown for **Phase 4 - AI Tutor (P3-01..13)**, the **Curriculum-Intelligence backlog (BL-01..05)**, and the new **Phase 10 - Payment, Billing & Credits (P10-01..12)** - Pipeline Briefs (`docs/briefs/`) + Execution Plans (`docs/plans/`) + per-stack task files. **No code - build plan only.** Payments renumbered Phase 9 -> 10 (`main` owns Phase 9 = Notifications). Cross-cutting briefs: `ai-helper-mvp`, `ai-cost-routing`, `ai-eval-gate`, `curriculum-system-of-record`. Settled: new `Ai` + `Curriculum` + `Billing` modules, Claude provider w/ model routing, AI credit economy (Global Settings P10-12), Arabic stack (Azure DI + RAG-Anything). Chore PR #123 = subagent model tuning. See HANDOFF 2026-06-13 note for the full decision log.
@@ -88,7 +89,7 @@
 | P3-05 | Progressive hints & simpler re-explanations | ðŸ”² |
 | P3-06 | Generate curriculum-grounded questions (RAG) | ðŸ”² |
 | P3-07 | Retrieve curriculum context via vector search | ðŸ”² |
-| P3-08 | Adjust difficulty adaptively | ðŸ”² |
+| P3-08 | Adjust difficulty adaptively | ✅ |
 | P3-09 | Track per-skill mastery | ✅ |
 | P3-10 | Schedule spaced-repetition practice | ðŸ”² |
 | P3-11 | Serve adaptive quizzes | ðŸ”² |
