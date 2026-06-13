@@ -804,11 +804,12 @@ public sealed class P2_08_RecordGranularAnswers_Tests : IAsyncLifetime
     }
 
     // =========================================================================
-    // GetStudentAttempts — Case 14: Cross-student IDOR → 401
+    // GetStudentAttempts — Case 14: Cross-student IDOR → 403 Forbidden
+    // (authenticated-but-not-authorized is 403, not 401 — 401 triggers FE token refresh)
     // =========================================================================
 
-    [Fact(DisplayName = "P208-C14 GetStudentAttempts IDOR: student A calls GET /Students/{studentB_id}/Attempts → 401")]
-    public async Task GetStudentAttempts_OtherStudentIDOR_Returns401()
+    [Fact(DisplayName = "P208-C14 GetStudentAttempts IDOR: student A calls GET /Students/{studentB_id}/Attempts → 403")]
+    public async Task GetStudentAttempts_OtherStudentIDOR_Returns403()
     {
         var (tokenA, _)   = await CreateStudentViaParentFlowAsync();
         var (tokenB, idB) = await CreateStudentViaParentFlowAsync();
@@ -817,11 +818,11 @@ public sealed class P2_08_RecordGranularAnswers_Tests : IAsyncLifetime
         var (resp, root, body) = await SendAsync(_client, HttpMethod.Get,
             $"api/Learning/Students/{idB}/Attempts", null, tokenA);
 
-        resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized,
-            "student A accessing student B's attempts must return 401 (IDOR guard); body: {0}", body);
+        resp.StatusCode.Should().Be(HttpStatusCode.Forbidden,
+            "student A accessing student B's attempts must return 403 (IDOR guard, generic); body: {0}", body);
 
         TryProp(root, "successed", out var successed).Should().BeTrue("body: {0}", body);
-        successed.GetBoolean().Should().BeFalse("Successed must be false for 401; body: {0}", body);
+        successed.GetBoolean().Should().BeFalse("Successed must be false for 403; body: {0}", body);
     }
 
     // =========================================================================

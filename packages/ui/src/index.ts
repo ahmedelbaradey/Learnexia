@@ -111,13 +111,22 @@ export { FillInBlank } from './components/FillInBlank';
 export type { FillInBlankProps, FillInBlankState } from './components/FillInBlank';
 
 export { MatchingPanel } from './components/MatchingPanel';
-export type { MatchingPanelProps } from './components/MatchingPanel';
+export type {
+  MatchingPanelProps,
+  MatchingPanelPhase,
+  MatchingItem,
+  MatchingPairValue,
+} from './components/MatchingPanel';
 
 export { AnswerFeedbackStrip } from './components/AnswerFeedbackStrip';
 export type { AnswerFeedbackStripProps } from './components/AnswerFeedbackStrip';
 
 export { AttemptSummaryCard } from './components/AttemptSummaryCard';
 export type { AttemptSummaryCardProps } from './components/AttemptSummaryCard';
+
+// --- A5 attempt history row (CO-FE-7, carryover batch 2c/2d) ---
+export { AttemptRow } from './components/AttemptRow';
+export type { AttemptRowProps } from './components/AttemptRow';
 
 export { ProgressDots } from './components/ProgressDots';
 export type { ProgressDotsProps } from './components/ProgressDots';
@@ -132,3 +141,13 @@ export type { SubjectKey as ContinueCardSubjectKey } from './components/Continue
 
 export { MissionBanner } from './components/MissionBanner';
 export type { MissionBannerProps } from './components/MissionBanner';
+
+// --- P4-08 carryover (batch 2a) — motion foundation, salvaged from the
+// retired feat/P4-08-gamification-screens-motion branch (plan L5) ---
+export { useReduceMotion } from './hooks/useReduceMotion';
+
+export { useDashboardDiff, ZERO_DIFF } from './hooks/useDashboardDiff';
+export type { DashboardLike, DashboardDiff } from './hooks/useDashboardDiff';
+
+export { ConfettiLayer } from './internal/ConfettiLayer';
+export type { ConfettiLayerProps, ConfettiPaletteVariant } from './internal/ConfettiLayer';

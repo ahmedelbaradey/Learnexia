@@ -41,7 +41,7 @@
  *  - Token persistence goes through `authStore.setTokens` (same path as
  *    email sign-in — no separate token storage path).
  */
-import { useGoogleSignIn, useSignIn } from '@learnexia/api-client';
+import { isApiError, useGoogleSignIn, useSignIn } from '@learnexia/api-client';
 import {
   LOGIN_PERSONAS,
   signInSchema,
@@ -81,6 +81,45 @@ WebBrowser.maybeCompleteAuthSession();
 
 /** Google OIDC discovery endpoint. */
 const GOOGLE_DISCOVERY_URL = 'https://accounts.google.com';
+
+/**
+ * Backend-message hint substrings (P1-11-FE-15 / CO-FE-2) — matched
+ * case-insensitively against the `BaseResponse.message` text. The backend
+ * localizes its messages (default culture ar-EG; English when Accept-Language
+ * is en), so each hint set carries BOTH the en-US and ar-EG resource substrings
+ * (`SharedResources.{en-US,ar-EG}.resx`: `LoginTooManyFailedAttempts`,
+ * `LoginAccountDeactivated`). These are technical matchers, not user-facing copy.
+ *
+ * Anti-enumeration: there is deliberately NO "user not found" hint — the
+ * backend returns one uniform invalid-credentials message for both unknown
+ * users and wrong passwords, and the FE must never branch on the cause.
+ */
+const ACCOUNT_LOCKED_HINTS = [
+  'too many failed',
+  'temporarily locked',
+  'قفل الحساب مؤقتاً',
+  'محاولات تسجيل دخول فاشلة',
+];
+const ACCOUNT_DEACTIVATED_HINTS = ['account is inactive', 'غير نشط'];
+
+/**
+ * Map a Google sign-in backend rejection to an i18n key. The Google handler
+ * returns the same distinct "account deactivated" message as email sign-in
+ * (`GoogleSignInCommandHandler` → `LoginAccountDeactivated`); everything else
+ * stays the generic social failure. Pure module-scope helper so the OAuth
+ * response effect's dependency list is unchanged.
+ */
+function googleErrorKey(err: unknown): string {
+  if (isApiError(err)) {
+    const text = [err.message ?? '', ...err.errors.filter((e): e is string => typeof e === 'string')]
+      .join(' ')
+      .toLowerCase();
+    if (ACCOUNT_DEACTIVATED_HINTS.some((h) => text.includes(h.toLowerCase()))) {
+      return 'auth.login.errors.accountDeactivated';
+    }
+  }
+  return 'auth.login.errors.socialFailed';
+}
 
 export function LoginForm() {
   const { t } = useTranslation();
@@ -179,9 +218,11 @@ export function LoginForm() {
           } else {
             setGoogleError(t('auth.login.errors.socialFailed'));
           }
-        } catch {
-          // Error surfaced inline via googleError state.
-          setGoogleError(t('auth.login.errors.socialFailed'));
+        } catch (err) {
+          // Error surfaced inline via googleError state. A deactivated/suspended
+          // account gets its distinct message (same contract as email sign-in);
+          // any other backend rejection stays the generic social failure.
+          setGoogleError(t(googleErrorKey(err)));
         }
       }
     };
@@ -196,13 +237,21 @@ export function LoginForm() {
   });
 
   // Email sign-in error message (shared banner — google error takes precedence when present).
+  // CO-FE-2 / P1-11-FE-15: distinct localized branches for the backend's
+  // lockout (`LoginTooManyFailedAttempts`) and deactivated/suspended
+  // (`LoginAccountDeactivated`) responses; every other credential failure —
+  // including unknown user — collapses to the SAME uniform invalid-credentials
+  // message (anti-enumeration: never branch user-not-found vs wrong-password).
   const emailServerMessage = signIn.isError
     ? resolveError(signIn.error, {
-        hints: [{ contains: ['not found', 'no account'], key: 'auth.login.errors.notFound' }],
+        hints: [
+          { contains: ACCOUNT_LOCKED_HINTS, key: 'auth.login.errors.accountLocked' },
+          { contains: ACCOUNT_DEACTIVATED_HINTS, key: 'auth.login.errors.accountDeactivated' },
+        ],
         byStatus: {
           400: 'auth.login.errors.invalidCredentials',
           401: 'auth.login.errors.invalidCredentials',
-          404: 'auth.login.errors.notFound',
+          404: 'auth.login.errors.invalidCredentials',
         },
       })
     : null;

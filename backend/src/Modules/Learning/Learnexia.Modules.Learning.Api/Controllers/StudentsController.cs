@@ -18,7 +18,8 @@ public class StudentsController : AppControllerBase
 {
     /// <summary>
     /// Returns the list of quiz attempts for the specified student, ordered by StartedAt descending.
-    /// StudentId in the route is cross-checked against the JWT — a student may only read their own attempts.
+    /// Authorized for the owning student (route StudentId cross-checked against the JWT) or a parent
+    /// linked to that student (parent↔child link verified in the handler); anyone else gets a generic 403.
     /// Empty list is valid (200); CorrectAnswer is NEVER in the response.
     /// </summary>
     /// <param name="studentId">The identity user ID of the student whose attempts are requested.</param>

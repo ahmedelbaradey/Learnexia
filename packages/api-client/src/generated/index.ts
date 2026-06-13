@@ -104,6 +104,21 @@ export type {
   // (DashboardDto now exposes dailyMissions: MissionSummary[] + weeklyMission: MissionSummary).
   MissionSummary,
   LeaguePreviewDto,
+  // P4-08 carryover (batch 2a) — gamification /Me responses + dashboard sub-DTOs
+  MyBadgesResponse,
+  MyBadgesResponseBaseResponse,
+  BadgeStateDto,
+  BadgeSummary,
+  MyMissionsResponse,
+  MyMissionsResponseBaseResponse,
+  MissionStateDto,
+  MyLeagueResponse,
+  MyLeagueResponseBaseResponse,
+  LeagueStandingDto,
+  ActiveTimedEventDto,
+  // P2-09 / A5 attempt-history (hook lands in batch 2d)
+  AttemptListItemDto,
+  AttemptListItemDtoListBaseResponse,
 } from './nswag-client';
 
 export {
@@ -112,6 +127,16 @@ export {
   DifficultyLevel,
   // W12 — quiz enum
   QuestionType,
+} from './nswag-client';
+
+// P4-08 carryover (batch 2a) — gamification enums (values, not just types).
+export {
+  BadgeRarity,
+  BadgeRarityDto,
+  MissionStatusDto,
+  MissionTypeDto,
+  MissionTargetTypeDto,
+  LeagueTierDto,
 } from './nswag-client';
 
 // P2-12 — NotificationCategory is an enum (not a type); must be exported as a value.

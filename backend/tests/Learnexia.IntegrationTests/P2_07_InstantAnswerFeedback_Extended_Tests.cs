@@ -395,30 +395,38 @@ public sealed class P2_07_InstantAnswerFeedback_Extended_Tests : IAsyncLifetime
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // BE-TC-13: Matching string-compare fallback (documentary)
+    // BE-TC-13: Matching pair-set equality (CO-BE-2 — replaced the Phase-2
+    // string-compare fallback). Stored CorrectAnswer = {"pairs":[{"leftId","rightId"}]};
+    // shuffled pair order in the payload must still grade correct; a swapped
+    // pairing must grade wrong. Full Matching e2e matrix lands with CO-BE-4.
     // ─────────────────────────────────────────────────────────────────────────
 
-    [Fact(DisplayName = "BE-TC-13: Matching type → string OrdinalIgnoreCase compare (Phase-2 fallback, documented behavior)")]
-    public async Task BeTc13_Matching_StringCompareFallback()
+    [Fact(DisplayName = "BE-TC-13: Matching type → order-independent pair-set equality (CO-BE-2)")]
+    public async Task BeTc13_Matching_PairSetEquality()
     {
+        const string matchingCorrect =
+            """{"pairs":[{"leftId":"l1","rightId":"r1"},{"leftId":"l2","rightId":"r2"}]}""";
         var lessonId = await SeedLessonAsync("x13");
-        // CorrectAnswer for Matching must be valid JSON (jsonb column). Use JSON string "\"x\"".
-        var qId1 = await SeedQuestionAsync(lessonId, QuestionType.Matching, "\"x\"");
-        var qId2 = await SeedQuestionAsync(lessonId, QuestionType.Matching, "\"x\"");
+        var qId1 = await SeedQuestionAsync(lessonId, QuestionType.Matching, matchingCorrect);
+        var qId2 = await SeedQuestionAsync(lessonId, QuestionType.Matching, matchingCorrect);
         var (token, _) = await CreateStudentAsync("s13");
         var attemptId = await StartAttemptAsync(lessonId, token);
 
-        // Submit "\"x\"" (JSON-quoted to match stored "\"x\"" value) → isCorrect=true
-        var (ra, roota, ba) = await SubmitAsync(attemptId, qId1, "\"x\"", 5, false, token);
-        ra.StatusCode.Should().Be(HttpStatusCode.OK, $"Matching '\"x\"' vs stored '\"x\"'; body={ba}");
+        // Same pairs in shuffled order + attempt metadata → isCorrect=true
+        var correctPayload =
+            """{"pairs":[{"leftId":"l2","rightId":"r2"},{"leftId":"l1","rightId":"r1"}],"attemptOrder":1,"timeMs":3500}""";
+        var (ra, roota, ba) = await SubmitAsync(attemptId, qId1, correctPayload, 5, false, token);
+        ra.StatusCode.Should().Be(HttpStatusCode.OK, $"Matching shuffled correct pairs; body={ba}");
         TryProp(roota, "data", out var da); TryProp(da, "isCorrect", out var ica);
-        ica.GetBoolean().Should().BeTrue($"Matching '\"x\"' == stored '\"x\"' → true (Phase-2 fallback string compare); body={ba}");
+        ica.GetBoolean().Should().BeTrue($"pair-set equality is order-independent; body={ba}");
 
-        // Submit "\"y\"" vs stored "\"x\"" → isCorrect=false
-        var (rb, rootb, bb) = await SubmitAsync(attemptId, qId2, "\"y\"", 5, false, token);
-        rb.StatusCode.Should().Be(HttpStatusCode.OK, $"Matching '\"y\"' vs stored '\"x\"'; body={bb}");
+        // Swapped pairing (same ids, wrong mapping) → isCorrect=false
+        var wrongPayload =
+            """{"pairs":[{"leftId":"l1","rightId":"r2"},{"leftId":"l2","rightId":"r1"}],"attemptOrder":2,"timeMs":4100}""";
+        var (rb, rootb, bb) = await SubmitAsync(attemptId, qId2, wrongPayload, 5, false, token);
+        rb.StatusCode.Should().Be(HttpStatusCode.OK, $"Matching wrong pairing; body={bb}");
         TryProp(rootb, "data", out var db); TryProp(db, "isCorrect", out var icb);
-        icb.GetBoolean().Should().BeFalse($"Matching '\"y\"' != stored '\"x\"' → false (Phase-2 fallback); body={bb}");
+        icb.GetBoolean().Should().BeFalse($"swapped pairing must grade as wrong; body={bb}");
     }
 
     // ─────────────────────────────────────────────────────────────────────────

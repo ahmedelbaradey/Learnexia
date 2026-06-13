@@ -25,7 +25,6 @@
  */
 
 import { useSignIn } from '@learnexia/api-client';
-import { isApiError } from '@learnexia/api-client';
 import { useAuthStore } from '@learnexia/shared/stores';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Image from 'next/image';
@@ -40,6 +39,7 @@ import { Stack, Text } from '@tamagui/core';
 
 import { AdminErrorBanner, type AdminBannerVariant } from '../../components/AdminErrorBanner';
 import { getRolesFromToken, isAdminRoleList, normalizeRoles } from '../../lib/jwt';
+import { SignInErrorKind, classifySignInError } from '../../lib/signInErrors';
 import { ADMIN_LOCALE, getStrings } from '../../lib/strings';
 import { signInSchema, type SignInFormValues } from '../../lib/signInSchema';
 
@@ -110,11 +110,22 @@ export default function LoginPage() {
       router.replace('/dashboard');
     } catch (err) {
       setGating(false);
-      // 400/401/403 → invalid credentials. Anything else (network/5xx) → generic.
-      if (isApiError(err) && (err.status === 400 || err.status === 401 || err.status === 403)) {
-        setBanner({ variant: 'error', message: strings.errInvalidCredentials });
-      } else {
-        setBanner({ variant: 'warning', message: strings.errNetwork });
+      // Distinct localized messages for locked / deactivated (carryover A1).
+      // Every OTHER credential failure shows the SAME uniform invalid-credentials
+      // message — never user-not-found vs wrong-password (anti-enumeration).
+      switch (classifySignInError(err)) {
+        case SignInErrorKind.AccountLocked:
+          setBanner({ variant: 'warning', message: strings.errAccountLocked });
+          break;
+        case SignInErrorKind.AccountDeactivated:
+          setBanner({ variant: 'error', message: strings.errAccountDeactivated });
+          break;
+        case SignInErrorKind.InvalidCredentials:
+          setBanner({ variant: 'error', message: strings.errInvalidCredentials });
+          break;
+        default:
+          // Network / 5xx → generic retry message.
+          setBanner({ variant: 'warning', message: strings.errNetwork });
       }
     }
   });

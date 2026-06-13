@@ -1,10 +1,10 @@
 /**
  * i18n resources — ar (Arabic-first) + en.
  *
- * Namespaces: `common`, `auth`, `onboarding`, `parent`, `child`. All P1-09 auth
- * & onboarding copy slots from the Design Spec live here. `defaultNS` is
- * `common`. The `en` object is the canonical shape; `ar` mirrors it exactly so
- * no key is missing in either locale (the QA pass verifies this).
+ * Namespaces: `common`, `auth`, `onboarding`, `parent`, `child`, `nav`. All
+ * P1-09 auth & onboarding copy slots from the Design Spec live here.
+ * `defaultNS` is `common`. The `en` object is the canonical shape; `ar` mirrors
+ * it exactly so no key is missing in either locale (the QA pass verifies this).
  */
 
 export const NAMESPACES = [
@@ -13,6 +13,15 @@ export const NAMESPACES = [
   'onboarding',
   'parent',
   'child',
+  'nav',
+  'quiz',
+  'xp',
+  'streak',
+  'hearts',
+  'badges',
+  'missions',
+  'league',
+  'events',
 ] as const;
 export type Namespace = (typeof NAMESPACES)[number];
 
@@ -102,6 +111,11 @@ export const en = {
       haveAccount: 'Already have an account?',
       signInLink: 'Sign in',
       backToSignIn: 'Back to Sign in',
+      captcha: {
+        a11y: 'Security check',
+        loadError:
+          "The security check couldn't load. Please refresh the page and try again.",
+      },
       errors: {
         duplicateEmail: 'An account with this email already exists.',
         weakPassword:
@@ -109,6 +123,7 @@ export const en = {
         invalidEmail: 'Please enter a valid email address.',
         countryRequired: 'Please select your country.',
         termsRequired: 'Please accept the Terms to continue.',
+        captchaFailed: 'Security check failed. Please try again.',
       },
     },
     login: {
@@ -138,8 +153,13 @@ export const en = {
         socialProof: '240,000+ kids learning today',
       },
       errors: {
+        // Anti-enumeration (P1-13): credential failures are ALWAYS this one
+        // uniform message — never a "no account found" variant.
         invalidCredentials: 'Incorrect username or password.',
-        notFound: 'No account found with this email.',
+        accountLocked:
+          'Too many failed attempts. Your account is temporarily locked — please try again later.',
+        accountDeactivated:
+          'This account has been deactivated. Please contact support for help.',
         socialFailed: "Couldn't sign in with Google. Please try again.",
       },
       social: {
@@ -191,9 +211,17 @@ export const en = {
     removeChild: 'Remove child',
     saveChanges: 'Save Changes',
     addChild: {
-      title: 'Add your child',
+      title: 'Add your children',
       subtitle:
-        "Fill in your child's details. You can add more children after.",
+        'Add each of your children. You can add more than one.',
+      // Continue button on the new My-Children-style onboarding screen.
+      continue: 'Continue',
+      // Section label above the already-added children list.
+      listLabel: 'Children added ({{count}})',
+      // Empty-state hint shown when no children have been added yet.
+      emptyHint: 'Add your first child to continue',
+      // Keys below are kept for AddChildForm / EditChildSheet (still used by
+      // the dashboard) and for backward-compat. Do not remove this PR.
       labelName: "Child's full name",
       labelEmail: 'Login email',
       labelPassword: 'Password',
@@ -212,7 +240,6 @@ export const en = {
         "The language for buttons, menus, and messages. We've matched it to the learning language — you can change it.",
       addToListButton: 'Add Child to List',
       submitButton: 'Add {{count}} Child(ren) and Continue',
-      listLabel: 'Children to add ({{count}})',
       added: 'Added!',
       partialFailureBanner:
         'Some children could not be added. Please fix the errors and try again.',
@@ -376,10 +403,66 @@ export const en = {
         },
       },
     },
+    // A4 Reports page (CO-FE-1 / P1-11-FE-9; charts deferred to P5-05).
     reports: {
-      // TODO(P1-11-FE-9 / P5-05-FE): full Reports + charts.
-      title: 'Reports',
-      comingSoon: 'Detailed reports and charts are on their way. Check back soon.',
+      title: "{{name}}'s reports",
+      subtitle: 'Detailed breakdown · Switch child in header',
+      range: {
+        label: 'Report range',
+        week: 'This week',
+        month: 'This month',
+        all: 'All time',
+      },
+      send: 'Send Report',
+      // L6: stub toast — real delivery ships with P5-04 / Phase-9 email.
+      sendToast: 'Report sent to your email — coming soon!',
+      kpi: {
+        time: 'Time learning',
+        xp: 'XP earned',
+        lessons: 'Lessons done',
+        accuracy: 'Avg. accuracy',
+        noActivity: 'No activity yet',
+        // G-2: no parent-readable child XP endpoint yet.
+        xpComingSoon: 'Coming with full reports',
+      },
+      delta: {
+        vsLastWeek: '{{value}}% vs last week',
+      },
+      mastery: {
+        title: 'Skills mastery',
+        sub: 'Mastery levels across subjects',
+        // G-1: no per-subject mastery endpoint yet (P5-05 aggregate).
+        empty: 'Mastery appears after the first lessons',
+      },
+      charts: {
+        xpTitle: 'Last 20 days · XP earned',
+        todTitle: 'Time of day',
+        comingSoon: 'Charts coming soon',
+      },
+      empty: {
+        firstWeek:
+          "{{name}} hasn't started yet — their first lesson will light this page up!",
+        addChild: 'Add a child to see reports',
+      },
+      loadError: 'Could not load reports. Tap to retry.',
+      // A5 parent surface — "Recent attempts" panel inside Reports.
+      attempts: {
+        title: 'Recent attempts',
+        sub: "{{name}}'s latest quizzes",
+        empty: 'No attempts in this period',
+        showAll: 'Show all',
+        showLess: 'Show less',
+        row: {
+          // G-1 (A5): the DTO has lessonId only — localized fallback.
+          lessonFallback: 'Lesson {{n}}',
+          today: 'Today',
+          yesterday: 'Yesterday',
+          completed: 'Completed',
+          inProgress: 'Not finished',
+          hints_one: '💡 {{count}} hint',
+          hints_other: '💡 {{count}} hints',
+        },
+      },
     },
     settings: {
       title: 'Settings',
@@ -656,6 +739,35 @@ export const en = {
         rankLabel: 'Rank {{rank}} of {{total}}',
         rankUnknown: 'Earning your rank…',
         a11y: '{{tier}} league, rank {{rank}} of {{total}}, {{xp}} XP this week',
+        hintA11y: 'Opens your league standings',
+      },
+      // 3c (B-int) — gamification entry points on the Home dashboard
+      // (Design Spec P4-08 §10: HUD-chip tap-throughs + event banner + activity link).
+      statsNav: {
+        hearts: '{{value}} hearts — see details',
+        streak: '{{value}} day streak — see details',
+        xp: '{{value}} XP this week — see details',
+        freeze: '{{value}} streak freezes — see events',
+      },
+      events: {
+        seeAll: 'See all →',
+        bannerA11y: '{{name}} — {{multiplier}} event. Opens events and challenges',
+      },
+      activity: {
+        seeAll: 'See all →',
+        a11y: 'My activity — see all your lesson attempts',
+      },
+      // 3c (B-int) — dashboard celebration popups (useDashboardDiff; level-up
+      // and mission-complete copy reuses xp.levelUp.* / missions.complete.*).
+      celebrate: {
+        cta: 'Keep Going',
+        badgeTitle: 'New Badge Unlocked!',
+        badgeA11y: 'New badge unlocked: {{name}}. You earned {{xp}} XP',
+        streakTitle: 'Streak Milestone!',
+        streakSubtitle_one: '{{value}}-day streak — keep it alive!',
+        streakSubtitle_other: '{{value}}-day streak — keep it alive!',
+        streakA11y_one: 'Streak milestone! {{value}} day streak. You earned {{xp}} XP',
+        streakA11y_other: 'Streak milestone! {{value}} days streak. You earned {{xp}} XP',
       },
     },
     subjects: {
@@ -760,6 +872,343 @@ export const en = {
       tryAgain: 'Try again',
       xpStub: '+10 XP (coming soon)',
     },
+    // A5 child surface — "My activity" attempt-history push screen
+    // (Design Spec design-system/ui_kits/student-app/A5-attempt-history.md §2/§4).
+    attempts: {
+      title: 'My activity',
+      sub: "Look how much you've done!",
+      back: 'Back',
+      summary: {
+        attempts: 'Attempts',
+        completed: 'Completed',
+        best: 'Best score',
+      },
+      group: {
+        thisWeek: 'This week',
+        earlier: 'Earlier',
+      },
+      row: {
+        lessonFallback: 'Lesson {{n}}',
+        today: 'Today',
+        yesterday: 'Yesterday',
+        completed: 'Completed',
+        inProgress: 'In progress',
+      },
+      empty: {
+        title: 'No adventures yet — start your first lesson!',
+        cta: 'Start learning',
+      },
+      error: "Couldn't load your activity. Try again",
+      showMore: 'Show more',
+      listA11y: '{{count}} attempts',
+    },
+  },
+  // B0-nav — child app bottom TabBar (Design Spec design-system/ui_kits/student-app/B0-nav-tabbar.md §1).
+  nav: {
+    tabs: {
+      home: 'Home',
+      missions: 'Missions',
+      league: 'League',
+      badges: 'Badges',
+      barLabel: 'Main navigation',
+    },
+    stub: {
+      comingSoon: 'Coming soon',
+    },
+  },
+  // C5 — Matching tap-to-pair panel (Design Spec design-system/ui_kits/student-app/C5-matching-panel.md §5).
+  quiz: {
+    matching: {
+      instruction: 'Tap two cards to pair them',
+      promptHeader: 'Match these',
+      answerHeader: '…with these',
+      armedA11y: '{{text}}, selected, choose its match',
+      pairedA11y: '{{text}}, paired with {{partner}}, tap to unpair',
+      pairedAnnounce: 'Paired: {{a}} with {{b}}',
+      unpairedAnnounce: 'Unpaired: {{a}} and {{b}}',
+      pairFormat: '{{left}} – {{right}}',
+      pairJoin: ', ',
+    },
+  },
+  // B1 — XP & Level screen + level-up moment (Design Spec P4-08 §1).
+  // XP counters / "n / m XP" strings keep Latin digits + LTR in BOTH locales
+  // (SKILL.md numerals rule); level numbers are prose counts (locale digits).
+  xp: {
+    back: 'Back',
+    hero: {
+      eyebrow: 'Your level',
+      level: 'Level {{value}}',
+      a11y: 'You are level {{level}}',
+    },
+    progress: {
+      header: '📈 Level {{from}} → {{to}}',
+      counter: '{{current}} / {{total}} XP',
+      counterTotalOnly: '{{xp}} XP',
+      footerPercent: '{{percent}} to next level',
+      footerLeft: '{{xp}} XP left',
+      barA11y: '{{current}} of {{total}} XP to level {{next}}',
+    },
+    totalXp: {
+      label: 'Total XP',
+      a11y: 'Total XP {{xp}}',
+    },
+    levelUp: {
+      title: 'Level Up!',
+      subtitle: 'You reached Level {{level}}',
+      cta: 'Keep Going',
+      a11y: 'Level up! You reached level {{level}} and earned {{xp}} XP',
+    },
+    error: 'We could not load your XP. Try again!',
+  },
+  // B2 — Streak screen (Design Spec P4-08 §2). No per-day history endpoint
+  // (gap G-2) → milestone markers + honest "coming soon" calendar placeholder.
+  streak: {
+    back: 'Back',
+    eyebrow: 'Streak',
+    days_one: '{{value}} day',
+    days_other: '{{value}} days',
+    keepAlive: 'Keep it alive!',
+    zeroTitle: 'Start your streak today!',
+    freeze: {
+      title: 'Streak freezes',
+      explainer: 'Freezes save your streak automatically when you miss a day',
+      countA11y_zero: 'No streak freezes yet — keep learning to earn them!',
+      countA11y_one: '{{value}} streak freeze ready',
+      countA11y_other: '{{value}} streak freezes ready',
+    },
+    milestones: {
+      eyebrow: 'Milestones',
+      dayLabel: 'Day {{value}}',
+      next: 'Next stop: day {{target}}!',
+      allDone: 'You passed every milestone — amazing!',
+      reachedA11y: 'Day {{value}} milestone reached',
+      upcomingA11y: 'Day {{value}} milestone — coming up!',
+    },
+    history: {
+      comingSoon: 'Your streak calendar is coming soon!',
+      body: "Soon you'll see every day you practiced right here.",
+    },
+    error: 'We could not load your streak. Try again!',
+  },
+  // B3 — Hearts status screen + Practice Mode (Design Spec P4-08 §3.1).
+  // No refill-countdown field on DashboardDto (gap G-5) → static refillNote only.
+  hearts: {
+    back: 'Back',
+    title: 'Your Hearts',
+    sub: 'You lose one for each wrong answer',
+    subFull: 'All hearts full — go learn!',
+    rowA11y: '{{current}} of {{max}} hearts',
+    refillNote: 'Hearts come back over time — or earn them by practicing',
+    lost: {
+      title: 'You lost a heart',
+      sub: 'Take your time — try again',
+    },
+    practiceMode: {
+      title: 'Practice Mode is on',
+      body: "Practice answers don't cost hearts and earn them back — keep learning!",
+      cta: 'Practice Mode (no hearts)',
+    },
+    error: "Couldn't load your hearts. Try again",
+  },
+  // B4 — Badges collection tab (Design Spec P4-08 §4). `names.*` / `hints.*`
+  // are keyed by the server badge `code` (Gamification BadgeSeeder catalog);
+  // unknown codes fall back to the raw code (technical identifier).
+  badges: {
+    title: 'Badges',
+    sub: '{{earned}} of {{total}} earned · Collect them all',
+    subEmpty: 'Earn your first badge by finishing a lesson!',
+    empty: 'No badges yet — earn your first!',
+    error: "Couldn't load your badges. Try again",
+    stats: {
+      bronze: 'Bronze',
+      silver: 'Silver',
+      gold: 'Gold',
+      legend: 'Legend',
+      cellA11y: '{{label}}: {{value}} earned',
+    },
+    status: {
+      earned: 'Earned',
+      locked: 'Locked',
+    },
+    earnedOn: 'Earned {{date}}',
+    tileA11y: {
+      earnedOn: '{{name}} — {{rarity}} badge, earned {{date}}',
+      earned: '{{name}} — {{rarity}} badge, earned',
+      locked: '{{name}} — locked. {{hint}}',
+      lockedNoHint: '{{name}} — locked',
+    },
+    rarity: {
+      bronze: 'Bronze',
+      silver: 'Silver',
+      gold: 'Gold',
+      legendary: 'Legendary',
+    },
+    names: {
+      FIRST_LESSON: 'First Steps',
+      STREAK_3: 'Warming Up',
+      STREAK_7: 'On Fire',
+      STREAK_14: 'Two-Week Champion',
+      STREAK_30: 'Unstoppable',
+      STREAK_100: 'Centurion',
+      LEVEL_5: 'Rookie',
+      LEVEL_10: 'Scholar',
+      LEVEL_20: 'Master',
+      LEGENDARY_50: 'Legend',
+    },
+    hints: {
+      FIRST_LESSON: 'Complete your first lesson',
+      STREAK_3: 'Keep a 3-day streak',
+      STREAK_7: 'Keep a 7-day streak',
+      STREAK_14: 'Keep a 14-day streak',
+      STREAK_30: 'Keep a 30-day streak',
+      STREAK_100: 'Keep a 100-day streak',
+      LEVEL_5: 'Reach Level 5',
+      LEVEL_10: 'Reach Level 10',
+      LEVEL_20: 'Reach Level 20',
+      LEGENDARY_50: 'Reach Level 50',
+    },
+  },
+  // B5 — Missions screen (Design Spec P4-08 §5). XP amounts keep Latin digits
+  // + LTR in BOTH locales (SKILL.md rule); mission counts are prose (locale
+  // digits). `titles.*` resolves the server-sent `titleKey` path
+  // (e.g. "mission.daily_3_lessons.title" — MissionSeeder catalog);
+  // `titles.unknown` is the fallback for unseeded keys (never the raw key).
+  missions: {
+    header: {
+      eyebrow: "Today's Mission",
+      progress: '{{done}} of {{total}} done',
+      resets: 'Resets at midnight',
+    },
+    hero: {
+      xp: '+{{xp}} XP',
+      sub: 'Finish all to claim it!',
+      a11y: 'Finish all daily missions to earn {{xp}} XP',
+    },
+    weekly: {
+      eyebrow: 'This Week',
+      chip: 'Weekly',
+    },
+    row: {
+      countSub: '{{progress}} of {{target}}',
+      completed: 'Completed',
+      expired: "Time's up — back tomorrow",
+      reward: '⭐ +{{xp}}',
+      a11y: '{{title}}, {{progress}} of {{target}} done, reward {{xp}} XP',
+      completedA11y: '{{title}}, completed, you earned {{xp}} XP',
+      expiredA11y: '{{title}}, time is up — back tomorrow',
+    },
+    complete: {
+      title: 'Mission Complete!',
+      subtitle: 'You finished all of today’s missions',
+      cta: 'Keep Going',
+      a11y: 'Mission complete! You earned {{xp}} XP',
+    },
+    empty: 'New missions arrive at midnight',
+    error: 'We could not load your missions. Try again!',
+    titles: {
+      mission: {
+        daily_3_lessons: { title: 'Complete 3 lessons' },
+        daily_10_correct: { title: 'Get 10 answers right' },
+        daily_keep_streak: { title: 'Keep your streak alive' },
+        daily_1_lesson_early: { title: 'Finish a lesson early today' },
+        daily_20_correct: { title: 'Get 20 answers right' },
+        weekly_15_lessons: { title: 'Complete 15 lessons this week' },
+        weekly_75_correct: { title: 'Get 75 answers right this week' },
+        weekly_5_day_streak: { title: 'Keep a 5-day streak' },
+        challenge_25_lessons: { title: 'Challenge: 25 lessons in one week' },
+        challenge_100_correct: { title: 'Challenge: 100 correct answers' },
+        challenge_5_day_streak: { title: 'Challenge: 5 days in a row' },
+      },
+      unknown: 'New mission',
+    },
+  },
+  // B6 — League standings screen (Design Spec P4-08 §6). Tier display names
+  // reuse `child.home.leagueTier.*`. XP strings keep Latin digits + "XP" in
+  // BOTH locales (SKILL.md rule, spec G-8).
+  league: {
+    banner: {
+      title: '{{tier}} League',
+      daysLeft_one: '{{value}} day left',
+      daysLeft_other: '{{value}} days left',
+      hoursLeft_one: '{{value}} hour left',
+      hoursLeft_other: '{{value}} hours left',
+      endingSoon: 'Ending soon',
+      promote_one: 'Top {{value}} promotes',
+      promote_other: 'Top {{value}} promote',
+      a11y: '{{tier}} League. {{timeLeft}}. {{promote}}',
+    },
+    countdown: {
+      full: 'Resets in {{days}} {{hours}}',
+      hoursOnly: 'Resets in {{hours}}',
+      soon: 'Resets soon!',
+      days_one: '{{value}}d',
+      days_other: '{{value}}d',
+      hours_one: '{{value}}h',
+      hours_other: '{{value}}h',
+    },
+    list: {
+      xp: '{{xp}} XP',
+      youChip: 'You',
+      rowA11y: 'Rank {{rank}}, {{name}}, {{xp}} XP this week',
+      youRowA11y: 'Rank {{rank}}, you, {{xp}} XP this week',
+      aloneHint: 'More learners join during the week — keep earning XP!',
+    },
+    zones: {
+      promotion: '↑ Promotion zone',
+      demotion: '↓ Demotion zone',
+    },
+    empty: {
+      title: 'Earn XP this week to join a league!',
+    },
+    error: 'We could not load your league. Try again!',
+  },
+  // B8 — Events screen: streak freeze + timed events + weekly challenge
+  // (Design Spec P4-08 §8). Freezes are EARNED-only — no purchase copy.
+  events: {
+    back: 'Back',
+    title: 'Events & Challenges',
+    error: 'We could not load your events. Try again!',
+    freeze: {
+      eyebrow: 'Streak Freeze',
+      countA11y_one: '{{value}} streak freeze ready',
+      countA11y_other: '{{value}} streak freezes ready',
+      explainer: 'Freezes save your streak automatically when you miss a day',
+      earnedNote: 'You earn freezes by learning — nothing to buy!',
+      zeroNote: 'No freezes yet — keep learning to earn them!',
+    },
+    timed: {
+      eyebrow: 'Timed Events',
+      multiplier: '×{{value}} XP',
+      endsInDayHour: 'Ends in {{d}}d {{h}}h',
+      endsInHourMinute: 'Ends in {{h}}h {{m}}m',
+      endsInMinute: 'Ends in {{m}}m',
+      cardA11y: '{{name}} — {{multiplier}} — {{ends}}',
+      more_one: '+{{value}} more event',
+      more_other: '+{{value}} more events',
+      empty: {
+        title: 'No events right now',
+        body: 'Special XP events will appear here — check back soon!',
+      },
+    },
+    challenges: {
+      eyebrow: 'Weekly Challenge',
+      progressLabel: '{{progress}} of {{target}}',
+      completed: 'Completed',
+      expired: "Time's up — a new challenge is coming!",
+      reward: '⭐ +{{xp}}',
+      cardA11y: '{{title}} — {{status}} — reward {{xp}} XP',
+      error: 'We could not load your challenges. Try again!',
+      titles: {
+        lessons25: 'Finish 25 lessons this week',
+        correct100: 'Get 100 answers right this week',
+        streak5: 'Learn 5 days in a row',
+        fallback: 'Weekly challenge',
+      },
+      empty: {
+        title: 'No challenge right now',
+        body: 'Weekly challenges will appear here — check back soon!',
+      },
+    },
   },
 } as const;
 
@@ -846,6 +1295,11 @@ export const ar = {
       haveAccount: 'لديك حساب بالفعل؟',
       signInLink: 'تسجيل الدخول',
       backToSignIn: 'العودة لتسجيل الدخول',
+      captcha: {
+        a11y: 'فحص الأمان',
+        loadError:
+          'تعذّر تحميل فحص الأمان. يرجى تحديث الصفحة والمحاولة مرة أخرى.',
+      },
       errors: {
         duplicateEmail: 'يوجد حساب بهذا البريد الإلكتروني بالفعل.',
         weakPassword:
@@ -853,6 +1307,7 @@ export const ar = {
         invalidEmail: 'يرجى إدخال بريد إلكتروني صحيح.',
         countryRequired: 'يرجى اختيار دولتك.',
         termsRequired: 'يرجى الموافقة على الشروط للمتابعة.',
+        captchaFailed: 'فشل فحص الأمان. يرجى المحاولة مرة أخرى.',
       },
     },
     login: {
@@ -882,8 +1337,13 @@ export const ar = {
         socialProof: 'أكثر من ٢٤٠٬٠٠٠ طفل يتعلمون اليوم',
       },
       errors: {
+        // Anti-enumeration (P1-13): credential failures are ALWAYS this one
+        // uniform message — never a "no account found" variant.
         invalidCredentials: 'اسم المستخدم أو كلمة المرور غير صحيحة.',
-        notFound: 'لا يوجد حساب بهذا البريد الإلكتروني.',
+        accountLocked:
+          'محاولات فاشلة كثيرة. تم قفل حسابك مؤقتاً — يرجى المحاولة لاحقاً.',
+        accountDeactivated:
+          'تم إيقاف هذا الحساب. يرجى التواصل مع الدعم للمساعدة.',
         socialFailed: 'تعذّر تسجيل الدخول عبر Google. حاول مرة أخرى.',
       },
       social: {
@@ -934,8 +1394,16 @@ export const ar = {
     removeChild: 'إزالة الطفل',
     saveChanges: 'حفظ التغييرات',
     addChild: {
-      title: 'أضف طفلك',
-      subtitle: 'أدخل بيانات طفلك. يمكنك إضافة أطفال آخرين بعد ذلك.',
+      title: 'أضف أطفالك',
+      subtitle: 'أضف كل طفل من أطفالك. يمكنك إضافة أكثر من طفل.',
+      // زر المتابعة في شاشة الإعداد الجديدة.
+      continue: 'متابعة',
+      // تسمية القسم فوق قائمة الأطفال المُضافين.
+      listLabel: 'الأطفال المُضافون ({{count}})',
+      // تلميح الحالة الفارغة عند عدم إضافة أي أطفال بعد.
+      emptyHint: 'أضف طفلك الأول للمتابعة',
+      // المفاتيح التالية محفوظة لـ AddChildForm / EditChildSheet (تُستخدم
+      // في لوحة التحكم) وللتوافق مع الإصدارات السابقة. لا تُحذف في هذا PR.
       labelName: 'الاسم الكامل للطفل',
       labelEmail: 'البريد الإلكتروني للدخول',
       labelPassword: 'كلمة المرور',
@@ -953,7 +1421,6 @@ export const ar = {
         'لغة الأزرار والقوائم والرسائل. قمنا بمطابقتها مع لغة الدراسة — ويمكنك تغييرها.',
       addToListButton: 'إضافة الطفل إلى القائمة',
       submitButton: 'إضافة {{count}} طفل/أطفال والمتابعة',
-      listLabel: 'الأطفال المراد إضافتهم ({{count}})',
       added: 'تمت الإضافة!',
       partialFailureBanner:
         'تعذر إضافة بعض الأطفال. يرجى تصحيح الأخطاء والمحاولة مجدداً.',
@@ -1117,10 +1584,69 @@ export const ar = {
         },
       },
     },
+    // A4 صفحة التقارير (CO-FE-1 / P1-11-FE-9؛ الرسوم البيانية مؤجلة إلى P5-05).
     reports: {
-      // TODO(P1-11-FE-9 / P5-05-FE): full Reports + charts.
-      title: 'التقارير',
-      comingSoon: 'التقارير التفصيلية والمخططات في الطريق. عُد قريباً للاطلاع عليها.',
+      title: 'تقارير {{name}}',
+      subtitle: 'تفاصيل كاملة · بدّل الطفل من الأعلى',
+      range: {
+        label: 'نطاق التقرير',
+        week: 'هذا الأسبوع',
+        month: 'هذا الشهر',
+        all: 'كل الوقت',
+      },
+      send: 'إرسال التقرير',
+      // L6: إشعار مؤقت — الإرسال الفعلي يصل مع P5-04 / المرحلة 9.
+      sendToast: 'سيصلك التقرير على بريدك — قريبًا!',
+      kpi: {
+        time: 'وقت التعلم',
+        xp: 'النقاط المكتسبة',
+        lessons: 'الدروس المكتملة',
+        accuracy: 'متوسط الدقة',
+        noActivity: 'لا يوجد نشاط بعد',
+        // G-2: لا توجد نقطة نهاية لنقاط الطفل للوالدين بعد.
+        xpComingSoon: 'يتوفر مع التقارير الكاملة',
+      },
+      delta: {
+        vsLastWeek: '{{value}}٪ عن الأسبوع الماضي',
+      },
+      mastery: {
+        title: 'إتقان المهارات',
+        sub: 'مستويات الإتقان حسب المادة',
+        // G-1: لا توجد نقطة نهاية لإتقان المواد بعد (P5-05).
+        empty: 'يظهر الإتقان بعد أولى الدروس',
+      },
+      charts: {
+        xpTitle: 'آخر ٢٠ يومًا · النقاط',
+        todTitle: 'أوقات اليوم',
+        comingSoon: 'الرسوم البيانية قريبًا',
+      },
+      empty: {
+        firstWeek: 'لم يبدأ {{name}} بعد — أول درس سيضيء هذه الصفحة!',
+        addChild: 'أضف طفلًا لعرض التقارير',
+      },
+      loadError: 'تعذّر تحميل التقارير. اضغط لإعادة المحاولة.',
+      // A5 واجهة الوالدين — لوحة «المحاولات الأخيرة» داخل التقارير.
+      attempts: {
+        title: 'المحاولات الأخيرة',
+        sub: 'آخر اختبارات {{name}}',
+        empty: 'لا توجد محاولات في هذه الفترة',
+        showAll: 'عرض الكل',
+        showLess: 'عرض أقل',
+        row: {
+          // G-1 (A5): الكائن يحمل lessonId فقط — نص بديل مترجم.
+          lessonFallback: 'الدرس {{n}}',
+          today: 'اليوم',
+          yesterday: 'أمس',
+          completed: 'مكتمل',
+          inProgress: 'غير مكتمل',
+          hints_zero: '💡 بدون تلميحات',
+          hints_one: '💡 تلميح واحد',
+          hints_two: '💡 تلميحان',
+          hints_few: '💡 {{count}} تلميحات',
+          hints_many: '💡 {{count}} تلميحًا',
+          hints_other: '💡 {{count}} تلميح',
+        },
+      },
     },
     settings: {
       title: 'الإعدادات',
@@ -1397,6 +1923,43 @@ export const ar = {
         rankLabel: 'المرتبة {{rank}} من {{total}}',
         rankUnknown: 'جارٍ احتساب مرتبتك…',
         a11y: 'دوري {{tier}}، المرتبة {{rank}} من {{total}}، {{xp}} نقطة هذا الأسبوع',
+        hintA11y: 'يفتح ترتيب دوريك',
+      },
+      // 3c (B-int) — نقاط الدخول للتلعيب على لوحة الطفل الرئيسية
+      // (Design Spec P4-08 §10: الرقائق + لافتة الفعاليات + رابط النشاط).
+      statsNav: {
+        hearts: '{{value}} قلوب — اعرض التفاصيل',
+        streak: 'سلسلة {{value}} أيام — اعرض التفاصيل',
+        xp: '{{value}} نقطة هذا الأسبوع — اعرض التفاصيل',
+        freeze: '{{value}} مجمِّدات — اعرض الفعاليات',
+      },
+      events: {
+        seeAll: 'عرض الكل ←',
+        bannerA11y: '{{name}} — فعالية {{multiplier}}. يفتح الفعاليات والتحديات',
+      },
+      activity: {
+        seeAll: 'عرض الكل ←',
+        a11y: 'نشاطي — اعرض كل محاولاتك في الدروس',
+      },
+      // 3c (B-int) — نوافذ الاحتفال على اللوحة (useDashboardDiff؛ نص الارتقاء
+      // وإكمال المهمة يعيد استخدام xp.levelUp.* / missions.complete.*).
+      celebrate: {
+        cta: 'واصل التقدم',
+        badgeTitle: 'شارة جديدة!',
+        badgeA11y: 'شارة جديدة: {{name}}. كسبت {{xp}} نقطة',
+        streakTitle: 'محطة جديدة في السلسلة!',
+        streakSubtitle_zero: 'سلسلة {{value}} أيام — حافظ عليها!',
+        streakSubtitle_one: 'سلسلة يوم واحد — حافظ عليها!',
+        streakSubtitle_two: 'سلسلة يومين — حافظ عليها!',
+        streakSubtitle_few: 'سلسلة {{value}} أيام — حافظ عليها!',
+        streakSubtitle_many: 'سلسلة {{value}} يومًا — حافظ عليها!',
+        streakSubtitle_other: 'سلسلة {{value}} يوم — حافظ عليها!',
+        streakA11y_zero: 'محطة جديدة! سلسلة {{value}} أيام. كسبت {{xp}} نقطة',
+        streakA11y_one: 'محطة جديدة! سلسلة يوم واحد. كسبت {{xp}} نقطة',
+        streakA11y_two: 'محطة جديدة! سلسلة يومين. كسبت {{xp}} نقطة',
+        streakA11y_few: 'محطة جديدة! سلسلة {{value}} أيام. كسبت {{xp}} نقطة',
+        streakA11y_many: 'محطة جديدة! سلسلة {{value}} يومًا. كسبت {{xp}} نقطة',
+        streakA11y_other: 'محطة جديدة! سلسلة {{value}} يوم. كسبت {{xp}} نقطة',
       },
     },
     subjects: {
@@ -1500,6 +2063,370 @@ export const ar = {
       backToSubject: 'الرجوع إلى الدروس',
       tryAgain: 'حاول مجددًا',
       xpStub: '+١٠ نقطة خبرة (قريبًا)',
+    },
+    // A5 — شاشة «نشاطي» لسجل المحاولات (Design Spec A5-attempt-history.md §2/§4 — النص العربي نهائي وفق المواصفة).
+    attempts: {
+      title: 'نشاطي',
+      sub: 'انظر كم أنجزت!',
+      back: 'رجوع',
+      summary: {
+        attempts: 'المحاولات',
+        completed: 'مكتملة',
+        best: 'أفضل نتيجة',
+      },
+      group: {
+        thisWeek: 'هذا الأسبوع',
+        earlier: 'سابقًا',
+      },
+      row: {
+        lessonFallback: 'الدرس {{n}}',
+        today: 'اليوم',
+        yesterday: 'أمس',
+        completed: 'مكتملة',
+        inProgress: 'قيد التنفيذ',
+      },
+      empty: {
+        title: 'لا مغامرات بعد — ابدأ أول درس!',
+        cta: 'ابدأ التعلم',
+      },
+      error: 'تعذر تحميل نشاطك. حاول مرة أخرى',
+      showMore: 'عرض المزيد',
+      listA11y: '{{count}} محاولة',
+    },
+  },
+  // B0-nav — شريط التنقّل السفلي لتطبيق الطفل (Design Spec §1 — AR copy is final per spec §4).
+  nav: {
+    tabs: {
+      home: 'الرئيسية',
+      missions: 'المهام',
+      league: 'الدوري',
+      badges: 'الشارات',
+      barLabel: 'التنقل الرئيسي',
+    },
+    stub: {
+      comingSoon: 'قريبًا',
+    },
+  },
+  // C5 — لوحة المطابقة بالنقر للوصل (Design Spec §5 — النص العربي نهائي وفق المواصفة).
+  quiz: {
+    matching: {
+      instruction: 'اضغط بطاقتين لتصل بينهما',
+      promptHeader: 'صِل هذه',
+      answerHeader: '…بهذه',
+      armedA11y: '{{text}}، مختار، اختر ما يطابقه',
+      pairedA11y: '{{text}}، موصول مع {{partner}}، اضغط لفك الوصل',
+      pairedAnnounce: 'تم الوصل: {{a}} مع {{b}}',
+      unpairedAnnounce: 'تم فك الوصل: {{a}} و{{b}}',
+      pairFormat: '{{left}} – {{right}}',
+      pairJoin: '، ',
+    },
+  },
+  // B1 — شاشة النقاط والمستوى + لحظة الارتقاء (Design Spec P4-08 §1 — النص العربي وفق المواصفة).
+  // عدّادات XP بصيغة "n / m XP" تبقى بأرقام لاتينية واتجاه LTR (قاعدة الأرقام في SKILL.md)؛
+  // أرقام المستويات نصية وتُعرض بالأرقام الشرقية.
+  xp: {
+    back: 'رجوع',
+    hero: {
+      eyebrow: 'مستواك',
+      level: 'المستوى {{value}}',
+      a11y: 'أنت في المستوى {{level}}',
+    },
+    progress: {
+      header: '📈 المستوى {{from}} ← {{to}}',
+      counter: '{{current}} / {{total}} XP',
+      counterTotalOnly: '{{xp}} XP',
+      footerPercent: '{{percent}} للوصول للمستوى {{next}}',
+      footerLeft: 'متبقي {{xp}} نقطة',
+      barA11y: '{{current}} من {{total}} نقطة للوصول للمستوى {{next}}',
+    },
+    totalXp: {
+      label: 'إجمالي النقاط',
+      a11y: 'إجمالي النقاط {{xp}}',
+    },
+    levelUp: {
+      title: 'ارتقيت في المستوى!',
+      subtitle: 'وصلت إلى المستوى {{level}}',
+      cta: 'واصل التقدم',
+      a11y: 'ارتقيت في المستوى! وصلت إلى المستوى {{level}} وكسبت {{xp}} نقطة',
+    },
+    error: 'تعذّر تحميل نقاطك. حاول مجددًا!',
+  },
+  // B2 — شاشة السلسلة (Design Spec P4-08 §2 — النص العربي وفق المواصفة).
+  streak: {
+    back: 'رجوع',
+    eyebrow: 'السلسلة',
+    days_zero: '{{value}} أيام',
+    days_one: 'يوم واحد',
+    days_two: 'يومان',
+    days_few: '{{value}} أيام',
+    days_many: '{{value}} يومًا',
+    days_other: '{{value}} يوم',
+    keepAlive: 'حافظ عليها!',
+    zeroTitle: 'ابدأ سلسلتك اليوم!',
+    freeze: {
+      title: 'مجمِّدات السلسلة',
+      explainer: 'تحمي المجمِّدات سلسلتك تلقائيًا عند تفويت يوم',
+      countA11y_zero: 'لا مجمِّدات بعد — واصل التعلم لتكسبها!',
+      countA11y_one: 'مجمِّد واحد جاهز',
+      countA11y_two: 'مجمِّدان جاهزان',
+      countA11y_few: '{{value}} مجمِّدات جاهزة',
+      countA11y_many: '{{value}} مجمِّدًا جاهزًا',
+      countA11y_other: '{{value}} مجمِّد جاهز',
+    },
+    milestones: {
+      eyebrow: 'محطات السلسلة',
+      dayLabel: 'اليوم {{value}}',
+      next: 'المحطة التالية: اليوم {{target}}!',
+      allDone: 'تجاوزت كل المحطات — مذهل!',
+      reachedA11y: 'وصلت إلى محطة اليوم {{value}}',
+      upcomingA11y: 'محطة اليوم {{value}} — قريبًا!',
+    },
+    history: {
+      comingSoon: 'تقويم سلسلتك قادم قريبًا!',
+      body: 'قريبًا سترى هنا كل يوم تتدرب فيه.',
+    },
+    error: 'تعذر تحميل سلسلتك. حاول مجددًا!',
+  },
+  // B3 — شاشة القلوب + وضع التدريب (Design Spec P4-08 §3.1 — النص العربي وفق المواصفة).
+  hearts: {
+    back: 'رجوع',
+    title: 'قلوبك',
+    sub: 'تفقد قلبًا مع كل إجابة خاطئة',
+    subFull: 'قلوبك مكتملة — هيا نتعلم!',
+    rowA11y: '{{current}} من {{max}} قلوب',
+    refillNote: 'تعود القلوب مع الوقت — أو اكسبها بالتدريب',
+    lost: {
+      title: 'فقدت قلبًا',
+      sub: 'خذ وقتك — حاول مجددًا',
+    },
+    practiceMode: {
+      title: 'وضع التدريب مفعّل',
+      body: 'إجابات التدريب لا تُكلّف قلوبًا وتعيدها إليك — واصل التعلم!',
+      cta: 'وضع التدريب (بدون قلوب)',
+    },
+    error: 'تعذّر تحميل قلوبك. حاول مجددًا',
+  },
+  // B4 — شارات الطفل (Design Spec P4-08 §4). الأسماء والتلميحات وفق كتالوج BadgeSeeder.
+  badges: {
+    title: 'الشارات',
+    sub: '{{earned}} من {{total}} مكتسبة · اجمعها كلها',
+    subEmpty: 'اكسب أول شارة بإكمال درس!',
+    empty: 'لا شارات بعد — اكسب أولى شاراتك!',
+    error: 'تعذّر تحميل شاراتك. حاول مجددًا',
+    stats: {
+      bronze: 'برونزية',
+      silver: 'فضية',
+      gold: 'ذهبية',
+      legend: 'أسطورية',
+      cellA11y: '{{label}}: {{value}} مكتسبة',
+    },
+    status: {
+      earned: 'مكتسبة',
+      locked: 'مقفلة',
+    },
+    earnedOn: 'اكتُسبت في {{date}}',
+    tileA11y: {
+      earnedOn: '{{name}} — شارة {{rarity}}، اكتُسبت في {{date}}',
+      earned: '{{name}} — شارة {{rarity}}، مكتسبة',
+      locked: '{{name}} — مقفلة. {{hint}}',
+      lockedNoHint: '{{name}} — مقفلة',
+    },
+    rarity: {
+      bronze: 'برونزية',
+      silver: 'فضية',
+      gold: 'ذهبية',
+      legendary: 'أسطورية',
+    },
+    names: {
+      FIRST_LESSON: 'الخطوات الأولى',
+      STREAK_3: 'بداية الحماس',
+      STREAK_7: 'متوهج',
+      STREAK_14: 'بطل الأسبوعين',
+      STREAK_30: 'لا يُوقف',
+      STREAK_100: 'قائد المئة',
+      LEVEL_5: 'مبتدئ واعد',
+      LEVEL_10: 'عالِم صغير',
+      LEVEL_20: 'محترف',
+      LEGENDARY_50: 'أسطورة',
+    },
+    hints: {
+      FIRST_LESSON: 'أكمل درسك الأول',
+      STREAK_3: 'حافظ على سلسلة لمدة ٣ أيام',
+      STREAK_7: 'حافظ على سلسلة لمدة ٧ أيام',
+      STREAK_14: 'حافظ على سلسلة لمدة ١٤ يومًا',
+      STREAK_30: 'حافظ على سلسلة لمدة ٣٠ يومًا',
+      STREAK_100: 'حافظ على سلسلة لمدة ١٠٠ يوم',
+      LEVEL_5: 'صِل إلى المستوى ٥',
+      LEVEL_10: 'صِل إلى المستوى ١٠',
+      LEVEL_20: 'صِل إلى المستوى ٢٠',
+      LEGENDARY_50: 'صِل إلى المستوى ٥٠',
+    },
+  },
+  // B5 — شاشة المهام (Design Spec P4-08 §5 — النص العربي وفق المواصفة).
+  // قيم XP تبقى بأرقام لاتينية واتجاه LTR (قاعدة الأرقام في SKILL.md)؛
+  // عدّادات المهام نصية وتُعرض بالأرقام الشرقية.
+  missions: {
+    header: {
+      eyebrow: 'مهمة اليوم',
+      progress: '{{done}} من {{total}} مكتملة',
+      resets: 'تتجدد عند منتصف الليل',
+    },
+    hero: {
+      xp: '+{{xp}} XP',
+      sub: 'أكملها كلها واحصل عليها!',
+      a11y: 'أكمل كل مهام اليوم لتكسب {{xp}} نقطة',
+    },
+    weekly: {
+      eyebrow: 'هذا الأسبوع',
+      chip: 'أسبوعية',
+    },
+    row: {
+      countSub: '{{progress}} من {{target}}',
+      completed: 'اكتملت',
+      expired: 'انتهى الوقت — عُد غدًا',
+      reward: '⭐ +{{xp}}',
+      a11y: '{{title}}، أنجزت {{progress}} من {{target}}، المكافأة {{xp}} نقطة',
+      completedA11y: '{{title}}، اكتملت وكسبت {{xp}} نقطة',
+      expiredA11y: '{{title}}، انتهى الوقت — عُد غدًا',
+    },
+    complete: {
+      title: 'أكملت المهمة!',
+      subtitle: 'أنهيت كل مهام اليوم',
+      cta: 'واصل التقدم',
+      a11y: 'أكملت المهمة! كسبت {{xp}} نقطة',
+    },
+    empty: 'مهام جديدة عند منتصف الليل',
+    error: 'تعذّر تحميل مهامك. حاول مجددًا!',
+    titles: {
+      mission: {
+        daily_3_lessons: { title: 'أكمل ٣ دروس' },
+        daily_10_correct: { title: 'أجب عن ١٠ أسئلة إجابة صحيحة' },
+        daily_keep_streak: { title: 'حافظ على سلسلتك' },
+        daily_1_lesson_early: { title: 'أكمل درسًا مبكرًا اليوم' },
+        daily_20_correct: { title: 'أجب عن ٢٠ سؤالًا إجابة صحيحة' },
+        weekly_15_lessons: { title: 'أكمل ١٥ درسًا هذا الأسبوع' },
+        weekly_75_correct: { title: 'أجب عن ٧٥ سؤالًا إجابة صحيحة هذا الأسبوع' },
+        weekly_5_day_streak: { title: 'حافظ على سلسلة ٥ أيام' },
+        challenge_25_lessons: { title: 'تحدٍّ: ٢٥ درسًا في أسبوع واحد' },
+        challenge_100_correct: { title: 'تحدٍّ: ١٠٠ إجابة صحيحة' },
+        challenge_5_day_streak: { title: 'تحدٍّ: ٥ أيام متتالية' },
+      },
+      unknown: 'مهمة جديدة',
+    },
+  },
+  // B6 — شاشة ترتيب الدوري (Design Spec P4-08 §6 — النص العربي وفق المواصفة).
+  // عدّادات النقاط تبقى بأرقام لاتينية + "XP" في كلتا اللغتين (SKILL.md، G-8).
+  league: {
+    banner: {
+      title: 'دوري {{tier}}',
+      daysLeft_zero: '{{value}} أيام متبقية',
+      daysLeft_one: 'يوم واحد متبقٍ',
+      daysLeft_two: 'يومان متبقيان',
+      daysLeft_few: '{{value}} أيام متبقية',
+      daysLeft_many: '{{value}} يومًا متبقيًا',
+      daysLeft_other: '{{value}} يوم متبقٍ',
+      hoursLeft_zero: '{{value}} ساعات متبقية',
+      hoursLeft_one: 'ساعة واحدة متبقية',
+      hoursLeft_two: 'ساعتان متبقيتان',
+      hoursLeft_few: '{{value}} ساعات متبقية',
+      hoursLeft_many: '{{value}} ساعة متبقية',
+      hoursLeft_other: '{{value}} ساعة متبقية',
+      endingSoon: 'ينتهي قريبًا',
+      promote_zero: 'لا أحد يصعد',
+      promote_one: 'الأول يصعد',
+      promote_two: 'أفضل اثنين يصعدان',
+      promote_few: 'أفضل {{value}} يصعدون',
+      promote_many: 'أفضل {{value}} يصعدون',
+      promote_other: 'أفضل {{value}} يصعدون',
+      a11y: 'دوري {{tier}}. {{timeLeft}}. {{promote}}',
+    },
+    countdown: {
+      full: 'تتجدد بعد {{days}} و{{hours}}',
+      hoursOnly: 'تتجدد بعد {{hours}}',
+      soon: 'تتجدد قريبًا!',
+      days_zero: '{{value}} أيام',
+      days_one: 'يوم واحد',
+      days_two: 'يومين',
+      days_few: '{{value}} أيام',
+      days_many: '{{value}} يومًا',
+      days_other: '{{value}} يوم',
+      hours_zero: '{{value}} ساعات',
+      hours_one: 'ساعة واحدة',
+      hours_two: 'ساعتين',
+      hours_few: '{{value}} ساعات',
+      hours_many: '{{value}} ساعة',
+      hours_other: '{{value}} ساعة',
+    },
+    list: {
+      xp: '{{xp}} XP',
+      youChip: 'أنت',
+      rowA11y: 'المركز {{rank}}، {{name}}، {{xp}} نقطة هذا الأسبوع',
+      youRowA11y: 'المركز {{rank}}، أنت، {{xp}} نقطة هذا الأسبوع',
+      aloneHint: 'ينضم متعلمون أكثر خلال الأسبوع — واصل كسب النقاط!',
+    },
+    zones: {
+      promotion: '↑ منطقة الصعود',
+      demotion: '↓ منطقة الهبوط',
+    },
+    empty: {
+      title: 'اكسب نقاطًا هذا الأسبوع للانضمام إلى دوري!',
+    },
+    error: 'تعذّر تحميل الدوري. حاول مجددًا!',
+  },
+  // B8 — شاشة الفعاليات: مجمِّد السلسلة + الفعاليات المؤقتة + تحدي الأسبوع
+  // (Design Spec P4-08 §8). المجمِّدات تُكتسب فقط — لا نصوص شراء.
+  events: {
+    back: 'رجوع',
+    title: 'الفعاليات والتحديات',
+    error: 'تعذّر تحميل الفعاليات. حاول مجددًا!',
+    freeze: {
+      eyebrow: 'مجمِّد السلسلة',
+      countA11y_zero: 'لا مجمِّدات بعد — واصل التعلم لتكسبها!',
+      countA11y_one: 'مجمِّد واحد جاهز',
+      countA11y_two: 'مجمِّدان جاهزان',
+      countA11y_few: '{{value}} مجمِّدات جاهزة',
+      countA11y_many: '{{value}} مجمِّدًا جاهزًا',
+      countA11y_other: '{{value}} مجمِّد جاهز',
+      explainer: 'تحمي المجمِّدات سلسلتك تلقائيًا عند تفويت يوم',
+      earnedNote: 'تكسب المجمِّدات بالتعلم — لا شيء للشراء!',
+      zeroNote: 'لا مجمِّدات بعد — واصل التعلم لتكسبها!',
+    },
+    timed: {
+      eyebrow: 'فعاليات مؤقتة',
+      multiplier: '×{{value}} XP',
+      endsInDayHour: 'ينتهي بعد {{d}} يوم و{{h}} ساعة',
+      endsInHourMinute: 'ينتهي بعد {{h}} س {{m}} د',
+      endsInMinute: 'ينتهي بعد {{m}} د',
+      cardA11y: '{{name}} — {{multiplier}} — {{ends}}',
+      more_zero: 'لا فعاليات أخرى',
+      more_one: '+ فعالية أخرى',
+      more_two: '+ فعاليتان أخريان',
+      more_few: '+ {{value}} فعاليات أخرى',
+      more_many: '+ {{value}} فعالية أخرى',
+      more_other: '+ {{value}} فعالية أخرى',
+      empty: {
+        title: 'لا فعاليات الآن',
+        body: 'ستظهر فعاليات النقاط الخاصة هنا — عُد قريبًا!',
+      },
+    },
+    challenges: {
+      eyebrow: 'تحدي الأسبوع',
+      progressLabel: '{{progress}} من {{target}}',
+      completed: 'اكتملت',
+      expired: 'انتهى الوقت — تحدٍّ جديد قادم!',
+      reward: '⭐ +{{xp}}',
+      cardA11y: '{{title}} — {{status}} — المكافأة {{xp}} نقطة',
+      error: 'تعذّر تحميل التحديات. حاول مجددًا!',
+      titles: {
+        lessons25: 'أكمل ٢٥ درسًا هذا الأسبوع',
+        correct100: 'أجب عن ١٠٠ سؤال إجابة صحيحة هذا الأسبوع',
+        streak5: 'تعلّم ٥ أيام متتالية',
+        fallback: 'تحدي الأسبوع',
+      },
+      empty: {
+        title: 'لا تحدي الآن',
+        body: 'ستظهر تحديات الأسبوع هنا — عُد قريبًا!',
+      },
     },
   },
 } as const;

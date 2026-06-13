@@ -1626,6 +1626,9 @@
   <data name="AnswerPayloadRequired" xml:space="preserve">
     <value>محتوى الإجابة مطلوب.</value>
   </data>
+  <data name="AnswerPayloadMalformedJson" xml:space="preserve">
+    <value>محتوى الإجابة ليس بصيغة JSON صحيحة.</value>
+  </data>
   <data name="TimeSpentSecondsMustBeNonNegative" xml:space="preserve">
     <value>يجب أن يكون الوقت المستغرق صفراً أو أكثر.</value>
   </data>
@@ -1655,6 +1658,9 @@
   </data>
   <data name="SkillStatsRetrievedSuccessfully" xml:space="preserve">
     <value>تم استرداد إحصائيات المهارة بنجاح.</value>
+  </data>
+  <data name="AttemptsAccessForbidden" xml:space="preserve">
+    <value>غير مخول للوصول إلى هذه المحاولات.</value>
   </data>
   <data name="KnowledgeNodeNotFound" xml:space="preserve">
     <value>عقدة المعرفة المطلوبة غير موجودة.</value>

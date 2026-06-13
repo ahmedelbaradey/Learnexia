@@ -40,7 +40,8 @@ namespace Learnexia.IntegrationTests;
 ///   BE-TC-34  Abandoned answers are retrievable afterward
 ///   BE-TC-38  Empty attempts list → 200 empty array (not 404)
 ///   BE-TC-39  studentId ≤ 0 → 400 (inline, not 422)
-///   BE-TC-40  Missing JWT + Parent JWT for E4
+///   BE-TC-40  E4 auth gates: missing JWT 401; unlinked parent 403 generic; own id 200
+///   BE-TC-40b E4 linked parent reads own child's attempts → 200 (parent↔child seam)
 ///   BE-TC-44  Skill stats scoped to requesting student
 ///   BE-TC-45  Skill stats IDOR → 401
 ///   BE-TC-46  Validation: skillId ≤ 0 → 400; studentId ≤ 0 → 400
@@ -565,22 +566,62 @@ public sealed class P2_08_RecordGranularAnswers_Extended_Tests : IAsyncLifetime
         ((int)r2.StatusCode).Should().Be(400, $"studentId=-1 must return 400; body={b2}");
     }
 
-    [Fact(DisplayName = "BE-TC-40: Missing JWT → 401 (framework); Parent JWT calling own ID → 200 empty (F-05)")]
+    [Fact(DisplayName = "BE-TC-40: Missing JWT → 401; UNLINKED parent JWT → 403 generic; parent's own ID → 200 (F-05)")]
     public async Task BeTc40_E4_AuthGates()
     {
-        // No JWT → 401
+        // No JWT → 401 (framework)
         var (r1, _, b1) = await SendAsync(_client, HttpMethod.Get, "api/Learning/Students/1/Attempts", null, null);
         r1.StatusCode.Should().Be(HttpStatusCode.Unauthorized, $"no JWT → 401; body={b1}");
 
-        // Parent JWT calling another student's id → 401 (IDOR)
+        // UNLINKED parent JWT calling another (not-their-own) student's id → 403 Forbidden
+        // (authenticated-but-not-authorized must NOT be 401 — 401 triggers FE token refresh).
         var (parentToken, parentUserId) = await CreateParentAsync("p40");
         var (studentToken, studentId) = await CreateStudentAsync("s40");
         var (r2, root2, b2) = await SendAsync(_client, HttpMethod.Get, $"api/Learning/Students/{studentId}/Attempts", null, parentToken);
-        r2.StatusCode.Should().Be(HttpStatusCode.Unauthorized, $"parent calling student's id → 401 (IDOR); body={b2}");
+        r2.StatusCode.Should().Be(HttpStatusCode.Forbidden, $"unlinked parent calling student's id → 403 (IDOR guard); body={b2}");
+        TryProp(root2, "successed", out var suc2); suc2.GetBoolean().Should().BeFalse($"body={b2}");
 
-        // Parent calling own userId → 200 (no role gate; IDOR passes; F-05)
+        // Unknown student id with an authenticated caller → SAME generic 403 (anti-enumeration:
+        // response must not reveal whether the id exists). 999999 has no user behind it.
+        var (r4, root4, b4) = await SendAsync(_client, HttpMethod.Get, "api/Learning/Students/999999/Attempts", null, parentToken);
+        r4.StatusCode.Should().Be(HttpStatusCode.Forbidden, $"unknown id → 403 (generic, anti-enumeration); body={b4}");
+        TryProp(root4, "message", out var m4); TryProp(root2, "message", out var m2);
+        m4.GetString().Should().Be(m2.GetString(), "unknown-id and not-owned-id must return the identical generic message");
+
+        // Parent calling own userId → 200 (route id == JWT id branch; F-05)
         var (r3, root3, b3) = await SendAsync(_client, HttpMethod.Get, $"api/Learning/Students/{parentUserId}/Attempts", null, parentToken);
         r3.StatusCode.Should().Be(HttpStatusCode.OK, $"F-05: parent accessing own userId → 200 empty; body={b3}");
+    }
+
+    [Fact(DisplayName = "BE-TC-40b: LINKED parent reads own child's attempts → 200 with data, no correctAnswer")]
+    public async Task BeTc40b_LinkedParent_Returns200WithChildAttempts()
+    {
+        // Parent registers and adds their own child (creates the ParentStudent link).
+        var (parentToken, _) = await CreateParentAsync("p40b");
+        var childEmail = UniqueEmail("c40b");
+        var (addR, addRoot, addB) = await SendAsync(_client, HttpMethod.Post, AddChildUrl,
+            new { FullName = "Student", Email = childEmail, Password = ValidChildPassword,
+                  Grade = 3, Language = "ar", Country = "EG", LearningLanguage = "ar" }, parentToken);
+        ((int)addR.StatusCode).Should().BeOneOf(new[] { 200, 201 }, $"Add-Child; body={addB}");
+        TryProp(addRoot, "data", out var addData); TryProp(addData, "id", out var childIdProp);
+        var childId = childIdProp.GetInt32();
+
+        // Child completes one attempt so the parent has real data to read.
+        var childToken = await SignInAsync(childEmail, ValidChildPassword);
+        var lessonId = await SeedLessonAsync("x40b");
+        var attemptId = await StartAttemptAsync(lessonId, childToken);
+        await CompleteAsync(attemptId, childToken);
+
+        // Linked parent reads the child's attempts → 200 with the attempt present.
+        var (resp, root, body) = await SendAsync(_client, HttpMethod.Get, $"api/Learning/Students/{childId}/Attempts", null, parentToken);
+        resp.StatusCode.Should().Be(HttpStatusCode.OK, $"linked parent must read own child's attempts; body={body}");
+        TryProp(root, "successed", out var suc); suc.GetBoolean().Should().BeTrue($"body={body}");
+        TryProp(root, "data", out var data);
+        data.ValueKind.Should().Be(JsonValueKind.Array, $"data must be array; body={body}");
+        data.GetArrayLength().Should().Be(1, $"the child's single attempt must be returned; body={body}");
+
+        // Security: CorrectAnswer must never leak to the parent either.
+        body.ToLowerInvariant().Should().NotContain("\"correctanswer\"", $"no correctAnswer in parent read; body={body}");
     }
 
     // ─────────────────────────────────────────────────────────────────────────

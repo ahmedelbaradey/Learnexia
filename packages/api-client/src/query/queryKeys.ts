@@ -51,6 +51,19 @@ export const queryKeys = {
     lesson: (lessonId: number) =>
       [...queryKeys.learning.all, 'lesson', lessonId] as const,
     dashboard: () => [...queryKeys.learning.all, 'dashboard'] as const,
+    // A5 attempt history (CO-FE-7) — per-student attempt list.
+    studentAttempts: (studentId: number | null) =>
+      [...queryKeys.learning.all, 'student-attempts', studentId] as const,
+  },
+  // P4-08 carryover (batch 2a) — gamification /Me hooks.
+  gamification: {
+    all: ['gamification'] as const,
+    /** GET /api/Gamification/Badges/Me — full badge catalog with earned state. */
+    badges: () => [...queryKeys.gamification.all, 'badges'] as const,
+    /** GET /api/Gamification/Missions/Me — daily + weekly mission state for the current period. */
+    missions: () => [...queryKeys.gamification.all, 'missions'] as const,
+    /** GET /api/Gamification/Leagues/Me — cohort standings + tier + week boundaries. */
+    league: () => [...queryKeys.gamification.all, 'league'] as const,
   },
 } as const;
 
