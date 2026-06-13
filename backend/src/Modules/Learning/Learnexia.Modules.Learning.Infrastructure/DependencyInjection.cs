@@ -34,6 +34,18 @@ public static class DependencyInjection
         // P3-09: Internal mastery seam for P3-08/P3-10/P3-11 in-process consumers.
         services.AddScoped<IMasteryService, MasteryService>();
 
+        // P3-13: Student behavioral profile engine options + service.
+        // StudentProfileOptions lives in Domain (same pattern as AdaptivityOptions) so the
+        // pure engine can reference it without violating the Application → Domain dependency direction.
+        services.Configure<StudentProfileOptions>(
+            configuration.GetSection(StudentProfileOptions.SectionName));
+        services.AddScoped<IStudentProfileService, StudentProfileService>();
+
+        // P3-13 Student profile recompute sweep job.
+        // Transient — the job creates its own inner scope via IServiceScopeFactory.CreateAsyncScope()
+        // so it does not participate in any caller's scope. Mirrors SpacedRepetitionSweepJob registration.
+        services.AddTransient<StudentProfileRecomputeJob>();
+
         // P3-08 Adaptivity Engine options + service.
         // AdaptivityOptions lives in Domain so the pure engine can reference it without violating
         // the Application → Domain dependency direction.

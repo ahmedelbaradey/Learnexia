@@ -1329,5 +1329,13 @@
         /// <summary>Returned when the due-reviews list is retrieved successfully for the student.</summary>
         public const string DueReviewsRetrievedSuccessfully = "DueReviewsRetrievedSuccessfully";
 
+        // ── P3-13 Adaptive Student Profile (Behavioral Modeling) ─────────────────────────────────────
+
+        /// <summary>
+        /// Returned when the student's behavioral learning profile is retrieved successfully.
+        /// Used by <c>GetStudentProfileQueryHandler</c> (AC3 / AC5 inspection endpoint).
+        /// </summary>
+        public const string StudentProfileRetrievedSuccessfully = "StudentProfileRetrievedSuccessfully";
+
     }
 }

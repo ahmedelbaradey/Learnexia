@@ -2116,4 +2116,7 @@
   <data name="DueReviewsRetrievedSuccessfully" xml:space="preserve">
     <value>تم استرداد المراجعات المستحقة بنجاح.</value>
   </data>
+  <data name="StudentProfileRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد ملف تعلم الطالب السلوكي بنجاح.</value>
+  </data>
 </root>

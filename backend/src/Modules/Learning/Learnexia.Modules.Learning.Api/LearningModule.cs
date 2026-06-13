@@ -31,6 +31,8 @@ public static class LearningModule
             .AddApplicationPart(typeof(SkillsController).Assembly)
             .AddApplicationPart(typeof(QuizzesController).Assembly)
             .AddApplicationPart(typeof(AdaptivityController).Assembly)
+            // ProfileController is in the same Learnexia.Modules.Learning.Api assembly as
+            // GradesController — no additional AddApplicationPart needed; it is already covered.
             .AddApplicationPart(typeof(ReviewsController).Assembly);
         return services;
     }
@@ -64,6 +66,15 @@ public static class LearningModule
             "SR-Sweep",
             job => job.RunAsync(CancellationToken.None),
             srOptions.JobCronExpression,
+            new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+        // Register the daily student-profile recompute job (P3-13, AC2).
+        // Fixed ID "SP-Recompute" — Hangfire dedupes by ID (idempotency requirement).
+        // Runs daily at midnight UTC (Cron.Daily = "0 0 * * *").
+        recurringJobs.AddOrUpdate<StudentProfileRecomputeJob>(
+            "SP-Recompute",
+            job => job.Execute(CancellationToken.None),
+            Cron.Daily(),
             new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
     }
 }

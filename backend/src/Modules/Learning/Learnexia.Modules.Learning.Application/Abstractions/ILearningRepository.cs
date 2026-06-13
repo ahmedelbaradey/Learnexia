@@ -269,4 +269,47 @@ public interface ILearningRepository : IGenericRepository
     /// UTC discipline: <paramref name="nextDueAt"/> must be UTC-kind.
     /// </summary>
     Task UpdateSpacedRepetitionFieldsAsync(int id, int intervalDays, int repetitionNumber, DateTime nextDueAt, CancellationToken ct = default);
+
+    // ── Student Profile (P3-13) ────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Fetches the aggregated answer signals needed by <c>StudentProfileEngine</c> for the given
+    /// student. Returns:
+    /// <list type="bullet">
+    ///   <item>Per-<c>QuestionType</c> correct/total counts (from StudentAnswer ⋈ QuizQuestion).</item>
+    ///   <item>Per-skill wrong-answer counts (StudentAnswer rows where IsCorrect = false, joined on SkillId).</item>
+    ///   <item>Per-minute-bucket accuracy sequence (answers bucketed by cumulative TimeSpentSeconds within attempts).</item>
+    ///   <item>Overall accuracy and total-answer count across all answers.</item>
+    ///   <item>Per-type hint-usage counts.</item>
+    /// </list>
+    /// AsNoTracking; UTC timestamps throughout.
+    /// </summary>
+    Task<StudentSignals> GetStudentAnswerSignalsAsync(int studentId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the existing <see cref="StudentLearningProfile"/> for the given student, or creates
+    /// and stages a default profile row if none exists yet (insert path — UoW commits).
+    /// Used by <c>StudentProfileService.RecomputeProfile</c> to ensure a row always exists before upsert.
+    /// </summary>
+    Task<StudentLearningProfile> GetOrCreateStudentLearningProfileAsync(int studentId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Upserts the full <see cref="StudentLearningProfile"/> row for the student. If a tracked
+    /// row exists, mutates it in-place; otherwise adds a new row. Stages only — UoW commits.
+    /// </summary>
+    Task UpsertStudentLearningProfileAsync(StudentLearningProfile profile, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the <see cref="StudentLearningProfile"/> for the given student, or null when none
+    /// exists yet. Used by the inspection query (<c>GET /api/Learning/Profile</c>). AsNoTracking.
+    /// </summary>
+    Task<StudentLearningProfile?> GetStudentLearningProfileAsync(int studentId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all <see cref="StudentLearningProfile"/> rows where <c>LastRecomputedAt</c> is
+    /// older than the given <paramref name="cutoffUtc"/> or is null (never recomputed).
+    /// Used by <c>StudentProfileRecomputeJob</c> to identify stale profiles.
+    /// AsNoTracking; grade-agnostic (no grade filter — grade transitions must not reset the profile).
+    /// </summary>
+    Task<List<StudentLearningProfile>> GetStaleProfilesAsync(DateTime cutoffUtc, CancellationToken ct = default);
 }

@@ -1,6 +1,7 @@
 using AutoMapper;
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Features.Attempts.Dtos;
+using Learnexia.Modules.Learning.Application.Services;
 using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Modules.Learning.Domain.Services;
@@ -60,6 +61,7 @@ public class CompleteAttemptCommandHandler : BaseResponseHandler,
     private readonly IStringLocalizer<SharedResources> _localizer;
     private readonly IPublisher _publisher;
     private readonly IOptions<SpacedRepetitionOptions> _srOptions;
+    private readonly IStudentProfileService _studentProfileService;
 
     public CompleteAttemptCommandHandler(
         ILearningRepositoryManager repository,
@@ -68,15 +70,17 @@ public class CompleteAttemptCommandHandler : BaseResponseHandler,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer,
         IPublisher publisher,
-        IOptions<SpacedRepetitionOptions> srOptions)
+        IOptions<SpacedRepetitionOptions> srOptions,
+        IStudentProfileService studentProfileService)
     {
-        _repository = repository;
-        _currentUser = currentUser;
-        _mapper = mapper;
-        _logger = logger;
-        _localizer = localizer;
-        _publisher = publisher;
-        _srOptions = srOptions;
+        _repository            = repository;
+        _currentUser           = currentUser;
+        _mapper                = mapper;
+        _logger                = logger;
+        _localizer             = localizer;
+        _publisher             = publisher;
+        _srOptions             = srOptions;
+        _studentProfileService = studentProfileService;
     }
 
     public async Task<BaseResponse<AttemptSummaryDto>> Handle(
@@ -150,6 +154,14 @@ public class CompleteAttemptCommandHandler : BaseResponseHandler,
             // Runs INSIDE the SAME ambient UoW transaction — no nested transaction opened.
             // If not due (routine practice), the SR fields are left untouched (skip).
             await AdvanceSpacedRepetitionAsync(attempt.StudentId, answers, preUpsertMasteryRows, cancellationToken);
+
+            // Step 8d — P3-13: Student behavioral profile recompute (completion hook).
+            // Called AFTER the P3-09 mastery upsert (Step 8b) so derivation reads fresh mastery data.
+            // Runs INSIDE the SAME ambient UoW transaction opened by UnitOfWorkBehavior — do NOT
+            // open a nested transaction. StudentProfileService.RecomputeProfile stages its writes;
+            // UoW commits everything atomically. The service internally catches and logs exceptions
+            // so a profile failure does not abort the attempt completion.
+            await _studentProfileService.RecomputeProfile(attempt.StudentId, cancellationToken);
 
             // Publish LessonCompletedIntegrationEvent (Option B — direct publish per lead decision).
             // Lesson.SkillId is nullable; the integration event requires SkillId, so skip when absent.

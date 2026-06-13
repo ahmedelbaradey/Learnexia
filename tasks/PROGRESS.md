@@ -12,6 +12,7 @@
 - `â€”` â€” no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
+- **P3-13 (Backend)** — Adaptive student profile (StudentLearningProfile + StudentProfileEngine 4-rule derivations + SP-Recompute job + GET /api/Learning/Profile) — committed
 - **P3-10 (Backend)** — Spaced-repetition scheduler (SpacedRepetitionEngine IsDue/ComputeNextReview, expanding ladder [1,3,7,14,30], GetDueMasteryRows/UpdateSR repo methods, SpacedRepetitionSweepJob Hangfire fixed-ID, write-path hook in CompleteAttempt, GET /Reviews/Due endpoint) — committed
 - **P3-01 (Backend)** — AI Gateway (IAiGateway seam, Ai module, Claude + second provider, task-based model router) — committed
 - **P3-08 (Backend)** — Adaptivity Engine (weighted-score algorithm, 4-signal model, AdaptivityService seam, inspection endpoint + admin debug endpoint) — committed
@@ -95,7 +96,7 @@
 | P3-10 | Schedule spaced-repetition practice | ðŸ”² |
 | P3-11 | Serve adaptive quizzes | ðŸ”² |
 | P3-12 | Interact with the AI tutor UI | ðŸ”² |
-| P3-13 | Build the adaptive student profile | ðŸ”² |
+| P3-13 | Build the adaptive student profile | ✅ |
 
 ## Phase 5 â€” Parent + Analytics
 | Story | Title | Status |

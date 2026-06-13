@@ -50,6 +50,9 @@ public class LearningDbContext : DbContext
     // P3-09: Per-(student, skill) persisted mastery (Student Modeling Engine)
     public DbSet<StudentSkillMastery> StudentSkillMasteries => Set<StudentSkillMastery>();
 
+    // P3-13: Per-student behavioral learning profile (adaptive student modeling)
+    public DbSet<StudentLearningProfile> StudentLearningProfiles => Set<StudentLearningProfile>();
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 
