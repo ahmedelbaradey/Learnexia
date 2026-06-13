@@ -460,4 +460,55 @@ public class LearningRepository : ILearningRepository
             .AsNoTracking()
             .Where(s => s.GradeId == gradeId)
             .ToListAsync(ct);
+
+    // ── Mastery (P3-09) ──────────────────────────────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public async Task<List<StudentSkillMastery>> GetSkillMasteryRowsAsync(
+        int studentId, IReadOnlyCollection<int> skillIds, CancellationToken ct = default)
+        => await RepositoryContext.StudentSkillMasteries
+            .AsNoTracking()
+            .Where(m => m.StudentId == studentId && skillIds.Contains(m.SkillId))
+            .ToListAsync(ct);
+
+    /// <inheritdoc/>
+    public async Task UpsertStudentSkillMasteryAsync(StudentSkillMastery mastery, CancellationToken ct = default)
+    {
+        // Check whether a row already exists in the DB for this (StudentId, SkillId) pair.
+        // We must query with tracking ON so EF can manage the update state.
+        var existing = await RepositoryContext.StudentSkillMasteries
+            .FirstOrDefaultAsync(m => m.StudentId == mastery.StudentId && m.SkillId == mastery.SkillId, ct);
+
+        if (existing is null)
+        {
+            // Insert path: stage the new entity (no SaveChanges — UoW behavior commits).
+            await RepositoryContext.StudentSkillMasteries.AddAsync(mastery, ct);
+        }
+        else
+        {
+            // Update path: mutate the tracked entity in-place so EF generates an UPDATE statement.
+            existing.MasteryPercentage  = mastery.MasteryPercentage;
+            existing.Status             = mastery.Status;
+            existing.AttemptsCount      = mastery.AttemptsCount;
+            existing.LastPracticedAt    = mastery.LastPracticedAt;
+            // SR columns (P3-10 reserved) are not touched here — they remain at their current values.
+            RepositoryContext.StudentSkillMasteries.Update(existing);
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<List<StudentSkillMastery>> GetAllMasteryForStudentAsync(
+        int studentId, CancellationToken ct = default)
+        => await RepositoryContext.StudentSkillMasteries
+            .AsNoTracking()
+            .Where(m => m.StudentId == studentId)
+            .OrderBy(m => m.SkillId)
+            .ToListAsync(ct);
+
+    /// <inheritdoc/>
+    public async Task<StudentSkillMastery?> GetSkillMasteryForStudentAsync(
+        int studentId, int skillId, CancellationToken ct = default)
+        => await RepositoryContext.StudentSkillMasteries
+            .AsNoTracking()
+            .FirstOrDefaultAsync(m => m.StudentId == studentId && m.SkillId == skillId, ct);
 }

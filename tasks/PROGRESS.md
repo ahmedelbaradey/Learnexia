@@ -86,7 +86,7 @@
 | P3-06 | Generate curriculum-grounded questions (RAG) | ðŸ”² |
 | P3-07 | Retrieve curriculum context via vector search | ðŸ”² |
 | P3-08 | Adjust difficulty adaptively | ðŸ”² |
-| P3-09 | Track per-skill mastery | ðŸ”² |
+| P3-09 | Track per-skill mastery | ✅ |
 | P3-10 | Schedule spaced-repetition practice | ðŸ”² |
 | P3-11 | Serve adaptive quizzes | ðŸ”² |
 | P3-12 | Interact with the AI tutor UI | ðŸ”² |

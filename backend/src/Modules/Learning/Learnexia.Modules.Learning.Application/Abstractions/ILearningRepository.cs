@@ -190,4 +190,38 @@ public interface ILearningRepository : IGenericRepository
     /// Admin read — no IsActive filter applied; global IsDeleted filter is still active.
     /// </summary>
     Task<List<Subject>> GetSubjectsForCoverageAsync(int gradeId, CancellationToken ct = default);
+
+    // ── Mastery (P3-09) ──────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns all <see cref="StudentSkillMastery"/> rows where <c>SkillId</c> is one of the given
+    /// <paramref name="skillIds"/> and <c>StudentId == studentId</c>. Used by the write path to fetch
+    /// existing mastery rows before upsert (one query for all skills touched in the attempt).
+    /// AsNoTracking — the caller fetches, mutates a local copy, and calls UpsertStudentSkillMasteryAsync.
+    /// </summary>
+    Task<List<StudentSkillMastery>> GetSkillMasteryRowsAsync(
+        int studentId, IReadOnlyCollection<int> skillIds, CancellationToken ct = default);
+
+    /// <summary>
+    /// Upserts a <see cref="StudentSkillMastery"/> row for the given (studentId, skillId) pair.
+    /// If an existing tracked row is provided, it is updated in-place (EF tracks the change).
+    /// If no existing row is found (insert path), a new one is added to the DbSet.
+    /// Stages the change only — UnitOfWorkBehavior owns the commit (ADR 0001).
+    /// </summary>
+    Task UpsertStudentSkillMasteryAsync(StudentSkillMastery mastery, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all <see cref="StudentSkillMastery"/> rows for the given <paramref name="studentId"/>,
+    /// ordered by <c>SkillId</c> ascending. Used by the "all my mastery" query endpoint.
+    /// AsNoTracking.
+    /// </summary>
+    Task<List<StudentSkillMastery>> GetAllMasteryForStudentAsync(int studentId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the <see cref="StudentSkillMastery"/> row for the given (studentId, skillId) pair,
+    /// or <c>null</c> if no row exists (student has not yet attempted this skill).
+    /// Callers should treat <c>null</c> as <c>NotStarted</c> with zero mastery percentage.
+    /// AsNoTracking.
+    /// </summary>
+    Task<StudentSkillMastery?> GetSkillMasteryForStudentAsync(int studentId, int skillId, CancellationToken ct = default);
 }
