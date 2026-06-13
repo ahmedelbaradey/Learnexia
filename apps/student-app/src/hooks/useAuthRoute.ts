@@ -24,10 +24,11 @@ import {
   LOCALES,
 } from '@learnexia/shared';
 import { applyWebDirection } from '@learnexia/shared/i18n';
-import { useRouter, useSegments } from 'expo-router';
+import { useSegments } from 'expo-router';
 import { useEffect } from 'react';
 
 import { useLocaleStore } from '../providers/localeStore';
+import { useLocalizedRouter } from './useLocalizedRouter';
 
 type TargetGroup = '(auth)' | '(onboarding)' | '(parent)' | '(child)' | null;
 
@@ -45,7 +46,7 @@ export interface AuthRouteState {
 }
 
 export function useAuthRoute(): AuthRouteState {
-  const router = useRouter();
+  const router = useLocalizedRouter();
   const segments = useSegments();
   const status = useAuthStore((s) => s.status);
   const setUser = useAuthStore((s) => s.setUser);
@@ -84,7 +85,9 @@ export function useAuthRoute(): AuthRouteState {
   useEffect(() => {
     if (isResolving) return;
 
-    const current = (segments[0] ?? null) as TargetGroup;
+    // Routes live under `app/[locale]/...`, so the group is no longer at index 0
+    // (segments[0] is the locale). Find the first `(group)` segment instead.
+    const current = (segments.find((s) => s.startsWith('(')) ?? null) as TargetGroup;
 
     if (status === 'signed-out') {
       if (current !== '(auth)') router.replace('/(auth)/login');

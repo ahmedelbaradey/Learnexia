@@ -20,10 +20,10 @@
 import { useMe } from '@learnexia/api-client';
 import { ROLES, useAuthStore, type Locale, LOCALES } from '@learnexia/shared';
 import { applyWebDirection } from '@learnexia/shared/i18n';
-import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 
 import { useLocaleStore } from '../providers/localeStore';
+import { useLocalizedRouter } from './useLocalizedRouter';
 
 type GroupName = '(onboarding)' | '(parent)' | '(child)';
 
@@ -41,7 +41,7 @@ export interface GroupGuardState {
 }
 
 export function useGroupGuard(group: GroupName): GroupGuardState {
-  const router = useRouter();
+  const router = useLocalizedRouter();
   const status = useAuthStore((s) => s.status);
   const setUser = useAuthStore((s) => s.setUser);
   const setLocale = useLocaleStore((s) => s.setLocale);

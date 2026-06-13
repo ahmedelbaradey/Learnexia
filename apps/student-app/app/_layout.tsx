@@ -31,10 +31,10 @@ import { useEffect, useMemo, useRef } from 'react';
 import { I18nManager, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { resolveApiBaseUrl } from '../src/providers/apiBaseUrl';
-import { useLocaleStore } from '../src/providers/localeStore';
-import { useThemeStore } from '../src/providers/themeStore';
-import { createPlatformTokenStorage } from '../src/providers/tokenStorage';
+import { resolveApiBaseUrl } from '@/providers/apiBaseUrl';
+import { useLocaleStore } from '@/providers/localeStore';
+import { useThemeStore } from '@/providers/themeStore';
+import { createPlatformTokenStorage } from '@/providers/tokenStorage';
 
 // Initialize i18n synchronously at module load (inline resources → `ready` is
 // true immediately). Must happen before the first render: react-i18next's

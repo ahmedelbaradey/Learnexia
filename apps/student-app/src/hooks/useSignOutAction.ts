@@ -8,11 +8,12 @@
  */
 import { useSignOut } from '@learnexia/api-client';
 import { useAuthStore } from '@learnexia/shared';
-import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
 
+import { useLocalizedRouter } from './useLocalizedRouter';
+
 export function useSignOutAction(): { signOut: () => Promise<void>; isPending: boolean } {
-  const router = useRouter();
+  const router = useLocalizedRouter();
   const signOutMutation = useSignOut();
   const storeSignOut = useAuthStore((s) => s.signOut);
 
