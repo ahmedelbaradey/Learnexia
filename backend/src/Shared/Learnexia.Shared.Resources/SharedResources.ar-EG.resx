@@ -2095,4 +2095,13 @@
   <data name="GamificationMissionAlreadyInRequestedState" xml:space="preserve">
     <value>تعريف المهمة في الحالة النشطة المطلوبة بالفعل. لم يتم إجراء أي تغيير.</value>
   </data>
+  <data name="MasteryRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد بيانات الإتقان بنجاح.</value>
+  </data>
+  <data name="SkillMasteryRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد مستوى إتقان المهارة بنجاح.</value>
+  </data>
+  <data name="SkillMasteryNotFound" xml:space="preserve">
+    <value>لا يوجد سجل إتقان لهذه المهارة بعد. لم يحاول الطالب ذلك بعد.</value>
+  </data>
 </root>

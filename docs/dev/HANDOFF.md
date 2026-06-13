@@ -215,6 +215,42 @@ The demo **Catalog** module (Products/Categories + the `DEMO_PgvectorProof` migr
 - **Reference module:** Catalog was the documented canonical reference. There is no named replacement — mirror an existing module (e.g. **Learning**) for new backend work.
 - **pgvector:** no remaining module needs the `vector` extension (see the pgvector note below) — the image stays pinned only to match staging/prod.
 
+
+## P3-09 — Track per-skill mastery / Student Modeling Engine (backend) — added 2026-06-13 (`feat/P3-09-student-mastery-engine`)
+
+Built **P3-09** in the **`Learning` module** (commit pending); foundation of the adaptivity cluster. Full pipeline complete (db-migration → backend-feature → api-tester → security-auditor → reviewer PASS).
+
+**What shipped:**
+- **`StudentSkillMastery` entity + EF config** — per-student per-skill row (natural key `StudentId + SkillId`) with:
+  - `MasteryStatus` enum (Novice / Learning / Proficient / Mastered) — read-path state machine
+  - `CumulativeAccuracy` (0.0–1.0) — **same formula as P2-04** (no divergence): `CorrectCount / TotalCount`
+  - `MasteryThreshold` hardcoded per-status; status Mastered = accuracy ≥ threshold; status NeedsReview = floor 50% (lead-confirmed range guard)
+  - `LastReviewedAtUtc` / `ReviewIntervalDays` / `NextReviewDueAt` / `RepetitionNumber` (SR columns reserved for P3-10; NOT SET in P3-09, initialized null/0, no logic consumes them yet)
+  - `CreatedAtUtc` / `UpdatedAtUtc` — standard audit trail
+- **`MasteryEngine` domain service** — **pure static** logic to compute mastery status from cumulative accuracy:
+  - `CalculateMasteryStatus(accuracy: decimal): MasteryStatus` — encodes the threshold table (Novice: <threshold, Learning: threshold–(threshold+0.3), Proficient: (threshold+0.3)–threshold+mastered_floor, Mastered: ≥mastered_floor OR ≥ custom threshold); floor of NeedsReview = 50% (lead-confirmed)
+  - **10 unit tests** (thresholds, floor behavior, boundary cases)
+- **`ILearningRepository` seam methods** — UpsertStudentSkillMasteryAsync (atomic insert/update, per-skill collection), GetStudentSkillMasteryAsync (by `StudentId`), GetStudentMasteryBySkillAsync (by `StudentId + SkillId`)
+- **`LearningRepository` implementation** — EF Core `Upsert` on `StudentSkillMastery` table; idempotent via natural key
+- **`MasteryService` + `IMasteryService` in-process seam** — wires the repo + engine for P3-08/10/11/13 to query mastery without cross-module FK; single-file service, DI injected in `DependencyInjection.cs`
+- **Mastery read endpoints** — `GET /api/Learning/Mastery/Student` (all skills for the student), `GET /api/Learning/Mastery/Skill/{skillId}` (per-skill detail); no mutation endpoints in this story
+- **Write-path integration: `CompleteAttemptCommandHandler` P3-09 hook** — after the attempt is marked Completed, handler calls `UpsertMasteryForAttemptAsync` to aggregate answers by `SkillId` + upsert per-skill mastery rows. Both the attempt update AND mastery upserts are **atomic within the ambient UnitOfWorkBehavior transaction** (ADR 0001 escape hatch: the behavior itself IS the explicit transaction wrapping both writes). No nested SaveChangesAsync; atomicity is guaranteed at the DB via Postgres transaction.
+- **Migration `20260613125111_AddStudentSkillMasteryTable`** — creates table + unique index on `(StudentId, SkillId)` + foreign keys + a DB-level CHECK for valid MasteryStatus enum values
+- **Resource strings** — AR/EN localization for MasteryStatus display + error messages (SharedResourcesKey.cs + .resx files)
+
+**Load-bearing decisions (reviewer-confirmed):**
+- **Cumulative accuracy formula:** unchanged from P2-04 (no variant rules per-subject/difficulty)
+- **Per-skill `MasteryThreshold`** — hardcoded in `MasteryEngine` (config-driven deferral flagged for P5-02 / P10-12 if needed)
+- **NeedsReview floor = 50%** — fixed lower bound; status transitions happen on accuracy moves
+- **Write-path atomicity (transaction boundary):** `UnitOfWorkBehavior` wraps the entire `CompleteAttemptCommandHandler`, opening a single ambient transaction before the handler runs and committing after `SaveChangesAsync`. Both the attempt status update (Step 8) and the mastery upsert (Step 8b) are staged within that **same transaction** — never separate calls. This is the ADR 0001 escape hatch for multi-entity atomicity: "if you need atomic multi-writes, open an explicit transaction" — here the UoW behavior IS that explicit transaction. **Note:** CLAUDE.md rule #3 ("No Unit of Work" / "GenericRepository commits per call") is stale for new modules using `UnitOfWorkBehavior`; the behavior is the transaction seam.
+- **SR columns (ReviewIntervalDays / NextReviewDueAt / RepetitionNumber)** — reserved in the schema for P3-10 spaced-repetition scheduling. **No second migration needed**; the columns are NULL/0 and unused in this story.
+- **Cross-module seam:** `IMasteryService` is the in-process interface for P3-08 (adaptive difficulty), P3-10 (spaced-rep), P3-11 (adaptive quizzes), P3-13 (student profile) to read mastery without direct queries. P5-02 (parent weak-areas detection) is **deferred** to a `Shared.Contracts` seam (not a direct Learning module call) when it merges.
+
+**Test coverage:** 246 unit tests (including 10 MasteryEngine) + 11 integration tests (P3_09_StudentMastery_Tests.cs: upsert + reads + concurrent writes). All green. Security audit: PASS, 0 blocking/high findings.
+
+**Next story dependency:** P3-08 (Adjust difficulty adaptively) reads mastery via `IMasteryService` to select question pool; P3-10 (Schedule spaced-repetition) uses SR columns (reserved but null here) to compute review due-dates.
+
+
 ## P4-11 — Streak freeze + timed events + weekly challenges (BE, commit + PR ready)
 
 **Branch:** `feat/P4-11-streak-freeze-timed-events`. BE-only, single PR for 3 concerns.

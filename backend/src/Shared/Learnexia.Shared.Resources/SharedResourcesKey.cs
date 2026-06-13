@@ -1300,5 +1300,19 @@
         /// </summary>
         public const string GamificationMissionAlreadyInRequestedState = "GamificationMissionAlreadyInRequestedState";
 
+        // ── P3-09 Student Mastery Engine ─────────────────────────────────────────────────────────────
+
+        /// <summary>Returned when all mastery rows for the student are retrieved successfully.</summary>
+        public const string MasteryRetrievedSuccessfully = "MasteryRetrievedSuccessfully";
+
+        /// <summary>Returned when a single skill's mastery row is retrieved successfully.</summary>
+        public const string SkillMasteryRetrievedSuccessfully = "SkillMasteryRetrievedSuccessfully";
+
+        /// <summary>
+        /// Returned when no mastery row exists yet for the requested (student, skill) pair.
+        /// The response still returns 200 with NotStarted defaults — never 404.
+        /// </summary>
+        public const string SkillMasteryNotFound = "SkillMasteryNotFound";
+
     }
 }
