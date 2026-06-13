@@ -2,6 +2,11 @@
   <PropertyGroup>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <!--
+      Eval tests: excluded from default CI run.
+      All tests are tagged [Trait("Category", "Eval")] so they do not run with standard test suites.
+      To run: dotnet test (path) - -filter Category=Eval   (no space between the two hyphens)
+    -->
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
@@ -19,5 +24,10 @@
     <ProjectReference Include="..\..\src\Modules\Ai\Learnexia.Modules.Ai.Infrastructure\Learnexia.Modules.Ai.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Shared\Learnexia.Shared.Contracts\Learnexia.Shared.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Shared\Learnexia.Shared.Resources\Learnexia.Shared.Resources.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Data\safety-eval-set.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

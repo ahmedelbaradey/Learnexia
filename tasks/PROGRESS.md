@@ -12,6 +12,7 @@
 - `â€”` â€” no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
+- **P3-02 (Backend)** — AI Safety Layer (ISafetyLayer facade, 3 composable fail-closed checks toxicity/age/hallucination, SafetyEvents append-only table, eval harness ar+en) — committed
 - **P3-13 (Backend)** — Adaptive student profile (StudentLearningProfile + StudentProfileEngine 4-rule derivations + SP-Recompute job + GET /api/Learning/Profile) — committed
 - **P3-10 (Backend)** — Spaced-repetition scheduler (SpacedRepetitionEngine IsDue/ComputeNextReview, expanding ladder [1,3,7,14,30], GetDueMasteryRows/UpdateSR repo methods, SpacedRepetitionSweepJob Hangfire fixed-ID, write-path hook in CompleteAttempt, GET /Reviews/Due endpoint) — committed
 - **P3-01 (Backend)** — AI Gateway (IAiGateway seam, Ai module, Claude + second provider, task-based model router) — committed
@@ -85,7 +86,7 @@
 | Story | Title | Status |
 |---|---|:--:|
 | P3-01 | Route AI requests through an AI Gateway | ✅ |
-| P3-02 | Filter AI output through a Safety Layer | ðŸ”² |
+| P3-02 | Filter AI output through a Safety Layer | ✅ |
 | P3-03 | Build personalized tutor prompts | ðŸ”² |
 | P3-04 | Explain a concept on demand | ðŸ”² |
 | P3-05 | Progressive hints & simpler re-explanations | ðŸ”² |

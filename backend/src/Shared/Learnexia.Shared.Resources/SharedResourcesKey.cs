@@ -1337,5 +1337,22 @@
         /// </summary>
         public const string StudentProfileRetrievedSuccessfully = "StudentProfileRetrievedSuccessfully";
 
+        // ── P3-02 AI Safety Layer ────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Child-safe fallback message returned to the student when AI content is blocked
+        /// by the Safety Layer (toxicity / age-appropriateness / hallucination check failed).
+        /// Never exposes the unsafe content; tells the student the tutor cannot help right now.
+        /// Resolved via string localizer from <c>SafetyOptions.FallbackMessageKey</c>.
+        /// </summary>
+        public const string AiContentBlocked = "AiContentBlocked";
+
+        /// <summary>
+        /// Child-safe fallback message returned to the student when the AI gateway itself
+        /// is unavailable or errored. Resolved via string localizer from
+        /// <c>SafetyOptions.GatewayErrorFallbackKey</c>.
+        /// </summary>
+        public const string AiServiceUnavailable = "AiServiceUnavailable";
+
     }
 }
