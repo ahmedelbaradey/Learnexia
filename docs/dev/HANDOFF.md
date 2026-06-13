@@ -389,6 +389,62 @@ Built **P3-10** in the **`Learning` module**; expansion of P3-09 mastery foundat
 
 
 
+
+## P3-13 — Adaptive student profile / behavioral modeling (backend) — added 2026-06-13 (`feat/P3-13-student-profile`)
+
+Built **P3-13** in the **`Learning` module**; behavioral modeling layer for personalization feeds. Full pipeline complete (backend-feature → security-auditor [child-privacy gate] → reviewer PASS).
+
+**What shipped:**
+
+- **`StudentLearningProfile` domain entity** — jsonb-backed behavioral attributes table (`learning.student_learning_profiles`), keyed on `(student_id, grade_id)` with unique constraint + indices on `student_id`. Fields: `StudentId/GradeId` FKs, `QuestionTypeAffinities` (jsonb normalized 0.0–1.0 per type), `RecurringErrorClusters` (jsonb list), `AttentionSpan` (minutes, v1 proxy), `PreferredExplanationStyle` (enum PROVISIONAL), `FatigueSignal` (internal-only), `DataPointCount`, timestamps.
+
+- **`ExplanationStyle` enum** — 4 values (Verbal, Visual, Analogical, StepByStep); PROVISIONAL pending P3-03 confirmation.
+
+- **`StudentProfileEngine` domain service** — pure static, deterministic (16 unit tests):
+  - **Derivation 1 (QuestionTypeAffinities):** normalized accuracy per question type
+  - **Derivation 2 (RecurringErrorClusters):** error-pattern grouping by skill + frequency
+  - **Derivation 3 (AttentionSpan):** v1 = median inter-question time within attempt (minutes)
+  - **Derivation 4 (ExplanationStyle):** inferred from accuracy-improvement deltas per style; Verbal default
+
+- **`StudentProfileService`** — wraps engine + repo. DI-injected. Methods: `ComputeProfileAsync`, `UpsertProfileAsync`.
+
+- **`IStudentProfileService` seam** — in-process interface for P3-03/P3-08 consumption (deferred wiring; cross-module via `Shared.Contracts` if needed).
+
+- **`StudentLearningProfileDto` DTO** — data-minimized: `QuestionTypeAffinities`, `PreferredExplanationStyle`, `DataPointCount` exposed; `FatigueSignal` internal only.
+
+- **`StudentProfileRecomputeJob` Hangfire job** — fixed ID `"SP-Recompute"` (idempotent), cron `"0 2 * * *"` (daily 2 AM UTC). Fetches attempts, runs engine, upserts profile.
+
+- **`CompleteAttemptCommandHandler` Step-8d hook** — calls `IStudentProfileService.UpsertProfileAsync(...)` after mastery + spaced-rep; rides P3-09/P3-10 transaction boundary.
+
+- **`GET /api/Learning/Profile` endpoint** — returns `StudentLearningProfileDto` for authenticated student. 401 anonymous. 200 + default/empty if no history.
+
+- **Migration `20260613180132_AddStudentLearningProfileTable`** — jsonb table + indices.
+
+**Data minimization (mandatory security-auditor gate, PASSED):**
+- DTO exposes 4 attrs + DataPointCount + style only; `FatigueSignal` stays internal
+- No raw error data (pattern summary only)
+- No PII (student IDs only)
+- Grade-transition preserves profile (no grade filter)
+
+**Load-bearing decisions:**
+- **Behavioral separation:** `StudentLearningProfile` (learning behavior, feeds P3-03/P3-08) orthogonal to `StudentXpProfile` (achievement).
+- **Pure engine, no AI:** deterministic, testable, offline-safe. AI surfaces in P3-03 (prompts) + P3-08 (difficulty).
+- **Recompute cadence:** daily sweep (2 AM UTC) + eager on-attempt-complete (within transaction). Trade-off: behavior surfaces ~2s later or next sweep.
+- **ExplanationStyle PROVISIONAL:** pending P3-03 confirmation (may refactor once locked).
+- **AttentionSpan v1:** within-attempt proxy. P5-03 v2 upgrades to per-session/per-subject depth (upgrade path reserved; DTO unchanged).
+- **IStudentProfileService seam:** in-process. P3-03/P3-08 consume synchronously.
+
+**Test coverage:** 302 unit (16 engine + 286 inherited P3-09/P3-10) + 8 integration (P3_13_StudentProfile_Tests.cs). All green. Security audit: PASS, 0 Critical/High.
+
+**Next dependencies:** P3-03 (tutor prompts via profile) + P3-08 (difficulty adjustment via ExplanationStyle + AttentionSpan).
+
+**Non-blocking follow-ups:**
+- ExplanationStyle taxonomy finalization (pending P3-03)
+- AttentionSpan v2 (P5-03) — per-session/per-subject depth modeling
+- Cross-module consumption (if P3-05/06+ need profile) — add `IStudentProfileQuery` to `Shared.Contracts`
+
+---
+
 ## P4-11 — Streak freeze + timed events + weekly challenges (BE, commit + PR ready)
 
 **Branch:** `feat/P4-11-streak-freeze-timed-events`. BE-only, single PR for 3 concerns.
