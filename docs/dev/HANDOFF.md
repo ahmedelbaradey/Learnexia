@@ -18,6 +18,46 @@
 > 2026-06-12: **Phase 10 — Payment, Billing & Credits task breakdown — PLANNING ONLY, all 🔲 (same branch as the AI-phase breakdown).** Authored 12 user stories (`user-stories/Phase-10-Payments-Billing/P10-01..12` — incl. P10-12 Global Settings) + briefs + plans + task files (`tasks/Backend/Phase-10-Payments-Billing/`, `tasks/Frontend/student-app/Phase-10-Payments-Billing/` parent billing + child ⚡ energy meter, `tasks/Frontend/admin-dashboard/Phase-10-Payments-Billing/P10-11-FE` config). **The AI credit economy ("⚡ طاقة المساعد") + monetization** lifted out of the AI-Helper MVP (which keeps only a minimal daily-request cap). **Parent-driven: ALL purchasing/billing/payment is parent-side; the child only spends energy + sees a read-only meter (P10-10).** New **`Billing`** module owns the credit ledger (dual pool: monthly **granted**-expire vs **purchased**-persist), subscriptions, payments, config; spend reaches the AI Gateway via `Shared.Contracts` **`ICreditSpendService`** (charge-on-delivery, cache-hits charged same, no charge on refuse/error). **Lead decisions still open before build:** new `Billing` module sign-off, **payment provider Paymob vs Fawry** (P10-06/07), refund clawback policy (P10-09), EGP/VAT receipt fields (P10-08), Hangfire for grant/dunning jobs. **P10-03 (spend) is hard-blocked on the AI Helper cluster (P3-01..06) merging first.** Per-action costs: hint=1, explain-mistake=3, deep-explanation=5, practice-generation=5 (config-driven, P10-11). The AI-phase decisions doc (`docs/decisions-needed-ai-phase.md`) is now RESOLVED.
 > 2026-06-13: **AI-phase + Phase-10 planning — FINAL state, renumber + refinements.** The complete work is on **PR #124 (`docs/ai-phase-task-breakdown → main`)** — PR #122 only carried the *first* commit to `qc` (merge it via #124, not `qc`). Updates since the 06-12 notes: **(1) Renumber Payments/Billing/Credits Phase 9 → Phase 10** — `main` already owns **Phase 9 = Notifications**; ours moved to `Phase-10-Payments-Billing/` (`P10-01..12`) to avoid an ID/folder clash. **At merge to `main`, keep BOTH** the Phase-9-Notifications and Phase-10-Payments rows in the two READMEs (Sprint→Phase tables conflict after Phase 8). **(2) Unified `ai.AiResponseCache`** (Type: Explain/Hint/WhyWrong/Practice; `ReviewStatus`/`Confidence`/`PromptVersion`/`CurriculumVersion`/`QuestionId`) replaces the separate Concept/Hint caches — **WhyWrong is now cacheable** by `(QuestionId, NormalizedWrongAnswer, Language, AgeBand, …)`; **practice = rotating pool N=5** (never 1:1, no answer-key leak); **runtime review gate** (only `Approved` entries amplified; auto-approve ≥ **0.85** confidence else `PendingReview`); **subject-aware Arabic normalization** (strip tashkeel for Math/Science, preserve for the Arabic subject). WhyWrong cap = 50/question (LRU). **(3) Credit economy v2:** Free **100/mo + 10/day**, Premium **5000/mo + 250/day**, pack **1000 / $5**; charge-on-delivery, cache-hit charged same, refuse/error free. **(4) Subscriptions:** monthly **199 EGP** + **annual 1990 EGP** (`BillingPeriod` dimension); **web checkout only — NO native IAP** (App/Play Store policy review gates native launch). **(5) Global Settings (P10-12):** all economy values + cache thresholds runtime-tunable via `IGlobalSettingsProvider` (DB-backed, Redis-cached, audited; code bootstrap defaults; `BootstrapDefaultGlobalSettingsProvider` ships in Phase-4 via `P3-01-BE-15`) — 17 managed keys. **(6) Primary cost lever = app-level Redis response cache** (hit = $0 tokens); provider prompt-cache is secondary. New brief `docs/briefs/ai-eval-gate.md`. **Success metrics to track (NOT AI cost):** Free→Paid conversion, CAC, retention, avg subscription months. Still all 🔲 planning. *(Separately: PR #123 `chore/agent-model-tuning → main` — designer→sonnet, reviewer+security-auditor→opus + the carryover lead brief.)*
 
+## P3-01 — AI Gateway seam — added 2026-06-13 (branch `feat/P3-01-ai-gateway`)
+
+Built the full AI gateway infrastructure seam (BE-1 through BE-9). No HTTP endpoint ships in this story; the gateway is an in-process DI seam for P3-02/P3-03/P3-04+.
+
+### What shipped
+
+- **`Shared.Contracts/Ai/`** — frozen public contract: `IAiGateway`, `AiRequest`, `AiResult`, `AiError`, `AiErrorKind`, `AiUsage`, `AiChunk`, `AiTaskKind`, `AiModelTier`, `AiMessage`. P3-02/P3-03 can wire against these immediately.
+- **New `Ai` module** (4 projects): `Learnexia.Modules.Ai.Domain`, `.Application`, `.Infrastructure`, `.Api`. Schema = `ai` (no DB table in P3-01 — log-only).
+- **`AiGatewayOptions`** in `Ai.Application.Options`, bound from `Ai:Gateway`. Keys (RetryCount=3, TimeoutSeconds=30, RetryBackoffSeconds=1.0).
+- **`AiModelRouter`** (Application layer) — pure deterministic mapping. Default routing table:
+  - `CheckAnswer`, `Classify`, `ShortTask` → `Claude / claude-haiku-4-5`
+  - `Explain`, `Hint`, `Simplify`, `QuestionGeneration` → `Claude / claude-sonnet-4-6`
+  - `AnalyzeDiagram`, `HardReasoning`, `ContentQa` → `Claude / claude-opus-4-8`
+  - All overridable from config at `Ai:Gateway:Models:TaskKind` or `Ai:Gateway:Models:TaskKind:Tier`.
+- **`ClaudeProvider`** — thin typed HttpClient wrapper to Anthropic Messages API. Supports `cache_control` for system prompt caching. Named client `"claude"`.
+- **`OpenAiProvider`** — thin typed HttpClient wrapper to OpenAI Chat Completions API. Named client `"openai"`. Proves abstraction is complete.
+- **`AiGateway`** facade — bounded retry + exponential backoff + hard timeout CTS + typed error translation. Never throws to caller. Logs usage at Debug (no PII, no prompt/response body).
+- **29 unit tests** (router: U01–U10 + arch: ARCH-01/02/03) — all GREEN.
+- Build: `dotnet build Learnexia.Modular.sln` — **0 errors**.
+
+### Secret config key paths (required before any runtime AI call)
+
+These are env vars / secret store — NEVER committed to git:
+- `Ai__Providers__Claude__ApiKey` → your Anthropic API key
+- `Ai__Providers__OpenAi__ApiKey` → your OpenAI API key
+
+### Load-bearing decisions
+
+- **Q5: log-only usage** — no `ai.AiUsageLogs` DB table. Deferred to P7-11. No migration in P3-01.
+- **Q6: streaming** — `StreamAsync` method signature frozen. Falls back to single-shot in P3-01. Real SSE streaming is P3-04's responsibility.
+- **Q7: thin HttpClient wrapper** — no vendor SDK packages. `Microsoft.Extensions.Http.Resilience` is in `Directory.Packages.props`.
+- `AiGatewayOptions` lives in `Application` layer (not Infrastructure) because `AiModelRouter` in Application needs it — avoids a circular dependency.
+- `ILoggerManager` exposes `LogDebug`, `LogWarn`, `LogInfo`, and `LogError(Exception?, string)`. In the Ai module: usage telemetry is logged at Debug (`LogUsage`), transient retries and HTTP-status diagnostics are logged at Warn, and `LogError` is reserved for unexpected failures with the actual exception passed (never `null`).
+
+### What P3-02 / P3-03 can do now
+
+- P3-02 (Safety layer) wraps `IAiGateway` — register a decorator over `IAiGateway` in `Shared.Contracts` or a pass-through seam.
+- P3-03 (Prompt builder) builds `AiRequest` objects — all DTOs are frozen.
+- Real provider API keys are needed before any runtime call (P3-04+).
+
 ## Phase 7 — Gamification admin overrides (P7-13 backend) — added 2026-06-09 (`feat/phase-7-backend`, in wave PR #106)
 
 Built **P7-13** in the **`Gamification` module** (commit `4b31fbc`). Scope = the story's **5 admin-config areas** (lead-confirmed; NOT per-student XP/hearts/badge-grant — those aren't in the story ACs): **league-tier override** (per student), **badge catalog CRUD** + activate/deactivate, **mission catalog CRUD** + activate/deactivate, **timed-event** write/transition, **streak-freeze grant**. All AdminOnly on `AdminGamificationController` (`api/Admin/Gamification`); each override takes a required `Reason`.
