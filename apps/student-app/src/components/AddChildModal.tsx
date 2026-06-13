@@ -1,19 +1,24 @@
 /**
- * AddChildModal — centered modal overlay for adding a new child from the parent
- * dashboard context (workstream E, parent-dashboard-uiux spec).
+ * AddChildModal — centered modal overlay for adding or editing a child from
+ * the parent dashboard context (workstream E, parent-dashboard-uiux spec).
  *
  * Reuses the in-repo RN `Modal transparent` + `$overlay` scrim convention
  * (same as `ChangeLearningLanguageModal` / `EditChildSheet`) — NOT a new pattern.
  *
+ * Two modes driven by whether `childId` is provided:
+ *   - ADD mode  (childId absent): photo upload, all fields including email +
+ *     password, submits via `useAddChild`.
+ *   - EDIT mode (childId present): no photo upload, no email/password (those
+ *     are not accepted by `updateChild` — security requirement); pre-fills from
+ *     `initialValues`; submits via `useUpdateChild`.
+ *
  * Anatomy (top → bottom):
  *   1. Header — mark + title/subtitle + ✕ close
- *   2. Body (scrolls): photo upload, child name, login email, password,
- *      grade tiles (6 plant-emoji, NEVER a <select>), app-language flag tiles
- *      (2 flags), learning-language Select, country Select
- *   3. Footer — Cancel (ghost) + personalized primary CTA ("Add {name} →")
- *
- * Submits via `useAddChild` → POST /api/Parent/Add-Child. On success: modal
- * closes and TanStack Query invalidates `myChildren` automatically.
+ *   2. Body (scrolls): [add-only: photo upload] child name, [add-only: login
+ *      email, password], grade tiles (6 plant-emoji, NEVER a <select>),
+ *      app-language flag tiles (2 flags), learning-language Select, country
+ *      Select [always shown]
+ *   3. Footer — Cancel (ghost) + personalized primary CTA
  *
  * RTL: card `direction` from locale; CTA arrow flips; email/country LTR-pinned;
  * grade numerals Eastern-Arabic; 📷 badge on logical-end corner.
@@ -21,7 +26,12 @@
  * Tokens only (no raw hex except the few sanctioned modal-surface values per spec).
  * No new design pattern — mirrors the existing overlay convention.
  */
-import { useAddChild, type AddChildCommand } from '@learnexia/api-client';
+import {
+  useAddChild,
+  useUpdateChild,
+  type AddChildCommand,
+  type UpdateChildCommand,
+} from '@learnexia/api-client';
 import { COUNTRIES, type CountryCode, LOCALES } from '@learnexia/shared';
 import {
   Avatar,
@@ -43,9 +53,28 @@ import { ServerErrorBanner } from './ServerErrorBanner';
 import { useLocale } from '../hooks/useLocale';
 import { useServerError } from '../hooks/useServerError';
 
+/** Initial field values when opening the modal in EDIT mode. */
+export interface EditChildInitialValues {
+  fullName: string;
+  grade: number;
+  /** App-language code ('ar' | 'en'). */
+  language: string;
+  /** Country code from COUNTRIES list. */
+  country: string;
+  /** Learning-language code — shown but not editable in edit mode (update endpoint omits it). */
+  learningLanguage?: string;
+}
+
 export interface AddChildModalProps {
   visible: boolean;
   onClose: () => void;
+  /**
+   * When provided the modal opens in EDIT mode: pre-fills fields from
+   * `initialValues`, hides email/password, uses `useUpdateChild` on submit.
+   * Absent = ADD mode (default).
+   */
+  childId?: number;
+  initialValues?: EditChildInitialValues;
 }
 
 /** Grade options with plant-emoji per spec (order: 🌱🌿🌳🌲🍃🌴). */
@@ -84,12 +113,16 @@ function formatGradeNumber(grade: number, locale: string): string {
   return new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US').format(grade);
 }
 
-export function AddChildModal({ visible, onClose }: AddChildModalProps) {
+export function AddChildModal({ visible, onClose, childId, initialValues }: AddChildModalProps) {
   const { t } = useTranslation();
   const { direction, isRtl, locale } = useLocale();
   const insets = useSafeAreaInsets();
   const addChild = useAddChild();
+  const updateChild = useUpdateChild();
   const resolveError = useServerError();
+
+  /** true when `childId` is provided (edit mode); false = add mode. */
+  const isEditMode = childId !== undefined;
 
   const rowDir = isRtl ? 'row-reverse' : 'row';
 
@@ -109,16 +142,31 @@ export function AddChildModal({ visible, onClose }: AddChildModalProps) {
     }
   }, [visible, cardScale]);
 
-  // Form state
-  const [fullName, setFullName] = useState('');
+  // Form state — seeded from initialValues when in edit mode.
+  const [fullName, setFullName] = useState(initialValues?.fullName ?? '');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [grade, setGrade] = useState<number | null>(null);
-  const [appLanguage, setAppLanguage] = useState<string | null>(null);
-  const [learningLanguage, setLearningLanguage] = useState<string | null>(null);
-  const [country, setCountry] = useState<CountryCode | null>(null);
+  const [grade, setGrade] = useState<number | null>(initialValues?.grade ?? null);
+  const [appLanguage, setAppLanguage] = useState<string | null>(initialValues?.language ?? null);
+  const [learningLanguage, setLearningLanguage] = useState<string | null>(
+    initialValues?.learningLanguage ?? null,
+  );
+  const [country, setCountry] = useState<CountryCode | null>(
+    (initialValues?.country as CountryCode) ?? null,
+  );
 
-  // Photo state
+  // Re-seed form when initialValues change (modal re-opens for a different child).
+  useEffect(() => {
+    if (visible && isEditMode && initialValues) {
+      setFullName(initialValues.fullName);
+      setGrade(initialValues.grade);
+      setAppLanguage(initialValues.language);
+      setCountry((initialValues.country as CountryCode) ?? null);
+      setLearningLanguage(initialValues.learningLanguage ?? null);
+    }
+  }, [visible, isEditMode, initialValues]);
+
+  // Photo state (add mode only — update endpoint does not accept avatar).
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [photoPreviewUri, setPhotoPreviewUri] = useState<string | null>(null);
   // photoFile is set on pick/reset and will be included in AddChildCommand once BE supports avatar upload.
@@ -144,8 +192,10 @@ export function AddChildModal({ visible, onClose }: AddChildModalProps) {
     label: loc === 'ar' ? t('common.prefs.switchToArabic') : t('common.prefs.switchToEnglish'),
   }));
 
-  const serverMessage = addChild.isError
-    ? resolveError(addChild.error, {
+  const activeHook = isEditMode ? updateChild : addChild;
+
+  const serverMessage = activeHook.isError
+    ? resolveError(activeHook.error, {
         byStatus: { 400: 'parent.addChildModal.errors.generic' },
       })
     : null;
@@ -178,11 +228,15 @@ export function AddChildModal({ visible, onClose }: AddChildModalProps) {
   function validate(): boolean {
     const errors: Record<string, string> = {};
     if (!fullName.trim()) errors.fullName = t('parent.addChildModal.errors.nameRequired');
-    if (!email.trim()) errors.email = t('parent.addChildModal.errors.emailRequired');
-    if (!password.trim()) errors.password = t('parent.addChildModal.errors.passwordRequired');
+    if (!isEditMode) {
+      if (!email.trim()) errors.email = t('parent.addChildModal.errors.emailRequired');
+      if (!password.trim()) errors.password = t('parent.addChildModal.errors.passwordRequired');
+    }
     if (grade === null) errors.grade = t('parent.addChildModal.errors.gradeRequired');
     if (!appLanguage) errors.appLanguage = t('parent.addChildModal.errors.languageRequired');
-    if (!learningLanguage) errors.learningLanguage = t('parent.addChildModal.errors.learningLanguageRequired');
+    if (!isEditMode && !learningLanguage) {
+      errors.learningLanguage = t('parent.addChildModal.errors.learningLanguageRequired');
+    }
     if (!country) errors.country = t('parent.addChildModal.errors.countryRequired');
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -201,6 +255,7 @@ export function AddChildModal({ visible, onClose }: AddChildModalProps) {
     setPhotoError(null);
     setFieldErrors({});
     addChild.reset();
+    updateChild.reset();
   }
 
   function handleClose() {
@@ -210,17 +265,28 @@ export function AddChildModal({ visible, onClose }: AddChildModalProps) {
 
   async function handleSubmit() {
     if (!validate()) return;
-    const cmd: AddChildCommand = {
-      fullName: fullName.trim(),
-      email: email.trim(),
-      password: password.trim(),
-      grade: grade!,
-      language: appLanguage!,
-      learningLanguage: learningLanguage!,
-      country: country!,
-    };
     try {
-      await addChild.mutateAsync(cmd);
+      if (isEditMode) {
+        const cmd: UpdateChildCommand = {
+          childId: childId!,
+          fullName: fullName.trim(),
+          grade: grade!,
+          language: appLanguage!,
+          country: country!,
+        };
+        await updateChild.mutateAsync(cmd);
+      } else {
+        const cmd: AddChildCommand = {
+          fullName: fullName.trim(),
+          email: email.trim(),
+          password: password.trim(),
+          grade: grade!,
+          language: appLanguage!,
+          learningLanguage: learningLanguage!,
+          country: country!,
+        };
+        await addChild.mutateAsync(cmd);
+      }
       resetForm();
       onClose();
     } catch {
@@ -228,9 +294,25 @@ export function AddChildModal({ visible, onClose }: AddChildModalProps) {
     }
   }
 
-  const ctaLabel = fullName.trim()
-    ? t('parent.addChildModal.ctaWithName', { name: fullName.trim() })
-    : t('parent.addChildModal.ctaDefault');
+  // CTA label — edit mode reuses `onboarding.saveChanges` (already translated
+  // in both locales); add mode is personalized with the child's name.
+  const ctaLabel = isEditMode
+    ? t('onboarding.saveChanges')
+    : fullName.trim()
+      ? t('parent.addChildModal.ctaWithName', { name: fullName.trim() })
+      : t('parent.addChildModal.ctaDefault');
+
+  // Title and subtitle differ by mode.
+  // Edit: reuses `onboarding.editChild` (both locales) + settings subtitle.
+  // Add: uses addChildModal.title / .subtitle.
+  const modalTitle = isEditMode
+    ? t('onboarding.editChild')
+    : t('parent.addChildModal.title');
+  const modalSubtitle = isEditMode
+    ? t('parent.settings.linkedChildren.subtitle')
+    : t('parent.addChildModal.subtitle');
+
+  const isPending = isEditMode ? updateChild.isPending : addChild.isPending;
 
   return (
     <Modal
@@ -292,7 +374,7 @@ export function AddChildModal({ visible, onClose }: AddChildModalProps) {
                 boxShadow: '0 6px 16px rgba(99,102,241,0.4)',
               }}
             >
-              <Text fontSize={20} accessibilityElementsHidden>{'👶'}</Text>
+              <Text fontSize={20} accessibilityElementsHidden>{isEditMode ? '✏️' : '👶'}</Text>
             </Stack>
 
             {/* Title block */}
@@ -304,10 +386,10 @@ export function AddChildModal({ visible, onClose }: AddChildModalProps) {
                 fontFamily="$heading"
                 writingDirection={direction}
               >
-                {t('parent.addChildModal.title')}
+                {modalTitle}
               </Text>
               <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction}>
-                {t('parent.addChildModal.subtitle')}
+                {modalSubtitle}
               </Text>
             </Stack>
 
@@ -338,8 +420,8 @@ export function AddChildModal({ visible, onClose }: AddChildModalProps) {
             contentContainerStyle={{ padding: 20, gap: 16, flexDirection: 'column' }}
             showsVerticalScrollIndicator
           >
-            {/* Web hidden file input */}
-            {Platform.OS === 'web' && (
+            {/* Web hidden file input (add mode only) */}
+            {Platform.OS === 'web' && !isEditMode && (
               <input
                 ref={fileInputRef}
                 type="file"
@@ -350,67 +432,69 @@ export function AddChildModal({ visible, onClose }: AddChildModalProps) {
               />
             )}
 
-            {/* Photo upload row */}
-            <Stack flexDirection={rowDir} alignItems="flex-start" gap={14}>
-              {/* Avatar circle 64×64 + 📷 badge */}
-              <Stack position="relative" width={64} height={64}>
-                <Avatar
-                  name={fullName || 'A'}
-                  uri={photoPreviewUri ?? undefined}
-                  size="lg"
-                  accessibilityLabel={t('parent.addChildModal.labelName')}
-                />
-                {/* 📷 badge */}
-                <Stack
-                  position="absolute"
-                  bottom={-2}
-                  {...(isRtl ? { left: -2 } : { right: -2 })}
-                  width={24}
-                  height={24}
-                  borderRadius={9999}
-                  backgroundColor="$primary"
-                  style={{ border: '2px solid #15161D' }}
-                  alignItems="center"
-                  justifyContent="center"
-                  cursor="pointer"
-                  onPress={handlePhotoPress}
-                  accessibilityElementsHidden
-                >
-                  <Text fontSize={11}>{'📷'}</Text>
+            {/* Photo upload row — add mode only */}
+            {!isEditMode && (
+              <Stack flexDirection={rowDir} alignItems="flex-start" gap={14}>
+                {/* Avatar circle 64×64 + 📷 badge */}
+                <Stack position="relative" width={64} height={64}>
+                  <Avatar
+                    name={fullName || 'A'}
+                    uri={photoPreviewUri ?? undefined}
+                    size="lg"
+                    accessibilityLabel={t('parent.addChildModal.labelName')}
+                  />
+                  {/* 📷 badge — on logical-end corner (right in LTR, left in RTL) */}
+                  <Stack
+                    position="absolute"
+                    bottom={-2}
+                    {...(isRtl ? { left: -2 } : { right: -2 })}
+                    width={24}
+                    height={24}
+                    borderRadius={9999}
+                    backgroundColor="$primary"
+                    style={{ border: '2px solid #15161D' }}
+                    alignItems="center"
+                    justifyContent="center"
+                    cursor="pointer"
+                    onPress={handlePhotoPress}
+                    accessibilityElementsHidden
+                  >
+                    <Text fontSize={11}>{'📷'}</Text>
+                  </Stack>
                 </Stack>
-              </Stack>
 
-              {/* Dashed drop-zone */}
-              <Stack
-                flex={1}
-                style={{
-                  borderStyle: 'dashed',
-                  borderColor: 'rgba(99,102,241,0.45)',
-                  backgroundColor: 'rgba(79,70,229,0.05)',
-                  borderWidth: 1.5,
-                  borderRadius: 14,
-                  padding: '12px 14px',
-                  cursor: 'pointer',
-                  flexDirection: 'column',
-                  gap: 4,
-                }}
-                onPress={handlePhotoPress}
-                cursor="pointer"
-                accessible
-                accessibilityRole="button"
-                accessibilityLabel={t('parent.addChildModal.photoUpload')}
-              >
-                <Stack flexDirection={rowDir} alignItems="center" gap="$1">
-                  <Text fontSize={14} accessibilityElementsHidden>{'⬆️'}</Text>
-                  <Text color="$primaryLight" fontSize={13} fontWeight="700" fontFamily="$heading" writingDirection={direction}>
-                    {t('parent.addChildModal.photoUpload')}
+                {/* Dashed drop-zone */}
+                <Stack
+                  flex={1}
+                  style={{
+                    borderStyle: 'dashed',
+                    borderColor: 'rgba(99,102,241,0.45)',
+                    backgroundColor: 'rgba(79,70,229,0.05)',
+                    borderWidth: 1.5,
+                    borderRadius: 14,
+                    padding: '12px 14px',
+                    cursor: 'pointer',
+                    flexDirection: 'column',
+                    gap: 4,
+                  }}
+                  onPress={handlePhotoPress}
+                  cursor="pointer"
+                  accessible
+                  accessibilityRole="button"
+                  accessibilityLabel={t('parent.addChildModal.photoUpload')}
+                >
+                  <Stack flexDirection={rowDir} alignItems="center" gap="$1">
+                    <Text fontSize={14} accessibilityElementsHidden>{'⬆️'}</Text>
+                    <Text color="$primaryLight" fontSize={13} fontWeight="700" fontFamily="$heading" writingDirection={direction}>
+                      {t('parent.addChildModal.photoUpload')}
+                    </Text>
+                  </Stack>
+                  <Text color="$fg3" fontSize={11} fontFamily="$body" writingDirection={direction}>
+                    {t('parent.addChildModal.photoSub')}
                   </Text>
                 </Stack>
-                <Text color="$fg3" fontSize={11} fontFamily="$body" writingDirection={direction}>
-                  {t('parent.addChildModal.photoSub')}
-                </Text>
               </Stack>
-            </Stack>
+            )}
             {photoError ? (
               <Text color="$danger" fontSize={12} fontFamily="$body" writingDirection={direction}>
                 {photoError}
@@ -428,39 +512,48 @@ export function AddChildModal({ visible, onClose }: AddChildModalProps) {
               testID="add-child-name"
             />
 
-            {/* Login email — LTR pinned */}
-            <TextField
-              label={t('parent.addChildModal.labelEmail')}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoComplete="email"
-              direction={direction}
-              forceLtr
-              error={fieldErrors.email}
-              testID="add-child-email"
-            />
-
-            {/* Password + strength meter */}
-            <Stack flexDirection="column" gap="$1">
+            {/* Login email — add mode only (LTR pinned, autocomplete off) */}
+            {!isEditMode && (
               <TextField
-                label={t('parent.addChildModal.labelPassword')}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
+                label={t('parent.addChildModal.labelEmail')}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoComplete="off"
+                autoCorrect={false}
                 direction={direction}
-                error={fieldErrors.password}
-                testID="add-child-password"
+                forceLtr
+                error={fieldErrors.email}
+                testID="add-child-email"
               />
-              {password.length > 0 ? (
-                <PasswordStrengthMeter
-                  score={passwordStrength}
-                  label={strengthLabel}
+            )}
+
+            {/* Password + strength meter — add mode only (autocomplete off) */}
+            {!isEditMode && (
+              <Stack flexDirection="column" gap="$1">
+                <TextField
+                  label={t('parent.addChildModal.labelPassword')}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  showLabel={t('auth.login.showPassword')}
+                  hideLabel={t('auth.login.hidePassword')}
+                  autoComplete="off"
+                  autoCorrect={false}
                   direction={direction}
-                  accessibilityLabel={t('auth.register.strength.a11y', { label: strengthLabel })}
+                  error={fieldErrors.password}
+                  testID="add-child-password"
                 />
-              ) : null}
-            </Stack>
+                {password.length > 0 ? (
+                  <PasswordStrengthMeter
+                    score={passwordStrength}
+                    label={strengthLabel}
+                    direction={direction}
+                    accessibilityLabel={t('auth.register.strength.a11y', { label: strengthLabel })}
+                  />
+                ) : null}
+              </Stack>
+            )}
 
             {/* Grade — 6 plant-emoji tiles (NEVER a select) */}
             <Stack flexDirection="column" gap="$1">
@@ -583,32 +676,34 @@ export function AddChildModal({ visible, onClose }: AddChildModalProps) {
               ) : null}
             </Stack>
 
-            {/* Learning language select (axis B, required) */}
-            <Stack flexDirection="column" gap="$1">
-              <LanguageSelect
-                label={t('parent.addChildModal.labelLearningLanguage')}
-                value={learningLanguage}
-                onChange={(v) => {
-                  setLearningLanguage(String(v));
-                  setFieldErrors((prev) => ({ ...prev, learningLanguage: '' }));
-                }}
-                options={languageOptions}
-                direction={direction}
-                accessibilityLabel={t('parent.addChildModal.labelLearningLanguage')}
-                error={fieldErrors.learningLanguage}
-                testID="add-child-learning-language"
-              />
-              <Text
-                color="$fg3"
-                fontSize={11}
-                fontFamily="$body"
-                writingDirection={direction}
-              >
-                {t('parent.addChildModal.learningLanguageHelper')}
-              </Text>
-            </Stack>
+            {/* Learning language select — add mode only (update endpoint omits it) */}
+            {!isEditMode && (
+              <Stack flexDirection="column" gap="$1">
+                <LanguageSelect
+                  label={t('parent.addChildModal.labelLearningLanguage')}
+                  value={learningLanguage}
+                  onChange={(v) => {
+                    setLearningLanguage(String(v));
+                    setFieldErrors((prev) => ({ ...prev, learningLanguage: '' }));
+                  }}
+                  options={languageOptions}
+                  direction={direction}
+                  accessibilityLabel={t('parent.addChildModal.labelLearningLanguage')}
+                  error={fieldErrors.learningLanguage}
+                  testID="add-child-learning-language"
+                />
+                <Text
+                  color="$fg3"
+                  fontSize={11}
+                  fontFamily="$body"
+                  writingDirection={direction}
+                >
+                  {t('parent.addChildModal.learningLanguageHelper')}
+                </Text>
+              </Stack>
+            )}
 
-            {/* Country select (required) */}
+            {/* Country select — always shown; backend supports it in both add and update */}
             <Select
               label={t('parent.addChildModal.labelCountry')}
               value={country}
@@ -661,8 +756,8 @@ export function AddChildModal({ visible, onClose }: AddChildModalProps) {
             <Button
               variant="primary"
               size="md"
-              loading={addChild.isPending}
-              disabled={addChild.isPending}
+              loading={isPending}
+              disabled={isPending}
               accessibilityLabel={ctaLabel}
               onPress={handleSubmit}
               testID="add-child-submit"

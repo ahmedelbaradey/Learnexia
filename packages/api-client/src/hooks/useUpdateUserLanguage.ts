@@ -1,9 +1,14 @@
 /**
- * useUpdateUserLanguage — PUT /api/Users/UserManagement/UpdateUserLanguage (authenticated).
+ * useUpdateUserLanguage — PUT /api/Users/Account/Language (authenticated, self-scoped).
  *
- * Wraps the NSwag `updateUserLanguage` method and unwraps the void response.
+ * Wraps the NSwag `language` method and unwraps the string response envelope.
  * Persists the authenticated user's `PreferredLanguage` (axis A — UI language)
  * to the backend so the choice survives sign-out/sign-in.
+ *
+ * Self-scoped: the user id is resolved server-side from the JWT — it is NOT sent
+ * in the body. No IDOR risk. Previously this called the admin-only
+ * UserManagement endpoint, which returned 403 for regular parents. The new
+ * endpoint (`Account/Language`) is accessible to any authenticated user.
  *
  * On success it invalidates the `Me` query so the freshly-saved language is
  * reflected in the next `/Me` fetch. The caller is responsible for also
@@ -20,19 +25,22 @@ import {
 } from '@tanstack/react-query';
 
 import { useTypedClient } from './apiClientContext';
+import { unwrapEnvelope } from '../client/typedClient';
 import { queryKeys } from '../query/queryKeys';
-import type { EditUserPreferredLanguageCommand } from '../schemas';
+import type { UpdateMyPreferredLanguageCommand } from '../schemas';
 
 export function useUpdateUserLanguage(): UseMutationResult<
-  void,
+  string | undefined,
   Error,
-  EditUserPreferredLanguageCommand
+  UpdateMyPreferredLanguageCommand
 > {
   const client = useTypedClient();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: EditUserPreferredLanguageCommand): Promise<void> =>
-      client.updateUserLanguage(input),
+    mutationFn: (
+      input: UpdateMyPreferredLanguageCommand,
+    ): Promise<string | undefined> =>
+      unwrapEnvelope(client.language(input)),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.auth.me() });
     },

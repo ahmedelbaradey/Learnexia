@@ -344,6 +344,8 @@ function ResetPasswordForm({ direction, email, token }: ResetPasswordFormProps) 
                 value={field.value}
                 onChangeText={field.onChange}
                 secureTextEntry
+                showLabel={t('auth.login.showPassword')}
+                hideLabel={t('auth.login.hidePassword')}
                 error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
                 direction={direction}
                 disabled={disabled}
@@ -382,6 +384,8 @@ function ResetPasswordForm({ direction, email, token }: ResetPasswordFormProps) 
             value={field.value}
             onChangeText={field.onChange}
             secureTextEntry
+            showLabel={t('auth.login.showPassword')}
+            hideLabel={t('auth.login.hidePassword')}
             error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
             direction={direction}
             disabled={disabled}

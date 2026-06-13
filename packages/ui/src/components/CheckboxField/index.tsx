@@ -55,7 +55,8 @@ export function CheckboxField({
   const hasError = Boolean(error);
   const rowDir = dir === 'rtl' ? 'row-reverse' : 'row';
 
-  const borderColor = hasError ? '$danger' : checked ? '$primary' : '$borderStrong';
+  // align-register M-4 / m-9: checked bg is $secondary (green #22C55E), not $primary.
+  const borderColor = hasError ? '$danger' : checked ? '$secondary' : '$borderStrong';
 
   return (
     <YStack gap="$1" opacity={disabled ? 0.5 : 1} pointerEvents={disabled ? 'none' : 'auto'}>
@@ -82,13 +83,14 @@ export function CheckboxField({
           borderRadius={boxRadius}
           borderWidth={2}
           borderColor={borderColor}
-          backgroundColor={checked ? '$primary' : 'transparent'}
+          backgroundColor={checked ? '$secondary' : 'transparent'}
           alignItems="center"
           justifyContent="center"
           accessibilityElementsHidden
         >
           {checked ? (
-            <Text fontSize={13} fontWeight="800" color="$fg1" accessibilityElementsHidden>
+            // align-register M-4: $fgInverse (dark #0F172A) on the green box.
+            <Text fontSize={13} fontWeight="800" color="$fgInverse" accessibilityElementsHidden>
               {'✓'}
             </Text>
           ) : null}

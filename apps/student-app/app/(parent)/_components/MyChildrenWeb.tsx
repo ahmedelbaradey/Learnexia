@@ -13,6 +13,15 @@
  * on web (in AR the grid container is direction:rtl so the columns reverse and
  * the add-card lands at the visual left); native falls back to a wrapping flex
  * row.
+ *
+ * Edit mode (bug #4 fix): pressing ✎ on a child card opens AddChildModal in
+ * edit mode (childId + initialValues) — same centered overlay as add mode,
+ * pre-filled with the child's real data, submitting via useUpdateChild.
+ * EditChildSheet (bottom-slide) is kept for the onboarding flow only.
+ *
+ * Bug #3 / #6 fix: pick-a-child row uses `flexWrap="nowrap"` so that in
+ * RTL `row-reverse` the button stays in-row and does not wrap to an unexpected
+ * position where pointer-events fail. Text alignment follows locale direction.
  */
 import { useMyChildren } from '@learnexia/api-client';
 import { Button, Select } from '@learnexia/ui';
@@ -25,7 +34,10 @@ import { useTranslation } from 'react-i18next';
 
 import { useLocale } from '../../../src/hooks/useLocale';
 import { useActiveChildStore } from '../../../src/providers/activeChildStore';
-import { EditChildSheet, type EditChildInitialValues } from '../../(onboarding)/_components/EditChildSheet';
+import {
+  AddChildModal,
+  type EditChildInitialValues,
+} from '../../../src/components/AddChildModal';
 import { AddChildCard } from './AddChildCard';
 import { ChildDashboardCard } from './ChildDashboardCard';
 import { FamilySummaryStrip } from './FamilySummaryStrip';
@@ -54,11 +66,7 @@ function CardSkeleton() {
 /** Shape of the child being edited — seeded from useMyChildren data. */
 interface EditingChild {
   id: number;
-  fullName: string;
-  grade: number;
-  language: string;
-  country: string;
-  email?: string;
+  initialValues: EditChildInitialValues;
 }
 
 export function MyChildrenWeb() {
@@ -67,7 +75,13 @@ export function MyChildrenWeb() {
   const router = useRouter();
   const query = useMyChildren();
   const [period, setPeriod] = useState<string>(REPORTING_PERIOD.ThisWeek);
-  // Edit-child state (P1-12-FE-5): null = sheet closed; set to child data to open.
+  /**
+   * Edit-child state (bug #4 fix):
+   * null = edit modal closed; non-null = edit modal open for this child.
+   * Uses AddChildModal in edit mode (childId + initialValues) so the same
+   * centered overlay that handles Add also handles Edit — pre-filled,
+   * correct title, and submitting via useUpdateChild.
+   */
   const [editingChild, setEditingChild] = useState<EditingChild | null>(null);
 
   const openAddChild = useActiveChildStore((s) => s.openAddChild);
@@ -102,10 +116,24 @@ export function MyChildrenWeb() {
         borderBottomColor="$border"
       >
         <Stack flexDirection="column" gap="$1">
-          <Text color="$fg1" fontSize={22} fontWeight="800" fontFamily="$heading" accessibilityRole="header" writingDirection={direction}>
+          <Text
+            color="$fg1"
+            fontSize={22}
+            fontWeight="800"
+            fontFamily="$heading"
+            accessibilityRole="header"
+            writingDirection={direction}
+            textAlign={isRtl ? 'right' : 'left'}
+          >
             {t('parent.myChildren.title')}
           </Text>
-          <Text color="$fg3" fontSize={13} fontFamily="$body" writingDirection={direction}>
+          <Text
+            color="$fg3"
+            fontSize={13}
+            fontFamily="$body"
+            writingDirection={direction}
+            textAlign={isRtl ? 'right' : 'left'}
+          >
             {t('parent.myChildren.subtitle', { count: children.length })}
           </Text>
         </Stack>
@@ -141,9 +169,28 @@ export function MyChildrenWeb() {
         {/* Family summary (TODO(P5) stub totals) */}
         <FamilySummaryStrip totals={totals} />
 
-        {/* Pick-a-child row */}
-        <Stack flexDirection={rowDir} alignItems="center" justifyContent="space-between" gap="$4" flexWrap="wrap">
-          <Text color="$fg1" fontSize={18} fontWeight="800" fontFamily="$heading" writingDirection={direction}>
+        {/* Pick-a-child row (bug #3 / #6 fix):
+            `flexWrap="nowrap"` prevents RTL `row-reverse` from wrapping the
+            Add Child button to an unexpected position where it becomes
+            un-clickable. Both children stay on one line; the Button sits at
+            the logical start (left in RTL) and the label at the logical end
+            (right in RTL). */}
+        <Stack
+          flexDirection={rowDir}
+          alignItems="center"
+          justifyContent="space-between"
+          gap="$4"
+          flexWrap="nowrap"
+        >
+          <Text
+            color="$fg1"
+            fontSize={18}
+            fontWeight="800"
+            fontFamily="$heading"
+            writingDirection={direction}
+            textAlign={isRtl ? 'right' : 'left'}
+            flex={1}
+          >
             {t('parent.myChildren.pickChild')}
           </Text>
           <Button
@@ -186,9 +233,10 @@ export function MyChildrenWeb() {
                 {children.map((child) => {
                   const id = String(child.id);
                   const childId = child.id ?? 0;
-                  // Card stats (XP/mastery) remain Phase-5 stubs. The edit sheet, however, pre-fills the
-                  // child's REAL grade/language/country (now returned on LinkedChildResponse) so a save
-                  // can't silently overwrite them with placeholders.
+                  // Card stats (XP/mastery) remain Phase-5 stubs. The edit modal,
+                  // however, pre-fills the child's REAL grade/language/country (now
+                  // returned on LinkedChildResponse) so a save can't silently
+                  // overwrite them with placeholders.
                   const stub = getChildStatsStub(id);
                   return (
                     <ChildDashboardCard
@@ -200,11 +248,13 @@ export function MyChildrenWeb() {
                       onEdit={() =>
                         setEditingChild({
                           id: childId,
-                          fullName: child.fullName ?? '',
-                          grade: child.grade ?? stub.grade,
-                          language: child.language ?? 'ar',
-                          country: child.country ?? '',
-                          email: child.email ?? undefined,
+                          initialValues: {
+                            fullName: child.fullName ?? '',
+                            grade: child.grade ?? stub.grade,
+                            language: child.language ?? 'ar',
+                            country: child.country ?? '',
+                            learningLanguage: child.learningLanguage ?? undefined,
+                          },
                         })
                       }
                     />
@@ -217,26 +267,18 @@ export function MyChildrenWeb() {
         )}
       </Stack>
 
-      {/* Edit-child sheet (P1-12-FE-5) — backend-wired, slim field set.
-          Opens when a child card's Edit button is pressed. On save, the hook
-          invalidates queryKeys.family.myChildren() so the list refreshes. */}
-      <EditChildSheet
+      {/*
+       * Edit-child modal (bug #4 fix) — AddChildModal in edit mode.
+       * Opens when a child card's Edit button is pressed. On save, the hook
+       * invalidates queryKeys.family.myChildren() so the list refreshes.
+       * Using the same centered modal as Add mode keeps the UX consistent;
+       * the modal title and CTA label change, email/password are hidden,
+       * and useUpdateChild is used for the API call.
+       */}
+      <AddChildModal
         visible={editingChild !== null}
-        initialValues={
-          editingChild
-            ? ({
-                fullName: editingChild.fullName,
-                grade: editingChild.grade,
-                language: editingChild.language,
-                country: editingChild.country,
-                email: editingChild.email,
-              } satisfies EditChildInitialValues)
-            : null
-        }
         childId={editingChild?.id}
-        onSave={() => {
-          /* onSave is not called in backend mode (childId present); kept for type compliance */
-        }}
+        initialValues={editingChild?.initialValues}
         onClose={() => setEditingChild(null)}
       />
     </Stack>

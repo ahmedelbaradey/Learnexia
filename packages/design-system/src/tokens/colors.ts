@@ -41,6 +41,8 @@ export const colors = {
   /** Boss disc bg at 0.55-alpha — muted danger for radial gradient fallback (SkillTreeNode boss). */
   dangerSoftStrong: 'rgba(239, 68, 68, 0.55)',
   purpleSoft: 'rgba(168, 85, 247, 0.18)',
+  /** 0.3-alpha purple for the register parent-only banner border (align-register M-13). */
+  purpleBorder: 'rgba(168, 85, 247, 0.3)',
 
   // ---- Gamification accents ----
   xp: '#FACC15',

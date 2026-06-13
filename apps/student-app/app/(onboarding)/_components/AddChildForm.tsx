@@ -122,6 +122,8 @@ export function AddChildForm({ initialValues, submitLabel, onAdd }: AddChildForm
             value={field.value}
             onChangeText={field.onChange}
             secureTextEntry
+            showLabel={t('auth.login.showPassword')}
+            hideLabel={t('auth.login.hidePassword')}
             error={errText(fieldState.error?.message)}
             direction={direction}
             testID="add-child-password"

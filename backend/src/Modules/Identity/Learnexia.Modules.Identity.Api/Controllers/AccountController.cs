@@ -1,6 +1,7 @@
 using Learnexia.Modules.Identity.Api.Bases;
 using Learnexia.Modules.Identity.Application.Features.Account.Commands.RemoveAvatar;
 using Learnexia.Modules.Identity.Application.Features.Account.Commands.SignOutOthers;
+using Learnexia.Modules.Identity.Application.Features.Account.Commands.UpdateMyPreferredLanguage;
 using Learnexia.Modules.Identity.Application.Features.Account.Commands.UpdateMyProfile;
 using Learnexia.Modules.Identity.Application.Features.Account.Commands.UploadAvatar;
 using Learnexia.Modules.Identity.Application.Features.Account.Dtos;
@@ -93,4 +94,15 @@ public class AccountController : AppControllerBase
     [ProducesResponseType(typeof(BaseResponse<CurrentPlanResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyPlan()
         => NewResult(await Mediator.Send(new GetMyPlanQuery()));
+
+    // Updates the authenticated user's preferred UI language. The acting user is ALWAYS resolved
+    // from the JWT inside the handler — there is no id on the route or body, so there is no IDOR
+    // surface and no mass-assignment (only the language field is accepted). Self-scoped; accessible
+    // to any authenticated user (parents) — NOT admin-only, unlike the old UserManagement endpoint.
+    [Authorize]
+    [HttpPut("Language")]
+    [ProducesResponseType(typeof(BaseResponse<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(BaseResponse<string>), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> UpdateLanguage([FromBody] UpdateMyPreferredLanguageCommand command)
+        => NewResult(await Mediator.Send(command));
 }

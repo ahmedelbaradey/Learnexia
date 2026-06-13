@@ -4,18 +4,29 @@
  * `$primary` feature panel RIGHT (the mirror of Login, whose brand panel is
  * left). Phone (≤768): the feature panel collapses to a single-column form.
  *
- * Left column: logo + wordmark · "STEP 1 OF 2" eyebrow + a ~50% progress bar ·
- * "Create your parent account" heading + subtitle · a "Parent / Guardian only"
- * info banner · the RegisterForm (full name, country, email, password, Terms,
- * Continue → Add Children). RTL-aware; all copy via i18n.
+ * TWO-STEP WIZARD (inline, no route jump):
+ *   Step 1: parent account form (full name, country, email, password, Terms,
+ *            Continue → Add Children). On success sets local `step = 2`.
+ *   Step 2: add-child step, rendered inline within the SAME scaffold/frame.
+ *           Shows the My-Children style list + AddChildModal + Continue button
+ *           (routes to /(onboarding)/complete once ≥1 child is added).
+ *
+ * The /(onboarding)/add-child route is kept intact for backward compatibility
+ * (LinkedChildrenPanel fallback uses it). This screen no longer navigates there.
+ *
+ * RTL-aware; all copy via i18n.
  */
+import { useMyChildren } from '@learnexia/api-client';
 import { gradientStops } from '@learnexia/design-system';
 import { type Direction } from '@learnexia/shared';
-import { GradientBox } from '@learnexia/ui';
+import { Button, ChildCard, GradientBox } from '@learnexia/ui';
 import { Stack, Text } from '@tamagui/core';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { AddChildModal } from '../../src/components/AddChildModal';
+import { AddChildCard } from '../(parent)/_components/AddChildCard';
 import { FormScaffold } from '../../src/components/FormScaffold';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useLocale } from '../../src/hooks/useLocale';
@@ -29,6 +40,12 @@ export default function RegisterScreen() {
   const align = direction === 'rtl' ? 'right' : 'left';
   const rowDir = direction === 'rtl' ? 'row-reverse' : 'row';
 
+  /**
+   * Wizard step state (UI-only — NOT server data, so local state is correct).
+   * 1 = parent account form, 2 = add-child step.
+   */
+  const [step, setStep] = useState<1 | 2>(1);
+
   return (
     <FormScaffold
       variant="split"
@@ -36,13 +53,18 @@ export default function RegisterScreen() {
       brandPanel={<RegisterFeaturePanel direction={direction} />}
       header={
         <ScreenHeader
-          onBack={() => router.replace('/(auth)/login')}
-          backLabel={t('auth.register.backToSignIn')}
+          onBack={step === 2
+            ? () => setStep(1)
+            : () => router.replace('/(auth)/login')}
+          backLabel={step === 2
+            ? t('onboarding.back')
+            : t('auth.register.backToSignIn')}
         />
       }
     >
       <Stack gap="$6">
-        {/* Logo + wordmark — always LTR mark→wordmark order (brand mark not mirrored). */}
+        {/* Logo + wordmark — always LTR mark→wordmark order (brand mark not mirrored).
+            Brand name stays Latin in all locales (SKILL.md rule — no transliteration). */}
         <Stack flexDirection="row" alignItems="center" gap="$3">
           <Stack
             width={40}
@@ -56,12 +78,14 @@ export default function RegisterScreen() {
               ✦
             </Text>
           </Stack>
-          <Text color="$fg1" fontSize={22} fontWeight="900" fontFamily="$heading" writingDirection="ltr">
+          {/* Latin brand name (common.appName = 'Learnexia' in both locales) + forced LTR (align-register m-16). */}
+          <Text color="$fg1" fontSize={22} fontWeight="900" fontFamily="$heading" writingDirection="ltr" direction="ltr">
             {t('common.appName')}
           </Text>
         </Stack>
 
-        {/* Step eyebrow + progress bar on ONE row (eyebrow left, bar flex:1). */}
+        {/* Step eyebrow + progress bar on ONE row (eyebrow leading side, bar flex:1).
+            Bar remains direction:ltr universally (SKILL.md §4 rule 6 — progress L→R). */}
         <Stack flexDirection={rowDir} alignItems="center" gap="$3">
           <Text
             color="$primaryLight"
@@ -73,7 +97,9 @@ export default function RegisterScreen() {
             textAlign={align}
             writingDirection={direction}
           >
-            {t('auth.register.step')}
+            {step === 1
+            ? t('auth.register.step')
+            : t('onboarding.stepLabel', { current: 2, total: 2 })}
           </Text>
           <Stack
             flex={1}
@@ -81,16 +107,24 @@ export default function RegisterScreen() {
             borderRadius="$pill"
             backgroundColor="$card"
             overflow="hidden"
-            // Progress fills L→R universally; keep the bar LTR even in RTL (SKILL.md).
             flexDirection="row"
             accessibilityRole="progressbar"
             accessible
-            accessibilityValue={{ min: 1, max: 2, now: 1 }}
-            accessibilityLabel={t('auth.register.progressA11y')}
-            aria-label={t('auth.register.progressA11y')}
+            accessibilityValue={{ min: 1, max: 2, now: step }}
+            accessibilityLabel={
+              step === 1
+                ? t('auth.register.progressA11y')
+                : t('onboarding.stepLabel', { current: 2, total: 2 })
+            }
+            aria-label={
+              step === 1
+                ? t('auth.register.progressA11y')
+                : t('onboarding.stepLabel', { current: 2, total: 2 })
+            }
           >
+            {/* Fill width: 50% step 1, 100% step 2. */}
             <GradientBox
-              width="50%"
+              width={step === 1 ? '50%' : '100%'}
               height={4}
               borderRadius="$pill"
               stops={gradientStops.gradLevelup.colors}
@@ -99,7 +133,7 @@ export default function RegisterScreen() {
           </Stack>
         </Stack>
 
-        {/* Heading + subtitle */}
+        {/* Heading + subtitle — change copy for step 2 */}
         <Stack gap="$2">
           <Text
             color="$fg1"
@@ -111,17 +145,22 @@ export default function RegisterScreen() {
             accessibilityRole="header"
             writingDirection={direction}
           >
-            {t('auth.register.title')}
+            {step === 1 ? t('auth.register.title') : t('onboarding.addChild.title')}
           </Text>
           <Text color="$fg3" fontSize={14} fontFamily="$body" textAlign={align} writingDirection={direction}>
-            {t('auth.register.subtitle')}
+            {step === 1 ? t('auth.register.subtitle') : t('onboarding.addChild.subtitle')}
           </Text>
         </Stack>
 
-        {/* Parent / Guardian only info banner */}
-        <ParentOnlyBanner direction={direction} />
-
-        <RegisterForm />
+        {step === 1 ? (
+          <>
+            {/* Parent / Guardian only info banner (step 1 only). */}
+            <ParentOnlyBanner direction={direction} />
+            <RegisterForm onSuccess={() => setStep(2)} />
+          </>
+        ) : (
+          <AddChildStep direction={direction} onContinue={() => router.replace('/(onboarding)/complete')} />
+        )}
       </Stack>
     </FormScaffold>
   );
@@ -141,13 +180,16 @@ function ParentOnlyBanner({ direction }: { direction: Direction }) {
       padding="$4"
       borderRadius="$card"
       borderWidth={1}
-      borderColor="$purpleSoft"
+      // M-13: purple 30% border ($purpleBorder; not $purpleSoft which is the bg token).
+      borderColor="$purpleBorder"
+      // M-14: $purpleSoft background (rgba(168,85,247,0.18)).
       backgroundColor="$purpleSoft"
     >
       <Text fontSize={22} accessibilityElementsHidden>
         👨‍👩‍👧
       </Text>
       <Stack flex={1} gap="$1">
+        {/* M-15: $purple title color. */}
         <Text
           color="$purple"
           fontSize={13}
@@ -170,5 +212,113 @@ function ParentOnlyBanner({ direction }: { direction: Direction }) {
         </Text>
       </Stack>
     </Stack>
+  );
+}
+
+/**
+ * AddChildStep — step 2 of the register wizard, rendered inline within the
+ * same FormScaffold frame (same width, same visual chrome). Mirrors the
+ * /(onboarding)/add-child screen content: My-Children list driven by
+ * useMyChildren + dashed AddChildCard tile that opens AddChildModal + Continue
+ * button gated on child count ≥ 1. Reuses existing components — no new pattern.
+ */
+function AddChildStep({
+  direction,
+  onContinue,
+}: {
+  direction: Direction;
+  onContinue: () => void;
+}) {
+  const { t } = useTranslation();
+  const { locale } = useLocale();
+  const query = useMyChildren();
+  const [addOpen, setAddOpen] = useState(false);
+
+  const children = query.data ?? [];
+  const childCount = children.length;
+
+  function formatNumber(n: number): string {
+    return new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US').format(n);
+  }
+
+  function childMeta(grade: number | undefined, language: string | undefined): string {
+    const gradePart =
+      grade != null
+        ? t(`onboarding.grade.${grade}`, { defaultValue: `${formatNumber(grade)}` })
+        : '';
+    const langPart = language
+      ? t(`onboarding.language.${language}`, { defaultValue: language })
+      : '';
+    if (gradePart && langPart) return `${gradePart} · ${langPart}`;
+    return gradePart || langPart;
+  }
+
+  return (
+    <>
+      {/* Added-children list */}
+      {childCount > 0 ? (
+        <Stack gap="$3" testID="onboarding-children-list">
+          <Text
+            color="$fg3"
+            fontSize={12}
+            fontWeight="600"
+            fontFamily="$heading"
+            textTransform="uppercase"
+            letterSpacing={0.6}
+            writingDirection={direction}
+          >
+            {t('onboarding.addChild.listLabel', { count: childCount })}
+          </Text>
+          {children.map((child) => (
+            <ChildCard
+              key={child.id}
+              testID={`onboarding-child-card-${child.id}`}
+              variant="status"
+              child={{
+                fullName: child.fullName ?? '',
+                meta: childMeta(child.grade ?? undefined, child.language ?? undefined),
+              }}
+              status="success"
+              direction={direction}
+              accessibilityLabel={child.fullName ?? ''}
+            />
+          ))}
+        </Stack>
+      ) : null}
+
+      {/* Empty-state hint */}
+      {childCount === 0 && !query.isLoading ? (
+        <Text
+          color="$fg3"
+          fontSize={13}
+          fontFamily="$body"
+          textAlign="center"
+          writingDirection={direction}
+        >
+          {t('onboarding.addChild.emptyHint')}
+        </Text>
+      ) : null}
+
+      {/* Dashed "Add a child" tile */}
+      <AddChildCard
+        onPress={() => setAddOpen(true)}
+        testID="onboarding-add-child-tile"
+      />
+
+      {/* Continue — enabled once ≥1 child added */}
+      <Button
+        variant="primary"
+        size="full"
+        accessibilityLabel={t('onboarding.addChild.continue')}
+        disabled={childCount === 0}
+        onPress={onContinue}
+        testID="onboarding-continue"
+      >
+        {t('onboarding.addChild.continue')}
+      </Button>
+
+      {/* AddChildModal — local state; creates the child immediately on confirm */}
+      <AddChildModal visible={addOpen} onClose={() => setAddOpen(false)} />
+    </>
   );
 }
