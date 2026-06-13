@@ -1,5 +1,6 @@
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Services;
+using Learnexia.Modules.Learning.Domain.Services;
 using Learnexia.Modules.Learning.Infrastructure.Behaviors;
 using Learnexia.Modules.Learning.Infrastructure.Persistence;
 using Learnexia.Modules.Learning.Infrastructure.Repository;
@@ -31,6 +32,13 @@ public static class DependencyInjection
 
         // P3-09: Internal mastery seam for P3-08/P3-10/P3-11 in-process consumers.
         services.AddScoped<IMasteryService, MasteryService>();
+
+        // P3-08 Adaptivity Engine options + service.
+        // AdaptivityOptions lives in Domain so the pure engine can reference it without violating
+        // the Application → Domain dependency direction.
+        services.Configure<AdaptivityOptions>(
+            configuration.GetSection(AdaptivityOptions.SectionName));
+        services.AddScoped<IAdaptivityService, AdaptivityService>();
 
         // Unit-of-Work behavior (ADR 0001 §2 + ADR 0002 §2): commit once per ICommand<>, then dispatch
         // domain events AFTER commit. Registered here in Infrastructure (not Application) because it

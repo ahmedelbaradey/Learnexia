@@ -1305,6 +1305,11 @@
         /// </summary>
         public const string GamificationMissionAlreadyInRequestedState = "GamificationMissionAlreadyInRequestedState";
 
+        // ── P3-08 Adaptivity Engine ──────────────────────────────────────────────────────────────────────
+
+        /// <summary>Returned when the adaptive difficulty decision is retrieved successfully.</summary>
+        public const string AdaptivityDecisionRetrievedSuccessfully = "AdaptivityDecisionRetrievedSuccessfully";
+
         // ── P3-09 Student Mastery Engine ─────────────────────────────────────────────────────────────
 
         /// <summary>Returned when all mastery rows for the student are retrieved successfully.</summary>

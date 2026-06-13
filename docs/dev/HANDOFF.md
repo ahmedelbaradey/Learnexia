@@ -65,6 +65,48 @@ These are env vars / secret store — NEVER committed to git:
 - P3-03 (Prompt builder) builds `AiRequest` objects — all DTOs are frozen.
 - Real provider API keys are needed before any runtime call (P3-04+).
 
+## P3-08 — Adjust difficulty adaptively (Adaptivity Engine) — added 2026-06-13 (branch `feat/P3-08-adaptivity-engine`)
+
+Built **P3-08** in the **`Learning` module**. Full pipeline (db-migration → backend-feature → api-tester → security-auditor → reviewer PASS).
+
+**What shipped**
+
+- **`AdaptivitySignals` value object** — 5 input signals (AccuracyPct 0.0–1.0, AvgTimeSeconds ≥0, HintRate 0.0–1.0, RetryCount ≥0, MasteryPct 0.0–1.0) + boolean IsDefault flag (cold-start = true). Pure data contract.
+- **`AdaptivityDecision` value object** — output: TargetDifficulty enum (Easy/Medium/Hard) + IsDefault flag. Immutable result.
+- **`AdaptivityOptions` config** — bound from `Learning:Adaptivity:WeightedScoreBand`: `WeightAccuracy` (0.5 default), `WeightTime` (0.2), `WeightHint` (0.2), `WeightRetry` (0.1), `HighBand` (0.8), `LowBand` (0.5), `ExpectedAttempts` (2), `FatigueSignalWeight` (0.0, optional P3-13 hook). Loaded in `Learning.Domain/Services` layer.
+- **`AdaptivityEngine` domain service** — pure static method `DecideDifficulty(signals, options) → AdaptivityDecision`. Weighted-score algorithm: `score = (accuracy × WeightAccuracy) + (normalizedTime × WeightTime) + ((1 − hint) × WeightHint) + ((1 − normalizedRetry) × WeightRetry)`. Time normalization: max(AvgTimeSeconds, 0) capped at 30s baseline (degradation guard; score floor = 0 if avg ≤ 0). Retry normalization: min(RetryCount, ExpectedAttempts) / ExpectedAttempts. Score-band mapping: score ≥ HighBand → Hard, score ≥ LowBand → Medium, else Easy. Cold-start (IsDefault=true) always → Medium + IsDefault=true. Deterministic, reproducible, monotonic.
+- **`SkillAdaptivityAggregate` read model** — pure logic; computes AdaptivitySignals from student attempt history per skill. Queries: cumulative accuracy, avg time, hint rate, retry count, mastery %. Seeded by the write-path (P3-08 integration handler) to avoid N+1 on dashboard read.
+- **`GetAdaptivitySignalsAsync(studentId, skillId)` repo aggregate** — reads from `StudentSkillMastery` (mastery %) + joins `StudentAnswer` to compute accuracy/time/hints/retries per skill. Scoped to the learner (auth via JWT `studentId`). Returns a fresh `AdaptivitySignals` struct for the skill.
+- **`IAdaptivityService` in-process seam** (Application layer) — single method `GetTargetDifficultyAsync(studentId, skillId, skillSlotId) → AdaptivityDecision`. Wires the repo + engine; caches isDefault check. **Cross-module seam for P3-11** (adaptive quiz selection consumes this). Registered in `DependencyInjection.cs`.
+- **Write-path integration: `CompleteAttemptCommandHandler` P3-08 hook** — after mastery is upserted (P3-09), handler calls `PrewarmAdaptivityCacheAsync` to compute + cache the AdaptivityDecision for each skill touched by the attempt. Fail-soft (no-op on cache miss; logging at Warn).
+- **Inspection endpoint** — `GET /api/Learning/Adaptivity/Decision/{skillId}` (student-scoped, returns `AdaptivityDecisionDto`). Admin-debug endpoint `GET /api/Admin/Learning/Adaptivity/Signals/{studentId}/{skillId}` (returns raw signals + computed score). No write endpoints.
+- **Resource strings** — AR/EN localization for TargetDifficulty display (SharedResourcesKey.cs + .resx files). "سهل" / "Easy", "متوسط" / "Medium", "صعب" / "Hard".
+
+**Load-bearing decisions (reviewer-confirmed)**
+
+- **Weighted-score formula is Q1 algorithm per the brief** — all 4 signals equally critical (non-zero weights); no subject/grade/domain variants (configurable at Global Settings P10-12 later).
+- **Default weights (Accuracy 0.5 / Time 0.2 / Hint 0.2 / Retry 0.1)** — tuned for K–12 learner profiles (accuracy primary, time as tiebreaker, hints/retries as secondary); configurable at runtime via `appsettings.json`.
+- **Cold-start = Medium + IsDefault** — no fallback to difficulty history or random (safest for unknown students).
+- **Time normalization baseline = 30s** — typical quiz-question attempt window; degradation (AvgTimeSeconds ≤ 0) zeroes the time component (never negative).
+- **Retry proxy = RetryCount** — defined as `TotalAnswers − 1` (coarse, not per-skill attempt count). **Tuning follow-up** (not a blocker): P3-08 should ideally read per-skill attempt count when available.
+- **No DB table for adaptivity state** — engine computes on-demand from attempt history (no migration). Reads are O(1) if mastery is cached (P3-09 UpsertMasteryForAttemptAsync pre-seeds it).
+- **P3-13 fatigue signal (optional)** — `FatigueSignalWeight = 0.0` by default. If P3-13 later adds a fatigue factor, the formula can include it: `score += (fatigueLevel × FatigueSignalWeight)`. Deferred.
+- **Cross-module seam:** `IAdaptivityService` is the in-process interface for P3-11 (adaptive quiz selection) + P3-13 (student profile) to query difficulty without direct Learning module calls.
+
+**Test coverage**
+
+- **12 unit tests** (AdaptivityEngineTests.cs: cold-start, high/medium/easy scoring, monotonicity, reproducibility, weight variation, time-normalization edge cases). All green.
+- **8 integration tests** (P3_08_AdaptivityEngine_Tests.cs: repo `GetAdaptivitySignalsAsync`, seam `IAdaptivityService.GetTargetDifficultyAsync`, write-path hook in `CompleteAttemptCommandHandler`, cache warming). All green.
+- **273 unit tests** + 8 integration tests combined, full Learning module suite green.
+
+**Security audit**
+
+- PASS, 0 blocking/high findings. Endpoint auth: student reads are JWT-gated (studentId from token); admin debug endpoint is AdminOnly; no PII in signals/decisions.
+
+**Next story dependency**
+
+- **P3-11** (Serve adaptive quizzes) reads `IAdaptivityService.GetTargetDifficultyAsync(…)` to select question pool difficulty (Easy/Medium/Hard) → question filter/sort.
+- **P3-13** (Build student profile) reads adaptivity signals to compute proficiency bands + time-vs-accuracy trade-off insights.
 ## Phase 7 — Gamification admin overrides (P7-13 backend) — added 2026-06-09 (`feat/phase-7-backend`, in wave PR #106)
 
 Built **P7-13** in the **`Gamification` module** (commit `4b31fbc`). Scope = the story's **5 admin-config areas** (lead-confirmed; NOT per-student XP/hearts/badge-grant — those aren't in the story ACs): **league-tier override** (per student), **badge catalog CRUD** + activate/deactivate, **mission catalog CRUD** + activate/deactivate, **timed-event** write/transition, **streak-freeze grant**. All AdminOnly on `AdminGamificationController` (`api/Admin/Gamification`); each override takes a required `Reason`.

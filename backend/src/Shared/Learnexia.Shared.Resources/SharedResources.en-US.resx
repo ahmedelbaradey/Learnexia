@@ -2102,6 +2102,9 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="GamificationMissionAlreadyInRequestedState" xml:space="preserve">
     <value>The mission definition is already in the requested active state. No change was made.</value>
   </data>
+  <data name="AdaptivityDecisionRetrievedSuccessfully" xml:space="preserve">
+    <value>Adaptive difficulty decision retrieved successfully.</value>
+  </data>
   <data name="MasteryRetrievedSuccessfully" xml:space="preserve">
     <value>Mastery data retrieved successfully.</value>
   </data>

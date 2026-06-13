@@ -191,6 +191,19 @@ public interface ILearningRepository : IGenericRepository
     /// </summary>
     Task<List<Subject>> GetSubjectsForCoverageAsync(int gradeId, CancellationToken ct = default);
 
+    // ── Adaptivity signal aggregation (P3-08) ─────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Aggregates the four FR-AD-1 signals from <c>StudentAnswer</c> rows for the given
+    /// (studentId, skillId) pair. Returns a <see cref="SkillAdaptivityAggregate"/> with:
+    ///   <c>TotalAnswers</c>, <c>CorrectAnswers</c>, <c>AvgTimeSeconds</c>, <c>HintCount</c>,
+    ///   <c>RetryCount</c> (= TotalAnswers - 1, floored at 0, as extra attempts beyond the first).
+    /// Returns a zeroed aggregate (TotalAnswers = 0) when no answers exist — signals cold-start.
+    /// AsNoTracking.
+    /// </summary>
+    Task<SkillAdaptivityAggregate> GetAdaptivitySignalsAsync(
+        int studentId, int skillId, CancellationToken ct = default);
+
     // ── Mastery (P3-09) ──────────────────────────────────────────────────────────────────────────────
 
     /// <summary>

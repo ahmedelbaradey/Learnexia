@@ -2101,6 +2101,9 @@
   <data name="GamificationMissionAlreadyInRequestedState" xml:space="preserve">
     <value>تعريف المهمة في الحالة النشطة المطلوبة بالفعل. لم يتم إجراء أي تغيير.</value>
   </data>
+  <data name="AdaptivityDecisionRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد قرار مستوى الصعوبة التكيفي بنجاح.</value>
+  </data>
   <data name="MasteryRetrievedSuccessfully" xml:space="preserve">
     <value>تم استرداد بيانات الإتقان بنجاح.</value>
   </data>
