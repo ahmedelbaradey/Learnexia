@@ -1,4 +1,5 @@
 using Learnexia.Modules.Learning.Application.Abstractions;
+using Learnexia.Modules.Learning.Application.Services;
 using Learnexia.Modules.Learning.Infrastructure.Behaviors;
 using Learnexia.Modules.Learning.Infrastructure.Persistence;
 using Learnexia.Modules.Learning.Infrastructure.Repository;
@@ -27,6 +28,9 @@ public static class DependencyInjection
         services.AddScoped<ILearningRepository, LearningRepository>();
         services.AddScoped<ILearningRepositoryManager, LearningRepositoryManager>();
         services.AddScoped<ILearningServiceManager, LearningServiceManager>();
+
+        // P3-09: Internal mastery seam for P3-08/P3-10/P3-11 in-process consumers.
+        services.AddScoped<IMasteryService, MasteryService>();
 
         // Unit-of-Work behavior (ADR 0001 §2 + ADR 0002 §2): commit once per ICommand<>, then dispatch
         // domain events AFTER commit. Registered here in Infrastructure (not Application) because it

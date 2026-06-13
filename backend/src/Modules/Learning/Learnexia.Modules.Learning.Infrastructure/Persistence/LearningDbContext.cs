@@ -47,6 +47,9 @@ public class LearningDbContext : DbContext
     // P7-05: Publish-time version snapshots
     public DbSet<ContentVersion> ContentVersions => Set<ContentVersion>();
 
+    // P3-09: Per-(student, skill) persisted mastery (Student Modeling Engine)
+    public DbSet<StudentSkillMastery> StudentSkillMasteries => Set<StudentSkillMastery>();
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 

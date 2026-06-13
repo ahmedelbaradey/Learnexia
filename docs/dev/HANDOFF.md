@@ -25,6 +25,46 @@
 > 2026-06-12: **Phase 10 — Payment, Billing & Credits task breakdown — PLANNING ONLY, all 🔲 (same branch as the AI-phase breakdown).** Authored 12 user stories (`user-stories/Phase-10-Payments-Billing/P10-01..12` — incl. P10-12 Global Settings) + briefs + plans + task files (`tasks/Backend/Phase-10-Payments-Billing/`, `tasks/Frontend/student-app/Phase-10-Payments-Billing/` parent billing + child ⚡ energy meter, `tasks/Frontend/admin-dashboard/Phase-10-Payments-Billing/P10-11-FE` config). **The AI credit economy ("⚡ طاقة المساعد") + monetization** lifted out of the AI-Helper MVP (which keeps only a minimal daily-request cap). **Parent-driven: ALL purchasing/billing/payment is parent-side; the child only spends energy + sees a read-only meter (P10-10).** New **`Billing`** module owns the credit ledger (dual pool: monthly **granted**-expire vs **purchased**-persist), subscriptions, payments, config; spend reaches the AI Gateway via `Shared.Contracts` **`ICreditSpendService`** (charge-on-delivery, cache-hits charged same, no charge on refuse/error). **Lead decisions still open before build:** new `Billing` module sign-off, **payment provider Paymob vs Fawry** (P10-06/07), refund clawback policy (P10-09), EGP/VAT receipt fields (P10-08), Hangfire for grant/dunning jobs. **P10-03 (spend) is hard-blocked on the AI Helper cluster (P3-01..06) merging first.** Per-action costs: hint=1, explain-mistake=3, deep-explanation=5, practice-generation=5 (config-driven, P10-11). The AI-phase decisions doc (`docs/decisions-needed-ai-phase.md`) is now RESOLVED.
 > 2026-06-13: **AI-phase + Phase-10 planning — FINAL state, renumber + refinements.** The complete work is on **PR #124 (`docs/ai-phase-task-breakdown → main`)** — PR #122 only carried the *first* commit to `qc` (merge it via #124, not `qc`). Updates since the 06-12 notes: **(1) Renumber Payments/Billing/Credits Phase 9 → Phase 10** — `main` already owns **Phase 9 = Notifications**; ours moved to `Phase-10-Payments-Billing/` (`P10-01..12`) to avoid an ID/folder clash. **At merge to `main`, keep BOTH** the Phase-9-Notifications and Phase-10-Payments rows in the two READMEs (Sprint→Phase tables conflict after Phase 8). **(2) Unified `ai.AiResponseCache`** (Type: Explain/Hint/WhyWrong/Practice; `ReviewStatus`/`Confidence`/`PromptVersion`/`CurriculumVersion`/`QuestionId`) replaces the separate Concept/Hint caches — **WhyWrong is now cacheable** by `(QuestionId, NormalizedWrongAnswer, Language, AgeBand, …)`; **practice = rotating pool N=5** (never 1:1, no answer-key leak); **runtime review gate** (only `Approved` entries amplified; auto-approve ≥ **0.85** confidence else `PendingReview`); **subject-aware Arabic normalization** (strip tashkeel for Math/Science, preserve for the Arabic subject). WhyWrong cap = 50/question (LRU). **(3) Credit economy v2:** Free **100/mo + 10/day**, Premium **5000/mo + 250/day**, pack **1000 / $5**; charge-on-delivery, cache-hit charged same, refuse/error free. **(4) Subscriptions:** monthly **199 EGP** + **annual 1990 EGP** (`BillingPeriod` dimension); **web checkout only — NO native IAP** (App/Play Store policy review gates native launch). **(5) Global Settings (P10-12):** all economy values + cache thresholds runtime-tunable via `IGlobalSettingsProvider` (DB-backed, Redis-cached, audited; code bootstrap defaults; `BootstrapDefaultGlobalSettingsProvider` ships in Phase-4 via `P3-01-BE-15`) — 17 managed keys. **(6) Primary cost lever = app-level Redis response cache** (hit = $0 tokens); provider prompt-cache is secondary. New brief `docs/briefs/ai-eval-gate.md`. **Success metrics to track (NOT AI cost):** Free→Paid conversion, CAC, retention, avg subscription months. Still all 🔲 planning. *(Separately: PR #123 `chore/agent-model-tuning → main` — designer→sonnet, reviewer+security-auditor→opus + the carryover lead brief.)*
 
+## P3-01 — AI Gateway seam — added 2026-06-13 (branch `feat/P3-01-ai-gateway`)
+
+Built the full AI gateway infrastructure seam (BE-1 through BE-9). No HTTP endpoint ships in this story; the gateway is an in-process DI seam for P3-02/P3-03/P3-04+.
+
+### What shipped
+
+- **`Shared.Contracts/Ai/`** — frozen public contract: `IAiGateway`, `AiRequest`, `AiResult`, `AiError`, `AiErrorKind`, `AiUsage`, `AiChunk`, `AiTaskKind`, `AiModelTier`, `AiMessage`. P3-02/P3-03 can wire against these immediately.
+- **New `Ai` module** (4 projects): `Learnexia.Modules.Ai.Domain`, `.Application`, `.Infrastructure`, `.Api`. Schema = `ai` (no DB table in P3-01 — log-only).
+- **`AiGatewayOptions`** in `Ai.Application.Options`, bound from `Ai:Gateway`. Keys (RetryCount=3, TimeoutSeconds=30, RetryBackoffSeconds=1.0).
+- **`AiModelRouter`** (Application layer) — pure deterministic mapping. Default routing table:
+  - `CheckAnswer`, `Classify`, `ShortTask` → `Claude / claude-haiku-4-5`
+  - `Explain`, `Hint`, `Simplify`, `QuestionGeneration` → `Claude / claude-sonnet-4-6`
+  - `AnalyzeDiagram`, `HardReasoning`, `ContentQa` → `Claude / claude-opus-4-8`
+  - All overridable from config at `Ai:Gateway:Models:TaskKind` or `Ai:Gateway:Models:TaskKind:Tier`.
+- **`ClaudeProvider`** — thin typed HttpClient wrapper to Anthropic Messages API. Supports `cache_control` for system prompt caching. Named client `"claude"`.
+- **`OpenAiProvider`** — thin typed HttpClient wrapper to OpenAI Chat Completions API. Named client `"openai"`. Proves abstraction is complete.
+- **`AiGateway`** facade — bounded retry + exponential backoff + hard timeout CTS + typed error translation. Never throws to caller. Logs usage at Debug (no PII, no prompt/response body).
+- **29 unit tests** (router: U01–U10 + arch: ARCH-01/02/03) — all GREEN.
+- Build: `dotnet build Learnexia.Modular.sln` — **0 errors**.
+
+### Secret config key paths (required before any runtime AI call)
+
+These are env vars / secret store — NEVER committed to git:
+- `Ai__Providers__Claude__ApiKey` → your Anthropic API key
+- `Ai__Providers__OpenAi__ApiKey` → your OpenAI API key
+
+### Load-bearing decisions
+
+- **Q5: log-only usage** — no `ai.AiUsageLogs` DB table. Deferred to P7-11. No migration in P3-01.
+- **Q6: streaming** — `StreamAsync` method signature frozen. Falls back to single-shot in P3-01. Real SSE streaming is P3-04's responsibility.
+- **Q7: thin HttpClient wrapper** — no vendor SDK packages. `Microsoft.Extensions.Http.Resilience` is in `Directory.Packages.props`.
+- `AiGatewayOptions` lives in `Application` layer (not Infrastructure) because `AiModelRouter` in Application needs it — avoids a circular dependency.
+- `ILoggerManager` exposes `LogDebug`, `LogWarn`, `LogInfo`, and `LogError(Exception?, string)`. In the Ai module: usage telemetry is logged at Debug (`LogUsage`), transient retries and HTTP-status diagnostics are logged at Warn, and `LogError` is reserved for unexpected failures with the actual exception passed (never `null`).
+
+### What P3-02 / P3-03 can do now
+
+- P3-02 (Safety layer) wraps `IAiGateway` — register a decorator over `IAiGateway` in `Shared.Contracts` or a pass-through seam.
+- P3-03 (Prompt builder) builds `AiRequest` objects — all DTOs are frozen.
+- Real provider API keys are needed before any runtime call (P3-04+).
+
 ## Phase 7 — Gamification admin overrides (P7-13 backend) — added 2026-06-09 (`feat/phase-7-backend`, in wave PR #106)
 
 Built **P7-13** in the **`Gamification` module** (commit `4b31fbc`). Scope = the story's **5 admin-config areas** (lead-confirmed; NOT per-student XP/hearts/badge-grant — those aren't in the story ACs): **league-tier override** (per student), **badge catalog CRUD** + activate/deactivate, **mission catalog CRUD** + activate/deactivate, **timed-event** write/transition, **streak-freeze grant**. All AdminOnly on `AdminGamificationController` (`api/Admin/Gamification`); each override takes a required `Reason`.
@@ -221,6 +261,42 @@ The demo **Catalog** module (Products/Categories + the `DEMO_PgvectorProof` migr
 
 - **Reference module:** Catalog was the documented canonical reference. There is no named replacement — mirror an existing module (e.g. **Learning**) for new backend work.
 - **pgvector:** no remaining module needs the `vector` extension (see the pgvector note below) — the image stays pinned only to match staging/prod.
+
+
+## P3-09 — Track per-skill mastery / Student Modeling Engine (backend) — added 2026-06-13 (`feat/P3-09-student-mastery-engine`)
+
+Built **P3-09** in the **`Learning` module** (commit pending); foundation of the adaptivity cluster. Full pipeline complete (db-migration → backend-feature → api-tester → security-auditor → reviewer PASS).
+
+**What shipped:**
+- **`StudentSkillMastery` entity + EF config** — per-student per-skill row (natural key `StudentId + SkillId`) with:
+  - `MasteryStatus` enum (Novice / Learning / Proficient / Mastered) — read-path state machine
+  - `CumulativeAccuracy` (0.0–1.0) — **same formula as P2-04** (no divergence): `CorrectCount / TotalCount`
+  - `MasteryThreshold` hardcoded per-status; status Mastered = accuracy ≥ threshold; status NeedsReview = floor 50% (lead-confirmed range guard)
+  - `LastReviewedAtUtc` / `ReviewIntervalDays` / `NextReviewDueAt` / `RepetitionNumber` (SR columns reserved for P3-10; NOT SET in P3-09, initialized null/0, no logic consumes them yet)
+  - `CreatedAtUtc` / `UpdatedAtUtc` — standard audit trail
+- **`MasteryEngine` domain service** — **pure static** logic to compute mastery status from cumulative accuracy:
+  - `CalculateMasteryStatus(accuracy: decimal): MasteryStatus` — encodes the threshold table (Novice: <threshold, Learning: threshold–(threshold+0.3), Proficient: (threshold+0.3)–threshold+mastered_floor, Mastered: ≥mastered_floor OR ≥ custom threshold); floor of NeedsReview = 50% (lead-confirmed)
+  - **10 unit tests** (thresholds, floor behavior, boundary cases)
+- **`ILearningRepository` seam methods** — UpsertStudentSkillMasteryAsync (atomic insert/update, per-skill collection), GetStudentSkillMasteryAsync (by `StudentId`), GetStudentMasteryBySkillAsync (by `StudentId + SkillId`)
+- **`LearningRepository` implementation** — EF Core `Upsert` on `StudentSkillMastery` table; idempotent via natural key
+- **`MasteryService` + `IMasteryService` in-process seam** — wires the repo + engine for P3-08/10/11/13 to query mastery without cross-module FK; single-file service, DI injected in `DependencyInjection.cs`
+- **Mastery read endpoints** — `GET /api/Learning/Mastery/Student` (all skills for the student), `GET /api/Learning/Mastery/Skill/{skillId}` (per-skill detail); no mutation endpoints in this story
+- **Write-path integration: `CompleteAttemptCommandHandler` P3-09 hook** — after the attempt is marked Completed, handler calls `UpsertMasteryForAttemptAsync` to aggregate answers by `SkillId` + upsert per-skill mastery rows. Both the attempt update AND mastery upserts are **atomic within the ambient UnitOfWorkBehavior transaction** (ADR 0001 escape hatch: the behavior itself IS the explicit transaction wrapping both writes). No nested SaveChangesAsync; atomicity is guaranteed at the DB via Postgres transaction.
+- **Migration `20260613125111_AddStudentSkillMasteryTable`** — creates table + unique index on `(StudentId, SkillId)` + foreign keys + a DB-level CHECK for valid MasteryStatus enum values
+- **Resource strings** — AR/EN localization for MasteryStatus display + error messages (SharedResourcesKey.cs + .resx files)
+
+**Load-bearing decisions (reviewer-confirmed):**
+- **Cumulative accuracy formula:** unchanged from P2-04 (no variant rules per-subject/difficulty)
+- **Per-skill `MasteryThreshold`** — hardcoded in `MasteryEngine` (config-driven deferral flagged for P5-02 / P10-12 if needed)
+- **NeedsReview floor = 50%** — fixed lower bound; status transitions happen on accuracy moves
+- **Write-path atomicity (transaction boundary):** `UnitOfWorkBehavior` wraps the entire `CompleteAttemptCommandHandler`, opening a single ambient transaction before the handler runs and committing after `SaveChangesAsync`. Both the attempt status update (Step 8) and the mastery upsert (Step 8b) are staged within that **same transaction** — never separate calls. This is the ADR 0001 escape hatch for multi-entity atomicity: "if you need atomic multi-writes, open an explicit transaction" — here the UoW behavior IS that explicit transaction. **Note:** CLAUDE.md rule #3 ("No Unit of Work" / "GenericRepository commits per call") is stale for new modules using `UnitOfWorkBehavior`; the behavior is the transaction seam.
+- **SR columns (ReviewIntervalDays / NextReviewDueAt / RepetitionNumber)** — reserved in the schema for P3-10 spaced-repetition scheduling. **No second migration needed**; the columns are NULL/0 and unused in this story.
+- **Cross-module seam:** `IMasteryService` is the in-process interface for P3-08 (adaptive difficulty), P3-10 (spaced-rep), P3-11 (adaptive quizzes), P3-13 (student profile) to read mastery without direct queries. P5-02 (parent weak-areas detection) is **deferred** to a `Shared.Contracts` seam (not a direct Learning module call) when it merges.
+
+**Test coverage:** 246 unit tests (including 10 MasteryEngine) + 11 integration tests (P3_09_StudentMastery_Tests.cs: upsert + reads + concurrent writes). All green. Security audit: PASS, 0 blocking/high findings.
+
+**Next story dependency:** P3-08 (Adjust difficulty adaptively) reads mastery via `IMasteryService` to select question pool; P3-10 (Schedule spaced-repetition) uses SR columns (reserved but null here) to compute review due-dates.
+
 
 ## P4-11 — Streak freeze + timed events + weekly challenges (BE, commit + PR ready)
 

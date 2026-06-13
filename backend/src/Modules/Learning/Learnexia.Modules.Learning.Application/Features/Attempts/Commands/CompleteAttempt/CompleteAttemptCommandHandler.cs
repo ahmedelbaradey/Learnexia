@@ -3,11 +3,13 @@ using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Features.Attempts.Dtos;
 using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
+using Learnexia.Modules.Learning.Domain.Services;
 using Learnexia.Shared.Contracts.Learning;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -24,6 +26,23 @@ namespace Learnexia.Modules.Learning.Application.Features.Attempts.Commands.Comp
 /// BusinessValidation: if the attempt is Abandoned, the transition is rejected.
 ///
 /// StudentId is resolved from the authenticated JWT — NEVER from the client.
+///
+/// ── P3-09 MASTERY UPSERT (transaction boundary) ──────────────────────────────────────────────
+/// After the attempt is marked Completed, this handler also upserts <c>StudentSkillMastery</c>
+/// rows for every skill touched by the attempt's answers (per-distinct-SkillId aggregation).
+///
+/// TRANSACTION BOUNDARY (ADR 0001 escape hatch — explicit atomicity):
+/// The <c>UnitOfWorkBehavior</c> wraps this entire handler in a single ambient EF Core transaction
+/// (opened via BeginTransactionAsync before the handler runs, committed after SaveChangesAsync).
+/// Both the attempt status update AND the mastery upserts are staged within that SAME transaction —
+/// they commit atomically together. This is the sanctioned escape hatch from ADR 0001 §2:
+/// "if you need atomic multi-writes, open an explicit transaction" — here the UoW behavior IS that
+/// explicit transaction. A student will never see a Completed attempt with stale mastery (Q4).
+///
+/// PostgreSQL/Npgsql note: nested transactions (SAVEPOINT) are supported, but we intentionally
+/// do NOT open a nested transaction here — we rely on the ambient UoW transaction to wrap everything.
+/// ────────────────────────────────────────────────────────────────────────────────────────────────
+///
 /// UnitOfWorkBehavior owns the commit — do NOT call SaveChangesAsync here.
 ///
 /// Concurrency note: a race between a final SubmitAnswer and this CompleteAttempt arriving
@@ -113,6 +132,11 @@ public class CompleteAttemptCommandHandler : BaseResponseHandler,
             // Step 8 — Stage update. UnitOfWorkBehavior commits atomically; do NOT call SaveChangesAsync.
             await _repository.Learning.UpdateAsync(attempt);
 
+            // Step 8b — P3-09: Upsert mastery rows for every skill touched by this attempt.
+            // Both this upsert and the attempt update above are staged within the SAME ambient
+            // UoW transaction (see class-level doc for the full transaction boundary explanation).
+            await UpsertMasteryForAttemptAsync(attempt.StudentId, answers, cancellationToken);
+
             // Publish LessonCompletedIntegrationEvent (Option B — direct publish per lead decision).
             // Lesson.SkillId is nullable; the integration event requires SkillId, so skip when absent.
             // TODO P3-09: track no-skill lesson completions separately.
@@ -160,6 +184,105 @@ public class CompleteAttemptCommandHandler : BaseResponseHandler,
             // Log server-side; do NOT echo ex.Message to the client.
             _logger.LogError(ex, "Error in CompleteAttemptCommand");
             return ServerError<AttemptSummaryDto>();
+        }
+    }
+
+    /// <summary>
+    /// P3-09 — Aggregates per-skill correct/total counts from the attempt's answers,
+    /// calls MasteryEngine.Compute for each distinct skill, and upserts StudentSkillMastery rows.
+    ///
+    /// This method runs INSIDE the ambient UoW transaction opened by UnitOfWorkBehavior — all staged
+    /// changes are committed atomically with the attempt status update (see class-level doc).
+    ///
+    /// NOTE: <paramref name="answers"/> does NOT have the Question navigation loaded — SkillId values
+    /// are fetched from the DB via a JOIN on QuizQuestion (step A below).
+    /// </summary>
+    private async Task UpsertMasteryForAttemptAsync(
+        int studentId,
+        IList<StudentAnswer> answers,
+        CancellationToken cancellationToken)
+    {
+        if (answers.Count == 0)
+            return;
+
+        var questionIds = answers.Select(a => a.QuestionId).Distinct().ToList();
+
+        // Step A — Fetch the SkillId for each question in this attempt (batch, one query).
+        // Questions with null SkillId are excluded (no skill attribution → no mastery update).
+        var questionSkillMap = await _repository.Learning
+            .GetByCondition<QuizQuestion>(qq => questionIds.Contains(qq.Id) && qq.SkillId.HasValue, trackChanges: false)
+            .Select(qq => new { qq.Id, SkillId = qq.SkillId!.Value })
+            .ToListAsync(cancellationToken);
+
+        if (questionSkillMap.Count == 0)
+        {
+            _logger.LogWarn("P3-09: No skill-tagged questions found for studentId=" + studentId + "; mastery not updated.");
+            return;
+        }
+
+        var skillIdByQuestionId = questionSkillMap.ToDictionary(q => q.Id, q => q.SkillId);
+
+        // Step B — Aggregate per-skill correct/total counts (in memory — small list).
+        var perSkillAggregates = answers
+            .Where(a => skillIdByQuestionId.ContainsKey(a.QuestionId))
+            .GroupBy(a => skillIdByQuestionId[a.QuestionId])
+            .Select(g => new { SkillId = g.Key, Total = g.Count(), Correct = g.Count(a => a.IsCorrect) })
+            .ToList();
+
+        var skillIds = perSkillAggregates.Select(a => a.SkillId).ToList();
+
+        // Step C — Fetch existing mastery rows (no tracking) and per-skill MasteryThreshold.
+        var existingRows = await _repository.Learning
+            .GetSkillMasteryRowsAsync(studentId, skillIds.AsReadOnly(), cancellationToken);
+        var existingBySkillId = existingRows.ToDictionary(m => m.SkillId);
+
+        var skills = await _repository.Learning
+            .GetByCondition<Skill>(s => skillIds.Contains(s.Id), trackChanges: false)
+            .Select(s => new { s.Id, s.MasteryThreshold })
+            .ToListAsync(cancellationToken);
+        var thresholdBySkillId = skills.ToDictionary(s => s.Id, s => s.MasteryThreshold);
+
+        // Step D — For each skill, compute mastery and upsert.
+        var now = DateTime.UtcNow;
+        foreach (var agg in perSkillAggregates)
+        {
+            // Threshold: use per-skill value if available; fall back to 80 (FR-AD-3 default).
+            var threshold = thresholdBySkillId.TryGetValue(agg.SkillId, out var t) ? t : 80;
+
+            var (masteryPercentage, status) = MasteryEngine.Compute(agg.Total, agg.Correct, threshold);
+
+            if (existingBySkillId.TryGetValue(agg.SkillId, out var existing))
+            {
+                // Update path: carry forward SR columns (P3-10 reserved) unchanged.
+                var updated = new StudentSkillMastery
+                {
+                    Id                 = existing.Id,
+                    StudentId          = studentId,
+                    SkillId            = agg.SkillId,
+                    MasteryPercentage  = masteryPercentage,
+                    Status             = status,
+                    AttemptsCount      = existing.AttemptsCount + 1,
+                    LastPracticedAt    = now,
+                    ReviewIntervalDays = existing.ReviewIntervalDays,
+                    NextReviewDueAt    = existing.NextReviewDueAt,
+                    RepetitionNumber   = existing.RepetitionNumber,
+                };
+                await _repository.Learning.UpsertStudentSkillMasteryAsync(updated, cancellationToken);
+            }
+            else
+            {
+                // Insert path: SR columns default to 0 / null per entity defaults (P3-10 reserved).
+                var inserted = new StudentSkillMastery
+                {
+                    StudentId          = studentId,
+                    SkillId            = agg.SkillId,
+                    MasteryPercentage  = masteryPercentage,
+                    Status             = status,
+                    AttemptsCount      = 1,
+                    LastPracticedAt    = now,
+                };
+                await _repository.Learning.UpsertStudentSkillMasteryAsync(inserted, cancellationToken);
+            }
         }
     }
 
