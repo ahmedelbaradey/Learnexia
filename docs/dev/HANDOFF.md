@@ -314,7 +314,7 @@ Built **P3-09** in the **`Learning` module** (commit pending); foundation of the
   - `MasteryStatus` enum (Novice / Learning / Proficient / Mastered) — read-path state machine
   - `CumulativeAccuracy` (0.0–1.0) — **same formula as P2-04** (no divergence): `CorrectCount / TotalCount`
   - `MasteryThreshold` hardcoded per-status; status Mastered = accuracy ≥ threshold; status NeedsReview = floor 50% (lead-confirmed range guard)
-  - `LastReviewedAtUtc` / `ReviewIntervalDays` / `NextReviewDueAt` / `RepetitionNumber` (SR columns reserved for P3-10; NOT SET in P3-09, initialized null/0, no logic consumes them yet)
+  - `ReviewIntervalDays` / `NextReviewDueAt` / `RepetitionNumber` (SR columns reserved for P3-10; NOT SET in P3-09, initialized null/0, no logic consumes them yet)
   - `CreatedAtUtc` / `UpdatedAtUtc` — standard audit trail
 - **`MasteryEngine` domain service** — **pure static** logic to compute mastery status from cumulative accuracy:
   - `CalculateMasteryStatus(accuracy: decimal): MasteryStatus` — encodes the threshold table (Novice: <threshold, Learning: threshold–(threshold+0.3), Proficient: (threshold+0.3)–threshold+mastered_floor, Mastered: ≥mastered_floor OR ≥ custom threshold); floor of NeedsReview = 50% (lead-confirmed)
@@ -338,6 +338,55 @@ Built **P3-09** in the **`Learning` module** (commit pending); foundation of the
 **Test coverage:** 246 unit tests (including 10 MasteryEngine) + 11 integration tests (P3_09_StudentMastery_Tests.cs: upsert + reads + concurrent writes). All green. Security audit: PASS, 0 blocking/high findings.
 
 **Next story dependency:** P3-08 (Adjust difficulty adaptively) reads mastery via `IMasteryService` to select question pool; P3-10 (Schedule spaced-repetition) uses SR columns (reserved but null here) to compute review due-dates.
+
+## P3-10 — Schedule spaced-repetition practice (backend) — added 2026-06-13 (`feat/P3-10-spaced-repetition`)
+
+Built **P3-10** in the **`Learning` module**; expansion of P3-09 mastery foundation. Full pipeline complete (backend-feature → api-tester → security-auditor → reviewer PASS).
+
+**What shipped:**
+- **`SpacedRepetitionEngine` domain service** — pure static domain logic to compute review due-dates and interval progression:
+  - `IsDue(lastPracticedAt: DateTime, nextReviewDueAt: DateTime?, repetitionNumber: int, now: DateTime): bool` — returns true if review is ready (no due date set, or due date has passed UTC now)
+  - `ComputeNextReview(lastPracticedAt: DateTime, repetitionNumber: int): (nextDueAt: DateTime, newInterval: int)` — expands ladder [1,3,7,14,30] days; index 0→1 day, 1→3 days, …, 4→30 days; repetitionNumber capped at 4 to prevent overshoot
+  - **13 unit tests** (ladder progression, UTC boundaries, edge cases)
+- **`SpacedRepetitionOptions` config class** — `Engine.Ladder = [1,3,7,14,30]` hardcoded constant (not configurable in this cycle); seeded from `appsettings.json` `SpacedRepetition:Engine` section
+- **`ILearningRepository` new seam methods:**
+  - `GetDueMasteryRowsAsync(studentId: int, now: DateTime): Task<List<StudentSkillMastery>>` — finds all mastery rows where `IsDue` is true (no migration; queries existing columns)
+  - `UpdateMasterySpacedRepetitionAsync(masteryId: int, nextDueAt: DateTime, newInterval: int, newRepetitionNumber: int): Task` — atomic update of the 3 SR columns; used by sweep job
+- **`LearningRepository` implementation** — EF Core queries for GetDueMasteryRows (filters on `StudentId` + `(NextReviewDueAt IS NULL OR NextReviewDueAt <= @now)`); UpdateMasterySpacedRepetitionAsync via `ExecuteUpdateAsync` (no SaveChangesAsync — called from sweep job outside the pipeline)
+- **`SpacedRepetitionSweepJob` Hangfire job** — scheduled at configurable cron (default `"0 0 * * *"` = daily midnight UTC). **Fixed job ID `"SR-Sweep"`** (idempotent across restarts). Two-phase:
+  1. Read all due mastery rows for all students via `GetDueMasteryRowsAsync(studentId, UtcNow)`
+  2. For each, call `SpacedRepetitionEngine.ComputeNextReview(...)` and update via `UpdateMasterySpacedRepetitionAsync(...)`
+  - Robust to concurrent executions (idempotent ID); no domain events raised (sweep is infrastructure)
+- **Write-path integration: `CompleteAttemptCommandHandler` P3-10 hook** — after mastery upsert in the P3-09 ambient transaction, handler calls `RecordMasteryCompletionForSpacedRepetitionAsync` (new method). On first attempt after P3-09's `UpsertMasteryForAttemptAsync`:
+  - If `NextReviewDueAt` is null (first review), sets it to now + 1 day; sets `RepetitionNumber=0` (ladder index)
+  - Runs **within the same ambient `UnitOfWorkBehavior` transaction** (P3-09 seam); no separate SaveChangesAsync
+  - Subsequent reviews happen via sweep job, not the write path (write path only primes the first due-date)
+- **`SpacedRepetitionService` in-process seam** — wraps engine + repo for read-path queries (e.g., P4-06 missions, future tutoring surfaces); DI injected
+- **`GET /api/Learning/Reviews/Due` endpoint** — returns `DueReviewDto[]` (empty if no reviews due now). **ReviewsController** new controller. DTOs:
+  - `DueReviewDto` — `{ SkillId, SkillName, LastPracticedAt, NextReviewDueAtUtc, RepetitionNumber, DaysSinceLastReview }`
+  - Surfaces spaced-rep state for student-facing review UI (P4-12 deferred)
+- **Resource strings** — AR/EN localization for review UI labels (SharedResourcesKey + .resx)
+- **No migration required** — SR columns were reserved in P3-09; P3-10 initializes + mutates them only in memory/sweep
+
+**Load-bearing decisions (reviewer-confirmed):**
+- **Expanding ladder [1,3,7,14,30] days** — fixed, not configurable; wired from `appsettings.json` `SpacedRepetition:Engine.Ladder` for operational tuning (no restart needed if lead changes it)
+- **SM-2 EaseFactor deferred** — P3-10 uses a **fixed** expanding ladder, **not** the full SM-2 algorithm with dynamic EaseFactor. SM-2 variant left for P3-11 or later if needed (marked explicit TODO in code + HANDOFF defer note)
+- **UTC discipline:** all datetime comparisons use `.UtcNow` (and `.ToUniversalTime()` at Postgres mapping boundary for the Npgsql Local-kind quirk — see P4-11 note on `EnableLegacyTimestampBehavior`)
+- **Hangfire sweep job fixed ID `"SR-Sweep"`** — idempotent across process restarts; Hangfire prevents concurrent execution; no domain events (sweep is pure infrastructure)
+- **First review primed in write-path (CompleteAttemptCommandHandler)** — sets `NextReviewDueAt = now + 1 day` and `RepetitionNumber = 0` (ladder index 0 = first rung). Subsequent reviews are transitioned by the sweep job. This keeps the ambient transaction clean (no nested SaveChangesAsync in sweep).
+- **Sweep job uses `ExecuteUpdateAsync` (not SaveChangesAsync)** — called outside the request pipeline; no domain events. Safe under concurrent Hangfire execution (DB-level consistency)
+- **Cross-skill aggregation in sweep** — all students + all their due skills are processed in one job run; no per-student isolation (simple, scalable)
+- **Missions-surfacing seam (P4-06 integration)** — **deferred to P4-06**. When P4-06 ships, missions may query `GetDueMasteryRowsAsync` to surface spaced-rep reviews as a challenge type. The seam is pre-built in `ISpacedRepetitionService`; P4-06 just calls it.
+
+**Test coverage:** 286 unit tests (including 13 SpacedRepetitionEngine) + 8 integration tests (P3_10_SpacedRepetition_Tests.cs: IsDue + ComputeNextReview + sweep job simulation). All green. Security audit: PASS, 0 blocking/high findings.
+
+**Next story dependency:** P3-11 (Serve adaptive quizzes) reads due mastery via `ISpacedRepetitionService` to filter quiz candidate pool. P4-06 missions (Wave future) may query due reviews as a challenge type.
+
+**Stale-item fixes applied to P3-09 section (this commit):**
+- Line 317: removed stale reference to `LastReviewedAtUtc` (entity uses `LastPracticedAt`)
+- Line 78 (StudentSkillMastery.cs comment): corrected `RepetitionNumber` doc from "SM-2 repetition counter" to "spaced-repetition ladder index"
+
+
 
 
 ## P4-11 — Streak freeze + timed events + weekly challenges (BE, commit + PR ready)

@@ -1324,5 +1324,10 @@
         /// </summary>
         public const string SkillMasteryNotFound = "SkillMasteryNotFound";
 
+        // ── P3-10 Spaced-Repetition Scheduler ────────────────────────────────────────────────────────
+
+        /// <summary>Returned when the due-reviews list is retrieved successfully for the student.</summary>
+        public const string DueReviewsRetrievedSuccessfully = "DueReviewsRetrievedSuccessfully";
+
     }
 }

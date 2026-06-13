@@ -537,4 +537,45 @@ public class LearningRepository : ILearningRepository
         => await RepositoryContext.StudentSkillMasteries
             .AsNoTracking()
             .FirstOrDefaultAsync(m => m.StudentId == studentId && m.SkillId == skillId, ct);
+
+    // ── Spaced Repetition (P3-10) ─────────────────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<StudentSkillMastery>> GetDueMasteryRowsAsync(
+        DateTime utcNow, CancellationToken ct = default)
+    {
+        // UTC discipline (HANDOFF P2-08 quirk): Npgsql returns timestamptz columns with
+        // Kind=Local even when UTC was stored. We normalize by specifying the UTC comparison
+        // directly in the query so the DB-side comparison is always correct.
+        // The WHERE clause mirrors SpacedRepetitionEngine.IsDue:
+        //   Status == NeedsReview  OR  (Status == Mastered AND NextReviewDueAt <= utcNow)
+        var needsReview = (int)MasteryStatus.NeedsReview;
+        var mastered    = (int)MasteryStatus.Mastered;
+
+        return await RepositoryContext.StudentSkillMasteries
+            .AsNoTracking()
+            .Include(m => m.Skill)
+            .Where(m => (int)m.Status == needsReview
+                     || ((int)m.Status == mastered
+                         && m.NextReviewDueAt.HasValue
+                         && m.NextReviewDueAt.Value <= utcNow))
+            .ToListAsync(ct);
+    }
+
+    /// <inheritdoc/>
+    public async Task UpdateSpacedRepetitionFieldsAsync(
+        int id, int intervalDays, int repetitionNumber, DateTime nextDueAt, CancellationToken ct = default)
+    {
+        // Targeted UPDATE — touches only the three SR columns.
+        // Uses ExecuteUpdateAsync (EF 7+ bulk update) to avoid a full entity load.
+        // This method commits immediately because the sweep job runs outside any UoW pipeline.
+        // UTC discipline: nextDueAt must be UTC-kind before being stored (timestamptz column).
+        await RepositoryContext.StudentSkillMasteries
+            .Where(m => m.Id == id)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(m => m.ReviewIntervalDays, intervalDays)
+                .SetProperty(m => m.RepetitionNumber,   repetitionNumber)
+                .SetProperty(m => m.NextReviewDueAt,    nextDueAt),
+                ct);
+    }
 }
