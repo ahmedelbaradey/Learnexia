@@ -794,3 +794,43 @@ AI evaluation dataset gate.
 - Default provider **Claude**, task-routed: Haiku (classify) / **Sonnet (tutoring floor)** / Opus (offline only).
 - **AI Helper (not Teacher):** 4 intents, refuse-and-redirect off-curriculum, ships on the **seeded corpus in parallel** with the BL pipeline (not gated behind it).
 - Curriculum **system of record**: provenance layer (`ContentSource`/`Chapter`) separate from the pedagogical tree; immutable **versioning** + stable `SkillKey`; separate versioned `chunk_embeddings` table; auto-KG → `KGSuggestion` review queue.
+
+---
+
+## FINAL LOCKED AI ARCHITECTURE (2026-06-13) — canonical reference
+
+> Status: **APPROVED FOR IMPLEMENTATION.** Supersedes any conflicting wording above — specifically §2's separate `ConceptExplanationCache`/`HintCache` tables (now unified — see *Cache* below) and §3's "Integration Events / Message Bus" phrasing (the seam is a durable DB job, not a broker/MediatR event).
+
+**Embeddings**
+- Model: **self-hosted BGE-M3, `vector(1024)`.** (Cohere `embed-multilingual-v3`, also 1024-d, is a future per-model-table alternative — not MVP.)
+- Runtime: a **synchronous TEI (Text-Embeddings-Inference) HTTP endpoint** on **Hetzner dedicated** (64 GB RAM, NVMe; CPU-only initially, GPU when query latency or large ingestion batches demand). This is the only inference service Phase 4 needs; it is **not** the Python ingestion pipeline.
+- Interface: **`IEmbeddingProvider`** (impl `BgeM3EmbeddingProvider`). `IEmbeddingService` is **retired**.
+- **Parity (REQUIRED):** seed-time and runtime query embeddings MUST use the identical BGE-M3 model + version + normalization, stamped on `chunk_embeddings_bge_m3` (`Provider`/`Model`/`ModelVersion`). Mismatch ⇒ incompatible vector spaces ⇒ invalid retrieval; `BgeM3EmbeddingProvider` fails-fast on mismatch.
+
+**Storage**
+- Vectors live in the separate **`chunk_embeddings_bge_m3`** table (`Id, ChunkId, Provider, Model, ModelVersion, Dimension, Vector vector(1024), CreatedAt, IsActive`) — **never inline on `CurriculumChunk`**. A future model ⇒ a new per-dimension table + `IsActive` flip (no `ALTER COLUMN`).
+- `CurriculumChunk` (canonical = P3-07): `Id, ConceptId?, SkillId?, SkillKey, GradeId, SubjectId, Difficulty (int 1–5), Content, Language, Metadata, ProvenanceRef (nullable — null for seeded chunks), CurriculumVersionId`. Visibility is governed by `CurriculumVersion.Status`, **not** a chunk-level status.
+
+**Schema-creation ownership**
+- **P3-07 creates the minimal** `CurriculumChunk` + `CurriculumVersion` + `chunk_embeddings_bge_m3` slice (to ship the seeded AI Tutor now). **BL-04 EXTENDS** (provenance entities, version-lifecycle fields, `KGSuggestion`, `SkillKey`); **BL-05 writes rows**. Neither re-creates those tables.
+
+**Retrieval (P3-07)**
+- `IEmbeddingProvider` embeds the query → pgvector cosine top-k (`<=>`, HNSW) JOIN `chunk_embeddings_bge_m3` (`IsActive`) ⋈ `CurriculumChunk` ⋈ `CurriculumVersion`, filtering **`Status = Active`** + grade + subject + skill (when present) + a similarity floor → empty ⇒ "no context" (never hallucinate).
+- Seams: **`ILearningContextProvider`** (impl `RagContextProvider`) for the runtime tutor. The offline batch question-generation path (P3-06) keeps its distinct **student-less `IChunkRetrievalContract`** seam — the two are **NOT merged** (different signatures, different callers). `IChunkRetrievalContract` is **retained**, not retired.
+
+**.NET ↔ Python seam**
+- **DB-outbox `PipelineJobs` + Python poller** for the offline curriculum factory (BL-01/02/05). "Event" = a durable job row, NOT in-process MediatR and NOT a message broker. The runtime embedding TEI call is the only synchronous .NET→inference path.
+
+**Cache** (per `docs/briefs/ai-cost-routing.md`)
+- Two-tier: durable, reviewable **`ai.AiResponseCache`** (Postgres; column `Response`, keyed by `SkillKey` + `CurriculumVersion`, `ReviewStatus ∈ {PendingReview, Approved, Rejected}`) + **Redis read-through** holding **Approved** entries only. Redis is the speed layer, never the source of truth; if Redis is lost, reload from Postgres. **This unified table supersedes §2's separate `ConceptExplanationCache`/`HintCache`.**
+- Auto-approve when **safety-passed AND confidence ≥ 0.85**; otherwise `PendingReview` (the current child is still served if safe; not served to other children until `Approved`).
+- Charge on delivered value (Redis hit, Postgres hit, fresh generation); never on error / safety-refusal / system failure. **Credit economy + ledger are Phase 10** — Phase-4 stories consume a charging seam, they do not build the ledger.
+
+**AI interaction scope**
+- Closed set of **4 intents only — Hint, WhyWrong, Explain-concept, Generate-practice.** No open chat / general Q&A / homework cheating / entertainment. Off-curriculum ⇒ safety redirect, 0 credits. Priority per request: approved DB content → Redis → AI generation → review → reuse.
+
+**Locked interface names**
+- `IEmbeddingProvider` (retire `IEmbeddingService`) · `ILearningContextProvider` + `RagContextProvider` (runtime tutor context) · `IChunkRetrievalContract` (P3-06 offline batch path).
+- **Retrieval interfaces — RATIFIED 2026-06-13: KEEP BOTH; `IChunkRetrievalContract` is NOT retired.** They are distinct seams for distinct callers, not duplicates:
+  - `ILearningContextProvider` — **runtime, student-centric**: `(studentId, skillId, questionId?, wrongAnswer?) → LearningContext`. Consumed by the AI Helper intents (P3-04/05); implemented by `SeededCorpusContextProvider` (MVP) then `RagContextProvider` (P3-07).
+  - `IChunkRetrievalContract` — **offline, student-less**: `RetrieveAsync(text, gradeId, subjectId, skillId, topK) → chunks`. Consumed by P3-06 batch question-generation (no student exists at pre-generation time). Both ultimately wrap P3-07's `RetrieveChunksQuery`.
