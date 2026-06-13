@@ -13,7 +13,7 @@ As a student, I want practice and quiz questions generated from my actual curric
 
 ## Acceptance Criteria
 - Generated questions are grounded in retrieved curriculum context for the target skill/grade (not free-form).
-- Output maps to supported question types (MCQ, True/False, Matching, Fill-in-the-blank) with a valid correct answer.
+- Output maps to supported question types (MCQ, True/False, Fill-in-the-blank — **Matching deferred pending CO-BE-1/2**) with a valid correct answer.
 - Questions pass the Safety Layer and are tagged with `GeneratedBy` for traceability.
 - Given retrieval returns no relevant context, then generation declines rather than hallucinating.
 

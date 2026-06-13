@@ -12,23 +12,29 @@ tasks/
 │   │   ├── Phase-1-Foundation/    P1-xx-FE.md
 │   │   ├── Phase-2-Learning-Core/ P2-xx-FE.md
 │   │   ├── Phase-3-Gamification/  P4-xx-FE.md   (XP/streak/hearts/badges/missions/leagues/motion)
+│   │   ├── Phase-4-AI-Tutor/      P3-12-FE.md   (AI tutor UI — chat/explain/hints surface, streaming, RTL)
 │   │   ├── Phase-5-Parent-Analytics/ P5-xx-FE.md
 │   │   ├── Phase-8-Localization/  P8-xx-FE.md   (add-child learning lang, parent change flow, app-shell fonts/RTL)
-│   │   └── Phase-9-Notifications/ P9-0x-FE.md   (expo push, deep links, in-app inbox, parent per-child controls)
+│   │   ├── Phase-9-Notifications/ P9-0x-FE.md   (expo push, deep links, in-app inbox, parent per-child controls)
+│   │   └── Phase-10-Payments-Billing/ P10-xx-FE.md (parent: plan/checkout/packs/billing-history; child: ⚡ energy meter)
 │   └── admin-dashboard/       Next.js admin screens
 │       ├── Phase-1-Foundation/    P1-10-FE.md   (admin sign-in & shell)
-│       └── Phase-7-Admin-Console/ P7-xx-FE.md   (admin feature screens)
+│       ├── Phase-7-Admin-Console/ P7-xx-FE.md   (admin feature screens)
+│       └── Phase-10-Payments-Billing/ P10-11-FE.md (billing config: plans/grants/action-costs)
 └── Backend/
     ├── Phase-1-Foundation/   P1-xx-BE.md
     ├── Phase-2-Learning-Core/ P2-xx-BE.md
     ├── Phase-3-Gamification/ P4-xx-BE.md
+    ├── Phase-4-AI-Tutor/     P3-xx-BE.md   (AI gateway/safety/prompt, RAG retrieval, explain/hints, adaptivity/mastery/SR/profile)
     ├── Phase-6-Stabilization/ P6-06-BE.md
     ├── Phase-7-Admin-Console/ P7-xx-BE.md
     ├── Phase-8-Localization/  P8-xx-BE.md
-    └── Phase-9-Notifications/ P9-0x-BE.md   (wire emitted events, new habit categories, arbitration, comeback ladder)
+    ├── Phase-9-Notifications/ P9-0x-BE.md   (wire emitted events, new habit categories, arbitration, comeback ladder)
+    ├── Phase-10-Payments-Billing/ P10-xx-BE.md  (credit ledger/grant/spend, subscriptions, payment provider, dunning/refunds, admin config)
+    └── Backlog-Phase-2-Plus/ BL-xx-BE.md   (Curriculum Intelligence: schema/upload/parsing/ingestion/knowledge-graph — .NET + Python pipeline)
 ```
 
-> **Scope:** this tree covers **Phase 1 & 2** stories, the **Phase 3 — Gamification** breakdown (`P4-xx`, both stacks), the **Phase 7 — Admin Console** feature breakdown (`P7-xx`), plus the **Phase 6 — `P6-06`** backend security-hardening pass (relocated from P1-13b). The barrier-to-entry stories **P4-09** (re-engagement notifications), **P4-10** (Redis realtime gamification) and **P4-11** (streak freeze / timed events) are now decomposed in the Phase 3 tree below. The remaining barrier-to-entry stories — **P3-13** (adaptive student profile) and **P5-07** (data feedback / calibration) — are **pending task breakdown** and will be decomposed when their phase trees are built. The Phase-2 story **P2-11** (skill dependency graph) is broken down here. See [../docs/briefs/barrier-to-entry-gap-analysis.md](../docs/briefs/barrier-to-entry-gap-analysis.md).
+> **Scope:** this tree covers **Phase 1 & 2** stories, the **Phase 3 — Gamification** breakdown (`P4-xx`, both stacks), the **Phase 4 — AI Tutor** breakdown (`P3-xx`, all 13 stories), the **Phase 7 — Admin Console** feature breakdown (`P7-xx`), the **Phase 6 — `P6-06`** backend security-hardening pass (relocated from P1-13b), the **Phase 10 — Payment, Billing & Credits** breakdown (`P10-01..11`, both stacks — AI credit economy + monetization), plus the **Backlog (Phase 2+) — Curriculum Intelligence** breakdown (`BL-01..05`, .NET + Python pipeline). The barrier-to-entry stories **P4-09** (re-engagement notifications), **P4-10** (Redis realtime gamification) and **P4-11** (streak freeze / timed events) are decomposed in the Phase 3 tree below; **P3-13** (adaptive student profile, barrier-to-entry BE2) is now decomposed in the Phase 4 tree. The remaining barrier-to-entry story **P5-07** (data feedback / calibration) is **pending task breakdown** and will be decomposed when its phase tree is built. The Phase-2 story **P2-11** (skill dependency graph) is broken down here. See [../docs/briefs/barrier-to-entry-gap-analysis.md](../docs/briefs/barrier-to-entry-gap-analysis.md).
 >
 > **Phase order (resequenced):** Phase 3 = **Gamification** (`P4-xx`), Phase 4 = **AI Tutor** (`P3-xx`) — Gamification builds before AI Tutor; story IDs were kept stable so the prefix no longer equals the phase number. See [../user-stories/README.md](../user-stories/README.md).
 
@@ -111,6 +117,33 @@ The Gamification module (`gamification` schema) reacting to the P4-01 learning d
 | P4-10 | Redis realtime gamification state *(barrier-to-entry BE3; enabler)* | — | [BE](Backend/Phase-3-Gamification/P4-10-BE.md) | 🔲 |
 | P4-11 | Streak freeze, timed events & weekly challenges *(barrier-to-entry)* | [FE](Frontend/student-app/Phase-3-Gamification/P4-11-FE.md) | [BE](Backend/Phase-3-Gamification/P4-11-BE.md) | 🔲 |
 
+### Phase 4 — AI Tutor *(story IDs `P3-xx`)*
+
+The AI layer over the learning core. Three new seams: a new **`Ai`** module (gateway/safety/prompt — contracts in `Shared.Contracts/Ai/`), a new **`Curriculum`** module (chunks + pgvector + RAG retrieval), and **`learning`** extended for adaptivity/mastery/spaced-repetition/profile. **Nothing here is built — all tasks 🔲.** Build order: infra (P3-01→02→03) → AI Helper on the **seeded corpus** (P3-04‖05‖06) → UI (P3-12); RAG (P3-07→06 full) and the adaptivity chain (P3-09→08→11, with P3-10/P3-13 parallel) run alongside.
+
+> **Three cross-cutting briefs govern this phase — read them first:**
+> - [`docs/briefs/ai-helper-mvp.md`](../docs/briefs/ai-helper-mvp.md) — **"AI Helper, not AI Teacher":** four allowed intents (explain / hint / why-my-answer-is-wrong / similar-example), general use blocked, refuse-and-redirect when off-curriculum, the closed-loop completion metric, and the `ILearningContextProvider` seam (`SeededCorpusContextProvider` ships **now** → `RagContextProvider` is the later config-swap). **The Helper ships on the seeded verified-skills corpus in parallel with the BL pipeline — it is NOT gated behind ingestion.**
+> - [`docs/briefs/ai-cost-routing.md`](../docs/briefs/ai-cost-routing.md) — offline-vs-runtime lanes, the `AiModelRouter` (cheap-default + escalate; Haiku classify / **Sonnet tutoring floor** / Opus offline-only), prompt caching, Batch API, per-plan quotas, cache-primary pre-generation.
+> - [`docs/briefs/curriculum-system-of-record.md`](../docs/briefs/curriculum-system-of-record.md) — see the Backlog section below.
+>
+> **Pre-dispatch gates (lead must clear):** new `Ai` + `Curriculum` module approval (CLAUDE.md ask-before-new-modules — already approved for this breakdown), provider API keys provisioned, per-plan AI quota numbers, embedding model + vector dimension `N` fixed before the P3-07 migration, streaming wire format (SSE) pinned in HANDOFF before P3-12. Full blocker lists live in each `docs/plans/P3-xx.md`.
+
+| Story | Title | Frontend | Backend |
+|---|---|---|---|
+| P3-01 | Route AI requests through an AI Gateway *(new `Ai` module; provider abstraction, retries, cost/usage)* | — | [BE](Backend/Phase-4-AI-Tutor/P3-01-BE.md) |
+| P3-02 | Filter AI output through a Safety Layer *(no-bypass, block/regenerate, `ai.SafetyEvents`)* | — | [BE](Backend/Phase-4-AI-Tutor/P3-02-BE.md) |
+| P3-03 | Build personalized tutor prompts *(grade/age/language/mastery; 4-subject templates)* | — | [BE](Backend/Phase-4-AI-Tutor/P3-03-BE.md) |
+| P3-04 | Explain a concept on demand *(streaming, grounded, safety-screened)* | *(in P3-12)* | [BE](Backend/Phase-4-AI-Tutor/P3-04-BE.md) |
+| P3-05 | Progressive hints & simpler re-explanations | *(in P3-12)* | [BE](Backend/Phase-4-AI-Tutor/P3-05-BE.md) |
+| P3-06 | Generate curriculum-grounded questions (RAG) *(writes `QuizQuestion` Draft via Shared.Contracts)* | — | [BE](Backend/Phase-4-AI-Tutor/P3-06-BE.md) |
+| P3-07 | Retrieve curriculum context via vector search *(new `Curriculum` module; pgvector top-k, seeded corpus)* | — | [BE](Backend/Phase-4-AI-Tutor/P3-07-BE.md) |
+| P3-08 | Adjust difficulty adaptively *(extends `learning`; reads mastery)* | — | [BE](Backend/Phase-4-AI-Tutor/P3-08-BE.md) |
+| P3-09 | Track per-skill mastery *(cumulative accuracy; cluster foundation)* | — | [BE](Backend/Phase-4-AI-Tutor/P3-09-BE.md) |
+| P3-10 | Schedule spaced-repetition practice *(expanding ladder on `StudentSkillMastery`)* | — | [BE](Backend/Phase-4-AI-Tutor/P3-10-BE.md) |
+| P3-11 | Serve adaptive quizzes *(difficulty-filtered `StartAttempt`)* | — | [BE](Backend/Phase-4-AI-Tutor/P3-11-BE.md) |
+| P3-12 | Interact with the AI tutor UI *(Expo/Tamagui; designer → frontend → e2e)* | [FE](Frontend/student-app/Phase-4-AI-Tutor/P3-12-FE.md) | — |
+| P3-13 | Build the adaptive student profile *(behavioral-only `StudentLearningProfile`; barrier-to-entry BE2)* | — | [BE](Backend/Phase-4-AI-Tutor/P3-13-BE.md) |
+
 ### Phase 7 — Admin Console *(post-MVP)*
 
 Admin feature breakdown behind the P1-10 shell. **All FE work lands in `apps/admin-dashboard` (Next.js 15)**, reusing the shared `packages/` and the P1-10 admin shell. BE reuses the `learning`/`assessment`/`Identity` modules plus a new `Moderation` (governance) module for the moderation queue + audit log.
@@ -142,3 +175,38 @@ Learning language (medium of instruction) vs UI language; bilingual curriculum a
 | P8-03 | Serve curriculum in the learning language *(read-path resolution)* | — | [BE](Backend/Phase-8-Localization/P8-03-BE.md) |
 | P8-04 | Change a child's learning language *(parent-only, fresh start)* | [FE](Frontend/student-app/Phase-8-Localization/P8-04-FE.md) | [BE](Backend/Phase-8-Localization/P8-04-BE.md) |
 | P8-99 | App-shell language foundation *(FE-only: api-client regen, fonts, UI-language persistence, RTL/i18n pass — folds in P6-03 FE-relevant)* | [FE](Frontend/student-app/Phase-8-Localization/P8-99-FE.md) | — |
+
+### Phase 10 — Payment, Billing & Credits *(story IDs `P10-xx`, post-MVP)*
+
+The AI **credit economy** ("⚡ طاقة المساعد") + monetization. **Parent-driven: all purchasing/billing/payment is in the parent app/account** — the child only spends energy and sees a **read-only** meter (P10-10, the only student-app billing surface). Lives in a new **`Billing`** module (schema `billing`) owning the credit ledger (dual pool: monthly **granted**-expire vs **purchased**-persist), subscriptions, payments, and config; spend reaches the AI Gateway (P3-01) via a `Shared.Contracts` **`ICreditSpendService`** seam. **Charge-on-delivery**, cache-hits charged the same, no charge on refuse/error. Supersedes the AI-Helper MVP daily-cap guardrail. Parent billing FE lands in the **student-app parent area**; admin config FE in **admin-dashboard**. **Nothing built — all tasks 🔲.**
+
+> **Pre-dispatch gates (lead must clear):** new `Billing` module approval (CLAUDE.md ask-before-new-modules), **payment provider Paymob vs Fawry** (P10-06/07), refund **clawback policy** (P10-09), EGP/VAT **receipt fields** (finance, P10-08), Hangfire for grant/renewal/dunning jobs, and provider keys/webhook secrets provisioning. **P10-03 (spend) is hard-blocked on the AI Helper cluster (P3-01..06) merging first.** Full blocker lists live in each `docs/plans/P10-xx.md`. Security-auditor gate is mandatory on **P10-03, P10-06, P10-07, P10-09**.
+
+| Story | Title | Frontend | Backend |
+|---|---|---|---|
+| P10-01 | Credit (energy) account & ledger *(Technical Enabler — dual pool, append-only)* | — | [BE](Backend/Phase-10-Payments-Billing/P10-01-BE.md) |
+| P10-02 | Grant monthly energy per plan *(Hangfire; granted-expire)* | — | [BE](Backend/Phase-10-Payments-Billing/P10-02-BE.md) |
+| P10-03 | Spend energy on AI help *(charge-on-delivery; wires into P3-01)* | — | [BE](Backend/Phase-10-Payments-Billing/P10-03-BE.md) |
+| P10-04 | Daily soft cap & low-energy warning *(bounded by monthly pool)* | — | [BE](Backend/Phase-10-Payments-Billing/P10-04-BE.md) |
+| P10-05 | Manage subscription plan *(Free/Premium — parent)* | [FE](Frontend/student-app/Phase-10-Payments-Billing/P10-05-FE.md) | [BE](Backend/Phase-10-Payments-Billing/P10-05-BE.md) |
+| P10-06 | Pay for a subscription *(provider DECISION; recurring; security-sensitive)* | [FE](Frontend/student-app/Phase-10-Payments-Billing/P10-06-FE.md) | [BE](Backend/Phase-10-Payments-Billing/P10-06-BE.md) |
+| P10-07 | Buy an energy pack *(1000 credits / $5, never expires — parent → child)* | [FE](Frontend/student-app/Phase-10-Payments-Billing/P10-07-FE.md) | [BE](Backend/Phase-10-Payments-Billing/P10-07-BE.md) |
+| P10-08 | Billing history & receipts *(parent)* | [FE](Frontend/student-app/Phase-10-Payments-Billing/P10-08-FE.md) | [BE](Backend/Phase-10-Payments-Billing/P10-08-BE.md) |
+| P10-09 | Failed payments & refunds *(dunning + clawback)* | [FE](Frontend/student-app/Phase-10-Payments-Billing/P10-09-FE.md) | [BE](Backend/Phase-10-Payments-Billing/P10-09-BE.md) |
+| P10-10 | Kid-facing energy UI *(⚡ طاقة المساعد — read-only; distinct from hearts)* | [FE](Frontend/student-app/Phase-10-Payments-Billing/P10-10-FE.md) | — |
+| P10-11 | Admin: configure plans, grants & action costs *(admin console)* | [FE](Frontend/admin-dashboard/Phase-10-Payments-Billing/P10-11-FE.md) | [BE](Backend/Phase-10-Payments-Billing/P10-11-BE.md) |
+| P10-12 | Runtime-configurable AI economy via Global Settings *(Technical Enabler — `IGlobalSettingsProvider`, DB-backed, Redis-cached, audited)* | — | [BE](Backend/Phase-10-Payments-Billing/P10-12-BE.md) |
+
+### Backlog (Phase 2+) — Curriculum Intelligence *(story IDs `BL-xx`)*
+
+The full OCR-driven curriculum pipeline, **deferred post-MVP** (P2-11 ships the hand-authored launch-bridge), built as a **system of record** — see [`docs/briefs/curriculum-system-of-record.md`](../docs/briefs/curriculum-system-of-record.md). Three stages: **Multimodal Parsing (BL-02) → Curriculum Ingestion (BL-05) → Knowledge Graph (BL-03)**, on the schema enabler **BL-04** behind the upload surface **BL-01**. Lives in the new **`Curriculum`** module (the *logical* owner of curriculum truth) and **reuses** the live P2-11 `KnowledgeNode`/`KnowledgeEdge` tables in `learning` (via `Shared.Contracts`, never relocated). Key model decisions baked in: a **provenance layer** (`ContentSource`/`Chapter`) distinct from the pedagogical tree; **immutable versioning** (`CurriculumVersion` Draft→Active switch) with a **stable `SkillKey`** so mastery survives re-publishing + version-aware retrieval/cache; a **separate versioned `chunk_embeddings` table** (BGE-M3, `vector(1024)`) for clean model migration; and the auto-extracted KG feeding a **review queue** (`KGSuggestion`) — only human/Claude-approved edges publish. **Both stacks in scope:** `-BE-n` tasks are .NET (orchestration/persistence/serve); `-PY-n` tasks are the Python pipeline (Azure Document Intelligence primary + MinerU/PaddleOCR fallback, RAG-Anything orchestration, LightRAG, BGE-M3 embeddings) — see each task file's second table. **Nothing built — all tasks 🔲.** Build order: **BL-04 → BL-01 → BL-02 → BL-05 → BL-03**.
+
+> **Pre-dispatch gates (lead must clear):** vector dimension `N` + `EmbeddingVectorRef` semantics (BL-04), BL-02 trigger seam + file-type/size caps (BL-01), the .NET↔Python service boundary + Azure DI provisioning (BL-02/05/03), idempotency keys vs the P2-10 seed (BL-05), and `KnowledgeEdge` auto-build provenance (BL-03). Full blocker lists live in each `docs/plans/BL-xx.md`. BL-01's admin upload UI is a Phase-7-style admin surface — FE deferred (no FE task file).
+
+| Story | Title | Frontend | Backend (.NET + Python) |
+|---|---|---|---|
+| BL-04 | Curriculum, knowledge-graph & vector schema *(Technical Enabler — `CurriculumChunk` + pgvector)* | — | [BE](Backend/Backlog-Phase-2-Plus/BL-04-BE.md) |
+| BL-01 | Upload curriculum documents with metadata *(admin upload + ingestion queue; FE deferred to P7)* | *(deferred)* | [BE](Backend/Backlog-Phase-2-Plus/BL-01-BE.md) |
+| BL-02 | Parse curriculum files into structured content *(Multimodal Parsing — OCR; Stage 1)* | — | [BE](Backend/Backlog-Phase-2-Plus/BL-02-BE.md) |
+| BL-05 | Ingest parsed content into the curriculum hierarchy *(AI structuring + semantic chunking; Stage 2)* | — | [BE](Backend/Backlog-Phase-2-Plus/BL-05-BE.md) |
+| BL-03 | Build & query the knowledge graph *(LightRAG; Neo4j Phase 3+; Stage 3)* | — | [BE](Backend/Backlog-Phase-2-Plus/BL-03-BE.md) |
