@@ -15,9 +15,10 @@ import { useLocale } from '../../../src/hooks/useLocale';
 
 export interface AddChildCardProps {
   onPress: () => void;
+  testID?: string;
 }
 
-export function AddChildCard({ onPress }: AddChildCardProps) {
+export function AddChildCard({ onPress, testID }: AddChildCardProps) {
   const { t } = useTranslation();
   const { direction } = useLocale();
 
@@ -45,6 +46,7 @@ export function AddChildCard({ onPress }: AddChildCardProps) {
       accessible
       accessibilityLabel={t('parent.myChildren.addCardTitle')}
       aria-label={t('parent.myChildren.addCardTitle')}
+      testID={testID}
     >
       <Stack
         width={64}

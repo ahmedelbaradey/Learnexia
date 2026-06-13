@@ -1,114 +1,82 @@
 /**
- * Add-Child screen (Design Spec Screen 5): add-child form + multi-child list
- * editor + submit loop with per-child success/failure feedback.
+ * Add-Child onboarding screen (My-Children style).
  *
- * Submit flow: for each draft (still idle/error), call `useAddChild` one at a
- * time. Success → ChildCard status badge turns green (stays in list). Failure →
- * red badge + per-child error. All succeeded → route to `/(onboarding)/complete`.
- * Partial failure → banner + failed cards remain editable for retry.
+ * Shows:
+ *   1. Heading + subtitle (onboarding copy).
+ *   2. List of children ALREADY ADDED, driven by useMyChildren (TanStack Query).
+ *      Each child is rendered as a ChildCard (status/display variant).
+ *   3. A dashed "Add a child" tile (AddChildCard) that opens AddChildModal.
+ *   4. A primary "Continue" button, enabled once ≥1 child exists, that routes
+ *      to /(onboarding)/complete.
+ *
+ * The modal creates each child IMMEDIATELY via its internal useAddChild.
+ * On close, the list refreshes from useMyChildren (already invalidated by
+ * useAddChild.onSuccess). Parents can add several children before continuing.
+ *
+ * Modal open/close is local useState — NOT activeChildStore (which is
+ * dashboard-scoped). See brief §2 "Modal-open state in onboarding".
+ *
+ * testIDs:
+ *   onboarding-add-child-tile      — dashed add tile / open-modal CTA
+ *   onboarding-children-list       — container for added children
+ *   onboarding-child-card-{id}     — each added child card (id = LinkedChildResponse.id)
+ *   onboarding-continue            — Continue / Finish button
+ *   (modal exposes its own set: add-child-modal, add-child-submit, grade-tile-{1..6}, etc.)
  */
-import { useAddChild, isApiError } from '@learnexia/api-client';
-import { type AddChildFormValues } from '@learnexia/shared';
-import { ChildCard } from '@learnexia/ui';
+import { useMyChildren } from '@learnexia/api-client';
+import { Button, ChildCard } from '@learnexia/ui';
 import { Stack, Text } from '@tamagui/core';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { Button } from '@learnexia/ui';
-import { ServerErrorBanner } from '../../src/components/ServerErrorBanner';
+import { AddChildModal } from '../../src/components/AddChildModal';
 import { useLocale } from '../../src/hooks/useLocale';
-import { AddChildForm } from './_components/AddChildForm';
-import { EditChildSheet } from './_components/EditChildSheet';
-import { nextLocalId, type ChildDraft } from './_components/childListTypes';
-
-function perChildErrorKey(error: unknown): string {
-  if (isApiError(error)) {
-    const text = [error.message, ...error.errors.map((e) => (typeof e === 'string' ? e : JSON.stringify(e)))]
-      .join(' ')
-      .toLowerCase();
-    if (text.includes('exists') || text.includes('duplicate') || error.status === 409) {
-      return 'onboarding.child.errors.duplicateEmail';
-    }
-    if (text.includes('grade')) return 'onboarding.child.errors.invalidGrade';
-    if (text.includes('password') || text.includes('weak')) return 'onboarding.child.errors.weakPassword';
-  }
-  return 'onboarding.child.errors.generic';
-}
+import { AddChildCard } from '../(parent)/_components/AddChildCard';
 
 export default function AddChildScreen() {
   const { t } = useTranslation();
-  const { direction } = useLocale();
+  const { direction, locale } = useLocale();
   const router = useRouter();
-  const addChild = useAddChild();
+  const query = useMyChildren();
 
-  const [drafts, setDrafts] = useState<ChildDraft[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [partialFailure, setPartialFailure] = useState(false);
+  // Local modal visibility — do NOT use activeChildStore (dashboard-scoped).
+  const [addOpen, setAddOpen] = useState(false);
 
-  const editing = drafts.find((d) => d.localId === editingId) ?? null;
+  const children = query.data ?? [];
+  const childCount = children.length;
 
-  const childMeta = (values: AddChildFormValues) =>
-    `${t(`onboarding.grade.${values.grade}`)} · ${t(`onboarding.language.${values.language}`)}`;
+  /** Format a number using the locale's numeral system (e.g. Eastern-Arabic). */
+  function formatNumber(n: number): string {
+    return new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US').format(n);
+  }
 
-  const addToList = (values: AddChildFormValues) => {
-    setDrafts((prev) => [...prev, { localId: nextLocalId(), values, status: 'idle' }]);
-  };
-
-  const removeDraft = (localId: string) => {
-    setDrafts((prev) => prev.filter((d) => d.localId !== localId));
-  };
-
-  const saveEdit = (values: AddChildFormValues) => {
-    setDrafts((prev) =>
-      prev.map((d) => (d.localId === editingId ? { ...d, values, status: 'idle', errorKey: undefined } : d)),
-    );
-  };
-
-  const submitAll = async () => {
-    setSubmitting(true);
-    setPartialFailure(false);
-    let anyFailed = false;
-
-    for (const draft of drafts) {
-      if (draft.status === 'success') continue; // never re-submit a succeeded child
-      setDrafts((prev) => prev.map((d) => (d.localId === draft.localId ? { ...d, status: 'pending' } : d)));
-      try {
-        await addChild.mutateAsync({
-          fullName: draft.values.fullName.trim(),
-          email: draft.values.email.trim(),
-          password: draft.values.password,
-          grade: draft.values.grade,
-          language: draft.values.language,
-          learningLanguage: draft.values.learningLanguage,
-          country: draft.values.country.trim(),
-        });
-        setDrafts((prev) => prev.map((d) => (d.localId === draft.localId ? { ...d, status: 'success', errorKey: undefined } : d)));
-      } catch (error) {
-        anyFailed = true;
-        const errorKey = perChildErrorKey(error);
-        setDrafts((prev) => prev.map((d) => (d.localId === draft.localId ? { ...d, status: 'error', errorKey } : d)));
-      }
-    }
-
-    setSubmitting(false);
-    if (anyFailed) {
-      setPartialFailure(true);
-    } else {
-      router.replace('/(onboarding)/complete');
-    }
-  };
-
-  const canSubmit = drafts.length > 0 && !submitting;
+  /** Build a display meta line for a child: "Grade X · Language". */
+  function childMeta(grade: number | undefined, language: string | undefined): string {
+    const gradePart = grade != null
+      ? t(`onboarding.grade.${grade}`, { defaultValue: `${formatNumber(grade)}` })
+      : '';
+    const langPart = language ? t(`onboarding.language.${language}`, { defaultValue: language }) : '';
+    if (gradePart && langPart) return `${gradePart} · ${langPart}`;
+    return gradePart || langPart;
+  }
 
   return (
     <Stack flex={1} backgroundColor="$bg">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
         <Stack paddingHorizontal="$6" paddingTop="$6" paddingBottom="$16" gap="$6">
+
+          {/* Screen heading + subtitle */}
           <Stack gap="$2">
-            <Text color="$fg1" fontSize={22} fontWeight="700" fontFamily="$heading" accessibilityRole="header" writingDirection={direction}>
+            <Text
+              color="$fg1"
+              fontSize={22}
+              fontWeight="700"
+              fontFamily="$heading"
+              accessibilityRole="header"
+              writingDirection={direction}
+            >
               {t('onboarding.addChild.title')}
             </Text>
             <Text color="$fg3" fontSize={14} fontFamily="$body" writingDirection={direction}>
@@ -116,59 +84,75 @@ export default function AddChildScreen() {
             </Text>
           </Stack>
 
-          {/* Add-child form card */}
-          <Stack testID="add-child-form-card" backgroundColor="$cardSoft" borderRadius="$card" padding="$4">
-            <AddChildForm submitLabel={t('onboarding.addChild.addToListButton')} onAdd={addToList} />
-          </Stack>
-
-          {/* Children list */}
-          {drafts.length > 0 ? (
-            <Stack gap="$3">
-              <Text color="$fg3" fontSize={12} fontWeight="600" fontFamily="$heading" textTransform="uppercase" letterSpacing={0.6} writingDirection={direction}>
-                {t('onboarding.addChild.listLabel', { count: drafts.length })}
+          {/* Added-children list — driven by useMyChildren, NOT local drafts */}
+          {childCount > 0 ? (
+            <Stack gap="$3" testID="onboarding-children-list">
+              <Text
+                color="$fg3"
+                fontSize={12}
+                fontWeight="600"
+                fontFamily="$heading"
+                textTransform="uppercase"
+                letterSpacing={0.6}
+                writingDirection={direction}
+              >
+                {t('onboarding.addChild.listLabel', { count: childCount })}
               </Text>
-              {drafts.map((draft) => (
+              {children.map((child) => (
                 <ChildCard
-                  key={draft.localId}
-                  testID={`child-card-${draft.localId}`}
-                  editTestID={`child-card-edit-${draft.localId}`}
-                  removeTestID={`child-card-remove-${draft.localId}`}
-                  variant={draft.status === 'idle' || draft.status === 'pending' ? 'editable' : 'status'}
-                  child={{ fullName: draft.values.fullName, meta: childMeta(draft.values) }}
-                  status={draft.status === 'success' ? 'success' : draft.status === 'error' ? 'error' : 'idle'}
-                  errorMessage={draft.errorKey ? t(draft.errorKey) : undefined}
-                  onEdit={() => setEditingId(draft.localId)}
-                  onRemove={() => removeDraft(draft.localId)}
+                  key={child.id}
+                  testID={`onboarding-child-card-${child.id}`}
+                  variant="status"
+                  child={{
+                    fullName: child.fullName ?? '',
+                    meta: childMeta(child.grade ?? undefined, child.language ?? undefined),
+                  }}
+                  status="success"
                   direction={direction}
-                  accessibilityLabel={draft.values.fullName}
+                  accessibilityLabel={child.fullName ?? ''}
                 />
               ))}
             </Stack>
           ) : null}
 
-          {partialFailure ? (
-            <ServerErrorBanner message={t('onboarding.addChild.partialFailureBanner')} direction={direction} />
+          {/* Empty-state hint — shown while no children added yet */}
+          {childCount === 0 && !query.isLoading ? (
+            <Text
+              color="$fg3"
+              fontSize={13}
+              fontFamily="$body"
+              textAlign="center"
+              writingDirection={direction}
+            >
+              {t('onboarding.addChild.emptyHint')}
+            </Text>
           ) : null}
 
+          {/* Dashed "Add a child" tile — opens AddChildModal */}
+          <AddChildCard
+            onPress={() => setAddOpen(true)}
+            testID="onboarding-add-child-tile"
+          />
+
+          {/* Continue button — enabled once ≥1 child is added */}
           <Button
             variant="primary"
             size="full"
-            accessibilityLabel={t('onboarding.addChild.submitButton', { count: drafts.length })}
-            loading={submitting}
-            disabled={!canSubmit}
-            onPress={submitAll}
-            testID="add-child-submit"
+            accessibilityLabel={t('onboarding.addChild.continue')}
+            disabled={childCount === 0}
+            onPress={() => router.replace('/(onboarding)/complete')}
+            testID="onboarding-continue"
           >
-            {t('onboarding.addChild.submitButton', { count: drafts.length })}
+            {t('onboarding.addChild.continue')}
           </Button>
+
         </Stack>
       </ScrollView>
 
-      <EditChildSheet
-        visible={editingId !== null}
-        initialValues={editing?.values ?? null}
-        onSave={saveEdit}
-        onClose={() => setEditingId(null)}
+      {/* AddChildModal — local state, creates child immediately on confirm */}
+      <AddChildModal
+        visible={addOpen}
+        onClose={() => setAddOpen(false)}
       />
     </Stack>
   );

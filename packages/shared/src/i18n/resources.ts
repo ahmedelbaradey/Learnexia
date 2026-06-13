@@ -211,9 +211,17 @@ export const en = {
     removeChild: 'Remove child',
     saveChanges: 'Save Changes',
     addChild: {
-      title: 'Add your child',
+      title: 'Add your children',
       subtitle:
-        "Fill in your child's details. You can add more children after.",
+        'Add each of your children. You can add more than one.',
+      // Continue button on the new My-Children-style onboarding screen.
+      continue: 'Continue',
+      // Section label above the already-added children list.
+      listLabel: 'Children added ({{count}})',
+      // Empty-state hint shown when no children have been added yet.
+      emptyHint: 'Add your first child to continue',
+      // Keys below are kept for AddChildForm / EditChildSheet (still used by
+      // the dashboard) and for backward-compat. Do not remove this PR.
       labelName: "Child's full name",
       labelEmail: 'Login email',
       labelPassword: 'Password',
@@ -232,7 +240,6 @@ export const en = {
         "The language for buttons, menus, and messages. We've matched it to the learning language — you can change it.",
       addToListButton: 'Add Child to List',
       submitButton: 'Add {{count}} Child(ren) and Continue',
-      listLabel: 'Children to add ({{count}})',
       added: 'Added!',
       partialFailureBanner:
         'Some children could not be added. Please fix the errors and try again.',
@@ -1387,8 +1394,16 @@ export const ar = {
     removeChild: 'إزالة الطفل',
     saveChanges: 'حفظ التغييرات',
     addChild: {
-      title: 'أضف طفلك',
-      subtitle: 'أدخل بيانات طفلك. يمكنك إضافة أطفال آخرين بعد ذلك.',
+      title: 'أضف أطفالك',
+      subtitle: 'أضف كل طفل من أطفالك. يمكنك إضافة أكثر من طفل.',
+      // زر المتابعة في شاشة الإعداد الجديدة.
+      continue: 'متابعة',
+      // تسمية القسم فوق قائمة الأطفال المُضافين.
+      listLabel: 'الأطفال المُضافون ({{count}})',
+      // تلميح الحالة الفارغة عند عدم إضافة أي أطفال بعد.
+      emptyHint: 'أضف طفلك الأول للمتابعة',
+      // المفاتيح التالية محفوظة لـ AddChildForm / EditChildSheet (تُستخدم
+      // في لوحة التحكم) وللتوافق مع الإصدارات السابقة. لا تُحذف في هذا PR.
       labelName: 'الاسم الكامل للطفل',
       labelEmail: 'البريد الإلكتروني للدخول',
       labelPassword: 'كلمة المرور',
@@ -1406,7 +1421,6 @@ export const ar = {
         'لغة الأزرار والقوائم والرسائل. قمنا بمطابقتها مع لغة الدراسة — ويمكنك تغييرها.',
       addToListButton: 'إضافة الطفل إلى القائمة',
       submitButton: 'إضافة {{count}} طفل/أطفال والمتابعة',
-      listLabel: 'الأطفال المراد إضافتهم ({{count}})',
       added: 'تمت الإضافة!',
       partialFailureBanner:
         'تعذر إضافة بعض الأطفال. يرجى تصحيح الأخطاء والمحاولة مجدداً.',

@@ -39,9 +39,9 @@ import { Animated, Modal, Platform, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
-import { ServerErrorBanner } from '../../../src/components/ServerErrorBanner';
-import { useLocale } from '../../../src/hooks/useLocale';
-import { useServerError } from '../../../src/hooks/useServerError';
+import { ServerErrorBanner } from './ServerErrorBanner';
+import { useLocale } from '../hooks/useLocale';
+import { useServerError } from '../hooks/useServerError';
 
 export interface AddChildModalProps {
   visible: boolean;
