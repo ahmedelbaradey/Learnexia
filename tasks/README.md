@@ -188,7 +188,7 @@ The AI **credit economy** ("⚡ طاقة المساعد") + monetization. **Pare
 | P10-04 | Daily soft cap & low-energy warning *(bounded by monthly pool)* | — | [BE](Backend/Phase-10-Payments-Billing/P10-04-BE.md) |
 | P10-05 | Manage subscription plan *(Free/Premium — parent)* | [FE](Frontend/student-app/Phase-10-Payments-Billing/P10-05-FE.md) | [BE](Backend/Phase-10-Payments-Billing/P10-05-BE.md) |
 | P10-06 | Pay for a subscription *(provider DECISION; recurring; security-sensitive)* | [FE](Frontend/student-app/Phase-10-Payments-Billing/P10-06-FE.md) | [BE](Backend/Phase-10-Payments-Billing/P10-06-BE.md) |
-| P10-07 | Buy an energy pack *(500, never expires — parent → child)* | [FE](Frontend/student-app/Phase-10-Payments-Billing/P10-07-FE.md) | [BE](Backend/Phase-10-Payments-Billing/P10-07-BE.md) |
+| P10-07 | Buy an energy pack *(1000 credits / $5, never expires — parent → child)* | [FE](Frontend/student-app/Phase-10-Payments-Billing/P10-07-FE.md) | [BE](Backend/Phase-10-Payments-Billing/P10-07-BE.md) |
 | P10-08 | Billing history & receipts *(parent)* | [FE](Frontend/student-app/Phase-10-Payments-Billing/P10-08-FE.md) | [BE](Backend/Phase-10-Payments-Billing/P10-08-BE.md) |
 | P10-09 | Failed payments & refunds *(dunning + clawback)* | [FE](Frontend/student-app/Phase-10-Payments-Billing/P10-09-FE.md) | [BE](Backend/Phase-10-Payments-Billing/P10-09-BE.md) |
 | P10-10 | Kid-facing energy UI *(⚡ طاقة المساعد — read-only; distinct from hearts)* | [FE](Frontend/student-app/Phase-10-Payments-Billing/P10-10-FE.md) | — |
