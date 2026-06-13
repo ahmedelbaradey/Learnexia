@@ -13,7 +13,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Learnexia.Modules.Curriculum.Domain\Learnexia.Modules.Curriculum.Domain.csproj" />
-    <ProjectReference Include="..\..\..\Shared\Learnexia.Shared.Kernel\Learnexia.Shared.Kernel.csproj" />
+<ProjectReference Include="..\..\..\Shared\Learnexia.Shared.Kernel\Learnexia.Shared.Kernel.csproj" />
     <ProjectReference Include="..\..\..\Shared\Learnexia.Shared.Contracts\Learnexia.Shared.Contracts.csproj" />
     <ProjectReference Include="..\..\..\Shared\Learnexia.Shared.Resources\Learnexia.Shared.Resources.csproj" />
   </ItemGroup>
