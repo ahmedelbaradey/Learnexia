@@ -13,6 +13,7 @@
 
 ## Recently completed (newest first)
 - **2026-06-13 â€” P1/2/3 carryover (branch `feat/p1-p2-p3-carryover`):** gamification FE (all screens + TabBar + celebrations), Matching full-stack, parent Reports + attempt-history (both surfaces), auth messaging + CAPTCHA, parentâ†”child attempts authz; e2e 39/3-skip/0-fail; PR pending.
+- **2026-06-13 - AI-phase + Phase-10 planning breakdown (PLANNING ONLY, all 🔲; PR #124 `docs/ai-phase-task-breakdown -> main`):** authored the full task breakdown for **Phase 4 - AI Tutor (P3-01..13)**, the **Curriculum-Intelligence backlog (BL-01..05)**, and the new **Phase 10 - Payment, Billing & Credits (P10-01..12)** - Pipeline Briefs (`docs/briefs/`) + Execution Plans (`docs/plans/`) + per-stack task files. **No code - build plan only.** Payments renumbered Phase 9 -> 10 (`main` owns Phase 9 = Notifications). Cross-cutting briefs: `ai-helper-mvp`, `ai-cost-routing`, `ai-eval-gate`, `curriculum-system-of-record`. Settled: new `Ai` + `Curriculum` + `Billing` modules, Claude provider w/ model routing, AI credit economy (Global Settings P10-12), Arabic stack (Azure DI + RAG-Anything). Chore PR #123 = subagent model tuning. See HANDOFF 2026-06-13 note for the full decision log.
 - **2026-06-10 - Phase 2 Exit Gate (P2-HARDENING):** full QC + test pass over Phase 2. **Design:** `qc-test-designer` catalogs for all 11 backend + 7 student-app stories (~319 + ~208 cases; PR #107/#108, merged). **Backend api-tester:** P2-01 (92) + P2-02 (39) integration tests green; P2-03..P2-12 catalogs ready. **Frontend e2e** (Playwright, isolated per story): P2-09 (23) / P2-02 (19) / P2-03 (6, lock-gate P0s pass) / P2-05 (15) / P2-06 (21) / P2-07 (21) / P2-12 (37) - ~142 pass; blocked long-tail classified in `docs/qc/PHASE-2-FE-blocked-classification.md` (seed/spec/feature follow-ups, none release-blocking). **Bugs found+fixed:** BUG-001 (child-home subjects dropped by name-match -> keyed off subjectCode), DEF-P205FE-02 (lesson back broken on web deep-link), and **DEF-P205FE-01 (HIGH) - quiz grading: jsonb-encoded CorrectAnswer compared raw -> every MCQ/TF/FillInBlank graded wrong; fixed in AnswerComparator (decode), 18 unit tests, verified live**. Remaining: Matching renderer + TrueFalse/FillInBlank seed (P2-06-FE-2 / P2-06-BE-3, already-tracked yellow). **Phase 2 tagged complete.**
 - **2026-06-06 â€” FE status reconciliation:** board corrected against `main` ground truth â€” Phase-1 FE (P1-01/02/03/04) and Phase-2 student FE (P2-05/06/07/09, merged via PR #70/#71/#72/#74) flipped ðŸ”²â†’âœ…; **P8-04 FE corrected âœ…â†’ðŸ”² (branch `feat/P8-04` was backend-only â€” no FE shipped)**. Open-WIP FE branches: `feat/P4-08-gamification-screens-motion` (resumable), `feat/design-system-pixel-align` (stale, holds font/RTL fixes).
 - **P8-04 (BE only):** Change a child's learning language (parent-only, fresh start) â€” backend merged; **parent FE not built** (carry-forward).
@@ -138,6 +139,23 @@
 | P8-02 | Author bilingual curriculum (SubjectCode + Language; parallel trees) | ðŸ”² | â€” |
 | P8-03 | Serve curriculum in the student's learning language | ðŸ”² | â€” |
 | P8-04 | Change a child's learning language (parent-only, fresh start) | âœ… | ðŸŸ¡ |
+
+## Phase 10 - Payment, Billing & Credits *(story IDs `P10-xx`, post-MVP)*
+> Task breakdown authored 2026-06-13 (PR #124) - **all 🔲 not started; planning only.** AI credit economy ("⚡ طاقة المساعد") + monetization; **parent-driven** (web checkout, no native IAP); new `Billing` module owns the dual-pool ledger + subscriptions + payments; Global Settings (P10-12) makes the economy runtime-tunable. **Renumbered from Phase 9** (which `main` owns as **Notifications**) - files under `*/Phase-10-Payments-Billing/`. `P10-03` (spend) is hard-blocked on the AI Helper cluster (P3-01..06).
+| Story | Title | Backend | Frontend |
+|---|---|:--:|:--:|
+| P10-01 | Credit (energy) account & ledger *(enabler)* | 🔲 | — |
+| P10-02 | Grant monthly energy per plan | 🔲 | — |
+| P10-03 | Spend energy on AI help (charge-on-delivery) | 🔲 | — |
+| P10-04 | Daily soft cap & low-energy warning | 🔲 | — |
+| P10-05 | Manage subscription plan (monthly 199 / annual 1990 EGP) | 🔲 | 🔲 |
+| P10-06 | Pay for a subscription (provider; web checkout) | 🔲 | 🔲 |
+| P10-07 | Buy an energy pack (1000 credits / $5) | 🔲 | 🔲 |
+| P10-08 | Billing history & receipts | 🔲 | 🔲 |
+| P10-09 | Failed payments & refunds | 🔲 | 🔲 |
+| P10-10 | Kid-facing energy UI (⚡ read-only) | — | 🔲 |
+| P10-11 | Admin: configure plans, grants & costs | 🔲 | 🔲 |
+| P10-12 | Runtime config via Global Settings *(enabler)* | 🔲 | — |
 
 ## Backlog (Phase 2+) â€” Curriculum Intelligence
 | Story | Title | Status |

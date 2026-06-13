@@ -424,12 +424,19 @@ public sealed class P7_01_SubjectsUnitsAdmin_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-5: Deactivating a subject hides it from student ForGrade read")]
     public async Task AC5_SubjectDeactivate_HidesFromStudentForGrade()
     {
-        int gradeId = await CreateGradeGetIdAsync();
-        int gradeNumber = await GetGradeNumberAsync(gradeId);
+        // Use the FIRST existing grade with Number=1 (the seeded grade).
+        // ForGrade uses FirstOrDefaultAsync on grades by Number; creating a new grade-1
+        // would make our subject unreachable via ForGrade due to grade-id mismatch.
+        int gradeNumber = 1;
+        int gradeId = await GetFirstGradeIdByNumberAsync(gradeNumber);
 
         // Create a MATH/Ar subject (SubjectCode=0, Language=0)
         int subjectId = await CreateSubjectGetIdAsync(gradeId,
             name: $"Math Ar {Guid.NewGuid():N}", subjectCode: 0, language: 0);
+
+        // P7-05: publish so the subject is visible to student ForGrade reads.
+        // (Admin-created entities default to Draft; ForGrade filters by LifecycleState == Published.)
+        await PublishEntityAsync(1 /* Subject */, subjectId);
 
         // Verify it appears in ForGrade (authenticated student read).
         var subjsBefore = await GetStudentSubjectsAsync(gradeNumber);
@@ -486,11 +493,18 @@ public sealed class P7_01_SubjectsUnitsAdmin_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-6: Reactivating a subject restores student ForGrade visibility")]
     public async Task AC6_SubjectReactivate_RestoresStudentVisibility()
     {
-        int gradeId = await CreateGradeGetIdAsync();
-        int gradeNumber = await GetGradeNumberAsync(gradeId);
+        // Use the FIRST existing grade with Number=1 (the seeded grade).
+        // See AC5_SubjectDeactivate_HidesFromStudentForGrade for the reason.
+        // Use SCIENCE/Ar (SubjectCode=1, Language=0) here to avoid the unique-key conflict with
+        // AC5_SubjectDeactivate_HidesFromStudentForGrade which already occupies MATH/Ar (0,0) in grade 1.
+        int gradeNumber = 1;
+        int gradeId = await GetFirstGradeIdByNumberAsync(gradeNumber);
 
         int subjectId = await CreateSubjectGetIdAsync(gradeId,
-            name: $"Math Ar {Guid.NewGuid():N}", subjectCode: 0, language: 0);
+            name: $"Science Ar {Guid.NewGuid():N}", subjectCode: 1, language: 0);
+
+        // P7-05: publish so the subject is visible to student ForGrade reads.
+        await PublishEntityAsync(1 /* Subject */, subjectId);
 
         // Deactivate then reactivate.
         await SendAsync(HttpMethod.Put, $"/api/learning/Subjects/{subjectId}/Active", new { isActive = false }, _adminToken);
@@ -520,6 +534,11 @@ public sealed class P7_01_SubjectsUnitsAdmin_Tests : IAsyncLifetime
             name: $"Math Ar {Guid.NewGuid():N}", subjectCode: 0, language: 0);
 
         int unitId = await CreateUnitGetIdAsync(subjectId, name: $"Unit X {Guid.NewGuid():N}", seqOrder: 1);
+
+        // P7-05: publish the subject and unit so the student Lessons endpoint can serve them.
+        // (GetSubjectLessons filters by LifecycleState == Published for both subject and units.)
+        await PublishEntityAsync(1 /* Subject */, subjectId);
+        await PublishEntityAsync(2 /* Unit */, unitId);
 
         // Verify unit appears in student Lessons.
         var unitsBefore = await GetStudentLessonsUnitsAsync(subjectId);
@@ -1107,6 +1126,59 @@ public sealed class P7_01_SubjectsUnitsAdmin_Tests : IAsyncLifetime
         return token.GetString()!;
     }
 
+    /// <summary>
+    /// Publishes a curriculum entity by calling POST /api/learning/ContentLifecycle/Transition
+    /// with TargetState=Published (2). Required before student-facing reads can see the entity,
+    /// because P7-05 added LifecycleState == Published filter to ForGrade and GetSubjectLessons.
+    /// VersionedEntityType: Subject=1, Unit=2, Lesson=3, QuizQuestion=4.
+    /// </summary>
+    private async Task PublishEntityAsync(int entityType, int entityId)
+    {
+        var (resp, root, body) = await SendAsync(HttpMethod.Post,
+            "/api/learning/ContentLifecycle/Transition",
+            new { EntityType = entityType, EntityId = entityId, TargetState = 2 },
+            _adminToken);
+        resp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "Transition to Published must return 200; entityType={0}, entityId={1}; body: {2}",
+            entityType, entityId, body);
+        AssertSucceeded(root, body);
+    }
+
+    /// <summary>
+    /// Returns the id of the FIRST grade in the system with the given Number.
+    /// If no grade with that Number exists yet (e.g. when the test runs in isolation
+    /// before any other test has created one), creates one and returns its id.
+    /// Used by ForGrade tests to ensure the subject's gradeId matches the grade that
+    /// ForGrade will pick (GetSubjectsForGradeQuery uses FirstOrDefaultAsync on Number).
+    /// </summary>
+    private async Task<int> GetFirstGradeIdByNumberAsync(int number)
+    {
+        var (resp, root, body) = await SendAsync(HttpMethod.Get,
+            $"/api/learning/grades/List?PageNumber=1&PageSize=200", bearer: _adminToken);
+        resp.StatusCode.Should().Be(HttpStatusCode.OK, "Grade list must return 200; body: {0}", body);
+        var items = ExtractPageItems(root, body);
+        var found = items.FirstOrDefault(g =>
+            TryProp(g, "number", out var n) && n.GetInt32() == number);
+
+        // If no grade with the requested Number exists, create one so the test is self-contained.
+        if (found.ValueKind == JsonValueKind.Undefined)
+        {
+            var name = $"P701 ForGrade Seed {number} {Guid.NewGuid():N}";
+            var (createResp, _, createBody) = await SendAsync(HttpMethod.Post,
+                "/api/learning/grades/Create",
+                new { Number = number, DisplayName = name },
+                _adminToken);
+            createResp.StatusCode.Should().Be(HttpStatusCode.OK,
+                "Create grade fallback must succeed; body: {0}", createBody);
+            return await FindIdInListAsync(
+                $"/api/learning/grades/List?PageNumber=1&PageSize=200",
+                "displayName", name, "grade", _adminToken);
+        }
+
+        TryProp(found, "id", out var idProp).Should().BeTrue("body: {0}", body);
+        return idProp.GetInt32();
+    }
+
     /// <summary>Creates a grade and returns its id.</summary>
     private async Task<int> CreateGradeGetIdAsync()
     {
@@ -1124,7 +1196,7 @@ public sealed class P7_01_SubjectsUnitsAdmin_Tests : IAsyncLifetime
     private async Task<int> GetGradeNumberAsync(int gradeId)
     {
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
-            $"/api/learning/grades?id={gradeId}", _adminToken);
+            $"/api/learning/grades?id={gradeId}", bearer: _adminToken);
         resp.StatusCode.Should().Be(HttpStatusCode.OK, "GetGrade must succeed; body: {0}", body);
         TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);
         TryProp(data, "number", out var numProp).Should().BeTrue("body: {0}", body);
@@ -1165,7 +1237,7 @@ public sealed class P7_01_SubjectsUnitsAdmin_Tests : IAsyncLifetime
     private async Task<List<JsonElement>> GetStudentSubjectsAsync(int gradeNumber)
     {
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
-            $"/api/learning/Subjects/ForGrade?grade={gradeNumber}", _adminToken);
+            $"/api/learning/Subjects/ForGrade?grade={gradeNumber}", bearer: _adminToken);
         resp.StatusCode.Should().Be(HttpStatusCode.OK,
             "ForGrade must return 200; body: {0}", body);
 
@@ -1183,7 +1255,7 @@ public sealed class P7_01_SubjectsUnitsAdmin_Tests : IAsyncLifetime
     private async Task<List<JsonElement>> GetStudentLessonsUnitsAsync(int subjectId)
     {
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
-            $"/api/learning/Subjects/{subjectId}/Lessons", _adminToken);
+            $"/api/learning/Subjects/{subjectId}/Lessons", bearer: _adminToken);
         resp.StatusCode.Should().Be(HttpStatusCode.OK,
             "GetLessons must return 200; body: {0}", body);
 

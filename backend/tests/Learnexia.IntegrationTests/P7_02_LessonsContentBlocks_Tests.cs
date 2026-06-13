@@ -182,7 +182,7 @@ public sealed class P7_02_LessonsContentBlocks_Tests : IAsyncLifetime
     public async Task Auth_DeleteContentBlock_NonAdmin_Returns403()
     {
         var (resp, _, body) = await SendAsync(HttpMethod.Delete, "/api/learning/ContentBlocks/1",
-            _basicToken);
+            bearer: _basicToken);
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden, "body: {0}", body);
     }
 
@@ -216,7 +216,7 @@ public sealed class P7_02_LessonsContentBlocks_Tests : IAsyncLifetime
     public async Task Auth_ListContentBlocks_NonAdmin_Returns403()
     {
         var (resp, _, body) = await SendAsync(HttpMethod.Get, "/api/learning/ContentBlocks/ByLesson/1",
-            _basicToken);
+            bearer: _basicToken);
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden, "body: {0}", body);
     }
 
@@ -232,7 +232,7 @@ public sealed class P7_02_LessonsContentBlocks_Tests : IAsyncLifetime
     public async Task Auth_GetAdminLesson_NonAdmin_Returns403()
     {
         var (resp, _, body) = await SendAsync(HttpMethod.Get, "/api/learning/Lessons/1/Admin",
-            _basicToken);
+            bearer: _basicToken);
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden, "body: {0}", body);
     }
 
@@ -407,7 +407,7 @@ public sealed class P7_02_LessonsContentBlocks_Tests : IAsyncLifetime
 
         // Soft-delete the block.
         var (delResp, delRoot, delBody) = await SendAsync(HttpMethod.Delete,
-            $"/api/learning/ContentBlocks/{blockId}", _adminToken);
+            $"/api/learning/ContentBlocks/{blockId}", bearer: _adminToken);
         delResp.StatusCode.Should().Be(HttpStatusCode.OK, "Delete must return 200; body: {0}", delBody);
         AssertSucceeded(delRoot, delBody);
 
@@ -700,7 +700,7 @@ public sealed class P7_02_LessonsContentBlocks_Tests : IAsyncLifetime
         var lessonId = await FindLessonIdByNameAsync(unitId, lessonName);
 
         var (adminResp, adminRoot, adminBody) = await SendAsync(HttpMethod.Get,
-            $"/api/learning/Lessons/{lessonId}/Admin", _adminToken);
+            $"/api/learning/Lessons/{lessonId}/Admin", bearer: _adminToken);
         adminResp.StatusCode.Should().Be(HttpStatusCode.OK, "Admin detail must return 200; body: {0}", adminBody);
 
         TryProp(adminRoot, "data", out var data).Should().BeTrue("body: {0}", adminBody);
@@ -737,7 +737,7 @@ public sealed class P7_02_LessonsContentBlocks_Tests : IAsyncLifetime
 
         // Re-fetch admin detail.
         var (adminResp, adminRoot, adminBody) = await SendAsync(HttpMethod.Get,
-            $"/api/learning/Lessons/{lessonId}/Admin", _adminToken);
+            $"/api/learning/Lessons/{lessonId}/Admin", bearer: _adminToken);
         adminResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", adminBody);
 
         TryProp(adminRoot, "data", out var data).Should().BeTrue("body: {0}", adminBody);
@@ -764,7 +764,7 @@ public sealed class P7_02_LessonsContentBlocks_Tests : IAsyncLifetime
         // Student GET (uses _adminToken which has a valid JWT — the route requires [Authorize]).
         // Handler filters by l.IsActive — inactive lessons return NotFound.
         var (getResp, getRoot, getBody) = await SendAsync(HttpMethod.Get,
-            $"/api/learning/Lessons/{lessonId}", _adminToken);
+            $"/api/learning/Lessons/{lessonId}", bearer: _adminToken);
 
         // Expect 200 with Successed=false (NotFound from handler) or HTTP 404.
         ((int)getResp.StatusCode).Should().BeOneOf(new[] { 200, 404 },
@@ -789,7 +789,7 @@ public sealed class P7_02_LessonsContentBlocks_Tests : IAsyncLifetime
 
         // Admin detail must still return the lesson with IsActive=false.
         var (adminResp, adminRoot, adminBody) = await SendAsync(HttpMethod.Get,
-            $"/api/learning/Lessons/{lessonId}/Admin", _adminToken);
+            $"/api/learning/Lessons/{lessonId}/Admin", bearer: _adminToken);
         adminResp.StatusCode.Should().Be(HttpStatusCode.OK,
             "Inactive lesson must still be visible via admin route; body: {0}", adminBody);
         AssertSucceeded(adminRoot, adminBody);
@@ -808,7 +808,20 @@ public sealed class P7_02_LessonsContentBlocks_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-LS-5: Reactivate lesson restores student GET /Lessons/{id} success")]
     public async Task ReactivateLesson_RestoresStudentVisibility()
     {
-        var lessonId = await CreateLessonGetIdAsync();
+        // Build a full grade→subject→unit stack; we need subject+unit+lesson ids
+        // so we can publish them. CreateLessonGetIdAsync only returns lessonId.
+        var (subjectId, unitId) = await CreateSubjectWithPrereqsAsync();
+        var lessonName = $"P702 Reactivate {Guid.NewGuid():N}";
+        await SendAsync(HttpMethod.Post, "/api/learning/Lessons/Create",
+            new { Name = lessonName, Difficulty = 1, SequenceOrder = 1, IsLocked = false,
+                  UnitId = unitId, EstimatedMinutes = 0 },
+            _adminToken);
+        var lessonId = await FindLessonIdByNameAsync(unitId, lessonName);
+
+        // P7-05: publish subject, unit, and lesson so GetLesson (LifecycleState==Published filter) can serve.
+        await PublishEntityAsync(1 /* Subject */, subjectId);
+        await PublishEntityAsync(2 /* Unit */, unitId);
+        await PublishEntityAsync(3 /* Lesson */, lessonId);
 
         // Deactivate then reactivate.
         await SendAsync(HttpMethod.Put, $"/api/learning/Lessons/{lessonId}/Active",
@@ -825,7 +838,7 @@ public sealed class P7_02_LessonsContentBlocks_Tests : IAsyncLifetime
         // We only assert that the response is not a 500 and either 200-successed=true OR 200-successed=false
         // due to language guard (a separate concern from IsActive).
         var (getResp, _, getBody) = await SendAsync(HttpMethod.Get,
-            $"/api/learning/Lessons/{lessonId}", _adminToken);
+            $"/api/learning/Lessons/{lessonId}", bearer: _adminToken);
         ((int)getResp.StatusCode).Should().NotBe(500,
             "Reactivated lesson must not 500 on student GET; body: {0}", getBody);
         ((int)getResp.StatusCode).Should().BeOneOf(new[] { 200, 403 },
@@ -848,6 +861,12 @@ public sealed class P7_02_LessonsContentBlocks_Tests : IAsyncLifetime
             _adminToken);
 
         var lessonId = await FindLessonIdByNameAsync(unitId, lessonName);
+
+        // P7-05: publish subject, unit, and lesson so the student Lessons endpoint can serve them.
+        // GetSubjectLessons filters by LifecycleState == Published for subject, units, and lessons.
+        await PublishEntityAsync(1 /* Subject */, subjectId);
+        await PublishEntityAsync(2 /* Unit */, unitId);
+        await PublishEntityAsync(3 /* Lesson */, lessonId);
 
         // Verify it appears first.
         var lessonsBefore = await GetStudentLessonsUnitsAsync(subjectId);
@@ -874,13 +893,13 @@ public sealed class P7_02_LessonsContentBlocks_Tests : IAsyncLifetime
         var lessonId = await CreateLessonGetIdAsync();
 
         var (delResp, delRoot, delBody) = await SendAsync(HttpMethod.Delete,
-            $"/api/learning/Lessons?id={lessonId}", _adminToken);
+            $"/api/learning/Lessons?id={lessonId}", bearer: _adminToken);
         delResp.StatusCode.Should().Be(HttpStatusCode.OK, "Delete must return 200; body: {0}", delBody);
         AssertSucceeded(delRoot, delBody);
 
         // Student GET must return NotFound.
         var (getResp, getRoot, getBody) = await SendAsync(HttpMethod.Get,
-            $"/api/learning/Lessons/{lessonId}", _adminToken);
+            $"/api/learning/Lessons/{lessonId}", bearer: _adminToken);
         ((int)getResp.StatusCode).Should().BeOneOf(new[] { 200, 404 },
             "Deleted lesson must not be served; body: {0}", getBody);
 
@@ -896,11 +915,11 @@ public sealed class P7_02_LessonsContentBlocks_Tests : IAsyncLifetime
     {
         var lessonId = await CreateLessonGetIdAsync();
 
-        await SendAsync(HttpMethod.Delete, $"/api/learning/Lessons?id={lessonId}", _adminToken);
+        await SendAsync(HttpMethod.Delete, $"/api/learning/Lessons?id={lessonId}", bearer: _adminToken);
 
         // Global IsDeleted filter means admin route also returns NotFound.
         var (adminResp, adminRoot, adminBody) = await SendAsync(HttpMethod.Get,
-            $"/api/learning/Lessons/{lessonId}/Admin", _adminToken);
+            $"/api/learning/Lessons/{lessonId}/Admin", bearer: _adminToken);
 
         ((int)adminResp.StatusCode).Should().BeOneOf(new[] { 200, 404 },
             "Soft-deleted lesson must not be found even via admin route; body: {0}", adminBody);
@@ -933,13 +952,13 @@ public sealed class P7_02_LessonsContentBlocks_Tests : IAsyncLifetime
 
         // Delete the lesson.
         var (delResp, delRoot, delBody) = await SendAsync(HttpMethod.Delete,
-            $"/api/learning/Lessons?id={lessonId}", _adminToken);
+            $"/api/learning/Lessons?id={lessonId}", bearer: _adminToken);
         delResp.StatusCode.Should().Be(HttpStatusCode.OK, "Delete must return 200; body: {0}", delBody);
         AssertSucceeded(delRoot, delBody);
 
         // ByLesson must return NotFound (lesson deleted → 200 Successed=false from handler).
         var (listResp, listRoot, listBody) = await SendAsync(HttpMethod.Get,
-            $"/api/learning/ContentBlocks/ByLesson/{lessonId}", _adminToken);
+            $"/api/learning/ContentBlocks/ByLesson/{lessonId}", bearer: _adminToken);
 
         ((int)listResp.StatusCode).Should().BeOneOf(new[] { 200, 404 },
             "ByLesson for deleted lesson must return graceful not-found; body: {0}", listBody);
@@ -1115,7 +1134,7 @@ public sealed class P7_02_LessonsContentBlocks_Tests : IAsyncLifetime
             new { lessonId, blockType = BlockTypeText, payload = TextPayload }, _adminToken);
 
         var (adminResp, adminRoot, adminBody) = await SendAsync(HttpMethod.Get,
-            $"/api/learning/Lessons/{lessonId}/Admin", _adminToken);
+            $"/api/learning/Lessons/{lessonId}/Admin", bearer: _adminToken);
         adminResp.StatusCode.Should().Be(HttpStatusCode.OK, "Admin detail must return 200; body: {0}", adminBody);
         AssertSucceeded(adminRoot, adminBody);
 
@@ -1171,7 +1190,7 @@ public sealed class P7_02_LessonsContentBlocks_Tests : IAsyncLifetime
         var lessonId = await CreateLessonGetIdAsync();
 
         var (adminResp, adminRoot, adminBody) = await SendAsync(HttpMethod.Get,
-            $"/api/learning/Lessons/{lessonId}/Admin", _adminToken);
+            $"/api/learning/Lessons/{lessonId}/Admin", bearer: _adminToken);
         adminResp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", adminBody);
 
         TryProp(adminRoot, "data", out var data).Should().BeTrue("body: {0}", adminBody);
@@ -1188,7 +1207,7 @@ public sealed class P7_02_LessonsContentBlocks_Tests : IAsyncLifetime
     public async Task GetAdminDetail_NonExistentId_ReturnsNotFound()
     {
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
-            "/api/learning/Lessons/99999999/Admin", _adminToken);
+            "/api/learning/Lessons/99999999/Admin", bearer: _adminToken);
 
         ((int)resp.StatusCode).Should().NotBe(500,
             "Non-existent lesson must not produce 500; body: {0}", body);
@@ -1317,6 +1336,23 @@ public sealed class P7_02_LessonsContentBlocks_Tests : IAsyncLifetime
         return token.GetString()!;
     }
 
+    /// <summary>
+    /// Publishes a curriculum entity via POST /api/learning/ContentLifecycle/Transition (TargetState=Published=2).
+    /// Required before student-facing reads (GetSubjectLessons) can see the entity, because P7-05
+    /// added LifecycleState == Published filter. VersionedEntityType: Subject=1, Unit=2, Lesson=3.
+    /// </summary>
+    private async Task PublishEntityAsync(int entityType, int entityId)
+    {
+        var (resp, root, body) = await SendAsync(HttpMethod.Post,
+            "/api/learning/ContentLifecycle/Transition",
+            new { EntityType = entityType, EntityId = entityId, TargetState = 2 },
+            _adminToken);
+        resp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "Transition to Published must return 200; entityType={0}, entityId={1}; body: {2}",
+            entityType, entityId, body);
+        AssertSucceeded(root, body);
+    }
+
     /// <summary>Creates a grade → subject → unit stack and returns unitId.</summary>
     private async Task<int> CreateUnitWithPrereqsAsync()
     {
@@ -1420,7 +1456,7 @@ public sealed class P7_02_LessonsContentBlocks_Tests : IAsyncLifetime
     private async Task<List<JsonElement>> GetBlocksByLessonAsync(int lessonId)
     {
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
-            $"/api/learning/ContentBlocks/ByLesson/{lessonId}", _adminToken);
+            $"/api/learning/ContentBlocks/ByLesson/{lessonId}", bearer: _adminToken);
         resp.StatusCode.Should().Be(HttpStatusCode.OK,
             "ByLesson must return 200; body: {0}", body);
 
@@ -1434,7 +1470,7 @@ public sealed class P7_02_LessonsContentBlocks_Tests : IAsyncLifetime
     private async Task<int> GetAdminLessonSequenceOrderAsync(int lessonId)
     {
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
-            $"/api/learning/Lessons/{lessonId}/Admin", _adminToken);
+            $"/api/learning/Lessons/{lessonId}/Admin", bearer: _adminToken);
         resp.StatusCode.Should().Be(HttpStatusCode.OK, "Admin detail must return 200; body: {0}", body);
         TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);
         TryProp(data, "sequenceOrder", out var oProp).Should().BeTrue("body: {0}", body);
@@ -1445,7 +1481,7 @@ public sealed class P7_02_LessonsContentBlocks_Tests : IAsyncLifetime
     private async Task<List<JsonElement>> GetStudentLessonsUnitsAsync(int subjectId)
     {
         var (resp, root, body) = await SendAsync(HttpMethod.Get,
-            $"/api/learning/Subjects/{subjectId}/Lessons", _adminToken);
+            $"/api/learning/Subjects/{subjectId}/Lessons", bearer: _adminToken);
         resp.StatusCode.Should().Be(HttpStatusCode.OK, "GetLessons must return 200; body: {0}", body);
 
         TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);
@@ -1464,7 +1500,8 @@ public sealed class P7_02_LessonsContentBlocks_Tests : IAsyncLifetime
         if (lessonsEl.ValueKind != JsonValueKind.Array) return false;
         foreach (var lesson in lessonsEl.EnumerateArray())
         {
-            if (TryProp(lesson, "id", out var id) && id.GetInt32() == lessonId)
+            // LessonInUnitDto serializes the id field as "lessonId" (camelCase of LessonId property).
+            if (TryProp(lesson, "lessonId", out var id) && id.GetInt32() == lessonId)
                 return true;
         }
         return false;

@@ -29,6 +29,7 @@ These intentional decisions diverge from the source docs; each affected story re
 | `Phase-7-Admin-Console` | P7 | post-MVP | Admin console: curriculum mgmt, user/account mgmt, moderation, analytics/AI oversight | Admins can manage curriculum, users, moderate content, and view platform + AI-safety dashboards |
 | `Phase-8-Localization` | P8 | post-MVP | Learning language (medium of instruction) vs UI language; bilingual curriculum (parallel ar/en trees) | A student gets Math/Science in their learning language; Arabic/English subjects pinned by subject |
 | `Phase-9-Notifications` | P9 | post-MVP | Push end-to-end (Expo FE) + full habit-forming notification catalog + arbitration, on the merged P4-09 engine | A child's device registers for push, nudges deep-link to the right screen, an in-app inbox exists, and many notification types are arbitrated to few daily sends |
+| `Phase-10-Payments-Billing` | P10 | post-MVP | AI credit economy (energy), subscriptions (Free/Premium), payment provider, parent billing | A parent can subscribe + buy energy packs; a child spends "⚡ طاقة المساعد" on AI help, charged on delivery |
 | `Backlog-Phase-2-Plus` | post-MVP | — | Curriculum Intelligence (ingestion, KG, RAG at scale) | Deferred; data model designed in MVP |
 
 ## How to load into Jira
@@ -156,6 +157,23 @@ These intentional decisions diverge from the source docs; each affected story re
 - P9-08 Comeback escalation ladder *(day 2/5/14 tiered win-back; extends P4-09 LapseWinBack; BE)*
 - P9-09 Spaced-repetition review reminder — **BLOCKED by P3-10** *(captured for catalog completeness; BE)*
 - P9-10 Get every notification in my selected language *(localize push/in-app/email; welcome is hardcoded English today; coordinates with P6-06; BE — developed later)*
+
+### Phase 10 — Payment, Billing & Credits *(post-MVP)*
+*The AI credit economy + monetization. **Parent-driven: all purchasing/billing/payment happens in the parent app/account** — the child only spends "⚡ طاقة المساعد" (energy) and sees a read-only meter. Credits = two pools: monthly **granted** (expire) vs **purchased** packs (never expire). Charge-on-delivery, cache-hits charged the same, no charge on refuse/error. Wires into the AI Gateway (P3-01) and supersedes the AI-Helper MVP daily-cap guardrail.*
+- P10-01 Credit (energy) account & ledger *(Technical Enabler — dual pool, append-only ledger)*
+- P10-02 Grant monthly energy per plan *(scheduled; granted credits expire at cycle rollover)*
+- P10-03 Spend energy on AI help *(charge-on-delivery, wired into the gateway)*
+- P10-04 Daily soft cap & low-energy warning *(bounded by the monthly pool)*
+- P10-05 Manage subscription plan *(Free vs Premium — 199 EGP/month or 1990 EGP/year — parent)*
+- P10-06 Pay for a subscription *(payment provider — Paymob/Fawry DECISION; recurring; security-sensitive)*
+- P10-07 Buy an energy pack *(1000 credits / $5, never expire — parent, assigned to a child)*
+- P10-08 Billing history & receipts *(parent)*
+- P10-09 Failed payments & refunds *(dunning + clawback)*
+- P10-10 Kid-facing energy UI *(⚡ طاقة المساعد — read-only, the only student-app billing surface; distinct from hearts)*
+- P10-11 Admin: configure plans, grants & action costs *(admin console; config-driven economy)*
+- P10-12 Runtime-configurable AI economy via Global Settings *(Technical Enabler — `IGlobalSettingsProvider`, DB-backed, Redis-cached, audited; values tunable without a deploy)*
+
+> **Business model (launch):** Monthly **199 EGP** + Annual **1990 EGP** (≈ 2 months saved). **Payments: web checkout primary — no native mobile IAP** (deliberate; needs App/Play Store policy review before native launch). **AI economy:** credits configurable (Global Settings), charge value delivered, cache aggressively. **Success metrics (track these, NOT AI cost):** Free→Paid conversion, CAC, retention, average subscription months — instrumented via P5-03 analytics. **Voice (TTS), when added:** generate-once / cache-always via `AiResponseCache` — *needs its own story (not yet specified).*
 
 ### Backlog (Phase 2+) — Curriculum Intelligence
 *Three-stage pipeline: Multimodal Parsing (BL-02) → Curriculum Ingestion (BL-05) → Knowledge Graph (BL-03).*
