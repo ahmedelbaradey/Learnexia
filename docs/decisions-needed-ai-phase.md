@@ -9,9 +9,9 @@
 > [ai-cost-routing.md](briefs/ai-cost-routing.md) ·
 > [curriculum-system-of-record.md](briefs/curriculum-system-of-record.md).
 
-Owner: lead · Status: **RESOLVED** (answers inline; credit economy + monetization carved to **Phase 9 — Payment, Billing & Credits**) · Created: 2026-06-12 · Resolved: 2026-06-12
+Owner: lead · Status: **RESOLVED** (answers inline; credit economy + monetization carved to **Phase 10 — Payment, Billing & Credits**) · Created: 2026-06-12 · Resolved: 2026-06-12
 
-> ⚠️ **Credit economy v2 — revised 2026-06-13** (supersedes the figures recorded in Section 1 below): **Free 100/month + 10/day · Premium 5000/month + 250/day · pack 1000 credits / $5.** Per-action costs unchanged (hint=1, explain-mistake=3, deep-explanation=5, practice-generation=5). Charge policy: delivered = charge, **cache-hit = charge**, refuse = free, error = free. Primary cost lever is the **app-level Redis response cache** (hit = $0 AI tokens), with provider prompt-cache as an optional secondary. Phase-9 stories/tasks carry the authoritative numbers.
+> ⚠️ **Credit economy v2 — revised 2026-06-13** (supersedes the figures recorded in Section 1 below): **Free 100/month + 10/day · Premium 5000/month + 250/day · pack 1000 credits / $5.** Per-action costs unchanged (hint=1, explain-mistake=3, deep-explanation=5, practice-generation=5). Charge policy: delivered = charge, **cache-hit = charge**, refuse = free, error = free. Primary cost lever is the **app-level Redis response cache** (hit = $0 AI tokens), with provider prompt-cache as an optional secondary. Phase-10 stories/tasks carry the authoritative numbers.
 
 ---
 

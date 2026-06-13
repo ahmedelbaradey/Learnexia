@@ -173,7 +173,7 @@ A Redis cache **freezes one AI answer and amplifies it to thousands of children*
 
 On a runtime cache miss:
 1. Generate → Safety Layer → compute `Confidence`.
-2. If `Confidence ≥ IGlobalSettingsProvider.GetDecimal("ai.cache.autoApprovalConfidence", 0.85m)` AND safety passed → store with `ReviewStatus = Approved` (auto-approved). **Decision 1 (OQ-F resolved):** bootstrap default = 0.85; tuning guidance: raise toward 0.90 if reviewers find many mistakes; lower toward 0.80 if quality is excellent. Read via `IGlobalSettingsProvider` at runtime — change via admin settings update post-P9-12, no deployment required. **Never read from `AiGatewayOptions.AutoApprovalConfidenceThreshold` or a hardcoded constant.**
+2. If `Confidence ≥ IGlobalSettingsProvider.GetDecimal("ai.cache.autoApprovalConfidence", 0.85m)` AND safety passed → store with `ReviewStatus = Approved` (auto-approved). **Decision 1 (OQ-F resolved):** bootstrap default = 0.85; tuning guidance: raise toward 0.90 if reviewers find many mistakes; lower toward 0.80 if quality is excellent. Read via `IGlobalSettingsProvider` at runtime — change via admin settings update post-P10-12, no deployment required. **Never read from `AiGatewayOptions.AutoApprovalConfidenceThreshold` or a hardcoded constant.**
 3. Otherwise (`Confidence < 0.85` or safety edge case) → store with `ReviewStatus = PendingReview` for human review; the **current student** receives the response (it passed safety), but it is NOT served as a cache hit to subsequent students until approved.
 
 Offline pre-generated entries follow the same gate: they enter as `PendingReview`; the Opus QA pass sets them to `Approved`. Only then do they enter the cache-hit path.
@@ -197,7 +197,7 @@ Invalidation triggers — set `InvalidatedAt = NOW()` (soft-invalidation) on row
 
 ## 7. Per-Plan Daily Request Cap (MVP Cost-Safety Guardrail)
 
-> **Scope:** This section describes a **minimal cost-safety guardrail only** — a daily request count cap, not a credit economy. The full credit economy (ledger, per-action pricing, purchasable credit packs, monthly grants/reset, billing) is deferred to **Phase 9 (`P9-*` — Payment, Billing & Credits)**. Phase 9 supersedes this guardrail and promotes the concept to a full `ai.AiUsageLedger` / `ai.AiCreditTransaction` system. For reference: the Phase 9 credit amounts are Free 100/mo + 10/day, Premium 5000/mo + 250/day, pack 1000 credits/$5 — cost-routing only references these; enforcement is P9's responsibility.
+> **Scope:** This section describes a **minimal cost-safety guardrail only** — a daily request count cap, not a credit economy. The full credit economy (ledger, per-action pricing, purchasable credit packs, monthly grants/reset, billing) is deferred to **Phase 10 (`P10-*` — Payment, Billing & Credits)**. Phase 10 supersedes this guardrail and promotes the concept to a full `ai.AiUsageLedger` / `ai.AiCreditTransaction` system. For reference: the Phase 10 credit amounts are Free 100/mo + 10/day, Premium 5000/mo + 250/day, pack 1000 credits/$5 — cost-routing only references these; enforcement is P10's responsibility.
 
 Enforce server-side in the gateway via `IAiUsageBudget` (see P3-01-BE-14):
 
@@ -208,7 +208,7 @@ Enforce server-side in the gateway via `IAiUsageBudget` (see P3-01-BE-14):
 
 Cap values are illustrative and config-driven — product must set exact numbers (confirm in `AiGatewayOptions`). The mechanism: each runtime gateway call checks the student's remaining **daily request count**; if exhausted, skip the LLM and serve the best available cached response. Never return a hard error to the student — degrade gracefully to the cached canned explanation.
 
-Track consumed requests in the `AiUsageLogs` table (planned for P7-11) or an interim Redis/DB counter. This cap is a temporary guardrail; Phase 9 builds the full billing and credit-accounting system on top of it.
+Track consumed requests in the `AiUsageLogs` table (planned for P7-11) or an interim Redis/DB counter. This cap is a temporary guardrail; Phase 10 builds the full billing and credit-accounting system on top of it.
 
 ## 8. Eval-Driven Tier Mix Validation
 
@@ -225,7 +225,7 @@ Do not lower the Sonnet floor on `Explain`, `Hint`, or `WhyWrong` task kinds wit
 
 ## 8b. Everything is runtime-configurable (Global Settings)
 
-All model-routing-adjacent economy values and cache/review thresholds are read through **`IGlobalSettingsProvider`** — a contract declared in `Shared.Contracts` that ships with the AI Helper (Phase 4) as a bootstrap-default implementation, and is upgraded to a fully DB-backed, Redis-cached, audited, admin-editable implementation in **P9-12 (Global Settings enabler)**. Until P9-12 lands, `IGlobalSettingsProvider.Get*(key, defaultValue)` returns the code/appsettings default for any key absent from the DB. After P9-12, every value is tunable by Product/Admin via the admin console without a deployment.
+All model-routing-adjacent economy values and cache/review thresholds are read through **`IGlobalSettingsProvider`** — a contract declared in `Shared.Contracts` that ships with the AI Helper (Phase 4) as a bootstrap-default implementation, and is upgraded to a fully DB-backed, Redis-cached, audited, admin-editable implementation in **P10-12 (Global Settings enabler)**. Until P10-12 lands, `IGlobalSettingsProvider.Get*(key, defaultValue)` returns the code/appsettings default for any key absent from the DB. After P10-12, every value is tunable by Product/Admin via the admin console without a deployment.
 
 **Managed keys (cache/review thresholds — owned by P3-04/05/06):**
 
@@ -238,9 +238,9 @@ All model-routing-adjacent economy values and cache/review thresholds are read t
 **Implementation rules:**
 - Code MUST read these values via `IGlobalSettingsProvider` — never from `AiGatewayOptions.*`, a hardcoded constant, or `appsettings.json` directly.
 - `appsettings.json` / `AiGatewayOptions` may carry the same bootstrap defaults for `IGlobalSettingsProvider`'s initial implementation, but they are the fallback, not the source of truth.
-- P9-12 upgrades the implementation; no calling code changes when that happens.
+- P10-12 upgrades the implementation; no calling code changes when that happens.
 
-**Broader economy values** (credit grants, per-action costs, daily caps, pack pricing) follow the same pattern and are also managed via `IGlobalSettingsProvider` in P9-12. See P9-12 user story for the full key inventory.
+**Broader economy values** (credit grants, per-action costs, daily caps, pack pricing) follow the same pattern and are also managed via `IGlobalSettingsProvider` in P10-12. See P10-12 user story for the full key inventory.
 
 ## 9. Open Questions for the Lead
 
@@ -251,9 +251,9 @@ All model-routing-adjacent economy values and cache/review thresholds are read t
 | OQ-C | **`IAiBatchGateway` vs extending `IAiGateway`:** should the Batch API path be a separate interface? | Separate `IAiBatchGateway` keeps the runtime and batch seams independent; confirm before P3-01 backend-feature is dispatched. |
 | OQ-D | **Quota store:** Redis counter (fast, ephemeral) vs DB column on the student/plan record vs the P7-11 `AiUsageLogs` table? | Interim: DB column on the plan/subscription record. P7-11 adds the analytics table on top. |
 | OQ-E | **Exact quota numbers per plan** (Free vs Premium AI monthly runtime call caps). | Product decision — block the quota-enforcement task until defined. |
-| OQ-F | **Auto-approval confidence threshold:** what is the minimum `Confidence` score for a runtime-generated response to be auto-approved? | **RESOLVED (Decision 1):** `Confidence ≥ 0.85` (bootstrap default) → auto-`Approved`; `< 0.85` → `PendingReview`. Read via `IGlobalSettingsProvider.GetDecimal("ai.cache.autoApprovalConfidence", 0.85m)` — **never from `AiGatewayOptions.AutoApprovalConfidenceThreshold` or a hardcoded constant**. Tuning guidance: raise toward `0.90` if reviewers find many mistakes; lower toward `0.80` if quality is excellent. Tunable at runtime post-P9-12 without a deployment. |
-| OQ-G | **WhyWrong cache pool or single entry?** Per R3, WhyWrong is cacheable by compound key — but it is student-answer-specific. Should there be a per-question hard cap on the number of distinct WhyWrong entries stored? | **RESOLVED (Decision 2):** Cap = **`IGlobalSettingsProvider.GetInt("ai.cache.whyWrongVariantCap", 50)` distinct normalized wrong-answer variants per `QuestionId`**, with **LRU eviction** beyond that cap. Bootstrap default = 50. Runtime-configurable via P9-12 without a deployment. Prevents unbounded cache growth while preserving the highest-traffic error patterns. |
-| OQ-H | **Practice pool size (N):** how many variation indices per skill should the offline job pre-generate? | **RESOLVED (Decision 3):** **N = `IGlobalSettingsProvider.GetInt("ai.cache.practicePoolSize", 5)` variations per skill** (bootstrap default = 5; bump to N ≥ 10 when the question bank is larger via an admin settings update — no code change required). Enumeration is `VariationIndex` 0..N-1. Runtime-configurable via P9-12. |
+| OQ-F | **Auto-approval confidence threshold:** what is the minimum `Confidence` score for a runtime-generated response to be auto-approved? | **RESOLVED (Decision 1):** `Confidence ≥ 0.85` (bootstrap default) → auto-`Approved`; `< 0.85` → `PendingReview`. Read via `IGlobalSettingsProvider.GetDecimal("ai.cache.autoApprovalConfidence", 0.85m)` — **never from `AiGatewayOptions.AutoApprovalConfidenceThreshold` or a hardcoded constant**. Tuning guidance: raise toward `0.90` if reviewers find many mistakes; lower toward `0.80` if quality is excellent. Tunable at runtime post-P10-12 without a deployment. |
+| OQ-G | **WhyWrong cache pool or single entry?** Per R3, WhyWrong is cacheable by compound key — but it is student-answer-specific. Should there be a per-question hard cap on the number of distinct WhyWrong entries stored? | **RESOLVED (Decision 2):** Cap = **`IGlobalSettingsProvider.GetInt("ai.cache.whyWrongVariantCap", 50)` distinct normalized wrong-answer variants per `QuestionId`**, with **LRU eviction** beyond that cap. Bootstrap default = 50. Runtime-configurable via P10-12 without a deployment. Prevents unbounded cache growth while preserving the highest-traffic error patterns. |
+| OQ-H | **Practice pool size (N):** how many variation indices per skill should the offline job pre-generate? | **RESOLVED (Decision 3):** **N = `IGlobalSettingsProvider.GetInt("ai.cache.practicePoolSize", 5)` variations per skill** (bootstrap default = 5; bump to N ≥ 10 when the question bank is larger via an admin settings update — no code change required). Enumeration is `VariationIndex` 0..N-1. Runtime-configurable via P10-12. |
 
 ## 10. Links
 

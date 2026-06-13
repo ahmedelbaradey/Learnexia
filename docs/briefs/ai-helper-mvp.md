@@ -167,7 +167,7 @@ P3-12 UI surfaces exactly these four helper actions as distinct affordances, plu
 
 ## 7b. Runtime-configurable thresholds (Global Settings)
 
-The cache/review thresholds that govern the AI Helper's cost-control and content-quality gates — auto-approval confidence threshold, WhyWrong variant cap, and practice pool size — are read at runtime via **`IGlobalSettingsProvider`** (contract in `Shared.Contracts`). The decided values (0.85 / 50 / 5) are **bootstrap defaults** used when a key is absent from the DB. The full DB-backed, Redis-cached, audited, admin-editable implementation lands in **P9-12**. Until then the bootstrap defaults apply transparently; no calling code in P3-04/05/06 needs to change when P9-12 ships.
+The cache/review thresholds that govern the AI Helper's cost-control and content-quality gates — auto-approval confidence threshold, WhyWrong variant cap, and practice pool size — are read at runtime via **`IGlobalSettingsProvider`** (contract in `Shared.Contracts`). The decided values (0.85 / 50 / 5) are **bootstrap defaults** used when a key is absent from the DB. The full DB-backed, Redis-cached, audited, admin-editable implementation lands in **P10-12**. Until then the bootstrap defaults apply transparently; no calling code in P3-04/05/06 needs to change when P10-12 ships.
 
 See `docs/briefs/ai-cost-routing.md §8b` for the full key inventory and implementation rules.
 
