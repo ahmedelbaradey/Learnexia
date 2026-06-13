@@ -24,6 +24,7 @@ import { Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { useLocale } from '../../../src/hooks/useLocale';
+import { useActiveChildStore } from '../../../src/providers/activeChildStore';
 import { EditChildSheet, type EditChildInitialValues } from '../../(onboarding)/_components/EditChildSheet';
 import { AddChildCard } from './AddChildCard';
 import { ChildDashboardCard } from './ChildDashboardCard';
@@ -69,6 +70,7 @@ export function MyChildrenWeb() {
   // Edit-child state (P1-12-FE-5): null = sheet closed; set to child data to open.
   const [editingChild, setEditingChild] = useState<EditingChild | null>(null);
 
+  const openAddChild = useActiveChildStore((s) => s.openAddChild);
   const rowDir = isRtl ? 'row-reverse' : 'row';
   const children = query.data ?? [];
   const childIds = children.map((c) => String(c.id));
@@ -148,7 +150,7 @@ export function MyChildrenWeb() {
             variant="primary"
             size="sm"
             accessibilityLabel={t('parent.myChildren.addChild')}
-            onPress={() => router.push('/(onboarding)/add-child')}
+            onPress={() => openAddChild()}
             testID="my-children-add-button"
           >
             {t('parent.myChildren.addChild')}
@@ -208,7 +210,7 @@ export function MyChildrenWeb() {
                     />
                   );
                 })}
-                <AddChildCard onPress={() => router.push('/(onboarding)/add-child')} />
+                <AddChildCard onPress={() => openAddChild()} />
               </>
             )}
           </Stack>

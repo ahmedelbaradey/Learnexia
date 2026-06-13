@@ -44,7 +44,7 @@ import { useGroupGuard } from '../../src/hooks/useGroupGuard';
 import { useLocale } from '../../src/hooks/useLocale';
 import { useActiveChildStore } from '../../src/providers/activeChildStore';
 import { LocaleThemeControls } from '../(auth)/_components/LocaleThemeControls';
-import { AddChildModal } from './_components/AddChildModal';
+import { AddChildModal } from '../../src/components/AddChildModal';
 import { ChildSwitcher } from './_components/ChildSwitcher';
 import {
   NAV_ITEM,

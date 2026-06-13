@@ -28,9 +28,14 @@ export function useAddChild(): UseMutationResult<
     mutationFn: (input: AddChildCommand): Promise<AddedChildResponse> =>
       unwrapEnvelope(client.addChild(input)) as Promise<AddedChildResponse>,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.family.myChildren(),
-      });
+      // Invalidate myChildren so the list refreshes everywhere.
+      // Also invalidate auth.me so `hasChildren` is up to date — guards that
+      // read hasChildren (e.g. useAuthRoute) see the updated state immediately
+      // after the first successful add (AC-3.3 / OQ-1).
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.family.myChildren() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.auth.me() }),
+      ]);
     },
   });
 }
