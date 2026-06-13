@@ -12,6 +12,7 @@
 - `â€”` â€” no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
+- **P3-07 (Backend)** — RAG retrieval (Curriculum module 4 projects, CurriculumChunk+CurriculumVersion+chunk_embeddings_bge_m3 pgvector schema HNSW, InitialCurriculum migration, BgeM3EmbeddingProvider + DeterministicEmbedding placeholders, RetrieveChunksQuery handler, RagContextProvider ILearningContextProvider+ICurriculumContextQuery, CurriculumChunkSeeder, cross-module MediatR, 11/11 integration vs pgvector; placeholder embeddings, real BGE-M3 pending P3-07-BE-0 TEI provision) — committed
 - **P3-03 (Backend)** — Prompt Builder (IPromptBuilder stateless facade, PromptContext value object, 4-subject 4-intent 2-language templates ar/en Math/Science/Arabic/English, TemplateSelector pure lookup, HelperIntent enum Explain/Hint/WhyWrong/SimilarExample, ToneFrame anti-injection, PII-minimal grade+age only, optional seams IStudentWeakAreasQuery/IChildLearningProfileQuery/ICurriculumContextQuery/ILearningContextProvider with safe stubs, graceful degradation, 203 Ai unit tests green 166 new, FR-AI-6 mandatory security gate PASS) — committed
 - **P3-02 (Backend)** — AI Safety Layer (ISafetyLayer facade, 3 composable fail-closed checks toxicity/age/hallucination, SafetyEvents append-only table, eval harness ar+en) — committed
 - **P3-13 (Backend)** — Adaptive student profile (StudentLearningProfile + StudentProfileEngine 4-rule derivations + SP-Recompute job + GET /api/Learning/Profile) — committed
@@ -92,7 +93,7 @@
 | P3-04 | Explain a concept on demand | ðŸ”² |
 | P3-05 | Progressive hints & simpler re-explanations | ðŸ”² |
 | P3-06 | Generate curriculum-grounded questions (RAG) | ðŸ”² |
-| P3-07 | Retrieve curriculum context via vector search | ðŸ”² |
+| P3-07 | Retrieve curriculum context via vector search | ✅ |
 | P3-08 | Adjust difficulty adaptively | ✅ |
 | P3-09 | Track per-skill mastery | ✅ |
 | P3-10 | Schedule spaced-repetition practice | ðŸ”² |
