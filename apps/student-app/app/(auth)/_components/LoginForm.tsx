@@ -318,8 +318,8 @@ export function LoginForm() {
             onChangeText={field.onChange}
             keyboardType="email-address"
             autoCapitalize="none"
-            autoComplete="username"
-            forceLtr
+            autoComplete="email"
+            forceValueLtr
             error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
             direction={direction}
             disabled={emailFormDisabled}
@@ -337,6 +337,8 @@ export function LoginForm() {
             onChangeText={field.onChange}
             secureTextEntry
             autoComplete="password"
+            showLabel={t('auth.login.showPassword')}
+            hideLabel={t('auth.login.hidePassword')}
             error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
             direction={direction}
             disabled={emailFormDisabled}
@@ -392,11 +394,12 @@ export function LoginForm() {
         {t('auth.login.submitButton')}
       </Button>
 
-      {/* OR divider — "Or" on phones, "Or continue with" on tablet+. */}
-      <Stack $tablet={{ display: 'none' }}>
+      {/* OR divider — "Or" on phones, "Or continue with" on tablet+.
+          paddingVertical="$2" adds 8px top+bottom breathing room (align-login m-31). */}
+      <Stack paddingVertical="$2" $tablet={{ display: 'none' }}>
         <OrDivider label={t('auth.login.orDivider')} direction={direction} />
       </Stack>
-      <Stack display="none" $tablet={{ display: 'flex' }}>
+      <Stack display="none" paddingVertical="$2" $tablet={{ display: 'flex' }}>
         <OrDivider label={t('auth.login.orContinueWith')} direction={direction} />
       </Stack>
 

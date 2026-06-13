@@ -6,11 +6,19 @@
  * runtimes without importing Reanimated in the type graph). Touch target ≥ 48px
  * for md/full; `sm` adds vertical hitSlop to reach 48px.
  *
+ * Web-only: primary variant adds an inset highlight via CSS box-shadow
+ * (`0 4px 12px rgba(99,102,241,0.4), inset 0 1px 0 rgba(255,255,255,0.2)`)
+ * per align-login M-09. Native keeps the RN shadow props.
+ *
+ * Disabled: solid `$cardSoft` surface at full opacity (no translucency
+ * artefact) — align-login M-08 / align-register B-3.
+ *
  * A11y: `accessibilityRole="button"`, `accessibilityState={{disabled, busy}}`,
  * required `accessibilityLabel`. See `src/accessibility.md`.
  */
 import { Stack, Text, styled, type GetProps } from '@tamagui/core';
 import React from 'react';
+import { Platform } from 'react-native';
 
 import { Spinner } from '../../internal/Spinner';
 
@@ -56,8 +64,11 @@ const ButtonFrame = styled(Stack, {
         borderColor: '$borderStrong',
       },
       disabled: {
-        backgroundColor: '$card',
-        opacity: 0.4,
+        // Solid muted surface at full opacity (no translucency artefact).
+        // align-login M-08 / align-register B-3: $cardSoft (#334155) is the
+        // closest token to the design target; opacity stays at 1.
+        backgroundColor: '$cardSoft',
+        opacity: 1,
         pointerEvents: 'none',
         cursor: 'default',
       },
@@ -107,6 +118,10 @@ export interface ButtonProps extends Omit<GetProps<typeof ButtonFrame>, 'variant
   testID?: string;
 }
 
+/** Web-only CSS box-shadow for the primary button (outer glow + inset highlight). */
+const PRIMARY_WEB_SHADOW =
+  '0 4px 12px rgba(99,102,241,0.4), inset 0 1px 0 rgba(255,255,255,0.2)';
+
 export function Button({
   variant = 'primary',
   size = 'md',
@@ -123,6 +138,13 @@ export function Button({
   const effectiveVariant: ButtonVariant = disabled ? 'disabled' : variant;
   const isInteractive = !disabled && !loading;
 
+  // Web-only: apply CSS box-shadow with inset highlight for primary CTA.
+  // Native keeps the RN shadow props on the styled variant (align-login M-09).
+  const webPrimaryShadow =
+    Platform.OS === 'web' && effectiveVariant === 'primary'
+      ? ({ boxShadow: PRIMARY_WEB_SHADOW } as Record<string, string>)
+      : undefined;
+
   return (
     <ButtonFrame
       variant={effectiveVariant}
@@ -138,6 +160,7 @@ export function Button({
       aria-disabled={!isInteractive}
       testID={testID}
       onPress={isInteractive ? onPress : undefined}
+      style={webPrimaryShadow}
       {...rest}
     >
       {loading ? (

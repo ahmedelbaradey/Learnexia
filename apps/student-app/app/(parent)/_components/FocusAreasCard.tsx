@@ -32,9 +32,14 @@ export interface FocusAreasCardProps {
   locale: string;
 }
 
-/** Localized percent for the row a11y label (Eastern-Arabic digits in AR). */
+/**
+ * Localized percent — Eastern-Arabic digits in AR, Latin digits in EN.
+ * Uses ARABIC PERCENT SIGN (U+066A, '٪') in AR per align spec M-26.
+ */
 function formatPercent(value: number, locale: string): string {
-  return `${new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US').format(value)}%`;
+  const isAr = locale === 'ar';
+  const formatted = new Intl.NumberFormat(isAr ? 'ar-EG' : 'en-US').format(value);
+  return `${formatted}${isAr ? '٪' : '%'}`;
 }
 
 /** Subject → i18n label key. */
@@ -99,10 +104,17 @@ export function FocusAreasCard({ childId, childName, direction, rowDir, locale }
             fontFamily="$heading"
             accessibilityRole="header"
             writingDirection={direction}
+            textAlign={direction === 'rtl' ? 'right' : 'left'}
           >
             {t('parent.overview.focusAreas.title')}
           </Text>
-          <Text color="$fg3" fontSize={13} fontFamily="$body" writingDirection={direction}>
+          <Text
+            color="$fg3"
+            fontSize={13}
+            fontFamily="$body"
+            writingDirection={direction}
+            textAlign={direction === 'rtl' ? 'right' : 'left'}
+          >
             {t('parent.overview.focusAreas.subtitle', { name: childName })}
           </Text>
         </Stack>
@@ -146,18 +158,20 @@ export function FocusAreasCard({ childId, childName, direction, rowDir, locale }
               key={`${row.topicKey}-${row.subject}`}
               flexDirection={rowDir}
               alignItems="center"
-              gap="$3"
+              gap={14}
               borderRadius="$cardInner"
               backgroundColor="$bg"
               borderWidth={1}
-              borderColor="$border"
+              borderColor="$borderSubtle"
               paddingVertical={12}
               paddingHorizontal={14}
               accessible
               accessibilityLabel={`${topic} ${subject} ${a11yPercent}`}
               aria-label={`${topic} ${subject} ${a11yPercent}`}
             >
-              {/* Icon chip — severity-tinted soft bg + matching icon color (B-14). */}
+              {/* Icon chip — severity-tinted soft bg + matching icon color (B-14).
+                  flexDirection={rowDir}: chip is the FIRST child so in RTL (row-reverse)
+                  it renders on the visual RIGHT (leading/start side). */}
               <Stack
                 width={40}
                 height={40}
@@ -172,24 +186,39 @@ export function FocusAreasCard({ childId, childName, direction, rowDir, locale }
                 </Text>
               </Stack>
 
-              {/* Topic + subject */}
+              {/* Topic + subject — text aligns to writing-direction start (right in RTL). */}
               <Stack flexDirection="column" gap="$1" flex={1}>
-                <Text color="$fg1" fontSize={13} fontWeight="700" fontFamily="$heading" writingDirection={direction}>
+                <Text
+                  color="$fg1"
+                  fontSize={13}
+                  fontWeight="700"
+                  fontFamily="$heading"
+                  writingDirection={direction}
+                  textAlign={direction === 'rtl' ? 'right' : 'left'}
+                >
                   {topic}
                 </Text>
-                <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction}>
+                <Text
+                  color="$fg3"
+                  fontSize={12}
+                  fontFamily="$body"
+                  writingDirection={direction}
+                  textAlign={direction === 'rtl' ? 'right' : 'left'}
+                >
                   {subject}
                 </Text>
               </Stack>
 
-              {/* Confidence bar — stays LTR in RTL (M-22); track $card + hairline (B-13). */}
+              {/* Confidence bar — always LTR (M-22): fill grows left→right in both locales.
+                  The outer wrapper forces direction:ltr so the fill Stack starts from left
+                  regardless of document direction. Track bg = $card + hairline (B-13). */}
               <Stack
                 width={120}
                 height={8}
                 borderRadius={9999}
                 backgroundColor="$card"
                 borderWidth={1}
-                borderColor="rgba(255,255,255,0.04)"
+                borderColor="$borderSubtle"
                 overflow="hidden"
                 flexDirection="row"
                 accessibilityElementsHidden
@@ -201,7 +230,8 @@ export function FocusAreasCard({ childId, childName, direction, rowDir, locale }
                 />
               </Stack>
 
-              {/* Percent */}
+              {/* Percent — localized numerals + locale-correct percent symbol (٪ in AR).
+                  Text aligns to logical end (left in RTL, right in LTR) per spec B-17. */}
               <Text
                 color={fill}
                 fontSize={14}
@@ -211,7 +241,7 @@ export function FocusAreasCard({ childId, childName, direction, rowDir, locale }
                 textAlign={direction === 'rtl' ? 'left' : 'right'}
                 style={{ fontVariant: ['tabular-nums'] }}
               >
-                {`${row.percent}%`}
+                {formatPercent(row.percent, locale)}
               </Text>
             </Stack>
           );

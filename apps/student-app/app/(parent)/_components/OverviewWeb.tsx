@@ -140,7 +140,9 @@ export function OverviewWeb({ onAddChild }: OverviewWebProps) {
 
   return (
     <Stack testID="overview-root" flexDirection="column" gap="$6" padding="$6" width="100%">
-      {/* Header */}
+      {/* Header — direction-aware row (rowDir): title block on logical-start side,
+           controls on logical-end side. In RTL rowDir=row-reverse so title appears
+           on the right (leading) and controls on the left (trailing). */}
       <Stack testID="overview-header" flexDirection={rowDir} alignItems="flex-start" justifyContent="space-between" gap="$4" flexWrap="wrap">
         <Stack flexDirection="column" gap="$1">
           <Text
@@ -150,10 +152,17 @@ export function OverviewWeb({ onAddChild }: OverviewWebProps) {
             fontFamily="$heading"
             accessibilityRole="header"
             writingDirection={direction}
+            textAlign={direction === 'rtl' ? 'right' : 'left'}
           >
             {t('parent.overview.title', { name: childName })}
           </Text>
-          <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction}>
+          <Text
+            color="$fg3"
+            fontSize={12}
+            fontFamily="$body"
+            writingDirection={direction}
+            textAlign={direction === 'rtl' ? 'right' : 'left'}
+          >
             {dateRange}
           </Text>
         </Stack>
@@ -247,6 +256,10 @@ function OverviewBody({ childId, childName, rowDir, direction, locale }: Overvie
             gap="$2"
             hoverStyle={{ backgroundColor: '$cardSoft', scale: 1.02 }}
           >
+            {/* Icon chip + label row — direction-aware: label on logical-start, chip on
+                logical-end. flexDirection={rowDir} places chip on the trailing visual
+                side in LTR (right) and the trailing visual side in RTL (left), matching
+                the AR/EN pixel references (ar-web-kpi.html, web-kpi-row.html). */}
             <Stack flexDirection={rowDir} alignItems="center" justifyContent="space-between" gap="$2">
               <Text
                 color="$fg3"
@@ -256,6 +269,7 @@ function OverviewBody({ childId, childName, rowDir, direction, locale }: Overvie
                 textTransform="uppercase"
                 letterSpacing={0.88}
                 writingDirection={direction}
+                textAlign={direction === 'rtl' ? 'right' : 'left'}
                 flex={1}
               >
                 {k.label}
@@ -273,6 +287,7 @@ function OverviewBody({ childId, childName, rowDir, direction, locale }: Overvie
                 <Text fontSize={18}>{k.icon}</Text>
               </Stack>
             </Stack>
+            {/* Value — tabular numerals, locale-formatted; right-aligned in RTL. */}
             <Text
               color="$fg1"
               fontSize={28}
@@ -280,10 +295,19 @@ function OverviewBody({ childId, childName, rowDir, direction, locale }: Overvie
               fontFamily="$heading"
               style={{ fontVariant: ['tabular-nums'] }}
               writingDirection={direction}
+              textAlign={direction === 'rtl' ? 'right' : 'left'}
             >
               {k.value}
             </Text>
-            <Text color="$success" fontSize={12} fontWeight="700" fontFamily="$heading" writingDirection={direction}>
+            {/* Delta — right-aligned in RTL. */}
+            <Text
+              color="$success"
+              fontSize={12}
+              fontWeight="700"
+              fontFamily="$heading"
+              writingDirection={direction}
+              textAlign={direction === 'rtl' ? 'right' : 'left'}
+            >
               {k.delta}
             </Text>
             {/* a11y: one composed label per tile (label + value + delta) */}

@@ -9,10 +9,12 @@
  * On narrow (<768): no shell header / sidebar — each page uses the mobile
  * ScreenHeader. The Slot is rendered in a plain full-height Stack.
  *
- * Shell header contains (logical-start → logical-end):
- *   [ChildSwitcher pill] .... [LocaleThemeControls (lang + theme toggle)]
- * In RTL the document `dir` flips the row automatically; the header inner row
- * uses `rowDir` (`row-reverse` for RTL) so the switcher and controls swap sides.
+ * Shell header contains (logical-end only):
+ *   [LocaleThemeControls (lang + theme toggle)]
+ * The ChildSwitcher was removed from the shell header — the sidebar child-selector
+ * card is now the single place to switch active child on wide screens. The
+ * ChildSwitcher is kept in the narrow mobile header only (no sidebar there).
+ * In RTL the document `dir` flips the row automatically.
  *
  * Brand scrollbar: injected via a web-only <style> element in the shell.
  * The content ScrollView's `style={{ flex: 1 }}` + `contentContainerStyle flexGrow:1`
@@ -154,21 +156,20 @@ export default function ParentLayout() {
     return (
       <>
         <Stack flex={1} flexDirection="column" backgroundColor="$bg">
-          {/* Shell header (56px, sticky) */}
+          {/* Shell header (56px, sticky) — locale/theme controls only.
+              ChildSwitcher removed: sidebar child-selector is the single
+              active-child picker on wide screens (spec fix). */}
           <Stack
             height={56}
             flexDirection={isRtl ? 'row-reverse' : 'row'}
             alignItems="center"
-            justifyContent="space-between"
+            justifyContent="flex-end"
             paddingHorizontal="$4"
             borderBottomWidth={1}
             borderBottomColor="$borderSubtle"
             backgroundColor="$bg"
             style={{ position: 'sticky', top: 0, zIndex: 40 }}
           >
-            {/* Logical START: Child Switcher */}
-            <ChildSwitcher onAddChild={handleAddChild} />
-
             {/* Logical END: Language + Theme controls */}
             <LocaleThemeControls direction={direction} />
           </Stack>

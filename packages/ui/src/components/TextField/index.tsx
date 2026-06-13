@@ -5,13 +5,17 @@
  * Universal (Expo + RN Web). Built on RN's `TextInput` (RN Web maps it to a DOM
  * input) wrapped in token-driven Tamagui stacks. Token-only styling, logical
  * RTL props, password visibility toggle, inline error slot. Input height 48px,
- * resting border `$borderInput` (0.10). `forceLtr` keeps email/phone values LTR.
+ * resting border `$borderInput` (0.10). `forceValueLtr` / `forceLtr` keeps
+ * email/phone values LTR. Also auto-forces LTR when `keyboardType` is
+ * `'email-address'` or `autoComplete` is `'email'` / `'tel'` (SKILL.md rule).
  *
  * `inputRadius = 14` is a LOCAL constant per Design Spec Gap 9 (it falls between
  * `$sm` 8px and `$card` 20px and is single-use — no new global token).
  *
  * A11y: label drives `accessibilityLabel`; error string is announced via
  * `accessibilityLiveRegion="polite"`; the password toggle is a 48px button.
+ * The reveal toggle renders localised "Show" / "Hide" text (not emoji) per
+ * align-login M-06/M-07, positioned inside the label row above the input.
  */
 import { colors } from '@learnexia/design-system';
 import { directionForLocale, type Direction } from '@learnexia/shared/i18n';
@@ -37,6 +41,7 @@ export interface TextFieldProps {
   keyboardType?: KeyboardTypeOptions;
   autoCapitalize?: TextInputProps['autoCapitalize'];
   autoComplete?: TextInputProps['autoComplete'];
+  autoCorrect?: boolean;
   disabled?: boolean;
   testID?: string;
   accessibilityLabel?: string;
@@ -47,8 +52,23 @@ export interface TextFieldProps {
    * Force the input VALUE to render left-to-right regardless of locale — for
    * technical strings (email, phone, URLs) that must stay Latin + LTR per
    * SKILL.md, even inside an RTL form. The label still follows `direction`.
+   * Also auto-forced when `keyboardType='email-address'` or
+   * `autoComplete='email'` / `'tel'`.
+   * `forceValueLtr` is the canonical name; `forceLtr` is kept as an alias.
    */
+  forceValueLtr?: boolean;
+  /** @deprecated Use `forceValueLtr`. */
   forceLtr?: boolean;
+  /**
+   * Localized label shown on the reveal toggle when the password is hidden.
+   * Defaults to 'Show'. Callers should pass `t('auth.login.showPassword')`.
+   */
+  showLabel?: string;
+  /**
+   * Localized label shown on the reveal toggle when the password is visible.
+   * Defaults to 'Hide'. Callers should pass `t('auth.login.hidePassword')`.
+   */
+  hideLabel?: string;
 }
 
 /**
@@ -61,6 +81,16 @@ function resolveDirection(direction?: Direction, locale?: string): Direction {
   return 'ltr';
 }
 
+/** Returns true if the field type implies the value must stay LTR (email/tel). */
+function isLtrField(
+  keyboardType?: KeyboardTypeOptions,
+  autoComplete?: TextInputProps['autoComplete'],
+): boolean {
+  if (keyboardType === 'email-address' || keyboardType === 'phone-pad') return true;
+  if (autoComplete === 'email' || autoComplete === 'tel') return true;
+  return false;
+}
+
 export function TextField({
   label,
   value,
@@ -71,12 +101,16 @@ export function TextField({
   keyboardType = 'default',
   autoCapitalize = 'none',
   autoComplete,
+  autoCorrect,
   disabled = false,
   testID,
   accessibilityLabel,
   direction,
   locale,
+  forceValueLtr = false,
   forceLtr = false,
+  showLabel = 'Show',
+  hideLabel = 'Hide',
 }: TextFieldProps) {
   const dir = resolveDirection(direction, locale);
   const [focused, setFocused] = useState(false);
@@ -86,8 +120,10 @@ export function TextField({
   const filled = value.length > 0;
 
   // Email/phone/url values stay Latin + LTR even in an RTL form (SKILL.md).
-  const valueDir: Direction = forceLtr ? 'ltr' : dir;
-  const valueAlign = forceLtr ? 'left' : dir === 'rtl' ? 'right' : 'left';
+  // Auto-force when keyboardType or autoComplete signals an email/phone field.
+  const shouldForceLtr = forceValueLtr || forceLtr || isLtrField(keyboardType, autoComplete);
+  const valueDir: Direction = shouldForceLtr ? 'ltr' : dir;
+  const valueAlign = shouldForceLtr ? 'left' : dir === 'rtl' ? 'right' : 'left';
 
   // Border / shadow per state (Design Spec §2.1 States table).
   const borderColor = hasError
@@ -108,18 +144,51 @@ export function TextField({
 
   return (
     <YStack gap="$1" opacity={disabled ? 0.5 : 1} pointerEvents={disabled ? 'none' : 'auto'}>
-      <Text
-        color="$fg3"
-        fontSize={12}
-        fontWeight="600"
-        fontFamily="$heading"
-        textTransform="uppercase"
-        letterSpacing={0.6}
-        textAlign={dir === 'rtl' ? 'right' : 'left'}
-        writingDirection={dir}
+      {/*
+       * Label row: label text on the leading side, reveal toggle on the trailing
+       * side (only when secureTextEntry). Direction-aware (RTL flips via rowDir).
+       * align-login M-06/M-07: "Show"/"Hide" text (localised), positioned in the
+       * label row, NOT inside the input overlay.
+       */}
+      <XStack
+        flexDirection={dir === 'rtl' ? 'row-reverse' : 'row'}
+        justifyContent="space-between"
+        alignItems="center"
       >
-        {label}
-      </Text>
+        <Text
+          color="$fg3"
+          fontSize={12}
+          fontWeight="600"
+          fontFamily="$heading"
+          textTransform="uppercase"
+          letterSpacing={0.72}
+          textAlign={dir === 'rtl' ? 'right' : 'left'}
+          writingDirection={dir}
+        >
+          {label}
+        </Text>
+
+        {secureTextEntry ? (
+          <Stack
+            cursor="pointer"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            onPress={() => setRevealed((r) => !r)}
+            accessibilityRole="button"
+            accessible
+            accessibilityLabel={revealed ? hideLabel : showLabel}
+            aria-label={revealed ? hideLabel : showLabel}
+          >
+            <Text
+              color="$primaryLight"
+              fontSize={12}
+              fontWeight="600"
+              fontFamily="$heading"
+            >
+              {revealed ? hideLabel : showLabel}
+            </Text>
+          </Stack>
+        ) : null}
+      </XStack>
 
       <Stack
         position="relative"
@@ -144,6 +213,7 @@ export function TextField({
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
           autoComplete={autoComplete}
+          autoCorrect={autoCorrect}
           editable={!disabled}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
@@ -151,36 +221,13 @@ export function TextField({
           style={{
             height: 48,
             paddingStart: 14,
-            paddingEnd: secureTextEntry ? 48 : 14,
+            paddingEnd: 14,
             color: colors.fg1,
             fontSize: 15,
             textAlign: valueAlign,
             writingDirection: valueDir,
           }}
         />
-
-        {secureTextEntry ? (
-          <Stack
-            position="absolute"
-            end={4}
-            top={0}
-            bottom={0}
-            width={48}
-            alignItems="center"
-            justifyContent="center"
-            cursor="pointer"
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            onPress={() => setRevealed((r) => !r)}
-            accessibilityRole="button"
-            accessible
-            accessibilityLabel={revealed ? 'Hide password' : 'Show password'}
-            aria-label={revealed ? 'Hide password' : 'Show password'}
-          >
-            <Text fontSize={18} color="$fg3" accessibilityElementsHidden>
-              {revealed ? '🙈' : '👁'}
-            </Text>
-          </Stack>
-        ) : null}
       </Stack>
 
       {hasError ? (
@@ -203,3 +250,9 @@ TextField.displayName = 'TextField';
 
 /** Alias — the Design Spec uses both names interchangeably. */
 export const FormField = TextField;
+
+/**
+ * Convenience re-export of the prop type so callers can reference the canonical
+ * `forceValueLtr` name in their code without having to import `TextFieldProps`.
+ */
+export type { TextFieldProps as FormFieldProps };

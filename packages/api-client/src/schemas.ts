@@ -90,8 +90,9 @@ export type {
   // W10 / P2-12 — Plan & billing tab
   CurrentPlanResponse,
   CurrentPlanResponseBaseResponse,
-  // P8-99-FE-2 — UI-language persistence (axis A)
+  // P8-99-FE-2 — UI-language persistence (axis A, self-scoped endpoint)
   EditUserPreferredLanguageCommand,
+  UpdateMyPreferredLanguageCommand,
   // P8-04-FE — child learning-language change (axis B)
   ChangeLearningLanguageCommand,
   ChangedLearningLanguageResponse,

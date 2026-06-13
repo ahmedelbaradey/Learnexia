@@ -46,10 +46,17 @@ export function DailyActivityCard({ direction, rowDir }: DailyActivityCardProps)
             fontFamily="$heading"
             accessibilityRole="header"
             writingDirection={direction}
+            textAlign={direction === 'rtl' ? 'right' : 'left'}
           >
             {t('parent.overview.dailyActivity.title')}
           </Text>
-          <Text color="$fg3" fontSize={13} fontFamily="$body" writingDirection={direction}>
+          <Text
+            color="$fg3"
+            fontSize={13}
+            fontFamily="$body"
+            writingDirection={direction}
+            textAlign={direction === 'rtl' ? 'right' : 'left'}
+          >
             {t('parent.overview.dailyActivity.subtitle')}
           </Text>
         </Stack>
