@@ -7,6 +7,7 @@ public static partial class Claims
         "Learning",
         "Parent",
         "Moderation",
+        "Curriculum",
     };
 
 

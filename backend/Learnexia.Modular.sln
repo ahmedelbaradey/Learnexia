@@ -112,6 +112,16 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Moderatio
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Moderation.Api", "src\Modules\Moderation\Learnexia.Modules.Moderation.Api\Learnexia.Modules.Moderation.Api.csproj", "{B0000064-0000-0000-0000-000000000064}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Curriculum", "Curriculum", "{A0000080-0000-0000-0000-000000000080}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Curriculum.Domain", "src\Modules\Curriculum\Learnexia.Modules.Curriculum.Domain\Learnexia.Modules.Curriculum.Domain.csproj", "{B0000081-0000-0000-0000-000000000081}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Curriculum.Application", "src\Modules\Curriculum\Learnexia.Modules.Curriculum.Application\Learnexia.Modules.Curriculum.Application.csproj", "{B0000082-0000-0000-0000-000000000082}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Curriculum.Infrastructure", "src\Modules\Curriculum\Learnexia.Modules.Curriculum.Infrastructure\Learnexia.Modules.Curriculum.Infrastructure.csproj", "{B0000083-0000-0000-0000-000000000083}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Curriculum.Api", "src\Modules\Curriculum\Learnexia.Modules.Curriculum.Api\Learnexia.Modules.Curriculum.Api.csproj", "{B0000084-0000-0000-0000-000000000084}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -578,6 +588,54 @@ Global
 		{B0000074-0000-0000-0000-000000000074}.Release|x64.Build.0 = Release|Any CPU
 		{B0000074-0000-0000-0000-000000000074}.Release|x86.ActiveCfg = Release|Any CPU
 		{B0000074-0000-0000-0000-000000000074}.Release|x86.Build.0 = Release|Any CPU
+		{B0000081-0000-0000-0000-000000000081}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000081-0000-0000-0000-000000000081}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000081-0000-0000-0000-000000000081}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B0000081-0000-0000-0000-000000000081}.Debug|x64.Build.0 = Debug|Any CPU
+		{B0000081-0000-0000-0000-000000000081}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B0000081-0000-0000-0000-000000000081}.Debug|x86.Build.0 = Debug|Any CPU
+		{B0000081-0000-0000-0000-000000000081}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000081-0000-0000-0000-000000000081}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0000081-0000-0000-0000-000000000081}.Release|x64.ActiveCfg = Release|Any CPU
+		{B0000081-0000-0000-0000-000000000081}.Release|x64.Build.0 = Release|Any CPU
+		{B0000081-0000-0000-0000-000000000081}.Release|x86.ActiveCfg = Release|Any CPU
+		{B0000081-0000-0000-0000-000000000081}.Release|x86.Build.0 = Release|Any CPU
+		{B0000082-0000-0000-0000-000000000082}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000082-0000-0000-0000-000000000082}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000082-0000-0000-0000-000000000082}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B0000082-0000-0000-0000-000000000082}.Debug|x64.Build.0 = Debug|Any CPU
+		{B0000082-0000-0000-0000-000000000082}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B0000082-0000-0000-0000-000000000082}.Debug|x86.Build.0 = Debug|Any CPU
+		{B0000082-0000-0000-0000-000000000082}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000082-0000-0000-0000-000000000082}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0000082-0000-0000-0000-000000000082}.Release|x64.ActiveCfg = Release|Any CPU
+		{B0000082-0000-0000-0000-000000000082}.Release|x64.Build.0 = Release|Any CPU
+		{B0000082-0000-0000-0000-000000000082}.Release|x86.ActiveCfg = Release|Any CPU
+		{B0000082-0000-0000-0000-000000000082}.Release|x86.Build.0 = Release|Any CPU
+		{B0000083-0000-0000-0000-000000000083}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000083-0000-0000-0000-000000000083}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000083-0000-0000-0000-000000000083}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B0000083-0000-0000-0000-000000000083}.Debug|x64.Build.0 = Debug|Any CPU
+		{B0000083-0000-0000-0000-000000000083}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B0000083-0000-0000-0000-000000000083}.Debug|x86.Build.0 = Debug|Any CPU
+		{B0000083-0000-0000-0000-000000000083}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000083-0000-0000-0000-000000000083}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0000083-0000-0000-0000-000000000083}.Release|x64.ActiveCfg = Release|Any CPU
+		{B0000083-0000-0000-0000-000000000083}.Release|x64.Build.0 = Release|Any CPU
+		{B0000083-0000-0000-0000-000000000083}.Release|x86.ActiveCfg = Release|Any CPU
+		{B0000083-0000-0000-0000-000000000083}.Release|x86.Build.0 = Release|Any CPU
+		{B0000084-0000-0000-0000-000000000084}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0000084-0000-0000-0000-000000000084}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0000084-0000-0000-0000-000000000084}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B0000084-0000-0000-0000-000000000084}.Debug|x64.Build.0 = Debug|Any CPU
+		{B0000084-0000-0000-0000-000000000084}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B0000084-0000-0000-0000-000000000084}.Debug|x86.Build.0 = Debug|Any CPU
+		{B0000084-0000-0000-0000-000000000084}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0000084-0000-0000-0000-000000000084}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0000084-0000-0000-0000-000000000084}.Release|x64.ActiveCfg = Release|Any CPU
+		{B0000084-0000-0000-0000-000000000084}.Release|x64.Build.0 = Release|Any CPU
+		{B0000084-0000-0000-0000-000000000084}.Release|x86.ActiveCfg = Release|Any CPU
+		{B0000084-0000-0000-0000-000000000084}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -631,5 +689,10 @@ Global
 		{B0000072-0000-0000-0000-000000000072} = {A0000070-0000-0000-0000-000000000070}
 		{B0000073-0000-0000-0000-000000000073} = {A0000070-0000-0000-0000-000000000070}
 		{B0000074-0000-0000-0000-000000000074} = {A0000070-0000-0000-0000-000000000070}
+		{A0000080-0000-0000-0000-000000000080} = {CA253913-39DE-BFD0-C9A3-4B7EC6FBDF17}
+		{B0000081-0000-0000-0000-000000000081} = {A0000080-0000-0000-0000-000000000080}
+		{B0000082-0000-0000-0000-000000000082} = {A0000080-0000-0000-0000-000000000080}
+		{B0000083-0000-0000-0000-000000000083} = {A0000080-0000-0000-0000-000000000080}
+		{B0000084-0000-0000-0000-000000000084} = {A0000080-0000-0000-0000-000000000080}
 	EndGlobalSection
 EndGlobal
