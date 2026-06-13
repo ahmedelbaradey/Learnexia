@@ -31,6 +31,7 @@ import { LessonCard } from '@learnexia/ui';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useLocale } from '../../../../src/hooks/useLocale';
+import { CHILD_TAB_BAR_CLEARANCE } from '../../_components/ChildTabBar';
 import { WhyLockedSheet } from '../../_components/WhyLockedSheet';
 
 const YStack = styled(TamStack, { flexDirection: 'column' });
@@ -85,7 +86,9 @@ export default function LessonsTab() {
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: 16,
-          paddingBottom: insets.bottom + 24,
+          // 3c — TabBar clearance: the floating ChildTabBar stays VISIBLE on
+          // subject detail (B0-nav allowlist), so scroll content reserves it.
+          paddingBottom: insets.bottom + CHILD_TAB_BAR_CLEARANCE,
           paddingTop: 16,
         }}
         showsVerticalScrollIndicator={false}

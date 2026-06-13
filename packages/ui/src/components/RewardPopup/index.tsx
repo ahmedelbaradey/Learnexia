@@ -170,7 +170,10 @@ export function RewardPopup({
       // native modal focus trap when rendered as a true overlay
       // (true Modal wrapping is the app's responsibility — P1-09)
     >
-      <ConfettiLayer />
+      <ConfettiLayer
+        active={visible}
+        paletteVariant={variant === 'level-up' ? 'levelup' : 'multicolor'}
+      />
       {card}
     </Stack>
   );

@@ -106,17 +106,146 @@ public sealed class AnswerComparatorTests
     }
 
     // ══════════════════════════════════════════════════════════════════════════════
-    // Matching
+    // Matching — CO-BE-2 order-independent pair-set equality.
+    // Stored CorrectAnswer = {"pairs":[{"leftId","rightId"}]}; the student payload carries the
+    // same pairs plus attempt metadata (attemptOrder/timeMs) that must never affect correctness.
     // ══════════════════════════════════════════════════════════════════════════════
 
+    private const string MatchingCorrect =
+        """{"pairs":[{"leftId":"l1","rightId":"r1"},{"leftId":"l2","rightId":"r2"},{"leftId":"l3","rightId":"r3"}]}""";
+
     [Fact]
-    public void Matching_IdenticalStrings_ReturnsTrue()
+    public void Matching_SamePairsSameOrder_ReturnsTrue()
     {
-        // Matching currently falls through to string compare (TODO P2-07.b).
-        // When both sides are identical the fallback must return true.
-        var result = AnswerComparator.AreEqual(QuestionType.Matching, studentPayload: "1-A;2-B", correctAnswer: "1-A;2-B");
+        var student = """{"pairs":[{"leftId":"l1","rightId":"r1"},{"leftId":"l2","rightId":"r2"},{"leftId":"l3","rightId":"r3"}],"attemptOrder":1,"timeMs":4200}""";
+
+        var result = AnswerComparator.AreEqual(QuestionType.Matching, student, MatchingCorrect);
 
         result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Matching_SamePairsShuffledOrder_ReturnsTrue()
+    {
+        // Pair order is presentation order, not semantics — set equality must hold.
+        var student = """{"pairs":[{"leftId":"l3","rightId":"r3"},{"leftId":"l1","rightId":"r1"},{"leftId":"l2","rightId":"r2"}],"attemptOrder":2,"timeMs":9000}""";
+
+        var result = AnswerComparator.AreEqual(QuestionType.Matching, student, MatchingCorrect);
+
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Matching_MetadataOnlyNoPairsDifference_MetadataIgnored()
+    {
+        // attemptOrder/timeMs differ wildly from any plausible value — still graded on pairs only.
+        var student = """{"pairs":[{"leftId":"l1","rightId":"r1"},{"leftId":"l2","rightId":"r2"},{"leftId":"l3","rightId":"r3"}],"attemptOrder":999,"timeMs":0}""";
+
+        var result = AnswerComparator.AreEqual(QuestionType.Matching, student, MatchingCorrect);
+
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Matching_WrongPairing_ReturnsFalse()
+    {
+        // l1↔r2 / l2↔r1 swapped — same ids, wrong mapping.
+        var student = """{"pairs":[{"leftId":"l1","rightId":"r2"},{"leftId":"l2","rightId":"r1"},{"leftId":"l3","rightId":"r3"}]}""";
+
+        var result = AnswerComparator.AreEqual(QuestionType.Matching, student, MatchingCorrect);
+
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Matching_PartialSubmission_ReturnsFalse()
+    {
+        // Only 2 of the 3 required pairs submitted.
+        var student = """{"pairs":[{"leftId":"l1","rightId":"r1"},{"leftId":"l2","rightId":"r2"}]}""";
+
+        var result = AnswerComparator.AreEqual(QuestionType.Matching, student, MatchingCorrect);
+
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Matching_ExtraPair_ReturnsFalse()
+    {
+        // A 4th pair not in the correct set — counts differ.
+        var student = """{"pairs":[{"leftId":"l1","rightId":"r1"},{"leftId":"l2","rightId":"r2"},{"leftId":"l3","rightId":"r3"},{"leftId":"l4","rightId":"r4"}]}""";
+
+        var result = AnswerComparator.AreEqual(QuestionType.Matching, student, MatchingCorrect);
+
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Matching_DuplicateLeftId_ReturnsFalse()
+    {
+        // l1 paired twice — a left item may be matched only once; whole document invalid.
+        var student = """{"pairs":[{"leftId":"l1","rightId":"r1"},{"leftId":"l1","rightId":"r2"},{"leftId":"l3","rightId":"r3"}]}""";
+
+        var result = AnswerComparator.AreEqual(QuestionType.Matching, student, MatchingCorrect);
+
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Matching_MalformedJsonPayload_DoesNotThrow_ReturnsFalse()
+    {
+        // Truncated JSON — must grade as incorrect without throwing.
+        var result = AnswerComparator.AreEqual(QuestionType.Matching, studentPayload: """{"pairs":[{"leftId":"l1",""", correctAnswer: MatchingCorrect);
+
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Matching_WellFormedWrongShapePayload_ReturnsFalse()
+    {
+        // Valid JSON but not the pairs contract.
+        var result = AnswerComparator.AreEqual(QuestionType.Matching, studentPayload: """{"foo":1}""", correctAnswer: MatchingCorrect);
+
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Matching_PairMissingRightId_ReturnsFalse()
+    {
+        var student = """{"pairs":[{"leftId":"l1"},{"leftId":"l2","rightId":"r2"},{"leftId":"l3","rightId":"r3"}]}""";
+
+        var result = AnswerComparator.AreEqual(QuestionType.Matching, student, MatchingCorrect);
+
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Matching_EmptyPairsBothSides_ReturnsFalse()
+    {
+        // An empty correct set means broken content — never grade as correct.
+        var result = AnswerComparator.AreEqual(QuestionType.Matching, studentPayload: """{"pairs":[]}""", correctAnswer: """{"pairs":[]}""");
+
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Matching_NumericIds_CompareEqualToStringIds()
+    {
+        // Brief writes ids as <id>; FE sends strings. 1 and "1" must compare equal (raw-text read).
+        var student = """{"pairs":[{"leftId":1,"rightId":2}]}""";
+        var correct = """{"pairs":[{"leftId":"1","rightId":"2"}]}""";
+
+        var result = AnswerComparator.AreEqual(QuestionType.Matching, student, correct);
+
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Matching_LegacyScalarCorrectAnswer_ReturnsFalse()
+    {
+        // Pre-CO-BE-2 rows stored a scalar (e.g. "x") — no longer comparable; grades false, no throw.
+        var result = AnswerComparator.AreEqual(QuestionType.Matching, studentPayload: "\"x\"", correctAnswer: "\"x\"");
+
+        result.Should().BeFalse();
     }
 
     // ══════════════════════════════════════════════════════════════════════════════

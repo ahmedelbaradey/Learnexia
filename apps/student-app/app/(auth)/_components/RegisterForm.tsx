@@ -7,8 +7,17 @@
  * `useRegisterParent`; on success persists tokens (`authStore.setTokens`) and
  * routes to onboarding. Maps `BaseResponse.errors` to localized banner copy.
  *
- * P1-12-FE-7: `country` and `acceptedTerms` are now posted. `captchaToken` is
- * intentionally omitted — it is tracked as P1-11-FE-16 (separate story).
+ * P1-12-FE-7: `country` and `acceptedTerms` are posted.
+ *
+ * P1-11-FE-16 / CO-FE-3 (CAPTCHA): when the Turnstile requirement is
+ * advertised (`EXPO_PUBLIC_TURNSTILE_SITE_KEY` set — the FE half of the
+ * backend's `Captcha:Enabled` config gate, same env-gated pattern as the
+ * Google client ID), the web form renders the Turnstile challenge and posts
+ * the resulting `captchaToken`; submit stays disabled until the challenge
+ * passes, and a failed register resets the challenge (tokens are single-use).
+ * When the site key is absent the widget is not rendered and no token is sent
+ * (pre-CAPTCHA behavior preserved). The backend's `CaptchaVerificationFailed`
+ * rejection maps to a localized banner message.
  *
  * RTL-aware via `useLocale`.
  */
@@ -33,13 +42,24 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Stack, Text } from '@tamagui/core';
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { Platform } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import { ServerErrorBanner } from '../../../src/components/ServerErrorBanner';
 import { useLocale } from '../../../src/hooks/useLocale';
 import { useServerError } from '../../../src/hooks/useServerError';
+import { useThemeStore } from '../../../src/providers/themeStore';
+import { TurnstileWidget } from './TurnstileWidget';
+
+/**
+ * Backend-message hint substrings for the CAPTCHA rejection
+ * (`SharedResourcesKey.CaptchaVerificationFailed`) — both the en-US and ar-EG
+ * resource values contain the Latin token "CAPTCHA", so one case-insensitive
+ * hint covers both locales. Technical matcher, not user-facing copy.
+ */
+const CAPTCHA_FAILED_HINTS = ['captcha'];
 
 /**
  * Cumulative password-strength score (0..4) for the PasswordStrengthMeter
@@ -76,6 +96,19 @@ export function RegisterForm() {
     [locale],
   );
 
+  // ── CAPTCHA (P1-11-FE-16) ─────────────────────────────────────────────────
+  // The requirement is advertised via the public Turnstile site key — env
+  // config mirroring the backend `Captcha:Enabled` gate (no advertisement
+  // endpoint exists; ops keeps the two in sync, like GoogleAuth__ClientId ↔
+  // EXPO_PUBLIC_GOOGLE_CLIENT_ID). Site key absent → no widget, no token.
+  // The challenge is web-only this wave; native sends no token.
+  const turnstileSiteKey = process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY ?? '';
+  const captchaRequired = Platform.OS === 'web' && Boolean(turnstileSiteKey);
+  // UI-only client state (NOT server data → local state, not Zustand).
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
+  const theme = useThemeStore((s) => s.theme);
+
   const { control, handleSubmit, formState } = useForm<RegisterParentFormValues>({
     resolver: zodResolver(registerParentSchema),
     defaultValues: { fullName: '', country: '', email: '', password: '', acceptedTerms: false },
@@ -85,6 +118,9 @@ export function RegisterForm() {
   const serverMessage = register.isError
     ? resolveError(register.error, {
         hints: [
+          // CAPTCHA hint first — its backend message must not fall through to
+          // the broader 'email'/'password' substring hints below.
+          { contains: CAPTCHA_FAILED_HINTS, key: 'auth.register.errors.captchaFailed' },
           { contains: ['exists', 'duplicate', 'taken', 'email'], key: 'auth.register.errors.duplicateEmail' },
           { contains: ['password', 'weak'], key: 'auth.register.errors.weakPassword' },
         ],
@@ -95,15 +131,17 @@ export function RegisterForm() {
   const onSubmit = handleSubmit(async (values) => {
     try {
       // P1-12-FE-7: `country` and `acceptedTerms` are now sent to the backend.
-      // `captchaToken` is omitted — tracked as P1-11-FE-16 (out of scope here).
       // `acceptedTerms` MUST remain false by default and only become true via
       // the user checking the CheckboxField (security requirement — never auto-set).
+      // P1-11-FE-16: `captchaToken` is sent only when the requirement is
+      // advertised (site key set) — otherwise the field is omitted entirely.
       const res = await register.mutateAsync({
         email: values.email.trim(),
         password: values.password,
         fullName: values.fullName?.trim() || undefined,
         country: values.country || undefined,
         acceptedTerms: values.acceptedTerms,
+        captchaToken: captchaRequired && captchaToken ? captchaToken : undefined,
       });
       if (res.accessToken && res.refreshToken?.tokenString) {
         await setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken.tokenString });
@@ -112,10 +150,17 @@ export function RegisterForm() {
     } catch {
       // Failure is surfaced inline via register.error → serverMessage; swallow
       // the rejection so it doesn't bubble as an uncaught promise error.
+      // Turnstile tokens are single-use — force a fresh challenge for retry.
+      if (captchaRequired) {
+        setCaptchaToken(null);
+        setCaptchaResetSignal((n) => n + 1);
+      }
     }
   });
 
   const disabled = register.isPending;
+  // With CAPTCHA advertised, submit stays gated until the challenge passes.
+  const submitDisabled = disabled || formState.isSubmitting || (captchaRequired && !captchaToken);
 
   return (
     <Stack testID="register-form" gap="$4">
@@ -256,6 +301,19 @@ export function RegisterForm() {
         }}
       />
 
+      {/* Turnstile challenge — rendered ONLY when the server advertises the
+          requirement (site key configured); sits between consent and submit. */}
+      {captchaRequired ? (
+        <TurnstileWidget
+          siteKey={turnstileSiteKey}
+          onToken={setCaptchaToken}
+          resetSignal={captchaResetSignal}
+          theme={theme}
+          direction={direction}
+          testID="register-captcha"
+        />
+      ) : null}
+
       <ServerErrorBanner message={serverMessage} direction={direction} testID="register-error" />
 
       <Button
@@ -263,7 +321,7 @@ export function RegisterForm() {
         size="full"
         accessibilityLabel={t('auth.register.submitButton')}
         loading={register.isPending}
-        disabled={disabled || formState.isSubmitting}
+        disabled={submitDisabled}
         onPress={onSubmit}
         testID="register-submit"
       >

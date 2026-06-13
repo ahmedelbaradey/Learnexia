@@ -353,9 +353,18 @@ public static class LearningSeeder
     /// Seeds static <see cref="Lesson.Explanation"/>, <see cref="Lesson.Visual"/>, and one
     /// MCQ <see cref="QuizQuestion"/> for the Grade-1 root lessons (one per language tree).
     ///
+    /// CO-BE-3 (closes P2-10 gap): the Grade-1 Math root lessons (Ar + En) additionally get one
+    /// question of each remaining type — TrueFalse, FillInBlank, and Matching — so all four
+    /// <see cref="QuestionType"/>s are exercised by demo data in both content languages.
+    /// Matching content follows the CO-BE-1 contract:
+    /// Options = {"left":[{"id","text"}],"right":[{"id","text"}]} (right stored shuffled so array
+    /// position never leaks the pairing); CorrectAnswer = {"pairs":[{"leftId","rightId"}]}.
+    ///
     /// Idempotency:
     /// - Lesson content is updated only when <c>Explanation IS NULL</c> (first run only).
-    /// - A <see cref="QuizQuestion"/> is inserted only when none already exists for the lesson.
+    /// - A <see cref="QuizQuestion"/> is inserted only when none of that <see cref="QuestionType"/>
+    ///   already exists for the lesson (per-type key, so pre-CO-BE-3 databases that already hold
+    ///   the MCQ row still gain the three new types exactly once).
     ///
     /// Lesson names are the stable P2-10/P8-02 seeder keys. If a name is not found the lesson
     /// is skipped with a warning and no exception is thrown.
@@ -452,9 +461,10 @@ public static class LearningSeeder
                 updatedLessons++;
             }
 
-            // ── Step 2: seed one MCQ QuizQuestion (idempotent) ───────────────────────────
-            var hasQuestion = await db.QuizQuestions.AnyAsync(q => q.LessonId == lesson.Id);
-            if (!hasQuestion)
+            // ── Step 2: seed one MCQ QuizQuestion (idempotent per (lesson, type) — CO-BE-3) ─
+            var hasMcq = await db.QuizQuestions.AnyAsync(q =>
+                q.LessonId == lesson.Id && q.QuestionType == QuestionType.MCQ);
+            if (!hasMcq)
             {
                 // Options is stored as jsonb — serialize the string array to a JSON array.
                 // CorrectAnswer is stored as jsonb — serialize the string value to a JSON string
@@ -471,10 +481,156 @@ public static class LearningSeeder
                     GeneratedBy    = GeneratedBy.Curated,
                     LifecycleState = LifecycleState.Published,
                     IsActive       = true,
+                    SequenceOrder  = 0,
                 };
                 await db.QuizQuestions.AddAsync(question);
                 addedQuestions++;
             }
+        }
+
+        // ── Step 3 (CO-BE-3): all four question types on the Grade-1 Math root lessons ───────
+        // One TrueFalse + one FillInBlank + one Matching per language tree (Ar + En), so demo data
+        // exercises every QuestionType alongside the Step-2 MCQ. Pre-serialized JSON (jsonb columns);
+        // Matching follows the CO-BE-1 contract (stable ids; "right" stored in non-aligned order).
+        var typeDemoQuestions = new[]
+        {
+            // Math / Arabic tree — TrueFalse
+            new
+            {
+                LessonName    = "مقدمة في العد (ص1)",
+                QuestionType  = QuestionType.TrueFalse,
+                QuestionText  = "العدد 7 يأتي بعد العدد 6.",
+                Options       = JsonSerializer.Serialize(new[] { "True", "False" }),
+                CorrectAnswer = JsonSerializer.Serialize("true"),
+                SequenceOrder = 1,
+            },
+            // Math / Arabic tree — FillInBlank
+            new
+            {
+                LessonName    = "مقدمة في العد (ص1)",
+                QuestionType  = QuestionType.FillInBlank,
+                QuestionText  = "اكتب العدد الذي يأتي بعد 9.",
+                Options       = JsonSerializer.Serialize(Array.Empty<string>()),
+                CorrectAnswer = JsonSerializer.Serialize("10"),
+                SequenceOrder = 2,
+            },
+            // Math / Arabic tree — Matching (CO-BE-1 contract)
+            new
+            {
+                LessonName    = "مقدمة في العد (ص1)",
+                QuestionType  = QuestionType.Matching,
+                QuestionText  = "صِل كل رقم بالكلمة المناسبة.",
+                Options       = JsonSerializer.Serialize(new
+                {
+                    left = new[]
+                    {
+                        new { id = "l1", text = "1" },
+                        new { id = "l2", text = "2" },
+                        new { id = "l3", text = "3" },
+                    },
+                    right = new[]
+                    {
+                        new { id = "r3", text = "ثلاثة" },
+                        new { id = "r1", text = "واحد" },
+                        new { id = "r2", text = "اثنان" },
+                    },
+                }),
+                CorrectAnswer = JsonSerializer.Serialize(new
+                {
+                    pairs = new[]
+                    {
+                        new { leftId = "l1", rightId = "r1" },
+                        new { leftId = "l2", rightId = "r2" },
+                        new { leftId = "l3", rightId = "r3" },
+                    },
+                }),
+                SequenceOrder = 3,
+            },
+            // Math / English tree — TrueFalse
+            new
+            {
+                LessonName    = "Introduction to Counting (G1)",
+                QuestionType  = QuestionType.TrueFalse,
+                QuestionText  = "The number 7 comes right after 6.",
+                Options       = JsonSerializer.Serialize(new[] { "True", "False" }),
+                CorrectAnswer = JsonSerializer.Serialize("true"),
+                SequenceOrder = 1,
+            },
+            // Math / English tree — FillInBlank
+            new
+            {
+                LessonName    = "Introduction to Counting (G1)",
+                QuestionType  = QuestionType.FillInBlank,
+                QuestionText  = "Write the number that comes after 9.",
+                Options       = JsonSerializer.Serialize(Array.Empty<string>()),
+                CorrectAnswer = JsonSerializer.Serialize("10"),
+                SequenceOrder = 2,
+            },
+            // Math / English tree — Matching (CO-BE-1 contract)
+            new
+            {
+                LessonName    = "Introduction to Counting (G1)",
+                QuestionType  = QuestionType.Matching,
+                QuestionText  = "Match each number to its word.",
+                Options       = JsonSerializer.Serialize(new
+                {
+                    left = new[]
+                    {
+                        new { id = "l1", text = "1" },
+                        new { id = "l2", text = "2" },
+                        new { id = "l3", text = "3" },
+                    },
+                    right = new[]
+                    {
+                        new { id = "r2", text = "two" },
+                        new { id = "r3", text = "three" },
+                        new { id = "r1", text = "one" },
+                    },
+                }),
+                CorrectAnswer = JsonSerializer.Serialize(new
+                {
+                    pairs = new[]
+                    {
+                        new { leftId = "l1", rightId = "r1" },
+                        new { leftId = "l2", rightId = "r2" },
+                        new { leftId = "l3", rightId = "r3" },
+                    },
+                }),
+                SequenceOrder = 3,
+            },
+        };
+
+        foreach (var demo in typeDemoQuestions)
+        {
+            var lesson = await db.Lessons.FirstOrDefaultAsync(l => l.Name == demo.LessonName);
+            if (lesson is null)
+            {
+                logger?.LogWarn($"CO-BE-3 seed: lesson '{demo.LessonName}' not found; skipping.");
+                continue;
+            }
+
+            // Idempotency key = (LessonId, QuestionType): one row of each type per demo lesson.
+            var hasTypeQuestion = await db.QuizQuestions.AnyAsync(q =>
+                q.LessonId == lesson.Id && q.QuestionType == demo.QuestionType);
+            if (hasTypeQuestion)
+                continue;
+
+            var question = new QuizQuestion
+            {
+                LessonId       = lesson.Id,
+                SkillId        = lesson.SkillId,
+                QuestionType   = demo.QuestionType,
+                QuestionText   = demo.QuestionText,
+                Options        = demo.Options,
+                CorrectAnswer  = demo.CorrectAnswer,
+                Difficulty     = DifficultyLevel.Easy,
+                GeneratedBy    = GeneratedBy.Curated,
+                LifecycleState = LifecycleState.Published,
+                IsActive       = true,
+                SequenceOrder  = demo.SequenceOrder,
+            };
+            await db.QuizQuestions.AddAsync(question);
+            addedQuestions++;
         }
 
         if (updatedLessons > 0 || addedQuestions > 0)
@@ -482,7 +638,7 @@ public static class LearningSeeder
             await db.SaveChangesAsync(SystemUserId);
         }
 
-        logger?.LogInfo($"P2-05 seed: SeedDemoLessonContent inserted {addedQuestions} quiz question(s) and updated {updatedLessons} lesson(s) with content.");
+        logger?.LogInfo($"P2-05/CO-BE-3 seed: SeedDemoLessonContent inserted {addedQuestions} quiz question(s) and updated {updatedLessons} lesson(s) with content.");
     }
 
     // -------------------------------------------------------------------------

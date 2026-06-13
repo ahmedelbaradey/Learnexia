@@ -54,6 +54,9 @@ import {
   AttemptSummaryCard,
   Button,
   GradientBox,
+  type MatchingItem,
+  type MatchingPairValue,
+  type MatchingPanelPhase,
 } from '@learnexia/ui';
 
 import { useLocale } from '../../../src/hooks/useLocale';
@@ -93,6 +96,98 @@ function parseOptions(optionsJson: string | undefined | null): string[] {
   }
 }
 
+// ── Matching (C5) helpers — CO-BE-1 wire contract ───────────────────────────
+// Content shape: {"left":[{id,text}],"right":[{id,text}]} (stable string ids;
+// "right" is served in non-aligned order — rendered as served, never realigned).
+
+interface MatchingContent {
+  left: MatchingItem[];
+  right: MatchingItem[];
+}
+
+/** Defensive content parse (like parseOptions) — null → stub fallback tile. */
+function parseMatchingContent(optionsJson: string | undefined | null): MatchingContent | null {
+  if (!optionsJson) return null;
+  try {
+    const parsed: unknown = JSON.parse(optionsJson);
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return null;
+    const { left, right } = parsed as Record<string, unknown>;
+
+    const mapItems = (value: unknown): MatchingItem[] | null => {
+      if (!Array.isArray(value) || value.length === 0) return null;
+      const items: MatchingItem[] = [];
+      for (const entry of value) {
+        if (typeof entry !== 'object' || entry === null) return null;
+        const { id, text } = entry as Record<string, unknown>;
+        if (typeof id !== 'string' && typeof id !== 'number') return null;
+        if (typeof text !== 'string' && typeof text !== 'number') return null;
+        items.push({ id: String(id), text: String(text) });
+      }
+      return items;
+    };
+
+    const leftItems = mapItems(left);
+    const rightItems = mapItems(right);
+    if (!leftItems || !rightItems) return null;
+    return { left: leftItems, right: rightItems };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Parse the pairs array carried in `AnswerState.selectedValue` for Matching
+ * questions (the existing string slot holds `JSON.stringify(pairs)`; the full
+ * locked L1 payload is only assembled at submit time in handleSubmit).
+ */
+function parseSelectedPairs(value: string | null | undefined): MatchingPairValue[] {
+  if (!value) return [];
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (!Array.isArray(parsed)) return [];
+    const pairs: MatchingPairValue[] = [];
+    for (const entry of parsed) {
+      if (typeof entry !== 'object' || entry === null) return [];
+      const { leftId, rightId } = entry as Record<string, unknown>;
+      if (typeof leftId !== 'string' || typeof rightId !== 'string') return [];
+      pairs.push({ leftId, rightId });
+    }
+    return pairs;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Format the server's Matching correctAnswer ({"pairs":[{leftId,rightId}]})
+ * as kid-readable text ("1 – one, 2 – two") for the feedback strip reveal.
+ * Returns null when it can't be resolved against the content (reveal omitted).
+ */
+function formatMatchingCorrectAnswer(
+  correctJson: string,
+  content: MatchingContent,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+): string | null {
+  try {
+    const parsed: unknown = JSON.parse(correctJson);
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    const { pairs } = parsed as Record<string, unknown>;
+    if (!Array.isArray(pairs) || pairs.length === 0) return null;
+    const parts: string[] = [];
+    for (const entry of pairs) {
+      if (typeof entry !== 'object' || entry === null) return null;
+      const { leftId, rightId } = entry as Record<string, unknown>;
+      const leftText = content.left.find((i) => i.id === String(leftId))?.text;
+      const rightText = content.right.find((i) => i.id === String(rightId))?.text;
+      if (!leftText || !rightText) return null;
+      parts.push(t('quiz.matching.pairFormat', { left: leftText, right: rightText }));
+    }
+    return parts.join(t('quiz.matching.pairJoin'));
+  } catch {
+    return null;
+  }
+}
+
 const ARABIC_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'] as const;
 
 function toArabicNumerals(n: string): string {
@@ -118,8 +213,13 @@ export default function LessonScreen() {
   const [stage, setStage] = useState<Stage>({ kind: 'intro' });
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Per-question timestamp for timeSpentSeconds.
+  // Per-question timestamp for timeSpentSeconds (and Matching's payload timeMs).
   const questionStartRef = useRef<number>(Date.now());
+
+  // Value snapshot while phase === 'submitting' (which carries no selectedValue)
+  // so the MatchingPanel keeps its pair chips readable during the round-trip
+  // (Design Spec §3 "Locked"), without changing the AnswerState shape.
+  const submittedValueRef = useRef<string | null>(null);
 
   // Auto-advance timer ref — cleared on unmount / back.
   const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -200,16 +300,33 @@ export default function LessonScreen() {
     if (stage.kind !== 'quiz') return;
     const { attemptId, questions, currentIndex, answerState } = stage;
     if (answerState.phase !== 'answering') return;
-    if (!answerState.selectedValue) return;
 
     const question = questions[currentIndex];
     if (!question?.id) return;
 
+    // Matching (C5) carries pairs JSON in selectedValue and may legitimately be
+    // null in the malformed-content fallback (submits an empty pair set).
+    const isMatchingQuestion = question.questionType === QuestionType._3;
+    if (!isMatchingQuestion && !answerState.selectedValue) return;
+
+    const now = Date.now();
     const timeSpentSeconds = Math.max(
       0,
-      Math.min(3600, Math.round((Date.now() - questionStartRef.current) / 1000)),
+      Math.min(3600, Math.round((now - questionStartRef.current) / 1000)),
     );
 
+    // Matching: wrap pairs into the LOCKED L1 payload shape (plan L1 —
+    // byte-for-byte keys: pairs / attemptOrder / timeMs). Other types submit
+    // selectedValue unchanged.
+    const answerPayload = isMatchingQuestion
+      ? JSON.stringify({
+          pairs: parseSelectedPairs(answerState.selectedValue),
+          attemptOrder: currentIndex + 1,
+          timeMs: Math.max(0, now - questionStartRef.current),
+        })
+      : answerState.selectedValue!;
+
+    submittedValueRef.current = answerState.selectedValue ?? '';
     setStage({
       kind: 'quiz',
       attemptId,
@@ -223,7 +340,7 @@ export default function LessonScreen() {
       {
         attemptId,
         questionId: question.id,
-        answerPayload: answerState.selectedValue,
+        answerPayload,
         timeSpentSeconds,
         hintUsed: false,
       },
@@ -236,7 +353,7 @@ export default function LessonScreen() {
             phase: 'feedback',
             isCorrect,
             correctAnswer,
-            selectedValue: answerState.selectedValue!,
+            selectedValue: answerState.selectedValue ?? '',
           };
 
           setStage({
@@ -588,6 +705,65 @@ export default function LessonScreen() {
     );
   };
 
+  // ── Render: Matching renderer (C5 tap-to-pair) ───────────────────────────
+  const renderMatching = (
+    question: QuizQuestionDto,
+    answerState: AnswerState,
+    onSelect: (val: string) => void,
+  ) => {
+    const content = parseMatchingContent(question.options);
+
+    if (!content) {
+      // Malformed/empty content — keep the W12 "coming soon" stub tile
+      // (Design Spec §4). Submit shows "Next" and sends an empty pair set in
+      // the locked L1 shape (valid JSON — never a 422).
+      return (
+        <MatchingPanel
+          testID="quiz-renderer-matching"
+          direction={direction}
+          locale={locale}
+          stubTitle={t('child.quiz.matchingStub')}
+          stubSubTitle={t('child.quiz.matchingSkip')}
+        />
+      );
+    }
+
+    // 'submitting' carries no selectedValue — read the snapshot ref so pair
+    // chips stay readable during the round-trip (Design Spec §3 "Locked").
+    const rawPairsValue =
+      answerState.phase === 'submitting' ? submittedValueRef.current : answerState.selectedValue;
+    const pairs = parseSelectedPairs(rawPairsValue);
+
+    const panelPhase: MatchingPanelPhase =
+      answerState.phase === 'answering'
+        ? 'answering'
+        : answerState.phase === 'submitting'
+          ? 'locked'
+          : answerState.isCorrect
+            ? 'correct'
+            : 'wrong';
+
+    return (
+      <MatchingPanel
+        testID="quiz-renderer-matching"
+        left={content.left}
+        right={content.right}
+        pairs={pairs}
+        onPairsChange={(next) => onSelect(JSON.stringify(next))}
+        phase={panelPhase}
+        direction={direction}
+        locale={locale}
+        instructionText={t('quiz.matching.instruction')}
+        promptHeaderText={t('quiz.matching.promptHeader')}
+        answerHeaderText={t('quiz.matching.answerHeader')}
+        armedA11yLabel={(text) => t('quiz.matching.armedA11y', { text })}
+        pairedA11yLabel={(text, partner) => t('quiz.matching.pairedA11y', { text, partner })}
+        pairedAnnounceText={(a, b) => t('quiz.matching.pairedAnnounce', { a, b })}
+        unpairedAnnounceText={(a, b) => t('quiz.matching.unpairedAnnounce', { a, b })}
+      />
+    );
+  };
+
   // ── Render: question-type renderer switch ────────────────────────────────
   const renderQuestionRenderer = (
     question: QuizQuestionDto,
@@ -602,17 +778,9 @@ export default function LessonScreen() {
         return renderTrueFalse(question, answerState, onSelect);
       case QuestionType._4: // FillInBlank
         return renderFillInBlank(question, answerState, onSelect);
-      case QuestionType._3: // Matching — stub
+      case QuestionType._3: // Matching (C5 tap-to-pair)
       default:
-        return (
-          <MatchingPanel
-            testID="quiz-renderer-matching"
-            direction={direction}
-            locale={locale}
-            title={t('child.quiz.matchingStub')}
-            subTitle={t('child.quiz.matchingSkip')}
-          />
-        );
+        return renderMatching(question, answerState, onSelect);
     }
   };
 
@@ -806,6 +974,7 @@ export default function LessonScreen() {
     if (!question) return null;
 
     const isMatching = question.questionType === QuestionType._3;
+    const matchingContent = isMatching ? parseMatchingContent(question.options) : null;
     const isAnswering = answerState.phase === 'answering';
     const isSubmitting = answerState.phase === 'submitting';
     const isFeedback = answerState.phase === 'feedback';
@@ -815,11 +984,15 @@ export default function LessonScreen() {
     const feedbackState: FeedbackState | null = isFeedback ? (answerState as FeedbackState) : null;
     const isCorrectFeedback = feedbackState?.isCorrect ?? false;
 
-    // Determine if Submit is enabled.
+    // Determine if Submit is enabled. Matching (C5): gated until EVERY prompt
+    // item is paired (Design Spec §1). Malformed-content fallback: always
+    // enabled ("Next" submits an empty pair set).
     const hasAnswer =
       isAnswering &&
       (isMatching
-        ? true // Matching auto-submits with empty string
+        ? matchingContent
+          ? parseSelectedPairs(answerState.selectedValue).length === matchingContent.left.length
+          : true
         : answerState.selectedValue !== null && answerState.selectedValue.trim().length > 0);
 
     const onSelectAnswer = (val: string) => {
@@ -833,6 +1006,27 @@ export default function LessonScreen() {
       });
     };
 
+    // Correct-answer reveal for the feedback strip. Matching: the server's
+    // correctAnswer is the pairs JSON — format it as kid-readable pair text
+    // against the question content; omit the reveal if it can't be resolved.
+    const revealText = (() => {
+      if (!feedbackState || feedbackState.isCorrect || !feedbackState.correctAnswer) {
+        return undefined;
+      }
+      if (isMatching) {
+        if (!matchingContent) return undefined;
+        const formatted = formatMatchingCorrectAnswer(
+          feedbackState.correctAnswer,
+          matchingContent,
+          t,
+        );
+        return formatted
+          ? t('child.feedback.correctAnswer', { answer: formatted })
+          : undefined;
+      }
+      return t('child.feedback.correctAnswer', { answer: feedbackState.correctAnswer });
+    })();
+
     // Feedback strip
     const feedbackNode = feedbackState ? (
       <AnswerFeedbackStrip
@@ -843,11 +1037,7 @@ export default function LessonScreen() {
             ? t('child.feedback.correct')
             : t('child.feedback.incorrect')
         }
-        revealText={
-          !feedbackState.isCorrect && feedbackState.correctAnswer
-            ? t('child.feedback.correctAnswer', { answer: feedbackState.correctAnswer })
-            : undefined
-        }
+        revealText={revealText}
         direction={direction}
         locale={locale}
       />
@@ -869,91 +1059,22 @@ export default function LessonScreen() {
           </Button>
         );
       }
-      // Matching: always show Next as Submit (auto answer = '').
-      if (isMatching && isAnswering) {
-        return (
-          <Button
-            testID="quiz-submit"
-            variant="primary"
-            size="md"
-            accessibilityLabel={t('child.quiz.next')}
-            onPress={() => {
-              // For matching, directly submit with empty payload without going
-              // through handleSubmit which reads state. Build the request inline.
-              const question = quiz.questions[quiz.currentIndex];
-              if (!question?.id) return;
-              const timeSpentSeconds = Math.max(
-                0,
-                Math.min(3600, Math.round((Date.now() - questionStartRef.current) / 1000)),
-              );
-              setStage({
-                kind: 'quiz',
-                attemptId: quiz.attemptId,
-                questions: quiz.questions,
-                currentIndex: quiz.currentIndex,
-                answerState: { phase: 'submitting' },
-              });
-              submitAnswerMutation.mutate(
-                {
-                  attemptId: quiz.attemptId,
-                  questionId: question.id,
-                  answerPayload: '',
-                  timeSpentSeconds,
-                  hintUsed: false,
-                },
-                {
-                  onSuccess: (result) => {
-                    setStage({
-                      kind: 'quiz',
-                      attemptId: quiz.attemptId,
-                      questions: quiz.questions,
-                      currentIndex: quiz.currentIndex,
-                      answerState: {
-                        phase: 'feedback',
-                        isCorrect: result.isCorrect ?? false,
-                        correctAnswer: result.correctAnswer ?? null,
-                        selectedValue: '',
-                      },
-                    });
-                    if (result.isCorrect) {
-                      if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
-                      advanceTimerRef.current = setTimeout(() => {
-                        const currentStage = stageRef.current;
-                        if (currentStage.kind === 'quiz') {
-                          advanceOrComplete(currentStage);
-                        }
-                      }, 800);
-                    }
-                  },
-                  onError: () => {
-                    setStage({
-                      kind: 'quiz',
-                      attemptId: quiz.attemptId,
-                      questions: quiz.questions,
-                      currentIndex: quiz.currentIndex,
-                      answerState: { phase: 'answering', selectedValue: '' },
-                    });
-                    setSubmitError(t('child.quiz.networkError'));
-                  },
-                },
-              );
-            }}
-          >
-            {t('child.quiz.next')}
-          </Button>
-        );
-      }
+      // Matching (C5) uses the standard Submit path: handleSubmit wraps the
+      // pairs into the locked L1 payload. Malformed-content fallback only:
+      // the CTA reads "Next" (stub tile, empty pair set).
+      const submitLabel =
+        isMatching && !matchingContent ? t('child.quiz.next') : t('child.quiz.submit');
       return (
         <Button
           testID="quiz-submit"
           variant="primary"
           size="md"
-          accessibilityLabel={t('child.quiz.submit')}
+          accessibilityLabel={submitLabel}
           disabled={isSubmitting || !hasAnswer}
           loading={isSubmitting}
           onPress={handleSubmit}
         >
-          {isSubmitting ? '' : t('child.quiz.submit')}
+          {isSubmitting ? '' : submitLabel}
         </Button>
       );
     })();

@@ -31,13 +31,18 @@ public class QuizQuestion : AggregateRoot
     /// <summary>
     /// Serialized options (jsonb column). Shape varies per QuestionType:
     /// MCQ — array of strings; TrueFalse — fixed ["True","False"];
-    /// Matching — object {"left":[...],"right":[...]}; FillInBlank — not used.
+    /// Matching — object {"left":[{"id","text"}],"right":[{"id","text"}]} with stable item ids and
+    /// localized display text (CO-BE-1 contract; store "right" in non-aligned order so array
+    /// position never leaks the pairing); FillInBlank — not used (stored as []).
     /// Per-type shape is enforced in FluentValidation only.
     /// </summary>
     public string Options { get; set; } = null!;
 
     /// <summary>
-    /// Serialized correct answer (jsonb column). Shape varies per QuestionType.
+    /// Serialized correct answer (jsonb column). Shape varies per QuestionType:
+    /// MCQ/FillInBlank — JSON string; TrueFalse — "true"/"false";
+    /// Matching — {"pairs":[{"leftId","rightId"}]} referencing the Options item ids
+    /// (CO-BE-1 contract; comparator semantics documented on AnswerComparator).
     /// Never exposed in the student-facing DTO — excluded by mapping profile.
     /// Exposed in the admin authoring DTO (distinct type, AdminOnly-gated).
     /// </summary>

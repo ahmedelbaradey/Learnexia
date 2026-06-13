@@ -62,6 +62,17 @@ const nextConfig: NextConfig = {
       'expo-linear-gradient': false,
       'expo-secure-store': false,
     };
+    // The design-system Tamagui config imports `.ttf` font sources
+    // (packages/design-system/src/fonts/assets.ts). Metro handles these on the
+    // student app; for the Next.js webpack build emit them as static assets so
+    // the import resolves to a URL (same contract as the `types/assets.d.ts`
+    // typecheck shim noted in HANDOFF).
+    config.module = config.module ?? {};
+    config.module.rules = config.module.rules ?? [];
+    config.module.rules.push({
+      test: /\.(ttf|otf|woff2?)$/,
+      type: 'asset/resource',
+    });
     return config;
   },
 };
