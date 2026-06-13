@@ -12,6 +12,7 @@
 - `â€”` â€” no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
+- **2026-06-13 â€” P1/2/3 carryover (branch `feat/p1-p2-p3-carryover`):** gamification FE (all screens + TabBar + celebrations), Matching full-stack, parent Reports + attempt-history (both surfaces), auth messaging + CAPTCHA, parentâ†”child attempts authz; e2e 39/3-skip/0-fail; PR pending.
 - **2026-06-10 - Phase 2 Exit Gate (P2-HARDENING):** full QC + test pass over Phase 2. **Design:** `qc-test-designer` catalogs for all 11 backend + 7 student-app stories (~319 + ~208 cases; PR #107/#108, merged). **Backend api-tester:** P2-01 (92) + P2-02 (39) integration tests green; P2-03..P2-12 catalogs ready. **Frontend e2e** (Playwright, isolated per story): P2-09 (23) / P2-02 (19) / P2-03 (6, lock-gate P0s pass) / P2-05 (15) / P2-06 (21) / P2-07 (21) / P2-12 (37) - ~142 pass; blocked long-tail classified in `docs/qc/PHASE-2-FE-blocked-classification.md` (seed/spec/feature follow-ups, none release-blocking). **Bugs found+fixed:** BUG-001 (child-home subjects dropped by name-match -> keyed off subjectCode), DEF-P205FE-02 (lesson back broken on web deep-link), and **DEF-P205FE-01 (HIGH) - quiz grading: jsonb-encoded CorrectAnswer compared raw -> every MCQ/TF/FillInBlank graded wrong; fixed in AnswerComparator (decode), 18 unit tests, verified live**. Remaining: Matching renderer + TrueFalse/FillInBlank seed (P2-06-FE-2 / P2-06-BE-3, already-tracked yellow). **Phase 2 tagged complete.**
 - **2026-06-06 â€” FE status reconciliation:** board corrected against `main` ground truth â€” Phase-1 FE (P1-01/02/03/04) and Phase-2 student FE (P2-05/06/07/09, merged via PR #70/#71/#72/#74) flipped ðŸ”²â†’âœ…; **P8-04 FE corrected âœ…â†’ðŸ”² (branch `feat/P8-04` was backend-only â€” no FE shipped)**. Open-WIP FE branches: `feat/P4-08-gamification-screens-motion` (resumable), `feat/design-system-pixel-align` (stale, holds font/RTL fixes).
 - **P8-04 (BE only):** Change a child's learning language (parent-only, fresh start) â€” backend merged; **parent FE not built** (carry-forward).
@@ -19,7 +20,7 @@
 - **Wave 13 (BE):** P4-06 (daily/weekly missions ï¿½ Phase 3 Gamification 5th story: AddMissionDefinitionStudentMissionProgressLog migration (MissionDefinitions catalog + StudentMissions per-period instance + MissionProgressLogs idempotency ledger) + XpReason.MissionCompleted=6 + MissionTargetType enum + MissionPeriodCalculator pure static UTC + ISO 8601 week math + StudentXpProfile.RecordMissionCompleted domain mutation raising MissionCompletedDomainEvent + StudentMission.ApplyProgress/MarkCompleted mutations + IncrementMissionProgressCommand (row-lock after probe, dual-layer idempotency, inline completion to avoid nested-tx) + 3 notification handlers (LessonCompletedMissionHandler/AnswerSubmittedMissionHandler/StreakAdvancedMissionHandler, each in own try/catch per ADR 0002 ï¿½3) + MissionSeeder idempotent atomic seed of 8 missions at startup + IStudentMissionsQuery cross-module seam with LAZY INSTANTIATION on dashboard read + DashboardDto.DailyMissions[] + WeeklyMission (replaces old DailyMission placeholder) + GET /api/Gamification/Missions/Me endpoint + MissionStatusDto/MissionTargetTypeDto/MissionTypeDto drift enums in Shared.Contracts + MissionRolloverJob Hangfire @ 5 0 * * * daily + 10 0 * * 1 weekly bulk ExecuteUpdateAsync; lead-approved 8 missions/lazy/PM-counts/daily-list+weekly-single + graph-nav 4th instance (AttachStudentMission); 19 unit tests + 23 integration tests + 62/62 P4-02/03/04/05 regression; security PASS with F1 comment + F2 narrowed catch + F3 DTO enums + F5 lock placement + reviewer F2-cleanup applied) ï¿½ open as PR on feat/P4-06-missions
 
 ## Phase 1 â€” Foundation
-> **Per-task detail added 2026-06-07:** each P1 task file now carries a Status column (âœ…/ðŸŸ¡/ðŸ”²). Story-level cells below are unchanged. Open sub-task gaps inside otherwise-shipped stories: **P1-10-FE-6** (admin account-locked message) ðŸ”², **P1-11-FE-15/16** (sign-in lockout msg + Register CAPTCHA) ðŸ”², **P1-12-FE-*** Batch-2 wiring ðŸŸ¡ + **FE-4** forgot/reset-password screens ðŸ”². Their backend deps (P1-12-BE, P1-13-BE-1/2/4) are merged, so all are unblocked.
+> **Per-task detail added 2026-06-07:** each P1 task file now carries a Status column (âœ…/ðŸŸ¡/ðŸ”²). Story-level cells below are unchanged. **Closed in the P1/P2/P3 carryover (Batch 1):** **P1-10-FE-6** (admin account-locked message) âœ…, **P1-11-FE-15/16** (sign-in lockout msg + Register CAPTCHA) âœ…. Remaining open sub-task gaps inside otherwise-shipped stories: **P1-12-FE-*** Batch-2 wiring ðŸŸ¡ + **FE-4** forgot/reset-password screens ðŸ”². Their backend deps (P1-12-BE, P1-13-BE-1/2/4) are merged, so all are unblocked. **P1-11 FE** stays ðŸŸ¡ pending the remaining pixel-perfect sub-tasks (FE-7 edit-child save, FE-13 QA pass), but Reports (chart-less KPIs + mastery + Send-Report stub) plus FE-15/FE-16 are now done via carryover.
 | Story | Title | Backend | Frontend |
 |---|---|:--:|:--:|
 | â€” | Monorepo, api-client & shared (foundation) | â€” | âœ… |
@@ -41,7 +42,7 @@
 | P1-13b | Backend hardening pass â€” BE-1 rate-limiting (PR #50); rest â†’ P6-06 | âœ… | â€” |
 
 ## Phase 2 â€” Learning Core
-> **Per-task detail added 2026-06-07:** each P2 task file now carries a Status column (âœ…/ðŸŸ¡/ðŸ”²). Story-level cells below are unchanged. One open sub-task gap inside an otherwise-shipped story: **quiz Matching** is incomplete on both stacks â€” **P2-06-FE-2** ðŸŸ¡ (UI stub) and **P2-06-BE-3** ðŸŸ¡ (answer-shape TODO, unseeded). Note: P2-06's "assessment module" was deliberately folded into the **Learning** module per the no-new-module decision.
+> **Per-task detail added 2026-06-07:** each P2 task file now carries a Status column (âœ…/ðŸŸ¡/ðŸ”²). Story-level cells below are unchanged. **Quiz Matching is now done on both stacks** â€” **P2-06-FE-2** âœ… (real tap-to-pair `MatchingPanel`) and **P2-06-BE-3** âœ… (order-independent comparator + all-4-types demo seed) shipped in the P1/P2/P3 carryover (payload `{pairs:[{leftId,rightId}],attemptOrder,timeMs}`). Note: P2-06's "assessment module" was deliberately folded into the **Learning** module per the no-new-module decision.
 | Story | Title | Backend | Frontend |
 |---|---|:--:|:--:|
 | P2-01 | Model the curriculum hierarchy | âœ… | â€” |
@@ -58,21 +59,21 @@
 | P2-12 | Account settings APIs (Parent module + Notifications prefs + Identity security) | âœ… | âœ… |
 
 ## Phase 3 â€” Gamification *(story IDs `P4-xx`)*
-> Backend XP/streak/hearts/badges/missions/leagues shipped. **Gamification FE is mostly not started** â€” only the P4-07 dashboard LeaguePreview flip is merged (ðŸŸ¡), and P4-08 motion/screens is unmerged WIP on `feat/P4-08-gamification-screens-motion`. Task tree under `tasks/Frontend/student-app/Phase-3-Gamification/`.
+> Backend XP/streak/hearts/badges/missions/leagues shipped. **Gamification FE shipped** via the P1/P2/P3 carryover on branch `feat/p1-p2-p3-carryover` â€” bottom TabBar + xp/streak/hearts/events/badges/missions/league screens + celebrations. Task tree under `tasks/Frontend/student-app/Phase-3-Gamification/`.
 > **Carry-over (Phase 1/2 gap closure scheduled into this wave):** `Backend/Phase-3-Gamification/CARRYOVER-P1-P2-gaps-BE.md` (quiz Matching type) + `Frontend/student-app/Phase-3-Gamification/CARRYOVER-P1-P2-gaps-FE.md` (Reports build, account-locked message, Register CAPTCHA, landing ar/RTL, Matching UI).
 | Story | Title | Backend | Frontend |
 |---|---|:--:|:--:|
 | P4-01 | Emit learning domain events | âœ… | â€” |
-| P4-02 | Earn XP and level up | âœ… | ðŸ”² |
-| P4-03 | Maintain a daily streak | âœ… | ðŸ”² |
-| P4-04 | Lose hearts and enter Practice Mode | âœ… | ðŸ”² |
-| P4-05 | Earn badges | âœ… | ðŸ”² |
-| P4-06 | Complete daily/weekly missions | âœ… | ðŸ”² |
-| P4-07 | Compete in weekly leagues | âœ… | ðŸŸ¡ |
-| P4-08 | Gamification screens & motion | â€” | ðŸ”² |
+| P4-02 | Earn XP and level up | âœ… | âœ… |
+| P4-03 | Maintain a daily streak | âœ… | âœ… |
+| P4-04 | Lose hearts and enter Practice Mode | âœ… | âœ… |
+| P4-05 | Earn badges | âœ… | âœ… |
+| P4-06 | Complete daily/weekly missions | âœ… | âœ… |
+| P4-07 | Compete in weekly leagues | âœ… | âœ… |
+| P4-08 | Gamification screens & motion | â€” | âœ… |
 | P4-09 | Re-engagement notifications | âœ… | ðŸ”² |
 | P4-10 | Redis realtime gamification state | âœ… | â€” |
-| P4-11 | Streak freeze, timed events & weekly challenges | âœ… | ðŸ”² |
+| P4-11 | Streak freeze, timed events & weekly challenges | âœ… | âœ… |
 
 ## Phase 4 â€” AI Tutor *(story IDs `P3-xx`)*
 | Story | Title | Status |
@@ -157,7 +158,7 @@
 - Tokenize inline glow/alpha shades in components â€” P1-08
 - **Open decision:** staging deploy provider (Azure / Railway / Render) â€” see `docs/deploy/staging-decision.md`
 - **Phase-2 QC follow-ups (from the P2 exit gate; non-blocking):**
-  - Seed **TrueFalse / FillInBlank** quiz questions + finish the **Matching** renderer (P2-06-FE-2 / P2-06-BE-3) so those question types are e2e-testable.
+  - ~~Seed **TrueFalse / FillInBlank** quiz questions + finish the **Matching** renderer (P2-06-FE-2 / P2-06-BE-3)~~ â€” **done in the P1/P2/P3 carryover**: real tap-to-pair `MatchingPanel` + order-independent comparator + all-4-types demo seed shipped (payload `{pairs:[{leftId,rightId}],attemptOrder,timeMs}`).
   - Backend defects the api-tester catalogs flagged (assert-actual, lead-decision): P2-01 duplicate-subject -> 500 (AddSubject omits SubjectCode/Language) and FK-orphan -> 500; cross-language browse silently redirects (not 403); no start-lock-guard (FE is the only lock gate); Learning IDOR -> 401 / business-state -> 424 conventions. See `docs/qc/P2-*/`.
   - Implement the remaining backend api-tester stories (P2-03/04/05/06/07/08/09/11/12) + fill P2-02's execution report.
   - Small FE testID follow-ups + spec nits per `docs/qc/PHASE-2-FE-blocked-classification.md` (categories D-I).
