@@ -21,8 +21,14 @@ export function LoginBrandPanel({ direction = 'ltr', appName }: LoginBrandPanelP
 
   return (
     <>
-      {/* Logo + wordmark — always LTR mark→wordmark order (brand mark not mirrored). */}
-      <Stack flexDirection="row" alignItems="center" gap="$3">
+      {/* Logo + wordmark — always LTR mark→wordmark order (brand mark not mirrored),
+          but the cluster sits at the reading start (right in RTL) like the rest of the panel. */}
+      <Stack
+        flexDirection="row"
+        alignItems="center"
+        justifyContent={direction === 'rtl' ? 'flex-end' : 'flex-start'}
+        gap="$3"
+      >
         <Stack
           width={44}
           height={44}
@@ -49,6 +55,11 @@ export function LoginBrandPanel({ direction = 'ltr', appName }: LoginBrandPanelP
           backgroundColor="$primaryHover"
           alignItems="center"
           justifyContent="center"
+          // Soft glow halo around the star (align-login brand panel).
+          shadowColor="rgba(165,148,249,1)"
+          shadowOffset={{ width: 0, height: 0 }}
+          shadowOpacity={0.7}
+          shadowRadius={44}
         >
           <Text fontSize={96} accessibilityElementsHidden>
             ⭐

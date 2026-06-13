@@ -66,8 +66,13 @@ export default function LoginScreen() {
           </Stack>
         </Stack>
 
-        {/* Header — eyebrow + heading + subtitle */}
-        <Stack gap="$2" alignItems="center" $tablet={{ alignItems: 'flex-start' }}>
+        {/* Header — eyebrow + heading + subtitle. Web: align to the reading start
+            (left in LTR, right in RTL) so the Arabic header hugs the right edge. */}
+        <Stack
+          gap="$2"
+          alignItems="center"
+          $tablet={{ alignItems: direction === 'rtl' ? 'flex-end' : 'flex-start' }}
+        >
           <Text
             color="$primaryLight"
             fontSize={12}
