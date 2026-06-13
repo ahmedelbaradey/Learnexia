@@ -2119,4 +2119,10 @@
   <data name="StudentProfileRetrievedSuccessfully" xml:space="preserve">
     <value>تم استرداد ملف تعلم الطالب السلوكي بنجاح.</value>
   </data>
+  <data name="AiContentBlocked" xml:space="preserve">
+    <value>لا أستطيع المساعدة في هذا الأمر الآن. يرجى المحاولة بسؤال آخر.</value>
+  </data>
+  <data name="AiServiceUnavailable" xml:space="preserve">
+    <value>المعلم الذكي غير متاح مؤقتًا. يرجى المحاولة مجددًا بعد لحظة.</value>
+  </data>
 </root>

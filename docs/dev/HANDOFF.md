@@ -65,6 +65,73 @@ These are env vars / secret store — NEVER committed to git:
 - P3-03 (Prompt builder) builds `AiRequest` objects — all DTOs are frozen.
 - Real provider API keys are needed before any runtime call (P3-04+).
 
+## P3-02 — AI Safety Layer — added 2026-06-13 (branch `feat/P3-02-ai-safety-layer`)
+
+Built the mandatory AI-safety facade enforcing FR-AI-4 (child-safety critical).
+
+### What shipped
+
+- **ISafetyLayer contract** (new, in Shared.Contracts/Ai/) — the ONLY authorized path for AI content generation. Feature handlers inject ISafetyLayer, never IAiGateway directly.
+- **SafeAiResult envelope** — carries Allowed bool, Content string, SafetyVerdict (Blocked/Fallback/Allowed), FailedChecks string[], Confidence double forwarded from gateway for cache ReviewStatus decisioning.
+- **SafetyLayer facade** (Ai.Application/Safety/SafetyLayer.cs) — sole ISafetyLayer impl. 8-step: (1) optional input toxicity screen, (2) call IAiGateway.CompleteAsync, (3-4) run all checks concurrently, (5) if Block go to (7); if NeedsRegeneration bounded regen (MaxRegenerationAttempts=2), (6) on block/exhausted: write SafetyEvent, return localized fallback, (7) fail-closed on all exceptions.
+- **3 composable checks, all enabled by default (FR-AI-4):**
+  - **ToxicityCheck** — LLM-as-judge (Haiku), detects slurs/profanity.
+  - **AgeAppropriatenessCheck** — LLM-as-judge, age-banded (grades 1-6 vs 7-12), detects sexual/violent/scary content.
+  - **HallucinationCheck** — heuristic (no LLM), checks logical consistency.
+  - All return CheckVerdict {Outcome, ReasonCodes[], Details}.
+- **Judge prompts injection-fenced** with sentinel delimiters to prevent student content escape.
+- **SafetyOptions** (Ai:Safety appsettings) — all flags default true per FR-AI-4; operator must explicitly disable. MaxRegenerationAttempts=2.
+- **ai.SafetyEvents table** — append-only, PII-light: StudentId int, TaskKind varchar, FailedChecks/ReasonCodes jsonb, ActionTaken varchar, ModelId varchar, OccurredAtUtc timestamptz indexed. NO prompt/response/names/email.
+- **AiDbContext + AiDbContextFactory** — mirrors Moderation. Append-only direct SaveChanges (ADR-0001).
+- **Architecture test P302-ARCH-04** — enforces no-bypass: any type outside Ai.Infrastructure/SafetyLayer/Shared.Contracts referencing IAiGateway fails test.
+- **Resource strings** — AiContentBlocked (ar/en), AiServiceUnavailable (gateway fallback).
+- **37 unit+arch tests GREEN** (SafetyLayerTests: 24 scenarios; AiModuleArchTests: P302-ARCH-04 + 12 other rules).
+- **Eval harness** (Ai.EvalTests, [Trait("Category","Eval")] tagged, CI-excluded) — runs checks against safety-eval-set.json (ar+en samples). Run with `dotnet test --filter Category=Eval` + live keys to validate Arabic moderation before P3-04 ships (Gate B, docs/briefs/ai-eval-gate.md).
+
+### Security audit (MANDATORY GATE — PASS, 0 Critical/High)
+
+- Fail-closed everywhere: any error → block + fallback, never unscreened.
+- No bypass: P302-ARCH-04 locks IAiGateway refs. Feature handlers must use ISafetyLayer.
+- PII-light SafetyEvents: reason codes only, no raw content. P7-09 reads stable codes.
+- Judge prompts injection-fenced (sentinel delimiters).
+- All checks default-enabled (FR-AI-4). Operator must flip config flags to disable.
+- Ai:Safety config carries flags/message-keys only, no API keys (those in secret Ai:Providers:*:ApiKey).
+- Eval harness must pass with live keys on ar+en before P3-04 integration. LAUNCH-GATE requirement.
+
+### Load-bearing decisions
+
+- **Facade (Q3):** SafetyLayer wraps IAiGateway. Architecture test locks no-bypass at type level.
+- **All checks enabled (FR-AI-4):** operator must explicitly set false in config to disable.
+- **MaxRegenerationAttempts=2 (bounded):** 2nd chance on marginal, prevents unbounded loops.
+- **LLM-as-judge toxicity/age (Q4/Q6):** cheap Haiku models, avoids separate endpoint. Hallucination is heuristic.
+- **PII-light SafetyEvents (Q5):** reason codes + check names in jsonb. Full-content quarantine deferred to P7-09.
+- **Append-only SaveChanges (ADR-0001):** mirrors Moderation.AuditLog. No Unit of Work.
+- **Eval-tagged CI-excluded:** live keys needed. Run `dotnet test backend/tests/Ai.EvalTests --filter Category=Eval`.
+- **Arabic moderation = LAUNCH-GATE (Gate B):** must pass with real keys ar+en before P3-04 ships to prod.
+
+### What P3-04/05/06 must do
+
+- Inject ISafetyLayer, never IAiGateway.
+- Call `await _safetyLayer.GenerateSafeAsync(request, ct)`.
+- On block, return `result.Message` (localized).
+- Use `Confidence + SafetyVerdict` for cache ReviewStatus decision.
+- Real provider keys (Ai__Providers__Claude__ApiKey, etc.) required before runtime.
+
+### Load-bearing config + secret paths
+
+Secrets (env vars / secret store, NEVER git):
+- Ai__Providers__Claude__ApiKey
+- Ai__Providers__OpenAi__ApiKey
+
+Config flags (appsettings.json, safe to commit):
+- Ai:Safety:EnableToxicityCheck = true (default)
+- Ai:Safety:EnableAgeCheck = true (default)
+- Ai:Safety:EnableHallucinationCheck = true (default)
+- Ai:Safety:MaxRegenerationAttempts = 2 (default)
+- Ai:Safety:ModerationProvider = "Claude" (default)
+- Ai:Safety:FallbackMessageKey = "AiContentBlocked" (default)
+- Ai:Safety:GatewayErrorFallbackKey = "AiServiceUnavailable" (default)
+
 ## P3-08 — Adjust difficulty adaptively (Adaptivity Engine) — added 2026-06-13 (branch `feat/P3-08-adaptivity-engine`)
 
 Built **P3-08** in the **`Learning` module**. Full pipeline (db-migration → backend-feature → api-tester → security-auditor → reviewer PASS).

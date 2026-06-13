@@ -2120,4 +2120,10 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="StudentProfileRetrievedSuccessfully" xml:space="preserve">
     <value>Student learning profile retrieved successfully.</value>
   </data>
+  <data name="AiContentBlocked" xml:space="preserve">
+    <value>I'm not able to help with that right now. Please try asking something else.</value>
+  </data>
+  <data name="AiServiceUnavailable" xml:space="preserve">
+    <value>The AI tutor is temporarily unavailable. Please try again in a moment.</value>
+  </data>
 </root>
