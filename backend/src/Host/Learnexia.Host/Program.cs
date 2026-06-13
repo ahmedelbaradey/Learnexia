@@ -11,6 +11,7 @@ using Learnexia.Modules.Parent.Api;
 using Learnexia.Modules.Notifications.Api;
 using Learnexia.Modules.Gamification.Api;
 using Learnexia.Modules.Moderation.Api;
+using Learnexia.Modules.Ai.Api;
 using Learnexia.Shared.Kernel.Storage;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -136,6 +137,7 @@ builder.Services.AddParentModule(builder.Configuration);
 builder.Services.AddNotificationsModule(builder.Configuration);
 builder.Services.AddGamificationModule(builder.Configuration);
 builder.Services.AddModerationModule(builder.Configuration);
+builder.Services.AddAiModule(builder.Configuration);
 
 // Single, cross-module MediatR registration spanning every module's Application assembly + the
 // IsolatedNotificationPublisher (ADR 0002 §4). Must come AFTER the modules register their validators /

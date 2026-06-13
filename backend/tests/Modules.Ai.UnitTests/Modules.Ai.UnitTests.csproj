@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Modules\Ai\Learnexia.Modules.Ai.Application\Learnexia.Modules.Ai.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Ai\Learnexia.Modules.Ai.Infrastructure\Learnexia.Modules.Ai.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Shared\Learnexia.Shared.Contracts\Learnexia.Shared.Contracts.csproj" />
+  </ItemGroup>
+</Project>
