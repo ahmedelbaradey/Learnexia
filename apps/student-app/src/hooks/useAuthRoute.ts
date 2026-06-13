@@ -105,7 +105,7 @@ export function useAuthRoute(): AuthRouteState {
       if (current !== '(onboarding)') router.replace('/(onboarding)/add-child');
       return;
     }
-    if (current !== '(parent)') router.replace('/(parent)');
+    if (current !== '(parent)') router.replace('/(parent)/overview');
   }, [isResolving, status, me.data, segments, router]);
 
   return { isResolving };

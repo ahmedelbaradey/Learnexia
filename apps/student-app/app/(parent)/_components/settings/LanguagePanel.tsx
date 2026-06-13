@@ -1,23 +1,24 @@
 /**
  * LanguagePanel — Settings → Language & region tab (P8-99-FE-3).
  *
- * Promotes the UI-language switch from a local-only Zustand update into a
- * persistent server-backed choice. On change:
- *   - Persists `User.PreferredLanguage` to the backend via `useUpdateUserLanguage`
- *     (axis A — the UI display language, separate from the child's learning language).
+ * Promotes the UI-language switch from an on-change persist into a backend-saved
+ * choice. Language selection updates LOCAL form state only; persistence fires on
+ * explicit **Save** (per parent-dashboard-uiux spec D.3).
+ *
+ * On Save:
+ *   - Persists `User.PreferredLanguage` to the backend via `useUpdateUserLanguage`.
  *   - Syncs the locale store (Zustand) + react-i18next so the app reflects the
  *     change immediately (web) or after restart (native).
  *   - WEB: direction flips instantly (no restart needed).
  *   - NATIVE: if the new locale has a different direction, shows the existing
- *     `RestartPrompt` via `restartPromptStore.show()` before applying the RTL flip.
+ *     `RestartPrompt` via `restartPromptStore.show()`.
+ *
+ * Region select is UI-only (no backend endpoint). Save persists language only;
+ * region stays local. A helper note flags this to the user (spec D.3).
  *
  * Layout / tokens: mirrors the PlanPanel / ProfilePanel grammar (PanelSurface +
  * PanelHeader + flex row of Select widgets). RTL-aware via `direction` + `rowDir`
  * props passed by `SettingsWeb`. No raw hex; token-only.
- *
- * No API calls in this component — all server interaction goes through
- * `useUpdateUserLanguage` from `@learnexia/api-client`.
- * No server data in Zustand — the locale store is the applied-UI mirror only.
  */
 import { useUpdateUserLanguage } from '@learnexia/api-client';
 import {
@@ -27,7 +28,7 @@ import {
   useRestartPromptStore,
   type Locale,
 } from '@learnexia/shared';
-import { Select } from '@learnexia/ui';
+import { Button, Select } from '@learnexia/ui';
 import { Stack, Text } from '@tamagui/core';
 import React, { useState } from 'react';
 import { Platform } from 'react-native';
@@ -106,6 +107,9 @@ export function LanguagePanel({ direction, rowDir, locale }: LanguagePanelProps)
   const showRestartPrompt = useRestartPromptStore((s) => s.show);
   const updateUserLanguage = useUpdateUserLanguage();
   const resolveError = useServerError();
+
+  // Local form state — selection does NOT persist until Save is tapped.
+  const [pendingLocale, setPendingLocale] = useState<Locale>(locale);
   const [region, setRegion] = useState<string>(REGION.Sa);
 
   const languageOptions = LOCALES.map((loc) => ({
@@ -122,27 +126,39 @@ export function LanguagePanel({ direction, rowDir, locale }: LanguagePanelProps)
     ? resolveError(updateUserLanguage.error, {})
     : null;
 
-  const onLocaleChange = (nextLocale: Locale) => {
-    if (nextLocale === locale) return;
-
-    // Always persist the choice to the backend — the server persists
-    // `User.PreferredLanguage` so the selection survives sign-out/sign-in.
-    // `id` is omitted (the endpoint resolves the acting user from the JWT).
-    updateUserLanguage.mutate({ userPreferredLanguage: nextLocale });
-
+  /** Apply the language: persist to backend + locale store. */
+  function applyLocale(nextLocale: Locale) {
     const nextDirection = directionForLocale(nextLocale);
     const currentDirection = isRtl ? 'rtl' : 'ltr';
 
     if (Platform.OS !== 'web' && nextDirection !== currentDirection) {
       // NATIVE: direction change requires a restart for RTL to fully apply.
-      // Show the existing restart prompt; the locale store is updated after
-      // restart via `applyNativeRtl` inside `RestartPrompt`.
       showRestartPrompt(nextLocale);
     } else {
-      // WEB (or same-direction locale change): apply immediately.
+      // WEB (or same-direction): apply immediately.
       setLocale(nextLocale);
     }
-  };
+  }
+
+  function handleSave() {
+    if (pendingLocale === locale && !updateUserLanguage.isError) {
+      // No change — no-op (or the locale is already the active one).
+      // Still apply in case the user toggled away and back.
+    }
+    updateUserLanguage.mutate(
+      { userPreferredLanguage: pendingLocale },
+      {
+        onSuccess: () => {
+          applyLocale(pendingLocale);
+        },
+      },
+    );
+  }
+
+  function handleCancel() {
+    setPendingLocale(locale);
+    updateUserLanguage.reset();
+  }
 
   return (
     <PanelSurface>
@@ -177,8 +193,11 @@ export function LanguagePanel({ direction, rowDir, locale }: LanguagePanelProps)
         <Stack flex={1} minWidth={240}>
           <Select
             label={t('parent.settings.language.languageLabel')}
-            value={locale}
-            onChange={(v) => onLocaleChange(v as Locale)}
+            value={pendingLocale}
+            onChange={(v) => {
+              setPendingLocale(v as Locale);
+              updateUserLanguage.reset();
+            }}
             options={languageOptions}
             direction={direction}
             accessibilityLabel={t('parent.settings.language.languageLabel')}
@@ -197,6 +216,42 @@ export function LanguagePanel({ direction, rowDir, locale }: LanguagePanelProps)
             accessibilityLabel={t('parent.settings.language.regionLabel')}
           />
         </Stack>
+      </Stack>
+
+      {/* Region UI-only note */}
+      <Text
+        color="$fg3"
+        fontSize={11}
+        fontFamily="$body"
+        writingDirection={direction}
+        textAlign={direction === 'rtl' ? 'right' : 'left'}
+      >
+        {t('parent.settings.language.regionUiOnlyNote')}
+      </Text>
+
+      {/* Save / Cancel action row */}
+      <Stack flexDirection={rowDir} justifyContent="flex-end" gap={10} paddingTop={6}>
+        <Button
+          variant="ghost"
+          size="md"
+          disabled={updateUserLanguage.isPending}
+          accessibilityLabel={t('parent.settings.language.cancel')}
+          onPress={handleCancel}
+          testID="language-cancel"
+        >
+          {t('parent.settings.language.cancel')}
+        </Button>
+        <Button
+          variant="primary"
+          size="md"
+          loading={updateUserLanguage.isPending}
+          disabled={updateUserLanguage.isPending}
+          accessibilityLabel={t('parent.settings.language.save')}
+          onPress={handleSave}
+          testID="language-save"
+        >
+          {t('parent.settings.language.save')}
+        </Button>
       </Stack>
     </PanelSurface>
   );

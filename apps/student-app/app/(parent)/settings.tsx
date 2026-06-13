@@ -2,19 +2,15 @@
  * Settings screen — the parent account & preferences screen
  * (capture `web/07-settings.png`), P1-11.
  *
- * Wide (≥768): left `Sidebar` (Settings nav item active) + the `SettingsWeb`
- * main content (header, six-tab left rail, active panel). Narrow (<768): the
- * mobile `ScreenHeader` + the same `SettingsWeb` content stacked.
+ * Wide (≥768): The shell `_layout.tsx` owns the Sidebar + content ScrollView.
+ * This page just renders `<SettingsWeb>` — no duplicate row/sidebar/scroll here.
  *
- * Functional tabs: Profile (UI-first; Save + avatar upload are P1-12 stubs) and
- * Language & region (switches the app language en↔ar app-wide + persists via the
- * locale store; region UI-only). The other four tabs (Notifications / Linked
- * children / Security / Plan & billing) render a "coming soon" panel — TODO(P2-12).
+ * Narrow (<768): Mobile `ScreenHeader` + scrollable body.
  *
- * Scoped server-side to the authenticated parent (the JWT); full name comes from
- * `useMe`. RTL + ar/en; tokens only.
+ * `onAddChild` is driven by `useActiveChildStore().openAddChild` so the
+ * AddChildModal (mounted in _layout) can be triggered from the
+ * LinkedChildrenPanel CTA without prop-drilling through `<Slot>`.
  */
-import { useMyChildren } from '@learnexia/api-client';
 import { Stack } from '@tamagui/core';
 import { useRouter } from 'expo-router';
 import { ScrollView, useWindowDimensions } from 'react-native';
@@ -22,9 +18,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
 import { ScreenHeader } from '../../src/components/ScreenHeader';
-import { NAV_ITEM, Sidebar } from './_components/Sidebar';
+import { useActiveChildStore } from '../../src/providers/activeChildStore';
 import { SettingsWeb } from './_components/SettingsWeb';
-import { getChildStatsStub } from './_components/parentDashboardStubs';
 
 /** Sidebar appears at the tablet breakpoint and up (design-system `media`). */
 const WIDE_BREAKPOINT = 768;
@@ -34,40 +29,20 @@ export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const query = useMyChildren();
+  const openAddChild = useActiveChildStore((s) => s.openAddChild);
 
   const isWide = width >= WIDE_BREAKPOINT;
 
   if (isWide) {
-    const firstChild = (query.data ?? [])[0];
-    const activeChild = firstChild
-      ? (() => {
-          const id = String(firstChild.id);
-          const stats = getChildStatsStub(id);
-          return {
-            id,
-            fullName: firstChild.fullName ?? '',
-            grade: stats.grade,
-            level: stats.level,
-          };
-        })()
-      : undefined;
-
-    return (
-      <Stack flex={1} flexDirection="row" backgroundColor="$bg">
-        <Sidebar activeChild={activeChild} activeKey={NAV_ITEM.Settings} />
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingBottom: 48 }}>
-          <SettingsWeb />
-        </ScrollView>
-      </Stack>
-    );
+    // Wide: shell owns sidebar + scroll; just render the body content.
+    return <SettingsWeb onAddChild={openAddChild} />;
   }
 
   return (
     <Stack flex={1} backgroundColor="$bg" paddingTop={insets.top}>
       <ScreenHeader title={t('parent.settings.title')} onBack={() => router.back()} />
       <ScrollView contentContainerStyle={{ paddingBottom: 48 }}>
-        <SettingsWeb />
+        <SettingsWeb onAddChild={openAddChild} />
       </ScrollView>
     </Stack>
   );

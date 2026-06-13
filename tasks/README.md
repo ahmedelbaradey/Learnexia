@@ -15,6 +15,7 @@ tasks/
 │   │   ├── Phase-4-AI-Tutor/      P3-12-FE.md   (AI tutor UI — chat/explain/hints surface, streaming, RTL)
 │   │   ├── Phase-5-Parent-Analytics/ P5-xx-FE.md
 │   │   ├── Phase-8-Localization/  P8-xx-FE.md   (add-child learning lang, parent change flow, app-shell fonts/RTL)
+│   │   ├── Phase-9-Notifications/ P9-0x-FE.md   (expo push, deep links, in-app inbox, parent per-child controls)
 │   │   └── Phase-10-Payments-Billing/ P10-xx-FE.md (parent: plan/checkout/packs/billing-history; child: ⚡ energy meter)
 │   └── admin-dashboard/       Next.js admin screens
 │       ├── Phase-1-Foundation/    P1-10-FE.md   (admin sign-in & shell)
@@ -28,6 +29,7 @@ tasks/
     ├── Phase-6-Stabilization/ P6-06-BE.md
     ├── Phase-7-Admin-Console/ P7-xx-BE.md
     ├── Phase-8-Localization/  P8-xx-BE.md
+    ├── Phase-9-Notifications/ P9-0x-BE.md   (wire emitted events, new habit categories, arbitration, comeback ladder)
     ├── Phase-10-Payments-Billing/ P10-xx-BE.md  (credit ledger/grant/spend, subscriptions, payment provider, dunning/refunds, admin config)
     └── Backlog-Phase-2-Plus/ BL-xx-BE.md   (Curriculum Intelligence: schema/upload/parsing/ingestion/knowledge-graph — .NET + Python pipeline)
 ```

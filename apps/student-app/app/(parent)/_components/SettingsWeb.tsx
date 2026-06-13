@@ -80,7 +80,12 @@ const TAB_LABEL_KEY: Record<SettingsTabKey, string> = {
   [SETTINGS_TAB.Language]: 'parent.settings.tabs.language',
 };
 
-export function SettingsWeb() {
+export interface SettingsWebProps {
+  /** Called when the user taps "Add child". Opens the AddChildModal overlay. */
+  onAddChild?: () => void;
+}
+
+export function SettingsWeb({ onAddChild }: SettingsWebProps) {
   const { t } = useTranslation();
   const { direction, locale } = useLocale();
   const profile = useMyProfile();
@@ -185,7 +190,7 @@ export function SettingsWeb() {
               case SETTINGS_TAB.Notifications:
                 return <NotificationsPanel direction={direction} rowDir={rowDir} />;
               case SETTINGS_TAB.LinkedChildren:
-                return <LinkedChildrenPanel direction={direction} rowDir={rowDir} />;
+                return <LinkedChildrenPanel direction={direction} rowDir={rowDir} onAddChild={onAddChild} />;
               case SETTINGS_TAB.Security:
                 return <SecurityPanel direction={direction} rowDir={rowDir} />;
               case SETTINGS_TAB.Billing:
@@ -280,9 +285,12 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
   // Avatar feedback state (inline, below the avatar row).
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [avatarSuccess, setAvatarSuccess] = useState<string | null>(null);
+  // Live preview URI — set immediately from URL.createObjectURL on file pick,
+  // before the upload mutation completes. Cleared on remove success.
+  const [avatarPreviewUri, setAvatarPreviewUri] = useState<string | null>(null);
 
   const avatarPending = uploadAvatar.isPending || removeAvatar.isPending;
-  const hasAvatar = Boolean(profile?.avatarUrl);
+  const hasAvatar = Boolean(profile?.avatarUrl) || Boolean(avatarPreviewUri);
 
   // Form state seeded from the loaded profile. `email` is display-only (not part
   // of the profile contract). Re-sync whenever the loaded profile changes.
@@ -355,11 +363,19 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
     setAvatarError(null);
     setAvatarSuccess(null);
 
+    // Instant live preview — show the chosen image immediately, before upload.
+    if (typeof URL !== 'undefined' && URL.createObjectURL) {
+      const previewUrl = URL.createObjectURL(file);
+      setAvatarPreviewUri(previewUrl);
+    }
+
     const param: FileParameter = { data: file, fileName: file.name };
     try {
       await uploadAvatar.mutateAsync(param);
       setAvatarSuccess(t('parent.settings.profile.avatar.uploadSuccess'));
     } catch {
+      // Clear preview on upload failure so avatar doesn't show a broken state.
+      setAvatarPreviewUri(null);
       setAvatarError(t('parent.settings.profile.avatar.uploadError'));
     }
   };
@@ -370,6 +386,7 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
     setAvatarSuccess(null);
     try {
       await removeAvatar.mutateAsync();
+      setAvatarPreviewUri(null);
       setAvatarSuccess(t('parent.settings.profile.avatar.removeSuccess'));
     } catch {
       setAvatarError(t('parent.settings.profile.avatar.removeError'));
@@ -415,15 +432,37 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
           aria-hidden
         />
       )}
-      <Stack flexDirection={rowDir} alignItems="center" gap={18}>
-        {/* Avatar circle with pending overlay while mutation is in flight. */}
-        <Stack position="relative">
+
+      {/* Avatar row: circle (84×84) + 📷 badge + dashed drop-zone (spec D.2). */}
+      <Stack flexDirection={rowDir} alignItems="flex-start" gap={18}>
+        {/* Avatar circle with 📷 badge + pending overlay */}
+        <Stack position="relative" width={84} height={84}>
           <Avatar
             name={name || profile?.fullName || 'A'}
-            uri={profile?.avatarUrl || undefined}
+            uri={avatarPreviewUri || profile?.avatarUrl || undefined}
             size="xl"
             accessibilityLabel={t('parent.settings.profile.title')}
           />
+          {/* 📷 badge at the logical-end corner (bottom-right in LTR, bottom-left in RTL) */}
+          <Stack
+            position="absolute"
+            bottom={-2}
+            {...(direction === 'rtl' ? { left: -2 } : { right: -2 })}
+            width={24}
+            height={24}
+            borderRadius={9999}
+            backgroundColor="$primary"
+            borderWidth={2}
+            borderColor="$card"
+            alignItems="center"
+            justifyContent="center"
+            cursor="pointer"
+            onPress={handleUploadPress}
+            accessibilityElementsHidden
+          >
+            <Text fontSize={11}>{'📷'}</Text>
+          </Stack>
+          {/* Pending overlay */}
           {avatarPending && (
             <Stack
               position="absolute"
@@ -444,80 +483,110 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
           )}
         </Stack>
 
-        <Stack flexDirection="column" gap="$2">
-          <Stack flexDirection={rowDir} gap="$3">
-            <Button
-              variant="primary"
-              size="sm"
-              loading={uploadAvatar.isPending}
-              disabled={avatarPending}
-              accessibilityLabel={t('parent.settings.profile.uploadPhoto')}
-              onPress={handleUploadPress}
-              testID="avatar-upload-button"
+        {/* Dashed drop-zone — full-width beside avatar */}
+        <Stack
+          flex={1}
+          borderWidth={1.5}
+          style={{ borderStyle: 'dashed', borderColor: 'rgba(99,102,241,0.45)', backgroundColor: 'rgba(79,70,229,0.05)', cursor: 'pointer' }}
+          borderRadius="$cardInner"
+          padding={12}
+          flexDirection="column"
+          alignItems={direction === 'rtl' ? 'flex-end' : 'flex-start'}
+          gap="$1"
+          onPress={handleUploadPress}
+          cursor="pointer"
+          hoverStyle={{ backgroundColor: '$primarySoft' }}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel={hasAvatar ? t('parent.settings.profile.avatar.uploadZoneTitleChange') : t('parent.settings.profile.avatar.uploadZoneTitle')}
+          testID="avatar-upload-button"
+        >
+          <Stack flexDirection={rowDir} alignItems="center" gap="$1">
+            <Text fontSize={14} accessibilityElementsHidden>{'⬆️'}</Text>
+            <Text
+              color="$primaryLight"
+              fontSize={13}
+              fontWeight="700"
+              fontFamily="$heading"
+              writingDirection={direction}
             >
-              {t('parent.settings.profile.uploadPhoto')}
-            </Button>
-            {/* Remove shown only when a photo is set (no remove on initials-only avatar). */}
-            {hasAvatar && (
-              <Button
-                variant="danger"
-                size="sm"
-                loading={removeAvatar.isPending}
-                disabled={avatarPending}
-                accessibilityLabel={t('parent.settings.profile.removePhoto')}
-                onPress={handleRemove}
-                testID="avatar-remove-button"
-              >
-                {t('parent.settings.profile.removePhoto')}
-              </Button>
-            )}
+              {hasAvatar
+                ? t('parent.settings.profile.avatar.uploadZoneTitleChange')
+                : t('parent.settings.profile.avatar.uploadZoneTitle')}
+            </Text>
           </Stack>
-
-          {/* Helper / feedback text below the button group. */}
-          {avatarError ? (
-            <Text
-              color="$danger"
-              fontSize={12}
-              fontFamily="$body"
-              textAlign={direction === 'rtl' ? 'right' : 'left'}
-              writingDirection={direction}
-              accessibilityLiveRegion="assertive"
-            >
-              {avatarError}
-            </Text>
-          ) : avatarSuccess ? (
-            <Text
-              color="$success"
-              fontSize={12}
-              fontFamily="$body"
-              textAlign={direction === 'rtl' ? 'right' : 'left'}
-              writingDirection={direction}
-              accessibilityLiveRegion="polite"
-            >
-              {avatarSuccess}
-            </Text>
-          ) : avatarPending ? (
-            <Text
-              color="$fg3"
-              fontSize={12}
-              fontFamily="$body"
-              textAlign={direction === 'rtl' ? 'right' : 'left'}
-              writingDirection={direction}
-            >
-              {t('parent.settings.profile.avatar.uploading')}
-            </Text>
-          ) : (
-            <Text
-              color="$fg3"
-              fontSize={12}
-              fontFamily="$body"
-              textAlign={direction === 'rtl' ? 'right' : 'left'}
-              writingDirection={direction}
-            >
-              {t('parent.settings.profile.avatar.helper')}
-            </Text>
-          )}
+          <Text
+            color="$fg3"
+            fontSize={11}
+            fontFamily="$body"
+            writingDirection={direction}
+          >
+            {t('parent.settings.profile.avatar.uploadZoneSub')}
+          </Text>
         </Stack>
+      </Stack>
+
+      {/* Remove photo + feedback strip */}
+      <Stack flexDirection={rowDir} alignItems="center" gap="$3">
+        {/* Remove shown only when a photo is set (no remove on initials-only avatar). */}
+        {hasAvatar && (
+          <Button
+            variant="danger"
+            size="sm"
+            loading={removeAvatar.isPending}
+            disabled={avatarPending}
+            accessibilityLabel={t('parent.settings.profile.removePhoto')}
+            onPress={handleRemove}
+            testID="avatar-remove-button"
+          >
+            {t('parent.settings.profile.removePhoto')}
+          </Button>
+        )}
+
+        {/* Helper / feedback text */}
+        {avatarError ? (
+          <Text
+            color="$danger"
+            fontSize={12}
+            fontFamily="$body"
+            textAlign={direction === 'rtl' ? 'right' : 'left'}
+            writingDirection={direction}
+            accessibilityLiveRegion="assertive"
+          >
+            {avatarError}
+          </Text>
+        ) : avatarSuccess ? (
+          <Text
+            color="$success"
+            fontSize={12}
+            fontFamily="$body"
+            textAlign={direction === 'rtl' ? 'right' : 'left'}
+            writingDirection={direction}
+            accessibilityLiveRegion="polite"
+          >
+            {avatarSuccess}
+          </Text>
+        ) : avatarPending ? (
+          <Text
+            color="$fg3"
+            fontSize={12}
+            fontFamily="$body"
+            textAlign={direction === 'rtl' ? 'right' : 'left'}
+            writingDirection={direction}
+          >
+            {t('parent.settings.profile.avatar.uploading')}
+          </Text>
+        ) : (
+          <Text
+            color="$fg3"
+            fontSize={12}
+            fontFamily="$body"
+            textAlign={direction === 'rtl' ? 'right' : 'left'}
+            writingDirection={direction}
+          >
+            {t('parent.settings.profile.avatar.helper')}
+          </Text>
+        )}
       </Stack>
 
       {/* Two-column field grid (full name / email, phone / country) */}
@@ -533,13 +602,14 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
             testID="profile-fullname"
           />
         </Stack>
-        <Stack flex={1} minWidth={240}>
+        <Stack flex={1} minWidth={240} flexDirection="column" gap="$1">
           {/* Email is display-only — not part of the profile-update contract.
               Value comes from the loaded profile; forced LTR (Latin technical
-              string) even in an RTL form per SKILL.md. */}
+              string) even in an RTL form per SKILL.md. Contract gap: email is
+              not in AccountProfileResponse — shows "—" if unavailable. */}
           <TextField
             label={t('parent.settings.profile.email')}
-            value={profileEmail}
+            value={profileEmail || '—'}
             onChangeText={() => undefined}
             keyboardType="email-address"
             autoComplete="email"
@@ -547,6 +617,19 @@ function ProfilePanel({ direction, rowDir, profile, isLoading }: ProfilePanelPro
             forceLtr
             disabled
           />
+          {/* Email locked helper — explains why it can't be edited (spec D.1). */}
+          <Stack flexDirection={rowDir} alignItems="center" gap="$1">
+            <Text fontSize={11} accessibilityElementsHidden>{'🔒'}</Text>
+            <Text
+              color="$fg3"
+              fontSize={12}
+              fontFamily="$body"
+              writingDirection={direction}
+              flex={1}
+            >
+              {t('parent.settings.profile.emailLockedHelper')}
+            </Text>
+          </Stack>
         </Stack>
       </Stack>
 
