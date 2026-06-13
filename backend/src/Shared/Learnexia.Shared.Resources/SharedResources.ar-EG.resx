@@ -2113,4 +2113,7 @@
   <data name="SkillMasteryNotFound" xml:space="preserve">
     <value>لا يوجد سجل إتقان لهذه المهارة بعد. لم يحاول الطالب ذلك بعد.</value>
   </data>
+  <data name="DueReviewsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد المراجعات المستحقة بنجاح.</value>
+  </data>
 </root>

@@ -2,6 +2,7 @@ using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Services;
 using Learnexia.Modules.Learning.Domain.Services;
 using Learnexia.Modules.Learning.Infrastructure.Behaviors;
+using Learnexia.Modules.Learning.Infrastructure.Jobs;
 using Learnexia.Modules.Learning.Infrastructure.Persistence;
 using Learnexia.Modules.Learning.Infrastructure.Repository;
 using Learnexia.Modules.Learning.Infrastructure.Service;
@@ -39,6 +40,17 @@ public static class DependencyInjection
         services.Configure<AdaptivityOptions>(
             configuration.GetSection(AdaptivityOptions.SectionName));
         services.AddScoped<IAdaptivityService, AdaptivityService>();
+
+        // P3-10 Spaced-Repetition Engine options.
+        // SpacedRepetitionOptions lives in Domain (same pattern as AdaptivityOptions) so the
+        // pure engine can reference it without violating the Application → Domain dependency direction.
+        services.Configure<SpacedRepetitionOptions>(
+            configuration.GetSection(SpacedRepetitionOptions.SectionName));
+
+        // P3-10 Spaced-Repetition sweep job.
+        // Transient — the job creates its own inner scope via IServiceScopeFactory.CreateAsyncScope()
+        // so it does not participate in any caller's scope. Mirrors StreakSweepJob registration.
+        services.AddTransient<SpacedRepetitionSweepJob>();
 
         // Unit-of-Work behavior (ADR 0001 §2 + ADR 0002 §2): commit once per ICommand<>, then dispatch
         // domain events AFTER commit. Registered here in Infrastructure (not Application) because it

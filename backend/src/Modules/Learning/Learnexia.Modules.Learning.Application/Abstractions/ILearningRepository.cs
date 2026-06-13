@@ -237,4 +237,36 @@ public interface ILearningRepository : IGenericRepository
     /// AsNoTracking.
     /// </summary>
     Task<StudentSkillMastery?> GetSkillMasteryForStudentAsync(int studentId, int skillId, CancellationToken ct = default);
+
+    // ── Spaced Repetition (P3-10) ─────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns all <see cref="StudentSkillMastery"/> rows that are due for spaced-repetition review
+    /// at <paramref name="utcNow"/>, per the <see cref="SpacedRepetitionEngine.IsDue"/> rule:
+    /// <list type="bullet">
+    ///   <item><c>Status == NeedsReview</c> — always due.</item>
+    ///   <item><c>Status == Mastered AND NextReviewDueAt &lt;= utcNow</c> — mastered-but-stale (forgetting check).</item>
+    /// </list>
+    /// AsNoTracking — used by the sweep job for a read-then-write pattern where the write uses
+    /// <see cref="UpdateSpacedRepetitionFieldsAsync"/> (targeted update, not a full entity reload).
+    ///
+    /// UTC discipline: <paramref name="utcNow"/> must be <c>DateTime.UtcNow</c> (never <c>DateTime.Now</c>).
+    /// </summary>
+    Task<IReadOnlyList<StudentSkillMastery>> GetDueMasteryRowsAsync(DateTime utcNow, CancellationToken ct = default);
+
+    /// <summary>
+    /// Issues a targeted UPDATE on the <c>StudentSkillMasteries</c> table for the row with
+    /// <c>Id == id</c>, writing only the three SR scheduling fields
+    /// (<c>ReviewIntervalDays</c>, <c>RepetitionNumber</c>, <c>NextReviewDueAt</c>).
+    ///
+    /// Commits immediately via <c>ExecuteUpdateAsync</c> (targeted SQL — NOT routed through the
+    /// UoW behavior, which tracks entity changes). This is intentional: the sweep job operates
+    /// OUTSIDE an HTTP command pipeline and has no UoW behavior wrapping it.
+    ///
+    /// Callers within a UoW command (BE-6 completion hook) must NOT use this method; they should
+    /// mutate the tracked entity directly and let UoW commit.
+    ///
+    /// UTC discipline: <paramref name="nextDueAt"/> must be UTC-kind.
+    /// </summary>
+    Task UpdateSpacedRepetitionFieldsAsync(int id, int intervalDays, int repetitionNumber, DateTime nextDueAt, CancellationToken ct = default);
 }
