@@ -284,6 +284,8 @@ export function SecurityPanel({ direction, rowDir }: SecurityPanelProps) {
           value={currentPwd}
           onChangeText={setCurrentPwd}
           secureTextEntry
+          showLabel={t('auth.login.showPassword')}
+          hideLabel={t('auth.login.hidePassword')}
           autoComplete="current-password"
           direction={direction}
           forceLtr
@@ -296,6 +298,8 @@ export function SecurityPanel({ direction, rowDir }: SecurityPanelProps) {
           value={newPwd}
           onChangeText={setNewPwd}
           secureTextEntry
+          showLabel={t('auth.login.showPassword')}
+          hideLabel={t('auth.login.hidePassword')}
           autoComplete="new-password"
           direction={direction}
           forceLtr
@@ -317,6 +321,8 @@ export function SecurityPanel({ direction, rowDir }: SecurityPanelProps) {
           value={confirmPwd}
           onChangeText={setConfirmPwd}
           secureTextEntry
+          showLabel={t('auth.login.showPassword')}
+          hideLabel={t('auth.login.hidePassword')}
           autoComplete="new-password"
           direction={direction}
           forceLtr

@@ -171,10 +171,8 @@ export function ChildCard({
         minHeight={72}
         borderRadius={borderRadius}
         borderWidth={1}
-        borderColor="$border"
+        borderColor={isActive ? '$primary' : '$border'}
         backgroundColor={isActive ? '$bgElevated' : '$card'}
-        borderStartWidth={isActive ? 4 : 1}
-        borderStartColor={isActive ? '$primary' : '$border'}
         cursor={isPressable ? 'pointer' : 'default'}
         pressStyle={isPressable ? { scale: 0.98 } : undefined}
         onPress={isPressable ? onPress : undefined}
@@ -215,13 +213,25 @@ export function ChildCard({
             )}
           </Stack>
 
-          {/* Info */}
+          {/* Info — direction-aware text alignment (align-my-children C-11..C-42 RTL). */}
           <YStack flex={1} gap="$1">
-            <Text color="$fg1" fontSize={16} fontWeight="600" textAlign="left" writingDirection={dir}>
+            <Text
+              color="$fg1"
+              fontSize={16}
+              fontWeight="600"
+              textAlign={dir === 'rtl' ? 'right' : 'left'}
+              writingDirection={dir}
+            >
               {child.fullName}
             </Text>
             {child.meta ? (
-              <Text color="$fg3" fontSize={13} fontFamily="$body" textAlign="left" writingDirection={dir}>
+              <Text
+                color="$fg3"
+                fontSize={13}
+                fontFamily="$body"
+                textAlign={dir === 'rtl' ? 'right' : 'left'}
+                writingDirection={dir}
+              >
                 {child.meta}
               </Text>
             ) : null}
@@ -261,7 +271,14 @@ export function ChildCard({
       </Stack>
 
       {showError ? (
-        <Text color="$danger" fontSize={12} fontFamily="$body" paddingHorizontal="$2" textAlign="left" writingDirection={dir}>
+        <Text
+          color="$danger"
+          fontSize={12}
+          fontFamily="$body"
+          paddingHorizontal="$2"
+          textAlign={dir === 'rtl' ? 'right' : 'left'}
+          writingDirection={dir}
+        >
           {errorMessage}
         </Text>
       ) : null}

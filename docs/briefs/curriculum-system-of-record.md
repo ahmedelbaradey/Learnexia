@@ -174,6 +174,8 @@ BL-04-BE-3/BE-4: remove the `EmbeddingVectorRef vector(1024)` column from `Curri
 
 BL-05 writes `CurriculumChunk` rows with no vector column (the column no longer exists on the chunk). Embeddings are written to `chunk_embeddings_bge_m3` by BL-05-PY-4b (if in scope) or by P3-07. P3-07 reads the active embedding table (identified by `IsActive`) via the Shared.Contracts seam. HNSW/IVFFlat ANN indexes are on the active table's `Vector` column, not on `CurriculumChunk`.
 
+**Schema-creation ownership (updated 2026-06-13 — FINAL LOCKED AI ARCHITECTURE; see `docs/decisions-needed-ai-phase.md`):** to ship the seeded AI Tutor (P3-07) without waiting for the Python curriculum factory, **P3-07 creates the minimal first cut** of `CurriculumChunk`, `CurriculumVersion`, and `chunk_embeddings_bge_m3` (see `tasks/Backend/Phase-4-AI-Tutor/P3-07-BE.md` BE-3/4/5/9). **BL-04 then EXTENDS these tables (ALTER / ensure-exists), and BL-05 writes rows into them — neither re-creates them.** Runtime + seed embeddings use **self-hosted BGE-M3 (1024-dim) over a synchronous TEI endpoint** behind `IEmbeddingProvider`; the identical model + version is used at seed-time and at query-time (parity is **required**, else cosine search is invalid). The HNSW index on `chunk_embeddings_bge_m3.Vector` is created by P3-07 (it is no longer "deferred").
+
 ---
 
 ## 4b. Cross-Process Transport — DB-Outbox + Python Poller (Pipeline Seam)

@@ -86,10 +86,17 @@ export function RecommendationsCard({ childName, direction, rowDir }: Recommenda
           fontFamily="$heading"
           accessibilityRole="header"
           writingDirection={direction}
+          textAlign={direction === 'rtl' ? 'right' : 'left'}
         >
           {t('parent.overview.recommendations.title')}
         </Text>
-        <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction}>
+        <Text
+          color="$fg3"
+          fontSize={12}
+          fontFamily="$body"
+          writingDirection={direction}
+          textAlign={direction === 'rtl' ? 'right' : 'left'}
+        >
           {t('parent.overview.recommendations.subtitle')}
         </Text>
       </Stack>
@@ -128,7 +135,7 @@ export function RecommendationsCard({ childName, direction, rowDir }: Recommenda
                 <Text fontSize={18}>{row.icon}</Text>
               </Stack>
 
-              {/* Text column */}
+              {/* Text column — text aligns to writing-direction start (right in RTL). */}
               <Stack flexDirection="column" flex={1} gap={0}>
                 <Text
                   color="$fg1"
@@ -136,6 +143,7 @@ export function RecommendationsCard({ childName, direction, rowDir }: Recommenda
                   fontWeight="700"
                   fontFamily="$heading"
                   writingDirection={direction}
+                  textAlign={direction === 'rtl' ? 'right' : 'left'}
                 >
                   {title}
                 </Text>
@@ -144,15 +152,17 @@ export function RecommendationsCard({ childName, direction, rowDir }: Recommenda
                   fontSize={12}
                   fontFamily="$body"
                   writingDirection={direction}
+                  textAlign={direction === 'rtl' ? 'right' : 'left'}
                   marginTop={3}
                   style={{ lineHeight: 1.45 }}
                 >
                   {body}
                 </Text>
-                {/* Ghost CTA — no border, transparent bg, accent color */}
+                {/* Ghost CTA — no border, transparent bg, accent color.
+                    alignSelf adapts to direction: start in RTL = flex-end visually. */}
                 <Stack
                   marginTop={10}
-                  alignSelf="flex-start"
+                  alignSelf={direction === 'rtl' ? 'flex-end' : 'flex-start'}
                   cursor="pointer"
                   pressStyle={{ opacity: 0.7 }}
                   onPress={() => {
@@ -171,6 +181,7 @@ export function RecommendationsCard({ childName, direction, rowDir }: Recommenda
                     fontWeight="700"
                     fontFamily="$heading"
                     writingDirection={direction}
+                    textAlign={direction === 'rtl' ? 'right' : 'left'}
                   >
                     {cta}
                   </Text>

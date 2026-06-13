@@ -1,7 +1,7 @@
 /**
  * AddChildForm — the one-child detail form inside the Add-Child screen (Design
  * Spec Screen 5). Fields: name, login email, password, grade, [language group:
- * learning language + app language], country.
+ * learning language + app language]. (Country is not collected for children.)
  *
  * P8-01-FE: adds a required `learningLanguage` field (axis B — medium of
  * instruction for Math & Science), distinct from the existing `language` field
@@ -40,7 +40,6 @@ const EMPTY: DefaultValues<AddChildFormValues> = {
   password: '',
   grade: 1,
   language: 'ar',
-  country: '',
   // learningLanguage intentionally omitted → undefined → placeholder shown
 };
 
@@ -122,6 +121,8 @@ export function AddChildForm({ initialValues, submitLabel, onAdd }: AddChildForm
             value={field.value}
             onChangeText={field.onChange}
             secureTextEntry
+            showLabel={t('auth.login.showPassword')}
+            hideLabel={t('auth.login.hidePassword')}
             error={errText(fieldState.error?.message)}
             direction={direction}
             testID="add-child-password"
@@ -244,22 +245,6 @@ export function AddChildForm({ initialValues, submitLabel, onAdd }: AddChildForm
           )}
         />
       </Stack>
-
-      <Controller
-        control={control}
-        name="country"
-        render={({ field, fieldState }) => (
-          <TextField
-            label={t('onboarding.addChild.labelCountry')}
-            value={field.value}
-            onChangeText={field.onChange}
-            autoCapitalize="words"
-            error={errText(fieldState.error?.message)}
-            direction={direction}
-            testID="add-child-country"
-          />
-        )}
-      />
 
       <Button variant="secondary" size="full" accessibilityLabel={submitLabel} onPress={onSubmit} testID="add-child-to-list">
         {submitLabel}

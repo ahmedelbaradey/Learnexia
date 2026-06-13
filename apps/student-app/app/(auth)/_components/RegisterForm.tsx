@@ -82,7 +82,16 @@ const STRENGTH_LABEL_KEY: Record<Exclude<PasswordStrength, 0>, string> = {
   4: 'auth.register.strength.strong',
 };
 
-export function RegisterForm() {
+export interface RegisterFormProps {
+  /**
+   * Called after the parent account has been successfully created and tokens
+   * persisted. The wizard host (register.tsx) advances to step 2 instead of
+   * navigating to a separate route.
+   */
+  onSuccess: () => void;
+}
+
+export function RegisterForm({ onSuccess }: RegisterFormProps) {
   const { t, i18n } = useTranslation();
   const { direction } = useLocale();
   const router = useRouter();
@@ -145,7 +154,7 @@ export function RegisterForm() {
       });
       if (res.accessToken && res.refreshToken?.tokenString) {
         await setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken.tokenString });
-        router.replace('/(onboarding)/add-child');
+        onSuccess();
       }
     } catch {
       // Failure is surfaced inline via register.error → serverMessage; swallow
@@ -218,7 +227,7 @@ export function RegisterForm() {
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
-            forceLtr
+            forceValueLtr
             error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
             direction={direction}
             disabled={disabled}
@@ -240,6 +249,9 @@ export function RegisterForm() {
                 value={field.value}
                 onChangeText={field.onChange}
                 secureTextEntry
+                showLabel={t('auth.login.showPassword')}
+                hideLabel={t('auth.login.hidePassword')}
+                autoComplete="new-password"
                 error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
                 direction={direction}
                 disabled={disabled}

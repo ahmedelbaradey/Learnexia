@@ -85,6 +85,7 @@ export function FormScaffold({
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           <Stack flex={1} alignItems="center" justifyContent="center" paddingVertical="$6">
             {/* Phone: full width. Tablet+: centered card, max 480. */}
@@ -195,6 +196,7 @@ export function SplitFormScaffold({
           <ScrollView
             contentContainerStyle={{ flexGrow: 1 }}
             keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
             <Stack flex={1} alignItems="center" justifyContent="center" paddingVertical="$6">
               <Stack

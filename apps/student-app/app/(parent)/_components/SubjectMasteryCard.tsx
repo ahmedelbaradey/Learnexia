@@ -51,7 +51,7 @@ export function SubjectMasteryCard({ childId, direction }: SubjectMasteryCardPro
       gap="$5"
       height="100%"
     >
-      {/* Header */}
+      {/* Header — text aligns to writing-direction start (right in RTL). */}
       <Stack flexDirection="column" gap="$1">
         <Text
           color="$fg1"
@@ -60,10 +60,17 @@ export function SubjectMasteryCard({ childId, direction }: SubjectMasteryCardPro
           fontFamily="$heading"
           accessibilityRole="header"
           writingDirection={direction}
+          textAlign={direction === 'rtl' ? 'right' : 'left'}
         >
           {t('parent.overview.subjectMastery.title')}
         </Text>
-        <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction}>
+        <Text
+          color="$fg3"
+          fontSize={12}
+          fontFamily="$body"
+          writingDirection={direction}
+          textAlign={direction === 'rtl' ? 'right' : 'left'}
+        >
           {t('parent.overview.subjectMastery.subtitle')}
         </Text>
       </Stack>

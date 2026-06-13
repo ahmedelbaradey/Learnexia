@@ -66,8 +66,8 @@ interface ILearningContextProvider {
 - This implementation ships **now**, in parallel with the curriculum pipeline.
 
 **`RagContextProvider` (ships later, via P3-07):**
-- Wraps the full P3-07 pgvector RAG retrieval over the `chunk_embeddings` corpus.
-- Owned by the Curriculum module / BL-04 pipeline. Do NOT redefine `chunk_embeddings` schema here — reference it via the `IChunkRetrievalContract` seam only.
+- Wraps the full P3-07 pgvector RAG retrieval over the `chunk_embeddings_bge_m3` corpus.
+- Owned by the Curriculum module (schema created minimally by P3-07, extended later by BL-04). Do NOT redefine the `chunk_embeddings_bge_m3` schema here — `RagContextProvider` wraps P3-07's `RetrieveChunksQuery` directly behind the `ILearningContextProvider` seam. (The student-less `IChunkRetrievalContract` is a separate seam for P3-06's offline batch question-generation, not the runtime Helper.)
 - Swaps in via config (DI registration) — no code change required in the Helper when this implementation is ready.
 
 The Helper depends only on `ILearningContextProvider`. The seam is the contract; the implementation is a config decision. This is the key architectural choice that makes the parallel build possible.

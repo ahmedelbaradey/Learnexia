@@ -122,9 +122,30 @@ export function LanguagePanel({ direction, rowDir, locale }: LanguagePanelProps)
     return { value: code, label: locale === 'ar' ? (c?.ar ?? code) : (c?.en ?? code) };
   });
 
-  const serverMessage = updateUserLanguage.isError
-    ? resolveError(updateUserLanguage.error, {})
-    : null;
+  // Resolve the save error to a display message.
+  // When the backend returns a 403 (admin-only endpoint called by a regular
+  // parent), the NSwag client throws the raw ProblemDetails object — NOT an
+  // ApiError — so isApiError() returns false and resolveError falls through to
+  // 'common.error.networkError' ("No internet connection"). We detect the 403
+  // ProblemDetails shape separately to surface a meaningful server-error message
+  // instead. The real fix is a backend-side endpoint accessible to parents (see
+  // backend report); this is a FE-side mitigation while that is pending.
+  const serverMessage = (() => {
+    if (!updateUserLanguage.isError) return null;
+    const err = updateUserLanguage.error;
+    // Detect a ProblemDetails-shape object thrown by the generated client on 403/4xx
+    // when the result is a non-BaseResponse body (has 'status' or 'title' but NOT
+    // 'successed'/'statusCode' — so translateError assigned status=0 / 'Unknown').
+    if (
+      err &&
+      typeof err === 'object' &&
+      ('status' in err || 'title' in err) &&
+      !('successed' in err)
+    ) {
+      return t('common.error.serverError');
+    }
+    return resolveError(err, {});
+  })();
 
   /** Apply the language: persist to backend + locale store. */
   function applyLocale(nextLocale: Locale) {

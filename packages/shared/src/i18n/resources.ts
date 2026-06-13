@@ -284,6 +284,7 @@ export const en = {
       activity: 'Activity',
       subjects: 'Subjects',
       settings: 'Settings',
+      logout: 'Log out',
       sectionLabel: 'Parent menu',
     },
     // TODO(P5): weekly-XP delta is server analytics — static stub copy for now.
@@ -1465,6 +1466,7 @@ export const ar = {
       activity: 'النشاط',
       subjects: 'المواد',
       settings: 'الإعدادات',
+      logout: 'تسجيل الخروج',
       sectionLabel: 'قائمة ولي الأمر',
     },
     // TODO(P5): فرق نقاط الخبرة الأسبوعي بيانات تحليلية من الخادم — نص مؤقت الآن.
@@ -1653,7 +1655,7 @@ export const ar = {
       subtitle: 'إدارة حسابك وتفضيلاتك',
       thisWeekEyebrow: 'هذا الأسبوع',
       thisWeekXp: '+{{value}} نقطة خبرة',
-      thisWeekDelta: 'ارتفاع بنسبة {{value}}% عن الأسبوع الماضي',
+      thisWeekDelta: 'ارتفاع بنسبة {{value}}٪ عن الأسبوع الماضي',
       tabs: {
         navLabel: 'أقسام الإعدادات',
         profile: 'الملف الشخصي',
@@ -1965,7 +1967,7 @@ export const ar = {
     subjects: {
       title: 'المواد',
       gradeLabel: 'الصف {{grade}}',
-      masteryLabel: '{{percent}}% إتقان',
+      masteryLabel: '{{percent}}٪ إتقان',
       empty: 'قريباً — لا توجد دروس بعد',
       subjectNotFound: 'المادة غير موجودة',
       errorRetry: 'تعذّر التحميل. حاول مرة أخرى',
