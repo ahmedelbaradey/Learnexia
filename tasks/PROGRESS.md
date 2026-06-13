@@ -12,6 +12,7 @@
 - `â€”` â€” no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
+- **P3-03 (Backend)** — Prompt Builder (IPromptBuilder stateless facade, PromptContext value object, 4-subject 4-intent 2-language templates ar/en Math/Science/Arabic/English, TemplateSelector pure lookup, HelperIntent enum Explain/Hint/WhyWrong/SimilarExample, ToneFrame anti-injection, PII-minimal grade+age only, optional seams IStudentWeakAreasQuery/IChildLearningProfileQuery/ICurriculumContextQuery/ILearningContextProvider with safe stubs, graceful degradation, 203 Ai unit tests green 166 new, FR-AI-6 mandatory security gate PASS) — committed
 - **P3-02 (Backend)** — AI Safety Layer (ISafetyLayer facade, 3 composable fail-closed checks toxicity/age/hallucination, SafetyEvents append-only table, eval harness ar+en) — committed
 - **P3-13 (Backend)** — Adaptive student profile (StudentLearningProfile + StudentProfileEngine 4-rule derivations + SP-Recompute job + GET /api/Learning/Profile) — committed
 - **P3-10 (Backend)** — Spaced-repetition scheduler (SpacedRepetitionEngine IsDue/ComputeNextReview, expanding ladder [1,3,7,14,30], GetDueMasteryRows/UpdateSR repo methods, SpacedRepetitionSweepJob Hangfire fixed-ID, write-path hook in CompleteAttempt, GET /Reviews/Due endpoint) — committed
