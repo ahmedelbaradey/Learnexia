@@ -18,4 +18,4 @@ As a child, I want to see my **⚡ طاقة المساعد** (Helper Energy) and
 - Full **RTL/Arabic + English**; kid-appropriate copy; the word **"Credits" is never shown to the child** (always "طاقة"/"energy").
 
 ## Notes
-- **The only student-app billing surface — and it is read-only.** The child sees their energy and costs but **never** a payment/purchase/plan UI; the out-of-energy state routes to **"ask a parent"** (all top-ups happen in the parent app, P9-05/06/07). Pipeline: `designer` → `frontend` → `frontend-e2e-tester`. Distinct from hearts (**P4-04**). Blocked by **P9-03**.
+- **The only student-app billing surface — and it is read-only.** The child sees their energy and costs but **never** a payment/purchase/plan UI; the out-of-energy state routes to **"ask a parent"** (all top-ups happen in the parent app — specifically via **web checkout**, P9-05/06/07). The "ask a parent" CTA must not link to any native in-app purchase flow; it is informational only, routing to the parent's web checkout surface. Pipeline: `designer` → `frontend` → `frontend-e2e-tester`. Distinct from hearts (**P4-04**). Blocked by **P9-03**.

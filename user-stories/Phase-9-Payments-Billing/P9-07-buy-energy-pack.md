@@ -18,6 +18,9 @@ As a parent, I want to buy a 1000-energy pack for a specific child, so that they
 - A **failed payment grants no credits** and is surfaced as an error (P9-09).
 - Pack size and price are config-driven (P9-11).
 
+## Web-checkout-first — COMPLIANCE FLAG
+> **Same policy as P9-06:** the pack purchase path is **web checkout only**. No native IAP (Apple/Google). **Validate against current App Store / Play Store policy before native launch.** The security-auditor stage must flag this.
+
 ## Notes
 - Purchased-credits-persist is **lead-confirmed**. Children **cannot** purchase — purchase is parent-gated.
 - Blocked by **P9-01** and **P9-06** (reuses the payment seam).

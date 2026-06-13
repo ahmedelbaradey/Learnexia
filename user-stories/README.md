@@ -150,7 +150,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P9-02 Grant monthly energy per plan *(scheduled; granted credits expire at cycle rollover)*
 - P9-03 Spend energy on AI help *(charge-on-delivery, wired into the gateway)*
 - P9-04 Daily soft cap & low-energy warning *(bounded by the monthly pool)*
-- P9-05 Manage subscription plan *(Free vs Premium 199 EGP/month — parent)*
+- P9-05 Manage subscription plan *(Free vs Premium — 199 EGP/month or 1990 EGP/year — parent)*
 - P9-06 Pay for a subscription *(payment provider — Paymob/Fawry DECISION; recurring; security-sensitive)*
 - P9-07 Buy an energy pack *(1000 credits / $5, never expire — parent, assigned to a child)*
 - P9-08 Billing history & receipts *(parent)*
@@ -158,6 +158,8 @@ These intentional decisions diverge from the source docs; each affected story re
 - P9-10 Kid-facing energy UI *(⚡ طاقة المساعد — read-only, the only student-app billing surface; distinct from hearts)*
 - P9-11 Admin: configure plans, grants & action costs *(admin console; config-driven economy)*
 - P9-12 Runtime-configurable AI economy via Global Settings *(Technical Enabler — `IGlobalSettingsProvider`, DB-backed, Redis-cached, audited; values tunable without a deploy)*
+
+> **Business model (launch):** Monthly **199 EGP** + Annual **1990 EGP** (≈ 2 months saved). **Payments: web checkout primary — no native mobile IAP** (deliberate; needs App/Play Store policy review before native launch). **AI economy:** credits configurable (Global Settings), charge value delivered, cache aggressively. **Success metrics (track these, NOT AI cost):** Free→Paid conversion, CAC, retention, average subscription months — instrumented via P5-03 analytics. **Voice (TTS), when added:** generate-once / cache-always via `AiResponseCache` — *needs its own story (not yet specified).*
 
 ### Backlog (Phase 2+) — Curriculum Intelligence
 *Three-stage pipeline: Multimodal Parsing (BL-02) → Curriculum Ingestion (BL-05) → Knowledge Graph (BL-03).*

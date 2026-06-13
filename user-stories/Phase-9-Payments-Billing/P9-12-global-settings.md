@@ -18,6 +18,8 @@ As the platform, I want every AI credit-economy value and cache/review threshold
 - Every change is **audited** (who / when / old → new) via the existing Moderation audit seam.
 - **Managed keys** cover:
   - *Credit economy:* free monthly credits, premium monthly credits, free daily limit, premium daily limit, extra-pack price, credits-per-pack.
+  - *Subscription pricing:* `subscription.monthlyPriceEgp` = 199, `subscription.annualPriceEgp` = 1990.
+  - *Payment / FX:* `payment.providerFees` (payment-provider fee config — for margin/accounting; **unit flagged: % vs flat EGP — confirm with lead before seeding**), `fx.usdExchangeRateBuffer` (FX buffer for AI cost margin protection, AI costs are USD and pricing is EGP; **unit flagged: % multiplier vs flat buffer — confirm with lead before seeding**).
   - *AI action costs:* hint, explain-mistake, deep-explanation, practice-generation.
   - *Cache/review thresholds:* auto-approval confidence threshold, WhyWrong variant cap, practice pool size.
 - Changes take effect at the **next read** (post-invalidation); economy grant/cost changes are **never applied retroactively** to past actions/charges.

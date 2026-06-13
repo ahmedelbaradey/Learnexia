@@ -17,7 +17,8 @@ As a parent on a plan, I want each of my children to receive their monthly energ
 - At cycle rollover, any unspent `GrantedBalance` **expires** (an `Expire` transaction); `PurchasedBalance` is untouched.
 - Re-running the grant for the same child + cycle is **idempotent** (no double-grant).
 - A plan change mid-cycle affects the **next** grant, not the current one (proration — open question).
+- **The monthly credit grant (Premium 5000/mo) is unchanged regardless of billing cadence.** Annual subscribers receive the same monthly grant as monthly subscribers. `BillingPeriod` (Monthly vs Annual) only controls when payment is charged — it does not change the credit delivery schedule or amount. The grant job must not branch on `BillingPeriod`.
 
 ## Notes
 - Runs on **Hangfire** (per the infra decision). Blocked by **P9-01** and **P9-05** (plan is the source of the allotment).
-- Grant amounts are admin-configurable (**P9-11**).
+- Grant amounts are admin-configurable (**P9-11** / **P9-12** GlobalSettings).
