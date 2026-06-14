@@ -2126,4 +2126,28 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="AiServiceUnavailable" xml:space="preserve">
     <value>The AI tutor is temporarily unavailable. Please try again in a moment.</value>
   </data>
+  <data name="ExplainConceptContextRequired" xml:space="preserve">
+    <value>At least one of LessonId, ConceptId, or SkillId is required to scope the explanation.</value>
+  </data>
+  <data name="ExplainConceptQuestionTooLong" xml:space="preserve">
+    <value>Question must not exceed 500 characters.</value>
+  </data>
+  <data name="AiTutorRedirectAr" xml:space="preserve">
+    <value>خلينا نكمل تحدي {0} الحالي، أو اختار درس العلوم.</value>
+  </data>
+  <data name="AiTutorRedirectEn" xml:space="preserve">
+    <value>Let's keep working on your current {0} challenge, or pick a Science lesson.</value>
+  </data>
+  <data name="ExplainConceptSafetyBlocked" xml:space="preserve">
+    <value>I'm not able to provide an explanation right now. Please try again.</value>
+  </data>
+  <data name="ExplainConceptUnsupportedSubject" xml:space="preserve">
+    <value>This subject is not supported by the AI tutor at this time.</value>
+  </data>
+  <data name="ExplainConceptMissingProfile" xml:space="preserve">
+    <value>Your learning profile could not be resolved. Please sign in again.</value>
+  </data>
+  <data name="ExplainConceptRateLimitExceeded" xml:space="preserve">
+    <value>You have made too many explanation requests. Please wait a moment before trying again.</value>
+  </data>
 </root>

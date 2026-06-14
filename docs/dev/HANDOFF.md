@@ -192,6 +192,73 @@ Config flags (appsettings.json, safe to commit):
 - (All inherited from P3-02 SafetyOptions; P3-03 adds no new config keys. **P3-07 introduces** `AiHelper:ContextProvider` = "Seeded" or "Rag" at wire-time.)
 
 
+## P3-04 — Explain a concept on demand (SSE Tutor Endpoint) — added 2026-06-14 (branch `feat/P3-04-explain`, Wave 3)
+
+Built **P3-04** in the **`Ai` module**. Full pipeline (analyzer → planner → backend-feature → security-auditor → reviewer PASS). Mandatory security gates: error-leak audit + D-1 fixes validated.
+
+### What shipped — CRITICAL SSE WIRE CONTRACT (for P3-12 FE consumption)
+
+**SSE endpoint** (`ExplainController`/`POST /api/AiTutor/Explain/{skillId}`) — student-scoped (`[Authorize(Roles="Student")]`), consumes `ExplainConceptCommand` (skillId, childGrade, tutorLanguage from JWT), emits **exactly 4 event types**:
+
+| Event Type | Data Schema | Semantics |
+|---|---|---|
+| `event: message` | `{"content":"<buffered text>"}` | Approved content chunk; FE appends |
+| `event: redirect` | `{"type":"lesson","targetId":"<skillId>"}` | Context refused (no curriculum match); FE navigates to lesson |
+| `event: error` | `{"code":"ValidationError\|UnhandledError\|<SafetyCode>","message":"<safe localized msg>"}` | Failure (never emits subsequent events); NO stack trace ever |
+| `event: done` | `[DONE]` | Stream terminator; NOT emitted after error |
+
+**Architecture:**
+- **Handler** (`ExplainConceptCommandHandler`) orchestrates: (1) `ILearningContextProvider` (student skill context) → (2) `IPromptBuilder` (safe prompt) → (3) `ISafetyLayer` (buffer→filter→emit) → (4) buffered text via `RedirectResponseBuilder` (ar/en). **Never raw tokens from LLM**.
+- **Refuse-and-redirect:** Empty context (no curriculum chunk found) → emit redirect event (no safety processing, fail-fast).
+- **Buffering:** `ISafetyLayer.GenerateSafeAsync()` returns `SafeAiResult.Content` (post-check); handler wraps in `message` events per 100-char buffer chunks. On block: emit single `error` event.
+- **Instrumentation:** `HelpRequestedIntegrationEvent` (start), `HelpDeliveredIntegrationEvent` (success), `HelpDeclinedIntegrationEvent` (refused/blocked) — logged to `ai.SafetyEvents` (PII-light).
+- **Rate limiter:** `AiTutorRateLimiter` (in-process, per-student daily cap, default 20/day, config-tunable). Hard-coded to Ai module; swap to Redis before multi-instance.
+
+### Load-bearing decisions (reviewer-confirmed, security PASS)
+
+- **SSE (rule-8 exception):** bypassess `BaseResponse<T>` envelope (lead-approved). Stream-oriented delivery for AI.
+- **Refuse-and-redirect (UX fail-safe):** empty context → immediate redirect (graceful, no hallucination attempt). Live grounding dormant until real `ILearningContextProvider` wired.
+- **Buffer→safety→emit discipline:** `ISafetyLayer` is the sole content exit. Handler never calls `IAiGateway` directly.
+- **ILessonContextContract seam:** `LessonContextDto` (skillId, name, description, prerequisites) + adapter in `Learning.Infrastructure/Contracts/` exposes student skill context to Ai module. Module isolation intact (Ai references only Shared.Contracts).
+- **Rate limiter is in-process:** blocks per-student, fail-soft on hit (429 + `AiTutorRateLimitExceeded` message). Multi-instance deployment needs Redis.
+- **Folded into Ai module:** no new module; reuses P3-01/P3-02/P3-03 seams.
+- **Cache economy deferred:** `P3-01-BE-12`, `P3-01-BE-13`, `P3-01-BE-14` (P3-01 task breakdown) handle AI credit ledger + quota dispatch. MVP: free-to-student, no spend tracking yet.
+- **Live grounding dormant:** `EmptyLearningContextProvider` (stub default) always redirects. Real `SeededCorpusContextProvider` (P3-07) or `RagContextProvider` (P3-07 w/ embeddings) wired at runtime via `AiHelper:ContextProvider` config.
+
+### Test coverage + gates
+
+- **208 unit tests** (ExplainConceptCommandHandlerTests: context/buffer/safety/redirect/rate-limit edge cases, ar/en localization). All green.
+- **13 SSE integration tests** (`P3_04_ExplainSse_Tests.cs`: endpoint contract, event sequence, error handling, redirect on empty, rate-limit 429). All green.
+- **Mandatory security gate PASS (0 Critical/High):** error-leak audit confirmed no stack traces in error events; D-1 feedback fixes applied (internal logic messages never exposed); `[Authorize]` enforced; rate-limiter fail-soft prevents brute-force.
+
+### Pre-deployment checklist
+
+- Real Claude/OpenAI keys required (`Ai__Providers__*__ApiKey` env vars).
+- `AiTutor:RateLimiter:DailyCapPerStudent` configured (default 20).
+- `AiHelper:ContextProvider` = "Seeded" (goes live with P3-07 curriculum).
+- **CORS:** SSE requires credentialed cross-origin — ensure platform config allows (P3-04 is HTTP only; CORS + credentials cross-check is platform follow-up).
+- **Not multi-instance ready:** in-process rate limiter will not coordinate across instances. Upgrade to Redis before scaling (platform backlog).
+
+### What P3-12 (FE) consumes
+
+- SSE endpoint path + method.
+- Exact event/data schema (no breaking changes post-MVP).
+- FE must handle all 4 event types + parse JSON data payloads.
+- Fallback: if no `event: done` within timeout, treat as error (FE timeouts at 15s; server timeout at 25s per brief).
+- Localization: `error.message` keys are from `SharedResourcesKey` (ar/en, safe text only).
+
+### Config + secret paths
+
+Secrets (env vars / secret store, NEVER git):
+- `Ai__Providers__Claude__ApiKey` (required)
+- `Ai__Providers__OpenAi__ApiKey` (optional secondary)
+
+Config (appsettings.json, safe to commit):
+- `AiTutor:RateLimiter:DailyCapPerStudent` (int, default 20)
+- `AiHelper:ContextProvider` (string, "Seeded"|"Rag", default "Seeded")
+- (Inherited from P3-01/P3-02/P3-03: gateway + safety + builder options)
+
+
 ## P3-08 — Adjust difficulty adaptively (Adaptivity Engine) — added 2026-06-13 (branch `feat/P3-08-adaptivity-engine`)
 
 Built **P3-08** in the **`Learning` module**. Full pipeline (db-migration → backend-feature → api-tester → security-auditor → reviewer PASS).
@@ -512,6 +579,66 @@ Built **P3-10** in the **`Learning` module**; expansion of P3-09 mastery foundat
 **Stale-item fixes applied to P3-09 section (this commit):**
 - Line 317: removed stale reference to `LastReviewedAtUtc` (entity uses `LastPracticedAt`)
 - Line 78 (StudentSkillMastery.cs comment): corrected `RepetitionNumber` doc from "SM-2 repetition counter" to "spaced-repetition ladder index"
+
+
+## P3-11 — Serve adaptive quizzes (backend) — added 2026-06-14 (`feat/P3-11-adaptive-quiz`)
+
+Built **P3-11** in the **`Learning` module**; difficulty-tuned quiz selection engine. Full pipeline complete (backend-feature → reviewer PASS). Last story in the difficulty chain (depends on P3-08 adaptivity + P3-09 mastery + P3-10 spaced-repetition).
+
+**What shipped:**
+
+- **`QuizSelectionEngine` domain service** — pure static deterministic weighted-mix selection:
+  - `SelectQuestions(candidates: List<Question>, targetDifficulty: int, policy: QuizSelectionOptions): (questions: List<Question>, servedMix: DifficultyMix)` — selects N questions from candidates using **70/30 weighted policy** (70% target difficulty, 30% adjacent difficulties); applies sort-by-Id for deterministic resume
+  - `DifficultyMix` value object captures the policy result as jsonb-serializable record `{ Easy, Medium, Hard, Target, WasDefault }`
+  - Graceful degradation: empty candidate pools at target difficulty fall back to full candidate list (never 500, never stall)
+  - **9 unit tests** (selection logic, edge cases, determinism)
+
+- **`QuizSelectionOptions` config class** — `Engine.WeightedMix` policy record (easy/medium/hard/target percentages); seeded from `appsettings.json` `QuizSelection:Engine` section (changeable per environment)
+
+- **`Attempt` entity schema changes** (migration `20260614015416_AddAttemptServedDifficultyMix`):
+  - New nullable column `ServedDifficultyMix` jsonb — persists the actual mix policy served to this attempt (set on start, never re-computed on resume for determinism); shape `{ Easy:int, Medium:int, Hard:int, Target:int, WasDefault:bool }`
+  - New nullable column `TargetDifficulty` int — the student's target difficulty at attempt start, derived from `IAdaptivityService.GetTargetDifficulty(studentId, skillId)` call
+
+- **`AttemptConfig` entity configuration** — Fluent mapping for jsonb columns (HasColumnType("jsonb"), HasDefaultValueSql)
+
+- **`StartAttemptCommandHandler` integration** — wired after existing lifecycle/IsActive/language guards (preserves all existing guards, additive only):
+  1. Call `_adaptivityService.GetTargetDifficulty(studentId, skillId, ...)`
+  2. Resolve quiz candidates from lesson's questions
+  3. Call `QuizSelectionEngine.SelectQuestions(candidates, target, options)`
+  4. Persist `TargetDifficulty` + `ServedDifficultyMix` on new attempt
+  5. Resume (existing attempt) skips re-selection: loads persisted mix from DB (deterministic across refreshes)
+
+- **`DependencyInjection.cs`** — wired `Configure<QuizSelectionOptions>` in Learning.Infrastructure
+
+- **`appsettings.json`** — new `QuizSelection:Engine` section with default `WeightedMix` policy (70/30 weighted)
+
+- **Test coverage:** 311 unit tests (9 new QuizSelectionEngine) + 8 integration tests (P3_11_AdaptiveQuizSelection_Tests.cs: selection logic, resume determinism, graceful fallback). All green. Security audit: PASS, inline (no PII, no breaches).
+
+**Load-bearing decisions (reviewer-confirmed):**
+
+- **70/30 weighted policy:** all difficulty buckets non-empty, policy weights toward target but includes adjacent levels for reinforcement. **Fully config-bound** (swappable per environment via `QuizSelection:Engine:WeightedMix`).
+
+- **Persisted on start only, NOT re-computed on resume:** once the student starts an attempt, the served mix is locked into `ServedDifficultyMix` (no second-guessing if mastery shifts mid-attempt). Reduces cognitive load + enables analytics (same questions re-shown on resume). Next step (Phase 5?): deep-resume could recompute target + re-select if needed (acceptable v1 deviation from persisted mix).
+
+- **Deterministic via sort-by-Id:** when the mix policy selects from a bucket (e.g., "3 medium"), the order is stable (sorted by QuestionId ascending) so resume produces the same question sequence without round-trip state.
+
+- **Graceful degradation (thin/empty pools):** if target-difficulty has no questions, the selection falls back to the full candidate list (no 500, no stall). Logged at Warn for ops to debug.
+
+- **Wired into StartAttempt AFTER guards:** call to `IAdaptivityService.GetTargetDifficulty` is downstream of existing quiz-active/language checks, so the service can assume a valid attempt context.
+
+- **No re-persistence on resume:** `CompleteAttemptCommandHandler` does NOT re-write `ServedDifficultyMix` (no churn, determinism preserved).
+
+**Cross-story dependencies:**
+
+- **P3-08 (adaptivity engine)** — `IAdaptivityService.GetTargetDifficulty(...)` is the only consumer of the adaptive-difficulty signal. P3-11 calls it during StartAttempt setup.
+- **P3-09 (mastery)** — mastery rows inform the difficulty target (via P3-08's weighted-score algorithm). P3-11 reads that signal.
+- **P3-10 (spaced-repetition)** — not directly wired into P3-11 (review due-ness is on the mastery row, not the question). Future: P3-11 could filter candidates to include "due reviews" as a reinforcement bucket (deferred to P3-12+).
+
+**Non-blocking follow-ups:**
+
+- **Resume recomputation:** if the student's mastery/target shifts mid-attempt (e.g., they practice outside the attempt context), a deep-resume could invalidate the cached mix. Acceptable v1 (student starts fresh quiz to re-tune).
+- **P3-06 generation-side consumer:** P3-06 (offline practice-question generation) reads the same `IAdaptivityService` seam; wired at `ILearningContextProvider` seam (deferred — not in P3-11 scope).
+
 
 
 

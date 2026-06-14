@@ -42,6 +42,8 @@ public static class MediatRExtensions
             // _mediator.Send(RetrieveChunksQuery) would throw "no handler" at runtime without this.
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Curriculum.Application.AssemblyReference>();
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Curriculum.Infrastructure.AssemblyReference>();
+            // P3-04: Ai.Application handlers (ExplainConceptCommandHandler + future Hint/WhyWrong).
+            cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Ai.Application.AssemblyReference>();
 
             // Independent fan-out: every handler runs, per-handler failures are caught + logged
             // (ADR 0002 §4). Replaces MediatR's default throw-on-first-failure publisher.

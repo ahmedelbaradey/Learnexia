@@ -1,7 +1,9 @@
+using System.Text.Json;
 using AutoMapper;
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Features.Attempts.Dtos;
 using Learnexia.Modules.Learning.Application.Helpers;
+using Learnexia.Modules.Learning.Application.Services;
 using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Modules.Learning.Domain.Services;
@@ -10,6 +12,7 @@ using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Options;
 using Resources;
 
 namespace Learnexia.Modules.Learning.Application.Features.Attempts.Commands.StartAttempt;
@@ -30,9 +33,17 @@ namespace Learnexia.Modules.Learning.Application.Features.Attempts.Commands.Star
 /// via <c>LearningDbContext.SaveChangesAsync(studentId)</c> so the DB-generated <c>Id</c> is
 /// populated before the response is built. Mirrors the <c>LinkParentStudentService</c> precedent.
 ///
+/// P3-11-BE-4: After loading the Published+Active candidate questions, calls
+/// <c>IAdaptivityService.GetTargetDifficulty</c> to get the student's target difficulty, then
+/// <c>QuizSelectionEngine.Select</c> to return a difficulty-weighted subset. Falls back to the full
+/// candidate pool if the selected set is empty (graceful degradation). On new-attempt start,
+/// persists <c>Attempt.ServedDifficultyMix</c> (jsonb) and <c>Attempt.TargetDifficulty</c> (int)
+/// before the UnitOfWorkBehavior commits. On resume, re-runs Select with the same deterministic
+/// inputs (sort-by-Id) so the same question set is reproduced without re-persisting the mix.
+///
 /// Mirrors AddSkillCommandHandler shape: ILearningRepositoryManager + ILoggerManager +
 /// IStringLocalizer + try/catch → ServerError.
-/// The UnitOfWorkBehavior's subsequent SaveChanges is a harmless no-op for the committed attempt.
+/// The UnitOfWorkBehavior's subsequent SaveChanges commits the newly staged mix fields.
 /// </summary>
 public class StartAttemptCommandHandler : BaseResponseHandler,
     ICommandHandler<StartAttemptCommand, BaseResponse<StartAttemptResponse>>
@@ -43,6 +54,8 @@ public class StartAttemptCommandHandler : BaseResponseHandler,
     private readonly IMapper _mapper;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
+    private readonly IAdaptivityService _adaptivityService;
+    private readonly QuizSelectionOptions _selectionOptions;
 
     public StartAttemptCommandHandler(
         ILearningRepositoryManager repository,
@@ -50,7 +63,9 @@ public class StartAttemptCommandHandler : BaseResponseHandler,
         ICurrentUserService currentUser,
         IMapper mapper,
         ILoggerManager logger,
-        IStringLocalizer<SharedResources> localizer)
+        IStringLocalizer<SharedResources> localizer,
+        IAdaptivityService adaptivityService,
+        IOptions<QuizSelectionOptions> selectionOptions)
     {
         _repository = repository;
         _service = service;
@@ -58,6 +73,8 @@ public class StartAttemptCommandHandler : BaseResponseHandler,
         _mapper = mapper;
         _logger = logger;
         _localizer = localizer;
+        _adaptivityService = adaptivityService;
+        _selectionOptions = selectionOptions.Value;
     }
 
     public async Task<BaseResponse<StartAttemptResponse>> Handle(
@@ -119,11 +136,24 @@ public class StartAttemptCommandHandler : BaseResponseHandler,
                 // P7-04: Filter IsActive == true so deactivated questions do not appear in student quizzes.
                 // P7-05: Filter LifecycleState == Published — Draft/Archived questions excluded from attempts.
                 // Soft-deleted questions are already excluded by the global query filter.
-                var questions = _repository.Learning
+                var candidates = _repository.Learning
                     .GetByCondition<QuizQuestion>(q => q.LessonId == request.LessonId && q.IsActive && q.LifecycleState == LifecycleState.Published, false)
                     .ToList();
 
-                var questionDtos = _mapper.Map<List<QuizQuestionDto>>(questions);
+                // P3-11: Re-run selection with the same deterministic inputs (sort-by-Id) so the
+                // question set reproduced on resume is identical to what was served at first start (AC4).
+                // Do NOT re-persist the mix — it was recorded at first start.
+                var resumeDecision = await _adaptivityService.GetTargetDifficulty(
+                    studentId.Value, lesson.SkillId, cancellationToken);
+
+                var resumeSelected = QuizSelectionEngine.Select(candidates, resumeDecision.Difficulty, _selectionOptions);
+
+                // Graceful degradation: if selection returns empty (empty pool), fall back to all candidates.
+                IReadOnlyList<QuizQuestion> resumeQuestions = resumeSelected.Count > 0
+                    ? resumeSelected
+                    : candidates;
+
+                var questionDtos = _mapper.Map<List<QuizQuestionDto>>(resumeQuestions);
 
                 var resumeResponse = new StartAttemptResponse
                 {
@@ -146,11 +176,64 @@ public class StartAttemptCommandHandler : BaseResponseHandler,
             // P7-04: Filter IsActive == true so deactivated questions do not appear in student quizzes.
             // P7-05: Filter LifecycleState == Published — Draft/Archived questions excluded from attempts.
             // Soft-deleted questions are already excluded by the global query filter.
-            var newQuestions = _repository.Learning
+            var newCandidates = _repository.Learning
                 .GetByCondition<QuizQuestion>(q => q.LessonId == request.LessonId && q.IsActive && q.LifecycleState == LifecycleState.Published, false)
                 .ToList();
 
-            var newQuestionDtos = _mapper.Map<List<QuizQuestionDto>>(newQuestions);
+            // P3-11: Get the student's target difficulty from the adaptivity model (AC1).
+            // IAdaptivityService returns a default (Medium, IsDefault=true) for null SkillId or cold-start (AC3).
+            var decision = await _adaptivityService.GetTargetDifficulty(
+                studentId.Value, lesson.SkillId, cancellationToken);
+
+            // P3-11: Select a difficulty-weighted subset from the candidate pool (AC2).
+            var selected = QuizSelectionEngine.Select(newCandidates, decision.Difficulty, _selectionOptions);
+
+            // P3-11: Graceful degradation — if selection returns empty (content gap), fall back to all
+            // candidates so the quiz never returns empty when questions exist.
+            // Log a content-gap warning server-side only (not in the response) per Q5.
+            IReadOnlyList<QuizQuestion> servedQuestions;
+            if (selected.Count == 0 && newCandidates.Count > 0)
+            {
+                _logger.LogWarn(
+                    $"P3-11 content gap: no questions at target difficulty {decision.Difficulty} " +
+                    $"for lesson {request.LessonId}. Falling back to full candidate pool.");
+                servedQuestions = newCandidates;
+            }
+            else
+            {
+                // Also log a warning when the target bucket was empty (QuizSelectionEngine returned the
+                // full sorted pool as its own graceful-degradation, so selected.Count == newCandidates.Count
+                // and the target bucket was thin). We detect the content-gap when there are no questions
+                // at the decided difficulty level in the served set.
+                var hasTargetDifficulty = selected.Any(q => q.Difficulty == decision.Difficulty);
+                if (selected.Count > 0 && !hasTargetDifficulty && newCandidates.Count > 0)
+                {
+                    _logger.LogWarn(
+                        $"P3-11 content gap: no questions at target difficulty {decision.Difficulty} " +
+                        $"for lesson {request.LessonId}. Serving adjacent difficulties.");
+                }
+                servedQuestions = selected.Count > 0 ? selected : newCandidates;
+            }
+
+            // P3-11: Persist the difficulty mix on the Attempt (AC4).
+            // The UnitOfWorkBehavior will commit this update alongside any other staged changes.
+            var easyCount   = servedQuestions.Count(q => q.Difficulty == DifficultyLevel.Easy);
+            var mediumCount = servedQuestions.Count(q => q.Difficulty == DifficultyLevel.Medium);
+            var hardCount   = servedQuestions.Count(q => q.Difficulty == DifficultyLevel.Hard);
+
+            var mixPayload = new
+            {
+                Easy      = easyCount,
+                Medium    = mediumCount,
+                Hard      = hardCount,
+                Target    = decision.Difficulty.ToString(),
+                WasDefault = decision.IsDefault
+            };
+
+            attempt.ServedDifficultyMix = JsonSerializer.Serialize(mixPayload);
+            attempt.TargetDifficulty    = (int)decision.Difficulty;
+
+            var newQuestionDtos = _mapper.Map<List<QuizQuestionDto>>(servedQuestions);
 
             var response = new StartAttemptResponse
             {

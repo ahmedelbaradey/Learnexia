@@ -2,10 +2,12 @@ using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Services;
 using Learnexia.Modules.Learning.Domain.Services;
 using Learnexia.Modules.Learning.Infrastructure.Behaviors;
+using Learnexia.Modules.Learning.Infrastructure.Contracts;
 using Learnexia.Modules.Learning.Infrastructure.Jobs;
 using Learnexia.Modules.Learning.Infrastructure.Persistence;
 using Learnexia.Modules.Learning.Infrastructure.Repository;
 using Learnexia.Modules.Learning.Infrastructure.Service;
+using Learnexia.Shared.Contracts.Learning;
 using Learnexia.Shared.Kernel.Logging;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -53,6 +55,12 @@ public static class DependencyInjection
             configuration.GetSection(AdaptivityOptions.SectionName));
         services.AddScoped<IAdaptivityService, AdaptivityService>();
 
+        // P3-11 Quiz Selection Engine options.
+        // QuizSelectionOptions lives in Domain (same pattern as AdaptivityOptions) so the
+        // pure engine can reference it without violating the Application → Domain dependency direction.
+        services.Configure<QuizSelectionOptions>(
+            configuration.GetSection(QuizSelectionOptions.SectionName));
+
         // P3-10 Spaced-Repetition Engine options.
         // SpacedRepetitionOptions lives in Domain (same pattern as AdaptivityOptions) so the
         // pure engine can reference it without violating the Application → Domain dependency direction.
@@ -63,6 +71,12 @@ public static class DependencyInjection
         // Transient — the job creates its own inner scope via IServiceScopeFactory.CreateAsyncScope()
         // so it does not participate in any caller's scope. Mirrors StreakSweepJob registration.
         services.AddTransient<SpacedRepetitionSweepJob>();
+
+        // P3-04 BE-2: Cross-module seam — allows the Ai module handler to read minimal lesson
+        // metadata (title, subject, grade) from LearningDbContext via Shared.Contracts.
+        // The Ai module depends only on ILessonContextContract from Shared.Contracts; it never
+        // references Learning's projects directly (module isolation rule).
+        services.AddScoped<ILessonContextContract, LessonContextContractAdapter>();
 
         // Unit-of-Work behavior (ADR 0001 §2 + ADR 0002 §2): commit once per ICommand<>, then dispatch
         // domain events AFTER commit. Registered here in Infrastructure (not Application) because it

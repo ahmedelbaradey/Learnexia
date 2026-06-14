@@ -2125,4 +2125,28 @@
   <data name="AiServiceUnavailable" xml:space="preserve">
     <value>المعلم الذكي غير متاح مؤقتًا. يرجى المحاولة مجددًا بعد لحظة.</value>
   </data>
+  <data name="ExplainConceptContextRequired" xml:space="preserve">
+    <value>يجب توفير واحد على الأقل من: معرف الدرس، أو معرف المفهوم، أو معرف المهارة لتحديد نطاق الشرح.</value>
+  </data>
+  <data name="ExplainConceptQuestionTooLong" xml:space="preserve">
+    <value>يجب ألا يتجاوز السؤال 500 حرف.</value>
+  </data>
+  <data name="AiTutorRedirectAr" xml:space="preserve">
+    <value>خلينا نكمل تحدي {0} الحالي، أو اختار درس العلوم.</value>
+  </data>
+  <data name="AiTutorRedirectEn" xml:space="preserve">
+    <value>Let's keep working on your current {0} challenge, or pick a Science lesson.</value>
+  </data>
+  <data name="ExplainConceptSafetyBlocked" xml:space="preserve">
+    <value>لا أستطيع تقديم شرح الآن. يرجى المحاولة مجددًا.</value>
+  </data>
+  <data name="ExplainConceptUnsupportedSubject" xml:space="preserve">
+    <value>هذه المادة غير مدعومة من قبل المعلم الذكي في الوقت الحالي.</value>
+  </data>
+  <data name="ExplainConceptMissingProfile" xml:space="preserve">
+    <value>تعذّر تحديد ملفك التعليمي. يرجى تسجيل الدخول مجددًا.</value>
+  </data>
+  <data name="ExplainConceptRateLimitExceeded" xml:space="preserve">
+    <value>لقد أرسلت عددًا كبيرًا جدًا من طلبات الشرح. يرجى الانتظار قليلًا قبل المحاولة مجددًا.</value>
+  </data>
 </root>

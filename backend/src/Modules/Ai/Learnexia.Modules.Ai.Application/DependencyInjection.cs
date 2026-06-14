@@ -1,5 +1,8 @@
+using FluentValidation;
+using Learnexia.Modules.Ai.Application.Features.Explain.Commands;
 using Learnexia.Modules.Ai.Application.PromptBuilder;
 using Learnexia.Modules.Ai.Application.PromptBuilder.Stubs;
+using Learnexia.Modules.Ai.Application.Services;
 using Learnexia.Shared.Contracts.Ai;
 using Learnexia.Shared.Contracts.AiTutor;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,6 +40,19 @@ public static class DependencyInjection
         // P3-04 wires the real implementation from the Identity/Parent seam.
         // Uses TryAdd so a real implementation registered first is not overridden.
         services.TryAddTransient<IChildLearningProfileQuery, DefaultChildLearningProfileQuery>();
+
+        // ── P3-04 Explain Feature ─────────────────────────────────────────────────────
+
+        // FluentValidation for ExplainConceptCommand — discovered by ValidationBehavior.
+        services.AddValidatorsFromAssemblyContaining<ExplainConceptCommandValidator>(ServiceLifetime.Transient);
+
+        // RedirectResponseBuilder: localized refuse-and-redirect copy for the Explain (and future Hint) intents.
+        services.AddTransient<RedirectResponseBuilder>();
+
+        // AiTutorRateLimiter: per-student fixed-window rate limiter for the explain endpoint (BE-5).
+        // Uses a ConcurrentDictionary as its counter store (in-process only — no IMemoryCache).
+        // Singleton — the counter dictionary must survive across requests within the same process.
+        services.AddSingleton<AiTutorRateLimiter>();
 
         return services;
     }
