@@ -1,0 +1,33 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="Energy Empty — Non-punitive" subtitle="Daily-cap-reached vs monthly-empty, each with a clear kid-friendly path forward" viewport="700x250" -->
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css">
+<style>
+  body{padding:24px;display:flex;gap:16px}
+  .card{flex:1;background:#1E293B;border:1px solid rgba(255,255,255,0.06);border-radius:22px;padding:20px 18px;display:flex;flex-direction:column;align-items:center;gap:11px;text-align:center}
+  .cap{border-color:rgba(56,189,248,0.35)}
+  .empty{border-color:rgba(168,85,247,0.3)}
+  .mascot{font-size:44px}
+  .h{font-family:var(--lx-font-display);font-weight:800;font-size:16px;color:#F8FAFC}
+  .p{font-size:12.5px;color:var(--lx-fg2);line-height:1.5;max-width:240px}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:#0F172A;border-radius:9999px;padding:7px 14px;font-weight:800;font-size:13px}
+  .chip.t{color:#38BDF8}.chip.p2{color:#A855F7}
+  .btn{height:42px;padding:0 20px;border-radius:13px;border:none;font-family:var(--lx-font-body);font-weight:800;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+  .ghost{background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--lx-fg2)}
+  .solid{background:linear-gradient(135deg,#A855F7,#7C3AED);color:#fff}
+</style></head>
+<body>
+<div class="card cap">
+  <div class="mascot">😴</div>
+  <div class="h">Lexi needs a rest!</div>
+  <div class="p">You used all <b style="color:#38BDF8">20</b> helpers for today. Your energy is fine — come back tomorrow for more.</div>
+  <div class="chip t">🌙 Resets in 6h 12m</div>
+  <button class="btn ghost">Keep learning without help →</button>
+</div>
+<div class="card empty">
+  <div class="mascot">🔌</div>
+  <div class="h">Out of energy</div>
+  <div class="p">You've used this month's helper energy. Ask a grown-up to add more so Lexi can keep helping.</div>
+  <div class="chip p2">⚡ 0 left this month</div>
+  <button class="btn solid">👨‍👩‍👧 Ask a parent</button>
+</div>
+</body></html>

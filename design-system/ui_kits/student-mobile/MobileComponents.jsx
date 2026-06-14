@@ -3,7 +3,7 @@
 
 const lxFont = { fontFamily: 'Poppins, system-ui, sans-serif' };
 
-function HudBar({ streak = 7, hearts = 4, xp = 1240, gems = 42 }) {
+function HudBar({ streak = 7, hearts = 4, xp = 1240, gems = 42, energy = 180, onEnergy }) {
   return (
     <div style={{
       display: 'flex', gap: 8, alignItems: 'center', padding: '0 16px',
@@ -12,21 +12,24 @@ function HudBar({ streak = 7, hearts = 4, xp = 1240, gems = 42 }) {
       <Pill icon="🔥" value={streak} color="#FB923C" />
       <Pill icon="❤️" value={hearts} color="#FB7185" />
       <Pill icon="⭐" value={xp.toLocaleString()} color="#FACC15" />
-      <Pill icon="💎" value={gems} color="#38BDF8" />
+      <Pill icon="⚡" value={energy} color="#2DD4BF" onClick={onEnergy} />
     </div>
   );
 }
 
-function Pill({ icon, value, color }) {
+function Pill({ icon, value, color, onClick }) {
+  const Tag = onClick ? 'button' : 'div';
   return (
-    <div style={{
+    <Tag onClick={onClick} style={{
       display: 'flex', alignItems: 'center', gap: 6,
-      padding: '7px 12px', borderRadius: 9999,
+      padding: '7px 12px', borderRadius: 9999, border: 'none',
       background: `${color}22`, color, fontWeight: 800, fontSize: 14,
-      fontVariantNumeric: 'tabular-nums',
+      fontVariantNumeric: 'tabular-nums', fontFamily: 'inherit',
+      cursor: onClick ? 'pointer' : 'default',
+      boxShadow: onClick ? `0 0 0 1px ${color}55` : 'none',
     }}>
       <span style={{ fontSize: 15 }}>{icon}</span>{value}
-    </div>
+    </Tag>
   );
 }
 
@@ -225,7 +228,7 @@ function MascotAvatar({ size = 64 }) {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       boxShadow: '0 8px 20px rgba(99,102,241,0.4)', flexShrink: 0,
     }}>
-      <img src="../../assets/mascot-owl.svg" style={{ width: size * 0.85, height: size * 0.85 }}/>
+      <img src={(window.__resources && window.__resources.mascotOwl) || "../../assets/mascot-owl.svg"} style={{ width: size * 0.85, height: size * 0.85 }}/>
     </div>
   );
 }

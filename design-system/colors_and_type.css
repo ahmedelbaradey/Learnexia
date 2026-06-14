@@ -68,6 +68,13 @@
   --lx-gold:           #FBBF24;   /* league gold */
   --lx-gem:            #38BDF8;   /* gem / premium */
 
+  /* Helper Energy — AI-help meter. Deliberately NOT rose (hearts) or sky (gem).
+     Teal + lightning bolt = "electric AI help", distinct from lives. */
+  --lx-energy:         #2DD4BF;   /* @kind color */
+  --lx-energy-soft:    rgba(45, 212, 191, 0.18);
+  --lx-energy-glow:    rgba(45, 212, 191, 0.5);
+  --lx-energy-deep:    #14B8A6;   /* @kind color */
+
   /* Surfaces (dark theme) */
   --lx-bg:             #0F172A;   /* main canvas */
   --lx-bg-elevated:    #111B33;   /* subtle lift behind cards */

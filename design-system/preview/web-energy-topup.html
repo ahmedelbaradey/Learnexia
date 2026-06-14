@@ -1,0 +1,43 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="Energy Top-up & Plans (Parent)" subtitle="500-credit pack purchase + Free vs Premium comparison — parent-only" viewport="700x250" -->
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css">
+<style>
+  body{padding:24px;display:flex;gap:16px;background:#0B1220}
+  .topup{flex:0.9;background:linear-gradient(160deg,rgba(45,212,191,0.16),#111B33);border:1px solid rgba(45,212,191,0.35);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:10px}
+  .h{font-family:var(--lx-font-display);font-weight:800;font-size:13px;color:var(--lx-fg3);text-transform:uppercase;letter-spacing:.06em}
+  .pack{display:flex;align-items:center;gap:12px;background:#0F172A;border:1px solid rgba(45,212,191,0.3);border-radius:16px;padding:14px}
+  .packic{font-size:30px}
+  .packn{font-family:var(--lx-font-display);font-weight:800;font-size:20px;color:#2DD4BF}
+  .packp{font-size:12px;color:var(--lx-fg3)}
+  .price{margin-inline-start:auto;font-family:var(--lx-font-display);font-weight:800;font-size:18px;color:#F8FAFC}
+  .buy{height:42px;border-radius:13px;border:none;background:linear-gradient(135deg,#2DD4BF,#14B8A6);color:#06302B;font-family:var(--lx-font-body);font-weight:800;font-size:14px;cursor:pointer}
+  .plans{flex:1.1;display:flex;gap:10px}
+  .plan{flex:1;background:#1E293B;border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:16px 14px;display:flex;flex-direction:column;gap:8px}
+  .pro{border-color:rgba(79,70,229,0.5);background:linear-gradient(160deg,rgba(79,70,229,0.16),#1E293B)}
+  .pn{font-family:var(--lx-font-display);font-weight:800;font-size:15px;color:#F8FAFC;display:flex;align-items:center;gap:6px}
+  .feat{font-size:12px;color:var(--lx-fg2);display:flex;gap:7px;align-items:flex-start}
+  .feat b{color:#2DD4BF;font-family:var(--lx-font-display)}
+  .badge{margin-inline-start:auto;font-size:9px;font-weight:800;background:#4F46E5;color:#fff;padding:2px 8px;border-radius:9999px;letter-spacing:.04em}
+</style></head>
+<body>
+<div class="topup">
+  <div class="h">Top-up pack</div>
+  <div class="pack"><div class="packic">🔋</div><div><div class="packn">+500 ⚡</div><div class="packp">Added instantly</div></div><div class="price">$2.99</div></div>
+  <button class="buy">Buy 500 credits →</button>
+  <div style="font-size:10.5px;color:var(--lx-fg3);text-align:center">Children never see prices or buy — parents only.</div>
+</div>
+<div class="plans">
+  <div class="plan">
+    <div class="pn">Free</div>
+    <div class="feat"><span>⚡</span><span><b>300</b> credits / month</span></div>
+    <div class="feat"><span>📅</span><span><b>20</b> / day cap</span></div>
+    <div class="feat"><span>💡</span><span>All helper types</span></div>
+  </div>
+  <div class="plan pro">
+    <div class="pn">Premium <span class="badge">POPULAR</span></div>
+    <div class="feat"><span>⚡</span><span><b>3000</b> credits / month</span></div>
+    <div class="feat"><span>📅</span><span><b>150</b> / day soft cap</span></div>
+    <div class="feat"><span>🎁</span><span>Cheaper top-ups</span></div>
+  </div>
+</div>
+</body></html>

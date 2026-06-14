@@ -29,6 +29,12 @@
   .panel-title { font-family: 'Cairo'; font-weight: 800; font-size: 16px; color: #F8FAFC; }
   .panel-sub { font-size: 12px; color: #94A3B8; margin-top: 2px; }
   @keyframes lxpulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+  @keyframes pdDrop { from { opacity: 0; transform: translateY(-8px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  /* Theme — Night (navy) vs Black (OLED) */
+  html[data-theme="black"], html[data-theme="black"] body { background: #000; }
+  html[data-theme="black"] .frame { background: #060606; box-shadow: 0 32px 80px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.08); }
+  html[data-theme="black"] .page aside { background: #000 !important; }
+  html[data-theme="black"] .chrome { background: #0d0d0d; }
 
   /* Custom scrollbars — brand-styled, both axes */
   * { scrollbar-width: thin; scrollbar-color: #4F46E5 transparent; }
@@ -347,6 +353,96 @@
     </div>
   </div></div>
 
+  <!-- HELPER ENERGY -->
+  <div class="page" data-id="energy"><div style="display:flex;min-height:820px">
+    <aside style="width:240px;background:#0F172A;border-left:1px solid rgba(255,255,255,0.06);padding:24px 16px;display:flex;flex-direction:column;gap:24px">
+      <div style="display:flex;align-items:center;gap:10px;padding:0 8px"><img src="../../assets/logo-mark.svg" style="width:36px;height:36px"/><div class="h-display" style="font-size:18px" dir="ltr">Learnexia</div></div>
+      <div style="background:#1E293B;border-radius:16px;padding:12px;display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#FB923C,#EF4444);display:flex;align-items:center;justify-content:center;font-family:'Cairo';font-size:16px;font-weight:800;color:#fff">س</div><div style="flex:1"><div style="font-family:'Cairo';font-weight:700;font-size:13px">سامي</div><div style="font-size:11px;color:#94A3B8">الصف ٣ · المستوى ١٢</div></div></div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <button style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;border:none;background:transparent;color:#94A3B8;font-family:'Cairo';font-weight:600;font-size:14px;text-align:right;cursor:pointer">👨‍👩‍👦 أطفالي</button>
+        <button style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;border:none;background:transparent;color:#94A3B8;font-family:'Cairo';font-weight:600;font-size:14px;text-align:right;cursor:pointer">📊 نظرة عامة</button>
+        <button style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;border:none;background:transparent;color:#94A3B8;font-family:'Cairo';font-weight:600;font-size:14px;text-align:right;cursor:pointer">📈 التقارير</button>
+        <button style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;border:none;background:rgba(45,212,191,0.16);color:#2DD4BF;font-family:'Cairo';font-weight:800;font-size:14px;text-align:right;cursor:pointer">⚡ طاقة المساعد</button>
+        <button style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;border:none;background:transparent;color:#94A3B8;font-family:'Cairo';font-weight:600;font-size:14px;text-align:right;cursor:pointer">⚙️ الإعدادات</button>
+      </div>
+    </aside>
+    <div style="flex:1;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:1px solid rgba(255,255,255,0.06)"><div><div class="h-display" style="font-size:22px">طاقة المساعد</div><div style="font-size:13px;color:#94A3B8;margin-top:2px">كيف تُحتسب استخدامات مساعد الذكاء لسامي · غيّر الطفل من الرأس</div></div></div>
+      <div style="flex:1;padding:28px;display:flex;flex-direction:column;gap:20px">
+        <!-- hero + meters -->
+        <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:20px;align-items:stretch">
+          <div style="background:linear-gradient(135deg,rgba(20,184,166,0.18),rgba(15,23,42,0.4));border:1px solid rgba(45,212,191,0.35);border-radius:20px;padding:22px;display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:9px"><span style="font-size:22px;filter:drop-shadow(0 0 8px rgba(45,212,191,0.6))">⚡</span><b class="h-display" style="font-size:16px;color:#F8FAFC">الطاقة المتبقية هذا الشهر</b></div><div class="h-display" style="font-size:30px;color:#2DD4BF" dir="ltr">١٨٠<span style="font-size:16px;color:#64748B"> / ٣٠٠</span></div></div>
+            <div style="display:flex;align-items:center;gap:7px;direction:ltr"><div style="flex:1;height:26px;background:#0F172A;border:2px solid #14B8A6;border-radius:9px;padding:3px;overflow:hidden"><div style="height:100%;width:60%;background:linear-gradient(90deg,#2DD4BF,#14B8A6);border-radius:5px"></div></div><div style="width:6px;height:13px;background:#14B8A6;border-radius:0 4px 4px 0"></div></div>
+            <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:13px;color:#94A3B8">📅 تتجدد خلال <b style="color:#CBD5E1">١٢ يوماً</b> · حد ٢٠/يوم</span><button style="height:38px;padding:0 16px;border-radius:11px;border:none;background:linear-gradient(135deg,#2DD4BF,#14B8A6);color:#06302B;font-family:'Cairo';font-weight:800;font-size:13px;cursor:pointer">🔋 شراء شحنة</button></div>
+          </div>
+          <div style="background:#1E293B;border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:22px;display:flex;flex-direction:column;justify-content:center;gap:14px">
+            <div style="font-size:12px;font-weight:800;color:#94A3B8;letter-spacing:0.06em">مقياسان منفصلان</div>
+            <div style="display:flex;align-items:center;gap:12px"><span style="font-size:26px">❤️</span><div><b style="color:#FB7185;font-size:14px">القلوب</b> <span style="color:#94A3B8;font-size:13px">= الأرواح في التدرّب (الأخطاء)</span></div></div>
+            <div style="display:flex;align-items:center;gap:12px"><span style="font-size:24px">⚡</span><div><b style="color:#2DD4BF;font-size:14px">الطاقة</b> <span style="color:#94A3B8;font-size:13px">= وقود مساعد الذكاء (هذه الصفحة)</span></div></div>
+            <div style="font-size:12px;color:#64748B;line-height:1.6">استخدام الطاقة لا يكلّف قلوباً، وفقدان القلوب لا يكلّف طاقة.</div>
+          </div>
+        </div>
+        <!-- weekly usage -->
+        <div class="card"><div style="margin-bottom:14px"><div class="panel-title">مساعدو الذكاء المستخدمون هذا الأسبوع</div><div class="panel-sub">١٢٤ طاقة عبر ٦٠ مساعداً</div></div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+            <div style="padding:16px;border-radius:14px;background:#0F172A;text-align:center"><div style="width:40px;height:40px;border-radius:12px;background:rgba(45,212,191,0.18);display:flex;align-items:center;justify-content:center;font-size:19px;margin:0 auto 8px">💡</div><div class="h-display" style="font-size:24px;color:#F8FAFC">٣٨</div><div style="font-size:11px;color:#94A3B8;font-weight:700">تلميحات</div><div style="font-size:10px;color:#2DD4BF;margin-top:3px" dir="ltr">⚡1 each</div></div>
+            <div style="padding:16px;border-radius:14px;background:#0F172A;text-align:center"><div style="width:40px;height:40px;border-radius:12px;background:rgba(168,85,247,0.18);display:flex;align-items:center;justify-content:center;font-size:19px;margin:0 auto 8px">🔍</div><div class="h-display" style="font-size:24px;color:#F8FAFC">١٢</div><div style="font-size:11px;color:#94A3B8;font-weight:700">شروحات</div><div style="font-size:10px;color:#C4B5FD;margin-top:3px" dir="ltr">⚡3 each</div></div>
+            <div style="padding:16px;border-radius:14px;background:#0F172A;text-align:center"><div style="width:40px;height:40px;border-radius:12px;background:rgba(79,70,229,0.20);display:flex;align-items:center;justify-content:center;font-size:19px;margin:0 auto 8px">📖</div><div class="h-display" style="font-size:24px;color:#F8FAFC">٦</div><div style="font-size:11px;color:#94A3B8;font-weight:700">مفصّل</div><div style="font-size:10px;color:#A5B4FC;margin-top:3px" dir="ltr">⚡5 each</div></div>
+            <div style="padding:16px;border-radius:14px;background:#0F172A;text-align:center"><div style="width:40px;height:40px;border-radius:12px;background:rgba(251,146,60,0.18);display:flex;align-items:center;justify-content:center;font-size:19px;margin:0 auto 8px">🎯</div><div class="h-display" style="font-size:24px;color:#F8FAFC">٤</div><div style="font-size:11px;color:#94A3B8;font-weight:700">تمارين</div><div style="font-size:10px;color:#FDBA74;margin-top:3px" dir="ltr">⚡5 each</div></div>
+          </div>
+        </div>
+        <!-- cost + plans -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+          <div class="card"><div style="margin-bottom:14px"><div class="panel-title">تكلفة كل مساعد</div><div class="panel-sub">الأطفال يستخدمون الطاقة ولا يرون الأسعار أبداً</div></div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:center;gap:12px;padding:11px 13px;background:#0F172A;border-radius:13px"><span style="font-size:18px">💡</span><span style="flex:1;font-family:'Cairo';font-weight:700;font-size:13px;color:#F8FAFC">تلميح</span><span class="h-display" style="font-weight:800;font-size:13px;color:#2DD4BF;background:rgba(45,212,191,0.14);padding:3px 10px;border-radius:9999px" dir="ltr">⚡ 1</span></div>
+              <div style="display:flex;align-items:center;gap:12px;padding:11px 13px;background:#0F172A;border-radius:13px"><span style="font-size:18px">🔍</span><span style="flex:1;font-family:'Cairo';font-weight:700;font-size:13px;color:#F8FAFC">اشرح الخطأ</span><span class="h-display" style="font-weight:800;font-size:13px;color:#2DD4BF;background:rgba(45,212,191,0.14);padding:3px 10px;border-radius:9999px" dir="ltr">⚡ 3</span></div>
+              <div style="display:flex;align-items:center;gap:12px;padding:11px 13px;background:#0F172A;border-radius:13px"><span style="font-size:18px">📖</span><span style="flex:1;font-family:'Cairo';font-weight:700;font-size:13px;color:#F8FAFC">شرح مفصّل</span><span class="h-display" style="font-weight:800;font-size:13px;color:#2DD4BF;background:rgba(45,212,191,0.14);padding:3px 10px;border-radius:9999px" dir="ltr">⚡ 5</span></div>
+              <div style="display:flex;align-items:center;gap:12px;padding:11px 13px;background:#0F172A;border-radius:13px"><span style="font-size:18px">🎯</span><span style="flex:1;font-family:'Cairo';font-weight:700;font-size:13px;color:#F8FAFC">توليد تمارين</span><span class="h-display" style="font-weight:800;font-size:13px;color:#2DD4BF;background:rgba(45,212,191,0.14);padding:3px 10px;border-radius:9999px" dir="ltr">⚡ 5</span></div>
+            </div>
+          </div>
+          <div class="card"><div style="margin-bottom:14px"><div class="panel-title">الباقة والشحنات</div><div class="panel-sub">أنت تشتري الطاقة — وطفلك يستخدمها فقط</div></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:14px;background:linear-gradient(135deg,rgba(45,212,191,0.16),#0F172A);border:1px solid rgba(45,212,191,0.3);border-radius:14px;margin-bottom:12px"><span style="font-size:28px">🔋</span><div style="flex:1"><div class="h-display" style="font-size:18px;color:#2DD4BF" dir="ltr">+500 ⚡</div><div style="font-size:11px;color:#94A3B8">شحنة · تُضاف فوراً</div></div><div class="h-display" style="font-size:18px;color:#F8FAFC">٢٫٩٩$</div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div style="padding:14px;border-radius:13px;background:#0F172A"><div style="font-family:'Cairo';font-weight:800;font-size:14px;color:#F8FAFC;margin-bottom:8px">مجاني</div><div style="font-size:12px;color:#94A3B8;line-height:1.9">⚡ <b style="color:#2DD4BF">٣٠٠</b>/شهر<br/>📅 حد <b style="color:#2DD4BF">٢٠</b>/يوم</div></div>
+              <div style="padding:14px;border-radius:13px;background:linear-gradient(160deg,rgba(79,70,229,0.18),#0F172A);border:1px solid rgba(79,70,229,0.45)"><div style="font-family:'Cairo';font-weight:800;font-size:14px;color:#F8FAFC;margin-bottom:8px;display:flex;align-items:center;gap:6px">مميّز <span style="font-size:9px;font-weight:800;background:#4F46E5;color:#fff;padding:2px 7px;border-radius:9999px">الأكثر</span></div><div style="font-size:12px;color:#94A3B8;line-height:1.9">⚡ <b style="color:#2DD4BF">٣٠٠٠</b>/شهر<br/>📅 حد <b style="color:#2DD4BF">١٥٠</b>/يوم</div></div>
+            </div>
+          </div>
+        </div>
+        <!-- What your child sees -->
+        <div class="card"><div style="margin-bottom:14px"><div class="panel-title">ما يراه طفلك</div><div class="panel-sub">شاشات الطفل — تُعرض التكلفة وتُؤكَّد قبل الإنفاق، ونفاد الطاقة ليس عقاباً أبداً</div></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+            <div style="background:linear-gradient(160deg,rgba(45,212,191,0.12),#0F172A);border:1px solid rgba(45,212,191,0.3);border-radius:16px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center">
+              <div style="font-size:30px">🔍</div>
+              <div style="font-family:'Cairo';font-weight:800;font-size:15px;color:#F8FAFC">استخدم ⚡٣ للشرح؟</div>
+              <div style="font-size:12px;color:#94A3B8">الرصيد بعدها: <b style="color:#2DD4BF" dir="ltr">177 ⚡</b> متبقّ</div>
+              <div style="display:flex;gap:8px;width:100%;margin-top:4px">
+                <div style="flex:1;height:36px;border-radius:11px;border:1px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-family:'Cairo';font-size:12px;font-weight:800;color:#CBD5E1">ليس الآن</div>
+                <div style="flex:1.3;height:36px;border-radius:11px;background:linear-gradient(135deg,#2DD4BF,#14B8A6);display:flex;align-items:center;justify-content:center;font-family:'Cairo';font-size:12px;font-weight:800;color:#06302B">استخدم ⚡٣ ←</div>
+              </div>
+              <div style="font-size:10px;color:#5eead4;font-weight:700;letter-spacing:0.06em">معاينة التكلفة والتأكيد</div>
+            </div>
+            <div style="background:rgba(56,189,248,0.10);border:1px solid rgba(56,189,248,0.3);border-radius:16px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center">
+              <div style="font-size:32px">😴</div>
+              <div style="font-family:'Cairo';font-weight:800;font-size:15px;color:#F8FAFC">ليكسي يحتاج راحة!</div>
+              <div style="font-size:12px;color:#94A3B8;line-height:1.5">استخدم كل الـ<b style="color:#38BDF8">٢٠</b> مساعدة اليوم. الطاقة بخير — عُد غداً.</div>
+              <div style="display:inline-flex;align-items:center;gap:6px;background:#0F172A;border-radius:9999px;padding:6px 13px;font-family:'Cairo';font-weight:800;font-size:12px;color:#38BDF8">🌙 تتجدد خلال ٦ س ١٢ د</div>
+              <div style="font-size:10px;color:#7DD3FC;font-weight:700;letter-spacing:0.06em">بلغ الحد اليومي</div>
+            </div>
+            <div style="background:rgba(168,85,247,0.10);border:1px solid rgba(168,85,247,0.3);border-radius:16px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center">
+              <div style="font-size:32px">🔌</div>
+              <div style="font-family:'Cairo';font-weight:800;font-size:15px;color:#F8FAFC">نفدت الطاقة</div>
+              <div style="font-size:12px;color:#94A3B8;line-height:1.5">طاقة هذا الشهر استُهلكت. يمكن لشخص بالغ إضافة المزيد.</div>
+              <div style="height:36px;padding:0 16px;border-radius:11px;background:linear-gradient(135deg,#A855F7,#7C3AED);display:flex;align-items:center;justify-content:center;font-family:'Cairo';font-size:12px;font-weight:800;color:#fff">👨‍👩‍👧 اطلب من ولي الأمر</div>
+              <div style="font-size:10px;color:#C4B5FD;font-weight:700;letter-spacing:0.06em">الرصيد الشهري فارغ</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+
   <!-- SETTINGS -->
   <div class="page" data-id="settings"><div style="display:flex;min-height:820px">
     <aside style="width:240px;background:#0F172A;border-left:1px solid rgba(255,255,255,0.06);padding:24px 16px;display:flex;flex-direction:column;gap:24px">
@@ -436,6 +532,7 @@ const pages = [
   { id: 'children', label: 'أطفالي',          group: 'التطبيق', url: 'app.learnexia.com/ar/children' },
   { id: 'dashboard',label: 'اللوحة',          group: 'التطبيق', url: 'app.learnexia.com/ar/sami/overview' },
   { id: 'reports',  label: 'التقارير',         group: 'التطبيق', url: 'app.learnexia.com/ar/sami/reports' },
+  { id: 'energy',   label: '⚡ الطاقة',        group: 'التطبيق', url: 'app.learnexia.com/ar/sami/energy' },
   { id: 'settings', label: 'الإعدادات',       group: 'التطبيق', url: 'app.learnexia.com/ar/settings' },
 ];
 const topbar = document.getElementById('topbar');
@@ -457,6 +554,100 @@ pages.forEach((p, i) => {
   };
   topbar.appendChild(b);
 });
+
+// Inject ⚡ Energy nav button into every app-page sidebar (before الإعدادات) for visual consistency
+document.querySelectorAll('.page[data-id="children"] aside > div:last-child, .page[data-id="dashboard"] aside > div:last-child, .page[data-id="reports"] aside > div:last-child, .page[data-id="settings"] aside > div:last-child').forEach(navGroup => {
+  if (navGroup.querySelector('[data-energy-nav]')) return;
+  const btns = navGroup.querySelectorAll('button');
+  const settingsBtn = [...btns].find(b => b.textContent.includes('الإعدادات'));
+  const e = document.createElement('button');
+  e.dataset.energyNav = '1';
+  e.style.cssText = "display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;border:none;background:transparent;color:#94A3B8;font-family:'Cairo';font-weight:600;font-size:14px;text-align:right;cursor:pointer";
+  e.textContent = '⚡ طاقة المساعد';
+  e.onclick = () => document.querySelector('.crumb-w[data-id="energy"]').click();
+  if (settingsBtn) navGroup.insertBefore(e, settingsBtn); else navGroup.appendChild(e);
+});
+
+/* ── Child switcher + language/theme toggles on every app sidebar (AR) ── */
+const AR_KIDS = [
+  { id:'sami',  name:'سامي', grade:'الصف ٣ · المستوى ١٢', av:'س', from:'#FB923C', to:'#EF4444', xp:'+٣٤٠ XP', up:'بزيادة ٢٨٪ عن الأسبوع الماضي' },
+  { id:'layla', name:'ليلى', grade:'الصف ٥ · المستوى ٢٠', av:'ل', from:'#A855F7', to:'#6366F1', xp:'+٥١٢ XP', up:'بزيادة ١٢٪ عن الأسبوع الماضي' },
+  { id:'yusuf', name:'يوسف', grade:'الصف ١ · المستوى ٤',  av:'ي', from:'#22C55E', to:'#0EA5E9', xp:'+١٨٠ XP', up:'جديد هذا الأسبوع 🎉' },
+];
+let arActiveKid = 'sami';
+function arKid(id){ return AR_KIDS.find(k=>k.id===id); }
+
+function arAvatar(c, size, fs){
+  return `<div style="width:${size}px;height:${size}px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,${c.from},${c.to});display:flex;align-items:center;justify-content:center;font-family:'Cairo';font-weight:800;font-size:${fs}px;color:#fff">${c.av}</div>`;
+}
+
+function arBuildSwitcher(card){
+  const k = arKid(arActiveKid);
+  card.style.cssText = 'position:relative';
+  card.innerHTML =
+    `<button class="ar-kid-toggle" style="width:100%;background:#1E293B;border-radius:16px;padding:12px;display:flex;align-items:center;gap:10px;cursor:pointer;border:1px solid transparent;font-family:'Cairo';text-align:right">
+       ${arAvatar(k,36,16)}
+       <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#F8FAFC">${k.name}</div><div style="font-size:11px;color:#94A3B8;font-family:'Tajawal'">${k.grade}</div></div>
+       <div class="ar-kid-chev" style="color:#94A3B8;font-size:13px;transition:transform .18s">‹</div>
+     </button>
+     <div class="ar-kid-menu" style="display:none;position:absolute;top:calc(100% + 8px);right:0;left:0;z-index:80;background:#1E293B;border:1px solid rgba(255,255,255,0.1);border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,0.55);padding:8px;flex-direction:column;gap:2px;animation:pdDrop .18s cubic-bezier(0.16,1,0.3,1)">
+       <div style="font-size:10px;font-weight:800;color:#64748B;letter-spacing:0.1em;padding:6px 10px 4px;font-family:'Cairo'">تبديل الطفل</div>
+       ${AR_KIDS.map(c=>`<button class="ar-kid-opt" data-kid="${c.id}" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:${c.id===arActiveKid?'rgba(79,70,229,0.18)':'transparent'};border:none;cursor:pointer;font-family:'Cairo';text-align:right">${arAvatar(c,32,14)}<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#F8FAFC">${c.name}</div><div style="font-size:11px;color:#94A3B8;font-family:'Tajawal'">${c.grade}</div></div>${c.id===arActiveKid?'<span style="color:#A5B4FC;font-size:14px">✓</span>':''}</button>`).join('')}
+       <div style="height:1px;background:rgba(255,255,255,0.07);margin:6px 4px"></div>
+       <button class="ar-kid-add" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:transparent;border:none;cursor:pointer;font-family:'Cairo';text-align:right;color:#A5B4FC;font-weight:700;font-size:13px"><span style="width:32px;height:32px;border-radius:50%;border:1.5px dashed rgba(165,180,252,0.5);display:flex;align-items:center;justify-content:center;font-size:16px">＋</span>أضف طفلاً</button>
+     </div>`;
+
+  const toggle = card.querySelector('.ar-kid-toggle');
+  const menu = card.querySelector('.ar-kid-menu');
+  const chev = card.querySelector('.ar-kid-chev');
+  toggle.onclick = (ev)=>{ ev.stopPropagation(); const open = menu.style.display==='flex'; menu.style.display = open?'none':'flex'; chev.style.transform = open?'none':'rotate(-90deg)'; toggle.style.borderColor = open?'transparent':'rgba(99,102,241,0.6)'; };
+  menu.querySelectorAll('.ar-kid-opt').forEach(opt=>{ opt.onclick=()=>{ arActiveKid = opt.dataset.kid; arRefreshSwitchers(); }; });
+  menu.querySelector('.ar-kid-add').onclick=()=>{ document.getElementById('ar-add-child').style.display='flex'; };
+}
+
+function arRefreshSwitchers(){
+  document.querySelectorAll('.page aside > div:nth-child(2)').forEach(arBuildSwitcher);
+  if (typeof arRefreshPrefs === 'function') arRefreshPrefs();
+}
+
+function arBuildPrefs(aside){
+  if (aside.querySelector('[data-ar-prefs]')) return;
+  const theme = document.documentElement.getAttribute('data-theme') || 'night';
+  const k = arKid(arActiveKid);
+  const wrap = document.createElement('div');
+  wrap.dataset.arPrefs = '1';
+  wrap.style.cssText = 'margin-top:auto;display:flex;flex-direction:column;gap:14px';
+  const segStyle = (on)=>`flex:1;height:34px;border-radius:9px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:'Cairo';font-weight:700;font-size:12px;background:${on?'#334155':'transparent'};color:${on?'#F8FAFC':'#94A3B8'};box-shadow:${on?'0 2px 6px rgba(0,0,0,0.3)':'none'}`;
+  const box = 'display:flex;gap:4px;background:#0F172A;border-radius:12px;padding:4px;border:1px solid rgba(255,255,255,0.06)';
+  wrap.innerHTML =
+    `<div style="display:flex;flex-direction:column;gap:8px">
+       <div style="${box}">
+         <button style="${segStyle(true)}" title="العربية"><span style="font-size:14px">🇪🇬</span>AR</button>
+         <button class="ar-to-en" style="${segStyle(false)}" title="English"><span style="font-size:14px">🇺🇸</span>EN</button>
+       </div>
+       <div style="${box}">
+         <button class="ar-th-night" style="${segStyle(theme==='night')}" title="ليل (كحلي)">🌙 ليل</button>
+         <button class="ar-th-black" style="${segStyle(theme==='black')}" title="أسود (OLED)">⬛ أسود</button>
+       </div>
+     </div>
+     <div style="background:#1E293B;border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:14px">
+       <div style="font-size:11px;font-weight:700;color:#FACC15;letter-spacing:0.08em;font-family:'Cairo'">هذا الأسبوع</div>
+       <div style="font-weight:800;font-size:20px;color:#F8FAFC;margin-top:4px;font-family:'Cairo'" dir="ltr">${k.xp}</div>
+       <div style="font-size:11px;color:#94A3B8;font-family:'Tajawal'">${k.up}</div>
+     </div>
+     <button class="ar-logout" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:12px;cursor:pointer;font-family:'Cairo';background:transparent;border:1px solid rgba(239,68,68,0.25);color:#F87171;font-weight:700;font-size:13px;text-align:right"><span style="font-size:15px">↩</span>تسجيل الخروج</button>`;
+  wrap.querySelector('.ar-to-en').onclick = ()=>{ window.location.href = 'index.html'; };
+  wrap.querySelector('.ar-logout').onclick = ()=>{ const c=document.querySelector('.crumb-w[data-id="login"]'); if(c) c.click(); };
+  wrap.querySelector('.ar-th-night').onclick = ()=>{ document.documentElement.setAttribute('data-theme','night'); arRefreshPrefs(); };
+  wrap.querySelector('.ar-th-black').onclick = ()=>{ document.documentElement.setAttribute('data-theme','black'); arRefreshPrefs(); };
+  aside.appendChild(wrap);
+}
+function arRefreshPrefs(){ document.querySelectorAll('.page aside [data-ar-prefs]').forEach(el=>el.remove()); document.querySelectorAll('.page aside').forEach(arBuildPrefs); }
+
+document.addEventListener('click', ()=>{ document.querySelectorAll('.ar-kid-menu').forEach(m=>{ if(m.style.display==='flex'){ m.style.display='none'; const c=m.parentElement.querySelector('.ar-kid-chev'); if(c)c.style.transform='none'; const t=m.parentElement.querySelector('.ar-kid-toggle'); if(t)t.style.borderColor='transparent'; } }); });
+
+arRefreshSwitchers();
+document.querySelectorAll('.page aside').forEach(arBuildPrefs);
 </script>
 <!-- Add Child modal (AR) -->
 <div id="ar-add-child" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(5,8,22,0.7);backdrop-filter:blur(4px);align-items:center;justify-content:center;direction:rtl;font-family:'Tajawal'">

@@ -15,13 +15,13 @@ function ScreenShell({ children, scroll = true, padTop = 60, padBottom = 120 }) 
 }
 
 // ───────────────────────────────────────────── HOME
-function HomeScreen({ onContinue, onMission }) {
+function HomeScreen({ onContinue, onMission, onEnergy }) {
   return (
     <ScreenShell>
       <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 18 }}>
         {/* HUD + greeting */}
         <div>
-          <HudBar streak={7} hearts={4} xp={1240} gems={42}/>
+          <HudBar streak={7} hearts={4} xp={1240} energy={180} onEnergy={onEnergy}/>
         </div>
         <div style={{ padding: '0 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
           <MascotAvatar size={56}/>

@@ -1,0 +1,36 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="Energy Cost — Preview & Confirm" subtitle="Per-action cost chips + spend confirmation showing remaining balance" viewport="700x230" -->
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css">
+<style>
+  body{padding:24px;display:flex;gap:16px;align-items:stretch}
+  .left{flex:1.1;display:flex;flex-direction:column;gap:9px}
+  .ttl{font-family:var(--lx-font-display);font-weight:800;font-size:12px;color:var(--lx-fg3);text-transform:uppercase;letter-spacing:.06em}
+  .action{display:flex;align-items:center;gap:11px;background:#1E293B;border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:11px 13px}
+  .ic{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+  .an{flex:1;font-weight:700;font-size:13px;color:#F8FAFC}
+  .cost{font-family:var(--lx-font-display);font-weight:800;font-size:13px;color:#2DD4BF;background:rgba(45,212,191,0.14);padding:3px 10px;border-radius:9999px}
+  .confirm{flex:1;background:linear-gradient(160deg,rgba(45,212,191,0.14),#1E293B);border:1px solid rgba(45,212,191,0.35);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px;justify-content:center}
+  .big{font-size:34px;text-align:center}
+  .ask{text-align:center;font-weight:800;font-size:15px;color:#F8FAFC}
+  .bal{display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;color:var(--lx-fg2)}
+  .bal b{color:#2DD4BF;font-family:var(--lx-font-display)}
+  .btns{display:flex;gap:8px}
+  .btn{flex:1;height:40px;border-radius:12px;border:none;font-family:var(--lx-font-body);font-weight:800;font-size:13px;cursor:pointer}
+  .go{background:linear-gradient(135deg,#2DD4BF,#14B8A6);color:#06302B}
+  .no{background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--lx-fg2)}
+</style></head>
+<body>
+<div class="left">
+  <div class="ttl">What each helper costs</div>
+  <div class="action"><div class="ic" style="background:rgba(45,212,191,0.14)">💡</div><div class="an">Hint</div><div class="cost">⚡ 1</div></div>
+  <div class="action"><div class="ic" style="background:rgba(168,85,247,0.14)">🔍</div><div class="an">Explain Mistake</div><div class="cost">⚡ 3</div></div>
+  <div class="action"><div class="ic" style="background:rgba(79,70,229,0.16)">📖</div><div class="an">Deep Explanation</div><div class="cost">⚡ 5</div></div>
+  <div class="action"><div class="ic" style="background:rgba(251,146,60,0.16)">🎯</div><div class="an">Practice Generation</div><div class="cost">⚡ 5</div></div>
+</div>
+<div class="confirm">
+  <div class="big">🔍</div>
+  <div class="ask">Use ⚡3 for an explanation?</div>
+  <div class="bal">Balance after: <b>177 ⚡</b> left</div>
+  <div class="btns"><button class="btn no">Not now</button><button class="btn go">Use ⚡3 →</button></div>
+</div>
+</body></html>

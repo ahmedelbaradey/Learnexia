@@ -121,7 +121,7 @@ function App() {
     role:        <RoleSelectScreen onPick={() => setScreen('grade')}/>,
     grade:       <GradeSelectScreen onPick={() => setScreen('subject')}/>,
     subject:     <SubjectSelectScreen onPick={() => setScreen('home')}/>,
-    home:        <HomeScreen onContinue={() => setScreen('lesson')} onMission={() => setScreen('mission')}/>,
+    home:        <HomeScreen onContinue={() => setScreen('lesson')} onMission={() => setScreen('mission')} onEnergy={() => setScreen('energy')}/>,
     skills:      <SkillTreeScreen onStart={() => setScreen('lesson')}/>,
     lesson:      <LessonScreen onAsk={() => {}} onStart={() => setScreen('quiz')}/>,
     quiz:        <QuizScreen onComplete={() => setScreen('reward')}/>,
@@ -130,6 +130,7 @@ function App() {
     league:      <LeagueScreen/>,
     badges:      <BadgeCollectionScreen/>,
     hearts:      <HeartsScreen onPractice={() => setScreen('lesson')}/>,
+    energy:      <EnergyScreen/>,
     mission:     <DailyMissionScreen/>,
     profile:     <ProfileScreen/>,
   };
@@ -151,7 +152,7 @@ function App() {
     if (screen === 'addchild') { setScreen('children'); setAddChildOpen(true); }
   }, [screen]);
 
-  const showsTabBar = ['home', 'skills', 'mission', 'league', 'profile', 'badges', 'hearts'].includes(screen);
+  const showsTabBar = ['home', 'skills', 'mission', 'league', 'profile', 'badges', 'hearts', 'energy'].includes(screen);
 
   const groups = [
     { name: 'Auth',       items: [['splash', 'Splash'], ['login', 'Login'], ['register', 'Register']] },
@@ -159,7 +160,7 @@ function App() {
     { name: 'Parent',     items: [['children', 'My Children'], ['addchild', 'Add Child']] },
     { name: 'Core',       items: [['home', 'Home'], ['skills', 'Skill Tree'], ['profile', 'Profile']] },
     { name: 'Lesson',     items: [['lesson', 'Lesson'], ['quiz', 'Quiz'], ['reward', 'Reward'], ['completed', 'Mission ✓']] },
-    { name: 'Game',       items: [['mission', 'Mission'], ['league', 'League'], ['badges', 'Badges'], ['hearts', 'Hearts']] },
+    { name: 'Game',       items: [['mission', 'Mission'], ['league', 'League'], ['badges', 'Badges'], ['hearts', 'Hearts'], ['energy', '⚡ Energy']] },
   ];
 
   return (

@@ -1,0 +1,206 @@
+<!doctype html>
+<!-- @dsCard group="UI Kit — Student Mobile" name="UI Kit · Student Mobile" subtitle="Click-thru iPhone — Home → Lesson → Quiz → Reward" viewport="460x1100" -->
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Learnexia · Student Mobile</title>
+<meta name="ext-resource-dependency" content="../../assets/mascot-owl.svg" data-resource-id="mascotOwl" />
+<link rel="stylesheet" href="../../colors_and_type.css"/>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; min-height: 100vh;
+    background: radial-gradient(circle at 50% 30%, #1a2348, #0b0f1e 70%);
+    color: #F8FAFC;
+    font-family: 'Poppins', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .stage {
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; gap: 24px;
+    padding: 32px 16px 64px;
+  }
+  .crumbs {
+    display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
+  }
+  .crumb {
+    background: #1E293B; border: 1px solid rgba(255,255,255,0.08);
+    color: #CBD5E1; padding: 8px 14px; border-radius: 9999px;
+    font-weight: 700; font-size: 13px; cursor: pointer;
+    transition: all 180ms cubic-bezier(0.16,1,0.3,1);
+    font-family: inherit;
+  }
+  .crumb.active { background: #4F46E5; color: #fff; border-color: #6366F1; box-shadow: 0 6px 18px rgba(99,102,241,0.45); }
+  .crumb:hover:not(.active) { background: #334155; }
+  .hint {
+    color: #94A3B8; font-size: 12px; text-align: center; max-width: 420px;
+    letter-spacing: 0.02em;
+  }
+  /* in-screen animations */
+  @keyframes lxpulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+  @keyframes lxpop {
+    0% { transform: scale(0); opacity: 0; }
+    60% { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); }
+  }
+  @keyframes lxspin { to { transform: rotate(360deg); } }
+  @keyframes lxshake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+  @keyframes lxdot {
+    0%, 100% { opacity: 0.3; transform: scale(0.85); }
+    50%      { opacity: 1;   transform: scale(1); }
+  }
+  @keyframes lxload {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(280%); }
+  }
+  @keyframes lxglow {
+    0%, 100% { box-shadow: 0 0 0 1px rgba(245,158,11,0.6), 0 0 28px rgba(245,158,11,0.25); }
+    50%      { box-shadow: 0 0 0 2px rgba(245,158,11,0.8), 0 0 48px rgba(245,158,11,0.45); }
+  }
+  @keyframes lxsheet { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
+  /* crumb group dividers */
+  .crumb-group {
+    display: flex; gap: 6px; align-items: center;
+  }
+  .crumb-group + .crumb-group::before {
+    content: ''; width: 1px; height: 16px; background: rgba(255,255,255,0.12); margin: 0 4px;
+  }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="MobileComponents.jsx"></script>
+<script type="text/babel" src="Screens.jsx"></script>
+<script type="text/babel" src="ScreensExtra.jsx"></script>
+<script type="text/babel" src="ScreensAuth.jsx"></script>
+</head>
+<body>
+<template id="__bundler_thumbnail" data-bg-color="#0b0f1e">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#0b0f1e"/>
+    <rect x="478" y="150" width="244" height="500" rx="46" fill="#0F172A" stroke="#1a1a1a" stroke-width="10"/>
+    <rect x="556" y="166" width="88" height="22" rx="11" fill="#000"/>
+    <circle cx="600" cy="320" r="58" fill="#4F46E5"/>
+    <text x="600" y="342" font-size="58" text-anchor="middle">🦉</text>
+    <rect x="520" y="410" width="160" height="14" rx="7" fill="#1E293B"/>
+    <rect x="520" y="438" width="110" height="12" rx="6" fill="#1E293B"/>
+    <rect x="520" y="492" width="160" height="40" rx="14" fill="#2DD4BF"/>
+    <text x="600" y="700" font-size="40" font-family="Poppins, sans-serif" font-weight="800" fill="#5eead4" text-anchor="middle">Learnexia ⚡</text>
+  </svg>
+</template>
+<div id="root"></div>
+
+<script type="text/babel">
+function DeviceShell({ children, dark = true }) {
+  return (
+    <div style={{
+      width: 402, height: 874, borderRadius: 48, overflow: 'hidden',
+      position: 'relative', background: '#0F172A',
+      boxShadow: '0 40px 80px rgba(0,0,0,0.5), 0 0 0 12px #1a1a1a, 0 0 0 13px rgba(255,255,255,0.08)',
+    }}>
+      {/* dynamic island */}
+      <div style={{
+        position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
+        width: 126, height: 37, borderRadius: 24, background: '#000', zIndex: 50,
+      }} />
+      <IOSStatusBar dark={true}/>
+      <div style={{ position: 'absolute', top: 60, left: 0, right: 0, bottom: 0 }}>
+        {children}
+      </div>
+      {/* home indicator */}
+      <div style={{
+        position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
+        width: 139, height: 5, borderRadius: 100,
+        background: 'rgba(255,255,255,0.7)', zIndex: 100,
+      }}/>
+    </div>
+  );
+}
+
+function App() {
+  const [screen, setScreen] = React.useState('home');
+  const [tab, setTab] = React.useState('home');
+  const [addChildOpen, setAddChildOpen] = React.useState(false);
+
+  const screens = {
+    splash:      <SplashScreen onContinue={() => setScreen('login')}/>,
+    login:       <LoginScreen onLogin={() => setScreen('home')} onRegister={() => setScreen('register')}/>,
+    register:    <RegisterScreen onRegister={() => setScreen('children')} onLogin={() => setScreen('login')}/>,
+    children:    <MyChildrenScreen onAddChild={() => setAddChildOpen(true)} onPick={() => setScreen('home')}/>,
+    role:        <RoleSelectScreen onPick={() => setScreen('grade')}/>,
+    grade:       <GradeSelectScreen onPick={() => setScreen('subject')}/>,
+    subject:     <SubjectSelectScreen onPick={() => setScreen('home')}/>,
+    home:        <HomeScreen onContinue={() => setScreen('lesson')} onMission={() => setScreen('mission')} onEnergy={() => setScreen('energy')}/>,
+    skills:      <SkillTreeScreen onStart={() => setScreen('lesson')}/>,
+    lesson:      <LessonScreen onAsk={() => {}} onStart={() => setScreen('quiz')}/>,
+    quiz:        <QuizScreen onComplete={() => setScreen('reward')}/>,
+    reward:      <RewardScreen onDone={() => setScreen('completed')}/>,
+    completed:   <MissionCompletedScreen onContinue={() => setScreen('home')} onChallenge={() => setScreen('quiz')}/>,
+    league:      <LeagueScreen/>,
+    badges:      <BadgeCollectionScreen/>,
+    hearts:      <HeartsScreen onPractice={() => setScreen('lesson')}/>,
+    energy:      <EnergyScreen/>,
+    mission:     <DailyMissionScreen/>,
+    profile:     <ProfileScreen/>,
+  };
+
+  const tabToScreen = (id) => {
+    setTab(id);
+    const map = { home: 'home', skills: 'skills', mission: 'mission', league: 'league', profile: 'profile' };
+    if (map[id]) setScreen(map[id]);
+  };
+
+  // keep tab in sync when navigating directly
+  React.useEffect(() => {
+    const tabFor = { home: 'home', skills: 'skills', mission: 'mission', league: 'league', profile: 'profile' };
+    if (tabFor[screen]) setTab(tabFor[screen]);
+  }, [screen]);
+
+  // "Add Child" crumb lands on My Children with the sheet already open
+  React.useEffect(() => {
+    if (screen === 'addchild') { setScreen('children'); setAddChildOpen(true); }
+  }, [screen]);
+
+  const showsTabBar = ['home', 'skills', 'mission', 'league', 'profile', 'badges', 'hearts', 'energy'].includes(screen);
+
+  const groups = [
+    { name: 'Auth',       items: [['splash', 'Splash'], ['login', 'Login'], ['register', 'Register']] },
+    { name: 'Onboarding', items: [['role', 'Role'], ['grade', 'Grade'], ['subject', 'Subject']] },
+    { name: 'Parent',     items: [['children', 'My Children'], ['addchild', 'Add Child']] },
+    { name: 'Core',       items: [['home', 'Home'], ['skills', 'Skill Tree'], ['profile', 'Profile']] },
+    { name: 'Lesson',     items: [['lesson', 'Lesson'], ['quiz', 'Quiz'], ['reward', 'Reward'], ['completed', 'Mission ✓']] },
+    { name: 'Game',       items: [['mission', 'Mission'], ['league', 'League'], ['badges', 'Badges'], ['hearts', 'Hearts'], ['energy', '⚡ Energy']] },
+  ];
+
+  return (
+    <div className="stage" data-screen-label={`Mobile · ${screen}`}>
+      <div className="crumbs">
+        {groups.map(g => (
+          <div key={g.name} className="crumb-group">
+            {g.items.map(([id, label]) => (
+              <button key={id} className={`crumb${screen === id ? ' active' : ''}`} onClick={() => setScreen(id)}>{label}</button>
+            ))}
+          </div>
+        ))}
+      </div>
+      <div style={{ position: 'relative' }}>
+        <DeviceShell>
+          {screens[screen]}
+          {showsTabBar && <TabBar active={tab} onChange={tabToScreen}/>}
+          <AddChildSheet open={addChildOpen} onClose={() => setAddChildOpen(false)}/>
+        </DeviceShell>
+      </div>
+      <div className="hint">Tap any pill above to jump screens. Try the <b>Splash → Role → Grade → Subject → Home</b> path for onboarding, or hit <b>Continue</b> on Home for the Lesson → Quiz → Reward flow.</div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

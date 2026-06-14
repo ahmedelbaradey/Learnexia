@@ -1,0 +1,117 @@
+<!doctype html>
+<!-- @dsCard group="Index" name="① Master Index — every screen, link & area" subtitle="Full inventory across all 4 surfaces — start here" viewport="1120x880" -->
+<html lang="en"><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css">
+<style>
+  body{padding:28px;background:#0B1220;color:#F8FAFC;font-family:var(--lx-font-body)}
+  h1{font-family:var(--lx-font-display);font-size:24px;margin:0 0 4px}
+  .lede{color:#94A3B8;font-size:13px;margin-bottom:22px}
+  .cols{column-count:3;column-gap:22px}
+  .surface{break-inside:avoid;background:#111B33;border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:16px 16px 14px;margin-bottom:18px}
+  .stitle{font-family:var(--lx-font-display);font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px;margin-bottom:2px}
+  .smeta{font-size:11px;color:#64748B;margin-bottom:12px}
+  .grp{font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#5eead4;margin:10px 0 5px}
+  .grp.v{color:#A5B4FC}.grp.g{color:#FBBF24}.grp.e{color:#2DD4BF}
+  ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:5px}
+  li{font-size:11.5px;background:#0F172A;border:1px solid rgba(255,255,255,0.06);border-radius:7px;padding:3px 8px;color:#CBD5E1}
+  li b{color:#fff}
+  .link{border-color:rgba(99,102,241,0.4);color:#A5B4FC}
+  .state{border-color:rgba(45,212,191,0.35);color:#5eead4}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:20px;font-size:11px;color:#94A3B8}
+  .legend span{display:flex;align-items:center;gap:6px}
+  .dot{width:10px;height:10px;border-radius:3px;border:1px solid}
+</style></head>
+<body>
+<h1>Learnexia — Master Index</h1>
+<div class="lede">Every screen, navigation link, modal, and area across the four shipping surfaces. Component specimens are catalogued in card ②. This is the site-map an engineer or AI coder should read first.</div>
+<div class="legend">
+  <span><span class="dot" style="background:#0F172A;border-color:rgba(255,255,255,0.1)"></span> screen / area</span>
+  <span><span class="dot" style="background:#0F172A;border-color:rgba(99,102,241,0.5)"></span> link / navigation</span>
+  <span><span class="dot" style="background:#0F172A;border-color:rgba(45,212,191,0.45)"></span> state</span>
+</div>
+
+<div class="cols">
+
+  <div class="surface">
+    <div class="stitle">📱 Student Mobile — EN</div>
+    <div class="smeta">ui_kits/student-mobile/index.html · 20 screens · 402×874</div>
+    <div class="grp">Auth</div><ul><li>Splash</li><li>Login</li><li>Register</li></ul>
+    <div class="grp">Onboarding</div><ul><li>Role select</li><li>Grade select</li><li>Subject select</li></ul>
+    <div class="grp">Parent</div><ul><li>My Children</li><li>Add Child <b>(sheet)</b></li></ul>
+    <div class="grp">Core</div><ul><li>Home</li><li>Skill Tree</li><li>Profile</li></ul>
+    <div class="grp">Lesson flow</div><ul><li>Lesson</li><li>Quiz</li><li>Reward</li><li>Mission ✓</li></ul>
+    <div class="grp g">Game</div><ul><li>Daily Mission</li><li>League</li><li>Badges</li><li>Hearts</li><li>⚡ Energy</li></ul>
+    <div class="grp link">Links</div><ul>
+      <li class="link">Tab bar: Home·Skills·Mission·League·Profile</li>
+      <li class="link">HUD ⚡ pill → Energy</li>
+      <li class="link">Home → Lesson</li><li class="link">Lesson → Quiz → Reward → Mission ✓</li>
+      <li class="link">Hearts → Practice</li><li class="link">Add Child ＋ → sheet</li>
+    </ul>
+    <div class="grp e">Energy states</div><ul><li class="state">full</li><li class="state">low</li><li class="state">daily-cap</li><li class="state">empty</li><li class="state">spend→Lexi reveal</li></ul>
+  </div>
+
+  <div class="surface">
+    <div class="stitle">📱 Student Mobile — AR</div>
+    <div class="smeta">ui_kits/student-mobile/index-ar.html · RTL · 20 screens</div>
+    <div class="grp">المصادقة</div><ul><li>البداية</li><li>تسجيل دخول</li><li>إنشاء حساب</li></ul>
+    <div class="grp">الإعداد</div><ul><li>الدور</li><li>الصف</li><li>المادة</li></ul>
+    <div class="grp">ولي الأمر</div><ul><li>أطفالي</li><li>إضافة طفل <b>(ورقة)</b></li></ul>
+    <div class="grp">أساسي</div><ul><li>الرئيسية</li><li>شجرة المهارات</li><li>الملف</li></ul>
+    <div class="grp">الدرس</div><ul><li>الدرس</li><li>الاختبار</li><li>المكافأة</li><li>مهمة مكتملة</li></ul>
+    <div class="grp g">اللعب</div><ul><li>المهمة اليومية</li><li>الدوري</li><li>الشارات</li><li>القلوب</li><li>⚡ الطاقة</li></ul>
+    <div class="grp link">الروابط</div><ul>
+      <li class="link">شريط: الرئيسية·المهارات·المهام·الدوري·أنا</li>
+      <li class="link">شارة ⚡ → الطاقة</li><li class="link">إضافة طفل ＋ → ورقة</li>
+    </ul>
+    <div class="grp e">حالات الطاقة</div><ul><li class="state">ممتلئة</li><li class="state">منخفضة</li><li class="state">الحد اليومي</li><li class="state">فارغة</li><li class="state">إنفاق→ليكسي</li></ul>
+  </div>
+
+  <div class="surface">
+    <div class="stitle">🖥️ Parent Web — EN</div>
+    <div class="smeta">ui_kits/parent-dashboard/index.html · 8 pages · 1280</div>
+    <div class="grp">Public</div><ul><li>Landing</li><li>Login</li><li>Register</li></ul>
+    <div class="grp">App (sidebar)</div><ul><li>My Children</li><li>Dashboard</li><li>Reports</li><li>⚡ Helper Energy</li><li>Settings</li></ul>
+    <div class="grp">Settings tabs</div><ul><li>Profile</li><li>Notifications</li><li>Linked children</li><li>Security</li><li>Plan &amp; billing</li><li>Language &amp; region</li></ul>
+    <div class="grp">Modals / areas</div><ul><li>Add Child modal</li><li>Child switcher (unfolds)</li><li>Send Report</li></ul>
+    <div class="grp link">Links / controls</div><ul>
+      <li class="link">Sidebar: Children·Overview·Reports·Energy·Activity·Subjects·Settings</li>
+      <li class="link">Child switcher → Sami·Layla·Yusuf·＋Add</li>
+      <li class="link">Language 🇺🇸EN/🇪🇬AR</li><li class="link">Theme 🌙Night/⬛Black</li>
+      <li class="link">Log out → Login</li>
+    </ul>
+    <div class="grp e">Energy page</div><ul><li class="state">balance battery</li><li class="state">hearts-vs-energy</li><li class="state">weekly usage</li><li class="state">cost list</li><li class="state">top-up & plans</li></ul>
+  </div>
+
+  <div class="surface">
+    <div class="stitle">🖥️ Parent Web — AR</div>
+    <div class="smeta">ui_kits/parent-dashboard/index-ar.html · RTL · 8 pages</div>
+    <div class="grp">عام</div><ul><li>الرئيسية</li><li>تسجيل الدخول</li><li>إنشاء حساب</li></ul>
+    <div class="grp">التطبيق</div><ul><li>أطفالي</li><li>اللوحة</li><li>التقارير</li><li>⚡ الطاقة</li><li>الإعدادات</li></ul>
+    <div class="grp">تبويبات الإعدادات</div><ul><li>الملف</li><li>الإشعارات</li><li>الأطفال</li><li>الأمان</li><li>الاشتراك</li><li>اللغة</li></ul>
+    <div class="grp">نوافذ / مناطق</div><ul><li>نافذة إضافة طفل</li><li>مبدّل الأطفال</li><li>إرسال تقرير</li></ul>
+    <div class="grp link">الروابط</div><ul>
+      <li class="link">الشريط الجانبي ×٧</li>
+      <li class="link">مبدّل: سامي·ليلى·يوسف·＋</li>
+      <li class="link">اللغة 🇪🇬AR/🇺🇸EN</li><li class="link">السمة 🌙ليل/⬛أسود</li>
+      <li class="link">تسجيل الخروج</li>
+    </ul>
+    <div class="grp e">صفحة الطاقة</div><ul><li class="state">بطارية الرصيد</li><li class="state">قلوب مقابل طاقة</li><li class="state">الاستخدام الأسبوعي</li><li class="state">التكاليف</li><li class="state">الشحن والباقات</li></ul>
+  </div>
+
+  <div class="surface">
+    <div class="stitle">⚡ Helper Energy — Showcase</div>
+    <div class="smeta">ui_kits/helper-energy/index.html · EN/AR × Kid/Parent</div>
+    <div class="grp e">Kid mobile boards</div><ul><li>Lesson demo (interactive)</li><li>Indicator states</li><li>Cost preview + confirm</li><li>Out-of-energy</li><li>Low / reset nudges</li></ul>
+    <div class="grp e">Parent web boards</div><ul><li>Dashboard sample</li><li>Top-up (500 pack)</li><li>Free vs Premium</li></ul>
+    <div class="grp link">Toggles</div><ul><li class="link">EN ⇄ AR</li><li class="link">Mobile ⇄ Web</li></ul>
+  </div>
+
+  <div class="surface">
+    <div class="stitle">🗂️ Standalone exports</div>
+    <div class="smeta">offline single-file builds</div>
+    <ul><li>Learnexia Student Mobile.html</li><li>Learnexia Helper Energy.html</li></ul>
+    <div class="grp">Docs</div><ul><li>README.md</li><li>SKILL.md</li><li>colors_and_type.css</li></ul>
+    <div class="grp">Screenshots</div><ul><li>screenshots/web</li><li>screenshots/web-ar</li><li>screenshots/mobile</li><li>screenshots/mobile-ar</li></ul>
+  </div>
+
+</div>
+</body></html>

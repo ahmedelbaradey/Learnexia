@@ -553,7 +553,7 @@ function Toggle({ on, onChange }) {
 // ────────────────────────────────────────────────────────────── App shell with sidebar
 function AppShell({ active, onNav, children }) {
   return (
-    <div style={{ display: 'flex', minHeight: 820, background: '#0F172A', color: '#F8FAFC', ...appFont }}>
+    <div style={{ display: 'flex', minHeight: 820, background: 'var(--pd-canvas,#0F172A)', color: '#F8FAFC', ...appFont }}>
       <PDSidebar active={active} onChange={onNav}/>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         {children}
@@ -563,5 +563,152 @@ function AppShell({ active, onNav, children }) {
 }
 
 Object.assign(window, {
-  MyChildrenWebPage, ReportsWebPage, SettingsWebPage, AppShell,
+  MyChildrenWebPage, ReportsWebPage, SettingsWebPage, EnergyWebPage, AppShell,
 });
+
+// ────────────────────────────────────────────────────────────── HELPER ENERGY (web)
+function EnergyWebPage({ sidebarActive, onNav }) {
+  const usage = [
+    { icon: '💡', n: 38, label: 'Hints',        cost: 1, bg: 'rgba(45,212,191,0.18)',  fg: '#2DD4BF' },
+    { icon: '🔍', n: 12, label: 'Explanations', cost: 3, bg: 'rgba(168,85,247,0.18)',  fg: '#C4B5FD' },
+    { icon: '📖', n: 6,  label: 'Deep',         cost: 5, bg: 'rgba(79,70,229,0.20)',   fg: '#A5B4FC' },
+    { icon: '🎯', n: 4,  label: 'Practice',     cost: 5, bg: 'rgba(251,146,60,0.18)',  fg: '#FDBA74' },
+  ];
+  const spent = usage.reduce((s, u) => s + u.n * u.cost, 0); // 38+36+30+20 = 124
+  return (
+    <AppShell active={sidebarActive} onNav={onNav}>
+      <PDHeader title="Helper Energy" sub="How Sami's AI-helper usage is metered · Switch child in header"/>
+      <div style={{ flex: 1, overflow: 'auto', padding: 28, display: 'flex', flexDirection: 'column', gap: 20, ...appFont }}>
+
+        {/* Hero: balance + separate-from-hearts reassurance */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 20, alignItems: 'stretch' }}>
+          <div style={{
+            background: 'linear-gradient(135deg,rgba(20,184,166,0.18),rgba(15,23,42,0.4))',
+            border: '1px solid rgba(45,212,191,0.35)', borderRadius: 20, padding: 22,
+            display: 'flex', flexDirection: 'column', gap: 16,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                <span style={{ fontSize: 22, filter: 'drop-shadow(0 0 8px rgba(45,212,191,0.6))' }}>⚡</span>
+                <b style={{ fontSize: 16, color: '#F8FAFC' }}>Energy left this month</b>
+              </div>
+              <div style={{ fontWeight: 900, fontSize: 30, color: '#2DD4BF', fontVariantNumeric: 'tabular-nums' }}>
+                180<span style={{ fontSize: 16, color: '#64748B' }}> / 300</span>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <div style={{ flex: 1, height: 26, background: '#0F172A', border: '2px solid #14B8A6', borderRadius: 9, padding: 3, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: '60%', background: 'linear-gradient(90deg,#2DD4BF,#14B8A6)', borderRadius: 5 }}/>
+              </div>
+              <div style={{ width: 6, height: 13, background: '#14B8A6', borderRadius: '0 4px 4px 0' }}/>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 13, color: '#94A3B8' }}>📅 Resets in <b style={{ color: '#CBD5E1' }}>12 days</b> · 20/day cap</span>
+              <button style={{
+                height: 38, padding: '0 16px', borderRadius: 11, border: 'none',
+                background: 'linear-gradient(135deg,#2DD4BF,#14B8A6)', color: '#06302B',
+                fontFamily: 'inherit', fontWeight: 800, fontSize: 13, cursor: 'pointer',
+              }}>🔋 Buy top-up</button>
+            </div>
+          </div>
+
+          <div style={{
+            background: '#1E293B', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 20, padding: 22,
+            display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 14,
+          }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Two separate meters</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 26 }}>❤️</span>
+              <div><b style={{ color: '#FB7185', fontSize: 14 }}>Hearts</b> <span style={{ color: '#94A3B8', fontSize: 13 }}>= lives in practice (mistakes)</span></div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 24 }}>⚡</span>
+              <div><b style={{ color: '#2DD4BF', fontSize: 14 }}>Energy</b> <span style={{ color: '#94A3B8', fontSize: 13 }}>= AI-helper fuel (this page)</span></div>
+            </div>
+            <div style={{ fontSize: 12, color: '#64748B', lineHeight: 1.5 }}>Spending energy never costs hearts, and losing hearts never costs energy.</div>
+          </div>
+        </div>
+
+        {/* Weekly usage breakdown */}
+        <PDPanel title="AI helpers used this week" sub={`${spent} energy spent across ${usage.reduce((s,u)=>s+u.n,0)} helpers`}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
+            {usage.map(u => (
+              <div key={u.label} style={{ padding: 16, borderRadius: 14, background: '#0F172A', textAlign: 'center' }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: u.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 19, margin: '0 auto 8px' }}>{u.icon}</div>
+                <div style={{ fontWeight: 900, fontSize: 24, color: '#F8FAFC', fontVariantNumeric: 'tabular-nums' }}>{u.n}</div>
+                <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 700 }}>{u.label}</div>
+                <div style={{ fontSize: 10, color: u.fg, marginTop: 3 }}>⚡{u.cost} each</div>
+              </div>
+            ))}
+          </div>
+        </PDPanel>
+
+        {/* Cost reference + top-up & plans */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'start' }}>
+          <PDPanel title="What each helper costs" sub="Children spend energy; they never see prices">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[['💡','Hint',1],['🔍','Explain Mistake',3],['📖','Deep Explanation',5],['🎯','Practice Generation',5]].map(([ic,name,c]) => (
+                <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 13px', background: '#0F172A', borderRadius: 13 }}>
+                  <span style={{ fontSize: 18 }}>{ic}</span>
+                  <span style={{ flex: 1, fontWeight: 700, fontSize: 13, color: '#F8FAFC' }}>{name}</span>
+                  <span style={{ fontWeight: 800, fontSize: 13, color: '#2DD4BF', background: 'rgba(45,212,191,0.14)', padding: '3px 10px', borderRadius: 9999 }}>⚡ {c}</span>
+                </div>
+              ))}
+            </div>
+          </PDPanel>
+
+          <PDPanel title="Plan & top-ups" sub="You buy energy — your child just uses it">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 14, background: 'linear-gradient(135deg,rgba(45,212,191,0.16),#0F172A)', border: '1px solid rgba(45,212,191,0.3)', borderRadius: 14, marginBottom: 12 }}>
+              <span style={{ fontSize: 28 }}>🔋</span>
+              <div style={{ flex: 1 }}><div style={{ fontWeight: 900, fontSize: 18, color: '#2DD4BF' }}>+500 ⚡</div><div style={{ fontSize: 11, color: '#94A3B8' }}>Top-up pack · added instantly</div></div>
+              <div style={{ fontWeight: 900, fontSize: 18, color: '#F8FAFC' }}>$2.99</div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ padding: 14, borderRadius: 13, background: '#0F172A' }}>
+                <div style={{ fontWeight: 800, fontSize: 14, color: '#F8FAFC', marginBottom: 8 }}>Free</div>
+                <div style={{ fontSize: 12, color: '#94A3B8', lineHeight: 1.8 }}>⚡ <b style={{ color: '#2DD4BF' }}>300</b>/mo<br/>📅 <b style={{ color: '#2DD4BF' }}>20</b>/day cap</div>
+              </div>
+              <div style={{ padding: 14, borderRadius: 13, background: 'linear-gradient(160deg,rgba(79,70,229,0.18),#0F172A)', border: '1px solid rgba(79,70,229,0.45)' }}>
+                <div style={{ fontWeight: 800, fontSize: 14, color: '#F8FAFC', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>Premium <span style={{ fontSize: 9, fontWeight: 800, background: '#4F46E5', color: '#fff', padding: '2px 7px', borderRadius: 9999 }}>POPULAR</span></div>
+                <div style={{ fontSize: 12, color: '#94A3B8', lineHeight: 1.8 }}>⚡ <b style={{ color: '#2DD4BF' }}>3000</b>/mo<br/>📅 <b style={{ color: '#2DD4BF' }}>150</b>/day soft cap</div>
+              </div>
+            </div>
+          </PDPanel>
+        </div>
+
+        {/* What your child sees — confirm + non-punitive empty states */}
+        <PDPanel title="What your child sees" sub="Kid-facing surfaces — costs are previewed and confirmed; out-of-energy is never a scold">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
+            {/* Confirm preview */}
+            <div style={{ background: 'linear-gradient(160deg,rgba(45,212,191,0.12),#0F172A)', border: '1px solid rgba(45,212,191,0.3)', borderRadius: 16, padding: 18, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
+              <div style={{ fontSize: 30 }}>🔍</div>
+              <div style={{ fontWeight: 800, fontSize: 15, color: '#F8FAFC' }}>Use ⚡3 for an explanation?</div>
+              <div style={{ fontSize: 12, color: '#94A3B8' }}>Balance after: <b style={{ color: '#2DD4BF' }}>177 ⚡</b> left</div>
+              <div style={{ display: 'flex', gap: 8, width: '100%', marginTop: 4 }}>
+                <div style={{ flex: 1, height: 36, borderRadius: 11, border: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#CBD5E1' }}>Not now</div>
+                <div style={{ flex: 1.3, height: 36, borderRadius: 11, background: 'linear-gradient(135deg,#2DD4BF,#14B8A6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#06302B' }}>Use ⚡3 →</div>
+              </div>
+              <div style={{ fontSize: 10, color: '#5eead4', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 2 }}>Cost preview & confirm</div>
+            </div>
+            {/* Daily cap reached */}
+            <div style={{ background: 'rgba(56,189,248,0.10)', border: '1px solid rgba(56,189,248,0.3)', borderRadius: 16, padding: 18, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9, textAlign: 'center' }}>
+              <div style={{ fontSize: 32 }}>😴</div>
+              <div style={{ fontWeight: 800, fontSize: 15, color: '#F8FAFC' }}>Lexi needs a rest!</div>
+              <div style={{ fontSize: 12, color: '#94A3B8', lineHeight: 1.5 }}>Used all <b style={{ color: '#38BDF8' }}>20</b> helpers today. Energy is fine — back tomorrow.</div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#0F172A', borderRadius: 9999, padding: '6px 13px', fontWeight: 800, fontSize: 12, color: '#38BDF8' }}>🌙 Resets in 6h 12m</div>
+              <div style={{ fontSize: 10, color: '#7DD3FC', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 2 }}>Daily cap reached</div>
+            </div>
+            {/* Monthly empty */}
+            <div style={{ background: 'rgba(168,85,247,0.10)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: 16, padding: 18, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9, textAlign: 'center' }}>
+              <div style={{ fontSize: 32 }}>🔌</div>
+              <div style={{ fontWeight: 800, fontSize: 15, color: '#F8FAFC' }}>Out of energy</div>
+              <div style={{ fontSize: 12, color: '#94A3B8', lineHeight: 1.5 }}>This month's energy is used up. A grown-up can add more.</div>
+              <div style={{ height: 36, padding: '0 16px', borderRadius: 11, background: 'linear-gradient(135deg,#A855F7,#7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#fff' }}>👨‍👩‍👧 Ask a parent</div>
+              <div style={{ fontSize: 10, color: '#C4B5FD', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 2 }}>Monthly balance empty</div>
+            </div>
+          </div>
+        </PDPanel>
+      </div>
+    </AppShell>
+  );
+}

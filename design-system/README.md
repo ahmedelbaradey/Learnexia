@@ -120,6 +120,7 @@ A **dark, saturated** palette — the canvas is deep navy (`#0F172A`), letting c
 - Hearts: `#FB7185` (rose)
 - League gold: `#FBBF24`
 - Gem: `#38BDF8`
+- **Helper Energy: `#2DD4BF` (teal)** + deep `#14B8A6` — the AI-help meter. Deliberately a different hue from hearts (rose) and gem (sky) so the two depleting meters can never be confused. See _Helper Energy_ below.
 
 Imagery and illustrations should read **warm + saturated** — never washed-out, never grayscale.
 
@@ -201,6 +202,7 @@ Animations are **CRITICAL** for kids and should feel snappy and rewarding.
 |---|---|---|
 | **Student Mobile** | `ui_kits/student-mobile/` | iPhone 402×874. 18-screen click-thru: Splash · Login · Register · Role/Grade/Subject onboarding · My Children · Home · Skill Tree · Lesson · Quiz · Reward · Mission Completed · Daily Mission · League · Badges · Hearts · Profile. Working **Add Child** bottom sheet (photo upload, grade tiles, language flags). Arabic RTL twin at `index-ar.html`. |
 | **Parent Web** | `ui_kits/parent-dashboard/` | Web 1280px, 7 pages: Landing · Login · Register · My Children · Dashboard · Reports · Settings. Working **Add Child** modal with photo upload. Arabic RTL twin at `index-ar.html`. |
+| **Helper Energy** | `ui_kits/helper-energy/` | The ⚡ AI-help credit system. One showcase (`index.html`) with an EN/AR × mobile/web toggle: an interactive lesson demo where spending a helper drains energy live, plus indicator states, cost-confirm, out-of-energy, nudges, and the parent top-up + plan compare. See _Helper Energy_ below. |
 
 Each kit has its own `README.md` and exposes small reusable JSX components
 (`MobileComponents.jsx` / `DashboardComponents.jsx`, `Screens*.jsx`, `Pages*.jsx`, `AddChildModal.jsx`).
@@ -221,6 +223,42 @@ Every screen exists in **English (LTR)** and **Arabic (RTL)** with identical lay
 Both web kits ship a **brand-styled scrollbar** (indigo gradient thumb, pill shape, subtle track, lighter hover) for both axes. Reuse this in any new web page rather than the default OS scrollbar.
 
 Each kit has its own `README.md` and exposes small reusable JSX components.
+
+---
+
+## Helper Energy (⚡ طاقة المساعد)
+
+The credit system that meters **AI-helper usage only** — a resource entirely separate from **hearts** (lives/mistakes in Practice Mode). Children see and spend energy but never see prices or buy; parents purchase top-up packs.
+
+**Economy (numbers the UI surfaces):**
+- **Free** — 300 credits/month, 20/day cap.
+- **Premium** — 3000 credits/month, 150/day soft cap.
+- **Top-up pack** — 500 credits.
+- **Per-action cost:** Hint = ⚡1 · Explain Mistake = ⚡3 · Deep Explanation = ⚡5 · Practice Generation = ⚡5.
+
+**Surfaces designed (each with all states):**
+1. Persistent indicator — full / low / **daily-cap reached** (balance fine, resets at midnight) vs **monthly-empty** (ask a parent).
+2. Per-action cost preview + confirm, showing the cost and the **remaining balance after**.
+3. Out-of-energy — kid-friendly, non-punitive, with a clear path (wait for daily reset vs. ask a parent to top up).
+4. Parent top-up flow (500-credit pack) + Free-vs-Premium comparison.
+5. Low/empty nudges and daily/monthly-reset messaging.
+
+**Hearts vs Energy — the hard distinction.** An 8-year-old must never confuse the two depleting meters. They differ on **every** channel:
+
+| Channel | ❤️ Hearts | ⚡ Energy |
+|---|---|---|
+| Means | Lives / mistakes | AI-helper fuel |
+| Color | Rose `#FB7185` | Teal `#2DD4BF` |
+| Icon / shape | Heart glyphs | Battery + lightning bolt |
+| Motion | Shatter + shake on loss | Smooth drain + bolt pulse |
+| Position | Top-**left** of HUD | Top-**right** of HUD |
+| Refills | Slowly over time (1 / 30 min) | Daily reset / parent top-up |
+
+**Tokens:** `--lx-energy` `#2DD4BF`, `--lx-energy-deep` `#14B8A6`, `--lx-energy-soft`, `--lx-energy-glow` (in `colors_and_type.css`).
+
+**Where it lives:**
+- Interactive showcase: `ui_kits/helper-energy/index.html` (toggle EN/AR × mobile/web).
+- Design System tab cards: `preview/colors-energy.html`, `components-energy-vs-hearts.html`, `components-energy-indicator.html`, `components-energy-cost.html`, `components-energy-empty.html`, `web-energy-topup.html`, plus Arabic `ar-energy-vs-hearts.html` and `ar-energy-indicator.html`.
 
 ---
 
