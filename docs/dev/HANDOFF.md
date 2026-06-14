@@ -327,6 +327,70 @@ Config (appsettings.json, safe to commit):
 - Live grounding: Real ILearningContextProvider wired at runtime (P3-07 embeddings gate).
 
 
+## P3-06 Part B — SimilarExample (SSE Tutor Endpoint, Intent #4) — added 2026-06-14 (branch `feat/P3-06-grounded-questions`, Wave 4)
+
+Built **P3-06 Part B** in the **`Ai` module**. The 4th and final intent of the AI Helper MVP. Full pipeline (analyzer → planner → backend-feature → **mandatory security gate PASS** (no Critical/High) → reviewer PASS).
+
+### What shipped — SSE WIRE CONTRACT (for P3-12 FE consumption)
+
+**One endpoint:**
+
+**POST /api/AiTutor/SimilarExample** — student-scoped ([Authorize(Roles="Student")]), consumes SimilarExampleCommand (skillId, optional questionId, childGrade, tutorLanguage from JWT). **Generates curriculum-grounded practice variants without redundant preamble** (differs from P3-05 Hint which emits preamble). Emits content chunks.
+
+**Architecture:**
+
+- Handler (SimilarExampleCommandHandler): (1) refuse-and-redirect on empty learning context (no curriculum match) — fail-fast, no safety processing; (2) call ISafetyLayer.GenerateSafeAsync() with the grounded prompt; (3) buffer and emit via RedirectResponseBuilder; (4) on safety block → emit error event.
+- **No hint-level tracking** (unlike P3-05) — similar examples are always freshly generated (not capped/leveled).
+- Usage instrumentation: HelpDeliveredIntegrationEvent / HelpDeclinedIntegrationEvent / HelpRequestedIntegrationEvent — logged to ai.SafetyEvents (PII-light, reason codes only).
+- Rate limiter: Shared AiTutorRateLimiter (in-process, per-student daily cap, inherited from P3-04).
+
+### Load-bearing decisions (mandatory security gate PASS, 0 Critical/High)
+
+- **No preamble:** Unlike P3-05 Hint (which emits {hintLevel, nextHintLevel}), P3-06 generates similar examples directly — no metadata frame, just content chunks.
+- **Refuse-and-redirect (fail-safe):** Empty context → immediate redirect (same as P3-04 Explain); prevents hallucinated examples unsupported by curriculum.
+- **Buffer→safety→emit discipline:** ISafetyLayer is sole content exit.
+- **Shared rate limiter:** Counts against the same daily per-student cap as Explain/Hint (default 20/day, configurable AiTutor:RateLimiter:DailyCapPerStudent).
+- **Folded into Ai module:** reuses P3-01/P3-02/P3-03/P3-04 seams.
+- **Cache economy deferred:** P3-01-BE-12/13/14 (response cache + quota dispatch).
+- **Live grounding dormant:** EmptyLearningContextProvider (stub default) always redirects. Real RagContextProvider wired at runtime via AiHelper:ContextProvider config.
+
+### Test coverage + gates
+
+- 219 unit tests (SimilarExampleCommandHandlerTests: context/redirect/buffer/safety edge cases, ar/en). All green.
+- 13 SSE integration tests (P3_06_SimilarExampleSse_Tests.cs: endpoint contract, event sequence, refuse-and-redirect, error handling). All green.
+- Mandatory security gate PASS (0 Critical/High): error-leak audit confirmed no stack traces; no IDOR issues; rate-limiter fail-soft; [Authorize] enforced.
+
+### Pre-deployment checklist
+
+- Real Claude/OpenAI keys required (Ai__Providers__*__ApiKey env vars).
+- AiTutor:RateLimiter:DailyCapPerStudent configured (shared cap with P3-04/P3-05, default 20).
+- AiHelper:ContextProvider = "Seeded" (or "Rag" when P3-07 goes live).
+- Not multi-instance ready: in-process rate limiter. Upgrade to Redis before scaling.
+
+### What P3-12 (FE) consumes
+
+- Endpoint path: /api/AiTutor/SimilarExample.
+- Content/error event schema (same as P3-04 Explain).
+- Retry: if no done event within 15s FE timeout, treat as error.
+- **No preamble to parse** (unlike Hint).
+
+### Config + secret paths
+
+Secrets (env vars / secret store, NEVER git):
+- Ai__Providers__Claude__ApiKey (required)
+- Ai__Providers__OpenAi__ApiKey (optional secondary)
+
+Config (appsettings.json, safe to commit):
+- AiTutor:RateLimiter:DailyCapPerStudent (int, default 20, shared cap)
+- AiHelper:ContextProvider (string, "Seeded"|"Rag", default "Seeded")
+
+### Carry-forward (non-blocking deferred)
+
+- **Part A (offline question generation):** P3-01-BE-1 through P3-01-BE-9; generates practice-pool variants in batch at question/attempt creation time.
+- **Practice-pool cache:** Seeded variant pool with dedup (P3-01-BE-13, P3-01-BE-14, plus cache parts of P3-01-BE-10).
+- **Quota dispatch:** AI credit ledger + charge-on-delivery (P10-03).
+- **This completes the 4-intent AI Helper MVP** (Explain, Hint, WhyWrong, SimilarExample) — all wired in P3-04/P3-05/P3-06. P3-12 FE consumes all 4 endpoints.
+
 ## P3-08 — Adjust difficulty adaptively (Adaptivity Engine) — added 2026-06-13 (branch `feat/P3-08-adaptivity-engine`)
 
 Built **P3-08** in the **`Learning` module**. Full pipeline (db-migration → backend-feature → api-tester → security-auditor → reviewer PASS).

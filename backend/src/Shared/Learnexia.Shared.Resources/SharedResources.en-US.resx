@@ -2195,4 +2195,19 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="SimplifyUnsupportedSubject" xml:space="preserve">
     <value>The tutor does not have a simplify template for this subject yet.</value>
   </data>
+  <data name="SimilarExampleSkillIdRequired" xml:space="preserve">
+    <value>A valid skill is required to get a similar example.</value>
+  </data>
+  <data name="SimilarExampleMissingProfile" xml:space="preserve">
+    <value>Your learning profile could not be resolved. Please sign in again.</value>
+  </data>
+  <data name="SimilarExampleRateLimitExceeded" xml:space="preserve">
+    <value>You have requested too many examples. Please wait a moment before trying again.</value>
+  </data>
+  <data name="SimilarExampleSafetyBlocked" xml:space="preserve">
+    <value>The tutor cannot provide an example right now. Please try again shortly.</value>
+  </data>
+  <data name="SimilarExampleUnsupportedSubject" xml:space="preserve">
+    <value>The tutor does not have an example template for this subject yet.</value>
+  </data>
 </root>
