@@ -69,6 +69,15 @@ public class GetAuditLogQueryHandler
                 return EmptyCollection(PaginatedResult<AuditLogDto>.Success(
                     new List<AuditLogDto>(), 0, pageNumber, pageSize));
 
+            // Under Npgsql.EnableLegacyTimestampBehavior=true a `timestamptz` column reads back as
+            // Kind=Local, so without normalization the API would emit OccurredAtUtc with the server's
+            // local offset (e.g. +03:00) instead of a true UTC instant. Normalize to UTC at the mapping
+            // boundary (P4-11 convention) so the field serializes as ...Z regardless of server timezone.
+            if (result.Data is { Count: > 0 })
+                result.Data = result.Data
+                    .Select(d => d with { OccurredAtUtc = d.OccurredAtUtc.ToUniversalTime() })
+                    .ToList();
+
             return Success(result);
         }
         catch (Exception ex)

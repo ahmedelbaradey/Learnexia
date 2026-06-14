@@ -445,6 +445,51 @@ Built **P7-13** in the **`Gamification` module** (commit `4b31fbc`). Scope = the
 
 **Phase 7 backend is now feature-complete for everything buildable.** P7-09 (moderation queue — the `Moderation` module is scaffolded + ready for it), P7-10 (analytics), P7-11 (AI-safety) remain BLOCKED on unbuilt upstream phases. All Phase-7 FE (admin-dashboard Next.js) is not started.
 
+## P7-12 FIX (DONE) — 2026-06-15 (`fix/phase7-wave-1`)
+
+The comprehensive "verify P7-12" pass found Bucket C still open + a latent UTC-serialization bug. Both fixed with all gates (reviewer, security-auditor, completeness-critic) passing.
+
+### Bucket C: Curriculum admin creates now produce audit rows (with real entity id)
+
+The Learning admin create handlers (Subject/Unit/Lesson) were **not raising `AdminActionPerformedDomainEvent`** — so admin curriculum creates produced no audit row. Fix: all three handlers now raise the event, carrying the **real created entity id** (not 0) via a new `ILearningRepository.FlushAsync(adminUserId)` seam:
+
+- **Pattern:** handler calls `AddAsync(entity)` (stages for insert), then `FlushAsync(adminUserId)` (flushes the **open UoW transaction** — DB assigns `entity.Id`), then `RaiseDomainEvent` (event captures the now-real id). The UoW's later `SaveChanges` is a no-op; post-commit domain-event dispatch still fires (zero events on rollback per ADR-0001).
+- **Impl:** `ILearningRepository` gained `FlushAsync(adminUserId)` (Application seam); `LearningRepository` calls `await _dbContext.Database.CommitTransactionAsync()` on the open transaction (idempotent — noop if already committed; fails if no enclosing txn — a useful safety guard).
+- **PII:** Details string is light (action type, entity id, admin name only — no curriculum names/content).
+
+### Bucket D: GetAuditLogQueryHandler normalizes OccurredAtUtc to UTC at the read boundary
+
+The audit log materialized rows' `OccurredAtUtc` carried the **server-local timezone offset** (not UTC) — violating the P4-11 `EnableLegacyTimestampBehavior` convention. The API emitted a timestamp with server-local-kind instead of UTC-kind, misrepresenting the event's true instant. Fix: `GetAuditLogQueryHandler` normalizes each row with `.ToUniversalTime()` on the materialized list (read boundary, one place, matches the convention used in `Lifecycle/GetVersionHistoryQueryHandler`).
+
+### LoggerManager.LogError now actually logs the exception
+
+The interface `ILoggerManager.LogError(Exception?, string)` was not implemented — the exception param was silently dropped. Fixed: `LoggerManager.LogError` now passes the exception to the underlying ILogger, matching the signature and the intended contract.
+
+### Verified
+
+- **P7-12 audit suite:** 22/22 pass (IDEM-1 made parallel-safe via .WithoutResultTracking).
+- **Full P7 integration suite:** 410/414 pass. The 4 remaining failures are confirmed **pre-existing** (AC-5 Bucket-E test-data, AC-LEAK-2 + Skill-CRUD Bucket-F, P7-07 SuperAdmin parallel-load flake) — **zero regressions**.
+- **Gates:** reviewer PASS (0 blockers); security-auditor PASS (0 Critical/High); completeness-critic PASS (Bucket C + D fixed; follow-ups surfaced separately).
+
+### Follow-ups (non-blocking, NOT done — surfaced by the completeness gate)
+
+1. **Same `TargetEntityId=0` gap in 4 OTHER Learning create handlers:**
+   - `AddSkillCommandHandler` (highest value; stages Skill + KnowledgeNode, must flush after BOTH).
+   - `AddQuestionCommandHandler`, `AddContentBlockCommandHandler`, `AddKnowledgeEdgeCommandHandler` — apply the same `FlushAsync` pattern.
+
+2. **Gamification create handlers (P7-13)** read `entity.Id` (=0) before commit:
+   - `CreateBadgeDefinitionCommandHandler`, `CreateMissionDefinitionCommandHandler`, `CreateTimedEventCommandHandler` — real defect; fix in P7-13.
+
+3. **Timestamptz DTO fields with the same Kind=Local/UTC bug** lacking `.ToUniversalTime()`:
+   - Notifications `ListMyInbox`/`List` `CreatedAtUtc`.
+   - Identity `GetAdminUserProfile` `StatusChangedAtUtc`.
+   - Several Attempt/Mastery date fields (reference correct impl: `Lifecycle/GetVersionHistoryQueryHandler`).
+
+4. **Pre-existing double `ILoggerManager` registration** in Identity `DependencyInjection.cs` (AddScoped + AddSingleton).
+
+5. **Guard for `FlushAsync` safety:** consider a debug-time check so `FlushAsync` fails loudly if ever called outside a UoW transaction (prevents silent bugs if a future caller misuses it).
+
+
 ## Phase 7 — Audit log + Moderation module (P7-12 backend) — added 2026-06-09 (`feat/phase-7-backend`, in wave PR #106)
 
 Built **P7-12** + the lead-approved **new `Moderation` module** + fixed the wave-wide audit-event timing (commit `5446a1d`).
