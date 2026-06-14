@@ -77,12 +77,12 @@ export function ChildSwitcher({ onAddChild }: ChildSwitcherProps) {
         flexDirection={rowDir}
         alignItems="center"
         gap="$2"
-        height={40}
-        paddingHorizontal={10}
-        borderRadius="$cardInner"
+        paddingVertical={12}
+        paddingHorizontal={12}
+        borderRadius={16}
         backgroundColor="$card"
         borderWidth={1}
-        borderColor="$border"
+        borderColor={open ? 'rgba(99,102,241,0.6)' : '$border'}
         cursor="pointer"
         hoverStyle={{ backgroundColor: '$cardSoft' }}
         pressStyle={{ scale: 0.95 }}
@@ -100,23 +100,29 @@ export function ChildSwitcher({ onAddChild }: ChildSwitcherProps) {
             {'👶'}
           </Text>
         )}
-        <Stack flexDirection="column">
+        <Stack flexDirection="column" flex={1}>
           <Text
             color="$fg1"
             fontSize={13}
             fontWeight="700"
             fontFamily="$heading"
             writingDirection={direction}
+            textAlign={isRtl ? 'right' : 'left'}
           >
             {pillLabel}
           </Text>
           {metaLabel ? (
-            <Text color="$fg3" fontSize={11} fontFamily="$body" writingDirection={direction}>
+            <Text color="$fg3" fontSize={11} fontFamily="$body" writingDirection={direction} textAlign={isRtl ? 'right' : 'left'}>
               {metaLabel}
             </Text>
           ) : null}
         </Stack>
-        <Text color="$fg3" fontSize={16} accessibilityElementsHidden>
+        <Text
+          color="$fg3"
+          fontSize={13}
+          accessibilityElementsHidden
+          style={{ transform: [{ rotate: open ? (isRtl ? '-90deg' : '90deg') : '0deg' }] } as object}
+        >
           {isRtl ? '‹' : '›'}
         </Text>
       </Stack>
@@ -138,20 +144,36 @@ export function ChildSwitcher({ onAddChild }: ChildSwitcherProps) {
           <Stack
             testID="child-switcher-dropdown"
             position="absolute"
-            top={46}
-            // Align to start of pill: left in LTR, right in RTL
-            {...(isRtl ? { right: 0 } : { left: 0 })}
+            top={74}
+            left={0}
+            right={0}
             zIndex={100}
-            minWidth={240}
             backgroundColor="$card"
-            borderRadius="$card"
+            borderRadius={16}
             borderWidth={1}
-            borderColor="$border"
-            style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.25)' }}
+            borderColor="rgba(255,255,255,0.1)"
+            style={{ boxShadow: '0 20px 50px rgba(0,0,0,0.55)' }}
             overflow="hidden"
             flexDirection="column"
+            padding={8}
+            gap={2}
           >
-            {/* Child rows */}
+            {/* "SWITCH CHILD" section header */}
+            <Stack paddingHorizontal={14} paddingTop={4} paddingBottom={6}>
+              <Text
+                color="$fg3"
+                fontSize={10}
+                fontWeight="800"
+                fontFamily="$heading"
+                textTransform="uppercase"
+                letterSpacing={1.2}
+                writingDirection={direction}
+                textAlign={isRtl ? 'right' : 'left'}
+              >
+                {t('parent.childSelector.switchChild')}
+              </Text>
+            </Stack>
+
             {children.length === 0 ? (
               <Stack padding={14}>
                 <Text color="$fg3" fontSize={13} fontFamily="$body" writingDirection={direction}>
@@ -168,10 +190,10 @@ export function ChildSwitcher({ onAddChild }: ChildSwitcherProps) {
                     key={childId}
                     flexDirection={rowDir}
                     alignItems="center"
-                    gap="$3"
-                    paddingVertical={10}
-                    paddingHorizontal={12}
-                    borderRadius="$nav"
+                    gap={10}
+                    paddingVertical={8}
+                    paddingHorizontal={10}
+                    borderRadius={12}
                     backgroundColor={isActive ? '$primarySoft' : 'transparent'}
                     hoverStyle={{ backgroundColor: isActive ? '$primarySoft' : '$cardSoft' }}
                     cursor="pointer"
@@ -190,10 +212,17 @@ export function ChildSwitcher({ onAddChild }: ChildSwitcherProps) {
                         fontWeight="700"
                         fontFamily="$heading"
                         writingDirection={direction}
+                        textAlign={isRtl ? 'right' : 'left'}
                       >
                         {child.fullName ?? ''}
                       </Text>
-                      <Text color="$fg3" fontSize={11} fontFamily="$body" writingDirection={direction}>
+                      <Text
+                        color="$fg3"
+                        fontSize={11}
+                        fontFamily="$body"
+                        writingDirection={direction}
+                        textAlign={isRtl ? 'right' : 'left'}
+                      >
                         {t('parent.childSwitcher.metaLabel', {
                           grade: formatNumber(stats.grade, locale),
                           level: formatNumber(stats.level, locale),
@@ -201,7 +230,7 @@ export function ChildSwitcher({ onAddChild }: ChildSwitcherProps) {
                       </Text>
                     </Stack>
                     {isActive ? (
-                      <Text color="$primary" fontSize={14} accessibilityElementsHidden>
+                      <Text color="$primaryLight" fontSize={14} accessibilityElementsHidden>
                         {'✓'}
                       </Text>
                     ) : null}
@@ -211,14 +240,16 @@ export function ChildSwitcher({ onAddChild }: ChildSwitcherProps) {
             )}
 
             {/* Divider */}
-            <Stack height={1} backgroundColor="$borderSubtle" marginHorizontal={8} />
+            <Stack height={1} backgroundColor="$borderSubtle" marginHorizontal={10} marginVertical={4} />
 
-            {/* + Add child footer */}
+            {/* Add a child footer — dashed circle "+" + label */}
             <Stack
               flexDirection={rowDir}
               alignItems="center"
-              gap="$2"
-              padding={12}
+              gap={10}
+              paddingVertical={8}
+              paddingHorizontal={10}
+              borderRadius={12}
               cursor="pointer"
               hoverStyle={{ backgroundColor: '$cardSoft' }}
               pressStyle={{ scale: 0.97 }}
@@ -228,10 +259,32 @@ export function ChildSwitcher({ onAddChild }: ChildSwitcherProps) {
               }}
               accessibilityRole="button"
               accessible
-              accessibilityLabel={t('parent.childSwitcher.addChild')}
+              accessibilityLabel={t('parent.childSelector.addChild')}
             >
-              <Text color="$primaryLight" fontSize={13} fontWeight="700" fontFamily="$heading" writingDirection={direction}>
-                {t('parent.childSwitcher.addChild')}
+              {/* Dashed-circle "+" icon — 32px matching spec */}
+              <Stack
+                width={32}
+                height={32}
+                borderRadius={16}
+                borderWidth={1.5}
+                alignItems="center"
+                justifyContent="center"
+                style={{ borderStyle: 'dashed', borderColor: 'rgba(165,180,252,0.5)' } as object}
+              >
+                <Text color="$primaryLight" fontSize={18} fontWeight="700" accessibilityElementsHidden>
+                  {'+'}
+                </Text>
+              </Stack>
+              <Text
+                color="$primaryLight"
+                fontSize={13}
+                fontWeight="700"
+                fontFamily="$heading"
+                writingDirection={direction}
+                textAlign={isRtl ? 'right' : 'left'}
+                flex={1}
+              >
+                {t('parent.childSelector.addChild')}
               </Text>
             </Stack>
           </Stack>

@@ -65,13 +65,22 @@ export function applyNativeRtl(
 }
 
 /**
- * Apply the locale's direction on WEB by setting `dir`/`lang` on the document
- * element. No reload required. Safe to call when there is no DOM (no-op).
+ * Apply the locale's language on WEB by setting `lang` on the document element.
+ * No reload required. Safe to call when there is no DOM (no-op).
+ *
+ * NOTE: We deliberately do NOT set `dir` here. React Native Web handles RTL
+ * layout through explicit component-level props (`flexDirection: 'row-reverse'`,
+ * `alignItems: 'flex-end'`, etc.). Setting `dir="rtl"` on the HTML root causes
+ * CSS to flip the flex main-axis for `row` AND for `row-reverse`, resulting in a
+ * double-reversal that undoes every RTL-aware prop in the component tree (the
+ * layout renders as LTR despite the RTL intent). Keeping `dir` off the root lets
+ * component-level RTL props work exactly as they do on native React Native.
+ * Arabic text rendering is handled by `writingDirection="rtl"` and
+ * `textAlign="right"` on individual Text elements.
  */
 export function applyWebDirection(locale: Locale): void {
   if (typeof globalThis === 'undefined') return;
-  const doc = (globalThis as { document?: { documentElement?: { dir: string; lang: string } } }).document;
+  const doc = (globalThis as { document?: { documentElement?: { lang: string } } }).document;
   if (!doc?.documentElement) return;
-  doc.documentElement.dir = directionForLocale(locale);
   doc.documentElement.lang = locale;
 }

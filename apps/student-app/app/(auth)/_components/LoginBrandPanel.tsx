@@ -48,23 +48,16 @@ export function LoginBrandPanel({ direction = 'ltr', appName }: LoginBrandPanelP
 
       {/* Glowing star + tagline */}
       <Stack gap="$5" alignItems={direction === 'rtl' ? 'flex-end' : 'flex-start'}>
-        <Stack
-          width={140}
-          height={140}
-          borderRadius="$pill"
-          backgroundColor="$primaryHover"
-          alignItems="center"
-          justifyContent="center"
-          // Soft glow halo around the star (align-login brand panel).
-          shadowColor="rgba(165,148,249,1)"
-          shadowOffset={{ width: 0, height: 0 }}
-          shadowOpacity={0.7}
-          shadowRadius={44}
+        <Text
+          fontSize={120}
+          accessibilityElementsHidden
+          // Soft glow — drop-shadow on the star emoji (web) / shadow props (native).
+          style={{
+            filter: 'drop-shadow(0 0 32px rgba(165,148,249,0.9)) drop-shadow(0 0 64px rgba(165,148,249,0.5))',
+          } as object}
         >
-          <Text fontSize={96} accessibilityElementsHidden>
-            ⭐
-          </Text>
-        </Stack>
+          ⭐
+        </Text>
         <Text
           color="$fg1"
           fontSize={48}
@@ -90,13 +83,13 @@ export function LoginBrandPanel({ direction = 'ltr', appName }: LoginBrandPanelP
         </Text>
       </Stack>
 
-      {/* Social proof */}
+      {/* Social proof — DOM order [text, 🔥] so that row-reverse in RTL puts text at right (reading start) and fire at left (visual accent end). */}
       <Stack flexDirection={rowDir} alignItems="center" gap="$2">
-        <Text fontSize={18} accessibilityElementsHidden>
-          🔥
-        </Text>
         <Text color="$fg3" fontSize={13} fontFamily="$body" writingDirection={direction}>
           {t('auth.login.brand.socialProof')}
+        </Text>
+        <Text fontSize={18} accessibilityElementsHidden>
+          🔥
         </Text>
       </Stack>
     </>

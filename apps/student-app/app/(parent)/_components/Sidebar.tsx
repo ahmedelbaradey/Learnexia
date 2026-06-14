@@ -23,19 +23,22 @@
  * session and redirects to /(auth)/login. Styled as a nav-item-like row.
  */
 import { useMyChildren } from '@learnexia/api-client';
-import { type Direction } from '@learnexia/shared';
+import { LOCALES, directionForLocale, type Direction, type Locale, useRestartPromptStore } from '@learnexia/shared';
 import { Avatar } from '@learnexia/ui';
 import { Stack, Text } from '@tamagui/core';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Image } from 'react-native';
+import { Image, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { assets } from '../../../src/assets';
 import { useLocale } from '../../../src/hooks/useLocale';
+import { useLocaleStore } from '../../../src/providers/localeStore';
 import { useSignOutAction } from '../../../src/hooks/useSignOutAction';
 import { useActiveChildStore } from '../../../src/providers/activeChildStore';
+import { useThemeStore } from '../../../src/providers/themeStore';
 import { formatNumber } from './ChildSwitcher';
+import { getChildStatsStub } from './parentDashboardStubs';
 
 /** Fixed parent nav destinations (enum-style const, never raw literals). */
 export const NAV_ITEM = {
@@ -106,6 +109,23 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
   // Logout (calls sign-out + redirects to /(auth)/login).
   const { signOut, isPending: isSigningOut } = useSignOutAction();
 
+  // Locale + theme controls (migrated from shell header into sidebar).
+  const setLocale = useLocaleStore((s) => s.setLocale);
+  const { showRestartPrompt } = useRestartPromptStore();
+  const theme = useThemeStore((s) => s.theme);
+  const setTheme = useThemeStore((s) => s.setTheme);
+
+  function handleLocaleChange(nextLocale: Locale) {
+    if (nextLocale === locale) return;
+    const nextDirection = directionForLocale(nextLocale);
+    const currentDirection = directionForLocale(locale);
+    if (Platform.OS !== 'web' && nextDirection !== currentDirection) {
+      showRestartPrompt(nextLocale);
+    } else {
+      setLocale(nextLocale);
+    }
+  }
+
   return (
     <Stack
       flexDirection="column"
@@ -137,11 +157,11 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
         <Stack position="relative">
           <Stack
             testID="sidebar-child-selector"
-            borderRadius="$cardInner"
+            borderRadius={16}
             backgroundColor="$card"
             borderWidth={1}
-            borderColor="$border"
-            padding={10}
+            borderColor={dropdownOpen ? 'rgba(99,102,241,0.6)' : '$border'}
+            padding={12}
             cursor="pointer"
             pressStyle={{ scale: 0.95 }}
             onPress={() => setDropdownOpen((v) => !v)}
@@ -177,7 +197,13 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
                   })}
                 </Text>
               </Stack>
-              <Text color="$fg3" fontSize={16} accessibilityElementsHidden>
+              {/* Chevron — rotates 90° when open to point downward */}
+              <Text
+                color="$fg3"
+                fontSize={13}
+                accessibilityElementsHidden
+                style={{ transform: [{ rotate: dropdownOpen ? (isRtl ? '-90deg' : '90deg') : '0deg' }] } as object}
+              >
                 {isRtl ? '‹' : '›'}
               </Text>
             </Stack>
@@ -200,19 +226,36 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
               <Stack
                 testID="sidebar-child-dropdown"
                 position="absolute"
-                top={50}
-                // Align dropdown to sidebar start: left in LTR, right in RTL
-                {...(isRtl ? { right: 0 } : { left: 0 })}
+                top={74}
+                left={0}
+                right={0}
                 zIndex={100}
-                minWidth={220}
                 backgroundColor="$card"
-                borderRadius="$card"
+                borderRadius={16}
                 borderWidth={1}
-                borderColor="$border"
-                style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.25)' }}
+                borderColor="rgba(255,255,255,0.1)"
+                style={{ boxShadow: '0 20px 50px rgba(0,0,0,0.55)' }}
                 overflow="hidden"
                 flexDirection="column"
+                padding={8}
+                gap={2}
               >
+                {/* "SWITCH CHILD" section header */}
+                <Stack paddingHorizontal={14} paddingTop={4} paddingBottom={6}>
+                  <Text
+                    color="$fg3"
+                    fontSize={10}
+                    fontWeight="800"
+                    fontFamily="$heading"
+                    textTransform="uppercase"
+                    letterSpacing={1.2}
+                    writingDirection={direction}
+                    textAlign={isRtl ? 'right' : 'left'}
+                  >
+                    {t('parent.childSelector.switchChild')}
+                  </Text>
+                </Stack>
+
                 {children.length === 0 ? (
                   <Stack padding={14}>
                     <Text color="$fg3" fontSize={13} fontFamily="$body" writingDirection={direction}>
@@ -223,14 +266,16 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
                   children.map((child) => {
                     const childId = String(child.id);
                     const isActive = childId === (activeChildId ?? String(children[0]?.id));
+                    const stats = getChildStatsStub(childId);
                     return (
                       <Stack
                         key={childId}
                         flexDirection={rowDir}
                         alignItems="center"
-                        gap="$3"
-                        paddingVertical={10}
-                        paddingHorizontal={12}
+                        gap={10}
+                        paddingVertical={8}
+                        paddingHorizontal={10}
+                        borderRadius={12}
                         backgroundColor={isActive ? '$primarySoft' : 'transparent'}
                         hoverStyle={{ backgroundColor: isActive ? '$primarySoft' : '$cardSoft' }}
                         cursor="pointer"
@@ -253,9 +298,21 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
                           >
                             {child.fullName ?? ''}
                           </Text>
+                          <Text
+                            color="$fg3"
+                            fontSize={11}
+                            fontFamily="$body"
+                            writingDirection={direction}
+                            textAlign={isRtl ? 'right' : 'left'}
+                          >
+                            {t('parent.childSelector.meta', {
+                              grade: formatNumber(stats.grade, locale),
+                              level: formatNumber(stats.level, locale),
+                            })}
+                          </Text>
                         </Stack>
                         {isActive ? (
-                          <Text color="$primary" fontSize={14} accessibilityElementsHidden>
+                          <Text color="$primaryLight" fontSize={14} accessibilityElementsHidden>
                             {'✓'}
                           </Text>
                         ) : null}
@@ -265,14 +322,16 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
                 )}
 
                 {/* Divider */}
-                <Stack height={1} backgroundColor="$borderSubtle" marginHorizontal={8} />
+                <Stack height={1} backgroundColor="$borderSubtle" marginHorizontal={10} marginVertical={4} />
 
-                {/* + Add child footer */}
+                {/* Add a child footer — dashed circle "+" + label */}
                 <Stack
                   flexDirection={rowDir}
                   alignItems="center"
-                  gap="$2"
-                  padding={12}
+                  gap={10}
+                  paddingVertical={8}
+                  paddingHorizontal={10}
+                  borderRadius={12}
                   cursor="pointer"
                   hoverStyle={{ backgroundColor: '$cardSoft' }}
                   pressStyle={{ scale: 0.97 }}
@@ -282,8 +341,22 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
                   }}
                   accessibilityRole="button"
                   accessible
-                  accessibilityLabel={t('parent.childSwitcher.addChild')}
+                  accessibilityLabel={t('parent.childSelector.addChild')}
                 >
+                  {/* Dashed-circle "+" icon — 32px matching spec */}
+                  <Stack
+                    width={32}
+                    height={32}
+                    borderRadius={16}
+                    borderWidth={1.5}
+                    alignItems="center"
+                    justifyContent="center"
+                    style={{ borderStyle: 'dashed', borderColor: 'rgba(165,180,252,0.5)' } as object}
+                  >
+                    <Text color="$primaryLight" fontSize={18} fontWeight="700" accessibilityElementsHidden>
+                      {'+'}
+                    </Text>
+                  </Stack>
                   <Text
                     color="$primaryLight"
                     fontSize={13}
@@ -291,8 +364,9 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
                     fontFamily="$heading"
                     writingDirection={direction}
                     textAlign={isRtl ? 'right' : 'left'}
+                    flex={1}
                   >
-                    {t('parent.childSwitcher.addChild')}
+                    {t('parent.childSelector.addChild')}
                   </Text>
                 </Stack>
               </Stack>
@@ -350,44 +424,137 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
         })}
       </Stack>
 
-      {/* Weekly-XP summary widget — pinned to the bottom (capture). */}
-      <SidebarXpWidget direction={direction} isRtl={isRtl} />
-
-      {/* Logout row — below XP widget; calls sign-out + redirects to login. */}
-      <Stack
-        flexDirection={rowDir}
-        alignItems="center"
-        gap="$3"
-        minHeight={40}
-        paddingVertical={10}
-        paddingHorizontal={12}
-        hitSlop={{ top: 4, bottom: 4 }}
-        borderRadius="$nav"
-        backgroundColor="transparent"
-        hoverStyle={{ backgroundColor: '$cardSoft' }}
-        cursor={isSigningOut ? 'default' : 'pointer'}
-        pressStyle={{ scale: 0.95 }}
-        onPress={isSigningOut ? undefined : signOut}
-        accessibilityRole="button"
-        accessible
-        accessibilityLabel={t('parent.nav.logout')}
-        aria-label={t('parent.nav.logout')}
-        opacity={isSigningOut ? 0.6 : 1}
-      >
-        <Text fontSize={16} accessibilityElementsHidden>
-          {'🚪'}
-        </Text>
-        <Text
-          flex={1}
-          color="$fg3"
-          fontSize={14}
-          fontWeight="600"
-          fontFamily="$heading"
-          writingDirection={direction}
-          textAlign={isRtl ? 'right' : 'left'}
+      {/* Bottom controls — language pill + theme pill + XP widget + logout */}
+      <Stack marginTop="auto" flexDirection="column" gap={8}>
+        {/* Language segmented pill */}
+        <Stack
+          flexDirection={rowDir}
+          borderRadius={12}
+          padding={4}
+          gap={4}
+          style={{ backgroundColor: '#0B1220', border: '1px solid rgba(255,255,255,0.06)' } as object}
         >
-          {t('parent.nav.logout')}
-        </Text>
+          {(LOCALES as readonly Locale[]).map((loc) => {
+            const isActive = loc === locale;
+            const flag = loc === 'ar' ? '🇪🇬' : '🇺🇸';
+            const label = loc === 'ar' ? 'AR' : 'EN';
+            return (
+              <Stack
+                key={loc}
+                flex={1}
+                flexDirection="row"
+                alignItems="center"
+                justifyContent="center"
+                gap={6}
+                height={34}
+                borderRadius={9}
+                backgroundColor={isActive ? '#334155' : 'transparent'}
+                style={isActive ? { boxShadow: '0 2px 6px rgba(0,0,0,0.3)' } as object : undefined}
+                cursor="pointer"
+                pressStyle={{ scale: 0.97 }}
+                onPress={() => handleLocaleChange(loc)}
+                accessibilityRole="button"
+                accessible
+                accessibilityState={{ selected: isActive }}
+                accessibilityLabel={t(loc === 'ar' ? 'common.prefs.switchToArabic' : 'common.prefs.switchToEnglish')}
+              >
+                <Text fontSize={14} accessibilityElementsHidden>{flag}</Text>
+                <Text
+                  color={isActive ? '$fg1' : '$fg3'}
+                  fontSize={13}
+                  fontWeight={isActive ? '700' : '600'}
+                  fontFamily="$heading"
+                >
+                  {label}
+                </Text>
+              </Stack>
+            );
+          })}
+        </Stack>
+
+        {/* Theme segmented pill */}
+        <Stack
+          flexDirection={rowDir}
+          borderRadius={12}
+          padding={4}
+          gap={4}
+          style={{ backgroundColor: '#0B1220', border: '1px solid rgba(255,255,255,0.06)' } as object}
+        >
+          {(['dark', 'light'] as const).map((th) => {
+            const isActive = th === theme;
+            const icon = th === 'dark' ? '🌙' : '☀️';
+            const label = th === 'dark' ? t('common.prefs.themeDark') : t('common.prefs.themeLight');
+            return (
+              <Stack
+                key={th}
+                flex={1}
+                flexDirection="row"
+                alignItems="center"
+                justifyContent="center"
+                gap={6}
+                height={34}
+                borderRadius={9}
+                backgroundColor={isActive ? '#334155' : 'transparent'}
+                style={isActive ? { boxShadow: '0 2px 6px rgba(0,0,0,0.3)' } as object : undefined}
+                cursor="pointer"
+                pressStyle={{ scale: 0.97 }}
+                onPress={() => setTheme(th)}
+                accessibilityRole="button"
+                accessible
+                accessibilityState={{ selected: isActive }}
+                accessibilityLabel={label}
+              >
+                <Text fontSize={14} accessibilityElementsHidden>{icon}</Text>
+                <Text
+                  color={isActive ? '$fg1' : '$fg3'}
+                  fontSize={13}
+                  fontWeight={isActive ? '700' : '600'}
+                  fontFamily="$heading"
+                >
+                  {label}
+                </Text>
+              </Stack>
+            );
+          })}
+        </Stack>
+
+        {/* Weekly-XP summary widget */}
+        <SidebarXpWidget direction={direction} isRtl={isRtl} />
+
+        {/* Logout — danger-outlined button */}
+        <Stack
+          flexDirection={rowDir}
+          alignItems="center"
+          gap="$3"
+          paddingVertical={10}
+          paddingHorizontal={12}
+          borderRadius={12}
+          borderWidth={1}
+          borderColor="rgba(239,68,68,0.25)"
+          backgroundColor="transparent"
+          hoverStyle={{ backgroundColor: 'rgba(239,68,68,0.06)' }}
+          cursor={isSigningOut ? 'default' : 'pointer'}
+          pressStyle={{ scale: 0.95 }}
+          onPress={isSigningOut ? undefined : signOut}
+          accessibilityRole="button"
+          accessible
+          accessibilityLabel={t('parent.nav.logout')}
+          aria-label={t('parent.nav.logout')}
+          opacity={isSigningOut ? 0.6 : 1}
+        >
+          <Text fontSize={16} color="#F87171" accessibilityElementsHidden>{'↩'}</Text>
+          <Text
+            flex={1}
+            color="#F87171"
+            fontSize={13}
+            fontWeight="700"
+            fontFamily="$heading"
+            writingDirection={direction}
+            textAlign={isRtl ? 'right' : 'left'}
+          >
+            {t('parent.nav.logout')}
+          </Text>
+        </Stack>
       </Stack>
     </Stack>
   );
@@ -410,7 +577,6 @@ function SidebarXpWidget({ direction, isRtl }: { direction: Direction; isRtl: bo
 
   return (
     <Stack
-      marginTop="auto"
       borderRadius="$button"
       backgroundColor="$card"
       borderWidth={1}

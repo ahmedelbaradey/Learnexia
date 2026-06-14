@@ -248,7 +248,7 @@ function OverviewBody({ childId, childName, rowDir, direction, locale }: Overvie
             key={k.label}
             flex={1}
             minWidth={200}
-            borderRadius="$card"
+            borderRadius={20}
             backgroundColor="$card"
             borderWidth={1}
             borderColor="$border"

@@ -39,6 +39,7 @@ export default function LoginScreen() {
   return (
     <FormScaffold
       variant="split"
+      brandSide={direction === 'rtl' ? 'end' : 'start'}
       brandPanel={<LoginBrandPanel direction={direction} appName={t('common.appName')} />}
     >
       <Stack gap="$6">

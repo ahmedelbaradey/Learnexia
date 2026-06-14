@@ -87,7 +87,7 @@ export function FocusAreasCard({ childId, childName, direction, rowDir, locale }
 
   return (
     <Stack
-      borderRadius="$card"
+      borderRadius={20}
       backgroundColor="$card"
       borderWidth={1}
       borderColor="$border"
