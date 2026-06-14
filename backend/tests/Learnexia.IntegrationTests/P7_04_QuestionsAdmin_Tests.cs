@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
+using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Modules.Learning.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -515,6 +516,11 @@ public sealed class P7_04_QuestionsAdmin_Tests : IAsyncLifetime
         questions.Should().HaveCount(2);
         TryProp(questions[0], "id", out var idProp).Should().BeTrue();
         var qIdToDelete = idProp.GetInt32();
+
+        // Publish questions so they pass the StartAttempt LifecycleState==Published guard.
+        // Questions created via the admin API default to Draft; publish before deleting so the
+        // remaining question is visible in the student StartAttempt response.
+        await PublishAllQuestionsForLessonAsync(lessonId);
 
         // Soft-delete the first question.
         await SendAsync(HttpMethod.Delete, $"/api/Learning/Questions/{qIdToDelete}", bearer: _adminToken);
@@ -1112,6 +1118,11 @@ public sealed class P7_04_QuestionsAdmin_Tests : IAsyncLifetime
         TryProp(questions[0], "id", out var idProp).Should().BeTrue();
         var qIdToDeactivate = idProp.GetInt32();
 
+        // Publish questions so they pass the StartAttempt LifecycleState==Published guard.
+        // Questions created via the admin API default to Draft; publish before deactivating so the
+        // remaining active question is visible in the student StartAttempt response.
+        await PublishAllQuestionsForLessonAsync(lessonId);
+
         // Deactivate the first question.
         var (setResp, setRoot, setBody) = await SendAsync(HttpMethod.Patch,
             $"/api/Learning/Questions/{qIdToDeactivate}/SetActive",
@@ -1183,6 +1194,10 @@ public sealed class P7_04_QuestionsAdmin_Tests : IAsyncLifetime
         var questions = await GetAdminQuestionsAsync(lessonId);
         TryProp(questions[0], "id", out var idProp).Should().BeTrue();
         var qId = idProp.GetInt32();
+
+        // Publish question so it passes the StartAttempt LifecycleState==Published guard.
+        // Questions created via the admin API default to Draft.
+        await PublishAllQuestionsForLessonAsync(lessonId);
 
         // Deactivate then reactivate.
         await SendAsync(HttpMethod.Patch, $"/api/Learning/Questions/{qId}/SetActive",
@@ -1469,7 +1484,9 @@ public sealed class P7_04_QuestionsAdmin_Tests : IAsyncLifetime
         return await SignInGetTokenAsync(childEmail, ValidChildPassword);
     }
 
-    /// <summary>Creates a grade → subject → unit → lesson stack. Returns the lesson ID.</summary>
+    /// <summary>Creates a grade → subject → unit → lesson stack. Returns the lesson ID.
+    /// The lesson is published (LifecycleState=Published, IsActive=true) via the DB layer
+    /// so that StartAttempt-dependent tests pass the lifecycle guard.</summary>
     private async Task<int> CreateLessonGetIdAsync()
     {
         int unitId = await CreateUnitWithPrereqsAsync();
@@ -1482,7 +1499,18 @@ public sealed class P7_04_QuestionsAdmin_Tests : IAsyncLifetime
         lessonResp.StatusCode.Should().Be(HttpStatusCode.OK,
             "lesson create must succeed; body: {0}", lessonBody);
 
-        return await FindLessonIdByNameAsync(unitId, lessonName);
+        int lessonId = await FindLessonIdByNameAsync(unitId, lessonName);
+
+        // Publish the lesson so StartAttempt passes the LifecycleState == Published guard.
+        // Mirrors P7_04_QuestionAuthoring_Tests.CreateLessonAsync() which sets these fields directly.
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<LearningDbContext>();
+        var lesson = await db.Lessons.FindAsync(lessonId);
+        lesson!.LifecycleState = LifecycleState.Published;
+        lesson.IsActive = true;
+        await db.SaveChangesAsync();
+
+        return lessonId;
     }
 
     /// <summary>Creates a grade → subject → unit stack and returns the unitId.</summary>
@@ -1662,4 +1690,22 @@ public sealed class P7_04_QuestionsAdmin_Tests : IAsyncLifetime
         correctAnswer = "Berlin",
         difficulty    = DiffEasy
     };
+
+    /// <summary>
+    /// Publishes all questions for a lesson (LifecycleState=Published) via the DB layer so they
+    /// pass the StartAttemptCommandHandler's LifecycleState==Published guard.
+    /// Questions created via the admin API default to LifecycleState.Draft.
+    /// Mirrors the pattern used for lesson publication in CreateLessonGetIdAsync.
+    /// </summary>
+    private async Task PublishAllQuestionsForLessonAsync(int lessonId)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<LearningDbContext>();
+        var questions = await db.QuizQuestions
+            .Where(q => q.LessonId == lessonId)
+            .ToListAsync();
+        foreach (var q in questions)
+            q.LifecycleState = LifecycleState.Published;
+        await db.SaveChangesAsync();
+    }
 }

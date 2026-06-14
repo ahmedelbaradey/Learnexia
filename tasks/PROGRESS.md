@@ -12,6 +12,7 @@
 - `â€”` â€” no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
+- **P7-04 (Backend + Tests)** — CorrectAnswer jsonb encode/decode bugfix (MCQ/FillInBlank create 500 + edit 422 fixed) — committed
 - **Wave 4:** P3-05-Backend (Hints + WhyWrong + Simplify SSE endpoints — IDOR-scoped, no-reveal guard, usage instrumentation, MVP slice) — committed
 - **Wave 4:** P3-06-Backend (SimilarExample — AI tutor SSE endpoint, intent #4, no preamble, refuse-and-redirect, usage instrumentation, MVP slice) — committed
 - **P3-04 (Backend)** — Explain a concept on demand (ExplainConceptCommand + validator + handler orchestrates ILearningContextProvider→IPromptBuilder→ISafetyLayer with refuse-and-redirect on empty context; SSE ExplainController with pinned wire contract event:message/redirect/error/done; ILessonContextContract cross-module seam; RedirectResponseBuilder ar/en; Help* instrumentation events; in-process rate limiter; folded into Ai module; buffer→safety→emit, never raw tokens; cache economy deferred P3-01-BE-12/13/14; live grounding dormant EmptyLearningContextProvider default; 208 unit + 13 SSE integration green; mandatory security gate PASS, error-leak + D-1 fixes landed) — committed

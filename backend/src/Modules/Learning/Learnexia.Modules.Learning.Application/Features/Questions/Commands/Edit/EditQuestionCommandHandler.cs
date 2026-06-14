@@ -1,5 +1,7 @@
+using System.Text.Json;
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Domain.Entities;
+using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Modules.Learning.Domain.Events;
 using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
@@ -55,10 +57,20 @@ public class EditQuestionCommandHandler
                 return NotFound<string>(_localizer[SharedResourcesKey.QuizQuestionNotFound]);
 
             // Only update editable fields — do NOT touch LessonId, SkillId, SequenceOrder, IsActive, IsDeleted.
+            // P7-04 bugfix: CorrectAnswer is stored as jsonb.
+            // Scalar types (MCQ, TrueFalse, FillInBlank) arrive as raw strings (e.g. "A", "true")
+            // which are not valid JSON → Postgres rejects with 22P02.
+            // Mirror the seeder exactly: JsonSerializer.Serialize(scalar) wraps in JSON quotes
+            // so "A" → "\"A\"", matching the shape AnswerComparator.NormalizeJsonScalar decodes.
+            // Matching arrives as an already-valid JSON object string — store as-is.
+            var correctAnswerJson = request.QuestionType == QuestionType.Matching
+                ? request.CorrectAnswer
+                : JsonSerializer.Serialize(request.CorrectAnswer);
+
             question.QuestionType  = request.QuestionType;
             question.QuestionText  = request.QuestionText;
             question.Options       = request.Options;
-            question.CorrectAnswer = request.CorrectAnswer;
+            question.CorrectAnswer = correctAnswerJson;
             question.Difficulty    = request.Difficulty;
 
             await _repository.Learning.UpdateAsync(question);
