@@ -12,6 +12,7 @@
 - `â€”` â€” no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
+- **P7-07 (Backend + Tests)** — Account-delete cascade 500 + post-commit side-effect ordering + refresh guard bugfix (nested txn removed; Identity-scoped post-commit domain-event buffer for session revocation + event publishing on commit; RefreshToken rejects suspended/deleted before minting). P7-07 integration 22/22, P1-02 refresh 26/26, Identity unit 10/10. Reviewer PASS + mandatory security gate PASS. — committed
 - **P7-04 (Backend + Tests)** — CorrectAnswer jsonb encode/decode bugfix (MCQ/FillInBlank create 500 + edit 422 fixed) — committed
 - **Wave 4:** P3-05-Backend (Hints + WhyWrong + Simplify SSE endpoints — IDOR-scoped, no-reveal guard, usage instrumentation, MVP slice) — committed
 - **Wave 4:** P3-06-Backend (SimilarExample — AI tutor SSE endpoint, intent #4, no preamble, refuse-and-redirect, usage instrumentation, MVP slice) — committed

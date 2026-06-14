@@ -470,7 +470,31 @@ Built the **backend** for **P7-06/07/08** in the **`Identity` module** (commit `
 
 **Load-bearing:** sign-in rejects `AccountStatus ∈ {Suspended, Deleted}` (resilient to `IsActive` drift) — keep both in sync on any future user-write path. `AdminActionPerformedEvent` Details + the `Account*` integration events carry **NO names/emails/free-text** (ids + enum states only) — preserve this when P7-12 builds the durable audit store. Migration `P7_07_AddAccountStatus` NOT applied — run `dotnet ef database update`.
 
-**Tracked follow-ups (NOT done):** residual access-token window on suspend/delete (no `OnTokenValidated` hook — the G2 work, deferred); `AdminActionPerformedEvent` pre-commit publish (wave-wide, fix before P7-12 consumer).
+**P7-07 Security fixes (branch `fix/P7-07-account-delete-cascade`, uncommitted — committer picks up):**
+
+Three independent fixes landed on this branch:
+
+1. **Transaction-nesting fix (original HIGH #1):** `DeleteAccountCommandHandler` no longer opens an inner `BeginTransactionAsync`. The `UnitOfWorkBehavior` already opens an enclosing EF Core transaction before invoking the handler; opening a second one on the same Npgsql connection caused a nested-transaction conflict (HTTP 500 on delete). Handlers now stage mutations only (matching the deferred-commit pattern); the UoW commits atomically. Cascade failures `throw` so the UoW's enclosing transaction is rolled back.
+
+2. **Refresh-token account-status guard (Fix #2):** `RefreshTokenCommandHandler` now checks `user.IsActive == false || user.AccountStatus != AccountStatus.Active` immediately after the user lookup, before issuing new tokens. Previously a suspended/deleted account with a valid Redis refresh token could silently obtain new access tokens. Guard returns `Unauthorized(LoginAccountDeactivated)`.
+
+3. **Post-commit domain-events buffer (approved fix, Security High #1 + Low #4):** Before this fix, Redis session revocation + `AccountDeletedIntegrationEvent` + `AdminActionPerformedEvent` ran inside the handler body, BEFORE the UoW committed. A commit failure would have revoked a live account's sessions, fired delete consumers, and written a phantom audit record. Fix: `IIdentityDomainEventsBuffer` (Scoped) buffers an `AccountDeletedDomainEvent` in the handler; `UnitOfWorkBehavior` drains it **after** `CommitAsync` only (success path). On rollback the scoped buffer is GC'd — no side-effects fire. The `AccountDeletedDomainEventHandler` (`INotificationHandler<AccountDeletedDomainEvent>`, in Identity.Infrastructure) performs: Redis revocation for parent + all children, `AccountDeletedIntegrationEvent`, `AdminActionPerformedEvent` — all best-effort/fail-soft.
+
+**Files changed:**
+- `Identity.Application/Events/AccountDeletedDomainEvent.cs` — new; the domain event record.
+- `Identity.Application/Abstractions/IIdentityDomainEventsBuffer.cs` — new; buffer interface (Add + Drain).
+- `Identity.Infrastructure/Events/IdentityDomainEventsBuffer.cs` — new; scoped in-memory implementation.
+- `Identity.Infrastructure/Events/AccountDeletedDomainEventHandler.cs` — new; `INotificationHandler<AccountDeletedDomainEvent>`.
+- `Identity.Infrastructure/Behaviors/UnitOfWorkBehavior.cs` — adds buffer injection + post-commit drain (per-event isolated try/catch, never rethrows).
+- `Identity.Application/Features/Users/Commands/DeleteAccount/DeleteAccountCommandHandler.cs` — removes inline Redis/Publish calls; adds `_eventsBuffer.Add(new AccountDeletedDomainEvent(...))`.
+- `Identity.Infrastructure/DependencyInjection.cs` — registers `IIdentityDomainEventsBuffer` as Scoped.
+- `Host/Extensions/MediatRExtensions.cs` — adds `Identity.Infrastructure.AssemblyReference` scan so `AccountDeletedDomainEventHandler` is discovered by MediatR (mirrors Learning.Infrastructure + Curriculum.Infrastructure pattern).
+- `tests/Modules.Identity.UnitTests/DeleteAccountDomainEventBufferTests.cs` — 5 new unit tests (happy-path buffer enqueue, confirm=false guard, self-protection guard, already-deleted guard, cascade child-ids).
+- `tests/Modules.Identity.UnitTests/Modules.Identity.UnitTests.csproj` — adds Shared.Contracts reference for test project.
+
+**Build: 0 errors. Unit tests: 10/10 pass (5 new + 5 existing). No migration required.**
+
+**Tracked follow-ups (NOT done):** residual access-token window on suspend/delete (no `OnTokenValidated` hook — the G2 work, deferred); `AdminActionPerformedEvent` pre-commit publish for P7-01..05 curriculum handlers (wave-wide, fix before P7-12 consumer — the delete handler is now correct).
 
 ## Phase 7 — Curriculum wave (backend) — added 2026-06-08 (`feat/phase-7-backend`, wave PR #106)
 

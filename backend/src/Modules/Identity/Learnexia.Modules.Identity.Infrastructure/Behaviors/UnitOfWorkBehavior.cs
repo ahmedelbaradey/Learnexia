@@ -1,3 +1,4 @@
+using Learnexia.Modules.Identity.Application.Abstractions;
 using Learnexia.Modules.Identity.Infrastructure.Persistence;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.DomainEvents;
@@ -19,9 +20,16 @@ namespace Learnexia.Modules.Identity.Infrastructure.Behaviors;
 ///   4. commits,
 ///   5. ONLY THEN collects <see cref="IDomainEvent"/>s from tracked <see cref="AggregateRoot"/>s and
 ///      dispatches them via <see cref="IDomainEventDispatcher"/>, then clears them.
+///   6. ONLY THEN drains the <see cref="IIdentityDomainEventsBuffer"/> and dispatches each buffered
+///      event via the same <see cref="IDomainEventDispatcher"/>. This seam handles domain events raised
+///      from <c>User : IdentityUser&lt;int&gt;</c> which cannot extend <c>AggregateRoot</c>
+///      (P7-07 Security High #1 fix).
 ///
 /// Domain events are dispatched strictly AFTER a successful commit and NEVER on rollback — so consumers
 /// never react to uncommitted state (ADR 0001 §4, ADR 0002 §2).
+///
+/// Post-commit dispatch failures (steps 5 and 6) are caught + logged per event. They must NOT rethrow:
+/// the primary mutation is already committed and rethrowing would 500 a successful delete/suspend.
 ///
 /// Placement note: ADR 0001's skeleton injects the concrete <c>&lt;Module&gt;DbContext</c>, which lives in
 /// Infrastructure; the Application layer cannot reference it (Application → Domain only). So this concrete
@@ -34,15 +42,21 @@ public sealed class UnitOfWorkBehavior<TRequest, TResponse> : IPipelineBehavior<
     private readonly IdentityModuleDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IDomainEventDispatcher _dispatcher;
+    private readonly IIdentityDomainEventsBuffer _eventsBuffer;
+    private readonly ILoggerManager _logger;
 
     public UnitOfWorkBehavior(
         IdentityModuleDbContext db,
         ICurrentUserService currentUser,
-        IDomainEventDispatcher dispatcher)
+        IDomainEventDispatcher dispatcher,
+        IIdentityDomainEventsBuffer eventsBuffer,
+        ILoggerManager logger)
     {
         _db = db;
         _currentUser = currentUser;
         _dispatcher = dispatcher;
+        _eventsBuffer = eventsBuffer;
+        _logger = logger;
     }
 
     public async Task<TResponse> Handle(
@@ -66,7 +80,12 @@ public sealed class UnitOfWorkBehavior<TRequest, TResponse> : IPipelineBehavior<
         await _db.SaveChangesAsync(_currentUser.UserId.GetValueOrDefault());
         await transaction.CommitAsync(cancellationToken);             // commit boundary
 
-        // After a successful commit ONLY: collect, dispatch, then clear domain events.
+        // ── SUCCESS PATH ONLY ─────────────────────────────────────────────────────────────────────────
+        // Everything below runs only after CommitAsync returns without throwing.
+        // An exception in next() or CommitAsync bypasses this block entirely; the await-using disposes
+        // the transaction (rollback) and the scoped IIdentityDomainEventsBuffer is GC'd — no side-effects.
+
+        // Step 5: AggregateRoot domain events (existing path — for any future AggregateRoot entities).
         var aggregates = _db.ChangeTracker
             .Entries<AggregateRoot>()
             .Where(e => e.Entity.DomainEvents.Count > 0)
@@ -80,7 +99,40 @@ public sealed class UnitOfWorkBehavior<TRequest, TResponse> : IPipelineBehavior<
             foreach (var aggregate in aggregates)
                 aggregate.ClearDomainEvents();
 
-            await _dispatcher.DispatchAsync(domainEvents, cancellationToken);
+            try
+            {
+                await _dispatcher.DispatchAsync(domainEvents, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                // Post-commit dispatch failure must NOT rethrow (primary mutation committed).
+                _logger.LogError(ex,
+                    "UnitOfWorkBehavior: post-commit AggregateRoot domain-event dispatch failed — " +
+                    "primary mutation is committed; side-effects may be missed.");
+            }
+        }
+
+        // Step 6: Identity-scoped buffer drain (P7-07 fix — for User : IdentityUser<int> events).
+        // Drain() returns an empty list if no events were enqueued (zero-cost for all other commands).
+        var bufferedEvents = _eventsBuffer.Drain();
+        if (bufferedEvents.Count > 0)
+        {
+            foreach (var bufferedEvent in bufferedEvents)
+            {
+                try
+                {
+                    await _dispatcher.DispatchAsync(new[] { bufferedEvent }, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    // Per-event isolation: one failing event must not block the others.
+                    // Post-commit failure must NOT rethrow (primary mutation committed).
+                    _logger.LogError(ex,
+                        $"UnitOfWorkBehavior: post-commit Identity buffer dispatch failed for event " +
+                        $"{bufferedEvent.GetType().Name} eventId={bufferedEvent.EventId} — " +
+                        $"primary mutation is committed; side-effects may be missed.");
+                }
+            }
         }
 
         return response;
