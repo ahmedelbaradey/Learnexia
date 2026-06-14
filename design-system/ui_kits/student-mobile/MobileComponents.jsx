@@ -267,7 +267,59 @@ function TutorBubble({ children, chips = [], onChip }) {
   );
 }
 
+function TodaysMission({ reward = 150, tasks, onStart }) {
+  const items = tasks || [
+    { label: 'Answer 3 questions', done: true },
+    { label: 'Complete one quiz', done: false },
+    { label: 'Review the Fractions lesson', done: false },
+  ];
+  return (
+    <div style={{
+      background: '#15161D', borderRadius: 24, padding: 18,
+      border: '1px solid rgba(255,255,255,0.06)',
+      display: 'flex', flexDirection: 'column', gap: 14, ...lxFont,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 22 }}>🎯</span>
+            <span style={{ fontWeight: 900, fontSize: 20, color: '#F8FAFC' }}>Today's Mission</span>
+          </div>
+          <div style={{ fontSize: 13, color: '#94A3B8', marginTop: 4 }}>Complete all to earn rewards</div>
+        </div>
+        <div style={{
+          padding: '6px 14px', borderRadius: 9999, background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)', fontWeight: 800, fontSize: 14, color: '#FACC15',
+          whiteSpace: 'nowrap',
+        }}>+{reward} XP</div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {items.map((t, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 16,
+            background: t.done ? 'rgba(34,197,94,0.08)' : '#0B0C12',
+            border: t.done ? '1px solid rgba(34,197,94,0.2)' : '1px solid rgba(255,255,255,0.04)',
+          }}>
+            {t.done ? (
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#22C55E', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900 }}>✓</div>
+            ) : (
+              <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.18)' }}/>
+            )}
+            <div style={{ flex: 1, fontWeight: 600, fontSize: 15, color: t.done ? '#F8FAFC' : '#CBD5E1' }}>{t.label}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: t.done ? '#22C55E' : 'rgba(255,255,255,0.22)' }}>{t.done ? 'Done' : '○'}</div>
+          </div>
+        ))}
+      </div>
+      <button onClick={onStart} style={{
+        height: 52, borderRadius: 16, border: 'none', cursor: 'pointer',
+        background: '#22C55E', color: '#06210F', fontFamily: 'inherit', fontWeight: 800, fontSize: 16,
+        boxShadow: '0 6px 16px rgba(34,197,94,0.35)',
+      }}>▶ Start mission</button>
+    </div>
+  );
+}
+
 Object.assign(window, {
-  HudBar, Pill, XPBar, PrimaryButton, LessonCard, MissionRow,
+  HudBar, Pill, XPBar, PrimaryButton, LessonCard, MissionRow, TodaysMission,
   AnswerButton, TabBar, MascotAvatar, TutorBubble,
 });

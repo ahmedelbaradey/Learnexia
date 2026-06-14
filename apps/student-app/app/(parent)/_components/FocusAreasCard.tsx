@@ -209,10 +209,12 @@ export function FocusAreasCard({ childId, childName, direction, rowDir, locale }
                 </Text>
               </Stack>
 
-              {/* Confidence bar — always LTR (M-22): fill grows left→right in both locales.
-                  The outer wrapper forces direction:ltr so the fill Stack starts from left
-                  regardless of document direction. Track bg = $card + hairline (B-13). */}
+              {/* Confidence bar — fill grows from the inline-start: LEFT in LTR,
+                  RIGHT in RTL (Arabic progresses right-to-left). The explicit `dir`
+                  pins the track direction so the fill anchors to the correct edge.
+                  Track bg = $card + hairline (B-13). */}
               <Stack
+                dir={direction === 'rtl' ? 'rtl' : 'ltr'}
                 width={120}
                 height={8}
                 borderRadius={9999}

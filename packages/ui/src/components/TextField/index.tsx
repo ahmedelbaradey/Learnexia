@@ -122,8 +122,11 @@ export function TextField({
   // Email/phone/url values stay Latin + LTR even in an RTL form (SKILL.md).
   // Auto-force when keyboardType or autoComplete signals an email/phone field.
   const shouldForceLtr = forceValueLtr || forceLtr || isLtrField(keyboardType, autoComplete);
+  // Email/phone keep an LTR *writing direction* so "user@host.com" renders in the
+  // correct order — but the text still aligns to the form's start edge (RIGHT in
+  // RTL), so an Arabic email field reads from the right like every other field.
   const valueDir: Direction = shouldForceLtr ? 'ltr' : dir;
-  const valueAlign = shouldForceLtr ? 'left' : dir === 'rtl' ? 'right' : 'left';
+  const valueAlign = dir === 'rtl' ? 'right' : 'left';
 
   // Border / shadow per state (Design Spec §2.1 States table).
   const borderColor = hasError

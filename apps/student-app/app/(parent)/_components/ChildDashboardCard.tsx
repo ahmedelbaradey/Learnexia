@@ -57,7 +57,12 @@ export function ChildDashboardCard({
 }: ChildDashboardCardProps) {
   const { t } = useTranslation();
   const { direction, isRtl, locale } = useLocale();
-  const rowDir = isRtl ? 'row-reverse' : 'row';
+  // RTL is driven by the CSS `direction` set via `dir` on the card root (below):
+  // the browser flips every plain `flexDirection: 'row'` for us, exactly like
+  // `ar-child-card.html` (which uses `dir="rtl"`). So children stay in natural
+  // DOM order — NO manual reversal (reversing would double-flip under `dir=rtl`).
+  // `nat` is kept as an identity passthrough so the row JSX reads uniformly.
+  const nat = (nodes: React.ReactNode[]) => nodes;
 
   const statusKey = stats.activeToday
     ? 'parent.myChildren.activeToday'
@@ -79,8 +84,11 @@ export function ChildDashboardCard({
   return (
     <Stack
       testID={testID}
+      // Explicit direction: the browser flips all inner `row` layouts to RTL,
+      // so children below stay in natural (LTR) DOM order.
+      dir={isRtl ? 'rtl' : 'ltr'}
       flexDirection="column"
-      gap={18}
+      gap={16}
       flex={1}
       minWidth={300}
       borderRadius="$modal"
@@ -88,7 +96,6 @@ export function ChildDashboardCard({
       borderColor="rgba(255,255,255,0.06)"
       backgroundColor="$card"
       padding={22}
-      // Soft drop-shadow (C-5) + hover lift (C-6).
       shadowColor="#000"
       shadowOpacity={0.15}
       shadowRadius={12}
@@ -100,16 +107,78 @@ export function ChildDashboardCard({
         shadowOffset: { width: 0, height: 8 },
       }}
     >
-      {/* Header — avatar + name/meta + optional edit affordance at inline-end */}
-      <Stack flexDirection={rowDir} alignItems="flex-start" gap="$3">
-        <Avatar name={fullName} size="lg" />
-        <Stack flexDirection="column" flex={1} gap="$2">
-          <Stack flexDirection={rowDir} alignItems="center" gap="$3" flexWrap="wrap">
-            <Text color="$fg1" fontSize={22} fontWeight="900" fontFamily="$heading" writingDirection={direction}>
+      {/* Header — natural order [avatar][info][edit+active group]; under `dir=rtl`
+          the browser flips it so visually: avatar RIGHT, info, then active LEFT-most
+          with the edit button to its right (matches ar-child-card.html). */}
+      <Stack flexDirection="row" alignItems="center" gap={14}>
+        {nat([
+          <Avatar key="avatar" name={fullName} size="card" />,
+
+          // Info column: name (row 1) · grade pill + language (row 2)
+          <Stack key="info" flexDirection="column" flex={1} gap={6}>
+            <Text
+              color="$fg1"
+              fontSize={20}
+              fontWeight="900"
+              lineHeight={20}
+              fontFamily="$heading"
+              writingDirection={direction}
+              textAlign={isRtl ? 'right' : 'left'}
+            >
               {fullName}
             </Text>
-            {/* Active/inactive status */}
-            <Stack flexDirection={rowDir} alignItems="center" gap="$1">
+            <Stack flexDirection="row" alignItems="center" gap={8} flexWrap="wrap">
+              {nat([
+                <Stack
+                  key="grade"
+                  backgroundColor="$primarySoft"
+                  borderRadius="$pill"
+                  paddingHorizontal={8}
+                  paddingVertical={2}
+                  accessible
+                  accessibilityLabel={t(`onboarding.grade.${stats.grade}`)}
+                >
+                  <Text color="$primaryLight" fontSize={11} fontWeight="800" fontFamily="$heading" writingDirection={direction}>
+                    {t(`onboarding.grade.${stats.grade}`)}
+                  </Text>
+                </Stack>,
+                <Text key="lang" color="$fg3" fontSize={12} fontFamily="$body" writingDirection="ltr">
+                  {langLabel}
+                </Text>,
+              ])}
+            </Stack>
+          </Stack>,
+
+          // Edit button + active status — grouped (ar-child-card.html line 9, gap 8).
+          // Natural DOM order [edit][active]: under dir=rtl the edit button sits at
+          // the inline-start (RIGHT) and the active label to its LEFT.
+          <Stack key="actions" flexDirection="row" alignItems="center" gap={8} flexShrink={0}>
+            {onEdit ? (
+              <Stack
+                width={32}
+                height={32}
+                flexShrink={0}
+                alignItems="center"
+                justifyContent="center"
+                borderRadius={10}
+                backgroundColor="rgba(79,70,229,0.14)"
+                borderWidth={1}
+                borderColor="rgba(99,102,241,0.3)"
+                cursor="pointer"
+                hoverStyle={{ backgroundColor: 'rgba(79,70,229,0.24)' }}
+                pressStyle={{ scale: 0.95 }}
+                onPress={onEdit}
+                accessibilityRole="button"
+                accessible
+                accessibilityLabel={t('parent.myChildren.editChild', { name: fullName })}
+                aria-label={t('parent.myChildren.editChild', { name: fullName })}
+              >
+                <Text fontSize={13} color="$primaryLight" accessibilityElementsHidden>
+                  ✏️
+                </Text>
+              </Stack>
+            ) : null}
+            <Stack flexDirection="row" alignItems="center" gap={4} flexShrink={0}>
               <Stack
                 width={8}
                 height={8}
@@ -125,97 +194,50 @@ export function ChildDashboardCard({
                   : null)}
                 accessibilityElementsHidden
               />
-              <Text color={stats.activeToday ? '$success' : '$fg3'} fontSize={12} fontWeight="600" fontFamily="$body">
+              <Text color={stats.activeToday ? '$success' : '$fg3'} fontSize={11} fontWeight="700" fontFamily="$body">
                 {t(statusKey)}
               </Text>
             </Stack>
-          </Stack>
-          <Stack flexDirection={rowDir} alignItems="center" gap="$2" flexWrap="wrap">
-            <Stack
-              backgroundColor="$primarySoft"
-              borderRadius="$pill"
-              paddingHorizontal="$3"
-              paddingVertical="$1"
-              accessible
-              accessibilityLabel={t(`onboarding.grade.${stats.grade}`)}
-            >
-              <Text color="$primaryLight" fontSize={12} fontWeight="700" fontFamily="$heading" writingDirection={direction}>
-                {t(`onboarding.grade.${stats.grade}`)}
-              </Text>
-            </Stack>
-            {/* Flag + language label kept LTR so the flag glyph stays leading. */}
-            <Text
-              color="$fg3"
-              fontSize={13}
-              fontFamily="$body"
-              writingDirection="ltr"
-            >
-              {langLabel}
-            </Text>
-          </Stack>
-        </Stack>
-        {/* Edit affordance — pencil icon button, rendered when onEdit is provided.
-            Sits at the inline-end of the header row (reverses with RTL).
-            44×44 touch target, labelled for a11y. */}
-        {onEdit ? (
-          <Stack
-            width={44}
-            height={44}
-            alignItems="center"
-            justifyContent="center"
-            cursor="pointer"
-            borderRadius="$sm"
-            hoverStyle={{ backgroundColor: '$cardSoft' }}
-            pressStyle={{ scale: 0.95 }}
-            onPress={onEdit}
-            accessibilityRole="button"
-            accessible
-            accessibilityLabel={t('parent.myChildren.editChild', { name: fullName })}
-            aria-label={t('parent.myChildren.editChild', { name: fullName })}
-          >
-            {/* Pencil glyph — consistent with the codebase's existing emoji/glyph icon approach */}
-            <Text fontSize={16} color="$fg3" accessibilityElementsHidden>
-              ✎
-            </Text>
-          </Stack>
-        ) : null}
+          </Stack>,
+        ])}
       </Stack>
 
-      {/* Stat tiles */}
-      <Stack flexDirection={rowDir} gap="$3">
-        <KPIStatCard
-          icon="🧠"
-          value={levelValue}
-          label={t('parent.myChildren.statLevel')}
-          accent="$primaryLight"
-          direction={direction}
-          accessibilityLabel={`${t('parent.myChildren.statLevel')} ${formatNumber(stats.level, locale)}`}
-        />
-        <KPIStatCard
-          icon="⭐"
-          value={xpValue}
-          label={t('parent.myChildren.statXp')}
-          accent="$xp"
-          direction={direction}
-          accessibilityLabel={`${t('parent.myChildren.statXp')} ${xpValue}`}
-        />
-        <KPIStatCard
-          icon="🔥"
-          value={streakValue}
-          label={t('parent.myChildren.statStreak')}
-          accent="$streak"
-          direction={direction}
-          accessibilityLabel={`${t('parent.myChildren.statStreak')} ${streakValue}`}
-        />
+      {/* Stat tiles — natural order Level→XP→Streak; under dir=rtl Level sits RIGHT. */}
+      <Stack flexDirection="row" gap={10}>
+        {nat([
+          <KPIStatCard
+            key="level"
+            icon="🧠"
+            value={levelValue}
+            label={t('parent.myChildren.statLevel')}
+            accent="$purple"
+            direction={direction}
+            accessibilityLabel={`${t('parent.myChildren.statLevel')} ${formatNumber(stats.level, locale)}`}
+          />,
+          <KPIStatCard
+            key="xp"
+            icon="⭐"
+            value={xpValue}
+            label={t('parent.myChildren.statXp')}
+            accent="$xp"
+            direction={direction}
+            accessibilityLabel={`${t('parent.myChildren.statXp')} ${xpValue}`}
+          />,
+          <KPIStatCard
+            key="streak"
+            icon="🔥"
+            value={streakValue}
+            label={t('parent.myChildren.statStreak')}
+            accent="$streak"
+            direction={direction}
+            accessibilityLabel={`${t('parent.myChildren.statStreak')} ${streakValue}`}
+          />,
+        ])}
       </Stack>
 
-      {/*
-       * Mastery (C-31..C-36, R-2). The bar fill always grows from the visual
-       * left (SKILL rule 6). The label + percent caption reverses with the
-       * locale, but the percent itself is a dir=ltr span (Eastern-Arabic + ٪).
-       */}
+      {/* Mastery — gap 5px, label $fg3/10px, no uppercase, letterSpacing 0.4 */}
       <Stack
-        gap="$2"
+        gap={5}
         width="100%"
         accessibilityRole="progressbar"
         accessible
@@ -223,28 +245,31 @@ export function ChildDashboardCard({
         aria-label={`${t('parent.myChildren.mastery')} ${masteryReadout}`}
         accessibilityValue={{ min: 0, max: 100, now: masteryPct }}
       >
-        <Stack flexDirection={rowDir} justifyContent="space-between" alignItems="center">
-          <Text
-            color="$fg1"
-            fontSize={11}
-            fontWeight="700"
-            fontFamily="$heading"
-            textTransform="uppercase"
-            letterSpacing={0.66}
-            writingDirection={direction}
-          >
-            {t('parent.myChildren.mastery')}
-          </Text>
-          <Text
-            color="$fg1"
-            fontSize={11}
-            fontWeight="800"
-            fontFamily="$heading"
-            writingDirection="ltr"
-            style={{ fontVariant: ['tabular-nums'] }}
-          >
-            {masteryReadout}
-          </Text>
+        <Stack flexDirection="row" justifyContent="space-between" alignItems="center">
+          {nat([
+            <Text
+              key="label"
+              color="$fg3"
+              fontSize={10}
+              fontWeight="700"
+              fontFamily="$heading"
+              letterSpacing={0.4}
+              writingDirection={direction}
+            >
+              {t('parent.myChildren.mastery')}
+            </Text>,
+            <Text
+              key="pct"
+              color="$fg1"
+              fontSize={11}
+              fontWeight="800"
+              fontFamily="$heading"
+              writingDirection="ltr"
+              style={{ fontVariant: ['tabular-nums'] }}
+            >
+              {masteryReadout}
+            </Text>,
+          ])}
         </Stack>
         <Stack height={7} borderRadius={9999} backgroundColor="$bg" overflow="hidden" flexDirection="row">
           <Stack width={`${masteryPct}%` as StackProps['width']} height="100%" borderRadius={9999} overflow="hidden">
@@ -253,38 +278,41 @@ export function ChildDashboardCard({
         </Stack>
       </Stack>
 
-      {/* Footer: weakest topic + view dashboard */}
+      {/* Footer — natural order [weakest][view]; under dir=rtl weakest sits RIGHT, view LEFT. */}
       <Stack
-        flexDirection={rowDir}
+        flexDirection="row"
         alignItems="center"
         justifyContent="space-between"
         gap="$2"
         flexWrap="wrap"
-        paddingTop={14}
+        paddingTop={12}
         borderTopWidth={1}
         borderTopColor="rgba(255,255,255,0.05)"
       >
-        <Text color="$fg3" fontSize={13} fontFamily="$body" writingDirection={direction}>
-          {`${t('parent.myChildren.weakest')} `}
-          <Text color="$fg2" fontSize={13} fontWeight="700" fontFamily="$body">
-            {weakestLabel}
-          </Text>
-        </Text>
-        <Stack
-          minHeight={40}
-          justifyContent="center"
-          cursor="pointer"
-          pressStyle={{ scale: 0.95 }}
-          onPress={() => onViewDashboard()}
-          accessibilityRole="button"
-          accessible
-          accessibilityLabel={`${t('parent.myChildren.viewDashboard')} ${fullName}`}
-          aria-label={`${t('parent.myChildren.viewDashboard')} ${fullName}`}
-        >
-          <Text color="$primaryLight" fontSize={12} fontWeight="800" fontFamily="$heading" writingDirection={direction}>
-            {t('parent.myChildren.viewDashboard')}
-          </Text>
-        </Stack>
+        {nat([
+          <Text key="weak" color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction}>
+            {`${t('parent.myChildren.weakest')} `}
+            <Text color="$fg2" fontSize={12} fontWeight="700" fontFamily="$body">
+              {weakestLabel}
+            </Text>
+          </Text>,
+          <Stack
+            key="view"
+            minHeight={40}
+            justifyContent="center"
+            cursor="pointer"
+            pressStyle={{ scale: 0.95 }}
+            onPress={() => onViewDashboard()}
+            accessibilityRole="button"
+            accessible
+            accessibilityLabel={`${t('parent.myChildren.viewDashboard')} ${fullName}`}
+            aria-label={`${t('parent.myChildren.viewDashboard')} ${fullName}`}
+          >
+            <Text color="$primaryLight" fontSize={12} fontWeight="800" fontFamily="$heading" writingDirection={direction}>
+              {t('parent.myChildren.viewDashboard')}
+            </Text>
+          </Stack>,
+        ])}
       </Stack>
     </Stack>
   );

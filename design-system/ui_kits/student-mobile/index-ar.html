@@ -136,6 +136,7 @@
           <div style="display:flex;align-items:center;gap:12px">
             <div style="width:52px;height:52px;border-radius:50%;background:#FB923C;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Cairo';font-weight:900;font-size:22px">س</div>
             <div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:8px"><div class="h-display" style="font-size:18px;color:#F8FAFC">سامي</div><div style="padding:2px 8px;border-radius:9999px;background:rgba(79,70,229,0.18);color:#A5B4FC;font-family:'Cairo';font-weight:800;font-size:11px">الصف ٣</div></div><div class="ltr" style="font-family:var(--lx-font-mono);font-size:12px;color:#94A3B8;margin-top:4px">sami@learnexia.com</div></div>
+            <button aria-label="تعديل" style="width:36px;height:36px;border-radius:12px;flex-shrink:0;background:rgba(79,70,229,0.14);border:1px solid rgba(99,102,241,0.3);color:#A5B4FC;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center">✏️</button>
           </div>
           <div style="display:flex;gap:14px;align-items:center"><div style="font-family:'Cairo';font-weight:800;font-size:13px;color:#A855F7">🧠 المستوى ١٢</div><div style="font-family:'Cairo';font-weight:800;font-size:13px;color:#FACC15">⭐ ١٬٢٤٠</div><div style="font-family:'Cairo';font-weight:800;font-size:13px;color:#FB923C">🔥 ٧ أيام</div></div>
         </div>
@@ -143,6 +144,7 @@
           <div style="display:flex;align-items:center;gap:12px">
             <div style="width:52px;height:52px;border-radius:50%;background:#A855F7;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Cairo';font-weight:900;font-size:22px">ل</div>
             <div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:8px"><div class="h-display" style="font-size:18px;color:#F8FAFC">ليلى</div><div style="padding:2px 8px;border-radius:9999px;background:rgba(79,70,229,0.18);color:#A5B4FC;font-family:'Cairo';font-weight:800;font-size:11px">الصف ١</div></div><div class="ltr" style="font-family:var(--lx-font-mono);font-size:12px;color:#94A3B8;margin-top:4px">layla@learnexia.com</div></div>
+            <button aria-label="تعديل" style="width:36px;height:36px;border-radius:12px;flex-shrink:0;background:rgba(79,70,229,0.14);border:1px solid rgba(99,102,241,0.3);color:#A5B4FC;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center">✏️</button>
           </div>
           <div style="display:flex;gap:14px;align-items:center"><div style="font-family:'Cairo';font-weight:800;font-size:13px;color:#A855F7">🧠 المستوى ٤</div><div style="font-family:'Cairo';font-weight:800;font-size:13px;color:#FACC15">⭐ ٣٨٠</div><div style="font-family:'Cairo';font-weight:800;font-size:13px;color:#FB923C">🔥 ٢ أيام</div></div>
         </div>
@@ -151,37 +153,57 @@
 
       <!-- HOME -->
       <div class="screen" data-id="home">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px;height:36px">
-          <div style="display:flex;align-items:center;gap:4px"><span class="h-display" style="font-size:22px;color:#F8FAFC" dir="ltr">Learnexia</span><span style="font-size:18px">🌟</span></div>
-          <div class="pill pill-streak">🔥 ٧ أيام</div>
-          <button onclick="setActive('energy')" class="pill" style="background:rgba(45,212,191,0.13);color:#2DD4BF;border:none;box-shadow:0 0 0 1px rgba(45,212,191,0.33);font-family:'Cairo';font-weight:800;font-size:13px;cursor:pointer" dir="ltr">⚡ ١٨٠</button>
-          <div style="display:flex;align-items:center;gap:4px"><span class="h-display" style="font-size:15px;color:#A855F7">المستوى ٥</span><span style="font-size:16px">🧠</span></div>
+        <!-- HUD pills -->
+        <div style="display:flex;gap:8px;align-items:center" dir="ltr">
+          <div class="pill" style="background:rgba(251,146,60,0.13);color:#FB923C;font-family:'Cairo';font-weight:800;font-size:14px"><span style="font-size:15px">🔥</span> ٧</div>
+          <div class="pill" style="background:rgba(251,113,133,0.13);color:#FB7185;font-family:'Cairo';font-weight:800;font-size:14px"><span style="font-size:15px">❤️</span> ٤</div>
+          <div class="pill" style="background:rgba(250,204,21,0.13);color:#FACC15;font-family:'Cairo';font-weight:800;font-size:14px"><span style="font-size:15px">⭐</span> ١٬٢٤٠</div>
+          <button onclick="setActive('energy')" class="pill" style="background:rgba(45,212,191,0.13);color:#2DD4BF;border:none;box-shadow:0 0 0 1px rgba(45,212,191,0.33);font-family:'Cairo';font-weight:800;font-size:14px;cursor:pointer"><span style="font-size:15px">⚡</span> ١٨٠</button>
         </div>
-        <div class="card card-dark">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px;color:#F59E0B">⚡</span><span class="h-display" style="font-size:16px;color:#CBD5E1;font-weight:700">نقاط الخبرة</span></div><div class="h-display" style="font-size:18px;color:#F8FAFC" dir="ltr">780 / 1000</div></div>
-          <div class="ltr" style="height:10px;background:#0A0B11;border-radius:9999px;overflow:hidden"><div style="height:100%;width:78%;background:linear-gradient(90deg,#22C55E,#4F46E5);box-shadow:inset 0 1px 0 rgba(255,255,255,0.3)"></div></div>
-          <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:12px"><span style="color:#94A3B8;font-weight:600">٧٨٪ للوصول للمستوى ٦</span><span style="color:#22C55E;font-weight:800">+٢٢٠ نقطة متبقية</span></div>
-        </div>
-        <div class="card card-dark" style="border-radius:24px;display:flex;flex-direction:column;gap:14px">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between"><div><div style="display:flex;align-items:center;gap:8px"><span style="font-size:22px">🎯</span><span class="h-display" style="font-size:22px;color:#F8FAFC">مهمة اليوم</span></div><div style="font-size:13px;color:#94A3B8;margin-top:4px">أكمل الكل لكسب المكافآت</div></div><div style="padding:6px 14px;border-radius:9999px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);font-family:'Cairo';font-weight:800;font-size:14px">+١٥٠ نقطة</div></div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2)"><div style="width:28px;height:28px;border-radius:50%;background:#22C55E;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900">✓</div><div style="flex:1;font-family:'Tajawal';font-weight:600;font-size:16px;color:#F8FAFC">حل ٣ أسئلة</div><div class="h-display" style="font-size:13px;font-weight:700;color:#22C55E">تم</div></div>
-            <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:#0B0C12;border:1px solid rgba(255,255,255,0.04)"><div style="width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,0.18)"></div><div style="flex:1;font-family:'Tajawal';font-weight:600;font-size:16px;color:#CBD5E1">أكمل اختباراً واحداً</div><div style="font-size:13px;color:rgba(255,255,255,0.22)">○</div></div>
-            <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:#0B0C12;border:1px solid rgba(255,255,255,0.04)"><div style="width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,0.18)"></div><div style="flex:1;font-family:'Tajawal';font-weight:600;font-size:16px;color:#CBD5E1">راجع درس الكسور</div><div style="font-size:13px;color:rgba(255,255,255,0.22)">○</div></div>
+        <!-- Greeting -->
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#A78BFA,#6366F1);display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 8px 20px rgba(99,102,241,0.4)">🦉</div>
+          <div>
+            <div style="font-size:12px;color:#94A3B8;font-weight:600;font-family:'Tajawal'">أهلاً بعودتك،</div>
+            <div class="h-display" style="font-size:22px;color:#F8FAFC;line-height:1.1">سامي!</div>
           </div>
-          <button class="btn-success">▶ ابدأ المهمة</button>
         </div>
+
+        <!-- Continue Learning -->
         <div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 4px"><div style="display:flex;align-items:center;gap:8px"><span class="h-display" style="font-size:22px;color:#F8FAFC">واصل التعلم</span><span style="font-size:20px">📚</span></div><span style="color:#94A3B8;font-weight:600;font-size:13px">عرض الكل</span></div>
           <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:4px">
             <div style="flex:0 0 160px;background:#1E293B;border-radius:20px;padding:14px;border:1px solid rgba(99,102,241,0.45);display:flex;flex-direction:column;gap:8px"><div style="font-size:32px">🧮</div><div class="h-display" style="font-size:19px;color:#F8FAFC">الرياضيات</div><div style="font-size:12px;color:#94A3B8">الكسور · <b style="color:#CBD5E1">٦٠٪</b></div><div class="ltr" style="height:4px;background:#0A0B11;border-radius:9999px;overflow:hidden;margin-top:2px"><div style="height:100%;width:60%;background:linear-gradient(90deg,#22C55E,#4F46E5)"></div></div></div>
             <div style="flex:0 0 160px;background:#1E293B;border-radius:20px;padding:14px;border:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;gap:8px"><div style="font-size:32px">🧪</div><div class="h-display" style="font-size:19px;color:#F8FAFC">العلوم</div><div style="font-size:12px;color:#94A3B8">النباتات · <b style="color:#CBD5E1">٣٥٪</b></div><div class="ltr" style="height:4px;background:#0A0B11;border-radius:9999px;overflow:hidden;margin-top:2px"><div style="height:100%;width:35%;background:linear-gradient(90deg,#22C55E,#4F46E5)"></div></div></div>
+            <div style="flex:0 0 160px;background:#1E293B;border-radius:20px;padding:14px;border:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;gap:8px"><div style="font-size:32px">🇬🇧</div><div class="h-display" style="font-size:19px;color:#F8FAFC">الإنجليزية</div><div style="font-size:12px;color:#94A3B8">الأفعال · <b style="color:#CBD5E1">٤٨٪</b></div><div class="ltr" style="height:4px;background:#0A0B11;border-radius:9999px;overflow:hidden;margin-top:2px"><div style="height:100%;width:48%;background:linear-gradient(90deg,#22C55E,#4F46E5)"></div></div></div>
             <div style="flex:0 0 160px;background:#1E293B;border-radius:20px;padding:14px;border:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;gap:8px"><div style="font-size:32px">📖</div><div class="h-display" style="font-size:19px;color:#F8FAFC">العربية</div><div style="font-size:12px;color:#94A3B8">القراءة · <b style="color:#CBD5E1">٧٢٪</b></div><div class="ltr" style="height:4px;background:#0A0B11;border-radius:9999px;overflow:hidden;margin-top:2px"><div style="height:100%;width:72%;background:linear-gradient(90deg,#22C55E,#4F46E5)"></div></div></div>
           </div>
         </div>
-        <button class="card card-dark" style="display:flex;align-items:center;gap:14px;text-align:right;cursor:pointer;color:#F8FAFC;font-family:'Tajawal'">
-          <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#FB923C,#A855F7);display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px">🏆</div>
-          <div style="flex:1"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:20px">🏆</span><span class="h-display" style="font-size:20px;color:#F8FAFC">الدوري الفضي</span></div><div style="font-size:13px;color:#94A3B8;margin-top:4px">المرتبة <b style="color:#F59E0B">#١٢</b> · العشرة الأوائل ← ذهبي</div></div>
+
+        <!-- Daily Quests -->
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 4px"><div class="h-display" style="font-size:16px;color:#F8FAFC">المهام اليومية</div><button onclick="setActive('mission')" style="background:transparent;border:none;color:#A5B4FC;font-family:'Cairo';font-weight:700;font-size:12px;cursor:pointer">عرض الكل ←</button></div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:14px;background:#1E293B;border-radius:20px;padding:14px 16px;border:1px solid rgba(255,255,255,0.06);box-shadow:0 4px 12px rgba(0,0,0,0.15)"><div style="width:44px;height:44px;border-radius:14px;background:rgba(79,70,229,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🎯</div><div style="flex:1"><div style="font-family:'Cairo';font-weight:700;font-size:14px;color:#F8FAFC">احصل على ١٠ إجابات متتالية</div><div style="font-size:11px;color:#94A3B8;margin-top:2px">٦ من ١٠</div><div class="ltr" style="height:5px;background:#0F172A;border-radius:9999px;margin-top:8px;overflow:hidden"><div style="height:100%;width:60%;background:linear-gradient(90deg,#22C55E,#4F46E5)"></div></div></div><div style="background:rgba(245,158,11,0.18);color:#F59E0B;padding:6px 10px;border-radius:9999px;font-family:'Cairo';font-weight:800;font-size:13px;white-space:nowrap">⭐ +٥٠</div></div>
+            <div style="display:flex;align-items:center;gap:14px;background:#1E293B;border-radius:20px;padding:14px 16px;border:1px solid rgba(255,255,255,0.06);box-shadow:0 4px 12px rgba(0,0,0,0.15)"><div style="width:44px;height:44px;border-radius:14px;background:rgba(251,146,60,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🔥</div><div style="flex:1"><div style="font-family:'Cairo';font-weight:700;font-size:14px;color:#F8FAFC">تدرّب ٣ أيام متتالية</div><div style="font-size:11px;color:#94A3B8;margin-top:2px">٢ من ٣</div><div class="ltr" style="height:5px;background:#0F172A;border-radius:9999px;margin-top:8px;overflow:hidden"><div style="height:100%;width:66%;background:linear-gradient(90deg,#22C55E,#4F46E5)"></div></div></div><div style="background:rgba(245,158,11,0.18);color:#F59E0B;padding:6px 10px;border-radius:9999px;font-family:'Cairo';font-weight:800;font-size:13px;white-space:nowrap">⭐ +٣٠</div></div>
+          </div>
+        </div>
+
+        <!-- Today's Mission -->
+        <div class="card card-dark" style="border-radius:24px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between"><div><div style="display:flex;align-items:center;gap:8px"><span style="font-size:22px">🎯</span><span class="h-display" style="font-size:20px;color:#F8FAFC">مهمة اليوم</span></div><div style="font-size:13px;color:#94A3B8;margin-top:4px">أكمل الكل لكسب المكافآت</div></div><div style="padding:6px 14px;border-radius:9999px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);font-family:'Cairo';font-weight:800;font-size:14px;color:#FACC15">+١٥٠ نقطة</div></div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2)"><div style="width:28px;height:28px;border-radius:50%;background:#22C55E;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900">✓</div><div style="flex:1;font-family:'Tajawal';font-weight:600;font-size:15px;color:#F8FAFC">حل ٣ أسئلة</div><div class="h-display" style="font-size:13px;font-weight:700;color:#22C55E">تم</div></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:#0B0C12;border:1px solid rgba(255,255,255,0.04)"><div style="width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,0.18)"></div><div style="flex:1;font-family:'Tajawal';font-weight:600;font-size:15px;color:#CBD5E1">أكمل اختباراً واحداً</div><div style="font-size:13px;color:rgba(255,255,255,0.22)">○</div></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:#0B0C12;border:1px solid rgba(255,255,255,0.04)"><div style="width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,0.18)"></div><div style="flex:1;font-family:'Tajawal';font-weight:600;font-size:15px;color:#CBD5E1">راجع درس الكسور</div><div style="font-size:13px;color:rgba(255,255,255,0.22)">○</div></div>
+          </div>
+          <button class="btn-success" onclick="setActive('lesson')">▶ ابدأ المهمة</button>
+        </div>
+
+        <!-- League preview -->
+        <button class="card card-dark" onclick="setActive('league')" style="display:flex;align-items:center;gap:14px;text-align:right;cursor:pointer;color:#F8FAFC;font-family:'Tajawal';border:1px solid rgba(255,255,255,0.06)">
+          <div style="width:52px;height:52px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#FBBF24,#B45309);display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 6px 16px rgba(180,83,9,0.5)">🏆</div>
+          <div style="flex:1"><div class="h-display" style="font-size:14px;color:#F8FAFC">الدوري البرونزي</div><div style="font-size:12px;color:#94A3B8;margin-top:2px">المرتبة <b style="color:#CBD5E1">#٤</b> · ٢٤٠ نقطة للترقية</div></div>
           <div style="color:#94A3B8;font-size:24px">‹</div>
         </button>
       </div>

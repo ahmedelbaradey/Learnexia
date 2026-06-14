@@ -224,20 +224,20 @@ function RegisterScreen({ onRegister, onLogin }) {
         <AuthField label="Country" icon="🌍">
           <select value={country} onChange={e => setCountry(e.target.value)} style={{
             ...authInputStyle(), appearance: 'none',
-            backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'8\' viewBox=\'0 0 12 8\'><path fill=\'%2394A3B8\' d=\'M6 8L0 0h12z\'/></svg>")',
+            backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2394A3B8' d='M6 8L0 0h12z'/%3E%3C/svg%3E\")",
             backgroundRepeat: 'no-repeat', backgroundPosition: 'right 14px center',
             paddingRight: 36, cursor: 'pointer',
           }}>
-            <option value="SA">🇸🇦 Saudi Arabia</option>
-            <option value="AE">🇦🇪 United Arab Emirates</option>
-            <option value="EG">🇪🇬 Egypt</option>
-            <option value="JO">🇯🇴 Jordan</option>
-            <option value="QA">🇶🇦 Qatar</option>
-            <option value="KW">🇰🇼 Kuwait</option>
-            <option value="OM">🇴🇲 Oman</option>
-            <option value="BH">🇧🇭 Bahrain</option>
-            <option value="US">🇺🇸 United States</option>
-            <option value="GB">🇬🇧 United Kingdom</option>
+            <option value="SA">{"🇸🇦 Saudi Arabia"}</option>
+            <option value="AE">{"🇦🇪 United Arab Emirates"}</option>
+            <option value="EG">{"🇪🇬 Egypt"}</option>
+            <option value="JO">{"🇯🇴 Jordan"}</option>
+            <option value="QA">{"🇶🇦 Qatar"}</option>
+            <option value="KW">{"🇰🇼 Kuwait"}</option>
+            <option value="OM">{"🇴🇲 Oman"}</option>
+            <option value="BH">{"🇧🇭 Bahrain"}</option>
+            <option value="US">{"🇺🇸 United States"}</option>
+            <option value="GB">{"🇬🇧 United Kingdom"}</option>
           </select>
         </AuthField>
 
@@ -354,7 +354,7 @@ function MyChildrenScreen({ onAddChild, onPick }) {
 
         {/* Children */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {children.map(c => <ChildCard key={c.id} child={c} onClick={() => onPick(c)}/>)}
+          {children.map(c => <ChildCard key={c.id} child={c} onClick={() => onPick(c)} onEdit={onAddChild}/>)}
         </div>
 
         {/* Add child CTA */}
@@ -396,10 +396,10 @@ function MyChildrenScreen({ onAddChild, onPick }) {
   );
 }
 
-function ChildCard({ child, onClick }) {
+function ChildCard({ child, onClick, onEdit }) {
   const langLabel = { en: '🇬🇧 English', ar: '🇸🇦 العربية' }[child.language] || child.language;
   return (
-    <button onClick={onClick} style={{
+    <div onClick={onClick} role="button" style={{
       background: '#15161D', borderRadius: 20, padding: 16,
       border: '1px solid rgba(255,255,255,0.06)',
       boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
@@ -431,6 +431,12 @@ function ChildCard({ child, onClick }) {
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{child.email}</div>
         </div>
+        <button onClick={(e) => { e.stopPropagation(); onEdit && onEdit(child); }} aria-label="Edit child" style={{
+          width: 36, height: 36, borderRadius: 12, flexShrink: 0,
+          background: 'rgba(79,70,229,0.14)', border: '1px solid rgba(99,102,241,0.3)',
+          color: '#A5B4FC', fontSize: 15, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>✏️</button>
         <div style={{ color: '#94A3B8', fontSize: 22 }}>›</div>
       </div>
 
@@ -461,7 +467,7 @@ function ChildCard({ child, onClick }) {
         <span><span style={{ color: '#94A3B8' }}>Language:</span> {langLabel}</span>
         <span style={{ color: '#A5B4FC', fontWeight: 700 }}>View progress →</span>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -523,7 +529,12 @@ function SocialButton({ label, icon, appleIcon }) {
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
     }}>
       {appleIcon
-        ? <svg width="18" height="18" viewBox="0 0 24 24" fill="#F8FAFC"><path d="M17.05 20.28c-.98.95-2.05.86-3.08.43-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.43C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+        ? <span style={{
+            width: 20, height: 20, borderRadius: '50%',
+            background: '#fff', color: '#0F172A',
+            fontWeight: 900, fontSize: 13,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>{'\uF8FF'}</span>
         : <span style={{
             width: 20, height: 20, borderRadius: '50%',
             background: '#fff', color: '#0F172A',

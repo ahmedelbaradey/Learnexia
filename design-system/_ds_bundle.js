@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":3,"namespace":"LearnexiaDesignSystem_dab417","components":[],"sourceHashes":{"ui_kits/parent-dashboard/AddChildModal.jsx":"5848c5167c81","ui_kits/parent-dashboard/DashboardComponents.jsx":"43b342507870","ui_kits/parent-dashboard/PagesApp.jsx":"c2c46d504dcd","ui_kits/parent-dashboard/PagesPublic.jsx":"4cf5dbfd9dcd","ui_kits/parent-dashboard/browser-window.jsx":"2e3bb69bede4","ui_kits/student-mobile/MobileComponents.jsx":"ccc02caa564a","ui_kits/student-mobile/Screens.jsx":"8bcecd2d04b2","ui_kits/student-mobile/ScreensAuth.jsx":"29033cb1d86d","ui_kits/student-mobile/ScreensExtra.jsx":"3515d35f2f78","ui_kits/student-mobile/ios-frame.jsx":"d67eb3ffe562"},"inlinedExternals":[],"unexposedExports":[]} */
+/* @ds-bundle: {"format":3,"namespace":"LearnexiaDesignSystem_dab417","components":[],"sourceHashes":{"ui_kits/parent-dashboard/AddChildModal.jsx":"5848c5167c81","ui_kits/parent-dashboard/DashboardComponents.jsx":"43b342507870","ui_kits/parent-dashboard/PagesApp.jsx":"9bed2a625be8","ui_kits/parent-dashboard/PagesPublic.jsx":"4cf5dbfd9dcd","ui_kits/parent-dashboard/browser-window.jsx":"2e3bb69bede4","ui_kits/student-mobile/MobileComponents.jsx":"00fa9cd83cf9","ui_kits/student-mobile/Screens.jsx":"454d01f8733e","ui_kits/student-mobile/ScreensAuth.jsx":"60974b30fe57","ui_kits/student-mobile/ScreensExtra.jsx":"3515d35f2f78","ui_kits/student-mobile/ios-frame.jsx":"d67eb3ffe562"},"inlinedExternals":[],"unexposedExports":[]} */
 
 (() => {
 
@@ -1492,7 +1492,8 @@ function MyChildrenWebPage({
   }, children.map(c => /*#__PURE__*/React.createElement(ChildWebCard, {
     key: c.id,
     child: c,
-    onClick: () => onPick(c)
+    onClick: () => onPick(c),
+    onEdit: onAddChild
   })), /*#__PURE__*/React.createElement("button", {
     onClick: onAddChild,
     style: {
@@ -1593,7 +1594,8 @@ function MyChildrenWebPage({
 }
 function ChildWebCard({
   child,
-  onClick
+  onClick,
+  onEdit
 }) {
   return /*#__PURE__*/React.createElement("div", {
     onClick: onClick,
@@ -1675,6 +1677,12 @@ function ChildWebCard({
     style: {
       display: 'flex',
       alignItems: 'center',
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
       gap: 4,
       fontSize: 11,
       fontWeight: 700,
@@ -1688,7 +1696,27 @@ function ChildWebCard({
       background: child.active ? '#22C55E' : '#64748B',
       boxShadow: child.active ? '0 0 6px rgba(34,197,94,0.6)' : 'none'
     }
-  }), child.active ? 'Active today' : 'Inactive')), /*#__PURE__*/React.createElement("div", {
+  }), child.active ? 'Active today' : 'Inactive'), /*#__PURE__*/React.createElement("button", {
+    onClick: e => {
+      e.stopPropagation();
+      onEdit && onEdit(child);
+    },
+    "aria-label": "Edit child",
+    style: {
+      width: 34,
+      height: 34,
+      borderRadius: 10,
+      flexShrink: 0,
+      background: 'rgba(79,70,229,0.14)',
+      border: '1px solid rgba(99,102,241,0.3)',
+      color: '#A5B4FC',
+      fontSize: 14,
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }
+  }, "\u270F\uFE0F"))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       gap: 14
@@ -6281,6 +6309,136 @@ function TutorBubble({
     }
   }, c)))));
 }
+function TodaysMission({
+  reward = 150,
+  tasks,
+  onStart
+}) {
+  const items = tasks || [{
+    label: 'Answer 3 questions',
+    done: true
+  }, {
+    label: 'Complete one quiz',
+    done: false
+  }, {
+    label: 'Review the Fractions lesson',
+    done: false
+  }];
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: '#15161D',
+      borderRadius: 24,
+      padding: 18,
+      border: '1px solid rgba(255,255,255,0.06)',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 14,
+      ...lxFont
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between'
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 22
+    }
+  }, "\uD83C\uDFAF"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontWeight: 900,
+      fontSize: 20,
+      color: '#F8FAFC'
+    }
+  }, "Today's Mission")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: '#94A3B8',
+      marginTop: 4
+    }
+  }, "Complete all to earn rewards")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: '6px 14px',
+      borderRadius: 9999,
+      background: 'rgba(255,255,255,0.04)',
+      border: '1px solid rgba(255,255,255,0.08)',
+      fontWeight: 800,
+      fontSize: 14,
+      color: '#FACC15',
+      whiteSpace: 'nowrap'
+    }
+  }, "+", reward, " XP")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 8
+    }
+  }, items.map((t, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 12,
+      padding: '12px 14px',
+      borderRadius: 16,
+      background: t.done ? 'rgba(34,197,94,0.08)' : '#0B0C12',
+      border: t.done ? '1px solid rgba(34,197,94,0.2)' : '1px solid rgba(255,255,255,0.04)'
+    }
+  }, t.done ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 28,
+      height: 28,
+      borderRadius: '50%',
+      background: '#22C55E',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: '#fff',
+      fontWeight: 900
+    }
+  }, "\u2713") : /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 28,
+      height: 28,
+      borderRadius: '50%',
+      border: '2px solid rgba(255,255,255,0.18)'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      fontWeight: 600,
+      fontSize: 15,
+      color: t.done ? '#F8FAFC' : '#CBD5E1'
+    }
+  }, t.label), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 700,
+      color: t.done ? '#22C55E' : 'rgba(255,255,255,0.22)'
+    }
+  }, t.done ? 'Done' : '○')))), /*#__PURE__*/React.createElement("button", {
+    onClick: onStart,
+    style: {
+      height: 52,
+      borderRadius: 16,
+      border: 'none',
+      cursor: 'pointer',
+      background: '#22C55E',
+      color: '#06210F',
+      fontFamily: 'inherit',
+      fontWeight: 800,
+      fontSize: 16,
+      boxShadow: '0 6px 16px rgba(34,197,94,0.35)'
+    }
+  }, "\u25B6 Start mission"));
+}
 Object.assign(window, {
   HudBar,
   Pill,
@@ -6288,6 +6446,7 @@ Object.assign(window, {
   PrimaryButton,
   LessonCard,
   MissionRow,
+  TodaysMission,
   AnswerButton,
   TabBar,
   MascotAvatar,
@@ -6478,6 +6637,12 @@ function HomeScreen({
     total: 3,
     reward: 30
   }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: '0 16px'
+    }
+  }, /*#__PURE__*/React.createElement(TodaysMission, {
+    onStart: onContinue
+  })), /*#__PURE__*/React.createElement("div", {
     style: {
       padding: '0 16px'
     }
@@ -7681,7 +7846,7 @@ function RegisterScreen({
     style: {
       ...authInputStyle(),
       appearance: 'none',
-      backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'8\' viewBox=\'0 0 12 8\'><path fill=\'%2394A3B8\' d=\'M6 8L0 0h12z\'/></svg>")',
+      backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2394A3B8' d='M6 8L0 0h12z'/%3E%3C/svg%3E\")",
       backgroundRepeat: 'no-repeat',
       backgroundPosition: 'right 14px center',
       paddingRight: 36,
@@ -7689,25 +7854,25 @@ function RegisterScreen({
     }
   }, /*#__PURE__*/React.createElement("option", {
     value: "SA"
-  }, "\uD83C\uDDF8\uD83C\uDDE6 Saudi Arabia"), /*#__PURE__*/React.createElement("option", {
+  }, "🇸🇦 Saudi Arabia"), /*#__PURE__*/React.createElement("option", {
     value: "AE"
-  }, "\uD83C\uDDE6\uD83C\uDDEA United Arab Emirates"), /*#__PURE__*/React.createElement("option", {
+  }, "🇦🇪 United Arab Emirates"), /*#__PURE__*/React.createElement("option", {
     value: "EG"
-  }, "\uD83C\uDDEA\uD83C\uDDEC Egypt"), /*#__PURE__*/React.createElement("option", {
+  }, "🇪🇬 Egypt"), /*#__PURE__*/React.createElement("option", {
     value: "JO"
-  }, "\uD83C\uDDEF\uD83C\uDDF4 Jordan"), /*#__PURE__*/React.createElement("option", {
+  }, "🇯🇴 Jordan"), /*#__PURE__*/React.createElement("option", {
     value: "QA"
-  }, "\uD83C\uDDF6\uD83C\uDDE6 Qatar"), /*#__PURE__*/React.createElement("option", {
+  }, "🇶🇦 Qatar"), /*#__PURE__*/React.createElement("option", {
     value: "KW"
-  }, "\uD83C\uDDF0\uD83C\uDDFC Kuwait"), /*#__PURE__*/React.createElement("option", {
+  }, "🇰🇼 Kuwait"), /*#__PURE__*/React.createElement("option", {
     value: "OM"
-  }, "\uD83C\uDDF4\uD83C\uDDF2 Oman"), /*#__PURE__*/React.createElement("option", {
+  }, "🇴🇲 Oman"), /*#__PURE__*/React.createElement("option", {
     value: "BH"
-  }, "\uD83C\uDDE7\uD83C\uDDED Bahrain"), /*#__PURE__*/React.createElement("option", {
+  }, "🇧🇭 Bahrain"), /*#__PURE__*/React.createElement("option", {
     value: "US"
-  }, "\uD83C\uDDFA\uD83C\uDDF8 United States"), /*#__PURE__*/React.createElement("option", {
+  }, "🇺🇸 United States"), /*#__PURE__*/React.createElement("option", {
     value: "GB"
-  }, "\uD83C\uDDEC\uD83C\uDDE7 United Kingdom"))), /*#__PURE__*/React.createElement("label", {
+  }, "🇬🇧 United Kingdom"))), /*#__PURE__*/React.createElement("label", {
     style: {
       display: 'flex',
       alignItems: 'flex-start',
@@ -7942,7 +8107,8 @@ function MyChildrenScreen({
   }, children.map(c => /*#__PURE__*/React.createElement(ChildCard, {
     key: c.id,
     child: c,
-    onClick: () => onPick(c)
+    onClick: () => onPick(c),
+    onEdit: onAddChild
   }))), /*#__PURE__*/React.createElement("button", {
     onClick: onAddChild,
     style: {
@@ -8018,14 +8184,16 @@ function MyChildrenScreen({
 }
 function ChildCard({
   child,
-  onClick
+  onClick,
+  onEdit
 }) {
   const langLabel = {
     en: '🇬🇧 English',
     ar: '🇸🇦 العربية'
   }[child.language] || child.language;
-  return /*#__PURE__*/React.createElement("button", {
+  return /*#__PURE__*/React.createElement("div", {
     onClick: onClick,
+    role: "button",
     style: {
       background: '#15161D',
       borderRadius: 20,
@@ -8099,7 +8267,27 @@ function ChildCard({
       textOverflow: 'ellipsis',
       whiteSpace: 'nowrap'
     }
-  }, child.email)), /*#__PURE__*/React.createElement("div", {
+  }, child.email)), /*#__PURE__*/React.createElement("button", {
+    onClick: e => {
+      e.stopPropagation();
+      onEdit && onEdit(child);
+    },
+    "aria-label": "Edit child",
+    style: {
+      width: 36,
+      height: 36,
+      borderRadius: 12,
+      flexShrink: 0,
+      background: 'rgba(79,70,229,0.14)',
+      border: '1px solid rgba(99,102,241,0.3)',
+      color: '#A5B4FC',
+      fontSize: 15,
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }
+  }, "\u270F\uFE0F"), /*#__PURE__*/React.createElement("div", {
     style: {
       color: '#94A3B8',
       fontSize: 22
@@ -8293,14 +8481,20 @@ function SocialButton({
       justifyContent: 'center',
       gap: 10
     }
-  }, appleIcon ? /*#__PURE__*/React.createElement("svg", {
-    width: "18",
-    height: "18",
-    viewBox: "0 0 24 24",
-    fill: "#F8FAFC"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M17.05 20.28c-.98.95-2.05.86-3.08.43-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.43C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"
-  })) : /*#__PURE__*/React.createElement("span", {
+  }, appleIcon ? /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 20,
+      height: 20,
+      borderRadius: '50%',
+      background: '#fff',
+      color: '#0F172A',
+      fontWeight: 900,
+      fontSize: 13,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }
+  }, '\uF8FF') : /*#__PURE__*/React.createElement("span", {
     style: {
       width: 20,
       height: 20,
