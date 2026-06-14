@@ -2,22 +2,23 @@ using Learnexia.Modules.Identity.Application.Abstractions;
 using Learnexia.Modules.Identity.Domain.Constants;
 using Learnexia.Modules.Identity.Domain.Entities;
 using Learnexia.Modules.Identity.Domain.Helpers;
+using Learnexia.Modules.Identity.Infrastructure.Behaviors;
+using Learnexia.Modules.Identity.Infrastructure.Events;
 using Learnexia.Modules.Identity.Infrastructure.Persistence;
 using Learnexia.Modules.Identity.Infrastructure.Services;
 using Learnexia.Modules.Identity.Infrastructure.Services.Sessions;
 using Learnexia.Shared.Kernel.Abstractions;
+using MediatR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using System.Text;
 using System.Reflection;
-using Microsoft.EntityFrameworkCore.Diagnostics;
+using System.Text;
 using Learnexia.Shared.Kernel.Logging;
-using Learnexia.Modules.Identity.Infrastructure.Behaviors;
-using MediatR;
 
 
 namespace Learnexia.Modules.Identity.Infrastructure;
@@ -43,7 +44,12 @@ public static class DependencyInjection
         // is registered at the Host (AddCrossModuleMediatR), alongside the unified IPublisher it wraps.
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(UnitOfWorkBehavior<,>));
 
-
+        // P7-07 Security High #1 fix: Identity-scoped post-commit domain-events buffer.
+        // Scoped so one instance is shared by the handler (Add) and the UoW behavior (Drain) within
+        // the same request scope — same scope as the DbContext/transaction boundary. On rollback the
+        // scope is disposed and the buffer is GC'd without Drain ever being called, so no side-effects
+        // fire on failed commits.
+        services.AddScoped<IIdentityDomainEventsBuffer, IdentityDomainEventsBuffer>();
 
         var sessionSettings = configuration.GetSection("SessionSettings").Get<SessionSettings>() ?? new SessionSettings();
         services.AddSingleton(sessionSettings);

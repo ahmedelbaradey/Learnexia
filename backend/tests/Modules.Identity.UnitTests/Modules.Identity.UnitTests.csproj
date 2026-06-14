@@ -15,5 +15,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Modules\Identity\Learnexia.Modules.Identity.Application\Learnexia.Modules.Identity.Application.csproj" />
     <ProjectReference Include="..\..\src\Modules\Identity\Learnexia.Modules.Identity.Domain\Learnexia.Modules.Identity.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Shared\Learnexia.Shared.Contracts\Learnexia.Shared.Contracts.csproj" />
   </ItemGroup>
 </Project>
