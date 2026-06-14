@@ -12,6 +12,8 @@
 - `â€”` â€” no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
+- **P3-04 (Backend)** — Explain a concept on demand (ExplainConceptCommand + validator + handler orchestrates ILearningContextProvider→IPromptBuilder→ISafetyLayer with refuse-and-redirect on empty context; SSE ExplainController with pinned wire contract event:message/redirect/error/done; ILessonContextContract cross-module seam; RedirectResponseBuilder ar/en; Help* instrumentation events; in-process rate limiter; folded into Ai module; buffer→safety→emit, never raw tokens; cache economy deferred P3-01-BE-12/13/14; live grounding dormant EmptyLearningContextProvider default; 208 unit + 13 SSE integration green; mandatory security gate PASS, error-leak + D-1 fixes landed) — committed
+- **P3-04 (Backend)** — Explain a concept on demand (ExplainConceptCommand + validator + handler orchestrates ILearningContextProvider→IPromptBuilder→ISafetyLayer with refuse-and-redirect on empty context; SSE ExplainController with pinned wire contract event:message/redirect/error/done; ILessonContextContract cross-module seam; RedirectResponseBuilder ar/en; Help* instrumentation events; in-process rate limiter; folded into Ai module; buffer→safety→emit, never raw tokens; cache economy deferred P3-01-BE-12/13/14; live grounding dormant EmptyLearningContextProvider default; 208 unit + 13 SSE integration green; mandatory security gate PASS, error-leak + D-1 fixes landed) — committed
 - **P3-11 (Backend)** — Adaptive quiz selection (QuizSelectionEngine pure static 70/30 weighted-mix, Attempt.ServedDifficultyMix jsonb + TargetDifficulty int migration, StartAttempt integration after guards, deterministic resume via sort-by-Id, graceful degradation on thin pools, 9 QuizSelectionEngine unit tests + 8 integration green, reviewer PASS, inline security PASS) — committed
 - **P3-07 (Backend)** — RAG retrieval (Curriculum module 4 projects, CurriculumChunk+CurriculumVersion+chunk_embeddings_bge_m3 pgvector schema HNSW, InitialCurriculum migration, BgeM3EmbeddingProvider + DeterministicEmbedding placeholders, RetrieveChunksQuery handler, RagContextProvider ILearningContextProvider+ICurriculumContextQuery, CurriculumChunkSeeder, cross-module MediatR, 11/11 integration vs pgvector; placeholder embeddings, real BGE-M3 pending P3-07-BE-0 TEI provision) — committed
 - **P3-03 (Backend)** — Prompt Builder (IPromptBuilder stateless facade, PromptContext value object, 4-subject 4-intent 2-language templates ar/en Math/Science/Arabic/English, TemplateSelector pure lookup, HelperIntent enum Explain/Hint/WhyWrong/SimilarExample, ToneFrame anti-injection, PII-minimal grade+age only, optional seams IStudentWeakAreasQuery/IChildLearningProfileQuery/ICurriculumContextQuery/ILearningContextProvider with safe stubs, graceful degradation, 203 Ai unit tests green 166 new, FR-AI-6 mandatory security gate PASS) — committed
@@ -90,15 +92,15 @@
 |---|---|:--:|
 | P3-01 | Route AI requests through an AI Gateway | ✅ |
 | P3-02 | Filter AI output through a Safety Layer | ✅ |
-| P3-03 | Build personalized tutor prompts | ðŸ”² |
-| P3-04 | Explain a concept on demand | ðŸ”² |
+| P3-03 | Build personalized tutor prompts | ✅ |
+| P3-04 | Explain a concept on demand | ✅ |
 | P3-05 | Progressive hints & simpler re-explanations | ðŸ”² |
 | P3-06 | Generate curriculum-grounded questions (RAG) | ðŸ”² |
 | P3-07 | Retrieve curriculum context via vector search | ✅ |
 | P3-08 | Adjust difficulty adaptively | ✅ |
 | P3-09 | Track per-skill mastery | ✅ |
-| P3-10 | Schedule spaced-repetition practice | ðŸ”² |
-| P3-11 | Serve adaptive quizzes | ðŸ”² |
+| P3-10 | Schedule spaced-repetition practice | ✅ |
+| P3-11 | Serve adaptive quizzes | ✅ |
 | P3-12 | Interact with the AI tutor UI | ðŸ”² |
 | P3-13 | Build the adaptive student profile | ✅ |
 
