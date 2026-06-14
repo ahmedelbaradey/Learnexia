@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <!-- Testing frameworks -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="coverlet.collector" />
+    <!-- Testcontainers PostgreSQL with pgvector support -->
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Pgvector" />
+    <PackageReference Include="Pgvector.EntityFrameworkCore" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <!-- In-process HTTP testing via WebApplicationFactory -->
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+  </ItemGroup>
+
+  <!-- Reference Curriculum module layers directly (avoids pulling in the full Host) -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Modules\Curriculum\Learnexia.Modules.Curriculum.Domain\Learnexia.Modules.Curriculum.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Curriculum\Learnexia.Modules.Curriculum.Application\Learnexia.Modules.Curriculum.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Curriculum\Learnexia.Modules.Curriculum.Infrastructure\Learnexia.Modules.Curriculum.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Shared\Learnexia.Shared.Kernel\Learnexia.Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\src\Shared\Learnexia.Shared.Contracts\Learnexia.Shared.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Shared\Learnexia.Shared.Resources\Learnexia.Shared.Resources.csproj" />
+    <!-- Host project — required for WebApplicationFactory<Program> -->
+    <ProjectReference Include="..\..\src\Host\Learnexia.Host\Learnexia.Host.csproj" />
+  </ItemGroup>
+</Project>

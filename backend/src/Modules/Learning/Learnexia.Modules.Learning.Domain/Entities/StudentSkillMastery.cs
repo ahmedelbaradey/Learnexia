@@ -75,8 +75,8 @@ public class StudentSkillMastery : FullAuditedEntity
     public DateTime? NextReviewDueAt { get; set; }
 
     /// <summary>
-    /// P3-10 (reserved): SM-2 repetition counter (number of successful reviews in a row).
-    /// Default 0.
+    /// P3-10 (reserved): spaced-repetition ladder index (position in the expanding ladder [1,3,7,14,30]).
+    /// Default 0 (no scheduled reviews yet).
     /// </summary>
     public int RepetitionNumber { get; set; } = 0;
 }

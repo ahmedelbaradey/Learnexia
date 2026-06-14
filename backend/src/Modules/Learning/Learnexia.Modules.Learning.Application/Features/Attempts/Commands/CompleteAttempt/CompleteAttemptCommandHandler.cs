@@ -1,6 +1,7 @@
 using AutoMapper;
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Features.Attempts.Dtos;
+using Learnexia.Modules.Learning.Application.Services;
 using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Modules.Learning.Domain.Services;
@@ -11,6 +12,7 @@ using Learnexia.Shared.Kernel.Responses;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Options;
 using Resources;
 
 namespace Learnexia.Modules.Learning.Application.Features.Attempts.Commands.CompleteAttempt;
@@ -58,6 +60,8 @@ public class CompleteAttemptCommandHandler : BaseResponseHandler,
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
     private readonly IPublisher _publisher;
+    private readonly IOptions<SpacedRepetitionOptions> _srOptions;
+    private readonly IStudentProfileService _studentProfileService;
 
     public CompleteAttemptCommandHandler(
         ILearningRepositoryManager repository,
@@ -65,14 +69,18 @@ public class CompleteAttemptCommandHandler : BaseResponseHandler,
         IMapper mapper,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer,
-        IPublisher publisher)
+        IPublisher publisher,
+        IOptions<SpacedRepetitionOptions> srOptions,
+        IStudentProfileService studentProfileService)
     {
-        _repository = repository;
-        _currentUser = currentUser;
-        _mapper = mapper;
-        _logger = logger;
-        _localizer = localizer;
-        _publisher = publisher;
+        _repository            = repository;
+        _currentUser           = currentUser;
+        _mapper                = mapper;
+        _logger                = logger;
+        _localizer             = localizer;
+        _publisher             = publisher;
+        _srOptions             = srOptions;
+        _studentProfileService = studentProfileService;
     }
 
     public async Task<BaseResponse<AttemptSummaryDto>> Handle(
@@ -135,7 +143,25 @@ public class CompleteAttemptCommandHandler : BaseResponseHandler,
             // Step 8b — P3-09: Upsert mastery rows for every skill touched by this attempt.
             // Both this upsert and the attempt update above are staged within the SAME ambient
             // UoW transaction (see class-level doc for the full transaction boundary explanation).
-            await UpsertMasteryForAttemptAsync(attempt.StudentId, answers, cancellationToken);
+            // Returns the PRE-upsert mastery rows (with old Status/NextReviewDueAt) for use
+            // by the P3-10 SR hook below — capturing the state BEFORE the mastery update.
+            var preUpsertMasteryRows = await UpsertMasteryForAttemptAsync(attempt.StudentId, answers, cancellationToken);
+
+            // Step 8c — P3-10: Interval-progression completion hook (spaced-repetition scheduler).
+            // For each skill touched by this attempt whose SR review was DUE before the attempt,
+            // advance (or reset) the ladder and write NextReviewDueAt back.
+            // Uses pre-upsert mastery rows so IsDue is evaluated against the PRE-attempt state.
+            // Runs INSIDE the SAME ambient UoW transaction — no nested transaction opened.
+            // If not due (routine practice), the SR fields are left untouched (skip).
+            await AdvanceSpacedRepetitionAsync(attempt.StudentId, answers, preUpsertMasteryRows, cancellationToken);
+
+            // Step 8d — P3-13: Student behavioral profile recompute (completion hook).
+            // Called AFTER the P3-09 mastery upsert (Step 8b) so derivation reads fresh mastery data.
+            // Runs INSIDE the SAME ambient UoW transaction opened by UnitOfWorkBehavior — do NOT
+            // open a nested transaction. StudentProfileService.RecomputeProfile stages its writes;
+            // UoW commits everything atomically. The service internally catches and logs exceptions
+            // so a profile failure does not abort the attempt completion.
+            await _studentProfileService.RecomputeProfile(attempt.StudentId, cancellationToken);
 
             // Publish LessonCompletedIntegrationEvent (Option B — direct publish per lead decision).
             // Lesson.SkillId is nullable; the integration event requires SkillId, so skip when absent.
@@ -197,13 +223,13 @@ public class CompleteAttemptCommandHandler : BaseResponseHandler,
     /// NOTE: <paramref name="answers"/> does NOT have the Question navigation loaded — SkillId values
     /// are fetched from the DB via a JOIN on QuizQuestion (step A below).
     /// </summary>
-    private async Task UpsertMasteryForAttemptAsync(
+    private async Task<Dictionary<int, StudentSkillMastery>> UpsertMasteryForAttemptAsync(
         int studentId,
         IList<StudentAnswer> answers,
         CancellationToken cancellationToken)
     {
         if (answers.Count == 0)
-            return;
+            return new Dictionary<int, StudentSkillMastery>();
 
         var questionIds = answers.Select(a => a.QuestionId).Distinct().ToList();
 
@@ -217,7 +243,7 @@ public class CompleteAttemptCommandHandler : BaseResponseHandler,
         if (questionSkillMap.Count == 0)
         {
             _logger.LogWarn("P3-09: No skill-tagged questions found for studentId=" + studentId + "; mastery not updated.");
-            return;
+            return new Dictionary<int, StudentSkillMastery>();
         }
 
         var skillIdByQuestionId = questionSkillMap.ToDictionary(q => q.Id, q => q.SkillId);
@@ -283,6 +309,89 @@ public class CompleteAttemptCommandHandler : BaseResponseHandler,
                 };
                 await _repository.Learning.UpsertStudentSkillMasteryAsync(inserted, cancellationToken);
             }
+        }
+
+        // Return the PRE-upsert rows keyed by SkillId — captured BEFORE the loop mutated them —
+        // so the P3-10 hook can evaluate IsDue against the PRE-attempt mastery state.
+        return existingBySkillId;
+    }
+
+    /// <summary>
+    /// P3-10 — Interval-progression completion hook.
+    ///
+    /// For each distinct skill touched by this attempt, checks whether the skill was DUE for
+    /// spaced-repetition review BEFORE this attempt (using the PRE-upsert mastery state passed in).
+    /// If due: calls <see cref="SpacedRepetitionEngine.ComputeNextReview"/> to advance (or reset)
+    /// the ladder and writes the updated SR fields back inside the ambient UoW transaction.
+    /// If not due (routine practice): leaves SR fields unchanged — skip.
+    ///
+    /// DESIGN NOTE — why use preUpsertMasteryRows:
+    ///   Step 8b (UpsertMasteryForAttemptAsync) already staged the NEW mastery status/percentage.
+    ///   To correctly evaluate IsDue on the PRE-ATTEMPT state (per spec: "was due before this attempt"),
+    ///   we pass the rows captured BEFORE the upsert. The "improved" flag uses the NEW tracked Status,
+    ///   fetched via trackChanges:true so EF returns the staged (post-upsert) value.
+    ///
+    /// UTC discipline: all DateTime comparisons use <c>DateTime.UtcNow</c>.
+    /// </summary>
+    private async Task AdvanceSpacedRepetitionAsync(
+        int studentId,
+        IList<StudentAnswer> answers,
+        Dictionary<int, StudentSkillMastery> preUpsertMasteryRows,
+        CancellationToken cancellationToken)
+    {
+        if (answers.Count == 0 || preUpsertMasteryRows.Count == 0)
+            return;
+
+        var options = _srOptions.Value;
+        var utcNow  = DateTime.UtcNow;
+
+        // Collect the distinct skillIds from questions answered in this attempt.
+        var questionIds = answers.Select(a => a.QuestionId).Distinct().ToList();
+
+        var questionSkillMap = await _repository.Learning
+            .GetByCondition<QuizQuestion>(qq => questionIds.Contains(qq.Id) && qq.SkillId.HasValue, trackChanges: false)
+            .Select(qq => new { qq.Id, SkillId = qq.SkillId!.Value })
+            .ToListAsync(cancellationToken);
+
+        if (questionSkillMap.Count == 0)
+            return;
+
+        var skillIds = questionSkillMap.Select(q => q.SkillId).Distinct().ToList();
+
+        // Fetch the POST-upsert tracked entities — their Status reflects the NEW mastery value
+        // (used for the "improved" flag). The SR columns (NextReviewDueAt, RepetitionNumber,
+        // ReviewIntervalDays) are unchanged by the upsert and correct on both tracked and pre-upsert rows.
+        var postUpsertRows = await _repository.Learning
+            .GetByCondition<StudentSkillMastery>(
+                m => m.StudentId == studentId && skillIds.Contains(m.SkillId),
+                trackChanges: true)
+            .ToListAsync(cancellationToken);
+
+        foreach (var postRow in postUpsertRows)
+        {
+            // Guard: only process skills that had a pre-attempt row (new inserts have no SR history).
+            if (!preUpsertMasteryRows.TryGetValue(postRow.SkillId, out var preRow))
+                continue;
+
+            // Evaluate IsDue against the PRE-attempt state (old Status + old NextReviewDueAt).
+            var wasDue = SpacedRepetitionEngine.IsDue(preRow.Status, preRow.NextReviewDueAt, utcNow);
+
+            if (!wasDue)
+                continue;   // routine practice — skip SR advancement
+
+            // "improved" = the NEW mastery status (post-upsert, from Step 8b) is not NeedsReview.
+            var improved = postRow.Status != MasteryStatus.NeedsReview;
+
+            var (nextIntervalDays, nextRepetitionNumber) =
+                SpacedRepetitionEngine.ComputeNextReview(preRow.RepetitionNumber, improved, options);
+
+            // Write SR fields back to the post-upsert tracked entity — UoW commits atomically.
+            postRow.ReviewIntervalDays = nextIntervalDays;
+            postRow.RepetitionNumber   = nextRepetitionNumber;
+            postRow.NextReviewDueAt    = utcNow.AddDays(nextIntervalDays);
+
+            // Stage the update (entity is already tracked; EF detects property changes).
+            await _repository.Learning.UpdateAsync(postRow);
         }
     }
 

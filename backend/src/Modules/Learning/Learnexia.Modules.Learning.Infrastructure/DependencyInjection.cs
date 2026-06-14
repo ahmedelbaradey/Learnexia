@@ -1,6 +1,8 @@
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Services;
+using Learnexia.Modules.Learning.Domain.Services;
 using Learnexia.Modules.Learning.Infrastructure.Behaviors;
+using Learnexia.Modules.Learning.Infrastructure.Jobs;
 using Learnexia.Modules.Learning.Infrastructure.Persistence;
 using Learnexia.Modules.Learning.Infrastructure.Repository;
 using Learnexia.Modules.Learning.Infrastructure.Service;
@@ -31,6 +33,36 @@ public static class DependencyInjection
 
         // P3-09: Internal mastery seam for P3-08/P3-10/P3-11 in-process consumers.
         services.AddScoped<IMasteryService, MasteryService>();
+
+        // P3-13: Student behavioral profile engine options + service.
+        // StudentProfileOptions lives in Domain (same pattern as AdaptivityOptions) so the
+        // pure engine can reference it without violating the Application → Domain dependency direction.
+        services.Configure<StudentProfileOptions>(
+            configuration.GetSection(StudentProfileOptions.SectionName));
+        services.AddScoped<IStudentProfileService, StudentProfileService>();
+
+        // P3-13 Student profile recompute sweep job.
+        // Transient — the job creates its own inner scope via IServiceScopeFactory.CreateAsyncScope()
+        // so it does not participate in any caller's scope. Mirrors SpacedRepetitionSweepJob registration.
+        services.AddTransient<StudentProfileRecomputeJob>();
+
+        // P3-08 Adaptivity Engine options + service.
+        // AdaptivityOptions lives in Domain so the pure engine can reference it without violating
+        // the Application → Domain dependency direction.
+        services.Configure<AdaptivityOptions>(
+            configuration.GetSection(AdaptivityOptions.SectionName));
+        services.AddScoped<IAdaptivityService, AdaptivityService>();
+
+        // P3-10 Spaced-Repetition Engine options.
+        // SpacedRepetitionOptions lives in Domain (same pattern as AdaptivityOptions) so the
+        // pure engine can reference it without violating the Application → Domain dependency direction.
+        services.Configure<SpacedRepetitionOptions>(
+            configuration.GetSection(SpacedRepetitionOptions.SectionName));
+
+        // P3-10 Spaced-Repetition sweep job.
+        // Transient — the job creates its own inner scope via IServiceScopeFactory.CreateAsyncScope()
+        // so it does not participate in any caller's scope. Mirrors StreakSweepJob registration.
+        services.AddTransient<SpacedRepetitionSweepJob>();
 
         // Unit-of-Work behavior (ADR 0001 §2 + ADR 0002 §2): commit once per ICommand<>, then dispatch
         // domain events AFTER commit. Registered here in Infrastructure (not Application) because it

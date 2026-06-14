@@ -11,10 +11,13 @@
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.Extensions.Options" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="Microsoft.Extensions.Localization.Abstractions" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Modules\Ai\Learnexia.Modules.Ai.Application\Learnexia.Modules.Ai.Application.csproj" />
     <ProjectReference Include="..\..\src\Modules\Ai\Learnexia.Modules.Ai.Infrastructure\Learnexia.Modules.Ai.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Shared\Learnexia.Shared.Contracts\Learnexia.Shared.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Shared\Learnexia.Shared.Resources\Learnexia.Shared.Resources.csproj" />
   </ItemGroup>
 </Project>

@@ -191,6 +191,19 @@ public interface ILearningRepository : IGenericRepository
     /// </summary>
     Task<List<Subject>> GetSubjectsForCoverageAsync(int gradeId, CancellationToken ct = default);
 
+    // ── Adaptivity signal aggregation (P3-08) ─────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Aggregates the four FR-AD-1 signals from <c>StudentAnswer</c> rows for the given
+    /// (studentId, skillId) pair. Returns a <see cref="SkillAdaptivityAggregate"/> with:
+    ///   <c>TotalAnswers</c>, <c>CorrectAnswers</c>, <c>AvgTimeSeconds</c>, <c>HintCount</c>,
+    ///   <c>RetryCount</c> (= TotalAnswers - 1, floored at 0, as extra attempts beyond the first).
+    /// Returns a zeroed aggregate (TotalAnswers = 0) when no answers exist — signals cold-start.
+    /// AsNoTracking.
+    /// </summary>
+    Task<SkillAdaptivityAggregate> GetAdaptivitySignalsAsync(
+        int studentId, int skillId, CancellationToken ct = default);
+
     // ── Mastery (P3-09) ──────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -224,4 +237,79 @@ public interface ILearningRepository : IGenericRepository
     /// AsNoTracking.
     /// </summary>
     Task<StudentSkillMastery?> GetSkillMasteryForStudentAsync(int studentId, int skillId, CancellationToken ct = default);
+
+    // ── Spaced Repetition (P3-10) ─────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns all <see cref="StudentSkillMastery"/> rows that are due for spaced-repetition review
+    /// at <paramref name="utcNow"/>, per the <see cref="SpacedRepetitionEngine.IsDue"/> rule:
+    /// <list type="bullet">
+    ///   <item><c>Status == NeedsReview</c> — always due.</item>
+    ///   <item><c>Status == Mastered AND NextReviewDueAt &lt;= utcNow</c> — mastered-but-stale (forgetting check).</item>
+    /// </list>
+    /// AsNoTracking — used by the sweep job for a read-then-write pattern where the write uses
+    /// <see cref="UpdateSpacedRepetitionFieldsAsync"/> (targeted update, not a full entity reload).
+    ///
+    /// UTC discipline: <paramref name="utcNow"/> must be <c>DateTime.UtcNow</c> (never <c>DateTime.Now</c>).
+    /// </summary>
+    Task<IReadOnlyList<StudentSkillMastery>> GetDueMasteryRowsAsync(DateTime utcNow, CancellationToken ct = default);
+
+    /// <summary>
+    /// Issues a targeted UPDATE on the <c>StudentSkillMasteries</c> table for the row with
+    /// <c>Id == id</c>, writing only the three SR scheduling fields
+    /// (<c>ReviewIntervalDays</c>, <c>RepetitionNumber</c>, <c>NextReviewDueAt</c>).
+    ///
+    /// Commits immediately via <c>ExecuteUpdateAsync</c> (targeted SQL — NOT routed through the
+    /// UoW behavior, which tracks entity changes). This is intentional: the sweep job operates
+    /// OUTSIDE an HTTP command pipeline and has no UoW behavior wrapping it.
+    ///
+    /// Callers within a UoW command (BE-6 completion hook) must NOT use this method; they should
+    /// mutate the tracked entity directly and let UoW commit.
+    ///
+    /// UTC discipline: <paramref name="nextDueAt"/> must be UTC-kind.
+    /// </summary>
+    Task UpdateSpacedRepetitionFieldsAsync(int id, int intervalDays, int repetitionNumber, DateTime nextDueAt, CancellationToken ct = default);
+
+    // ── Student Profile (P3-13) ────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Fetches the aggregated answer signals needed by <c>StudentProfileEngine</c> for the given
+    /// student. Returns:
+    /// <list type="bullet">
+    ///   <item>Per-<c>QuestionType</c> correct/total counts (from StudentAnswer ⋈ QuizQuestion).</item>
+    ///   <item>Per-skill wrong-answer counts (StudentAnswer rows where IsCorrect = false, joined on SkillId).</item>
+    ///   <item>Per-minute-bucket accuracy sequence (answers bucketed by cumulative TimeSpentSeconds within attempts).</item>
+    ///   <item>Overall accuracy and total-answer count across all answers.</item>
+    ///   <item>Per-type hint-usage counts.</item>
+    /// </list>
+    /// AsNoTracking; UTC timestamps throughout.
+    /// </summary>
+    Task<StudentSignals> GetStudentAnswerSignalsAsync(int studentId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the existing <see cref="StudentLearningProfile"/> for the given student, or creates
+    /// and stages a default profile row if none exists yet (insert path — UoW commits).
+    /// Used by <c>StudentProfileService.RecomputeProfile</c> to ensure a row always exists before upsert.
+    /// </summary>
+    Task<StudentLearningProfile> GetOrCreateStudentLearningProfileAsync(int studentId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Upserts the full <see cref="StudentLearningProfile"/> row for the student. If a tracked
+    /// row exists, mutates it in-place; otherwise adds a new row. Stages only — UoW commits.
+    /// </summary>
+    Task UpsertStudentLearningProfileAsync(StudentLearningProfile profile, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the <see cref="StudentLearningProfile"/> for the given student, or null when none
+    /// exists yet. Used by the inspection query (<c>GET /api/Learning/Profile</c>). AsNoTracking.
+    /// </summary>
+    Task<StudentLearningProfile?> GetStudentLearningProfileAsync(int studentId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all <see cref="StudentLearningProfile"/> rows where <c>LastRecomputedAt</c> is
+    /// older than the given <paramref name="cutoffUtc"/> or is null (never recomputed).
+    /// Used by <c>StudentProfileRecomputeJob</c> to identify stale profiles.
+    /// AsNoTracking; grade-agnostic (no grade filter — grade transitions must not reset the profile).
+    /// </summary>
+    Task<List<StudentLearningProfile>> GetStaleProfilesAsync(DateTime cutoffUtc, CancellationToken ct = default);
 }

@@ -35,6 +35,13 @@ public static class MediatRExtensions
             // AuditLogEventHandler is discovered. Without this line, AdminActionPerformedEvent
             // publishes into a void and the audit log silently stays empty with no error.
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Moderation.Application.AssemblyReference>();
+            // Curriculum (P3-07): register BOTH layers. The retrieval query handler
+            // (RetrieveChunksQueryHandler) lives in the Infrastructure assembly because it depends on
+            // CurriculumDbContext + pgvector (Application may not reference Infrastructure), so the
+            // Application-only scan used for other modules would miss it — RagContextProvider's
+            // _mediator.Send(RetrieveChunksQuery) would throw "no handler" at runtime without this.
+            cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Curriculum.Application.AssemblyReference>();
+            cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Curriculum.Infrastructure.AssemblyReference>();
 
             // Independent fan-out: every handler runs, per-handler failures are caught + logged
             // (ADR 0002 §4). Replaces MediatR's default throw-on-first-failure publisher.

@@ -2102,6 +2102,9 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="GamificationMissionAlreadyInRequestedState" xml:space="preserve">
     <value>The mission definition is already in the requested active state. No change was made.</value>
   </data>
+  <data name="AdaptivityDecisionRetrievedSuccessfully" xml:space="preserve">
+    <value>Adaptive difficulty decision retrieved successfully.</value>
+  </data>
   <data name="MasteryRetrievedSuccessfully" xml:space="preserve">
     <value>Mastery data retrieved successfully.</value>
   </data>
@@ -2110,5 +2113,17 @@ You should add board members to be able to perform fund activities, at least 2 i
   </data>
   <data name="SkillMasteryNotFound" xml:space="preserve">
     <value>No mastery record found for this skill. The student has not yet attempted it.</value>
+  </data>
+  <data name="DueReviewsRetrievedSuccessfully" xml:space="preserve">
+    <value>Due reviews retrieved successfully.</value>
+  </data>
+  <data name="StudentProfileRetrievedSuccessfully" xml:space="preserve">
+    <value>Student learning profile retrieved successfully.</value>
+  </data>
+  <data name="AiContentBlocked" xml:space="preserve">
+    <value>I'm not able to help with that right now. Please try asking something else.</value>
+  </data>
+  <data name="AiServiceUnavailable" xml:space="preserve">
+    <value>The AI tutor is temporarily unavailable. Please try again in a moment.</value>
   </data>
 </root>

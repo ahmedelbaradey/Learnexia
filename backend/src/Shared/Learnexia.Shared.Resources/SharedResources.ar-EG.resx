@@ -2101,6 +2101,9 @@
   <data name="GamificationMissionAlreadyInRequestedState" xml:space="preserve">
     <value>تعريف المهمة في الحالة النشطة المطلوبة بالفعل. لم يتم إجراء أي تغيير.</value>
   </data>
+  <data name="AdaptivityDecisionRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد قرار مستوى الصعوبة التكيفي بنجاح.</value>
+  </data>
   <data name="MasteryRetrievedSuccessfully" xml:space="preserve">
     <value>تم استرداد بيانات الإتقان بنجاح.</value>
   </data>
@@ -2109,5 +2112,17 @@
   </data>
   <data name="SkillMasteryNotFound" xml:space="preserve">
     <value>لا يوجد سجل إتقان لهذه المهارة بعد. لم يحاول الطالب ذلك بعد.</value>
+  </data>
+  <data name="DueReviewsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد المراجعات المستحقة بنجاح.</value>
+  </data>
+  <data name="StudentProfileRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد ملف تعلم الطالب السلوكي بنجاح.</value>
+  </data>
+  <data name="AiContentBlocked" xml:space="preserve">
+    <value>لا أستطيع المساعدة في هذا الأمر الآن. يرجى المحاولة بسؤال آخر.</value>
+  </data>
+  <data name="AiServiceUnavailable" xml:space="preserve">
+    <value>المعلم الذكي غير متاح مؤقتًا. يرجى المحاولة مجددًا بعد لحظة.</value>
   </data>
 </root>

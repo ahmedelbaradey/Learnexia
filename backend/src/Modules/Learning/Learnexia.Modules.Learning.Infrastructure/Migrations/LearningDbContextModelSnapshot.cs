@@ -722,6 +722,72 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
                     b.ToTable("StudentAnswers", "learning");
                 });
 
+            modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.StudentLearningProfile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AttentionSpanMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("DataPointCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("FatigueSignal")
+                        .HasColumnType("jsonb");
+
+                    b.Property<bool?>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastRecomputedAt")
+                        .HasColumnType("timestamptz");
+
+                    b.Property<int>("PreferredExplanationStyle")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("QuestionTypeAffinity")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("RecurringErrorClusters")
+                        .HasColumnType("jsonb");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StudentId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_StudentLearningProfiles_StudentId");
+
+                    b.ToTable("StudentLearningProfiles", "learning");
+                });
+
             modelBuilder.Entity("Learnexia.Modules.Learning.Domain.Entities.StudentSkillMastery", b =>
                 {
                     b.Property<int>("Id")

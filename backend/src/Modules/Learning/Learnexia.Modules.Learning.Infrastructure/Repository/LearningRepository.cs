@@ -461,6 +461,32 @@ public class LearningRepository : ILearningRepository
             .Where(s => s.GradeId == gradeId)
             .ToListAsync(ct);
 
+    // ── Adaptivity signal aggregation (P3-08) ─────────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public async Task<SkillAdaptivityAggregate> GetAdaptivitySignalsAsync(
+        int studentId, int skillId, CancellationToken ct = default)
+    {
+        // Fetch only the columns needed for the four FR-AD-1 signals.
+        // Mirrors GetSkillStatsQueryHandler's aggregation pattern (P2-08).
+        var answers = await RepositoryContext.StudentAnswers
+            .AsNoTracking()
+            .Where(sa => sa.Attempt.StudentId == studentId
+                      && sa.Question.SkillId == skillId)
+            .Select(sa => new { sa.IsCorrect, sa.TimeSpentSeconds, sa.HintUsed })
+            .ToListAsync(ct);
+
+        var total   = answers.Count;
+        var correct = answers.Count(a => a.IsCorrect);
+        var hints   = answers.Count(a => a.HintUsed);
+        var avgTime = total == 0 ? 0.0 : answers.Average(a => a.TimeSpentSeconds);
+
+        // RetryCount = extra answers beyond the first (proxy for repeated skill attempts).
+        var retries = Math.Max(total - 1, 0);
+
+        return new SkillAdaptivityAggregate(total, correct, avgTime, hints, retries);
+    }
+
     // ── Mastery (P3-09) ──────────────────────────────────────────────────────────────────────────────
 
     /// <inheritdoc/>
@@ -511,4 +537,225 @@ public class LearningRepository : ILearningRepository
         => await RepositoryContext.StudentSkillMasteries
             .AsNoTracking()
             .FirstOrDefaultAsync(m => m.StudentId == studentId && m.SkillId == skillId, ct);
+
+    // ── Spaced Repetition (P3-10) ─────────────────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<StudentSkillMastery>> GetDueMasteryRowsAsync(
+        DateTime utcNow, CancellationToken ct = default)
+    {
+        // UTC discipline (HANDOFF P2-08 quirk): Npgsql returns timestamptz columns with
+        // Kind=Local even when UTC was stored. We normalize by specifying the UTC comparison
+        // directly in the query so the DB-side comparison is always correct.
+        // The WHERE clause mirrors SpacedRepetitionEngine.IsDue:
+        //   Status == NeedsReview  OR  (Status == Mastered AND NextReviewDueAt <= utcNow)
+        var needsReview = (int)MasteryStatus.NeedsReview;
+        var mastered    = (int)MasteryStatus.Mastered;
+
+        return await RepositoryContext.StudentSkillMasteries
+            .AsNoTracking()
+            .Include(m => m.Skill)
+            .Where(m => (int)m.Status == needsReview
+                     || ((int)m.Status == mastered
+                         && m.NextReviewDueAt.HasValue
+                         && m.NextReviewDueAt.Value <= utcNow))
+            .ToListAsync(ct);
+    }
+
+    /// <inheritdoc/>
+    public async Task UpdateSpacedRepetitionFieldsAsync(
+        int id, int intervalDays, int repetitionNumber, DateTime nextDueAt, CancellationToken ct = default)
+    {
+        // Targeted UPDATE — touches only the three SR columns.
+        // Uses ExecuteUpdateAsync (EF 7+ bulk update) to avoid a full entity load.
+        // This method commits immediately because the sweep job runs outside any UoW pipeline.
+        // UTC discipline: nextDueAt must be UTC-kind before being stored (timestamptz column).
+        await RepositoryContext.StudentSkillMasteries
+            .Where(m => m.Id == id)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(m => m.ReviewIntervalDays, intervalDays)
+                .SetProperty(m => m.RepetitionNumber,   repetitionNumber)
+                .SetProperty(m => m.NextReviewDueAt,    nextDueAt),
+                ct);
+    }
+
+    // ── Student Profile (P3-13) ────────────────────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public async Task<StudentSignals> GetStudentAnswerSignalsAsync(int studentId, CancellationToken ct = default)
+    {
+        // ── Step 1: Fetch all answers for this student with the columns needed for derivation.
+        // Join to QuizQuestion to get QuestionType, SkillId; join to Attempt to get timing.
+        // UTC discipline: all timestamps are stored as timestamptz; normalized to UTC in memory.
+        // AsNoTracking — read-only aggregate for the profile engine.
+        var rawAnswers = await RepositoryContext.StudentAnswers
+            .AsNoTracking()
+            .Where(sa => sa.Attempt.StudentId == studentId)
+            .Select(sa => new
+            {
+                sa.IsCorrect,
+                sa.TimeSpentSeconds,
+                sa.HintUsed,
+                QuestionType   = sa.Question.QuestionType,
+                SkillId        = sa.Question.SkillId,
+                AttemptId      = sa.AttemptId,
+            })
+            .ToListAsync(ct);
+
+        var totalAnswers = rawAnswers.Count;
+
+        // ── Step 2: Overall accuracy.
+        var totalCorrect = rawAnswers.Count(a => a.IsCorrect);
+        var overallAccuracy = totalAnswers == 0
+            ? 0.0
+            : (double)totalCorrect / totalAnswers;
+
+        // ── Step 3: Per-QuestionType correct/total aggregates.
+        var answersByType = rawAnswers
+            .GroupBy(a => a.QuestionType)
+            .Select(g => (
+                Type:    g.Key,
+                Correct: g.Count(a => a.IsCorrect),
+                Total:   g.Count()))
+            .ToList();
+
+        // ── Step 4: Per-skill wrong-answer counts (only skills with at least one wrong answer).
+        // SkillId is nullable — exclude answers for questions with no skill assignment.
+        var skillErrorCounts = rawAnswers
+            .Where(a => !a.IsCorrect && a.SkillId.HasValue)
+            .GroupBy(a => a.SkillId!.Value)
+            .Select(g => (SkillId: g.Key, WrongCount: g.Count()))
+            .ToList();
+
+        // ── Step 5: Per-type hint-usage counts.
+        var hintAnswerCountByType = rawAnswers
+            .GroupBy(a => a.QuestionType)
+            .Select(g => (
+                Type:      g.Key,
+                HintCount: g.Count(a => a.HintUsed),
+                Total:     g.Count()))
+            .ToList();
+
+        // ── Step 6: Session accuracy buckets — bucket answers by cumulative TimeSpentSeconds
+        // within each attempt (v1 proxy from P2-08 timestamps).
+        // v1 proxy from Attempt/StudentAnswer timestamps; enrich from P5-03 (not yet built)
+        // when available. P5-03 will provide truer cross-attempt session boundaries.
+        //
+        // Each attempt's answers are sorted by TimeSpentSeconds (cumulative proxy), then bucketed
+        // into AttentionWindowMinutes=20 minute windows. Accuracy is computed per bucket.
+        // Buckets are then averaged across attempts to smooth session-to-session variation.
+        //
+        // Simplification: since TimeSpentSeconds is per-question (not cumulative), we use its
+        // running sum within each attempt as the elapsed-minutes proxy.
+        var answersByAttempt = rawAnswers
+            .GroupBy(a => a.AttemptId)
+            .ToList();
+
+        const int bucketWidthMinutes = 20; // mirrors AttentionWindowMinutes default
+        const int secondsPerMinute   = 60;
+        const int bucketWidthSeconds = bucketWidthMinutes * secondsPerMinute;
+
+        // Accumulate accuracy per bucket across all attempts.
+        var bucketAccuracyAccumulator = new Dictionary<int, (int correct, int total)>();
+
+        foreach (var attempt in answersByAttempt)
+        {
+            int runningSeconds = 0;
+            foreach (var answer in attempt.OrderBy(a => a.TimeSpentSeconds))
+            {
+                runningSeconds += answer.TimeSpentSeconds;
+                // Bucket index = which AttentionWindowMinutes window (0-based, in minutes).
+                var bucketMinute = (runningSeconds / bucketWidthSeconds) * bucketWidthMinutes;
+
+                if (!bucketAccuracyAccumulator.TryGetValue(bucketMinute, out var acc))
+                    acc = (0, 0);
+
+                bucketAccuracyAccumulator[bucketMinute] = (
+                    acc.correct + (answer.IsCorrect ? 1 : 0),
+                    acc.total   + 1);
+            }
+        }
+
+        var sessionAccuracyBuckets = bucketAccuracyAccumulator
+            .OrderBy(kv => kv.Key)
+            .Select(kv => (
+                MinuteBucket: kv.Key,
+                Accuracy:     kv.Value.total == 0 ? 0.0 : (double)kv.Value.correct / kv.Value.total))
+            .ToList();
+
+        return new StudentSignals(
+            AnswersByType:          answersByType,
+            SkillErrorCounts:       skillErrorCounts,
+            SessionAccuracyBuckets: sessionAccuracyBuckets,
+            OverallAccuracy:        overallAccuracy,
+            TotalAnswers:           totalAnswers,
+            HintAnswerCountByType:  hintAnswerCountByType);
+    }
+
+    /// <inheritdoc/>
+    public async Task<StudentLearningProfile> GetOrCreateStudentLearningProfileAsync(
+        int studentId, CancellationToken ct = default)
+    {
+        var existing = await RepositoryContext.StudentLearningProfiles
+            .FirstOrDefaultAsync(p => p.StudentId == studentId, ct);
+
+        if (existing is not null)
+            return existing;
+
+        // Insert a minimal default row — UoW commits; StudentProfileService populates the fields.
+        var profile = new StudentLearningProfile
+        {
+            StudentId                 = studentId,
+            PreferredExplanationStyle = ExplanationStyle.Standard,
+            DataPointCount            = 0,
+        };
+
+        await RepositoryContext.StudentLearningProfiles.AddAsync(profile, ct);
+        return profile;
+    }
+
+    /// <inheritdoc/>
+    public async Task UpsertStudentLearningProfileAsync(
+        StudentLearningProfile profile, CancellationToken ct = default)
+    {
+        // Check for an existing tracked row. Use tracking ON so EF manages the state.
+        var existing = await RepositoryContext.StudentLearningProfiles
+            .FirstOrDefaultAsync(p => p.StudentId == profile.StudentId, ct);
+
+        if (existing is null)
+        {
+            // Insert path: stage the new row (UoW commits).
+            await RepositoryContext.StudentLearningProfiles.AddAsync(profile, ct);
+        }
+        else
+        {
+            // Update path: mutate the tracked entity in-place.
+            existing.QuestionTypeAffinity      = profile.QuestionTypeAffinity;
+            existing.RecurringErrorClusters    = profile.RecurringErrorClusters;
+            existing.AttentionSpanMinutes      = profile.AttentionSpanMinutes;
+            existing.FatigueSignal             = profile.FatigueSignal;
+            existing.PreferredExplanationStyle = profile.PreferredExplanationStyle;
+            existing.DataPointCount            = profile.DataPointCount;
+            existing.LastRecomputedAt          = profile.LastRecomputedAt;
+
+            RepositoryContext.StudentLearningProfiles.Update(existing);
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<StudentLearningProfile?> GetStudentLearningProfileAsync(
+        int studentId, CancellationToken ct = default)
+        => await RepositoryContext.StudentLearningProfiles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.StudentId == studentId, ct);
+
+    /// <inheritdoc/>
+    public async Task<List<StudentLearningProfile>> GetStaleProfilesAsync(
+        DateTime cutoffUtc, CancellationToken ct = default)
+        // Grade-transition preservation: NO grade filter — the profile is per-student and grade-agnostic.
+        // A grade change must NOT cause the profile to disappear from this query.
+        => await RepositoryContext.StudentLearningProfiles
+            .AsNoTracking()
+            .Where(p => p.LastRecomputedAt == null || p.LastRecomputedAt < cutoffUtc)
+            .ToListAsync(ct);
 }

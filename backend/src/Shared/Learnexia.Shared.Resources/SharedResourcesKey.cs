@@ -1305,6 +1305,11 @@
         /// </summary>
         public const string GamificationMissionAlreadyInRequestedState = "GamificationMissionAlreadyInRequestedState";
 
+        // ── P3-08 Adaptivity Engine ──────────────────────────────────────────────────────────────────────
+
+        /// <summary>Returned when the adaptive difficulty decision is retrieved successfully.</summary>
+        public const string AdaptivityDecisionRetrievedSuccessfully = "AdaptivityDecisionRetrievedSuccessfully";
+
         // ── P3-09 Student Mastery Engine ─────────────────────────────────────────────────────────────
 
         /// <summary>Returned when all mastery rows for the student are retrieved successfully.</summary>
@@ -1318,6 +1323,36 @@
         /// The response still returns 200 with NotStarted defaults — never 404.
         /// </summary>
         public const string SkillMasteryNotFound = "SkillMasteryNotFound";
+
+        // ── P3-10 Spaced-Repetition Scheduler ────────────────────────────────────────────────────────
+
+        /// <summary>Returned when the due-reviews list is retrieved successfully for the student.</summary>
+        public const string DueReviewsRetrievedSuccessfully = "DueReviewsRetrievedSuccessfully";
+
+        // ── P3-13 Adaptive Student Profile (Behavioral Modeling) ─────────────────────────────────────
+
+        /// <summary>
+        /// Returned when the student's behavioral learning profile is retrieved successfully.
+        /// Used by <c>GetStudentProfileQueryHandler</c> (AC3 / AC5 inspection endpoint).
+        /// </summary>
+        public const string StudentProfileRetrievedSuccessfully = "StudentProfileRetrievedSuccessfully";
+
+        // ── P3-02 AI Safety Layer ────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Child-safe fallback message returned to the student when AI content is blocked
+        /// by the Safety Layer (toxicity / age-appropriateness / hallucination check failed).
+        /// Never exposes the unsafe content; tells the student the tutor cannot help right now.
+        /// Resolved via string localizer from <c>SafetyOptions.FallbackMessageKey</c>.
+        /// </summary>
+        public const string AiContentBlocked = "AiContentBlocked";
+
+        /// <summary>
+        /// Child-safe fallback message returned to the student when the AI gateway itself
+        /// is unavailable or errored. Resolved via string localizer from
+        /// <c>SafetyOptions.GatewayErrorFallbackKey</c>.
+        /// </summary>
+        public const string AiServiceUnavailable = "AiServiceUnavailable";
 
     }
 }

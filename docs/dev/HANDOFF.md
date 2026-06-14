@@ -3,7 +3,7 @@
 > Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-06-06 (**FE state reconciliation — see the ⭐ block directly below; Phase-1 + Phase-2 student FE confirmed merged, P8-04 FE corrected to not-started.** Earlier: **Phase 8 — Localization backend COMPLETE + merged to main (P8-01/02/03 PR #90; P8-04 PR #91) — see the Phase 8 section directly below.** Earlier status: **P4-11 BE — Streak freeze + timed events + weekly challenges + XP boost — commit/PR ready. P4-10 BE merged. P4-09 merged via PR #80. P4-08 FE WIP on `feat/P4-08-gamification-screens-motion` (Batches 2–6 still open for FE lead). Earlier P4-* per below.**).
 > Captures what's done, the decisions, the load-building config, and what's next. If you change any of these, update this file.
 > 2026-06-13: **Parent-dashboard + auth Arabic-RTL alignment / rounded-corner polish + functional fixes (branch `fix/frontend-rtl-alignment-polish`, off main).** Cross-cutting RTL + design pass from a QC findings list across Login, My-Children, Overview, Settings, layout/Sidebar, and Register. **Shared `packages/ui`:** `TextField` — direction-aware label/error `textAlign`, height 52→48, new `forceValueLtr` + `autoComplete`/`autoCorrect` props (email/phone values render LTR even in AR; auto-forced for `email-address`/`autoComplete='email'|'tel'`), reveal toggle moved into label row with localized `showLabel`/`hideLabel` (callers pass `auth.login.showPassword/hidePassword`); `Button` web primary glow + disabled `$cardSoft`; `ChildCard` RTL rows + removed active accent stripe; `CheckboxField` green check (`$secondary`/`$fgInverse`). (`Select`/`Tabs`/`MasteryBar`/radius tokens were already correct.) **CHILDREN/`AddChildModal`:** added **edit mode** (`childId`+`initialValues` → `useUpdateChild` PUT /Update-Child, re-seeds on reopen, hides email/password/photo per update contract); Country select (backend-backed via `AddChildCommand`/`UpdateChildCommand.country`); `autoComplete="off"` on email+password; the **Arabic "Add Child" button bug** was `flexWrap:"wrap"` + `row-reverse` pushing the button to an un-clickable wrapped position → fixed to `flexWrap:"nowrap"` + `flex:1` label. **OVERVIEW/SETTINGS/LAYOUT:** direction-aware `textAlign` on KPI/Recommendations/FocusAreas/header; **sidebar ChildSwitcher made functional** (was a static card that just `router.push`'d — now wired to `useActiveChildStore` like the header one) and the **duplicate top-nav ChildSwitcher removed** from the wide shell header (narrow/mobile header keeps it); **Logout added to sidebar** via `useSignOutAction` (new i18n `parent.nav.logout` en+ar). **REGISTER:** add-child is now an **inline 2-step wizard** (state-based `step` in `register.tsx`, reuses `AddChildModal`; `RegisterForm` gained `onSuccess` instead of routing to `/(onboarding)/add-child`, which is left intact for `LinkedChildrenPanel`); guardian banner border→new `$purpleBorder` token; FormScaffold scroll indicator hidden. **NEW BACKEND ENDPOINT (Settings language Save was 403):** the only language-write endpoint (`UserManagementController.UpdateUserLanguage`) is **AdminOnly** → parents got 403 mislabeled "No internet". Added self-scoped **`PUT /api/Users/Account/Language`** (`[Authorize]`, `UpdateMyPreferredLanguageCommand` — single `userPreferredLanguage`, user resolved from JWT, no IDOR/mass-assignment) in Identity `AccountController`, mirroring `UpdateMyProfile`. **api-client regenerated** by hand-editing the committed `packages/api-client/swagger.json` (new path + `UpdateMyPreferredLanguageCommand` schema) then `pnpm --filter @learnexia/api-client gen:api` (no running backend needed — `refresh:swagger` needs a live backend, `gen:api` works off the snapshot); generated method = `client.language(...)`; `useUpdateUserLanguage` rewired to it via `unwrapEnvelope` (same hook name/signature). **Gates:** reviewer **PASS** (0 blockers; 2 off-token colors + nits fixed: `$purpleBorder`/`$borderSubtle` tokens, restored `t('common.appName')`, localized password toggles at 5 call sites); **dotnet build + full workspace type-check/lint = green (18/18)**. **NOT verified live:** no Expo-web visual RTL smoke this pass (typecheck/lint/review only) — recommend a `frontend-e2e-tester` RTL run before merge. **Known minor:** `(onboarding)/_components/EditChildSheet.tsx` is now orphaned (referenced only in comments as a pattern template) — harmless dead code, left in place. **To fully ship the language Save:** when a live backend is next available, run `refresh:swagger` + `gen:api` to reconcile the hand-edited snapshot, and have `api-tester` cover the new endpoint. **PR #128** (`gh pr view 128`). **Follow-up commit `5e3a057`: removed the Country field from CHILD add/edit entirely** (product rule — children have no country): dropped from `AddChildModal`, onboarding `AddChildForm`, the shared `addChildSchema`, and the `AddChildCommand`/`UpdateChildCommand` payloads + edit pre-fill; **deleted the now-orphaned `(onboarding)/_components/EditChildSheet.tsx`**. Backend still accepts `country` as optional (unchanged) — the client just stops sending it for children; parent-registration country is untouched. (Unused `parent.addChildModal`/`onboarding.addChild` country i18n keys left in place — harmless.) type-check + lint green. **Untracked artifact:** an agent auto-generated `docs/dev/FRONTEND_DEV_MANUAL.md` (377 lines, a React-dev onboarding map for this monorepo) — left UNCOMMITTED/unvetted in the working tree; keep+vet or delete per lead.
-> 2026-06-13: **P3-07 IMPLEMENTATION STARTED — `Curriculum` module scaffolded (untracked `backend/src/Modules/Curriculum/`, another lead building).** Domain entities created to the locked spec: `CurriculumVersion` (minimal — `SubjectId`, `Language`, `Status {Draft/Active/Archived}`, **+ `Name` label e.g. "MVP-G3-Math-v1"** added this session for the seeder + P7-05 surface; audit/`CreatedAt` come from `AggregateRoot`/`FullAuditedEntity`), `CurriculumChunk` (no inline vector; `SkillKey`, `CurriculumVersionId`, nullable `ProvenanceRef`; plain-int hierarchy refs), `ChunkEmbeddingBgeM3` (separate table, `Provider/Model/ModelVersion/Dimension/Vector vector(1024)/IsActive`, derives `CreationAuditedEntity`), enums `ContentLanguage`/`CurriculumVersionStatus`, `CurriculumDbContext` + factory. Matches the FINAL LOCKED architecture below (minimal slice; BL-04 extends, BL-05 writes). Still TODO per P3-07-BE.md: EF configs + `InitialCurriculum` migration (HNSW on `chunk_embeddings_bge_m3.Vector`), `IEmbeddingProvider`/`BgeM3EmbeddingProvider` (TEI), `RetrieveChunksQuery`, seeder, `RagContextProvider` (`ILearningContextProvider`) **+ implement the merged `ICurriculumContextQuery`** (replaces `EmptyCurriculumContextQuery`), and `P3-07-BE-0` (stand up the BGE-M3 TEI endpoint). **Retrieval-seam decision (updates the entry below): use the built `ICurriculumContextQuery`; DROP the planned `IChunkRetrievalContract`** — the "keep both seams" line below is superseded (decisions-doc one-line cleanup still pending).
+> 2026-06-14: **P3-07 COMPLETE — `Curriculum` module + RAG retrieval system BUILT.** New `Curriculum` module (4 projects: Domain/Application/Infrastructure/Api) fully implements P3-07-BE per the locked AI architecture. **Schema:** `CurriculumVersion` (SubjectId, Language, Status={Draft/Active/Archived}, Name, audit/CreatedAt), `CurriculumChunk` (SkillKey, CurriculumVersionId, nullable ProvenanceRef, hierarchy refs), `chunk_embeddings_bge_m3` table (separate, never inline; `Provider/Model/ModelVersion/Dimension/Vector vector(1024) HNSW cosine/IsActive`). **InitialCurriculum migration** creates the pgvector extension + 3-table schema + HNSW cosine index. **Embedding provider:** `BgeM3EmbeddingProvider` (calls TEI endpoint) + `DeterministicEmbedding` (seed-only, placeholder `ModelVersion="seed-placeholder-v0"`); seeder `CurriculumChunkSeeder` plants deterministic embeddings for testing + demo (parity stamp enables future swap to real BGE-M3 without schema change). **Retrieval:** `RetrieveChunksQuery` handler (Infrastructure, needs DbContext+pgvector) joins embedding↔chunk↔version, filters CurriculumVersion.Status=Active + grade + subject + skill + similarity floor, returns empty on no hits (never hallucinate). **Context provider:** `RagContextProvider` (Infrastructure) implements BOTH `ILearningContextProvider` (runtime student-centric) AND `ICurriculumContextQuery` (the intended seam); wired via `AiHelper:ContextProvider="Rag"` config (default="Seeded"). **Cross-module MediatR:** handler lives in Curriculum.Infrastructure (isolated, has DbContext); Host scans both Curriculum.Application + Curriculum.Infrastructure AssemblyReferences for registration. **Integration tests:** 11/11 pass vs real pgvector (P3_07_RetrievalEndpoint_Tests: endpoint semantics; RagContextProviderTests: provider behavior). **CRITICAL GATE:** embeddings are PLACEHOLDERS — semantic RAG is NOT live until (1) P3-07-BE-0 (devops: provision + deploy BGE-M3 TEI endpoint on Hetzner) is done AND (2) all rows in `chunk_embeddings_bge_m3` are re-embedded with real BGE-M3 vectors (the ModelVersion parity stamp makes the swap detectable; current default `Curriculum:Retrieval:SimilarityDistanceFloor` is tuned for placeholders and must be re-tuned for real). **Activation steps:** (1) Stand up BGE-M3 TEI on Hetzner per P3-07-BE-0, record base URL. (2) Set `Curriculum:Embedding:BaseUrl` + `Model` + `ModelVersion` in config. (3) Backfill embeddings via offline job. (4) Re-tune similarity floor. **Reviewer PASS** (0 blocking, build green, 11/11 integration vs pgvector green); **Light-security PASS** (no Critical/High; API key missing by design — kept in secrets, not appsettings).
 > 2026-06-13: **🔒 FINAL LOCKED AI ARCHITECTURE — Phase-4 AI Tutor + Curriculum Intelligence (docs only; nothing built yet). Canonical record: `docs/decisions-needed-ai-phase.md` → "FINAL LOCKED AI ARCHITECTURE (2026-06-13)".** Lead ratified the full AI retrieval/embedding/cache stack and aligned all the specs; this is the spec the P3-07 + BL agents implement against. **Embeddings:** self-host **BGE-M3, `vector(1024)`**, served at runtime over a **synchronous TEI (Text-Embeddings-Inference) endpoint on a Hetzner dedicated host** (64 GB RAM/NVMe, CPU-only at MVP → GPU when query latency or large ingestion batches demand), behind **`IEmbeddingProvider`** (`BgeM3EmbeddingProvider`; `IEmbeddingService` retired). **Seed-time ↔ runtime model/version PARITY is required** (stamped on `chunk_embeddings_bge_m3.Provider/Model/ModelVersion`; provider fails-fast on mismatch) — else cosine search is invalid. **Storage:** vectors live in a **separate `chunk_embeddings_bge_m3` table**, never inline on `CurriculumChunk`; future model = new per-dimension table + `IsActive` flip. **Schema ownership:** **P3-07 creates the *minimal* `CurriculumChunk` + `CurriculumVersion` + `chunk_embeddings_bge_m3` slice; BL-04 EXTENDS (ALTER/ensure-exists), BL-05 writes rows — neither re-creates** (guards added to BL-04-BE/BL-05-BE/curriculum-system-of-record §4). **Retrieval (P3-07):** JOIN embedding⋈chunk⋈version, filter `CurriculumVersion.Status = Active` + grade + subject + skill + similarity floor; empty ⇒ "no context" (never hallucinate). **Two retrieval seams kept (NOT merged):** `ILearningContextProvider`/`RagContextProvider` (runtime, student-centric) + `IChunkRetrievalContract` (P3-06 offline batch, student-less). **.NET↔Python seam:** DB-outbox `PipelineJobs` + Python poller (NOT MediatR, NOT a broker). **Cache (per `docs/briefs/ai-cost-routing.md`):** two-tier — durable reviewable **`ai.AiResponseCache`** (Postgres; col `Response`; key `SkillKey`+`CurriculumVersion`; `ReviewStatus ∈ {PendingReview,Approved,Rejected}`; auto-approve on safety-passed AND confidence ≥ 0.85) + **Redis read-through** holding Approved-only (Redis is speed, never source of truth — reload from Postgres on loss). This **unifies/supersedes** the old separate `ConceptExplanationCache`/`HintCache`. **Charging** (Redis hit / Postgres hit / fresh gen = charge; error/refusal = free) is a *rule*; the **credit ledger + charging seam are Phase 10** (P10-01 ledger, P10-03 spend-on-ai). **AI scope:** closed set of **4 intents only** (Hint, WhyWrong, Explain-concept, Generate-practice) — no open chat. **Python pipeline LOCKED same-repo at `python/curriculum_intelligence/`** (`app/ parsers/ embeddings/ kg/ workers/`); `BL-02-PY-1` is the shared foundation BL-03-PY/BL-05-PY build on (BL stories + `-PY` task tables already exist: BL-02=9, BL-03=5, BL-05=8). **Task changes made this session:** P3-07-BE.md rewritten to the locked design + **new `P3-07-BE-0` (provision/deploy the BGE-M3 TEI endpoint — Hetzner, secrets, health, compose/CI; blocks BE-6)**; BL-02-BE location locked; P3-07 plan/brief + ai-helper-mvp re-aligned. **DEVOPS TODO before P3-07 runs:** stand up the BGE-M3 TEI endpoint + record base URL + `Model`/`ModelVersion` in `EmbeddingSettings` (P3-07-BE-0). **No new user stories needed** — BL stories cover the pipeline; gaps were task-level. Earlier AI status below: Wave 1 (P3-01 gateway + P3-09 mastery) merged PR #126; P3-08/P3-10 merged locally; P3-13 in progress on this branch.
 > 2026-06-13: **Onboarding add-child → MODAL (branch `feat/onboarding-add-child-modal`, off main).** The parent register/onboarding add-child step (`app/(onboarding)/add-child.tsx`) was converted from the old inline `AddChildForm` + in-memory draft-list + batch "submit all" into the **design-system Add-Child MODAL** flow: a My-Children-style screen (heading + `useMyChildren` list rendered with `@learnexia/ui` `ChildCard` + a dashed `AddChildCard` "Add a child" tile) that opens the existing `AddChildModal`; each modal confirm **creates the child immediately** (`useAddChild` → POST /api/Parent/Add-Child) and it appears in the list; a **Continue** button gated on `child count >= 1` → `/(onboarding)/complete`. **Key moves:** (1) `AddChildModal` **moved to shared `apps/student-app/src/components/AddChildModal.tsx`** (old `(parent)/_components/AddChildModal.tsx` shim deleted — zero importers); both dashboard + onboarding import the shared one. (2) `useAddChild.onSuccess` now invalidates **both** `myChildren` AND `auth.me()` (so the `hasChildren` guard isn't stale post-add). (3) Dashboard `MyChildrenWeb` "+ Add Child" button + dashed card now **open the modal** via `activeChildStore.openAddChild()` instead of `router.push('/(onboarding)/add-child')` (required — onboarding is no longer a page form). `AddChildForm.tsx`/`EditChildSheet.tsx` **kept** (dashboard's `MyChildrenWeb` still uses `EditChildSheet`); `childListTypes.ts` deleted. i18n: reused `parent.addChildModal.*`, added `onboarding.addChild.continue/listLabel/emptyHint` + reworded title/subtitle (en+ar). **Gates:** reviewer **PASS** (0 blocking); rewritten `tests/e2e/specs/P1-03-FE.spec.ts` **21/21 pass** (verified empty-state→dashed-tile→modal→list→Continue, en+ar/RTL); type-check/lint/build green (student-app/shared/api-client). **Known (backlog, not blockers):** new-child **photo is preview-only** (no avatar endpoint on `AddChildCommand` — `photoFile` held behind an eslint-disable); grade tiles + flag tiles + Select options all share `accessibilityRole="radio"` (minor a11y/selector note); `LinkedChildrenPanel` still has a `router.push('/(onboarding)/add-child')` fallback only when its `onAddChild` prop is absent.
 > 2026-06-12: **Phase 1/2/3 carryover backlog started (branch `feat/p1-p2-p3-carryover`, off main; brief `docs/dev/CARRYOVER-P1-P2-P3-LEAD-BRIEF.md`).** Three gating decisions recorded (lead/user, 2026-06-12): **(1) Matching answer payload = `{ pairs: [{leftId,rightId}], attemptOrder, timeMs }`** — comparator does order-independent pair-set equality; demo seed must carry **all 4 types (MCQ/TrueFalse/FillBlank/Matching)**; FE gets a real tap/drag pairing UI. **(2) Attempt-history (P2-09 / G5) = IN SCOPE now** (not deferred to Phase 5). **(3) Marketing landing ar/RTL (CO-FE-4) = ALREADY EXISTS on main** (`apps/marketing-site/app/[locale]` /en+/ar, `middleware.ts`, `lib/copy.ts`, `LanguageSwitcher`) → **dropped from the backlog** (review-only, no build). Waves: A = Phase-1/2 FE polish, B = Phase-3 gamification FE (the bulk), C = Matching full-stack, D = E2E close-out. Brief `docs/briefs/p1-p2-p3-carryover.md`, plan `docs/plans/p1-p2-p3-carryover.md`.
@@ -68,6 +68,171 @@ These are env vars / secret store — NEVER committed to git:
 - P3-03 (Prompt builder) builds `AiRequest` objects — all DTOs are frozen.
 - Real provider API keys are needed before any runtime call (P3-04+).
 
+## P3-02 — AI Safety Layer — added 2026-06-13 (branch `feat/P3-02-ai-safety-layer`)
+
+Built the mandatory AI-safety facade enforcing FR-AI-4 (child-safety critical).
+
+### What shipped
+
+- **ISafetyLayer contract** (new, in Shared.Contracts/Ai/) — the ONLY authorized path for AI content generation. Feature handlers inject ISafetyLayer, never IAiGateway directly.
+- **SafeAiResult envelope** — carries Allowed bool, Content string, SafetyVerdict (Blocked/Fallback/Allowed), FailedChecks string[], Confidence double forwarded from gateway for cache ReviewStatus decisioning.
+- **SafetyLayer facade** (Ai.Application/Safety/SafetyLayer.cs) — sole ISafetyLayer impl. 8-step: (1) optional input toxicity screen, (2) call IAiGateway.CompleteAsync, (3-4) run all checks concurrently, (5) if Block go to (7); if NeedsRegeneration bounded regen (MaxRegenerationAttempts=2), (6) on block/exhausted: write SafetyEvent, return localized fallback, (7) fail-closed on all exceptions.
+- **3 composable checks, all enabled by default (FR-AI-4):**
+  - **ToxicityCheck** — LLM-as-judge (Haiku), detects slurs/profanity.
+  - **AgeAppropriatenessCheck** — LLM-as-judge, age-banded (grades 1-6 vs 7-12), detects sexual/violent/scary content.
+  - **HallucinationCheck** — heuristic (no LLM), checks logical consistency.
+  - All return CheckVerdict {Outcome, ReasonCodes[], Details}.
+- **Judge prompts injection-fenced** with sentinel delimiters to prevent student content escape.
+- **SafetyOptions** (Ai:Safety appsettings) — all flags default true per FR-AI-4; operator must explicitly disable. MaxRegenerationAttempts=2.
+- **ai.SafetyEvents table** — append-only, PII-light: StudentId int, TaskKind varchar, FailedChecks/ReasonCodes jsonb, ActionTaken varchar, ModelId varchar, OccurredAtUtc timestamptz indexed. NO prompt/response/names/email.
+- **AiDbContext + AiDbContextFactory** — mirrors Moderation. Append-only direct SaveChanges (ADR-0001).
+- **Architecture test P302-ARCH-04** — enforces no-bypass: any type outside Ai.Infrastructure/SafetyLayer/Shared.Contracts referencing IAiGateway fails test.
+- **Resource strings** — AiContentBlocked (ar/en), AiServiceUnavailable (gateway fallback).
+- **37 unit+arch tests GREEN** (SafetyLayerTests: 24 scenarios; AiModuleArchTests: P302-ARCH-04 + 12 other rules).
+- **Eval harness** (Ai.EvalTests, [Trait("Category","Eval")] tagged, CI-excluded) — runs checks against safety-eval-set.json (ar+en samples). Run with `dotnet test --filter Category=Eval` + live keys to validate Arabic moderation before P3-04 ships (Gate B, docs/briefs/ai-eval-gate.md).
+
+### Security audit (MANDATORY GATE — PASS, 0 Critical/High)
+
+- Fail-closed everywhere: any error → block + fallback, never unscreened.
+- No bypass: P302-ARCH-04 locks IAiGateway refs. Feature handlers must use ISafetyLayer.
+- PII-light SafetyEvents: reason codes only, no raw content. P7-09 reads stable codes.
+- Judge prompts injection-fenced (sentinel delimiters).
+- All checks default-enabled (FR-AI-4). Operator must flip config flags to disable.
+- Ai:Safety config carries flags/message-keys only, no API keys (those in secret Ai:Providers:*:ApiKey).
+- Eval harness must pass with live keys on ar+en before P3-04 integration. LAUNCH-GATE requirement.
+
+### Load-bearing decisions
+
+- **Facade (Q3):** SafetyLayer wraps IAiGateway. Architecture test locks no-bypass at type level.
+- **All checks enabled (FR-AI-4):** operator must explicitly set false in config to disable.
+- **MaxRegenerationAttempts=2 (bounded):** 2nd chance on marginal, prevents unbounded loops.
+- **LLM-as-judge toxicity/age (Q4/Q6):** cheap Haiku models, avoids separate endpoint. Hallucination is heuristic.
+- **PII-light SafetyEvents (Q5):** reason codes + check names in jsonb. Full-content quarantine deferred to P7-09.
+- **Append-only SaveChanges (ADR-0001):** mirrors Moderation.AuditLog. No Unit of Work.
+- **Eval-tagged CI-excluded:** live keys needed. Run `dotnet test backend/tests/Ai.EvalTests --filter Category=Eval`.
+- **Arabic moderation = LAUNCH-GATE (Gate B):** must pass with real keys ar+en before P3-04 ships to prod.
+
+### What P3-04/05/06 must do
+
+- Inject ISafetyLayer, never IAiGateway.
+- Call `await _safetyLayer.GenerateSafeAsync(request, ct)`.
+- On block, return `result.Message` (localized).
+- Use `Confidence + SafetyVerdict` for cache ReviewStatus decision.
+- Real provider keys (Ai__Providers__Claude__ApiKey, etc.) required before runtime.
+
+### Load-bearing config + secret paths
+
+Secrets (env vars / secret store, NEVER git):
+- Ai__Providers__Claude__ApiKey
+- Ai__Providers__OpenAi__ApiKey
+
+Config flags (appsettings.json, safe to commit):
+- Ai:Safety:EnableToxicityCheck = true (default)
+- Ai:Safety:EnableAgeCheck = true (default)
+- Ai:Safety:EnableHallucinationCheck = true (default)
+- Ai:Safety:MaxRegenerationAttempts = 2 (default)
+- Ai:Safety:ModerationProvider = "Claude" (default)
+- Ai:Safety:FallbackMessageKey = "AiContentBlocked" (default)
+- Ai:Safety:GatewayErrorFallbackKey = "AiServiceUnavailable" (default)
+
+## P3-03 — Prompt Builder — added 2026-06-13 (branch `feat/P3-03-prompt-builder`)
+
+Built the full prompt-builder (P3-03 BE-1 through BE-10). Stateless deterministic prompt assembly for personalized child-safe tutor prompts.
+
+### What shipped
+
+- **`IPromptBuilder` contract** (new, in Ai.Application/PromptBuilder/) — single method `BuildAsync(PromptContext) → AiRequest`. Deterministic, no side effects, pure logic.
+- **`PromptContext` value object** — captures all rendering variables: StudentId, ChildGrade, TutorLanguage (ar/en), HelperIntent, SubjectName, TopicName, CurrentConcept, WeakAreas[], ContextProvider (pluggable: `ILearningContextProvider`).
+- **`PromptBuilder` facade** — wires 4-step pipeline: (1) TemplateSelector picks intent-specific template (`Explain`/`Hint`/`WhyWrong`/`SimilarExample`), (2) ToneFrame anti-injection + PII-minimal (grade/age only, no StudentId/name/email), (3) language variant (ar/en), (4) assemble final `AiRequest` with task-kind routing.
+- **4-subject template tree** (Math, Science, Arabic, English; NO Social Studies) — each subject has 4 intent variants (Explain/Hint/WhyWrong/SimilarExample), each bilingual ar/en, code-as-config in `PromptBuilder/Templates/` (7 txt files per subject, 28 templates total). Tone frame = injected guard: student-supplied text wrapped in sentinel delimiters to block escape.
+- **`TemplateSelector` static** — pure dictionary lookup: (Subject, Intent) → template string. Fast, deterministic.
+- **`HelperIntent` enum** — 4 values: Explain (describe concept), Hint (guide without answer), WhyWrong (explain incorrect choice), SimilarExample (practice variant). Maps to `AiTaskKind.Explain` (Explain/SimilarExample) or `AiTaskKind.Hint` (Hint/WhyWrong) for model routing via `AiModelRouter` (Sonnet + Mid tier per brief).
+- **Optional seams in `Shared.Contracts/Ai/`** (P3-03 ships stubs; implementations deferred):
+  - `IStudentWeakAreasQuery` → P3-09 (mastery engine computes weak areas).
+  - `IChildLearningProfileQuery` → P3-04 (profile engine).
+  - `ICurriculumContextQuery` → P3-07 (curriculum module retrieves context).
+  - `ILearningContextProvider` (Ai.Application/Stubs/`EmptyLearningContextProvider`) → P3-07 deferred (concrete `SeededCorpusContextProvider`/`RagContextProvider` live in P3-07; module isolation: Ai cannot reference Learning/Curriculum; config key `AiHelper:ContextProvider` introduced in P3-07).
+- **`AiTutor` seam in `Shared.Contracts/AiTutor/`** — `LearningContext` DTO + `ILearningContextProvider` interface; both consumed by P3-04/05/06 through ISafetyLayer.
+- **Graceful degradation** — all optional seams return safe defaults if unimplemented (empty weak areas, no profile hints, generic context). Prompts render + ship even if dependencies are stubbed.
+- **4 unit test files** (203 Ai unit tests total, 166 new):
+  - `PromptBuilderAssemblyTests` — verify all 28 templates exist + parse + no interpolation errors.
+  - `PromptBuilderLanguageTests` — ar/en variants render + ToneFrame guards inject correctly.
+  - `PromptBuilderGracefulDegradationTests` — stubs return safe defaults; full prompts assemble without crashing.
+  - `TemplateSelectorTests` — dictionary lookup deterministic, all (Subject, Intent) pairs map.
+- **DI wiring** in `Ai.Application/DependencyInjection.cs` — `AddScoped<IPromptBuilder, PromptBuilder>()` + optional seam registrations (defaults to stubs).
+- **Security audit: MANDATORY GATE — PASS** (0 Critical/High). ToneFrame anti-injection tested; PII-minimal (grade/age only); `HelperIntent` routing prevents model-mismatch; no hardcoded secrets; graceful fallback on missing dependencies. FR-AI-6 (personalized + safe) enforced.
+- Build: `dotnet build Learnexia.Modular.sln` — **0 errors**. Unit test suite 203 green (166 P3-03 new + 37 P3-02 legacy).
+
+### Load-bearing decisions (reviewer-confirmed)
+
+- **Pure stateless facade** — no DB reads, no side effects. PromptBuilder is a pure function PromptContext → AiRequest.
+- **`HelperIntent` replaces `TutorTask`** — 4 intents (Explain/Hint/WhyWrong/SimilarExample) map 2:1 to `AiTaskKind` (Explain/SimilarExample→Explain, Hint/WhyWrong→Hint); both use Sonnet + Mid tier per the routing table.
+- **4-subject invariant** (Math/Science/Arabic/English) — no Social Studies per product spec. Subject enum + all templates locked to 4 members.
+- **Optional seams with safe stubs** — `IStudentWeakAreasQuery`/`IChildLearningProfileQuery`/`ICurriculumContextQuery`/`ILearningContextProvider` shipped with no-op stubs; implementations land in later stories (P3-04/07/09). Graceful degradation: if a seam is never wired, the stub returns empty/safe (weak areas=[], profile=null, context=empty).
+- **Module isolation preserved** — Ai.Application can reference `Shared.Contracts` only, never Learning or Curriculum. `ILearningContextProvider` lives in `Shared.Contracts/AiTutor/`, not in Ai. The concrete provider (`SeededCorpusContextProvider`) is authored in P3-07 + wired there; `AiHelper:ContextProvider` config key introduced in P3-07 at wire-time.
+- **ToneFrame anti-injection ar/en** — student text (wrong answer, question context) wrapped in sentinel delimiters to prevent escape + prompt injection. Guards tested ar+en.
+- **PII-minimal prompts** — only StudentGrade + EstimatedAge passed to model. No StudentId, email, name, phone, or learning-language in the prompt body.
+- **Templates = code-as-config** — .txt files in `PromptBuilder/Templates/` read at startup, parsed once, cached. No DB table, no versioning yet (P10-12 considers runtime tuning via Global Settings).
+- **No migration** — P3-03 is stateless; no new tables or schema.
+
+### What P3-04/05/06 must do
+
+- Inject `IPromptBuilder` (now registered in DI).
+- Call `await _promptBuilder.BuildAsync(context)` with filled `PromptContext`.
+- Pass result `AiRequest` to `ISafetyLayer.GenerateSafeAsync(request, ct)`.
+- Wire optional seams: P3-04 implements `IChildLearningProfileQuery`, P3-07 implements `ICurriculumContextQuery` + `ILearningContextProvider`, P3-09 implements `IStudentWeakAreasQuery`.
+
+### Config + secret paths
+
+Secrets (env vars / secret store, NEVER git):
+- (None new in P3-03; inherited from P3-01/P3-02: Ai__Providers__Claude__ApiKey, Ai__Providers__OpenAi__ApiKey)
+
+Config flags (appsettings.json, safe to commit):
+- (All inherited from P3-02 SafetyOptions; P3-03 adds no new config keys. **P3-07 introduces** `AiHelper:ContextProvider` = "Seeded" or "Rag" at wire-time.)
+
+
+## P3-08 — Adjust difficulty adaptively (Adaptivity Engine) — added 2026-06-13 (branch `feat/P3-08-adaptivity-engine`)
+
+Built **P3-08** in the **`Learning` module**. Full pipeline (db-migration → backend-feature → api-tester → security-auditor → reviewer PASS).
+
+**What shipped**
+
+- **`AdaptivitySignals` value object** — 5 input signals (AccuracyPct 0.0–1.0, AvgTimeSeconds ≥0, HintRate 0.0–1.0, RetryCount ≥0, MasteryPct 0.0–1.0) + boolean IsDefault flag (cold-start = true). Pure data contract.
+- **`AdaptivityDecision` value object** — output: TargetDifficulty enum (Easy/Medium/Hard) + IsDefault flag. Immutable result.
+- **`AdaptivityOptions` config** — bound from `Learning:Adaptivity:WeightedScoreBand`: `WeightAccuracy` (0.5 default), `WeightTime` (0.2), `WeightHint` (0.2), `WeightRetry` (0.1), `HighBand` (0.8), `LowBand` (0.5), `ExpectedAttempts` (2), `FatigueSignalWeight` (0.0, optional P3-13 hook). Loaded in `Learning.Domain/Services` layer.
+- **`AdaptivityEngine` domain service** — pure static method `DecideDifficulty(signals, options) → AdaptivityDecision`. Weighted-score algorithm: `score = (accuracy × WeightAccuracy) + (normalizedTime × WeightTime) + ((1 − hint) × WeightHint) + ((1 − normalizedRetry) × WeightRetry)`. Time normalization: max(AvgTimeSeconds, 0) capped at 30s baseline (degradation guard; score floor = 0 if avg ≤ 0). Retry normalization: min(RetryCount, ExpectedAttempts) / ExpectedAttempts. Score-band mapping: score ≥ HighBand → Hard, score ≥ LowBand → Medium, else Easy. Cold-start (IsDefault=true) always → Medium + IsDefault=true. Deterministic, reproducible, monotonic.
+- **`SkillAdaptivityAggregate` read model** — pure logic; computes AdaptivitySignals from student attempt history per skill. Queries: cumulative accuracy, avg time, hint rate, retry count, mastery %. Seeded by the write-path (P3-08 integration handler) to avoid N+1 on dashboard read.
+- **`GetAdaptivitySignalsAsync(studentId, skillId)` repo aggregate** — reads from `StudentSkillMastery` (mastery %) + joins `StudentAnswer` to compute accuracy/time/hints/retries per skill. Scoped to the learner (auth via JWT `studentId`). Returns a fresh `AdaptivitySignals` struct for the skill.
+- **`IAdaptivityService` in-process seam** (Application layer) — single method `GetTargetDifficultyAsync(studentId, skillId, skillSlotId) → AdaptivityDecision`. Wires the repo + engine; caches isDefault check. **Cross-module seam for P3-11** (adaptive quiz selection consumes this). Registered in `DependencyInjection.cs`.
+- **Write-path integration: `CompleteAttemptCommandHandler` P3-08 hook** — after mastery is upserted (P3-09), handler calls `PrewarmAdaptivityCacheAsync` to compute + cache the AdaptivityDecision for each skill touched by the attempt. Fail-soft (no-op on cache miss; logging at Warn).
+- **Inspection endpoint** — `GET /api/Learning/Adaptivity/Decision/{skillId}` (student-scoped, returns `AdaptivityDecisionDto`). Admin-debug endpoint `GET /api/Admin/Learning/Adaptivity/Signals/{studentId}/{skillId}` (returns raw signals + computed score). No write endpoints.
+- **Resource strings** — AR/EN localization for TargetDifficulty display (SharedResourcesKey.cs + .resx files). "سهل" / "Easy", "متوسط" / "Medium", "صعب" / "Hard".
+
+**Load-bearing decisions (reviewer-confirmed)**
+
+- **Weighted-score formula is Q1 algorithm per the brief** — all 4 signals equally critical (non-zero weights); no subject/grade/domain variants (configurable at Global Settings P10-12 later).
+- **Default weights (Accuracy 0.5 / Time 0.2 / Hint 0.2 / Retry 0.1)** — tuned for K–12 learner profiles (accuracy primary, time as tiebreaker, hints/retries as secondary); configurable at runtime via `appsettings.json`.
+- **Cold-start = Medium + IsDefault** — no fallback to difficulty history or random (safest for unknown students).
+- **Time normalization baseline = 30s** — typical quiz-question attempt window; degradation (AvgTimeSeconds ≤ 0) zeroes the time component (never negative).
+- **Retry proxy = RetryCount** — defined as `TotalAnswers − 1` (coarse, not per-skill attempt count). **Tuning follow-up** (not a blocker): P3-08 should ideally read per-skill attempt count when available.
+- **No DB table for adaptivity state** — engine computes on-demand from attempt history (no migration). Reads are O(1) if mastery is cached (P3-09 UpsertMasteryForAttemptAsync pre-seeds it).
+- **P3-13 fatigue signal (optional)** — `FatigueSignalWeight = 0.0` by default. If P3-13 later adds a fatigue factor, the formula can include it: `score += (fatigueLevel × FatigueSignalWeight)`. Deferred.
+- **Cross-module seam:** `IAdaptivityService` is the in-process interface for P3-11 (adaptive quiz selection) + P3-13 (student profile) to query difficulty without direct Learning module calls.
+
+**Test coverage**
+
+- **12 unit tests** (AdaptivityEngineTests.cs: cold-start, high/medium/easy scoring, monotonicity, reproducibility, weight variation, time-normalization edge cases). All green.
+- **8 integration tests** (P3_08_AdaptivityEngine_Tests.cs: repo `GetAdaptivitySignalsAsync`, seam `IAdaptivityService.GetTargetDifficultyAsync`, write-path hook in `CompleteAttemptCommandHandler`, cache warming). All green.
+- **273 unit tests** + 8 integration tests combined, full Learning module suite green.
+
+**Security audit**
+
+- PASS, 0 blocking/high findings. Endpoint auth: student reads are JWT-gated (studentId from token); admin debug endpoint is AdminOnly; no PII in signals/decisions.
+
+**Next story dependency**
+
+- **P3-11** (Serve adaptive quizzes) reads `IAdaptivityService.GetTargetDifficultyAsync(…)` to select question pool difficulty (Easy/Medium/Hard) → question filter/sort.
+- **P3-13** (Build student profile) reads adaptivity signals to compute proficiency bands + time-vs-accuracy trade-off insights.
 ## Phase 7 — Gamification admin overrides (P7-13 backend) — added 2026-06-09 (`feat/phase-7-backend`, in wave PR #106)
 
 Built **P7-13** in the **`Gamification` module** (commit `4b31fbc`). Scope = the story's **5 admin-config areas** (lead-confirmed; NOT per-student XP/hearts/badge-grant — those aren't in the story ACs): **league-tier override** (per student), **badge catalog CRUD** + activate/deactivate, **mission catalog CRUD** + activate/deactivate, **timed-event** write/transition, **streak-freeze grant**. All AdminOnly on `AdminGamificationController` (`api/Admin/Gamification`); each override takes a required `Reason`.
@@ -275,7 +440,7 @@ Built **P3-09** in the **`Learning` module** (commit pending); foundation of the
   - `MasteryStatus` enum (Novice / Learning / Proficient / Mastered) — read-path state machine
   - `CumulativeAccuracy` (0.0–1.0) — **same formula as P2-04** (no divergence): `CorrectCount / TotalCount`
   - `MasteryThreshold` hardcoded per-status; status Mastered = accuracy ≥ threshold; status NeedsReview = floor 50% (lead-confirmed range guard)
-  - `LastReviewedAtUtc` / `ReviewIntervalDays` / `NextReviewDueAt` / `RepetitionNumber` (SR columns reserved for P3-10; NOT SET in P3-09, initialized null/0, no logic consumes them yet)
+  - `ReviewIntervalDays` / `NextReviewDueAt` / `RepetitionNumber` (SR columns reserved for P3-10; NOT SET in P3-09, initialized null/0, no logic consumes them yet)
   - `CreatedAtUtc` / `UpdatedAtUtc` — standard audit trail
 - **`MasteryEngine` domain service** — **pure static** logic to compute mastery status from cumulative accuracy:
   - `CalculateMasteryStatus(accuracy: decimal): MasteryStatus` — encodes the threshold table (Novice: <threshold, Learning: threshold–(threshold+0.3), Proficient: (threshold+0.3)–threshold+mastered_floor, Mastered: ≥mastered_floor OR ≥ custom threshold); floor of NeedsReview = 50% (lead-confirmed)
@@ -300,6 +465,111 @@ Built **P3-09** in the **`Learning` module** (commit pending); foundation of the
 
 **Next story dependency:** P3-08 (Adjust difficulty adaptively) reads mastery via `IMasteryService` to select question pool; P3-10 (Schedule spaced-repetition) uses SR columns (reserved but null here) to compute review due-dates.
 
+## P3-10 — Schedule spaced-repetition practice (backend) — added 2026-06-13 (`feat/P3-10-spaced-repetition`)
+
+Built **P3-10** in the **`Learning` module**; expansion of P3-09 mastery foundation. Full pipeline complete (backend-feature → api-tester → security-auditor → reviewer PASS).
+
+**What shipped:**
+- **`SpacedRepetitionEngine` domain service** — pure static domain logic to compute review due-dates and interval progression:
+  - `IsDue(lastPracticedAt: DateTime, nextReviewDueAt: DateTime?, repetitionNumber: int, now: DateTime): bool` — returns true if review is ready (no due date set, or due date has passed UTC now)
+  - `ComputeNextReview(lastPracticedAt: DateTime, repetitionNumber: int): (nextDueAt: DateTime, newInterval: int)` — expands ladder [1,3,7,14,30] days; index 0→1 day, 1→3 days, …, 4→30 days; repetitionNumber capped at 4 to prevent overshoot
+  - **13 unit tests** (ladder progression, UTC boundaries, edge cases)
+- **`SpacedRepetitionOptions` config class** — `Engine.Ladder = [1,3,7,14,30]` hardcoded constant (not configurable in this cycle); seeded from `appsettings.json` `SpacedRepetition:Engine` section
+- **`ILearningRepository` new seam methods:**
+  - `GetDueMasteryRowsAsync(studentId: int, now: DateTime): Task<List<StudentSkillMastery>>` — finds all mastery rows where `IsDue` is true (no migration; queries existing columns)
+  - `UpdateMasterySpacedRepetitionAsync(masteryId: int, nextDueAt: DateTime, newInterval: int, newRepetitionNumber: int): Task` — atomic update of the 3 SR columns; used by sweep job
+- **`LearningRepository` implementation** — EF Core queries for GetDueMasteryRows (filters on `StudentId` + `(NextReviewDueAt IS NULL OR NextReviewDueAt <= @now)`); UpdateMasterySpacedRepetitionAsync via `ExecuteUpdateAsync` (no SaveChangesAsync — called from sweep job outside the pipeline)
+- **`SpacedRepetitionSweepJob` Hangfire job** — scheduled at configurable cron (default `"0 0 * * *"` = daily midnight UTC). **Fixed job ID `"SR-Sweep"`** (idempotent across restarts). Two-phase:
+  1. Read all due mastery rows for all students via `GetDueMasteryRowsAsync(studentId, UtcNow)`
+  2. For each, call `SpacedRepetitionEngine.ComputeNextReview(...)` and update via `UpdateMasterySpacedRepetitionAsync(...)`
+  - Robust to concurrent executions (idempotent ID); no domain events raised (sweep is infrastructure)
+- **Write-path integration: `CompleteAttemptCommandHandler` P3-10 hook** — after mastery upsert in the P3-09 ambient transaction, handler calls `RecordMasteryCompletionForSpacedRepetitionAsync` (new method). On first attempt after P3-09's `UpsertMasteryForAttemptAsync`:
+  - If `NextReviewDueAt` is null (first review), sets it to now + 1 day; sets `RepetitionNumber=0` (ladder index)
+  - Runs **within the same ambient `UnitOfWorkBehavior` transaction** (P3-09 seam); no separate SaveChangesAsync
+  - Subsequent reviews happen via sweep job, not the write path (write path only primes the first due-date)
+- **`SpacedRepetitionService` in-process seam** — wraps engine + repo for read-path queries (e.g., P4-06 missions, future tutoring surfaces); DI injected
+- **`GET /api/Learning/Reviews/Due` endpoint** — returns `DueReviewDto[]` (empty if no reviews due now). **ReviewsController** new controller. DTOs:
+  - `DueReviewDto` — `{ SkillId, SkillName, LastPracticedAt, NextReviewDueAtUtc, RepetitionNumber, DaysSinceLastReview }`
+  - Surfaces spaced-rep state for student-facing review UI (P4-12 deferred)
+- **Resource strings** — AR/EN localization for review UI labels (SharedResourcesKey + .resx)
+- **No migration required** — SR columns were reserved in P3-09; P3-10 initializes + mutates them only in memory/sweep
+
+**Load-bearing decisions (reviewer-confirmed):**
+- **Expanding ladder [1,3,7,14,30] days** — fixed, not configurable; wired from `appsettings.json` `SpacedRepetition:Engine.Ladder` for operational tuning (no restart needed if lead changes it)
+- **SM-2 EaseFactor deferred** — P3-10 uses a **fixed** expanding ladder, **not** the full SM-2 algorithm with dynamic EaseFactor. SM-2 variant left for P3-11 or later if needed (marked explicit TODO in code + HANDOFF defer note)
+- **UTC discipline:** all datetime comparisons use `.UtcNow` (and `.ToUniversalTime()` at Postgres mapping boundary for the Npgsql Local-kind quirk — see P4-11 note on `EnableLegacyTimestampBehavior`)
+- **Hangfire sweep job fixed ID `"SR-Sweep"`** — idempotent across process restarts; Hangfire prevents concurrent execution; no domain events (sweep is pure infrastructure)
+- **First review primed in write-path (CompleteAttemptCommandHandler)** — sets `NextReviewDueAt = now + 1 day` and `RepetitionNumber = 0` (ladder index 0 = first rung). Subsequent reviews are transitioned by the sweep job. This keeps the ambient transaction clean (no nested SaveChangesAsync in sweep).
+- **Sweep job uses `ExecuteUpdateAsync` (not SaveChangesAsync)** — called outside the request pipeline; no domain events. Safe under concurrent Hangfire execution (DB-level consistency)
+- **Cross-skill aggregation in sweep** — all students + all their due skills are processed in one job run; no per-student isolation (simple, scalable)
+- **Missions-surfacing seam (P4-06 integration)** — **deferred to P4-06**. When P4-06 ships, missions may query `GetDueMasteryRowsAsync` to surface spaced-rep reviews as a challenge type. The seam is pre-built in `ISpacedRepetitionService`; P4-06 just calls it.
+
+**Test coverage:** 286 unit tests (including 13 SpacedRepetitionEngine) + 8 integration tests (P3_10_SpacedRepetition_Tests.cs: IsDue + ComputeNextReview + sweep job simulation). All green. Security audit: PASS, 0 blocking/high findings.
+
+**Next story dependency:** P3-11 (Serve adaptive quizzes) reads due mastery via `ISpacedRepetitionService` to filter quiz candidate pool. P4-06 missions (Wave future) may query due reviews as a challenge type.
+
+**Stale-item fixes applied to P3-09 section (this commit):**
+- Line 317: removed stale reference to `LastReviewedAtUtc` (entity uses `LastPracticedAt`)
+- Line 78 (StudentSkillMastery.cs comment): corrected `RepetitionNumber` doc from "SM-2 repetition counter" to "spaced-repetition ladder index"
+
+
+
+
+
+## P3-13 — Adaptive student profile / behavioral modeling (backend) — added 2026-06-13 (`feat/P3-13-student-profile`)
+
+Built **P3-13** in the **`Learning` module**; behavioral modeling layer for personalization feeds. Full pipeline complete (backend-feature → security-auditor [child-privacy gate] → reviewer PASS).
+
+**What shipped:**
+
+- **`StudentLearningProfile` domain entity** — jsonb-backed behavioral attributes table (`learning.student_learning_profiles`), keyed on `(student_id, grade_id)` with unique constraint + indices on `student_id`. Fields: `StudentId/GradeId` FKs, `QuestionTypeAffinities` (jsonb normalized 0.0–1.0 per type), `RecurringErrorClusters` (jsonb list), `AttentionSpan` (minutes, v1 proxy), `PreferredExplanationStyle` (enum PROVISIONAL), `FatigueSignal` (internal-only), `DataPointCount`, timestamps.
+
+- **`ExplanationStyle` enum** — 4 values (Verbal, Visual, Analogical, StepByStep); PROVISIONAL pending P3-03 confirmation.
+
+- **`StudentProfileEngine` domain service** — pure static, deterministic (16 unit tests):
+  - **Derivation 1 (QuestionTypeAffinities):** normalized accuracy per question type
+  - **Derivation 2 (RecurringErrorClusters):** error-pattern grouping by skill + frequency
+  - **Derivation 3 (AttentionSpan):** v1 = median inter-question time within attempt (minutes)
+  - **Derivation 4 (ExplanationStyle):** inferred from accuracy-improvement deltas per style; Verbal default
+
+- **`StudentProfileService`** — wraps engine + repo. DI-injected. Methods: `ComputeProfileAsync`, `UpsertProfileAsync`.
+
+- **`IStudentProfileService` seam** — in-process interface for P3-03/P3-08 consumption (deferred wiring; cross-module via `Shared.Contracts` if needed).
+
+- **`StudentLearningProfileDto` DTO** — data-minimized: `QuestionTypeAffinities`, `PreferredExplanationStyle`, `DataPointCount` exposed; `FatigueSignal` internal only.
+
+- **`StudentProfileRecomputeJob` Hangfire job** — fixed ID `"SP-Recompute"` (idempotent), cron `"0 2 * * *"` (daily 2 AM UTC). Fetches attempts, runs engine, upserts profile.
+
+- **`CompleteAttemptCommandHandler` Step-8d hook** — calls `IStudentProfileService.UpsertProfileAsync(...)` after mastery + spaced-rep; rides P3-09/P3-10 transaction boundary.
+
+- **`GET /api/Learning/Profile` endpoint** — returns `StudentLearningProfileDto` for authenticated student. 401 anonymous. 200 + default/empty if no history.
+
+- **Migration `20260613180132_AddStudentLearningProfileTable`** — jsonb table + indices.
+
+**Data minimization (mandatory security-auditor gate, PASSED):**
+- DTO exposes 4 attrs + DataPointCount + style only; `FatigueSignal` stays internal
+- No raw error data (pattern summary only)
+- No PII (student IDs only)
+- Grade-transition preserves profile (no grade filter)
+
+**Load-bearing decisions:**
+- **Behavioral separation:** `StudentLearningProfile` (learning behavior, feeds P3-03/P3-08) orthogonal to `StudentXpProfile` (achievement).
+- **Pure engine, no AI:** deterministic, testable, offline-safe. AI surfaces in P3-03 (prompts) + P3-08 (difficulty).
+- **Recompute cadence:** daily sweep (2 AM UTC) + eager on-attempt-complete (within transaction). Trade-off: behavior surfaces ~2s later or next sweep.
+- **ExplanationStyle PROVISIONAL:** pending P3-03 confirmation (may refactor once locked).
+- **AttentionSpan v1:** within-attempt proxy. P5-03 v2 upgrades to per-session/per-subject depth (upgrade path reserved; DTO unchanged).
+- **IStudentProfileService seam:** in-process. P3-03/P3-08 consume synchronously.
+
+**Test coverage:** 302 unit (16 engine + 286 inherited P3-09/P3-10) + 8 integration (P3_13_StudentProfile_Tests.cs). All green. Security audit: PASS, 0 Critical/High.
+
+**Next dependencies:** P3-03 (tutor prompts via profile) + P3-08 (difficulty adjustment via ExplanationStyle + AttentionSpan).
+
+**Non-blocking follow-ups:**
+- ExplanationStyle taxonomy finalization (pending P3-03)
+- AttentionSpan v2 (P5-03) — per-session/per-subject depth modeling
+- Cross-module consumption (if P3-05/06+ need profile) — add `IStudentProfileQuery` to `Shared.Contracts`
+
+---
 
 ## P4-11 — Streak freeze + timed events + weekly challenges (BE, commit + PR ready)
 

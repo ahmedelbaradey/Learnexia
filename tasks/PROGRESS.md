@@ -12,7 +12,13 @@
 - `â€”` â€” no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
+- **P3-07 (Backend)** — RAG retrieval (Curriculum module 4 projects, CurriculumChunk+CurriculumVersion+chunk_embeddings_bge_m3 pgvector schema HNSW, InitialCurriculum migration, BgeM3EmbeddingProvider + DeterministicEmbedding placeholders, RetrieveChunksQuery handler, RagContextProvider ILearningContextProvider+ICurriculumContextQuery, CurriculumChunkSeeder, cross-module MediatR, 11/11 integration vs pgvector; placeholder embeddings, real BGE-M3 pending P3-07-BE-0 TEI provision) — committed
+- **P3-03 (Backend)** — Prompt Builder (IPromptBuilder stateless facade, PromptContext value object, 4-subject 4-intent 2-language templates ar/en Math/Science/Arabic/English, TemplateSelector pure lookup, HelperIntent enum Explain/Hint/WhyWrong/SimilarExample, ToneFrame anti-injection, PII-minimal grade+age only, optional seams IStudentWeakAreasQuery/IChildLearningProfileQuery/ICurriculumContextQuery/ILearningContextProvider with safe stubs, graceful degradation, 203 Ai unit tests green 166 new, FR-AI-6 mandatory security gate PASS) — committed
+- **P3-02 (Backend)** — AI Safety Layer (ISafetyLayer facade, 3 composable fail-closed checks toxicity/age/hallucination, SafetyEvents append-only table, eval harness ar+en) — committed
+- **P3-13 (Backend)** — Adaptive student profile (StudentLearningProfile + StudentProfileEngine 4-rule derivations + SP-Recompute job + GET /api/Learning/Profile) — committed
+- **P3-10 (Backend)** — Spaced-repetition scheduler (SpacedRepetitionEngine IsDue/ComputeNextReview, expanding ladder [1,3,7,14,30], GetDueMasteryRows/UpdateSR repo methods, SpacedRepetitionSweepJob Hangfire fixed-ID, write-path hook in CompleteAttempt, GET /Reviews/Due endpoint) — committed
 - **P3-01 (Backend)** — AI Gateway (IAiGateway seam, Ai module, Claude + second provider, task-based model router) — committed
+- **P3-08 (Backend)** — Adaptivity Engine (weighted-score algorithm, 4-signal model, AdaptivityService seam, inspection endpoint + admin debug endpoint) — committed
 - **P3-09 (Backend)** - Student mastery engine (StudentSkillMastery table + MasteryEngine + write/read paths + IMasteryService seam) - committed (Wave 1, PR #126)
 - **2026-06-13 â€” P1/2/3 carryover (branch `feat/p1-p2-p3-carryover`):** gamification FE (all screens + TabBar + celebrations), Matching full-stack, parent Reports + attempt-history (both surfaces), auth messaging + CAPTCHA, parentâ†”child attempts authz; e2e 39/3-skip/0-fail; PR pending.
 - **2026-06-13 - AI-phase + Phase-10 planning breakdown (PLANNING ONLY, all 🔲; PR #124 `docs/ai-phase-task-breakdown -> main`):** authored the full task breakdown for **Phase 4 - AI Tutor (P3-01..13)**, the **Curriculum-Intelligence backlog (BL-01..05)**, and the new **Phase 10 - Payment, Billing & Credits (P10-01..12)** - Pipeline Briefs (`docs/briefs/`) + Execution Plans (`docs/plans/`) + per-stack task files. **No code - build plan only.** Payments renumbered Phase 9 -> 10 (`main` owns Phase 9 = Notifications). Cross-cutting briefs: `ai-helper-mvp`, `ai-cost-routing`, `ai-eval-gate`, `curriculum-system-of-record`. Settled: new `Ai` + `Curriculum` + `Billing` modules, Claude provider w/ model routing, AI credit economy (Global Settings P10-12), Arabic stack (Azure DI + RAG-Anything). Chore PR #123 = subagent model tuning. See HANDOFF 2026-06-13 note for the full decision log.
@@ -82,18 +88,18 @@
 | Story | Title | Status |
 |---|---|:--:|
 | P3-01 | Route AI requests through an AI Gateway | ✅ |
-| P3-02 | Filter AI output through a Safety Layer | ðŸ”² |
+| P3-02 | Filter AI output through a Safety Layer | ✅ |
 | P3-03 | Build personalized tutor prompts | ðŸ”² |
 | P3-04 | Explain a concept on demand | ðŸ”² |
 | P3-05 | Progressive hints & simpler re-explanations | ðŸ”² |
 | P3-06 | Generate curriculum-grounded questions (RAG) | ðŸ”² |
-| P3-07 | Retrieve curriculum context via vector search | ðŸ”² |
-| P3-08 | Adjust difficulty adaptively | ðŸ”² |
+| P3-07 | Retrieve curriculum context via vector search | ✅ |
+| P3-08 | Adjust difficulty adaptively | ✅ |
 | P3-09 | Track per-skill mastery | ✅ |
 | P3-10 | Schedule spaced-repetition practice | ðŸ”² |
 | P3-11 | Serve adaptive quizzes | ðŸ”² |
 | P3-12 | Interact with the AI tutor UI | ðŸ”² |
-| P3-13 | Build the adaptive student profile | ðŸ”² |
+| P3-13 | Build the adaptive student profile | ✅ |
 
 ## Phase 5 â€” Parent + Analytics
 | Story | Title | Status |
