@@ -2194,4 +2194,19 @@
   <data name="SimplifyUnsupportedSubject" xml:space="preserve">
     <value>لا يوجد قالب تبسيط للمعلم لهذه المادة حتى الآن.</value>
   </data>
+  <data name="SimilarExampleSkillIdRequired" xml:space="preserve">
+    <value>يجب توفير مهارة صالحة للحصول على مثال مشابه.</value>
+  </data>
+  <data name="SimilarExampleMissingProfile" xml:space="preserve">
+    <value>تعذّر تحديد ملفك التعليمي. يرجى تسجيل الدخول مجددًا.</value>
+  </data>
+  <data name="SimilarExampleRateLimitExceeded" xml:space="preserve">
+    <value>لقد طلبت عددًا كبيرًا جدًا من الأمثلة. يرجى الانتظار قليلًا قبل المحاولة مجددًا.</value>
+  </data>
+  <data name="SimilarExampleSafetyBlocked" xml:space="preserve">
+    <value>لا يستطيع المعلم تقديم مثال الآن. يرجى المحاولة مرة أخرى بعد قليل.</value>
+  </data>
+  <data name="SimilarExampleUnsupportedSubject" xml:space="preserve">
+    <value>لا يوجد قالب مثال للمعلم لهذه المادة حتى الآن.</value>
+  </data>
 </root>

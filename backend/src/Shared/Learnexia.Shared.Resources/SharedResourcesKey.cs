@@ -1492,5 +1492,35 @@
         /// </summary>
         public const string SimplifyUnsupportedSubject = "SimplifyUnsupportedSubject";
 
+        // ── P3-06 Part B — AI Tutor — Similar Example (intent #4) ───────────────────────────
+
+        /// <summary>
+        /// Validation error when <c>SimilarExampleCommand.SkillId</c> is zero or negative.
+        /// SkillId is required to scope the similar example to the active skill (AC-7 scope guard).
+        /// </summary>
+        public const string SimilarExampleSkillIdRequired = "SimilarExampleSkillIdRequired";
+
+        /// <summary>
+        /// SSE error code returned when the student JWT is missing required claims (grade/language)
+        /// in the SimilarExample handler.
+        /// </summary>
+        public const string SimilarExampleMissingProfile = "SimilarExampleMissingProfile";
+
+        /// <summary>
+        /// Gentle message shown when the similar-example endpoint rate limit is exceeded (per-student window).
+        /// </summary>
+        public const string SimilarExampleRateLimitExceeded = "SimilarExampleRateLimitExceeded";
+
+        /// <summary>
+        /// SSE error code returned when the AI safety layer blocks the generated similar-example content.
+        /// Surfaced as event: error. Child-safe message — no unsafe content exposed.
+        /// </summary>
+        public const string SimilarExampleSafetyBlocked = "SimilarExampleSafetyBlocked";
+
+        /// <summary>
+        /// SSE error code returned when the similar-example subject has no registered prompt template.
+        /// </summary>
+        public const string SimilarExampleUnsupportedSubject = "SimilarExampleUnsupportedSubject";
+
     }
 }
