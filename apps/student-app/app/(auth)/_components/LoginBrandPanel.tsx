@@ -49,21 +49,21 @@ export function LoginBrandPanel({ direction = 'ltr', appName }: LoginBrandPanelP
       {/* Glowing star + tagline */}
       <Stack gap="$5" alignItems={direction === 'rtl' ? 'flex-end' : 'flex-start'}>
         <Text
-          fontSize={120}
+          fontSize={80}
           accessibilityElementsHidden
-          // Soft glow — drop-shadow on the star emoji (web) / shadow props (native).
+          // Star glow — drop-shadow per web-auth-split.html spec.
           style={{
-            filter: 'drop-shadow(0 0 32px rgba(165,148,249,0.9)) drop-shadow(0 0 64px rgba(165,148,249,0.5))',
+            filter: 'drop-shadow(0 0 16px rgba(250,204,21,0.5))',
           } as object}
         >
-          ⭐
+          {'🌟'}
         </Text>
         <Text
           color="$fg1"
-          fontSize={48}
+          fontSize={28}
           fontWeight="900"
           fontFamily="$heading"
-          lineHeight={52}
+          lineHeight={32}
           textAlign={align}
           writingDirection={direction}
           accessibilityRole="header"
@@ -71,11 +71,11 @@ export function LoginBrandPanel({ direction = 'ltr', appName }: LoginBrandPanelP
           {t('auth.login.brand.title')}
         </Text>
         <Text
-          color="$fg2"
-          fontSize={16}
+          color="$fg2Alpha"
+          fontSize={13}
           fontFamily="$body"
-          lineHeight={24}
-          maxWidth={400}
+          lineHeight={20}
+          maxWidth={320}
           textAlign={align}
           writingDirection={direction}
         >

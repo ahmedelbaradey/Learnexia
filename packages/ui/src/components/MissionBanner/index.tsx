@@ -70,7 +70,7 @@ export function MissionBanner({
       borderRadius="$card"
       backgroundColor="$card"
       borderWidth={1}
-      borderColor="$borderStrong"
+      borderColor="$borderSubtle"
       // Shadow resolved to raw rgba — $shadow-soft (design spec §4.4)
       shadowColor="rgba(0,0,0,0.15)"
       shadowOffset={{ width: 0, height: 4 }}

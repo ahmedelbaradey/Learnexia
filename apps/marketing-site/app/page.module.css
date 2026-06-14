@@ -67,8 +67,8 @@
   justify-content: center;
   height: 36px;
   padding: 0 14px;
-  border-radius: var(--lx-radius-button);
-  border: 1px solid var(--lx-border-strong);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   background: transparent;
   color: var(--lx-fg2);
   font-weight: 600;
@@ -88,7 +88,7 @@
   justify-content: center;
   height: 36px;
   padding: 0 14px;
-  border-radius: var(--lx-radius-button);
+  border-radius: 12px;
   background: var(--lx-primary);
   color: var(--lx-fg1);
   font-weight: 700;

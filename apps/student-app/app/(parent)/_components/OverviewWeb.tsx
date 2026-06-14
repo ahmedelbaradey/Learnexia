@@ -251,7 +251,7 @@ function OverviewBody({ childId, childName, rowDir, direction, locale }: Overvie
             borderRadius={20}
             backgroundColor="$card"
             borderWidth={1}
-            borderColor="$border"
+            borderColor="$borderSubtle"
             padding="$5"
             gap="$2"
             hoverStyle={{ backgroundColor: '$cardSoft', scale: 1.02 }}
@@ -274,11 +274,11 @@ function OverviewBody({ childId, childName, rowDir, direction, locale }: Overvie
               >
                 {k.label}
               </Text>
-              {/* 32×32 radius-8 tinted icon chip, per accent (B-03/N-06). */}
+              {/* 32×32 radius-10 tinted icon chip, per accent (B-03/N-06). */}
               <Stack
                 width={32}
                 height={32}
-                borderRadius="$sm"
+                borderRadius={10}
                 backgroundColor={k.chipBg}
                 alignItems="center"
                 justifyContent="center"

@@ -43,7 +43,7 @@
   padding: var(--lx-space-6);
   background: var(--lx-card);
   border-radius: var(--lx-radius-modal);
-  border: 1px solid var(--lx-border);
+  border: 1px solid var(--lx-border-subtle);
   box-shadow: var(--lx-shadow-soft);
 }
 

@@ -246,7 +246,7 @@ export function ChildDashboardCard({
             {masteryReadout}
           </Text>
         </Stack>
-        <Stack height={8} borderRadius={9999} backgroundColor="$bg" overflow="hidden" flexDirection="row">
+        <Stack height={7} borderRadius={9999} backgroundColor="$bg" overflow="hidden" flexDirection="row">
           <Stack width={`${masteryPct}%` as StackProps['width']} height="100%" borderRadius={9999} overflow="hidden">
             <GradientBox stops={gradientStops.gradXp.colors} angle={90} height="100%" width="100%" />
           </Stack>

@@ -246,8 +246,11 @@ export function LessonCard({
               backgroundColor={isCompleted ? '$success' : undefined}
             >
               {!isCompleted ? (
-                /* gradXp not imported here — use primary for simplicity */
-                <Stack flex={1} backgroundColor="$primary" />
+                /* Fill gradient from preview: indigo→purple (components-lesson-card.html) */
+                <Stack
+                  flex={1}
+                  style={{ background: 'linear-gradient(90deg, #4F46E5, #A855F7)' } as object}
+                />
               ) : null}
             </Stack>
           </Stack>

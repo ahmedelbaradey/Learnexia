@@ -49,8 +49,11 @@ export function KPIStatCard({
     <YStack
       flex={isTile ? 1 : undefined}
       gap={isTile ? '$1' : '$2'}
-      padding={isTile ? '$3' : '$0'}
-      borderRadius={isTile ? '$sm' : 0}
+      paddingVertical={isTile ? 8 : 0}
+      paddingHorizontal={isTile ? 10 : 0}
+      borderRadius={isTile ? 12 : 0}
+      borderWidth={isTile ? 1 : 0}
+      borderColor={isTile ? 'rgba(255,255,255,0.04)' : 'transparent'}
       backgroundColor={isTile ? '$bg' : 'transparent'}
       alignItems={isTile ? 'flex-start' : 'center'}
       accessible

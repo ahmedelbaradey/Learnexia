@@ -228,9 +228,9 @@ export function SkillTreeNode({
     >
       {/* Disc */}
       <Stack
-        width={72}
-        height={72}
-        borderRadius={36}
+        width={80}
+        height={80}
+        borderRadius={40}
         backgroundColor={discStyle.bg as never}
         alignItems="center"
         justifyContent="center"
