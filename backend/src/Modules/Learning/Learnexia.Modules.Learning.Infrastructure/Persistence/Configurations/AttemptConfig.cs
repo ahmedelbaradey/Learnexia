@@ -46,6 +46,16 @@ public class AttemptConfig : IEntityTypeConfiguration<Attempt>
         builder.Property(x => x.CompletedAt)
             .IsRequired(false);
 
+        // P3-11 — difficulty-mix jsonb column; nullable so existing rows are unaffected.
+        builder.Property(x => x.ServedDifficultyMix)
+            .IsRequired(false)
+            .HasColumnType("jsonb");
+
+        // P3-11 — target difficulty as int; nullable so existing rows are unaffected.
+        builder.Property(x => x.TargetDifficulty)
+            .IsRequired(false)
+            .HasColumnType("integer");
+
         builder.HasIndex(x => x.StudentId)
             .HasDatabaseName("IX_Attempts_StudentId");
 
