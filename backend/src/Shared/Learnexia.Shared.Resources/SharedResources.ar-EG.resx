@@ -2149,4 +2149,64 @@
   <data name="ExplainConceptRateLimitExceeded" xml:space="preserve">
     <value>لقد أرسلت عددًا كبيرًا جدًا من طلبات الشرح. يرجى الانتظار قليلًا قبل المحاولة مجددًا.</value>
   </data>
+  <data name="HintIntentInvalid" xml:space="preserve">
+    <value>يجب أن تكون النية "تلميح" أو "لماذا كانت إجابتي خاطئة".</value>
+  </data>
+  <data name="HintLevelOutOfRange" xml:space="preserve">
+    <value>مستوى التلميح يجب أن يكون بين 1 والحد الأقصى المسموح به.</value>
+  </data>
+  <data name="HintWrongAnswerRequired" xml:space="preserve">
+    <value>يرجى إدراج إجابتك الخاطئة حتى يتمكن المعلم من شرح السبب.</value>
+  </data>
+  <data name="HintWrongAnswerTooLong" xml:space="preserve">
+    <value>إجابتك طويلة جدًا. يرجى الإبقاء عليها في حدود 500 حرف.</value>
+  </data>
+  <data name="SimplifyContextRequired" xml:space="preserve">
+    <value>يرجى تحديد مفهوم أو درس لتبسيطه.</value>
+  </data>
+  <data name="HintRateLimitExceeded" xml:space="preserve">
+    <value>لقد طلبت عددًا كبيرًا جدًا من التلميحات. يرجى الانتظار قليلًا قبل المحاولة مجددًا.</value>
+  </data>
+  <data name="HintSafetyBlocked" xml:space="preserve">
+    <value>لا يستطيع المعلم تقديم تلميح الآن. يرجى المحاولة مرة أخرى بعد قليل.</value>
+  </data>
+  <data name="HintUnsupportedSubject" xml:space="preserve">
+    <value>لا يوجد قالب للمعلم لهذه المادة حتى الآن.</value>
+  </data>
+  <data name="HintNoRevealViolation" xml:space="preserve">
+    <value>تعذّر على المعلم توليد تلميح آمن لهذا السؤال. يرجى المحاولة مجددًا.</value>
+  </data>
+  <data name="HintQuestionNotFound" xml:space="preserve">
+    <value>تعذّر العثور على هذا السؤال أو المحاولة.</value>
+  </data>
+  <data name="HintMaxLevelsReached" xml:space="preserve">
+    <value>لقد استخدمت جميع التلميحات المتاحة لهذا السؤال. هل تريد شرحًا أبسط؟</value>
+  </data>
+  <data name="SimplifyMissingProfile" xml:space="preserve">
+    <value>تعذّر تحديد ملفك التعليمي. يرجى تسجيل الدخول مجددًا.</value>
+  </data>
+  <data name="SimplifyRateLimitExceeded" xml:space="preserve">
+    <value>لقد أرسلت عددًا كبيرًا جدًا من طلبات التبسيط. يرجى الانتظار قليلًا قبل المحاولة مجددًا.</value>
+  </data>
+  <data name="SimplifySafetyBlocked" xml:space="preserve">
+    <value>لا يستطيع المعلم تبسيط هذا الشرح الآن. يرجى المحاولة مرة أخرى بعد قليل.</value>
+  </data>
+  <data name="SimplifyUnsupportedSubject" xml:space="preserve">
+    <value>لا يوجد قالب تبسيط للمعلم لهذه المادة حتى الآن.</value>
+  </data>
+  <data name="SimilarExampleSkillIdRequired" xml:space="preserve">
+    <value>يجب توفير مهارة صالحة للحصول على مثال مشابه.</value>
+  </data>
+  <data name="SimilarExampleMissingProfile" xml:space="preserve">
+    <value>تعذّر تحديد ملفك التعليمي. يرجى تسجيل الدخول مجددًا.</value>
+  </data>
+  <data name="SimilarExampleRateLimitExceeded" xml:space="preserve">
+    <value>لقد طلبت عددًا كبيرًا جدًا من الأمثلة. يرجى الانتظار قليلًا قبل المحاولة مجددًا.</value>
+  </data>
+  <data name="SimilarExampleSafetyBlocked" xml:space="preserve">
+    <value>لا يستطيع المعلم تقديم مثال الآن. يرجى المحاولة مرة أخرى بعد قليل.</value>
+  </data>
+  <data name="SimilarExampleUnsupportedSubject" xml:space="preserve">
+    <value>لا يوجد قالب مثال للمعلم لهذه المادة حتى الآن.</value>
+  </data>
 </root>

@@ -1,10 +1,14 @@
 using FluentValidation;
 using Learnexia.Modules.Ai.Application.Features.Explain.Commands;
+using Learnexia.Modules.Ai.Application.Features.Hint.Commands;
+using Learnexia.Modules.Ai.Application.Features.Simplify.Commands;
+using Learnexia.Modules.Ai.Application.Options;
 using Learnexia.Modules.Ai.Application.PromptBuilder;
 using Learnexia.Modules.Ai.Application.PromptBuilder.Stubs;
 using Learnexia.Modules.Ai.Application.Services;
 using Learnexia.Shared.Contracts.Ai;
 using Learnexia.Shared.Contracts.AiTutor;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -12,7 +16,9 @@ namespace Learnexia.Modules.Ai.Application;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddAiApplication(this IServiceCollection services)
+    public static IServiceCollection AddAiApplication(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
         // ── P3-03 Prompt Builder (BE-8) ──────────────────────────────────────────
 
@@ -53,6 +59,17 @@ public static class DependencyInjection
         // Uses a ConcurrentDictionary as its counter store (in-process only — no IMemoryCache).
         // Singleton — the counter dictionary must survive across requests within the same process.
         services.AddSingleton<AiTutorRateLimiter>();
+
+        // ── P3-05 Hint + WhyWrong + Simplify Features ────────────────────────────────
+
+        // HintOptions: config-bound POCO for MaxHintLevels (OQ-5).
+        // Bound from "Ai:Hint" section; default MaxHintLevels = 3.
+        services.Configure<HintOptions>(configuration.GetSection(HintOptions.SectionName));
+
+        // FluentValidation for GetHintCommand and SimplifyExplanationCommand.
+        // AddValidatorsFromAssemblyContaining is idempotent — scanning the same assembly twice is safe.
+        services.AddValidatorsFromAssemblyContaining<GetHintCommandValidator>(ServiceLifetime.Transient);
+        services.AddValidatorsFromAssemblyContaining<SimplifyExplanationCommandValidator>(ServiceLifetime.Transient);
 
         return services;
     }

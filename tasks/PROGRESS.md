@@ -12,6 +12,8 @@
 - `â€”` â€” no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
+- **Wave 4:** P3-05-Backend (Hints + WhyWrong + Simplify SSE endpoints — IDOR-scoped, no-reveal guard, usage instrumentation, MVP slice) — committed
+- **Wave 4:** P3-06-Backend (SimilarExample — AI tutor SSE endpoint, intent #4, no preamble, refuse-and-redirect, usage instrumentation, MVP slice) — committed
 - **P3-04 (Backend)** — Explain a concept on demand (ExplainConceptCommand + validator + handler orchestrates ILearningContextProvider→IPromptBuilder→ISafetyLayer with refuse-and-redirect on empty context; SSE ExplainController with pinned wire contract event:message/redirect/error/done; ILessonContextContract cross-module seam; RedirectResponseBuilder ar/en; Help* instrumentation events; in-process rate limiter; folded into Ai module; buffer→safety→emit, never raw tokens; cache economy deferred P3-01-BE-12/13/14; live grounding dormant EmptyLearningContextProvider default; 208 unit + 13 SSE integration green; mandatory security gate PASS, error-leak + D-1 fixes landed) — committed
 - **P3-04 (Backend)** — Explain a concept on demand (ExplainConceptCommand + validator + handler orchestrates ILearningContextProvider→IPromptBuilder→ISafetyLayer with refuse-and-redirect on empty context; SSE ExplainController with pinned wire contract event:message/redirect/error/done; ILessonContextContract cross-module seam; RedirectResponseBuilder ar/en; Help* instrumentation events; in-process rate limiter; folded into Ai module; buffer→safety→emit, never raw tokens; cache economy deferred P3-01-BE-12/13/14; live grounding dormant EmptyLearningContextProvider default; 208 unit + 13 SSE integration green; mandatory security gate PASS, error-leak + D-1 fixes landed) — committed
 - **P3-11 (Backend)** — Adaptive quiz selection (QuizSelectionEngine pure static 70/30 weighted-mix, Attempt.ServedDifficultyMix jsonb + TargetDifficulty int migration, StartAttempt integration after guards, deterministic resume via sort-by-Id, graceful degradation on thin pools, 9 QuizSelectionEngine unit tests + 8 integration green, reviewer PASS, inline security PASS) — committed
@@ -95,7 +97,7 @@
 | P3-03 | Build personalized tutor prompts | ✅ |
 | P3-04 | Explain a concept on demand | ✅ |
 | P3-05 | Progressive hints & simpler re-explanations | ðŸ”² |
-| P3-06 | Generate curriculum-grounded questions (RAG) | ðŸ”² |
+| P3-06 | Generate curriculum-grounded questions (RAG) | ✅ |
 | P3-07 | Retrieve curriculum context via vector search | ✅ |
 | P3-08 | Adjust difficulty adaptively | ✅ |
 | P3-09 | Track per-skill mastery | ✅ |
@@ -191,4 +193,3 @@
   - Backend defects the api-tester catalogs flagged (assert-actual, lead-decision): P2-01 duplicate-subject -> 500 (AddSubject omits SubjectCode/Language) and FK-orphan -> 500; cross-language browse silently redirects (not 403); no start-lock-guard (FE is the only lock gate); Learning IDOR -> 401 / business-state -> 424 conventions. See `docs/qc/P2-*/`.
   - Implement the remaining backend api-tester stories (P2-03/04/05/06/07/08/09/11/12) + fill P2-02's execution report.
   - Small FE testID follow-ups + spec nits per `docs/qc/PHASE-2-FE-blocked-classification.md` (categories D-I).
-
