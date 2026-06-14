@@ -8,10 +8,27 @@ namespace Learnexia.Modules.Learning.Application.Abstractions;
 /// <summary>
 /// Module-local generic repository seam for the Learning module. Mirrors Catalog's repository seam.
 /// In a deferred-commit module, repository writes stage changes only — the per-module
-/// UnitOfWorkBehavior owns the commit (ADR 0001/0002). Implementations must NOT call SaveChangesAsync.
+/// UnitOfWorkBehavior owns the commit (ADR 0001/0002). Implementations must NOT call SaveChangesAsync
+/// except via <see cref="FlushAsync"/> when a handler must obtain a DB-generated Id before
+/// raising a domain event (P7-12 Bucket C fix). The flush rides the UoW's open transaction;
+/// the UoW's own subsequent SaveChangesAsync call is then a no-op.
 /// </summary>
 public interface ILearningRepository : IGenericRepository
 {
+    // ── P7-12 Bucket C: mid-handler flush to obtain DB-assigned Id ──────────────────────────────
+
+    /// <summary>
+    /// Flushes staged changes to the database within the UoW's open transaction so that
+    /// DB-generated Ids (e.g. entity.Id for a newly added row) are assigned BEFORE the handler
+    /// raises a domain event that captures those Ids. The UoW calls SaveChangesAsync again after
+    /// the handler returns; because no new changes are staged that second call is a no-op.
+    ///
+    /// Callers: Learning create handlers (AddSubjectCommandHandler, AddUnitCommandHandler,
+    /// AddLessonCommandHandler) — must call FlushAsync AFTER AddAsync and BEFORE RaiseDomainEvent.
+    /// Must NOT be called outside a UoW transaction (i.e. not in query handlers or background jobs).
+    /// </summary>
+    Task<int> FlushAsync(int userId, CancellationToken ct = default);
+
     // ── Skill dependency graph (P2-11 BE-5) ──────────────────────────────────────────────────────
 
     /// <summary>

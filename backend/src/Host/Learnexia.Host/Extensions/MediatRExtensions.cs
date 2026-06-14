@@ -27,6 +27,12 @@ public static class MediatRExtensions
             // handlers) are discoverable across module boundaries. Add new modules' Application
             // assemblies here (e.g. Gamification) as they come online.
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Identity.Application.AssemblyReference>();
+            // P7-07: Identity.Infrastructure handlers (AccountDeletedDomainEventHandler) live in
+            // Infrastructure because they depend on ISessionManagementService + IDistributedCache.
+            // Without this scan those handlers are never discovered and post-commit side-effects
+            // (session revocation, integration events) silently don't fire. Mirrors the pattern
+            // established for Learning.Infrastructure and Curriculum.Infrastructure above.
+            cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Identity.Infrastructure.AssemblyReference>();
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Learning.Application.AssemblyReference>();
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Parent.Application.AssemblyReference>();
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Notifications.Application.AssemblyReference>();

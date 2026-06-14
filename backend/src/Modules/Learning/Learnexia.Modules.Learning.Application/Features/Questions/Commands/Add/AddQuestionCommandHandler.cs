@@ -1,5 +1,7 @@
+using System.Text.Json;
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Domain.Entities;
+using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Modules.Learning.Domain.Events;
 using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
@@ -62,6 +64,16 @@ public class AddQuestionCommandHandler
 
             var sequenceOrder = (maxOrder ?? -1) + 1;
 
+            // P7-04 bugfix: CorrectAnswer is stored as jsonb.
+            // Scalar types (MCQ, TrueFalse, FillInBlank) arrive as raw strings (e.g. "A", "true")
+            // which are not valid JSON → Postgres rejects with 22P02.
+            // Mirror the seeder exactly: JsonSerializer.Serialize(scalar) wraps in JSON quotes
+            // so "A" → "\"A\"", matching the shape AnswerComparator.NormalizeJsonScalar decodes.
+            // Matching arrives as an already-valid JSON object string — store as-is.
+            var correctAnswerJson = request.QuestionType == QuestionType.Matching
+                ? request.CorrectAnswer
+                : JsonSerializer.Serialize(request.CorrectAnswer);
+
             var question = new QuizQuestion
             {
                 LessonId      = request.LessonId,
@@ -69,7 +81,7 @@ public class AddQuestionCommandHandler
                 QuestionType  = request.QuestionType,
                 QuestionText  = request.QuestionText,
                 Options       = request.Options,
-                CorrectAnswer = request.CorrectAnswer,
+                CorrectAnswer = correctAnswerJson,
                 Difficulty    = request.Difficulty,
                 GeneratedBy   = request.GeneratedBy,
                 SequenceOrder = sequenceOrder,
