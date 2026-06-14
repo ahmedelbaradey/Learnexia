@@ -401,13 +401,11 @@ public sealed class P7_12_AuditLog_Tests : IAsyncLifetime
     [Fact(DisplayName = "BE-TC-IDEM-1: one admin Subject.Create → exactly one AuditLog row (no double-write)")]
     public async Task Idem1_OneAction_ExactlyOneAuditRow()
     {
-        // Produce exactly one Subject.Created action with a unique subject.
+        // Use a unique GradeId as the discriminator — every parallel test class creates its own
+        // grades, so this GradeId will not appear in any sibling test's audit Details string.
+        // This makes the count assertion immune to cross-class parallelism without relaxing the
+        // exactly-one guarantee (the no-double-write invariant).
         int gradeId = await CreateGradeGetIdAsync();
-
-        // Use a unique actionType filter we control by picking a fresh grade id so the
-        // filter by adminUserId + targetEntityType scopes the count effectively.
-        // We filter by adminUserId + target type and count before and after.
-        int countBefore = await CountAuditRowsAsync($"actionType=Subject.Created&adminUserId={_adminUserId}");
 
         var (resp, _, body) = await SendAsync(HttpMethod.Post, SubjectsCreateUrl,
             new { Name = $"Idem1 {Guid.NewGuid():N}", Country = "EG", GradeId = gradeId, SubjectCode = 0, Language = 0 },
@@ -415,19 +413,48 @@ public sealed class P7_12_AuditLog_Tests : IAsyncLifetime
         resp.StatusCode.Should().Be(HttpStatusCode.OK, "Subject.Create must succeed; body: {0}", body);
         AssertSucceeded(JsonDocument.Parse(body).RootElement, body);
 
-        // Poll to ensure the row appears before we count.
-        var row = await PollForAuditRowAsync(
-            filter: $"actionType=Subject.Created&adminUserId={_adminUserId}",
-            timeoutSeconds: 3,
-            minExpectedCount: countBefore + 1);
+        // Poll until at least one Subject.Created row appears for this admin.
+        // Then filter locally to rows whose Details contains GradeId={gradeId} — only THIS test
+        // created a subject under that specific grade, so concurrent siblings cannot pollute the count.
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
+        List<JsonElement> matchingRows = [];
 
-        row.Should().NotBeNull("at least one audit row must appear after the action");
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            var (pollResp, pollRoot, _) = await SendAsync(HttpMethod.Get,
+                $"{AuditLogUrl}?actionType=Subject.Created&adminUserId={_adminUserId}&pageSize=200",
+                bearer: _adminToken);
 
-        int countAfter = await CountAuditRowsAsync($"actionType=Subject.Created&adminUserId={_adminUserId}");
+            if (pollResp.StatusCode == HttpStatusCode.OK)
+            {
+                var allRows = ExtractAuditLogItems(pollRoot, "");
+                // Filter to rows whose Details contains the unique GradeId discriminator.
+                // Details format (after P7-12 Bucket C fix): "SubjectCode=0, Language=0, GradeId={gradeId}"
+                matchingRows = allRows
+                    .Where(r =>
+                    {
+                        TryProp(r, "details", out var detailsProp);
+                        var details = detailsProp.ValueKind == JsonValueKind.String
+                            ? detailsProp.GetString() ?? ""
+                            : "";
+                        return details.Contains($"GradeId={gradeId}");
+                    })
+                    .ToList();
 
-        countAfter.Should().Be(countBefore + 1,
-            "exactly one new AuditLog row must appear per Subject.Created action (no double-write); " +
-            "before={0}, after={1}", countBefore, countAfter);
+                if (matchingRows.Count >= 1)
+                    break;
+            }
+            await Task.Delay(300);
+        }
+
+        matchingRows.Should().NotBeEmpty(
+            "at least one audit row must appear after the Subject.Created action " +
+            "(filter: Details contains GradeId={0})", gradeId);
+
+        matchingRows.Count.Should().Be(1,
+            "exactly ONE AuditLog row must exist for this specific Subject.Created (no double-write); " +
+            "GradeId={0} was used as the unique discriminator; matching row count={1}",
+            gradeId, matchingRows.Count);
     }
 
     // =========================================================================
