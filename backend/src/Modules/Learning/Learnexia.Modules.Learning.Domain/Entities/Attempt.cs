@@ -34,5 +34,18 @@ public class Attempt : AggregateRoot
     /// <summary>Null until the attempt is completed or abandoned (P2-08).</summary>
     public DateTime? CompletedAt { get; set; }
 
+    /// <summary>
+    /// P3-11 — jsonb snapshot of the difficulty distribution served at quiz-start time.
+    /// Shape: {"Easy":n,"Medium":n,"Hard":n,"Target":"Medium","WasDefault":true}.
+    /// Null for attempts created before P3-11 (backfill-safe).
+    /// </summary>
+    public string? ServedDifficultyMix { get; set; }
+
+    /// <summary>
+    /// P3-11 — the <see cref="DifficultyLevel"/> enum value (stored as int) that drove the
+    /// selection at quiz-start. Null for attempts created before P3-11 (backfill-safe).
+    /// </summary>
+    public int? TargetDifficulty { get; set; }
+
     public ICollection<StudentAnswer> StudentAnswers { get; set; } = new List<StudentAnswer>();
 }

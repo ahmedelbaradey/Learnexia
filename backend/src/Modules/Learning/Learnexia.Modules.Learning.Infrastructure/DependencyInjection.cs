@@ -53,6 +53,12 @@ public static class DependencyInjection
             configuration.GetSection(AdaptivityOptions.SectionName));
         services.AddScoped<IAdaptivityService, AdaptivityService>();
 
+        // P3-11 Quiz Selection Engine options.
+        // QuizSelectionOptions lives in Domain (same pattern as AdaptivityOptions) so the
+        // pure engine can reference it without violating the Application → Domain dependency direction.
+        services.Configure<QuizSelectionOptions>(
+            configuration.GetSection(QuizSelectionOptions.SectionName));
+
         // P3-10 Spaced-Repetition Engine options.
         // SpacedRepetitionOptions lives in Domain (same pattern as AdaptivityOptions) so the
         // pure engine can reference it without violating the Application → Domain dependency direction.

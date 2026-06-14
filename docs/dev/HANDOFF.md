@@ -514,6 +514,66 @@ Built **P3-10** in the **`Learning` module**; expansion of P3-09 mastery foundat
 - Line 78 (StudentSkillMastery.cs comment): corrected `RepetitionNumber` doc from "SM-2 repetition counter" to "spaced-repetition ladder index"
 
 
+## P3-11 — Serve adaptive quizzes (backend) — added 2026-06-14 (`feat/P3-11-adaptive-quiz`)
+
+Built **P3-11** in the **`Learning` module**; difficulty-tuned quiz selection engine. Full pipeline complete (backend-feature → reviewer PASS). Last story in the difficulty chain (depends on P3-08 adaptivity + P3-09 mastery + P3-10 spaced-repetition).
+
+**What shipped:**
+
+- **`QuizSelectionEngine` domain service** — pure static deterministic weighted-mix selection:
+  - `SelectQuestions(candidates: List<Question>, targetDifficulty: int, policy: QuizSelectionOptions): (questions: List<Question>, servedMix: DifficultyMix)` — selects N questions from candidates using **70/30 weighted policy** (70% target difficulty, 30% adjacent difficulties); applies sort-by-Id for deterministic resume
+  - `DifficultyMix` value object captures the policy result as jsonb-serializable record `{ Easy, Medium, Hard, Target, WasDefault }`
+  - Graceful degradation: empty candidate pools at target difficulty fall back to full candidate list (never 500, never stall)
+  - **9 unit tests** (selection logic, edge cases, determinism)
+
+- **`QuizSelectionOptions` config class** — `Engine.WeightedMix` policy record (easy/medium/hard/target percentages); seeded from `appsettings.json` `QuizSelection:Engine` section (changeable per environment)
+
+- **`Attempt` entity schema changes** (migration `20260614015416_AddAttemptServedDifficultyMix`):
+  - New nullable column `ServedDifficultyMix` jsonb — persists the actual mix policy served to this attempt (set on start, never re-computed on resume for determinism); shape `{ Easy:int, Medium:int, Hard:int, Target:int, WasDefault:bool }`
+  - New nullable column `TargetDifficulty` int — the student's target difficulty at attempt start, derived from `IAdaptivityService.GetTargetDifficulty(studentId, skillId)` call
+
+- **`AttemptConfig` entity configuration** — Fluent mapping for jsonb columns (HasColumnType("jsonb"), HasDefaultValueSql)
+
+- **`StartAttemptCommandHandler` integration** — wired after existing lifecycle/IsActive/language guards (preserves all existing guards, additive only):
+  1. Call `_adaptivityService.GetTargetDifficulty(studentId, skillId, ...)`
+  2. Resolve quiz candidates from lesson's questions
+  3. Call `QuizSelectionEngine.SelectQuestions(candidates, target, options)`
+  4. Persist `TargetDifficulty` + `ServedDifficultyMix` on new attempt
+  5. Resume (existing attempt) skips re-selection: loads persisted mix from DB (deterministic across refreshes)
+
+- **`DependencyInjection.cs`** — wired `Configure<QuizSelectionOptions>` in Learning.Infrastructure
+
+- **`appsettings.json`** — new `QuizSelection:Engine` section with default `WeightedMix` policy (70/30 weighted)
+
+- **Test coverage:** 311 unit tests (9 new QuizSelectionEngine) + 8 integration tests (P3_11_AdaptiveQuizSelection_Tests.cs: selection logic, resume determinism, graceful fallback). All green. Security audit: PASS, inline (no PII, no breaches).
+
+**Load-bearing decisions (reviewer-confirmed):**
+
+- **70/30 weighted policy:** all difficulty buckets non-empty, policy weights toward target but includes adjacent levels for reinforcement. **Fully config-bound** (swappable per environment via `QuizSelection:Engine:WeightedMix`).
+
+- **Persisted on start only, NOT re-computed on resume:** once the student starts an attempt, the served mix is locked into `ServedDifficultyMix` (no second-guessing if mastery shifts mid-attempt). Reduces cognitive load + enables analytics (same questions re-shown on resume). Next step (Phase 5?): deep-resume could recompute target + re-select if needed (acceptable v1 deviation from persisted mix).
+
+- **Deterministic via sort-by-Id:** when the mix policy selects from a bucket (e.g., "3 medium"), the order is stable (sorted by QuestionId ascending) so resume produces the same question sequence without round-trip state.
+
+- **Graceful degradation (thin/empty pools):** if target-difficulty has no questions, the selection falls back to the full candidate list (no 500, no stall). Logged at Warn for ops to debug.
+
+- **Wired into StartAttempt AFTER guards:** call to `IAdaptivityService.GetTargetDifficulty` is downstream of existing quiz-active/language checks, so the service can assume a valid attempt context.
+
+- **No re-persistence on resume:** `CompleteAttemptCommandHandler` does NOT re-write `ServedDifficultyMix` (no churn, determinism preserved).
+
+**Cross-story dependencies:**
+
+- **P3-08 (adaptivity engine)** — `IAdaptivityService.GetTargetDifficulty(...)` is the only consumer of the adaptive-difficulty signal. P3-11 calls it during StartAttempt setup.
+- **P3-09 (mastery)** — mastery rows inform the difficulty target (via P3-08's weighted-score algorithm). P3-11 reads that signal.
+- **P3-10 (spaced-repetition)** — not directly wired into P3-11 (review due-ness is on the mastery row, not the question). Future: P3-11 could filter candidates to include "due reviews" as a reinforcement bucket (deferred to P3-12+).
+
+**Non-blocking follow-ups:**
+
+- **Resume recomputation:** if the student's mastery/target shifts mid-attempt (e.g., they practice outside the attempt context), a deep-resume could invalidate the cached mix. Acceptable v1 (student starts fresh quiz to re-tune).
+- **P3-06 generation-side consumer:** P3-06 (offline practice-question generation) reads the same `IAdaptivityService` seam; wired at `ILearningContextProvider` seam (deferred — not in P3-11 scope).
+
+
+
 
 
 
