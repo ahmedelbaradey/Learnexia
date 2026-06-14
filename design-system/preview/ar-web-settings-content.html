@@ -1,0 +1,41 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="AR · Settings (tabs + content)" subtitle="شريط التبويبات + لوحة الملف الشخصي — حقول وصورة وحفظ (RTL)" viewport="700x400" -->
+<html dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="_base-ar.css">
+<style>
+  body{padding:20px;background:#0F172A;font-family:'Tajawal'}
+  .wrap{display:grid;grid-template-columns:200px 1fr;gap:20px}
+  .tab{text-align:right;padding:9px 13px;border-radius:11px;border:none;background:transparent;color:#94A3B8;font-family:'Cairo';font-weight:600;font-size:13px;cursor:pointer}
+  .tab.on{background:rgba(79,70,229,0.18);color:#A5B4FC;font-weight:800}
+  .panel{background:#1E293B;border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:16px}
+  .lbl{font-family:'Cairo';font-size:12px;font-weight:700;color:#CBD5E1;margin-bottom:6px}
+  .in{height:42px;width:100%;background:#0F172A;border:1px solid rgba(255,255,255,0.1);border-radius:11px;color:#F8FAFC;font-family:'Tajawal';font-size:14px;padding:0 12px;box-sizing:border-box}
+  .btn{height:38px;padding:0 16px;border-radius:11px;font-family:'Cairo';font-weight:700;font-size:13px;cursor:pointer;border:none}
+  .primary{background:#4F46E5;color:#fff;box-shadow:0 4px 12px rgba(99,102,241,0.4)}
+  .ghost{background:transparent;border:1px solid rgba(255,255,255,0.14);color:#CBD5E1}
+</style></head>
+<body>
+<div class="wrap">
+  <nav style="display:flex;flex-direction:column;gap:3px">
+    <button class="tab on">👤 الملف الشخصي</button>
+    <button class="tab">🔔 الإشعارات</button>
+    <button class="tab">👨‍👩‍👦 الأطفال المربوطون</button>
+    <button class="tab">🛡️ الأمان</button>
+    <button class="tab">💎 الاشتراك</button>
+    <button class="tab">🌍 اللغة والمنطقة</button>
+  </nav>
+  <div class="panel">
+    <div><div style="font-family:'Cairo';font-weight:800;font-size:16px;color:#F8FAFC">الملف الشخصي</div><div style="font-size:12px;color:#94A3B8;margin-top:2px">هكذا يعرفك Learnexia</div></div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#FB923C,#EF4444);display:flex;align-items:center;justify-content:center;font-family:'Cairo';font-weight:900;font-size:28px;color:#fff">أ</div>
+      <div style="display:flex;gap:10px"><button class="btn primary">رفع صورة</button><button class="btn ghost">إزالة</button></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div><div class="lbl">الاسم الكامل</div><input class="in" value="أحمد حسن"/></div>
+      <div><div class="lbl">البريد</div><input class="in" value="ahmed@email.com" dir="ltr"/></div>
+      <div><div class="lbl">الهاتف</div><input class="in" value="+966 50 123 4567" dir="ltr"/></div>
+      <div><div class="lbl">الدولة</div><input class="in" value="🇸🇦 السعودية"/></div>
+    </div>
+    <div style="display:flex;justify-content:flex-start;gap:10px"><button class="btn ghost">إلغاء</button><button class="btn primary">حفظ التغييرات</button></div>
+  </div>
+</div>
+</body></html>

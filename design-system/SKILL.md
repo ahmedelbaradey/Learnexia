@@ -26,6 +26,7 @@ When invoked, read `README.md` first for the full design philosophy, then drill 
 | `ui_kits/parent-dashboard/index.html` | Full English web app (7 pages) + working Add Child modal |
 | `ui_kits/parent-dashboard/index-ar.html` | Full Arabic RTL web app (7 pages) + Add Child modal |
 | `ui_kits/parent-dashboard/AddChildModal.jsx` | Reusable Add Child modal (photo upload, grade tiles, language flags) |
+| `ui_kits/helper-energy/index.html` | ⚡ Helper Energy showcase — interactive (EN/AR × mobile/web): lesson demo, indicator states, cost-confirm, out-of-energy, parent top-up |
 | `screenshots/` | PNG captures of every screen and page, en + ar |
 
 ---
@@ -90,6 +91,7 @@ For any small piece you need, **first** look in `preview/`. Naming:
 - Shared components (no prefix): `components-buttons.html`, `components-hud.html`, `components-xp-bar.html`, `components-badges.html`, `components-hearts-streak.html`, `components-lesson-card.html`, `components-quiz.html`, `components-tutor.html`, `components-missions.html`, `components-reward.html`, `components-input.html`, `components-skill-node.html`
 - Mobile-specific: `mobile-*` (29 files — auth, onboarding, home, gamification, profile, hearts, badges)
 - Web-specific: `web-*` (25 files — nav, hero, sidebar, KPIs, charts, settings, recommendations)
+- Helper Energy: `colors-energy.html`, `components-energy-vs-hearts.html`, `components-energy-indicator.html`, `components-energy-cost.html`, `components-energy-empty.html`, `web-energy-topup.html`, + AR twins `ar-energy-vs-hearts.html`, `ar-energy-indicator.html`
 - Arabic equivalents: `ar-*` (27 files covering the most-used atoms in RTL)
 
 Lift the HTML directly. Each file imports `_base.css` (or `_base-ar.css`) which imports `colors_and_type.css` — to use in a new project, copy the markup and include `colors_and_type.css`.
@@ -121,6 +123,31 @@ The reference implementations are `ui_kits/parent-dashboard/AddChildModal.jsx` (
 - Always include the **brand scrollbar** CSS (indigo gradient thumb, pill, 10px, lighter hover) — copy the `*::-webkit-scrollbar*` block from either web kit's `<style>`. Covers vertical + horizontal.
 - For paired analytical panels (e.g. weak-areas + recommendations), use a **2-column `grid` with `align-items: start`** so they sit in one row; let inner lists stack vertically rather than forcing a 3-up grid that wraps.
 
+## Skill 10 — Helper Energy (⚡ the AI-help credit meter)
+
+Energy meters **AI-helper usage only**. It is a *separate resource from hearts* (lives/mistakes). The golden rule: **a child must never confuse hearts and energy.** Keep them distinct on every channel.
+
+| Channel | ❤️ Hearts | ⚡ Energy |
+|---|---|---|
+| Means | Lives / mistakes | AI-helper fuel |
+| Color | Rose `#FB7185` (`--lx-heart`) | Teal `#2DD4BF` (`--lx-energy`) |
+| Icon / shape | Heart glyphs | Battery + lightning bolt |
+| Motion | Shatter + shake | Smooth drain + bolt pulse |
+| Position | Top-**left** of HUD | Top-**right** of HUD |
+| Refills | 1 / 30 min | Daily reset / parent top-up |
+
+**Numbers to surface (don't invent others):**
+- Free = **300**/month, **20**/day cap · Premium = **3000**/month, **150**/day soft cap · Top-up pack = **500**.
+- Costs: Hint **⚡1** · Explain Mistake **⚡3** · Deep Explanation **⚡5** · Practice Generation **⚡5**.
+
+**Rules:**
+1. Render the meter as a **teal battery** (shell + fill + tip), never a heart or a plain bar. Tokens: `--lx-energy`, `--lx-energy-deep`, `--lx-energy-soft`, `--lx-energy-glow`.
+2. Distinguish **daily-cap reached** (balance is fine — "resets at midnight", sky/`#38BDF8` accent, ⏳) from **monthly-empty** (balance is 0 — "ask a parent", grey/purple, 🔌).
+3. Before any spend, show a **confirm** with the cost *and* the balance-after ("Use ⚡3? · 177 left").
+4. Empty/cap states are **non-punitive** — friendly mascot, clear path forward, never a scold. Kids never see prices; "Ask a parent" routes to the parent top-up.
+5. Lean on **icon + color + number**, not text — young/low-literacy readers.
+6. Reference implementation: `ui_kits/helper-energy/index.html` (interactive, EN/AR × mobile/web). Copy battery/cost/confirm markup from there; copy DS-tab cards from `preview/*energy*`.
+
 ---
 
 ## Common copywriting cheat sheet
@@ -138,6 +165,10 @@ The reference implementations are `ui_kits/parent-dashboard/AddChildModal.jsx` (
 | XP earned | "+50 XP" | "+٥٠ نقطة" |
 | Locked | "Locked" | "مقفل" |
 | New badge | "New Badge Unlocked!" | "شارة جديدة!" |
+| Use a hint | "Use ⚡1 for a hint?" | "استخدم ⚡١ للتلميح؟" |
+| Energy low | "Energy running low" | "الطاقة تنخفض" |
+| Daily cap | "Lexi needs a rest — back tomorrow!" | "ليكسي يحتاج راحة — عُد غداً!" |
+| Out of energy | "Ask a parent for more energy" | "اطلب من أحد الوالدين مزيداً من الطاقة" |
 
 ---
 

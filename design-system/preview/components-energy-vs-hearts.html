@@ -1,0 +1,42 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="Hearts vs Energy" subtitle="Two depleting meters a kid must never confuse — by color, shape, motion, position, words" viewport="700x250" -->
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css">
+<style>
+  body{padding:24px;display:flex;gap:16px}
+  .panel{flex:1;background:#1E293B;border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px}
+  .heartp{border-color:rgba(251,113,133,0.4)}
+  .energyp{border-color:rgba(45,212,191,0.4)}
+  .ttl{font-family:var(--lx-font-display);font-weight:800;font-size:14px;display:flex;align-items:center;gap:8px}
+  .hearts{display:flex;gap:7px;font-size:26px}
+  .lost{filter:grayscale(1) opacity(0.32)}
+  .batt{display:flex;align-items:center;gap:7px}
+  .shell{flex:1;height:18px;background:#0F172A;border:2px solid #14B8A6;border-radius:6px;padding:2px;overflow:hidden}
+  .fill{height:100%;width:60%;background:linear-gradient(90deg,#2DD4BF,#14B8A6);border-radius:3px}
+  .tip{width:4px;height:9px;background:#14B8A6;border-radius:0 3px 3px 0}
+  table{border-collapse:collapse;font-size:11px;width:100%}
+  td{padding:4px 6px;color:var(--lx-fg2);border-top:1px solid rgba(255,255,255,0.05)}
+  td:first-child{color:var(--lx-fg3);font-weight:700;width:64px}
+  .k{font-weight:700}
+</style></head>
+<body>
+<div class="panel heartp">
+  <div class="ttl" style="color:#FB7185">❤️ Hearts</div>
+  <div class="hearts"><span>❤️</span><span>❤️</span><span>❤️</span><span class="lost">❤️</span><span class="lost">❤️</span></div>
+  <table>
+    <tr><td>Means</td><td class="k">Lives / mistakes</td></tr>
+    <tr><td>Shape</td><td>Rose heart, top-LEFT</td></tr>
+    <tr><td>Motion</td><td>Shatter + shake on loss</td></tr>
+    <tr><td>Refills</td><td>Slowly over time (1 / 30 min)</td></tr>
+  </table>
+</div>
+<div class="panel energyp">
+  <div class="ttl" style="color:#2DD4BF">⚡ Energy</div>
+  <div class="batt"><div class="shell"><div class="fill"></div></div><div class="tip"></div><span style="font-family:var(--lx-font-display);font-weight:800;color:#2DD4BF">180</span></div>
+  <table>
+    <tr><td>Means</td><td class="k">AI helper fuel</td></tr>
+    <tr><td>Shape</td><td>Teal battery, top-RIGHT</td></tr>
+    <tr><td>Motion</td><td>Smooth drain + bolt pulse</td></tr>
+    <tr><td>Refills</td><td>Daily reset / parent top-up</td></tr>
+  </table>
+</div>
+</body></html>

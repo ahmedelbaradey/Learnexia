@@ -2,19 +2,135 @@
 
 const pdFont = { fontFamily: 'Poppins, system-ui, sans-serif' };
 
+// Linked children for the family switcher.
+const PD_CHILDREN = [
+  { id: 'sami',  name: 'Sami',  grade: 'Grade 3 · Level 12', av: 'S', from: '#FB923C', to: '#EF4444', xp: '+340 XP', up: 'Up 28% from last week' },
+  { id: 'layla', name: 'Layla', grade: 'Grade 5 · Level 20', av: 'L', from: '#A855F7', to: '#6366F1', xp: '+512 XP', up: 'Up 12% from last week' },
+  { id: 'yusuf', name: 'Yusuf', grade: 'Grade 1 · Level 4',  av: 'Y', from: '#22C55E', to: '#0EA5E9', xp: '+180 XP', up: 'New this week 🎉' },
+];
+
+// Shared app context: current child + theme. App provides it; sidebar consumes it.
+const PDCtx = React.createContext(null);
+function usePD() { return React.useContext(PDCtx) || {}; }
+
+function PDChildSwitcher({ collapsed = false }) {
+  const { child = PD_CHILDREN[0], setChild } = usePD();
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, []);
+  const Avatar = ({ c, size = 36, fs = 16 }) => (
+    <div style={{
+      width: size, height: size, borderRadius: '50%', flexShrink: 0,
+      background: `linear-gradient(135deg,${c.from},${c.to})`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: fs, fontWeight: 800, color: '#fff',
+    }}>{c.av}</div>
+  );
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button onClick={() => setOpen(o => !o)} style={{
+        width: '100%', background: '#1E293B', borderRadius: 16, padding: 12,
+        display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
+        border: open ? '1px solid rgba(99,102,241,0.6)' : '1px solid transparent',
+        fontFamily: 'inherit', textAlign: 'left',
+        transition: 'border-color 140ms ease',
+      }}>
+        <Avatar c={child}/>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: 13, color: '#F8FAFC' }}>{child.name}</div>
+          <div style={{ fontSize: 11, color: '#94A3B8' }}>{child.grade}</div>
+        </div>
+        <div style={{ color: '#94A3B8', fontSize: 13, transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 180ms cubic-bezier(0.16,1,0.3,1)' }}>›</div>
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 80,
+          background: '#1E293B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16,
+          boxShadow: '0 20px 50px rgba(0,0,0,0.55)', padding: 8,
+          display: 'flex', flexDirection: 'column', gap: 2,
+          animation: 'pdDrop 180ms cubic-bezier(0.16,1,0.3,1)',
+        }}>
+          <div style={{ fontSize: 10, fontWeight: 800, color: '#64748B', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '6px 10px 4px' }}>Switch child</div>
+          {PD_CHILDREN.map(c => {
+            const on = c.id === child.id;
+            return (
+              <button key={c.id} onClick={() => { setChild && setChild(c); setOpen(false); }} style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 12,
+                background: on ? 'rgba(79,70,229,0.18)' : 'transparent', border: 'none', cursor: 'pointer',
+                fontFamily: 'inherit', textAlign: 'left',
+              }}>
+                <Avatar c={c} size={32} fs={14}/>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: '#F8FAFC' }}>{c.name}</div>
+                  <div style={{ fontSize: 11, color: '#94A3B8' }}>{c.grade}</div>
+                </div>
+                {on && <span style={{ color: '#A5B4FC', fontSize: 14 }}>✓</span>}
+              </button>
+            );
+          })}
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '6px 4px' }}/>
+          <button onClick={() => setOpen(false)} style={{
+            display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 12,
+            background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+            color: '#A5B4FC', fontWeight: 700, fontSize: 13,
+          }}>
+            <span style={{ width: 32, height: 32, borderRadius: '50%', border: '1.5px dashed rgba(165,180,252,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>＋</span>
+            Add a child
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PDPrefsRow() {
+  const { theme = 'night', setTheme } = usePD();
+  const seg = (active) => ({
+    flex: 1, height: 34, borderRadius: 9, border: 'none', cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+    fontFamily: 'inherit', fontWeight: 700, fontSize: 12,
+    background: active ? '#334155' : 'transparent',
+    color: active ? '#F8FAFC' : '#94A3B8',
+    boxShadow: active ? '0 2px 6px rgba(0,0,0,0.3)' : 'none',
+    transition: 'all 140ms ease',
+  });
+  const wrap = { display: 'flex', gap: 4, background: '#0F172A', borderRadius: 12, padding: 4, border: '1px solid rgba(255,255,255,0.06)' };
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {/* Language */}
+      <div style={wrap}>
+        <button style={seg(true)} title="English"><span style={{ fontSize: 14 }}>🇺🇸</span>EN</button>
+        <button style={seg(false)} onClick={() => { window.location.href = 'index-ar.html'; }} title="العربية"><span style={{ fontSize: 14 }}>🇪🇬</span>AR</button>
+      </div>
+      {/* Theme: Night (navy) vs Black (OLED) */}
+      <div style={wrap}>
+        <button style={seg(theme === 'night')} onClick={() => setTheme && setTheme('night')} title="Night (navy)">🌙 Night</button>
+        <button style={seg(theme === 'black')} onClick={() => setTheme && setTheme('black')} title="Black (OLED)">⬛ Black</button>
+      </div>
+    </div>
+  );
+}
+
 function PDSidebar({ active, onChange }) {
+  const { child = PD_CHILDREN[0], onLogout } = usePD();
   const items = [
     { id: 'children',    label: 'My Children',  icon: '👨‍👩‍👦' },
     { id: 'overview',    label: 'Overview',     icon: '📊' },
     { id: 'reports',     label: 'Reports',      icon: '📈' },
+    { id: 'energy',      label: 'Helper Energy', icon: '⚡' },
     { id: 'activity',    label: 'Activity',     icon: '⏱️' },
     { id: 'subjects',    label: 'Subjects',     icon: '📚' },
     { id: 'settings',    label: 'Settings',     icon: '⚙️' },
   ];
   return (
     <aside style={{
-      width: 240, background: '#0F172A', borderRight: '1px solid rgba(255,255,255,0.06)',
-      padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 24,
+      width: 240, background: 'var(--pd-rail,#0F172A)', borderRight: '1px solid rgba(255,255,255,0.06)',
+      padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 20,
       flexShrink: 0, ...pdFont,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px' }}>
@@ -22,22 +138,7 @@ function PDSidebar({ active, onChange }) {
         <div style={{ fontWeight: 800, fontSize: 18, color: '#F8FAFC' }}>Learnexia</div>
       </div>
 
-      <div style={{
-        background: '#1E293B', borderRadius: 16, padding: 12,
-        display: 'flex', alignItems: 'center', gap: 10,
-      }}>
-        <div style={{
-          width: 36, height: 36, borderRadius: '50%',
-          background: 'linear-gradient(135deg,#FB923C,#EF4444)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 16, fontWeight: 800, color: '#fff',
-        }}>S</div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 700, fontSize: 13, color: '#F8FAFC' }}>Sami</div>
-          <div style={{ fontSize: 11, color: '#94A3B8' }}>Grade 3 · Level 12</div>
-        </div>
-        <div style={{ color: '#94A3B8', fontSize: 16 }}>›</div>
-      </div>
+      <PDChildSwitcher/>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {items.map(i => (
@@ -55,19 +156,34 @@ function PDSidebar({ active, onChange }) {
         ))}
       </div>
 
-      <div style={{
-        marginTop: 'auto', background: '#1E293B', border: '1px solid rgba(255,255,255,0.06)',
-        borderRadius: 16, padding: 14,
-      }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#FACC15', letterSpacing: '0.08em', textTransform: 'uppercase' }}>This week</div>
-        <div style={{ fontWeight: 800, fontSize: 20, color: '#F8FAFC', marginTop: 4 }}>+340 XP</div>
-        <div style={{ fontSize: 11, color: '#94A3B8' }}>Up 28% from last week</div>
+      <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <PDPrefsRow/>
+        <div style={{
+          background: '#1E293B', border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: 16, padding: 14,
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#FACC15', letterSpacing: '0.08em', textTransform: 'uppercase' }}>This week</div>
+          <div style={{ fontWeight: 800, fontSize: 20, color: '#F8FAFC', marginTop: 4 }}>{child.xp}</div>
+          <div style={{ fontSize: 11, color: '#94A3B8' }}>{child.up}</div>
+        </div>
+        <button onClick={() => onLogout && onLogout()} style={{
+          display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+          padding: '10px 12px', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
+          background: 'transparent', border: '1px solid rgba(239,68,68,0.25)',
+          color: '#F87171', fontWeight: 700, fontSize: 13, textAlign: 'left',
+          transition: 'background-color 140ms ease',
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.12)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+          <span style={{ fontSize: 15 }}>↪</span>Log out
+        </button>
       </div>
     </aside>
   );
 }
 
 function PDHeader({ title, sub }) {
+  const { child } = usePD();
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -79,6 +195,20 @@ function PDHeader({ title, sub }) {
         {sub && <div style={{ fontSize: 13, color: '#94A3B8', marginTop: 2 }}>{sub}</div>}
       </div>
       <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        {child && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8, background: '#1E293B',
+            border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9999, padding: '5px 12px 5px 6px',
+          }}>
+            <div style={{
+              width: 26, height: 26, borderRadius: '50%',
+              background: `linear-gradient(135deg,${child.from},${child.to})`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 12, fontWeight: 800, color: '#fff',
+            }}>{child.av}</div>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#F8FAFC' }}>{child.name}</span>
+          </div>
+        )}
         <select style={{
           background: '#1E293B', color: '#F8FAFC', border: '1px solid rgba(255,255,255,0.1)',
           padding: '8px 12px', borderRadius: 10, fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
@@ -253,4 +383,5 @@ function PDRecommendation({ icon, title, body, cta, accent = '#4F46E5' }) {
 
 Object.assign(window, {
   PDSidebar, PDHeader, PDStatCard, PDActivityChart, PDWeakAreas, PDPanel, PDRecommendation,
+  PDCtx, PD_CHILDREN, usePD, PDChildSwitcher, PDPrefsRow,
 });

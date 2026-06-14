@@ -1,0 +1,42 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="AR · Hearts vs Energy" subtitle="القلوب مقابل الطاقة — مقياسان لا يجب الخلط بينهما (RTL)" viewport="700x250" -->
+<html dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="_base-ar.css">
+<style>
+  body{padding:24px;display:flex;gap:16px;font-family:'Tajawal'}
+  .panel{flex:1;background:#1E293B;border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px}
+  .heartp{border-color:rgba(251,113,133,0.4)}
+  .energyp{border-color:rgba(45,212,191,0.4)}
+  .ttl{font-family:'Cairo';font-weight:800;font-size:14px;display:flex;align-items:center;gap:8px}
+  .hearts{display:flex;gap:7px;font-size:26px}
+  .lost{filter:grayscale(1) opacity(0.32)}
+  .batt{display:flex;align-items:center;gap:7px}
+  .shell{flex:1;height:18px;background:#0F172A;border:2px solid #14B8A6;border-radius:6px;padding:2px;overflow:hidden}
+  .fill{height:100%;width:60%;background:linear-gradient(90deg,#2DD4BF,#14B8A6);border-radius:3px}
+  .tip{width:4px;height:9px;background:#14B8A6;border-radius:3px 0 0 3px}
+  table{border-collapse:collapse;font-size:12px;width:100%}
+  td{padding:5px 6px;color:#CBD5E1;border-top:1px solid rgba(255,255,255,0.05)}
+  td:first-child{color:#94A3B8;font-weight:700;width:72px}
+  .k{font-weight:700}
+</style></head>
+<body>
+<div class="panel heartp">
+  <div class="ttl" style="color:#FB7185">❤️ القلوب</div>
+  <div class="hearts"><span>❤️</span><span>❤️</span><span>❤️</span><span class="lost">❤️</span><span class="lost">❤️</span></div>
+  <table>
+    <tr><td>المعنى</td><td class="k">الأرواح / الأخطاء</td></tr>
+    <tr><td>الشكل</td><td>قلب وردي، أعلى اليمين</td></tr>
+    <tr><td>الحركة</td><td>تحطّم واهتزاز عند الخسارة</td></tr>
+    <tr><td>التجدد</td><td>ببطء مع الوقت (١ كل ٣٠ دقيقة)</td></tr>
+  </table>
+</div>
+<div class="panel energyp">
+  <div class="ttl" style="color:#2DD4BF">⚡ الطاقة</div>
+  <div class="batt"><div class="shell"><div class="fill"></div></div><div class="tip"></div><span style="font-family:'Cairo';font-weight:800;color:#2DD4BF">١٨٠</span></div>
+  <table>
+    <tr><td>المعنى</td><td class="k">وقود مساعد الذكاء</td></tr>
+    <tr><td>الشكل</td><td>بطارية فيروزية، أعلى اليسار</td></tr>
+    <tr><td>الحركة</td><td>تفريغ سلس ونبض البرق</td></tr>
+    <tr><td>التجدد</td><td>تجديد يومي / شحن الوالدين</td></tr>
+  </table>
+</div>
+</body></html>

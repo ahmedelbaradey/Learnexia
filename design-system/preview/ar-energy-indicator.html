@@ -1,0 +1,38 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="AR · Energy Indicator States" subtitle="ممتلئة · منخفضة · بلغ الحد اليومي · فرغ الرصيد الشهري (RTL)" viewport="700x210" -->
+<html dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="_base-ar.css">
+<style>
+  body{padding:24px;font-family:'Tajawal'}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .cell{background:#1E293B;border:1px solid rgba(255,255,255,0.06);border-radius:18px;padding:16px 14px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+  .batt{display:flex;align-items:center;gap:5px;direction:ltr}
+  .shell{width:74px;height:26px;background:#0F172A;border:2px solid #14B8A6;border-radius:7px;padding:2px;overflow:hidden}
+  .fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#2DD4BF,#14B8A6)}
+  .tip{width:5px;height:12px;background:#14B8A6;border-radius:0 3px 3px 0}
+  .val{font-family:'Cairo';font-weight:800;font-size:18px;color:#2DD4BF}
+  .lbl{font-weight:800;font-size:13px;color:#F8FAFC;font-family:'Cairo'}
+  .sub{font-size:11px;color:#94A3B8;line-height:1.5}
+  .warn .shell{border-color:#F59E0B}.warn .tip{background:#F59E0B}.warn .fill{background:linear-gradient(90deg,#FBBF24,#F59E0B)}.warn .val{color:#F59E0B}
+  .cap .shell{border-color:#38BDF8}.cap .tip{background:#38BDF8}.cap .fill{background:linear-gradient(90deg,#7DD3FC,#38BDF8)}.cap .val{color:#38BDF8}
+  .empty .shell{border-color:#64748B}.empty .tip{background:#64748B}.empty .val{color:#94A3B8}
+</style></head>
+<body>
+<div class="grid">
+  <div class="cell">
+    <div class="batt"><div class="shell"><div class="fill" style="width:100%"></div></div><div class="tip"></div></div>
+    <div class="val">⚡ ٣٠٠</div><div class="lbl">ممتلئة</div><div class="sub">رصيد شهري جديد</div>
+  </div>
+  <div class="cell warn">
+    <div class="batt"><div class="shell"><div class="fill" style="width:18%"></div></div><div class="tip"></div></div>
+    <div class="val">⚡ ١٢</div><div class="lbl">منخفضة</div><div class="sub">يظهر تنبيه برتقالي</div>
+  </div>
+  <div class="cell cap">
+    <div class="batt"><div class="shell"><div class="fill" style="width:100%"></div></div><div class="tip"></div></div>
+    <div class="val">⏳ ٠/٢٠</div><div class="lbl">الحد اليومي</div><div class="sub">الرصيد جيد — يتجدد منتصف الليل</div>
+  </div>
+  <div class="cell empty">
+    <div class="batt"><div class="shell"><div class="fill" style="width:0%"></div></div><div class="tip"></div></div>
+    <div class="val">⚡ ٠</div><div class="lbl">فرغ الشهري</div><div class="sub">اطلب من أحد الوالدين الشحن</div>
+  </div>
+</div>
+</body></html>

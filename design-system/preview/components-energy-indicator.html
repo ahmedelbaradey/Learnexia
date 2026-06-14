@@ -1,0 +1,40 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="Energy Indicator — States" subtitle="Full · low · daily-cap reached · monthly-empty" viewport="700x210" -->
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css">
+<style>
+  body{padding:24px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .cell{background:#1E293B;border:1px solid rgba(255,255,255,0.06);border-radius:18px;padding:16px 14px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+  .batt{display:flex;align-items:center;gap:5px}
+  .shell{width:74px;height:26px;background:#0F172A;border:2px solid #14B8A6;border-radius:7px;padding:2px;overflow:hidden}
+  .fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#2DD4BF,#14B8A6)}
+  .tip{width:5px;height:12px;background:#14B8A6;border-radius:0 3px 3px 0}
+  .val{font-family:var(--lx-font-display);font-weight:800;font-size:18px;color:#2DD4BF}
+  .lbl{font-weight:800;font-size:12px;color:#F8FAFC}
+  .sub{font-size:10.5px;color:var(--lx-fg3);line-height:1.4}
+  .warn .shell,.warn .tip{border-color:#F59E0B;background:#F59E0B}
+  .warn .shell{background:#0F172A}.warn .fill{background:linear-gradient(90deg,#FBBF24,#F59E0B)}
+  .warn .val{color:#F59E0B}
+  .cap .shell{border-color:#38BDF8}.cap .tip{background:#38BDF8}.cap .fill{background:linear-gradient(90deg,#7DD3FC,#38BDF8)}.cap .val{color:#38BDF8}
+  .empty .shell{border-color:#64748B}.empty .tip{background:#64748B}.empty .val{color:#94A3B8}
+</style></head>
+<body>
+<div class="grid">
+  <div class="cell">
+    <div class="batt"><div class="shell"><div class="fill" style="width:100%"></div></div><div class="tip"></div></div>
+    <div class="val">⚡ 300</div><div class="lbl">Full</div><div class="sub">Fresh monthly balance</div>
+  </div>
+  <div class="cell warn">
+    <div class="batt"><div class="shell"><div class="fill" style="width:18%"></div></div><div class="tip"></div></div>
+    <div class="val">⚡ 12</div><div class="lbl">Low</div><div class="sub">Amber nudge appears</div>
+  </div>
+  <div class="cell cap">
+    <div class="batt"><div class="shell"><div class="fill" style="width:100%"></div></div><div class="tip"></div></div>
+    <div class="val">⏳ 0/20</div><div class="lbl">Daily cap</div><div class="sub">Balance OK — resets at midnight</div>
+  </div>
+  <div class="cell empty">
+    <div class="batt"><div class="shell"><div class="fill" style="width:0%"></div></div><div class="tip"></div></div>
+    <div class="val">⚡ 0</div><div class="lbl">Monthly empty</div><div class="sub">Ask a parent to top up</div>
+  </div>
+</div>
+</body></html>

@@ -40,6 +40,7 @@
   .pill-xp     { background: rgba(250,204,21,0.18); color: #FACC15; }
   .hint { color: #94A3B8; font-size: 12px; text-align: center; max-width: 420px; line-height: 1.5; }
   @keyframes lxpulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+  @keyframes lxpop { 0% { transform: scale(0.85); opacity: 0; } 60% { transform: scale(1.04); opacity: 1; } 100% { transform: scale(1); } }
 </style>
 </head>
 <body>
@@ -153,6 +154,7 @@
         <div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px;height:36px">
           <div style="display:flex;align-items:center;gap:4px"><span class="h-display" style="font-size:22px;color:#F8FAFC" dir="ltr">Learnexia</span><span style="font-size:18px">🌟</span></div>
           <div class="pill pill-streak">🔥 ٧ أيام</div>
+          <button onclick="setActive('energy')" class="pill" style="background:rgba(45,212,191,0.13);color:#2DD4BF;border:none;box-shadow:0 0 0 1px rgba(45,212,191,0.33);font-family:'Cairo';font-weight:800;font-size:13px;cursor:pointer" dir="ltr">⚡ ١٨٠</button>
           <div style="display:flex;align-items:center;gap:4px"><span class="h-display" style="font-size:15px;color:#A855F7">المستوى ٥</span><span style="font-size:16px">🧠</span></div>
         </div>
         <div class="card card-dark">
@@ -363,6 +365,55 @@
         <button style="background:transparent;border:none;color:#A5B4FC;font-family:'Cairo';font-weight:700;font-size:13px;padding:8px;cursor:pointer">💎 املأ القلوب بـ ١٠ جواهر</button>
       </div>
 
+      <!-- HELPER ENERGY -->
+      <div class="screen" data-id="energy">
+        <div><div class="h-display" style="font-size:12px;color:#5eead4;letter-spacing:0.12em">⚡ طاقة المساعد</div><div class="h-display" style="font-size:26px;color:#F8FAFC;margin-top:4px">وقود مساعدة ليكسي</div><div style="font-size:12px;color:#94A3B8;margin-top:3px">منفصلة عن ❤️ قلوبك — هذه تشغّل مساعد الذكاء فقط.</div></div>
+        <div style="display:flex;gap:5px;background:#0F172A;border-radius:12px;padding:4px" id="arEnergyTabs">
+          <button onclick="arSetEnergyView('live')" data-v="live" class="ar-en-tab" style="flex:1;padding:7px 4px;border-radius:9px;border:none;cursor:pointer;font-family:'Cairo';font-weight:800;font-size:11px;background:rgba(45,212,191,0.16);color:#2DD4BF">ممتلئة</button>
+          <button onclick="arSetEnergyView('low')" data-v="low" class="ar-en-tab" style="flex:1;padding:7px 4px;border-radius:9px;border:none;cursor:pointer;font-family:'Cairo';font-weight:800;font-size:11px;background:transparent;color:#64748B">منخفضة</button>
+          <button onclick="arSetEnergyView('cap')" data-v="cap" class="ar-en-tab" style="flex:1;padding:7px 4px;border-radius:9px;border:none;cursor:pointer;font-family:'Cairo';font-weight:800;font-size:11px;background:transparent;color:#64748B">الحد اليومي</button>
+          <button onclick="arSetEnergyView('empty')" data-v="empty" class="ar-en-tab" style="flex:1;padding:7px 4px;border-radius:9px;border:none;cursor:pointer;font-family:'Cairo';font-weight:800;font-size:11px;background:transparent;color:#64748B">فارغة</button>
+        </div>
+        <div id="arEnergyHero" style="background:radial-gradient(circle at 50% 0%,rgba(45,212,191,0.18),transparent 70%);border:1px solid rgba(45,212,191,0.25);border-radius:22px;padding:20px 18px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:7px"><span style="font-size:20px;filter:drop-shadow(0 0 8px rgba(45,212,191,0.7))">⚡</span><span class="h-display" style="font-size:14px;color:#F8FAFC">هذا الشهر</span></div><div class="h-display" style="font-size:26px;color:#2DD4BF" dir="ltr" id="arEnergyVal">١٨٠<span style="font-size:14px;color:#64748B"> / ٣٠٠</span></div></div>
+          <div style="display:flex;align-items:center;gap:6px;direction:ltr"><div style="flex:1;height:26px;background:#0F172A;border:2px solid #14B8A6;border-radius:9px;padding:3px;overflow:hidden" id="arEnergyShell"><div id="arEnergyFill" style="height:100%;width:60%;background:linear-gradient(90deg,#2DD4BF,#14B8A6);border-radius:5px;transition:width 400ms cubic-bezier(0.16,1,0.3,1)"></div></div><div id="arEnergyTip" style="width:6px;height:13px;background:#14B8A6;border-radius:0 4px 4px 0"></div></div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#94A3B8" id="arEnergyMeta"><span>📅</span><span>تتجدد خلال <b style="color:#CBD5E1">١٢ يوماً</b> · حد <b style="color:#CBD5E1">٢٠</b>/يوم</span></div>
+        </div>
+        <!-- non-punitive states -->
+        <div id="arEnergyEmpty" style="display:none;background:rgba(168,85,247,0.13);border:1px solid rgba(168,85,247,0.35);border-radius:18px;padding:18px;flex-direction:column;align-items:center;gap:10px;text-align:center">
+          <div style="font-size:40px">🔌</div><div class="h-display" style="font-size:18px;color:#F8FAFC">نفدت الطاقة</div><div style="font-size:12px;color:#94A3B8;max-width:240px;line-height:1.5">لقد استخدمت طاقة هذا الشهر. اطلب من شخص بالغ إضافة المزيد ليواصل ليكسي مساعدتك.</div><button style="height:44px;padding:0 22px;border-radius:13px;border:none;background:linear-gradient(135deg,#A855F7,#7C3AED);color:#fff;font-family:'Cairo';font-weight:800;font-size:14px;cursor:pointer;margin-top:4px">👨‍👩‍👧 اطلب من ولي الأمر</button>
+        </div>
+        <div id="arEnergyCap" style="display:none;background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.35);border-radius:18px;padding:18px;flex-direction:column;align-items:center;gap:10px;text-align:center">
+          <div style="font-size:40px">😴</div><div class="h-display" style="font-size:18px;color:#F8FAFC">ليكسي يحتاج راحة!</div><div style="font-size:12px;color:#94A3B8;max-width:250px;line-height:1.5">استخدمت كل الـ<b style="color:#38BDF8">٢٠</b> مساعدة لليوم. طاقتك بخير — عُد غداً للمزيد.</div><div style="display:inline-flex;align-items:center;gap:6px;background:#0F172A;border-radius:9999px;padding:7px 14px;font-family:'Cairo';font-weight:800;font-size:13px;color:#38BDF8;margin-top:2px">🌙 تتجدد خلال ٦ س ١٢ د</div>
+        </div>
+        <div id="arEnergyLow" style="display:none;background:rgba(245,158,11,0.13);border:1px solid rgba(245,158,11,0.3);border-radius:16px;padding:14px;align-items:center;gap:12px">
+          <div style="font-size:22px">⚡</div><div style="flex:1"><div class="h-display" style="font-size:14px;color:#F59E0B">الطاقة تنخفض</div><div style="font-size:11px;color:#FBBF24">احتفظ بها لوقت الحاجة الحقيقية.</div></div>
+        </div>
+        <div id="arEnergyHelpers">
+          <div style="font-size:11px;color:#94A3B8;font-weight:700;letter-spacing:0.06em;margin-bottom:8px">اضغط على مساعد — ستؤكّد قبل الاستخدام</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button onclick="arAskSpend(1,'تلميح','النصف يعني تقسيم إلى مجموعتين متساويتين. قسّم ٨ إلى مجموعتين 🍕')" style="display:flex;align-items:center;gap:11px;background:#1E293B;border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:11px 13px;cursor:pointer;font-family:'Tajawal';text-align:right"><div style="width:34px;height:34px;border-radius:10px;background:rgba(45,212,191,0.14);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">💡</div><div style="flex:1;font-weight:700;font-size:14px;color:#F8FAFC">تلميح</div><div class="h-display" style="font-weight:800;font-size:13px;color:#2DD4BF;background:rgba(45,212,191,0.14);padding:3px 10px;border-radius:9999px" dir="ltr">⚡ ١</div></button>
+            <button onclick="arAskSpend(3,'اشرح الخطأ','أضفت بدلاً من الطرح. ٨ − ٣ تأخذ ٣، فيتبقّى ٥.')" style="display:flex;align-items:center;gap:11px;background:#1E293B;border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:11px 13px;cursor:pointer;font-family:'Tajawal';text-align:right"><div style="width:34px;height:34px;border-radius:10px;background:rgba(168,85,247,0.14);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">🔍</div><div style="flex:1;font-weight:700;font-size:14px;color:#F8FAFC">اشرح الخطأ</div><div class="h-display" style="font-weight:800;font-size:13px;color:#2DD4BF;background:rgba(45,212,191,0.14);padding:3px 10px;border-radius:9999px" dir="ltr">⚡ ٣</div></button>
+            <button onclick="arAskSpend(5,'شرح مفصّل','لنمرّ على الكسور خطوة بخطوة مع بيتزا 🍕…')" style="display:flex;align-items:center;gap:11px;background:#1E293B;border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:11px 13px;cursor:pointer;font-family:'Tajawal';text-align:right"><div style="width:34px;height:34px;border-radius:10px;background:rgba(79,70,229,0.16);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">📖</div><div style="flex:1;font-weight:700;font-size:14px;color:#F8FAFC">شرح مفصّل</div><div class="h-display" style="font-weight:800;font-size:13px;color:#2DD4BF;background:rgba(45,212,191,0.14);padding:3px 10px;border-radius:9999px" dir="ltr">⚡ ٥</div></button>
+            <button onclick="arAskSpend(5,'توليد تمارين','أنشأت لك ٥ أسئلة تدريب جديدة على هذه المهارة!')" style="display:flex;align-items:center;gap:11px;background:#1E293B;border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:11px 13px;cursor:pointer;font-family:'Tajawal';text-align:right"><div style="width:34px;height:34px;border-radius:10px;background:rgba(251,146,60,0.16);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">🎯</div><div style="flex:1;font-weight:700;font-size:14px;color:#F8FAFC">توليد تمارين</div><div class="h-display" style="font-weight:800;font-size:13px;color:#2DD4BF;background:rgba(45,212,191,0.14);padding:3px 10px;border-radius:9999px" dir="ltr">⚡ ٥</div></button>
+          </div>
+        </div>
+        <div id="arLexiBox"></div>
+      </div>
+      <!-- AR confirm-before-spend sheet -->
+      <div id="arEnergyConfirm" style="display:none;position:absolute;inset:0;z-index:60;background:rgba(5,8,22,0.66);backdrop-filter:blur(3px);align-items:flex-end;font-family:'Tajawal'" onclick="document.getElementById('arEnergyConfirm').style.display='none'">
+        <div onclick="event.stopPropagation()" style="width:100%;background:#15161D;border-radius:24px 24px 0 0;border-top:1px solid rgba(45,212,191,0.3);padding:10px 20px 28px;display:flex;flex-direction:column;gap:14px;align-items:center;animation:lxsheet 280ms cubic-bezier(0.16,1,0.3,1)">
+          <div style="width:40px;height:5px;border-radius:100px;background:rgba(255,255,255,0.2);margin-bottom:4px"></div>
+          <div style="font-size:40px" id="arConfIcon">💡</div>
+          <div class="h-display" style="font-size:18px;color:#F8FAFC;text-align:center" id="arConfTitle">استخدم ⚡١ للتلميح؟</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:#94A3B8">الرصيد بعدها: <b style="color:#2DD4BF" dir="ltr" id="arConfBal">١٧٩ ⚡</b> متبقّ</div>
+          <div style="display:flex;gap:10px;width:100%;margin-top:4px">
+            <button onclick="document.getElementById('arEnergyConfirm').style.display='none'" style="flex:1;height:48px;border-radius:14px;border:1px solid rgba(255,255,255,0.15);background:transparent;color:#CBD5E1;font-family:'Cairo';font-weight:800;font-size:15px;cursor:pointer">ليس الآن</button>
+            <button onclick="arDoSpend()" style="flex:1.4;height:48px;border-radius:14px;border:none;background:linear-gradient(135deg,#2DD4BF,#14B8A6);color:#06302B;font-family:'Cairo';font-weight:800;font-size:15px;cursor:pointer" id="arConfGo">استخدم ⚡١ ←</button>
+          </div>
+        </div>
+      </div>
+
       <div class="tabbar">
         <button data-tab="home" class="active"><div class="ico">🏠</div>الرئيسية</button>
         <button data-tab="children"><div class="ico">🌳</div>المهارات</button>
@@ -376,8 +427,8 @@
 </div>
 
 <script>
-const screens = ['splash','login','register','role','grade','subject','children','home','skills','profile','lesson','quiz','reward','completed','mission','league','badges','hearts'];
-const labels  = ['البداية','تسجيل دخول','إنشاء حساب','الدور','الصف','المادة','أطفالي','الرئيسية','شجرة المهارات','الملف','الدرس','الاختبار','المكافأة','مهمة مكتملة','المهمة اليومية','الدوري','الشارات','القلوب'];
+const screens = ['splash','login','register','role','grade','subject','children','home','skills','profile','lesson','quiz','reward','completed','mission','league','badges','hearts','energy'];
+const labels  = ['البداية','تسجيل دخول','إنشاء حساب','الدور','الصف','المادة','أطفالي','الرئيسية','شجرة المهارات','الملف','الدرس','الاختبار','المكافأة','مهمة مكتملة','المهمة اليومية','الدوري','الشارات','القلوب','⚡ الطاقة'];
 const crumbsEl = document.getElementById('crumbs');
 function setActive(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.dataset.id === id));
@@ -391,6 +442,58 @@ screens.forEach((id, i) => {
   b.onclick = () => setActive(id);
   crumbsEl.appendChild(b);
 });
+
+// Helper Energy — interactive spend (Arabic mobile)
+const arNums = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+const toAr = n => String(n).split('').map(c => arNums[+c] ?? c).join('');
+let arEnergyBal = 180;
+let arPending = null;
+
+function arSetEnergyView(view) {
+  document.querySelectorAll('#arEnergyTabs .ar-en-tab').forEach(b => {
+    const on = b.dataset.v === view;
+    b.style.background = on ? 'rgba(45,212,191,0.16)' : 'transparent';
+    b.style.color = on ? '#2DD4BF' : '#64748B';
+  });
+  const shown = view === 'low' ? 12 : view === 'empty' ? 0 : arEnergyBal;
+  const empty = view === 'empty', cap = view === 'cap', low = view === 'low';
+  const edge = empty ? '#64748B' : cap ? '#38BDF8' : low ? '#F59E0B' : '#14B8A6';
+  const fill = empty ? '#64748B' : cap ? 'linear-gradient(90deg,#7DD3FC,#38BDF8)' : low ? 'linear-gradient(90deg,#FBBF24,#F59E0B)' : 'linear-gradient(90deg,#2DD4BF,#14B8A6)';
+  document.getElementById('arEnergyShell').style.borderColor = edge;
+  document.getElementById('arEnergyTip').style.background = edge;
+  document.getElementById('arEnergyFill').style.background = fill;
+  document.getElementById('arEnergyFill').style.width = Math.max(0,(shown/300)*100) + '%';
+  const val = document.getElementById('arEnergyVal');
+  val.style.color = empty ? '#94A3B8' : cap ? '#38BDF8' : low ? '#F59E0B' : '#2DD4BF';
+  val.innerHTML = cap ? '<span style="font-size:18px">⏳ ٠/٢٠ اليوم</span>' : toAr(shown) + '<span style="font-size:14px;color:#64748B"> / ٣٠٠</span>';
+  document.getElementById('arEnergyMeta').innerHTML = cap
+    ? '<span>📅</span><span>بلغت الحد اليومي — <b style="color:#7DD3FC">تتجدد منتصف الليل</b></span>'
+    : '<span>📅</span><span>تتجدد خلال <b style="color:#CBD5E1">١٢ يوماً</b> · حد <b style="color:#CBD5E1">٢٠</b>/يوم</span>';
+  document.getElementById('arEnergyEmpty').style.display = empty ? 'flex' : 'none';
+  document.getElementById('arEnergyCap').style.display = cap ? 'flex' : 'none';
+  document.getElementById('arEnergyLow').style.display = low ? 'flex' : 'none';
+  document.getElementById('arEnergyHelpers').style.display = view === 'live' ? 'block' : 'none';
+  if (view !== 'live') document.getElementById('arLexiBox').innerHTML = '';
+}
+
+function arAskSpend(cost, label, say) {
+  arPending = { cost, label, say };
+  document.getElementById('arConfIcon').textContent = ({1:'💡',3:'🔍',5:'📖'})[cost] || '⚡';
+  document.getElementById('arConfTitle').textContent = 'استخدم ⚡' + toAr(cost) + ' لـ' + label + '؟';
+  document.getElementById('arConfBal').textContent = toAr(arEnergyBal - cost) + ' ⚡';
+  document.getElementById('arConfGo').textContent = 'استخدم ⚡' + toAr(cost) + ' ←';
+  document.getElementById('arEnergyConfirm').style.display = 'flex';
+}
+
+function arDoSpend() {
+  document.getElementById('arEnergyConfirm').style.display = 'none';
+  if (!arPending || arEnergyBal - arPending.cost < 0) return;
+  const { cost, say } = arPending;
+  arEnergyBal -= cost;
+  document.getElementById('arEnergyVal').innerHTML = toAr(arEnergyBal) + '<span style="font-size:14px;color:#64748B"> / ٣٠٠</span>';
+  document.getElementById('arEnergyFill').style.width = Math.max(2, (arEnergyBal / 300) * 100) + '%';
+  document.getElementById('arLexiBox').innerHTML = '<div style="background:rgba(45,212,191,0.06);border:1px solid rgba(45,212,191,0.35);border-radius:16px;padding:13px;display:flex;gap:10px;align-items:flex-start;animation:lxpop 360ms cubic-bezier(0.16,1,0.3,1)"><div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#A78BFA,#6366F1);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px">🦉</div><div><div style="font-size:11px;color:#2DD4BF;font-weight:800;margin-bottom:3px;font-family:\'Cairo\'">ليكسي يقول · ' + toAr(cost) + ' ⚡-</div><div style="font-size:13px;color:#F8FAFC;line-height:1.5;font-family:\'Tajawal\'">' + say + '</div></div></div>';
+}
 </script>
 </body>
 </html>

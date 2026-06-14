@@ -594,10 +594,181 @@ function StatTile({ icon, value, label, color }) {
   );
 }
 
+// ───────────────────────────────────────────── HELPER ENERGY
+function EnergyScreen() {
+  const MAX = 300;
+  // view: 'live' (180, interactive) · 'low' (12) · 'cap' (daily cap reached) · 'empty' (0)
+  const [view, setView] = React.useState('live');
+  const [bal, setBal] = React.useState(180);
+  const [revealed, setRevealed] = React.useState(null);
+  const [pending, setPending] = React.useState(null); // confirm dialog
+
+  const shownBal = view === 'low' ? 12 : view === 'empty' ? 0 : view === 'cap' ? bal : bal;
+  const pct = Math.max(0, (shownBal / MAX) * 100);
+  const low = view === 'low';
+  const empty = view === 'empty';
+  const cap = view === 'cap';
+  const barColor = empty ? '#64748B' : cap ? 'linear-gradient(90deg,#7DD3FC,#38BDF8)' : low ? 'linear-gradient(90deg,#FBBF24,#F59E0B)' : 'linear-gradient(90deg,#2DD4BF,#14B8A6)';
+  const edge = empty ? '#64748B' : cap ? '#38BDF8' : low ? '#F59E0B' : '#14B8A6';
+  const txt = empty ? '#94A3B8' : cap ? '#38BDF8' : low ? '#F59E0B' : '#2DD4BF';
+
+  const actions = [
+    { id: 'hint',    icon: '💡', label: 'Hint',                cost: 1, bg: 'rgba(45,212,191,0.14)',  fg: '#2DD4BF', say: 'Half means split into 2 equal groups. Split 8 into 2 groups 🍕' },
+    { id: 'explain', icon: '🔍', label: 'Explain Mistake',     cost: 3, bg: 'rgba(168,85,247,0.14)',  fg: '#C4B5FD', say: 'You added instead of subtracting. 8 − 3 takes 3 away, leaving 5.' },
+    { id: 'deep',    icon: '📖', label: 'Deep Explanation',    cost: 5, bg: 'rgba(79,70,229,0.16)',   fg: '#A5B4FC', say: "Let's walk through fractions step by step with a pizza 🍕…" },
+    { id: 'prac',    icon: '🎯', label: 'Practice Generation', cost: 5, bg: 'rgba(251,146,60,0.16)',  fg: '#FDBA74', say: 'Made you 5 fresh practice questions on this skill!' },
+  ];
+
+  const confirmSpend = () => {
+    const a = pending;
+    setPending(null);
+    if (bal - a.cost < 0) return;
+    setBal(b => b - a.cost);
+    setRevealed(a);
+  };
+
+  const tabs = [['live','Full'],['low','Low'],['cap','Daily cap'],['empty','Empty']];
+
+  return (
+    <ScreenShell padTop={70}>
+      <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 16, ...extraFont }}>
+        <div>
+          <div style={{ fontSize: 12, color: '#5eead4', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>⚡ Helper Energy</div>
+          <div style={{ fontWeight: 900, fontSize: 26, color: '#F8FAFC', marginTop: 4 }}>Fuel for Lexi's help</div>
+          <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 3 }}>Separate from your ❤️ hearts — this only powers the AI helper.</div>
+        </div>
+
+        {/* state preview switcher */}
+        <div style={{ display: 'flex', gap: 5, background: '#0F172A', borderRadius: 12, padding: 4 }}>
+          {tabs.map(([id, label]) => (
+            <button key={id} onClick={() => { setView(id); setRevealed(null); }} style={{
+              flex: 1, padding: '7px 4px', borderRadius: 9, border: 'none', cursor: 'pointer',
+              fontFamily: 'inherit', fontWeight: 800, fontSize: 11,
+              background: view === id ? 'rgba(45,212,191,0.16)' : 'transparent',
+              color: view === id ? '#2DD4BF' : '#64748B',
+            }}>{label}</button>
+          ))}
+        </div>
+
+        {/* Battery hero */}
+        <div style={{
+          background: 'radial-gradient(circle at 50% 0%,rgba(45,212,191,0.18),transparent 70%)',
+          border: '1px solid rgba(45,212,191,0.25)', borderRadius: 22, padding: '20px 18px',
+          display: 'flex', flexDirection: 'column', gap: 14,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <span style={{ fontSize: 20, filter: 'drop-shadow(0 0 8px rgba(45,212,191,0.7))' }}>⚡</span>
+              <span style={{ fontWeight: 800, fontSize: 14, color: '#F8FAFC' }}>This month</span>
+            </div>
+            <div style={{ fontWeight: 900, fontSize: 26, color: txt, fontVariantNumeric: 'tabular-nums' }}>
+              {cap ? <span style={{ fontSize: 18 }}>⏳ 0/20 today</span> : <>{shownBal}<span style={{ fontSize: 14, color: '#64748B' }}> / {MAX}</span></>}
+            </div>
+          </div>
+          {/* battery */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ flex: 1, height: 26, background: '#0F172A', border: `2px solid ${edge}`, borderRadius: 9, padding: 3, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: pct + '%', background: barColor, borderRadius: 5, transition: 'width 400ms cubic-bezier(0.16,1,0.3,1)' }}/>
+            </div>
+            <div style={{ width: 6, height: 13, background: edge, borderRadius: '0 4px 4px 0' }}/>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#94A3B8' }}>
+            <span>📅</span><span>{cap ? <>Daily limit hit — <b style={{ color: '#7DD3FC' }}>resets at midnight</b></> : <>Resets in <b style={{ color: '#CBD5E1' }}>12 days</b> · <b style={{ color: '#CBD5E1' }}>20</b>/day cap</>}</span>
+          </div>
+        </div>
+
+        {/* Non-punitive empty / cap / low states */}
+        {empty ? (
+          <div style={{ background: 'rgba(168,85,247,0.13)', border: '1px solid rgba(168,85,247,0.35)', borderRadius: 18, padding: 18, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
+            <div style={{ fontSize: 40 }}>🔌</div>
+            <div style={{ fontWeight: 900, fontSize: 18, color: '#F8FAFC' }}>Out of energy</div>
+            <div style={{ fontSize: 12, color: '#94A3B8', maxWidth: 240, lineHeight: 1.5 }}>You've used this month's helper energy. Ask a grown-up to add more so Lexi can keep helping.</div>
+            <button style={{ height: 44, padding: '0 22px', borderRadius: 13, border: 'none', background: 'linear-gradient(135deg,#A855F7,#7C3AED)', color: '#fff', fontFamily: 'inherit', fontWeight: 800, fontSize: 14, cursor: 'pointer', marginTop: 4 }}>👨‍👩‍👧 Ask a parent</button>
+          </div>
+        ) : cap ? (
+          <div style={{ background: 'rgba(56,189,248,0.12)', border: '1px solid rgba(56,189,248,0.35)', borderRadius: 18, padding: 18, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
+            <div style={{ fontSize: 40 }}>😴</div>
+            <div style={{ fontWeight: 900, fontSize: 18, color: '#F8FAFC' }}>Lexi needs a rest!</div>
+            <div style={{ fontSize: 12, color: '#94A3B8', maxWidth: 250, lineHeight: 1.5 }}>You used all <b style={{ color: '#38BDF8' }}>20</b> helpers for today. Your energy is fine — come back tomorrow for more.</div>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#0F172A', borderRadius: 9999, padding: '7px 14px', fontWeight: 800, fontSize: 13, color: '#38BDF8', marginTop: 2 }}>🌙 Resets in 6h 12m</div>
+          </div>
+        ) : low ? (
+          <div style={{ background: 'rgba(245,158,11,0.13)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 16, padding: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ fontSize: 22 }}>⚡</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 800, fontSize: 14, color: '#F59E0B' }}>Energy running low</div>
+              <div style={{ fontSize: 11, color: '#FBBF24' }}>Save it for when you're really stuck.</div>
+            </div>
+          </div>
+        ) : null}
+
+        {/* cost list — tap to spend (live state only) */}
+        {view === 'live' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Tap a helper — you'll confirm before spending</div>
+            {actions.map(a => {
+              const afford = bal - a.cost >= 0;
+              return (
+                <button key={a.id} onClick={() => setPending(a)} disabled={!afford} style={{
+                  display: 'flex', alignItems: 'center', gap: 11,
+                  background: '#1E293B', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14,
+                  padding: '11px 13px', cursor: afford ? 'pointer' : 'not-allowed', opacity: afford ? 1 : 0.4,
+                  fontFamily: 'inherit', textAlign: 'left',
+                }}>
+                  <div style={{ width: 34, height: 34, borderRadius: 10, background: a.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, flexShrink: 0 }}>{a.icon}</div>
+                  <div style={{ flex: 1, fontWeight: 700, fontSize: 13, color: '#F8FAFC' }}>{a.label}</div>
+                  <div style={{ fontWeight: 800, fontSize: 13, color: '#2DD4BF', background: 'rgba(45,212,191,0.14)', padding: '3px 10px', borderRadius: 9999 }}>⚡ {a.cost}</div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Lexi reveal */}
+        {revealed && view === 'live' && (
+          <div style={{ background: 'rgba(45,212,191,0.06)', border: '1px solid rgba(45,212,191,0.35)', borderRadius: 16, padding: 13, display: 'flex', gap: 10, alignItems: 'flex-start', animation: 'lxpop 360ms cubic-bezier(0.16,1,0.3,1)' }}>
+            <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#A78BFA,#6366F1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 18 }}>🦉</div>
+            <div>
+              <div style={{ fontSize: 11, color: '#2DD4BF', fontWeight: 800, marginBottom: 3 }}>Lexi says · −{revealed.cost} ⚡</div>
+              <div style={{ fontSize: 13, color: '#F8FAFC', lineHeight: 1.5 }}>{revealed.say}</div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Confirm-before-spend dialog */}
+      {pending && (
+        <div onClick={() => setPending(null)} style={{
+          position: 'absolute', inset: 0, zIndex: 60, background: 'rgba(5,8,22,0.66)',
+          backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'flex-end', ...extraFont,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            width: '100%', background: '#15161D', borderRadius: '24px 24px 0 0',
+            borderTop: '1px solid rgba(45,212,191,0.3)', padding: '10px 20px 28px',
+            display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center',
+            animation: 'lxsheet 280ms cubic-bezier(0.16,1,0.3,1)',
+          }}>
+            <div style={{ width: 40, height: 5, borderRadius: 100, background: 'rgba(255,255,255,0.2)', marginBottom: 4 }}/>
+            <div style={{ fontSize: 40 }}>{pending.icon}</div>
+            <div style={{ fontWeight: 900, fontSize: 18, color: '#F8FAFC', textAlign: 'center' }}>Use ⚡{pending.cost} for {pending.label.toLowerCase()}?</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#94A3B8' }}>
+              Balance after: <b style={{ color: '#2DD4BF', fontVariantNumeric: 'tabular-nums' }}>{bal - pending.cost} ⚡</b> left
+            </div>
+            <div style={{ display: 'flex', gap: 10, width: '100%', marginTop: 4 }}>
+              <button onClick={() => setPending(null)} style={{ flex: 1, height: 48, borderRadius: 14, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#CBD5E1', fontFamily: 'inherit', fontWeight: 800, fontSize: 15, cursor: 'pointer' }}>Not now</button>
+              <button onClick={confirmSpend} style={{ flex: 1.4, height: 48, borderRadius: 14, border: 'none', background: 'linear-gradient(135deg,#2DD4BF,#14B8A6)', color: '#06302B', fontFamily: 'inherit', fontWeight: 800, fontSize: 15, cursor: 'pointer' }}>Use ⚡{pending.cost} →</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </ScreenShell>
+  );
+}
+
 Object.assign(window, {
   SplashScreen, RoleSelectScreen, GradeSelectScreen, SubjectSelectScreen,
   LeagueScreen, BadgeCollectionScreen, HeartsScreen, DailyMissionScreen, ProfileScreen,
-  MissionCompletedScreen,
+  MissionCompletedScreen, EnergyScreen,
 });
 
 // ───────────────────────────────────────────── MISSION COMPLETED
