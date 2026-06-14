@@ -50,11 +50,13 @@ export function Tabs({
   testID,
 }: TabsProps) {
   const isRtl = direction === 'rtl';
-  const rowDir = isRtl ? 'row-reverse' : 'row';
 
   return (
     <YStack
       testID={testID}
+      // Explicit direction so each row flips natively under RTL: the icon ends at
+      // the inline-start (RIGHT) and the label hugs it — natural order, no reversal.
+      dir={isRtl ? 'rtl' : 'ltr'}
       gap="$1"
       accessibilityRole="tablist"
       accessible
@@ -67,7 +69,7 @@ export function Tabs({
           <XStack
             key={item.value}
             testID={item.testID}
-            flexDirection={rowDir}
+            flexDirection="row"
             alignItems="center"
             gap="$3"
             minHeight={40}
@@ -99,6 +101,7 @@ export function Tabs({
               fontWeight={isActive ? '800' : '600'}
               fontFamily="$heading"
               writingDirection={direction}
+              textAlign={isRtl ? 'right' : 'left'}
             >
               {item.label}
             </Text>

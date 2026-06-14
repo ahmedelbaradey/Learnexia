@@ -368,10 +368,17 @@ export function AddChildModal({ visible, onClose, childId, initialValues }: AddC
                 fontWeight="800"
                 fontFamily="$heading"
                 writingDirection={direction}
+                textAlign={isRtl ? 'right' : 'left'}
               >
                 {modalTitle}
               </Text>
-              <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction}>
+              <Text
+                color="$fg3"
+                fontSize={12}
+                fontFamily="$body"
+                writingDirection={direction}
+                textAlign={isRtl ? 'right' : 'left'}
+              >
                 {modalSubtitle}
               </Text>
             </Stack>
@@ -495,7 +502,9 @@ export function AddChildModal({ visible, onClose, childId, initialValues }: AddC
               testID="add-child-name"
             />
 
-            {/* Login email — add mode only (LTR pinned, autocomplete off) */}
+            {/* Login email — add mode only (LTR pinned). `autoComplete="off"` plus
+                the password's `new-password` below stops the browser autofilling
+                the parent's saved credentials into the child-account form. */}
             {!isEditMode && (
               <TextField
                 label={t('parent.addChildModal.labelEmail')}
@@ -511,7 +520,9 @@ export function AddChildModal({ visible, onClose, childId, initialValues }: AddC
               />
             )}
 
-            {/* Password + strength meter — add mode only (autocomplete off) */}
+            {/* Password + strength meter — add mode only. `new-password` marks this
+                as account-creation so the browser does NOT autofill the parent's
+                saved password (and suppresses login autofill for the form). */}
             {!isEditMode && (
               <Stack flexDirection="column" gap="$1">
                 <TextField
@@ -521,7 +532,7 @@ export function AddChildModal({ visible, onClose, childId, initialValues }: AddC
                   secureTextEntry
                   showLabel={t('auth.login.showPassword')}
                   hideLabel={t('auth.login.hidePassword')}
-                  autoComplete="off"
+                  autoComplete="new-password"
                   autoCorrect={false}
                   direction={direction}
                   error={fieldErrors.password}
@@ -546,6 +557,7 @@ export function AddChildModal({ visible, onClose, childId, initialValues }: AddC
                 fontWeight="700"
                 fontFamily="$heading"
                 writingDirection={direction}
+                textAlign={isRtl ? 'right' : 'left'}
               >
                 {t('parent.addChildModal.labelGrade')}
               </Text>
@@ -606,6 +618,7 @@ export function AddChildModal({ visible, onClose, childId, initialValues }: AddC
                 fontWeight="700"
                 fontFamily="$heading"
                 writingDirection={direction}
+                textAlign={isRtl ? 'right' : 'left'}
               >
                 {t('parent.addChildModal.labelAppLanguage')}
               </Text>

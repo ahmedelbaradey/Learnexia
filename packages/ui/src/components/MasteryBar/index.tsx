@@ -74,11 +74,13 @@ export function MasteryBar({
       </XStack>
 
       {/*
-       * Progress bars stay LTR regardless of locale (SKILL.md rule 6): force the
-       * track + fill row to `flexDirection="row"` so the fill always grows from
-       * the visual left, even in RTL.
+       * The fill grows from the inline-start: LEFT in LTR, RIGHT in RTL. An
+       * explicit `dir` pins the track's writing direction so the fill (first
+       * flex child) anchors to the correct edge regardless of any inherited
+       * direction — in Arabic the bar progresses right-to-left.
        */}
       <Stack
+        dir={isRtl ? 'rtl' : 'ltr'}
         height={TRACK_HEIGHT}
         borderRadius={9999}
         backgroundColor="$bg"

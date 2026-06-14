@@ -90,10 +90,11 @@ function PanelHeader({
         fontWeight="800"
         fontFamily="$heading"
         writingDirection={direction}
+        textAlign={direction === 'rtl' ? 'right' : 'left'}
       >
         {title}
       </Text>
-      <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction}>
+      <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction} textAlign={direction === 'rtl' ? 'right' : 'left'}>
         {subtitle}
       </Text>
     </Stack>

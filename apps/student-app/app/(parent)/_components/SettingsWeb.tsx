@@ -231,12 +231,13 @@ function PanelSurface({ children }: { children: React.ReactNode }) {
 }
 
 function PanelHeader({ title, subtitle, direction }: { title: string; subtitle: string; direction: 'ltr' | 'rtl' }) {
+  const align = direction === 'rtl' ? 'right' : 'left';
   return (
     <Stack flexDirection="column" gap="$1">
-      <Text color="$fg1" fontSize={16} fontWeight="800" fontFamily="$heading" writingDirection={direction}>
+      <Text color="$fg1" fontSize={16} fontWeight="800" fontFamily="$heading" writingDirection={direction} textAlign={align}>
         {title}
       </Text>
-      <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction}>
+      <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction} textAlign={align}>
         {subtitle}
       </Text>
     </Stack>

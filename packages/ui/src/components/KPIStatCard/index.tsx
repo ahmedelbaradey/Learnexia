@@ -42,30 +42,42 @@ export function KPIStatCard({
   direction = 'ltr',
   accessibilityLabel,
 }: KPIStatCardProps) {
-  const rowDir = direction === 'rtl' ? 'row-reverse' : 'row';
+  const isRtl = direction === 'rtl';
   const isTile = variant === 'tile';
 
   return (
     <YStack
       flex={isTile ? 1 : undefined}
-      gap={isTile ? '$1' : '$2'}
+      // Explicit direction so the icon+value row flips natively under RTL — the
+      // icon ends up at the inline-end (RIGHT in RTL) with NO manual reversal.
+      dir={isRtl ? 'rtl' : 'ltr'}
       paddingVertical={isTile ? 8 : 0}
       paddingHorizontal={isTile ? 10 : 0}
       borderRadius={isTile ? 12 : 0}
       borderWidth={isTile ? 1 : 0}
       borderColor={isTile ? 'rgba(255,255,255,0.04)' : 'transparent'}
       backgroundColor={isTile ? '$bg' : 'transparent'}
-      alignItems={isTile ? 'flex-start' : 'center'}
+      // Tile content spans the full width so the value-row + label sit on the
+      // correct side (RTL → right, LTR → left) instead of always hugging left.
+      alignItems={isTile ? 'stretch' : 'center'}
       accessible
       accessibilityLabel={accessibilityLabel}
       aria-label={accessibilityLabel}
     >
-      <XStack alignItems="center" gap="$1" flexDirection={rowDir} accessibilityElementsHidden>
-        {icon ? <Text fontSize={isTile ? 15 : 22}>{icon}</Text> : null}
+      <XStack
+        width={isTile ? '100%' : undefined}
+        alignItems="center"
+        // flex-start = inline-start: RIGHT under dir=rtl, LEFT under dir=ltr.
+        justifyContent={isTile ? 'flex-start' : 'center'}
+        gap={isTile ? 5 : '$2'}
+        flexDirection="row"
+        accessibilityElementsHidden
+      >
+        {icon ? <Text fontSize={isTile ? 13 : 22}>{icon}</Text> : null}
         <Text
           color={accent}
-          fontSize={isTile ? 16 : 26}
-          fontWeight="800"
+          fontSize={isTile ? 14 : 26}
+          fontWeight="900"
           fontFamily="$heading"
           style={{ fontVariant: ['tabular-nums'] }}
         >
@@ -74,11 +86,14 @@ export function KPIStatCard({
       </XStack>
       <Text
         color="$fg3"
-        fontSize={isTile ? 10 : 11}
+        width={isTile ? '100%' : undefined}
+        textAlign={isTile ? (isRtl ? 'right' : 'left') : 'center'}
+        fontSize={isTile ? 9 : 11}
         fontWeight="700"
         fontFamily="$heading"
         textTransform="uppercase"
-        letterSpacing={0.6}
+        letterSpacing={0.4}
+        marginTop={isTile ? 2 : '$1'}
         accessibilityElementsHidden
       >
         {label}
