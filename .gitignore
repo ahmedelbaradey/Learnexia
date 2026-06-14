@@ -1,3 +1,8 @@
+# ---- Windows NTFS Alternate-Data-Stream artifacts (never commit) ----
+# Files like "foo.svg:Zone.Identifier" are Windows download-zone metadata; the
+# colon makes them invalid paths on Windows checkouts (breaks git checkout/reset).
+*Zone.Identifier
+
 # ---- .NET (backend) ----
 [Bb]in/
 [Oo]bj/
