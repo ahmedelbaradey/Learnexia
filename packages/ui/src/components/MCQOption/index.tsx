@@ -62,11 +62,11 @@ const STATE_BORDER_COLOR: Record<MCQOptionState, string> = {
 };
 
 const STATE_BORDER_WIDTH: Record<MCQOptionState, number> = {
-  default: 1,
+  default: 2,
   selected: 2,
   correct: 2,
   incorrect: 2,
-  'locked-default': 1,
+  'locked-default': 2,
 };
 
 const STATE_LABEL_COLOR: Record<MCQOptionState, string> = {

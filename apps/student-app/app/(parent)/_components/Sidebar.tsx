@@ -111,7 +111,7 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
 
   // Locale + theme controls (migrated from shell header into sidebar).
   const setLocale = useLocaleStore((s) => s.setLocale);
-  const { showRestartPrompt } = useRestartPromptStore();
+  const showRestartPrompt = useRestartPromptStore((s) => s.show);
   const theme = useThemeStore((s) => s.theme);
   const setTheme = useThemeStore((s) => s.setTheme);
 
@@ -577,10 +577,10 @@ function SidebarXpWidget({ direction, isRtl }: { direction: Direction; isRtl: bo
 
   return (
     <Stack
-      borderRadius="$button"
+      borderRadius={14}
       backgroundColor="$card"
       borderWidth={1}
-      borderColor="$border"
+      borderColor="$borderSubtle"
       padding={14}
       gap="$1"
       accessible

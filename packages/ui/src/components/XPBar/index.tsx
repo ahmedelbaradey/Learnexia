@@ -114,7 +114,7 @@ export function XPBar({
         borderRadius={9999}
         backgroundColor="$bg"
         borderWidth={1}
-        borderColor="$border"
+        borderColor="$borderSubtle"
         overflow="hidden"
         // glow on level-up (web box-shadow; native uses shadow props)
         shadowColor={colors.xp}

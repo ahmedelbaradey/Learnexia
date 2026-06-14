@@ -31,7 +31,7 @@ export function DailyActivityCard({ direction, rowDir }: DailyActivityCardProps)
       borderRadius={20}
       backgroundColor="$card"
       borderWidth={1}
-      borderColor="$border"
+      borderColor="$borderSubtle"
       padding={22}
       gap="$5"
       height="100%"

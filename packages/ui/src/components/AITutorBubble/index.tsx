@@ -143,7 +143,7 @@ export function AITutorBubble({
           ? 'rgba(245,158,11,0.3)'
           : variant === 'student'
             ? '$borderStrong'
-            : '$border'
+            : '$borderInput'
       }
       borderTopStartRadius={20}
       borderTopEndRadius={20}
@@ -199,8 +199,8 @@ export function AITutorBubble({
       flexDirection={isRtl ? 'row-reverse' : 'row'}
     >
       <Stack
-        width={52}
-        height={52}
+        width={64}
+        height={64}
         borderRadius={9999}
         overflow="hidden"
         alignItems="center"
