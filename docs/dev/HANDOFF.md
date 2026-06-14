@@ -192,6 +192,73 @@ Config flags (appsettings.json, safe to commit):
 - (All inherited from P3-02 SafetyOptions; P3-03 adds no new config keys. **P3-07 introduces** `AiHelper:ContextProvider` = "Seeded" or "Rag" at wire-time.)
 
 
+## P3-04 — Explain a concept on demand (SSE Tutor Endpoint) — added 2026-06-14 (branch `feat/P3-04-explain`, Wave 3)
+
+Built **P3-04** in the **`Ai` module**. Full pipeline (analyzer → planner → backend-feature → security-auditor → reviewer PASS). Mandatory security gates: error-leak audit + D-1 fixes validated.
+
+### What shipped — CRITICAL SSE WIRE CONTRACT (for P3-12 FE consumption)
+
+**SSE endpoint** (`ExplainController`/`POST /api/AiTutor/Explain/{skillId}`) — student-scoped (`[Authorize(Roles="Student")]`), consumes `ExplainConceptCommand` (skillId, childGrade, tutorLanguage from JWT), emits **exactly 4 event types**:
+
+| Event Type | Data Schema | Semantics |
+|---|---|---|
+| `event: message` | `{"content":"<buffered text>"}` | Approved content chunk; FE appends |
+| `event: redirect` | `{"type":"lesson","targetId":"<skillId>"}` | Context refused (no curriculum match); FE navigates to lesson |
+| `event: error` | `{"code":"ValidationError\|UnhandledError\|<SafetyCode>","message":"<safe localized msg>"}` | Failure (never emits subsequent events); NO stack trace ever |
+| `event: done` | `[DONE]` | Stream terminator; NOT emitted after error |
+
+**Architecture:**
+- **Handler** (`ExplainConceptCommandHandler`) orchestrates: (1) `ILearningContextProvider` (student skill context) → (2) `IPromptBuilder` (safe prompt) → (3) `ISafetyLayer` (buffer→filter→emit) → (4) buffered text via `RedirectResponseBuilder` (ar/en). **Never raw tokens from LLM**.
+- **Refuse-and-redirect:** Empty context (no curriculum chunk found) → emit redirect event (no safety processing, fail-fast).
+- **Buffering:** `ISafetyLayer.GenerateSafeAsync()` returns `SafeAiResult.Content` (post-check); handler wraps in `message` events per 100-char buffer chunks. On block: emit single `error` event.
+- **Instrumentation:** `HelpRequestedIntegrationEvent` (start), `HelpDeliveredIntegrationEvent` (success), `HelpDeclinedIntegrationEvent` (refused/blocked) — logged to `ai.SafetyEvents` (PII-light).
+- **Rate limiter:** `AiTutorRateLimiter` (in-process, per-student daily cap, default 20/day, config-tunable). Hard-coded to Ai module; swap to Redis before multi-instance.
+
+### Load-bearing decisions (reviewer-confirmed, security PASS)
+
+- **SSE (rule-8 exception):** bypassess `BaseResponse<T>` envelope (lead-approved). Stream-oriented delivery for AI.
+- **Refuse-and-redirect (UX fail-safe):** empty context → immediate redirect (graceful, no hallucination attempt). Live grounding dormant until real `ILearningContextProvider` wired.
+- **Buffer→safety→emit discipline:** `ISafetyLayer` is the sole content exit. Handler never calls `IAiGateway` directly.
+- **ILessonContextContract seam:** `LessonContextDto` (skillId, name, description, prerequisites) + adapter in `Learning.Infrastructure/Contracts/` exposes student skill context to Ai module. Module isolation intact (Ai references only Shared.Contracts).
+- **Rate limiter is in-process:** blocks per-student, fail-soft on hit (429 + `AiTutorRateLimitExceeded` message). Multi-instance deployment needs Redis.
+- **Folded into Ai module:** no new module; reuses P3-01/P3-02/P3-03 seams.
+- **Cache economy deferred:** `P3-01-BE-12`, `P3-01-BE-13`, `P3-01-BE-14` (P3-01 task breakdown) handle AI credit ledger + quota dispatch. MVP: free-to-student, no spend tracking yet.
+- **Live grounding dormant:** `EmptyLearningContextProvider` (stub default) always redirects. Real `SeededCorpusContextProvider` (P3-07) or `RagContextProvider` (P3-07 w/ embeddings) wired at runtime via `AiHelper:ContextProvider` config.
+
+### Test coverage + gates
+
+- **208 unit tests** (ExplainConceptCommandHandlerTests: context/buffer/safety/redirect/rate-limit edge cases, ar/en localization). All green.
+- **13 SSE integration tests** (`P3_04_ExplainSse_Tests.cs`: endpoint contract, event sequence, error handling, redirect on empty, rate-limit 429). All green.
+- **Mandatory security gate PASS (0 Critical/High):** error-leak audit confirmed no stack traces in error events; D-1 feedback fixes applied (internal logic messages never exposed); `[Authorize]` enforced; rate-limiter fail-soft prevents brute-force.
+
+### Pre-deployment checklist
+
+- Real Claude/OpenAI keys required (`Ai__Providers__*__ApiKey` env vars).
+- `AiTutor:RateLimiter:DailyCapPerStudent` configured (default 20).
+- `AiHelper:ContextProvider` = "Seeded" (goes live with P3-07 curriculum).
+- **CORS:** SSE requires credentialed cross-origin — ensure platform config allows (P3-04 is HTTP only; CORS + credentials cross-check is platform follow-up).
+- **Not multi-instance ready:** in-process rate limiter will not coordinate across instances. Upgrade to Redis before scaling (platform backlog).
+
+### What P3-12 (FE) consumes
+
+- SSE endpoint path + method.
+- Exact event/data schema (no breaking changes post-MVP).
+- FE must handle all 4 event types + parse JSON data payloads.
+- Fallback: if no `event: done` within timeout, treat as error (FE timeouts at 15s; server timeout at 25s per brief).
+- Localization: `error.message` keys are from `SharedResourcesKey` (ar/en, safe text only).
+
+### Config + secret paths
+
+Secrets (env vars / secret store, NEVER git):
+- `Ai__Providers__Claude__ApiKey` (required)
+- `Ai__Providers__OpenAi__ApiKey` (optional secondary)
+
+Config (appsettings.json, safe to commit):
+- `AiTutor:RateLimiter:DailyCapPerStudent` (int, default 20)
+- `AiHelper:ContextProvider` (string, "Seeded"|"Rag", default "Seeded")
+- (Inherited from P3-01/P3-02/P3-03: gateway + safety + builder options)
+
+
 ## P3-08 — Adjust difficulty adaptively (Adaptivity Engine) — added 2026-06-13 (branch `feat/P3-08-adaptivity-engine`)
 
 Built **P3-08** in the **`Learning` module**. Full pipeline (db-migration → backend-feature → api-tester → security-auditor → reviewer PASS).

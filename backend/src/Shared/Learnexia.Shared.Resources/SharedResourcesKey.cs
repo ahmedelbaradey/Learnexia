@@ -1354,5 +1354,53 @@
         /// </summary>
         public const string AiServiceUnavailable = "AiServiceUnavailable";
 
+        // ── P3-04 AI Tutor — Explain Concept ────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Validation error when ExplainConceptCommand has none of LessonId/ConceptId/SkillId set.
+        /// At least one must be provided to scope the explanation.
+        /// </summary>
+        public const string ExplainConceptContextRequired = "ExplainConceptContextRequired";
+
+        /// <summary>
+        /// Validation error when ExplainConceptCommand.Question exceeds the 500-character maximum.
+        /// </summary>
+        public const string ExplainConceptQuestionTooLong = "ExplainConceptQuestionTooLong";
+
+        /// <summary>
+        /// Refuse-and-redirect copy (Arabic) emitted when ILearningContextProvider returns no approved
+        /// context for the active skill. Templated with the skill/lesson name.
+        /// Format: "خلينا نكمل تحدي {0} الحالي، أو اختار درس العلوم."
+        /// </summary>
+        public const string AiTutorRedirectAr = "AiTutorRedirectAr";
+
+        /// <summary>
+        /// Refuse-and-redirect copy (English) emitted when ILearningContextProvider returns no approved
+        /// context for the active skill. Templated with the skill/lesson name.
+        /// Format: "Let's keep working on your current {0} challenge, or pick a Science lesson."
+        /// </summary>
+        public const string AiTutorRedirectEn = "AiTutorRedirectEn";
+
+        /// <summary>
+        /// SSE error code returned when the AI safety layer blocks the generated content.
+        /// Surfaced as event: error / data: {"code":"AiContentBlocked","message":"..."}.
+        /// </summary>
+        public const string ExplainConceptSafetyBlocked = "ExplainConceptSafetyBlocked";
+
+        /// <summary>
+        /// SSE error code returned when the subject of the request has no registered prompt template.
+        /// </summary>
+        public const string ExplainConceptUnsupportedSubject = "ExplainConceptUnsupportedSubject";
+
+        /// <summary>
+        /// SSE error code returned when the student JWT is missing required claims (grade/language).
+        /// </summary>
+        public const string ExplainConceptMissingProfile = "ExplainConceptMissingProfile";
+
+        /// <summary>
+        /// Gentle message shown when the explain endpoint rate limit is exceeded (per-student window).
+        /// </summary>
+        public const string ExplainConceptRateLimitExceeded = "ExplainConceptRateLimitExceeded";
+
     }
 }
