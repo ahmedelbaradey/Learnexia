@@ -1402,5 +1402,95 @@
         /// </summary>
         public const string ExplainConceptRateLimitExceeded = "ExplainConceptRateLimitExceeded";
 
+        // ── P3-05 AI Tutor — Hint, WhyWrong, Simplify ────────────────────────────────────────────
+
+        // Validator keys (GetHintCommandValidator)
+
+        /// <summary>
+        /// Validation error when GetHintCommand.Intent is not Hint or WhyWrong.
+        /// </summary>
+        public const string HintIntentInvalid = "HintIntentInvalid";
+
+        /// <summary>
+        /// Validation error when GetHintCommand.HintLevel is outside the allowed 1..MaxHintLevels range.
+        /// </summary>
+        public const string HintLevelOutOfRange = "HintLevelOutOfRange";
+
+        /// <summary>
+        /// Validation error when GetHintCommand.WrongAnswer is missing/empty for a WhyWrong intent.
+        /// </summary>
+        public const string HintWrongAnswerRequired = "HintWrongAnswerRequired";
+
+        /// <summary>
+        /// Validation error when GetHintCommand.WrongAnswer exceeds the 500-character maximum.
+        /// </summary>
+        public const string HintWrongAnswerTooLong = "HintWrongAnswerTooLong";
+
+        // Validator keys (SimplifyExplanationCommandValidator)
+
+        /// <summary>
+        /// Validation error when SimplifyExplanationCommand has neither ConceptId nor LessonId set.
+        /// At least one must be provided to scope the simplification.
+        /// </summary>
+        public const string SimplifyContextRequired = "SimplifyContextRequired";
+
+        // Handler keys (GetHintCommandHandler)
+
+        /// <summary>
+        /// SSE error code returned when the hint/why-wrong request rate limit is exceeded (per-student window).
+        /// </summary>
+        public const string HintRateLimitExceeded = "HintRateLimitExceeded";
+
+        /// <summary>
+        /// SSE error code returned when the AI safety layer blocks the generated hint content.
+        /// Surfaced as event: error. Child-safe message — no unsafe content exposed.
+        /// </summary>
+        public const string HintSafetyBlocked = "HintSafetyBlocked";
+
+        /// <summary>
+        /// SSE error code returned when the hint subject has no registered prompt template.
+        /// </summary>
+        public const string HintUnsupportedSubject = "HintUnsupportedSubject";
+
+        /// <summary>
+        /// SSE error code returned when the generated hint content contains the question's CorrectAnswer
+        /// (post-generation no-reveal check, OQ-4). The hint is blocked; the student should try again.
+        /// </summary>
+        public const string HintNoRevealViolation = "HintNoRevealViolation";
+
+        /// <summary>
+        /// SSE error code returned when IQuestionAnswerContract returns null (question or attempt not found).
+        /// </summary>
+        public const string HintQuestionNotFound = "HintQuestionNotFound";
+
+        /// <summary>
+        /// SSE error code returned when the student has used all MaxHintLevels for the current question.
+        /// The FE should offer "want a simpler explanation?" (Simplify intent).
+        /// </summary>
+        public const string HintMaxLevelsReached = "HintMaxLevelsReached";
+
+        // Handler keys (SimplifyExplanationCommandHandler)
+
+        /// <summary>
+        /// SSE error code returned when the student JWT is missing required claims (grade/language)
+        /// in the Simplify handler. Mirrors ExplainConceptMissingProfile — separate key for per-handler tracking.
+        /// </summary>
+        public const string SimplifyMissingProfile = "SimplifyMissingProfile";
+
+        /// <summary>
+        /// SSE error code returned when the simplify endpoint rate limit is exceeded (per-student window).
+        /// </summary>
+        public const string SimplifyRateLimitExceeded = "SimplifyRateLimitExceeded";
+
+        /// <summary>
+        /// SSE error code returned when the AI safety layer blocks the generated simplify content.
+        /// </summary>
+        public const string SimplifySafetyBlocked = "SimplifySafetyBlocked";
+
+        /// <summary>
+        /// SSE error code returned when the simplify subject has no registered prompt template.
+        /// </summary>
+        public const string SimplifyUnsupportedSubject = "SimplifyUnsupportedSubject";
+
     }
 }

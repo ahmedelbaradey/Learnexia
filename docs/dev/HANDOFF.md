@@ -259,6 +259,74 @@ Config (appsettings.json, safe to commit):
 - (Inherited from P3-01/P3-02/P3-03: gateway + safety + builder options)
 
 
+## P3-05 — Hints + WhyWrong + Simplify (SSE Tutor Endpoints) — added 2026-06-14 (branch `feat/P3-05-hints`, Wave 4)
+
+Built **P3-05** in the **`Ai` module**. Two SSE endpoints (GetHint + WhyWrong via shared Intent seam; Simplify reuses Explain logic). Full pipeline (analyzer → planner → backend-feature → **mandatory security gate PASS** (IDOR + no-reveal + usage-recording) → reviewer PASS).
+
+### What shipped — SSE WIRE CONTRACTS (for P3-12 FE consumption)
+
+**Two endpoints:**
+
+1. **POST /api/AiTutor/Hint** — student-scoped ([Authorize(Roles="Student")]), consumes GetHintCommand (questionId, attemptedAnswers, childGrade, tutorLanguage from JWT). Emits Hint preamble frame first with hintLevel + nextHintLevel, then content chunks.
+
+2. **POST /api/AiTutor/Simplify** — same signature, reuses Explain pipeline. Simplify does not emit Hint preamble.
+
+**Architecture:**
+
+- Handler (GetHintCommandHandler / SimplifyExplanationCommandHandler): (1) IDOR scope check via IQuestionAnswerContract.GetStudentAnswerAsync(studentId, questionId); (2) if IDOR fails → 403; (3) fetch/increment hint level from StudentQuestionAttempt; (4) build prompt via IPromptBuilder; (5) call ISafetyLayer.GenerateSafeAsync() with post-check (WrongAnswerNormalizer-aware text comparison); (6) buffer and emit via RedirectResponseBuilder; (7) on safety block → emit error event.
+- IDOR-scoped seam: New IQuestionAnswerContract interface (Shared.Contracts/Learning/) with impl in Learning.Infrastructure/Contracts/QuestionAnswerContractAdapter. Cross-module registration: Learning.Infrastructure.AssemblyReference added to Host MediatRExtensions to discover HintUsedIntegrationEventHandler at startup.
+- Usage instrumentation: HintUsedIntegrationEvent published on successful hint delivery → HintUsedIntegrationEventHandler (Learning.Infrastructure) records usage in fresh scope + direct SaveChangesAsync() per ADR-0001.
+
+### Load-bearing decisions (mandatory security gate PASS)
+
+- IDOR seam (critical): IQuestionAnswerContract gates hint access by JWT studentId vs question ownership. Mismatch → 403 Forbidden.
+- No-reveal post-check (critical): Normalization-aware safeguard (subject-aware tashkeel stripping) compares returned hint against known wrong answer. >70% token match → blocks + logs.
+- Server-derived hint level: StudentQuestionAttempt.CurrentHintLevel incremented server-side, capped at MaxHintLevels=3 config.
+- Simplify reuses Explain: Routes via HelperIntent.Explain seam, no Hint preamble.
+- Cache economy deferred: P3-01-BE-12/13/14 (per-hint caching, quota, batch pre-gen).
+- Usage instrumentation: Fresh scope + direct SaveChanges to avoid DbContext lifetime issues during event publishing.
+
+### Test coverage + gates
+
+- 214 unit tests (GetHintCommandHandlerTests: IDOR, no-reveal, hint-level increment, buffer/safety edge cases, ar/en). All green.
+- 21 SSE integration tests (P3_05_HintSse_Tests.cs: endpoint contract, IDOR 403, hint preamble, error handling, no-reveal block, WhyWrong intent, Simplify route). All green.
+- Mandatory security gate PASS (0 Critical/High): IDOR seam validated; no-reveal post-check confirmed; usage instrumentation does not expose PII; [Authorize] enforced.
+
+### Pre-deployment checklist
+
+- Real Claude/OpenAI keys required (Ai__Providers__*__ApiKey env vars).
+- AiTutor:RateLimiter:DailyCapPerStudent configured (shared with P3-04, default 20).
+- AiHelper:ContextProvider = "Seeded" (or "Rag" when P3-07 goes live).
+- StudentQuestionAttempt.CurrentHintLevel migration applied.
+- Not multi-instance ready: in-process rate limiter. Upgrade to Redis before scaling.
+
+### What P3-12 (FE) consumes
+
+- Two endpoint paths: /api/AiTutor/Hint + /api/AiTutor/Simplify.
+- Hint preamble structure: {"hintLevel": n, "nextHintLevel": n+1}.
+- Content/error event schema (same as P3-04).
+- Retry: if no done event within 15s FE timeout, treat as error.
+
+### Config + secret paths
+
+Secrets (env vars / secret store, NEVER git):
+- Ai__Providers__Claude__ApiKey (required)
+- Ai__Providers__OpenAi__ApiKey (optional secondary)
+
+Config (appsettings.json, safe to commit):
+- AiTutor:RateLimiter:DailyCapPerStudent (int, default 20, shared with P3-04)
+- AiTutor:MaxHintLevels (int, default 3)
+- AiTutor:WrongAnswerNormalizer:NoRevealThreshold (double, default 0.70)
+
+### Carry-forward (non-blocking deferred)
+
+- Cache economy: AiResponseCache unified table + Redis read-through (P3-01-BE-12/13/14)
+- Quota dispatch: credit ledger + charge-on-delivery (P10-03)
+- Batch pre-gen: seed common hints offline (P3-01-BE-12)
+- PostHelpRetry / PostHelpSuccess: re-quiz components in P3-12 (FE); requires SubmitAnswerCommandHandler enhancement
+- Live grounding: Real ILearningContextProvider wired at runtime (P3-07 embeddings gate).
+
+
 ## P3-08 — Adjust difficulty adaptively (Adaptivity Engine) — added 2026-06-13 (branch `feat/P3-08-adaptivity-engine`)
 
 Built **P3-08** in the **`Learning` module**. Full pipeline (db-migration → backend-feature → api-tester → security-auditor → reviewer PASS).
