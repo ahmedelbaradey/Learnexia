@@ -151,7 +151,7 @@ export function SocialButton({
       testID={testID}
       flex={1}
       height={48}
-      flexDirection={direction === 'rtl' ? 'row-reverse' : 'row'}
+      flexDirection="row"
       alignItems="center"
       justifyContent="center"
       gap="$2"

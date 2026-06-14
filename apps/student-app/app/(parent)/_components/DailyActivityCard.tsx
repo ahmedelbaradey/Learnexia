@@ -28,7 +28,7 @@ export function DailyActivityCard({ direction, rowDir }: DailyActivityCardProps)
 
   return (
     <Stack
-      borderRadius="$card"
+      borderRadius={20}
       backgroundColor="$card"
       borderWidth={1}
       borderColor="$border"

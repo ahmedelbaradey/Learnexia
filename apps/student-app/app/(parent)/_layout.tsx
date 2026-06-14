@@ -2,19 +2,13 @@
  * (parent) route group — shared parent web shell + auth/role guard.
  *
  * SHARED SHELL (parent-dashboard-uiux workstream A — lead-approved pattern):
- * On wide (≥768): renders a shell header (56px) + a row of [Sidebar 240px] +
- * [content scroll container]. All (parent) pages render via <Slot> inside the
- * content scroll container — they no longer need their own row/sidebar.
+ * On wide (≥768): renders a [Sidebar 240px] + [content scroll container] row
+ * with NO shell header. Locale/theme controls now live at the bottom of the
+ * Sidebar. All (parent) pages render via <Slot> inside the content scroll
+ * container — they no longer need their own row/sidebar.
  *
- * On narrow (<768): no shell header / sidebar — each page uses the mobile
- * ScreenHeader. The Slot is rendered in a plain full-height Stack.
- *
- * Shell header contains (logical-end only):
- *   [LocaleThemeControls (lang + theme toggle)]
- * The ChildSwitcher was removed from the shell header — the sidebar child-selector
- * card is now the single place to switch active child on wide screens. The
- * ChildSwitcher is kept in the narrow mobile header only (no sidebar there).
- * In RTL the document `dir` flips the row automatically.
+ * On narrow (<768): no sidebar — compact header has LocaleThemeControls +
+ * ChildSwitcher above the Slot. The Slot is rendered in a plain full-height Stack.
  *
  * Brand scrollbar: injected via a web-only <style> element in the shell.
  * The content ScrollView's `style={{ flex: 1 }}` + `contentContainerStyle flexGrow:1`
@@ -152,30 +146,13 @@ export default function ParentLayout() {
 
   if (isWide) {
     // Wide layout: shell header + [sidebar | content scroll container].
-    // Direction: `row` always — document `dir="rtl"` flips it once. No row-reverse.
+    // row-reverse in RTL puts sidebar (first in DOM) on the RIGHT and content on the LEFT.
     return (
       <>
         <Stack flex={1} flexDirection="column" backgroundColor="$bg">
-          {/* Shell header (56px, sticky) — locale/theme controls only.
-              ChildSwitcher removed: sidebar child-selector is the single
-              active-child picker on wide screens (spec fix). */}
-          <Stack
-            height={56}
-            flexDirection={isRtl ? 'row-reverse' : 'row'}
-            alignItems="center"
-            justifyContent="flex-end"
-            paddingHorizontal="$4"
-            borderBottomWidth={1}
-            borderBottomColor="$borderSubtle"
-            backgroundColor="$bg"
-            style={{ position: 'sticky', top: 0, zIndex: 40 }}
-          >
-            {/* Logical END: Language + Theme controls */}
-            <LocaleThemeControls direction={direction} />
-          </Stack>
-
-          {/* Body row: sidebar + content */}
-          <Stack flex={1} flexDirection="row">
+          {/* Body row: sidebar + content. row-reverse in RTL puts sidebar RIGHT, content LEFT.
+              Locale/theme controls now live inside the Sidebar bottom section. */}
+          <Stack flex={1} flexDirection={isRtl ? 'row-reverse' : 'row'}>
             <Sidebar
               activeChild={sidebarChild}
               activeKey={activeNavKey}

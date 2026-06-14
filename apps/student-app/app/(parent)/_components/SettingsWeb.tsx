@@ -87,14 +87,12 @@ export interface SettingsWebProps {
 
 export function SettingsWeb({ onAddChild }: SettingsWebProps) {
   const { t } = useTranslation();
-  const { direction, locale } = useLocale();
+  const { direction, locale, isRtl } = useLocale();
   const profile = useMyProfile();
   const [period, setPeriod] = useState<string>(REPORTING_PERIOD.ThisWeek);
   const [activeTab, setActiveTab] = useState<SettingsTabKey>(SETTINGS_TAB.Profile);
 
-  // Always `row` — the document `dir="rtl"` flips the layout once (rail on the
-  // right in Arabic). An explicit `row-reverse` for RTL would double-flip it.
-  const rowDir = 'row' as const;
+  const rowDir = isRtl ? 'row-reverse' as const : 'row' as const;
 
   const tabItems: TabItem[] = (Object.values(SETTINGS_TAB) as SettingsTabKey[]).map((key) => ({
     value: key,

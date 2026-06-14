@@ -70,7 +70,7 @@ export function RecommendationsCard({ childName, direction, rowDir }: Recommenda
   return (
     <Stack
       testID="recommendations-card"
-      borderRadius="$card"
+      borderRadius={20}
       backgroundColor="$card"
       borderWidth={1}
       borderColor="$border"

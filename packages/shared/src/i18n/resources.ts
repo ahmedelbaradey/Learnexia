@@ -53,6 +53,8 @@ export const en = {
       switchToEnglish: 'English',
       language: 'Language',
       theme: 'Theme',
+      themeDark: 'Night',
+      themeLight: 'Light',
     },
     splash: {
       subtitle: 'AI Learning Adventure Begins',
@@ -148,7 +150,7 @@ export const en = {
       newParent: 'New to Learnexia?',
       createAccount: 'Create parent account',
       brand: {
-        title: 'Welcome back to the adventure.',
+        title: 'Welcome back to\nthe adventure.',
         body: 'Pick up your streak, keep your hearts full, and watch your kids fly through new skills.',
         socialProof: '240,000+ kids learning today',
       },
@@ -296,6 +298,8 @@ export const en = {
     childSelector: {
       label: 'Active child',
       meta: 'Grade {{grade}} · Level {{level}}',
+      switchChild: 'SWITCH CHILD',
+      addChild: 'Add a child',
     },
     myChildren: {
       title: 'My Children',
@@ -1238,6 +1242,8 @@ export const ar = {
       switchToEnglish: 'English',
       language: 'اللغة',
       theme: 'المظهر',
+      themeDark: 'ليل',
+      themeLight: 'فاتح',
     },
     splash: {
       subtitle: 'تبدأ مغامرة التعلّم بالذكاء الاصطناعي',
@@ -1313,28 +1319,28 @@ export const ar = {
     },
     login: {
       eyebrow: 'تسجيل الدخول',
-      title: 'مرحباً بعودتك',
+      title: 'أهلاً بعودتك',
       subtitle: 'سجّل دخولك للحفاظ على سلسلتك 🔥',
-      personaParent: '👨‍👩‍👧 أنا ولي أمر',
-      personaStudent: '🎓 أنا طالب',
+      personaParent: 'أنا ولي أمر 👨‍👩‍👧',
+      personaStudent: 'أنا طالب 🎒',
       personaToggleLabel: 'اختر من يقوم بتسجيل الدخول',
       labelUsername: 'البريد الإلكتروني',
       labelPassword: 'كلمة المرور',
       showPassword: 'إظهار',
       hidePassword: 'إخفاء',
       rememberMe: 'تذكّرني',
-      forgotPassword: 'هل نسيت كلمة المرور؟',
+      forgotPassword: 'نسيت كلمة المرور؟',
       submitButton: 'تسجيل الدخول ←',
       orDivider: 'أو',
       orContinueWith: 'أو واصل بـ',
       socialGoogle: 'Google',
       socialApple: 'آبل',
       socialMicrosoft: 'مايكروسوفت',
-      newParent: 'جديد على Learnexia؟',
+      newParent: 'جديد على  Learnexia',
       createAccount: 'إنشاء حساب ولي أمر',
       brand: {
-        title: 'مرحباً بعودتك إلى المغامرة.',
-        body: 'تابع سلسلة إنجازاتك، حافظ على قلوبك ممتلئة، وشاهد أطفالك يتقنون مهارات جديدة.',
+        title: '.أهلاً بعودتك للمغامرة',
+        body: '.تابع سلسلة إنجازاتك، حافظ على قلوبك ممتلئة، وشاهد أطفالك يتقنون مهارات جديدة',
         socialProof: 'أكثر من ٢٤٠٬٠٠٠ طفل يتعلمون اليوم',
       },
       errors: {
@@ -1478,6 +1484,8 @@ export const ar = {
     childSelector: {
       label: 'الطفل النشط',
       meta: 'الصف {{grade}} · المستوى {{level}}',
+      switchChild: 'تبديل الطفل',
+      addChild: 'إضافة طفل',
     },
     myChildren: {
       title: 'أطفالي',

@@ -319,7 +319,7 @@ export function LoginForm() {
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
-            forceValueLtr
+            // forceValueLtr
             error={fieldState.error ? t(fieldState.error.message ?? '') : undefined}
             direction={direction}
             disabled={emailFormDisabled}
