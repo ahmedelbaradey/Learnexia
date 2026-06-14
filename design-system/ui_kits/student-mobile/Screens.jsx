@@ -70,6 +70,11 @@ function HomeScreen({ onContinue, onMission, onEnergy }) {
           </div>
         </div>
 
+        {/* Today's Mission */}
+        <div style={{ padding: '0 16px' }}>
+          <TodaysMission onStart={onContinue}/>
+        </div>
+
         {/* League preview */}
         <div style={{ padding: '0 16px' }}>
           <div style={{

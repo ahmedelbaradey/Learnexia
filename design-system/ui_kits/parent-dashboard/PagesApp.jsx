@@ -42,7 +42,7 @@ function MyChildrenWebPage({ onPick, onAddChild, sidebarActive, onNav }) {
 
         {/* Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-          {children.map(c => <ChildWebCard key={c.id} child={c} onClick={() => onPick(c)}/>)}
+          {children.map(c => <ChildWebCard key={c.id} child={c} onClick={() => onPick(c)} onEdit={onAddChild}/>)}
           <button onClick={onAddChild} style={{
             background: 'transparent', border: '2px dashed rgba(99,102,241,0.4)',
             borderRadius: 24, padding: 32, minHeight: 260,
@@ -84,7 +84,7 @@ function MyChildrenWebPage({ onPick, onAddChild, sidebarActive, onNav }) {
   );
 }
 
-function ChildWebCard({ child, onClick }) {
+function ChildWebCard({ child, onClick, onEdit }) {
   return (
     <div onClick={onClick} style={{
       background: '#1E293B', borderRadius: 24, padding: 24,
@@ -111,17 +111,25 @@ function ChildWebCard({ child, onClick }) {
             <span style={{ fontSize: 12, color: '#94A3B8' }}>{child.language}</span>
           </div>
         </div>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 4,
-          fontSize: 11, fontWeight: 700,
-          color: child.active ? '#22C55E' : '#64748B',
-        }}>
-          <span style={{
-            width: 8, height: 8, borderRadius: '50%',
-            background: child.active ? '#22C55E' : '#64748B',
-            boxShadow: child.active ? '0 0 6px rgba(34,197,94,0.6)' : 'none',
-          }}/>
-          {child.active ? 'Active today' : 'Inactive'}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            fontSize: 11, fontWeight: 700,
+            color: child.active ? '#22C55E' : '#64748B',
+          }}>
+            <span style={{
+              width: 8, height: 8, borderRadius: '50%',
+              background: child.active ? '#22C55E' : '#64748B',
+              boxShadow: child.active ? '0 0 6px rgba(34,197,94,0.6)' : 'none',
+            }}/>
+            {child.active ? 'Active today' : 'Inactive'}
+          </div>
+          <button onClick={(e) => { e.stopPropagation(); onEdit && onEdit(child); }} aria-label="Edit child" style={{
+            width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+            background: 'rgba(79,70,229,0.14)', border: '1px solid rgba(99,102,241,0.3)',
+            color: '#A5B4FC', fontSize: 14, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>✏️</button>
         </div>
       </div>
 
