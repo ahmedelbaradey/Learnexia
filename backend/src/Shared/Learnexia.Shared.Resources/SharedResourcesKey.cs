@@ -1522,5 +1522,20 @@
         /// </summary>
         public const string SimilarExampleUnsupportedSubject = "SimilarExampleUnsupportedSubject";
 
+        // ── P3-07 WI-A2: Re-embed curriculum job ─────────────────────────────────────────────────
+
+        /// <summary>
+        /// Returned by the admin ReEmbed endpoint when the BGE-M3 TEI embedding endpoint is not
+        /// configured (Curriculum:Embedding:BaseUrl or ModelVersion absent).
+        /// No job is enqueued; the admin must provision the TEI endpoint first.
+        /// </summary>
+        public const string ReEmbedEndpointNotConfigured = "ReEmbedEndpointNotConfigured";
+
+        /// <summary>
+        /// Returned by the admin ReEmbed endpoint on successful job enqueue.
+        /// The job ID is included in the response so the admin can track progress.
+        /// </summary>
+        public const string ReEmbedJobEnqueued = "ReEmbedJobEnqueued";
+
     }
 }
