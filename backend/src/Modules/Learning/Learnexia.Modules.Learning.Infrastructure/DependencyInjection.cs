@@ -78,6 +78,12 @@ public static class DependencyInjection
         // references Learning's projects directly (module isolation rule).
         services.AddScoped<ILessonContextContract, LessonContextContractAdapter>();
 
+        // P3-05 BE-3: Cross-module seam — allows the Ai Hint handler to read CorrectAnswer
+        // and the server-derived CurrentHintLevel (OQ-2b, OQ-4) from LearningDbContext via
+        // Shared.Contracts. The Ai module depends only on IQuestionAnswerContract; no direct
+        // reference to any Learning project (module isolation rule).
+        services.AddScoped<IQuestionAnswerContract, QuestionAnswerContractAdapter>();
+
         // Unit-of-Work behavior (ADR 0001 §2 + ADR 0002 §2): commit once per ICommand<>, then dispatch
         // domain events AFTER commit. Registered here in Infrastructure (not Application) because it
         // injects the concrete LearningDbContext. Registered AFTER ValidationBehavior (added in

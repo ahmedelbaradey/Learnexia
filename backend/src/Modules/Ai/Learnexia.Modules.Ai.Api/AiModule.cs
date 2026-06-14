@@ -19,7 +19,7 @@ public static class AiModule
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddAiApplication();
+        services.AddAiApplication(configuration);
         services.AddAiInfrastructure(configuration);
         return services;
     }

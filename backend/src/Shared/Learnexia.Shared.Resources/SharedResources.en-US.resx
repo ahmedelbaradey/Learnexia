@@ -2150,4 +2150,49 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="ExplainConceptRateLimitExceeded" xml:space="preserve">
     <value>You have made too many explanation requests. Please wait a moment before trying again.</value>
   </data>
+  <data name="HintIntentInvalid" xml:space="preserve">
+    <value>Intent must be Hint or WhyWrong.</value>
+  </data>
+  <data name="HintLevelOutOfRange" xml:space="preserve">
+    <value>Hint level must be between 1 and the maximum allowed levels.</value>
+  </data>
+  <data name="HintWrongAnswerRequired" xml:space="preserve">
+    <value>Please include your wrong answer so the tutor can explain it.</value>
+  </data>
+  <data name="HintWrongAnswerTooLong" xml:space="preserve">
+    <value>Your answer is too long. Please keep it under 500 characters.</value>
+  </data>
+  <data name="SimplifyContextRequired" xml:space="preserve">
+    <value>Please provide a concept or lesson to simplify.</value>
+  </data>
+  <data name="HintRateLimitExceeded" xml:space="preserve">
+    <value>You have asked for too many hints. Please wait a moment before trying again.</value>
+  </data>
+  <data name="HintSafetyBlocked" xml:space="preserve">
+    <value>The tutor cannot provide a hint right now. Please try again shortly.</value>
+  </data>
+  <data name="HintUnsupportedSubject" xml:space="preserve">
+    <value>The tutor does not have a template for this subject yet.</value>
+  </data>
+  <data name="HintNoRevealViolation" xml:space="preserve">
+    <value>The tutor could not generate a safe hint for this question. Please try again.</value>
+  </data>
+  <data name="HintQuestionNotFound" xml:space="preserve">
+    <value>This question or attempt could not be found.</value>
+  </data>
+  <data name="HintMaxLevelsReached" xml:space="preserve">
+    <value>You have used all available hints for this question. Would you like a simpler explanation?</value>
+  </data>
+  <data name="SimplifyMissingProfile" xml:space="preserve">
+    <value>Your learning profile could not be resolved. Please sign in again.</value>
+  </data>
+  <data name="SimplifyRateLimitExceeded" xml:space="preserve">
+    <value>You have made too many simplify requests. Please wait a moment before trying again.</value>
+  </data>
+  <data name="SimplifySafetyBlocked" xml:space="preserve">
+    <value>The tutor cannot simplify this right now. Please try again shortly.</value>
+  </data>
+  <data name="SimplifyUnsupportedSubject" xml:space="preserve">
+    <value>The tutor does not have a simplify template for this subject yet.</value>
+  </data>
 </root>

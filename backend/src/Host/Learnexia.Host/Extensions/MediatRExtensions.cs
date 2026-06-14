@@ -42,6 +42,11 @@ public static class MediatRExtensions
             // _mediator.Send(RetrieveChunksQuery) would throw "no handler" at runtime without this.
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Curriculum.Application.AssemblyReference>();
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Curriculum.Infrastructure.AssemblyReference>();
+            // P3-05: Learning.Infrastructure handlers (e.g. HintUsedIntegrationEventHandler) live in
+            // Infrastructure because they depend on LearningDbContext. Without this scan those handlers
+            // are never discovered by MediatR and Publish(HintUsedIntegrationEvent) is a silent no-op.
+            // Mirrors the Curriculum.Infrastructure scan above.
+            cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Learning.Infrastructure.AssemblyReference>();
             // P3-04: Ai.Application handlers (ExplainConceptCommandHandler + future Hint/WhyWrong).
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Ai.Application.AssemblyReference>();
 
