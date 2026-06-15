@@ -187,7 +187,7 @@ export function MyChildrenWeb() {
                       testID={`child-card-${id}`}
                       fullName={child.fullName ?? ''}
                       stats={stub}
-                      onViewDashboard={() => router.push('/(parent)')}
+                      onViewDashboard={() => router.push(`/(parent)/child/${id}`)}
                       onEdit={() =>
                         setEditingChild({
                           id: childId,

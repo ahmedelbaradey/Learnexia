@@ -64,6 +64,11 @@ function segmentToNavKey(segments: string[]): NavItemKey {
     case 'settings':
       return NAV_ITEM.Settings;
     default:
+      // Per-child drill-down (`child/[id]`) is reached from My Children — keep
+      // that nav item highlighted while the pushed sub-screen is open. The last
+      // segment for the dynamic route is the id, so we match on the `child`
+      // parent segment rather than `last`.
+      if (segments.includes('child')) return NAV_ITEM.MyChildren;
       return NAV_ITEM.Overview;
   }
 }

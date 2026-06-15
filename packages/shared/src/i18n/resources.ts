@@ -346,6 +346,7 @@ export const en = {
       statXp: 'XP',
       statStreak: 'Streak',
       statStreakValue: '{{n}}d',
+      statEnergy: 'Energy',
       mastery: 'Mastery',
       weakest: 'Weakest:',
       viewDashboard: 'View dashboard →',
@@ -433,6 +434,20 @@ export const en = {
           },
         },
       },
+    },
+    // Per-child Child Overview drill-down (Batch C; (parent)/child/[id]).
+    childOverview: {
+      title: "{{name}}'s progress",
+      back: 'Go back',
+      notFound: "We couldn't find that child.",
+      backToChildren: 'Back to My Children',
+      kpi: {
+        time: 'Time',
+        xp: 'XP earned',
+        lessons: 'Lessons',
+      },
+      fullReport: '📈 Full report',
+      energy: '⚡ Energy',
     },
     // A4 Reports page (CO-FE-1 / P1-11-FE-9; charts deferred to P5-05).
     reports: {
@@ -1581,6 +1596,7 @@ export const ar = {
       statXp: 'النقاط',
       statStreak: 'التحدى',
       statStreakValue: '{{n}} أيام',
+      statEnergy: 'الطاقة',
       mastery: 'الإتقان',
       weakest: 'الأضعف:',
       viewDashboard: 'عرض اللوحة ←',
@@ -1668,6 +1684,20 @@ export const ar = {
           },
         },
       },
+    },
+    // نظرة عامة على الطفل (Batch C؛ (parent)/child/[id]).
+    childOverview: {
+      title: 'تقدّم {{name}}',
+      back: 'رجوع',
+      notFound: 'تعذّر العثور على هذا الطفل.',
+      backToChildren: 'العودة إلى أطفالي',
+      kpi: {
+        time: 'الوقت',
+        xp: 'النقاط المكتسبة',
+        lessons: 'الدروس',
+      },
+      fullReport: '📈 التقرير الكامل',
+      energy: '⚡ الطاقة',
     },
     // A4 صفحة التقارير (CO-FE-1 / P1-11-FE-9؛ الرسوم البيانية مؤجلة إلى P5-05).
     reports: {
