@@ -208,6 +208,7 @@ using (var scope = app.Services.CreateScope())
     await GamificationModule.InitializeAsync(scope.ServiceProvider);
     await ModerationModule.InitializeAsync(scope.ServiceProvider);
     await CurriculumModule.InitializeAsync(scope.ServiceProvider);
+    await AiModule.InitializeAsync(scope.ServiceProvider);
 }
 
 // Health probes (P1-07-BE-2) — mapped BEFORE auth, rate limiting, and error/auth-logging middleware so

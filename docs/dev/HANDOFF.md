@@ -395,6 +395,151 @@ Config (appsettings.json, safe to commit):
 - **Quota dispatch:** AI credit ledger + charge-on-delivery (P10-03).
 - **This completes the 4-intent AI Helper MVP** (Explain, Hint, WhyWrong, SimilarExample) — all wired in P3-04/P3-05/P3-06. P3-12 FE consumes all 4 endpoints.
 
+## Operationalize Phase-4 AI — flip-to-live runbook — 2026-06-15 (wave `feat/phase4-ai-runtime`)
+
+This section is the canonical, end-to-end activation runbook once all Cluster A + B + C code is merged. Follow steps in order. No code change is required at any step — all flip switches are config/env.
+
+### What the wave shipped (code summary)
+
+- **Cluster A:** Parity-guard hardened (fail-fast on ModelVersion mismatch), `ReEmbedCurriculumJob` (Hangfire, idempotent, 50-row batches), `POST /api/Admin/Curriculum/ReEmbed` admin trigger, `Curriculum:Retrieval:SimilarityDistanceFloor` config-bound (default 0.4, placeholder-tuned).
+- **Cluster B:** `AiResponseCache` DB table (`ai.AiResponseCache`, UNIQUE `CacheKey`, 4 indexes), `IAiResponseCache` Redis/DB read-through (R5 gate: only `Approved + non-invalidated` served), `IGlobalSettingsProvider` + `BootstrapDefaultGlobalSettingsProvider` (reads from `AiHelper:Cache:*` in appsettings), cache-first + cache-write wired into all 4 handlers (Explain/Hint/SimilarExample/Simplify), `RedisAiRateLimiter` (Redis fixed-window, falls back to `AiTutorRateLimiter` in-process when Redis absent).
+- **Cluster C:** `PromptBuilder.Build` populates `AiRequest.CacheableSystemPrompt` with the stable tone-frame (ToneFrame.Ar / ToneFrame.En), enabling `ClaudeProvider` to emit `cache_control: ephemeral` on every request. `ILearningContextProvider` flip is config-driven via `AiHelper:ContextProvider` (already present since P3-07); `Program.cs` wires `IGlobalSettingsProvider`. All config keys documented in `appsettings.json` with safe empty defaults and inline comments.
+
+### Flip-to-live runbook (steps 1–6, in order)
+
+**Step 1 — Provider API keys [devops / secret store]**
+
+Set the following env vars in the deployment secret store (NEVER commit non-empty values):
+
+```
+Ai__Providers__Claude__ApiKey=<anthropic-api-key>
+Ai__Providers__OpenAi__ApiKey=<openai-api-key>   # optional secondary
+```
+
+Absent key behavior: `ClaudeProvider` / `OpenAiProvider` return `AiError.Unavailable`; `SafetyLayer` fails closed; students receive a localized error message. No startup crash.
+
+**Step 2 — BGE-M3 TEI provisioning [devops, external]**
+
+Stand up the BGE-M3 TEI server on Hetzner (docker-compose / deployment entry, pinned `Model` and `ModelVersion`, health endpoint, auth token). Record the base URL and model version. This is `P3-07-BE-0` (devops side) — NOT a code task.
+
+Once the TEI endpoint is live, set the following env vars:
+
+```
+Curriculum__Embedding__BaseUrl=http://<hetzner-host>:8080
+Curriculum__Embedding__ModelVersion=<version-served-by-tei>   # e.g. "1.0"
+Curriculum__Embedding__AuthToken=<bearer-token>               # NEVER commit
+Curriculum__Embedding__Model=bge-m3                           # safe to commit
+```
+
+Absent `BaseUrl` behavior: `BgeM3EmbeddingProvider.EmbedAsync` returns null, retrieval returns empty, all 4 handlers redirect. Startup logs a clear warning. No crash.
+
+**Step 3 — Re-embed curriculum chunks**
+
+Trigger the Hangfire re-embed job via the admin endpoint:
+
+```
+POST /api/Admin/Curriculum/ReEmbed
+Authorization: Bearer <admin-jwt>
+```
+
+Watch the Hangfire dashboard (`/hangfire`, Development only) or query the DB until all `chunk_embeddings_bge_m3` rows have `IsActive = true` and `ModelVersion` matches `Curriculum:Embedding:ModelVersion`. Placeholder rows (`ModelVersion = 'seed-placeholder-v0'`) must drop to zero.
+
+The job is idempotent: re-running when no placeholder rows remain is a safe no-op.
+
+**Step 4 — Re-calibrate the similarity floor**
+
+The current `Curriculum:Retrieval:SimilarityDistanceFloor = 0.4` was tuned for placeholder hash-vector geometry (`seed-placeholder-v0`). Real BGE-M3 embeddings have different distance distributions.
+
+After re-embed, run representative evaluation queries (in-corpus: Grade-3 Math fractions, Science photosynthesis; out-of-corpus: geography, history) and adjust the floor:
+
+- Typical BGE-M3 semantically-similar distances: 0.10–0.35.
+- Start at `0.3` and adjust.
+- Too strict (too low): over-redirects — students get "no context" for in-corpus questions.
+- Too loose (too high): irrelevant chunks included — retrieval quality degrades.
+
+Set in config (safe to commit; no live secret):
+
+```json
+"Curriculum": {
+  "Retrieval": {
+    "SimilarityDistanceFloor": 0.3
+  }
+}
+```
+
+**Step 5 — Activate live grounding**
+
+Set `AiHelper:ContextProvider = "Rag"` in appsettings (or env `AiHelper__ContextProvider=Rag`). No code change required.
+
+This switches `ILearningContextProvider` from `EmptyLearningContextProvider` (always-redirect) to `RagContextProvider` (live pgvector retrieval). The switch happens in `Curriculum.Infrastructure.DependencyInjection.AddCurriculumInfrastructure` which checks the key at registration time.
+
+**Do NOT flip this before Steps 3 + 4 are complete** — activating RAG over placeholder vectors returns garbage retrieval results.
+
+**Step 6 — Verify end-to-end**
+
+```
+POST /api/AiTutor/Explain
+{ "skillId": <in-corpus-skill-id>, ... }
+```
+
+Expected sequence for a cache miss on first call:
+1. `RagContextProvider` retrieves non-empty chunks (similarity floor met).
+2. `PromptBuilder` assembles the prompt with `CacheableSystemPrompt` populated (Claude will prompt-cache the tone frame).
+3. `ISafetyLayer` calls `ClaudeProvider` → response returned.
+4. `IAiResponseCache.WriteAsync` stores the entry (`ReviewStatus = Approved` if confidence ≥ 0.85, else `PendingReview`).
+
+Second identical call → cache HIT (zero Claude API calls; asserted by zero `IAiGateway` invocations).
+
+### Cache TTL matrix
+
+| Intent | TTL (Redis hot layer) | Key tuple |
+|---|---|---|
+| Explain | 24 h | `(SubjectId, ConceptId, AgeBand, Language, Difficulty, PromptVersion, CurriculumVersion)` |
+| Hint | 12 h | `(SubjectId, QuestionId, HintLevel, AgeBand, Language, PromptVersion, CurriculumVersion)` |
+| WhyWrong | 6 h | `(SubjectId, QuestionId, SHA256(NormalizedWrongAnswer), Language, AgeBand, PromptVersion, CurriculumVersion)` |
+| SimilarExample (Practice) | 24 h | `(SubjectId, SkillKey, VariationIndex, AgeBand, Language, PromptVersion, CurriculumVersion)` |
+
+`AgeBand` = `grade / 3` (floor) so Grades 1–3 share a band, Grades 4–6 share a band, etc. Prevents cross-cohort cache pollution.
+
+`WhyWrong` variant cap: 50 per `QuestionId` (LRU by `CreatedAt`). Configurable via `AiHelper:Cache:whyWrongVariantCap`.
+
+### Redis rate-limiter config
+
+- Counter key: `ai:rl:{studentId}:{windowMinute}` (UTC minute epoch).
+- Window: 60 seconds, max 10 requests per student per window.
+- Redis absent: falls back to `AiTutorRateLimiter` (in-process `ConcurrentDictionary`); no crash; no multi-instance coordination.
+- Redis present: `RedisAiRateLimiter` (atomic `INCR + EXPIRE`; shared across instances).
+- Config: `ConnectionStrings:Redis` (empty = in-process fallback).
+
+### AiResponseCache serving note (OQ-7 deferral)
+
+`AiResponseCacheRepository.GetApprovedAsync` serves only entries with `ReviewStatus = Approved AND InvalidatedAt IS NULL`. Entries are auto-approved at write time when `Confidence >= IGlobalSettingsProvider.GetDecimal("ai.cache.autoApprovalConfidence", 0.85m)`.
+
+**The `Confidence` field is currently always `null`** — `SafeAiResult` carries no confidence signal from `SafetyLayer` in this wave (OQ-7 deferred). As a result, **all new cache entries are written as `PendingReview`** and will NOT be served as cache hits until either:
+- A human reviewer marks them `Approved` via a future review UI (P7-09-style, Phase 10), OR
+- OQ-7 is resolved by wiring a confidence signal into `SafeAiResult` and a subsequent wave sets the status at write time.
+
+The cache write-path is live and stores entries — the read-through cache is dormant until the confidence/approval signal lands.
+
+### External dependencies (not built by this pipeline)
+
+| # | What | Who clears | Impact when absent |
+|---|---|---|---|
+| EXT-1 | BGE-M3 TEI endpoint on Hetzner | Devops | `BgeM3EmbeddingProvider` returns null; all handlers redirect. No crash. |
+| EXT-2 | Claude API key (`Ai:Providers:Claude:ApiKey`) | Lead / secret store | `ClaudeProvider` returns `AiError.Unavailable`; `SafetyLayer` fails closed. No crash. |
+| EXT-3 | OpenAI API key (`Ai:Providers:OpenAi:ApiKey`) | Lead / secret store | Same as EXT-2 for OpenAI tier. |
+| EXT-4 | Similarity floor calibration | Lead (after EXT-1 + Step 3 complete) | 0.4 is placeholder-tuned; real vectors may over- or under-retrieve. |
+| EXT-5 | Redis (`ConnectionStrings:Redis`) | Devops / compose | In-process fallback. Cache and rate-limiter work; no multi-instance coordination. |
+
+### Deferred (NOT in this wave)
+
+- **P3-01-BE-13 `IAiBatchGateway` / `ClaudeBatchProvider`** (offline pre-generation for cold-start cache fill) — Phase 10.
+- **P3-01-BE-14 `IAiUsageBudget` / daily-cap guardrail** — Phase 10.
+- **Human-moderation review-gate / `PendingReview` workflow / invalidation triggers** — Phase 10 (P7-09-style).
+- **`AiUsageLogs` DB persistence** — P7-11.
+- **Full BL curriculum ingestion pipeline** (BL-01..05) — backlog.
+- **OQ-7 confidence signal into `SafeAiResult`** — required before cache HITs serve (see AiResponseCache serving note above).
+
 ## P3-08 — Adjust difficulty adaptively (Adaptivity Engine) — added 2026-06-13 (branch `feat/P3-08-adaptivity-engine`)
 
 Built **P3-08** in the **`Learning` module**. Full pipeline (db-migration → backend-feature → api-tester → security-auditor → reviewer PASS).
