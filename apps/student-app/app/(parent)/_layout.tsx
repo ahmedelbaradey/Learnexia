@@ -39,15 +39,14 @@ import { Stack } from '@tamagui/core';
 import { useGroupGuard } from '../../src/hooks/useGroupGuard';
 import { useLocale } from '../../src/hooks/useLocale';
 import { useActiveChildStore } from '../../src/providers/activeChildStore';
-import { LocaleThemeControls } from '../(auth)/_components/LocaleThemeControls';
 import { AddChildModal } from '../../src/components/AddChildModal';
-import { ChildSwitcher } from './_components/ChildSwitcher';
 import {
   NAV_ITEM,
   type NavItemKey,
   Sidebar,
 } from './_components/Sidebar';
 import { getChildStatsStub } from './_components/parentDashboardStubs';
+import { ParentTabBar, PARENT_TAB_BAR_CLEARANCE } from './_components/ParentTabBar';
 
 /** Sidebar appears at the tablet breakpoint and up (design-system `media`). */
 const WIDE_BREAKPOINT = 768;
@@ -56,16 +55,18 @@ const WIDE_BREAKPOINT = 768;
 function segmentToNavKey(segments: string[]): NavItemKey {
   const last = segments[segments.length - 1];
   switch (last) {
-    case 'overview':
-      return NAV_ITEM.Overview;
     case 'children':
+      return NAV_ITEM.MyChildren;
+    // Overview is the per-child view (opened from My Children) — no longer a
+    // sidebar item, so keep My Children highlighted while it's open.
+    case 'overview':
       return NAV_ITEM.MyChildren;
     case 'reports':
       return NAV_ITEM.Reports;
     case 'settings':
       return NAV_ITEM.Settings;
     default:
-      return NAV_ITEM.Overview;
+      return NAV_ITEM.MyChildren;
   }
 }
 
@@ -102,14 +103,13 @@ function useBrandScrollbar() {
 
 export default function ParentLayout() {
   const { isResolving } = useGroupGuard('(parent)');
-  const { direction, isRtl } = useLocale();
+  const { isRtl } = useLocale();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const query = useMyChildren();
   const segments = useSegments();
   const activeChildId = useActiveChildStore((s) => s.activeChildId);
   const addChildModalVisible = useActiveChildStore((s) => s.addChildOpen);
-  const openAddChild = useActiveChildStore((s) => s.openAddChild);
   const closeAddChild = useActiveChildStore((s) => s.closeAddChild);
 
   // Inject brand scrollbar CSS (web only, once).
@@ -142,16 +142,15 @@ export default function ParentLayout() {
       })()
     : undefined;
 
-  const handleAddChild = () => openAddChild();
-
   if (isWide) {
-    // Wide layout: shell header + [sidebar | content scroll container].
-    // row-reverse in RTL puts sidebar (first in DOM) on the RIGHT and content on the LEFT.
+    // Wide layout: [sidebar | content]. No slim shell header — the per-page
+    // ParentHeader now carries the ChildSwitcher + AccountMenu (and the
+    // wide-only period select + Send Report). row-reverse in RTL puts the
+    // sidebar (first in DOM) on the RIGHT and content on the LEFT.
     return (
       <>
         <Stack flex={1} flexDirection="column" backgroundColor="$bg">
-          {/* Body row: sidebar + content. row-reverse in RTL puts sidebar RIGHT, content LEFT.
-              Locale/theme controls now live inside the Sidebar bottom section. */}
+          {/* Body row: sidebar + content. row-reverse in RTL puts sidebar RIGHT, content LEFT. */}
           <Stack flex={1} flexDirection={isRtl ? 'row-reverse' : 'row'}>
             <Sidebar
               activeChild={sidebarChild}
@@ -175,27 +174,41 @@ export default function ParentLayout() {
     );
   }
 
-  // Narrow layout: compact header (LocaleThemeControls + ChildSwitcher) above Slot.
-  // Per spec §A.1: locale/theme controls trailing-aligned; child-switcher full-width
-  // pill below; RTL-correct via rowDir.
+  // Narrow layout (<768) AND native: content area + floating ParentTabBar.
+  //
+  // Design rule: controls MUST remain reachable on narrow (design-author hard
+  // requirement). They now live in the per-page ParentHeader (ChildSwitcher +
+  // AccountMenu inline-end of every page) — the shell no longer renders its own
+  // slim header row. The tab bar floats over the content via `position:fixed`
+  // (web) / `position:absolute` (native), so the content Stack needs a bottom
+  // padding equal to PARENT_TAB_BAR_CLEARANCE + safe-area bottom to prevent
+  // content being obscured by the bar.
+  //
+  // The outer Stack is `position:relative` on native so the `absolute`-positioned
+  // tab bar is contained within it.
   return (
     <>
-      <Stack flex={1} flexDirection="column" backgroundColor="$bg" paddingTop={insets.top}>
-        {/* Compact mobile header */}
-        <Stack flexDirection="column" paddingHorizontal="$4" paddingBottom="$3" gap="$2">
-          {/* Row 1: trailing-aligned LocaleThemeControls */}
-          <Stack
-            flexDirection={isRtl ? 'row-reverse' : 'row'}
-            justifyContent="flex-end"
-            alignItems="center"
-            paddingTop="$2"
-          >
-            <LocaleThemeControls direction={direction} />
-          </Stack>
-          {/* Row 2: full-width ChildSwitcher pill */}
-          <ChildSwitcher onAddChild={handleAddChild} />
+      <Stack
+        flex={1}
+        flexDirection="column"
+        backgroundColor="$bg"
+        paddingTop={insets.top}
+        // Native: relative positioning so the absolute tab bar is contained.
+        position="relative"
+      >
+        {/* Content area — bottom padding clears the floating tab bar. */}
+        <Stack
+          flex={1}
+          // paddingBottom prevents content scrolling under the bar.
+          // Uses safe-area bottom + bar clearance so content is never obscured.
+          paddingBottom={PARENT_TAB_BAR_CLEARANCE + insets.bottom}
+          overflow="hidden"
+        >
+          <Slot />
         </Stack>
-        <Slot />
+
+        {/* Floating glass tab bar — position:fixed (web) / absolute (native). */}
+        <ParentTabBar />
       </Stack>
 
       <AddChildModal

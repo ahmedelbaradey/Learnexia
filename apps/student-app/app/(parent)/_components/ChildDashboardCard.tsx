@@ -77,6 +77,8 @@ export function ChildDashboardCard({
   const streakValue = t('parent.myChildren.statStreakValue', {
     n: formatNumber(stats.streakDays, locale),
   });
+  // Energy KPI value (Batch C): display-only Helper-Energy balance stub.
+  const energyValue = formatNumber(stats.energy, locale);
 
   const masteryPct = Math.max(0, Math.min(100, stats.masteryPercent));
   const masteryReadout = formatPercent(masteryPct, locale);
@@ -90,7 +92,7 @@ export function ChildDashboardCard({
       flexDirection="column"
       gap={16}
       flex={1}
-      minWidth={300}
+      minWidth={340}
       borderRadius="$modal"
       borderWidth={1}
       borderColor="rgba(255,255,255,0.06)"
@@ -202,36 +204,53 @@ export function ChildDashboardCard({
         ])}
       </Stack>
 
-      {/* Stat tiles — natural order Level→XP→Streak; under dir=rtl Level sits RIGHT. */}
-      <Stack flexDirection="row" gap={10}>
+      {/* Stat tiles — natural order Level→XP→Streak→Energy; under dir=rtl Level
+          sits RIGHT. 4 tiles wrap to 2×2 on narrow cards (flexWrap + per-tile
+          minWidth) so they always fit; each tile keeps flex:1 to fill its row. */}
+      <Stack flexDirection="row" flexWrap="wrap" gap={10}>
         {nat([
-          <KPIStatCard
-            key="level"
-            icon="🧠"
-            value={levelValue}
-            label={t('parent.myChildren.statLevel')}
-            accent="$purple"
-            direction={direction}
-            accessibilityLabel={`${t('parent.myChildren.statLevel')} ${formatNumber(stats.level, locale)}`}
-          />,
-          <KPIStatCard
-            key="xp"
-            icon="⭐"
-            value={xpValue}
-            label={t('parent.myChildren.statXp')}
-            accent="$xp"
-            direction={direction}
-            accessibilityLabel={`${t('parent.myChildren.statXp')} ${xpValue}`}
-          />,
-          <KPIStatCard
-            key="streak"
-            icon="🔥"
-            value={streakValue}
-            label={t('parent.myChildren.statStreak')}
-            accent="$streak"
-            direction={direction}
-            accessibilityLabel={`${t('parent.myChildren.statStreak')} ${streakValue}`}
-          />,
+          <Stack key="level" flex={1} minWidth={68}>
+            <KPIStatCard
+              icon="🧠"
+              value={levelValue}
+              label={t('parent.myChildren.statLevel')}
+              accent="$purple"
+              direction={direction}
+              accessibilityLabel={`${t('parent.myChildren.statLevel')} ${formatNumber(stats.level, locale)}`}
+            />
+          </Stack>,
+          <Stack key="xp" flex={1} minWidth={68}>
+            <KPIStatCard
+              icon="⭐"
+              value={xpValue}
+              label={t('parent.myChildren.statXp')}
+              accent="$xp"
+              direction={direction}
+              accessibilityLabel={`${t('parent.myChildren.statXp')} ${xpValue}`}
+            />
+          </Stack>,
+          <Stack key="streak" flex={1} minWidth={68}>
+            <KPIStatCard
+              icon="🔥"
+              value={streakValue}
+              label={t('parent.myChildren.statStreak')}
+              accent="$streak"
+              direction={direction}
+              accessibilityLabel={`${t('parent.myChildren.statStreak')} ${streakValue}`}
+            />
+          </Stack>,
+          // ⚡ Energy mini-stat (Batch C) — teal accent (#2DD4BF; no token yet)
+          // keeps it visually distinct from the pink hearts. Display-only stub.
+          <Stack key="energy" flex={1} minWidth={68}>
+            <KPIStatCard
+              icon="⚡"
+              value={energyValue}
+              label={t('parent.myChildren.statEnergy')}
+              accent="#2DD4BF"
+              direction={direction}
+              accessibilityLabel={`${t('parent.myChildren.statEnergy')} ${energyValue}`}
+            />
+          </Stack>,
         ])}
       </Stack>
 

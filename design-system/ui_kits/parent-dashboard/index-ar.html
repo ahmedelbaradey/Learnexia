@@ -17,14 +17,31 @@
   .frame { width: 1280px; max-width: calc(100vw - 32px); margin: 24px auto 60px; border-radius: 16px; overflow: hidden; box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06); background: #0F172A; container-type: inline-size; container-name: pdframe; position: relative; }
   /* Responsive (container-query on frame): tablet 769–1024 · mobile ≤768 */
   .pd-bottombar { display: none; }
+  /* Header child switcher: hidden on desktop (sidebar carries it), shown only on mobile */
+  .pd-header-switcher { display: none !important; }
   @container pdframe (max-width: 1024px) {
     .page [style*="grid-template-columns"] { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
+    .page .pd-settings-grid { grid-template-columns: 200px 1fr !important; }
   }
   @container pdframe (max-width: 768px) {
     .page aside { display: none !important; }
     .page [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+    .page .pd-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .page .pd-header-switcher { display: flex !important; }
     .page > div[style*="min-height"] { padding-bottom: 76px; }
     .pd-bottombar { display: flex !important; }
+    .page .pd-header { padding: 16px 18px !important; }
+    .page .pd-header .pd-hide-sm { display: none !important; }
+    .page .pd-header-actions { gap: 8px !important; }
+    /* Family hero → mobile banner: header on top, stats in a 2×2 grid */
+    .page .pd-family-hero { grid-template-columns: repeat(2, 1fr) !important; padding: 22px 20px !important; gap: 22px 12px !important; }
+    .pd-family-hero .pd-fh-title { grid-column: 1 / -1 !important; text-align: center; }
+    .pd-family-hero .pd-fh-emoji { display: none !important; }
+    .pd-family-hero > div:nth-child(even):not(.pd-fh-title) { border-inline-start: 1px solid rgba(255,255,255,0.16); }
+  }
+  /* Settings: labeled rail stacks below content on mobile */
+  @container pdframe (max-width: 768px) {
+    .page .pd-settings-grid { grid-template-columns: 1fr !important; }
   }
   .pd-bottombar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 200; height: 64px; background: rgba(15,23,42,0.94); backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.08); align-items: center; justify-content: space-around; font-family: 'Cairo'; }
   .pd-bottombar button { background: transparent; border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; color: #64748B; font-weight: 700; font-size: 10px; font-family: inherit; padding: 4px 8px; }
@@ -84,14 +101,13 @@
 
   <!-- SPLASH -->
   <div class="page active" data-id="splash">
-    <div onclick="setPageAr('role')" style="min-height:820px;cursor:pointer;position:relative;overflow:hidden;background:radial-gradient(circle at 50% 42%,#4F3FB0 0%,#3B2C8F 38%,#241B6A 100%);display:flex;flex-direction:column;align-items:center;justify-content:center">
+    <div onclick="setPageAr('role')" style="min-height:820px;cursor:pointer;position:relative;overflow:hidden;background:radial-gradient(circle at 50% 42%,#4F3FB0 0%,#3B2C8F 38%,#241B6A 100%);display:flex;flex-direction:column;align-items:center;justify-content:center"><span style="position:absolute;top:7%;left:18%;width:3px;height:3px;border-radius:50%;background:#fff;opacity:0.20;box-shadow:0 0 6px rgba(255,255,255,0.20)"></span><span style="position:absolute;top:60%;left:55%;width:4px;height:4px;border-radius:50%;background:#fff;opacity:0.29;box-shadow:0 0 8px rgba(255,255,255,0.29)"></span><span style="position:absolute;top:13%;left:92%;width:5px;height:5px;border-radius:50%;background:#fff;opacity:0.38;box-shadow:0 0 10px rgba(255,255,255,0.38)"></span><span style="position:absolute;top:66%;left:29%;width:3px;height:3px;border-radius:50%;background:#fff;opacity:0.47;box-shadow:0 0 6px rgba(255,255,255,0.47)"></span><span style="position:absolute;top:19%;left:66%;width:4px;height:4px;border-radius:50%;background:#fff;opacity:0.56;box-shadow:0 0 8px rgba(255,255,255,0.56)"></span><span style="position:absolute;top:72%;left:3%;width:5px;height:5px;border-radius:50%;background:#fff;opacity:0.65;box-shadow:0 0 10px rgba(255,255,255,0.65)"></span><span style="position:absolute;top:25%;left:40%;width:3px;height:3px;border-radius:50%;background:#fff;opacity:0.24;box-shadow:0 0 6px rgba(255,255,255,0.24)"></span><span style="position:absolute;top:78%;left:77%;width:4px;height:4px;border-radius:50%;background:#fff;opacity:0.33;box-shadow:0 0 8px rgba(255,255,255,0.33)"></span><span style="position:absolute;top:31%;left:14%;width:5px;height:5px;border-radius:50%;background:#fff;opacity:0.42;box-shadow:0 0 10px rgba(255,255,255,0.42)"></span><span style="position:absolute;top:84%;left:51%;width:3px;height:3px;border-radius:50%;background:#fff;opacity:0.51;box-shadow:0 0 6px rgba(255,255,255,0.51)"></span><span style="position:absolute;top:37%;left:88%;width:4px;height:4px;border-radius:50%;background:#fff;opacity:0.60;box-shadow:0 0 8px rgba(255,255,255,0.60)"></span><span style="position:absolute;top:90%;left:25%;width:5px;height:5px;border-radius:50%;background:#fff;opacity:0.69;box-shadow:0 0 10px rgba(255,255,255,0.69)"></span><span style="position:absolute;top:43%;left:62%;width:3px;height:3px;border-radius:50%;background:#fff;opacity:0.28;box-shadow:0 0 6px rgba(255,255,255,0.28)"></span><span style="position:absolute;top:96%;left:99%;width:4px;height:4px;border-radius:50%;background:#fff;opacity:0.37;box-shadow:0 0 8px rgba(255,255,255,0.37)"></span><span style="position:absolute;top:49%;left:36%;width:5px;height:5px;border-radius:50%;background:#fff;opacity:0.46;box-shadow:0 0 10px rgba(255,255,255,0.46)"></span><span style="position:absolute;top:2%;left:73%;width:3px;height:3px;border-radius:50%;background:#fff;opacity:0.55;box-shadow:0 0 6px rgba(255,255,255,0.55)"></span><span style="position:absolute;top:55%;left:10%;width:4px;height:4px;border-radius:50%;background:#fff;opacity:0.64;box-shadow:0 0 8px rgba(255,255,255,0.64)"></span><span style="position:absolute;top:8%;left:47%;width:5px;height:5px;border-radius:50%;background:#fff;opacity:0.23;box-shadow:0 0 10px rgba(255,255,255,0.23)"></span><span style="position:absolute;top:61%;left:84%;width:3px;height:3px;border-radius:50%;background:#fff;opacity:0.32;box-shadow:0 0 6px rgba(255,255,255,0.32)"></span><span style="position:absolute;top:14%;left:21%;width:4px;height:4px;border-radius:50%;background:#fff;opacity:0.41;box-shadow:0 0 8px rgba(255,255,255,0.41)"></span><span style="position:absolute;top:67%;left:58%;width:5px;height:5px;border-radius:50%;background:#fff;opacity:0.50;box-shadow:0 0 10px rgba(255,255,255,0.50)"></span><span style="position:absolute;top:20%;left:95%;width:3px;height:3px;border-radius:50%;background:#fff;opacity:0.59;box-shadow:0 0 6px rgba(255,255,255,0.59)"></span><span style="position:absolute;top:73%;left:32%;width:4px;height:4px;border-radius:50%;background:#fff;opacity:0.68;box-shadow:0 0 8px rgba(255,255,255,0.68)"></span><span style="position:absolute;top:26%;left:69%;width:5px;height:5px;border-radius:50%;background:#fff;opacity:0.27;box-shadow:0 0 10px rgba(255,255,255,0.27)"></span><span style="position:absolute;top:79%;left:6%;width:3px;height:3px;border-radius:50%;background:#fff;opacity:0.36;box-shadow:0 0 6px rgba(255,255,255,0.36)"></span><span style="position:absolute;top:32%;left:43%;width:4px;height:4px;border-radius:50%;background:#fff;opacity:0.45;box-shadow:0 0 8px rgba(255,255,255,0.45)"></span><span style="position:absolute;top:18%;left:22%;font-size:22px;filter:drop-shadow(0 0 6px rgba(196,181,253,0.7))">✨</span><span style="position:absolute;top:26%;left:74%;font-size:16px;filter:drop-shadow(0 0 6px rgba(196,181,253,0.7))">✨</span><span style="position:absolute;top:68%;left:16%;font-size:18px;filter:drop-shadow(0 0 6px rgba(196,181,253,0.7))">✨</span><span style="position:absolute;top:72%;left:82%;font-size:20px;filter:drop-shadow(0 0 6px rgba(196,181,253,0.7))">✨</span>
       <div style="display:flex;flex-direction:column;align-items:center;gap:22px">
         <div style="width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(250,204,21,0.35) 0%,rgba(168,85,247,0) 65%);display:flex;align-items:center;justify-content:center"><div style="font-size:104px;filter:drop-shadow(0 0 24px rgba(250,204,21,0.6))">🌟</div></div>
-        <div style="text-align:center"><div class="h-display" style="font-size:48px;color:#F8FAFC;letter-spacing:-0.02em" dir="ltr">Learnexia</div><div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:10px;font-weight:500">بوابة ولي الأمر</div></div>
+        <div style="text-align:center"><div style="font-family:'Poppins',sans-serif;font-weight:900;font-size:48px;color:#F8FAFC;letter-spacing:-0.02em" dir="ltr">Learnexia</div></div>
         <div style="width:260px;height:6px;border-radius:9999px;background:rgba(0,0,0,0.35);overflow:hidden;margin-top:8px"><div style="height:100%;width:55%;background:linear-gradient(90deg,#C4B5FD,#818CF8);border-radius:9999px"></div></div>
         <div style="display:flex;align-items:center;gap:8px;color:rgba(255,255,255,0.7);font-size:15px;font-weight:500;font-family:'Tajawal'">جارٍ التحميل… <span style="font-size:16px">⚡</span></div>
       </div>
-      <div style="position:absolute;bottom:40px;font-size:12px;font-weight:700;color:rgba(255,255,255,0.45);letter-spacing:0.2em;font-family:'Cairo'">اضغط في أي مكان للمتابعة</div>
     </div>
   </div>
 
@@ -344,11 +360,11 @@
       </div>
     </aside>
     <div style="flex:1;display:flex;flex-direction:column">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:1px solid rgba(255,255,255,0.06)"><div><div class="h-display" style="font-size:22px">أطفالي</div><div style="font-size:13px;color:#94A3B8;margin-top:2px">٣ أطفال مربوطين بحسابك</div></div><button class="btn-primary" style="height:44px;padding:0 18px" onclick="document.getElementById('ar-add-child').style.display='flex'">+ أضف طفلاً</button></div>
+      <div class="pd-header" style="display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:1px solid rgba(255,255,255,0.06)"><div><div class="h-display" style="font-size:22px">أطفالي</div><div style="font-size:13px;color:#94A3B8;margin-top:2px">٣ أطفال مربوطين بحسابك</div></div><button class="btn-primary" style="height:44px;padding:0 18px" onclick="document.getElementById('ar-add-child').style.display='flex'">+ أضف طفلاً</button></div>
       <div style="flex:1;padding:28px;display:flex;flex-direction:column;gap:20px">
-        <div style="background:linear-gradient(135deg,#A855F7 0%,#6366F1 100%);border-radius:24px;padding:28px;display:grid;grid-template-columns:1.4fr repeat(4,1fr);align-items:center;gap:20px;color:#fff;box-shadow:0 16px 36px rgba(99,102,241,0.4);position:relative;overflow:hidden">
-          <div style="position:absolute;left:-20px;top:-20px;font-size:180px;opacity:0.18">👨‍👩‍👦</div>
-          <div style="position:relative"><div style="font-family:'Cairo';font-weight:800;font-size:12px;letter-spacing:0.12em;opacity:0.85">هذا الأسبوع · الإجمالي</div><div class="h-display" style="font-size:28px;margin-top:6px;letter-spacing:-0.02em">عائلتك في تقدّم رائع</div><div style="font-size:13px;margin-top:6px;opacity:0.85">٣ متعلمين نشطين · ١٨ درساً</div></div>
+        <div class="pd-family-hero" style="background:linear-gradient(135deg,#A855F7 0%,#6366F1 100%);border-radius:24px;padding:28px;display:grid;grid-template-columns:1.4fr repeat(4,1fr);align-items:center;gap:20px;color:#fff;box-shadow:0 16px 36px rgba(99,102,241,0.4);position:relative;overflow:hidden">
+          <div class="pd-fh-emoji" style="position:absolute;left:-20px;top:-20px;font-size:180px;opacity:0.18">👨‍👩‍👦</div>
+          <div class="pd-fh-title" style="position:relative"><div style="font-family:'Cairo';font-weight:800;font-size:12px;letter-spacing:0.12em;opacity:0.85">هذا الأسبوع · الإجمالي</div><div class="h-display" style="font-size:28px;margin-top:6px;letter-spacing:-0.02em">عائلتك في تقدّم رائع</div><div style="font-size:13px;margin-top:6px;opacity:0.85">٣ متعلمين نشطين · ١٨ درساً</div></div>
           <div style="text-align:center"><div style="font-size:22px">⭐</div><div class="h-display" style="font-size:28px">٤٬٤٨٠</div><div style="font-family:'Cairo';font-size:11px;font-weight:800;opacity:0.85;margin-top:4px">إجمالي النقاط</div></div>
           <div style="text-align:center"><div style="font-size:22px">📚</div><div class="h-display" style="font-size:28px">١٨</div><div style="font-family:'Cairo';font-size:11px;font-weight:800;opacity:0.85;margin-top:4px">دروس</div></div>
           <div style="text-align:center"><div style="font-size:22px">🔥</div><div class="h-display" style="font-size:28px">٩ أيام</div><div style="font-family:'Cairo';font-size:11px;font-weight:800;opacity:0.85;margin-top:4px">أطول سلسلة</div></div>
@@ -385,9 +401,9 @@
       </div>
     </aside>
     <div style="flex:1;display:flex;flex-direction:column">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:1px solid rgba(255,255,255,0.06)"><div><div class="h-display" style="font-size:22px">تقارير سامي</div><div style="font-size:13px;color:#94A3B8;margin-top:2px">تفصيل شهري · غيّر الطفل من الرأس</div></div><button class="btn-primary">تصدير CSV</button></div>
+      <div class="pd-header" style="display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:1px solid rgba(255,255,255,0.06)"><div><div class="h-display" style="font-size:22px">تقارير سامي</div><div style="font-size:13px;color:#94A3B8;margin-top:2px">تفصيل شهري · غيّر الطفل من الرأس</div></div><div style="display:flex;gap:10px;align-items:center"><div style="display:flex;align-items:center;gap:8px;background:#1E293B;border:1px solid rgba(255,255,255,0.08);border-radius:9999px;padding:5px 6px 5px 12px"><div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#FB923C,#EF4444);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff">س</div><span style="font-size:13px;font-weight:700;color:#F8FAFC">سامي</span></div><button class="btn-primary pd-hide-sm">تصدير CSV</button><button style="width:40px;height:40px;flex-shrink:0;border-radius:50%;border:2px solid rgba(255,255,255,0.12);background:linear-gradient(135deg,#FB923C,#EF4444);color:#fff;font-family:'Cairo';font-weight:900;font-size:16px;cursor:pointer">أ</button></div></div>
       <div style="flex:1;padding:28px;display:flex;flex-direction:column;gap:20px">
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+        <div class="pd-kpi-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
           <div style="background:#1E293B;border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:18px"><div style="font-family:'Cairo';font-size:11px;font-weight:700;color:#94A3B8">وقت التعلم</div><div class="h-display" style="font-size:24px;margin-top:8px">١٤ س ١٢ د</div><div style="font-size:12px;font-weight:700;color:#22C55E;margin-top:6px">+٣٨٪</div></div>
           <div style="background:#1E293B;border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:18px"><div style="font-family:'Cairo';font-size:11px;font-weight:700;color:#94A3B8">النقاط</div><div class="h-display" style="font-size:28px;margin-top:8px">٢٬١٨٠</div><div style="font-size:12px;font-weight:700;color:#22C55E;margin-top:6px">+٢٢٪</div></div>
           <div style="background:#1E293B;border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:18px"><div style="font-family:'Cairo';font-size:11px;font-weight:700;color:#94A3B8">دروس متقنة</div><div class="h-display" style="font-size:28px;margin-top:8px">٤٢</div><div style="font-size:12px;font-weight:700;color:#22C55E;margin-top:6px">+٩</div></div>
@@ -418,7 +434,7 @@
       </div>
     </aside>
     <div style="flex:1;display:flex;flex-direction:column">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:1px solid rgba(255,255,255,0.06)"><div><div class="h-display" style="font-size:22px">طاقة المساعد</div><div style="font-size:13px;color:#94A3B8;margin-top:2px">كيف تُحتسب استخدامات مساعد الذكاء لسامي · غيّر الطفل من الرأس</div></div></div>
+      <div class="pd-header" style="display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:1px solid rgba(255,255,255,0.06)"><div><div class="h-display" style="font-size:22px">طاقة المساعد</div><div style="font-size:13px;color:#94A3B8;margin-top:2px">كيف تُحتسب استخدامات مساعد الذكاء لسامي · غيّر الطفل من الرأس</div></div><div style="display:flex;gap:10px;align-items:center"><div style="display:flex;align-items:center;gap:8px;background:#1E293B;border:1px solid rgba(255,255,255,0.08);border-radius:9999px;padding:5px 6px 5px 12px"><div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#FB923C,#EF4444);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff">س</div><span style="font-size:13px;font-weight:700;color:#F8FAFC">سامي</span></div><button style="width:40px;height:40px;flex-shrink:0;border-radius:50%;border:2px solid rgba(255,255,255,0.12);background:linear-gradient(135deg,#FB923C,#EF4444);color:#fff;font-family:'Cairo';font-weight:900;font-size:16px;cursor:pointer">أ</button></div></div>
       <div style="flex:1;padding:28px;display:flex;flex-direction:column;gap:20px">
         <!-- hero + meters -->
         <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:20px;align-items:stretch">
@@ -436,7 +452,7 @@
         </div>
         <!-- weekly usage -->
         <div class="card"><div style="margin-bottom:14px"><div class="panel-title">مساعدو الذكاء المستخدمون هذا الأسبوع</div><div class="panel-sub">١٢٤ طاقة عبر ٦٠ مساعداً</div></div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+          <div class="pd-kpi-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
             <div style="padding:16px;border-radius:14px;background:#0F172A;text-align:center"><div style="width:40px;height:40px;border-radius:12px;background:rgba(45,212,191,0.18);display:flex;align-items:center;justify-content:center;font-size:19px;margin:0 auto 8px">💡</div><div class="h-display" style="font-size:24px;color:#F8FAFC">٣٨</div><div style="font-size:11px;color:#94A3B8;font-weight:700">تلميحات</div><div style="font-size:10px;color:#2DD4BF;margin-top:3px" dir="ltr">⚡1 each</div></div>
             <div style="padding:16px;border-radius:14px;background:#0F172A;text-align:center"><div style="width:40px;height:40px;border-radius:12px;background:rgba(168,85,247,0.18);display:flex;align-items:center;justify-content:center;font-size:19px;margin:0 auto 8px">🔍</div><div class="h-display" style="font-size:24px;color:#F8FAFC">١٢</div><div style="font-size:11px;color:#94A3B8;font-weight:700">شروحات</div><div style="font-size:10px;color:#C4B5FD;margin-top:3px" dir="ltr">⚡3 each</div></div>
             <div style="padding:16px;border-radius:14px;background:#0F172A;text-align:center"><div style="width:40px;height:40px;border-radius:12px;background:rgba(79,70,229,0.20);display:flex;align-items:center;justify-content:center;font-size:19px;margin:0 auto 8px">📖</div><div class="h-display" style="font-size:24px;color:#F8FAFC">٦</div><div style="font-size:11px;color:#94A3B8;font-weight:700">مفصّل</div><div style="font-size:10px;color:#A5B4FC;margin-top:3px" dir="ltr">⚡5 each</div></div>
@@ -507,15 +523,15 @@
       </div>
     </aside>
     <div style="flex:1;display:flex;flex-direction:column">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:1px solid rgba(255,255,255,0.06)"><div><div class="h-display" style="font-size:22px">الإعدادات</div><div style="font-size:13px;color:#94A3B8;margin-top:2px">إدارة حسابك وتفضيلاتك</div></div></div>
-      <div style="flex:1;padding:28px;display:grid;grid-template-columns:220px 1fr;gap:24px">
-        <nav style="display:flex;flex-direction:column;gap:4px">
-          <button style="text-align:right;padding:10px 14px;border-radius:12px;border:none;background:rgba(79,70,229,0.18);color:#A5B4FC;font-family:'Cairo';font-weight:800;font-size:14px;cursor:pointer">👤 الملف الشخصي</button>
-          <button style="text-align:right;padding:10px 14px;border-radius:12px;border:none;background:transparent;color:#94A3B8;font-family:'Cairo';font-weight:600;font-size:14px;cursor:pointer">🔔 الإشعارات</button>
-          <button style="text-align:right;padding:10px 14px;border-radius:12px;border:none;background:transparent;color:#94A3B8;font-family:'Cairo';font-weight:600;font-size:14px;cursor:pointer">👨‍👩‍👦 الأطفال المربوطون</button>
-          <button style="text-align:right;padding:10px 14px;border-radius:12px;border:none;background:transparent;color:#94A3B8;font-family:'Cairo';font-weight:600;font-size:14px;cursor:pointer">🛡️ الأمان</button>
-          <button style="text-align:right;padding:10px 14px;border-radius:12px;border:none;background:transparent;color:#94A3B8;font-family:'Cairo';font-weight:600;font-size:14px;cursor:pointer">💎 الاشتراك</button>
-          <button style="text-align:right;padding:10px 14px;border-radius:12px;border:none;background:transparent;color:#94A3B8;font-family:'Cairo';font-weight:600;font-size:14px;cursor:pointer">🌍 اللغة والمنطقة</button>
+      <div class="pd-header" style="display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:1px solid rgba(255,255,255,0.06)"><div><div class="h-display" style="font-size:22px">الإعدادات</div><div style="font-size:13px;color:#94A3B8;margin-top:2px">إدارة حسابك وتفضيلاتك</div></div></div>
+      <div class="pd-settings-grid" style="flex:1;padding:28px;display:grid;grid-template-columns:200px 1fr;gap:20px">
+        <nav style="display:flex;flex-direction:column;gap:3px">
+          <button style="display:flex;align-items:center;gap:10px;text-align:right;padding:10px 13px;border-radius:11px;border:none;background:rgba(79,70,229,0.18);color:#A5B4FC;font-family:'Cairo';font-weight:800;font-size:13px;cursor:pointer"><span style="font-size:16px">👤</span>الملف الشخصي</button>
+          <button style="display:flex;align-items:center;gap:10px;text-align:right;padding:10px 13px;border-radius:11px;border:none;background:transparent;color:#94A3B8;font-family:'Cairo';font-weight:600;font-size:13px;cursor:pointer"><span style="font-size:16px">🔔</span>الإشعارات</button>
+          <button style="display:flex;align-items:center;gap:10px;text-align:right;padding:10px 13px;border-radius:11px;border:none;background:transparent;color:#94A3B8;font-family:'Cairo';font-weight:600;font-size:13px;cursor:pointer"><span style="font-size:16px">👨‍👩‍👦</span>الأطفال المربوطون</button>
+          <button style="display:flex;align-items:center;gap:10px;text-align:right;padding:10px 13px;border-radius:11px;border:none;background:transparent;color:#94A3B8;font-family:'Cairo';font-weight:600;font-size:13px;cursor:pointer"><span style="font-size:16px">🛡️</span>الأمان</button>
+          <button style="display:flex;align-items:center;gap:10px;text-align:right;padding:10px 13px;border-radius:11px;border:none;background:transparent;color:#94A3B8;font-family:'Cairo';font-weight:600;font-size:13px;cursor:pointer"><span style="font-size:16px">💎</span>الاشتراك</button>
+          <button style="display:flex;align-items:center;gap:10px;text-align:right;padding:10px 13px;border-radius:11px;border:none;background:transparent;color:#94A3B8;font-family:'Cairo';font-weight:600;font-size:13px;cursor:pointer"><span style="font-size:16px">🌍</span>اللغة والمنطقة</button>
         </nav>
         <div style="display:flex;flex-direction:column;gap:20px">
           <div class="card"><div style="margin-bottom:18px"><div class="panel-title">الملف الشخصي</div><div class="panel-sub">هكذا يعرفك Learnexia</div></div>
@@ -542,9 +558,9 @@
       </div>
     </aside>
     <div style="flex:1;display:flex;flex-direction:column">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:1px solid rgba(255,255,255,0.06)"><div><div class="h-display" style="font-size:22px">تقدّم سامي</div><div style="font-size:13px;color:#94A3B8;margin-top:2px">الإثنين، ١٨ نوفمبر ← الأحد، ٢٤ نوفمبر</div></div><div style="display:flex;gap:10px"><select class="field-in" style="height:36px;width:auto;font-size:13px;font-weight:600"><option>هذا الأسبوع</option><option>هذا الشهر</option></select><button class="btn-primary">إرسال التقرير</button></div></div>
+      <div class="pd-header" style="display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:1px solid rgba(255,255,255,0.06)"><div><div class="h-display" style="font-size:22px">تقدّم سامي</div><div style="font-size:13px;color:#94A3B8;margin-top:2px">الإثنين، ١٨ نوفمبر ← الأحد، ٢٤ نوفمبر</div></div><div style="display:flex;gap:10px;align-items:center"><div style="display:flex;align-items:center;gap:8px;background:#1E293B;border:1px solid rgba(255,255,255,0.08);border-radius:9999px;padding:5px 6px 5px 12px"><div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#FB923C,#EF4444);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff">س</div><span style="font-size:13px;font-weight:700;color:#F8FAFC">سامي</span></div><select class="field-in pd-hide-sm" style="height:36px;width:auto;font-size:13px;font-weight:600"><option>هذا الأسبوع</option><option>هذا الشهر</option></select><button class="btn-primary pd-hide-sm">إرسال التقرير</button><button style="width:40px;height:40px;flex-shrink:0;border-radius:50%;border:2px solid rgba(255,255,255,0.12);background:linear-gradient(135deg,#FB923C,#EF4444);color:#fff;font-family:'Cairo';font-weight:900;font-size:16px;cursor:pointer">أ</button></div></div>
       <div style="flex:1;padding:28px;display:flex;flex-direction:column;gap:20px">
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+        <div class="pd-kpi-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
           <div style="background:#1E293B;border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;align-items:center;justify-content:space-between"><div style="font-family:'Cairo';font-size:11px;font-weight:700;color:#94A3B8">وقت التعلم</div><div style="width:32px;height:32px;border-radius:10px;background:rgba(79,70,229,0.13);color:#4F46E5;display:flex;align-items:center;justify-content:center">⏱️</div></div><div class="h-display" style="font-size:28px;line-height:1">٣ س ٢٤ د</div><div style="font-size:12px;font-weight:700;color:#22C55E">+٤٢ د الأسبوع الماضي</div></div>
           <div style="background:#1E293B;border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;align-items:center;justify-content:space-between"><div style="font-family:'Cairo';font-size:11px;font-weight:700;color:#94A3B8">النقاط</div><div style="width:32px;height:32px;border-radius:10px;background:rgba(250,204,21,0.13);color:#FACC15;display:flex;align-items:center;justify-content:center">⭐</div></div><div class="h-display" style="font-size:28px;line-height:1">٤٨٠</div><div style="font-size:12px;font-weight:700;color:#22C55E">+٢٨٪</div></div>
           <div style="background:#1E293B;border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;align-items:center;justify-content:space-between"><div style="font-family:'Cairo';font-size:11px;font-weight:700;color:#94A3B8">دروس منجزة</div><div style="width:32px;height:32px;border-radius:10px;background:rgba(34,197,94,0.13);color:#22C55E;display:flex;align-items:center;justify-content:center">✓</div></div><div class="h-display" style="font-size:28px;line-height:1">١٤</div><div style="font-size:12px;font-weight:700;color:#22C55E">+٣</div></div>
@@ -716,6 +732,48 @@ document.addEventListener('click', ()=>{ document.querySelectorAll('.ar-kid-menu
 
 arRefreshSwitchers();
 document.querySelectorAll('.page aside').forEach(arBuildPrefs);
+
+// Normalize every parent-page header: consistent child pill (mobile-only) + avatar account menu
+function arWireAccountMenus(){
+  document.querySelectorAll('.page .pd-header').forEach(function(hdr){
+    if(hdr.dataset.acmWired) return;
+    hdr.dataset.acmWired = '1';
+    // keep the title block (first child); rebuild the right-side actions
+    var title = hdr.firstElementChild;
+    while(hdr.children.length > 1) hdr.removeChild(hdr.lastElementChild);
+    var actions = document.createElement('div');
+    actions.className = 'pd-header-actions';
+    actions.style.cssText = 'display:flex;gap:10px;align-items:center;position:relative';
+    actions.innerHTML =
+      '<div class="pd-header-switcher" style="display:flex;align-items:center;gap:8px;background:#1E293B;border:1px solid rgba(255,255,255,0.08);border-radius:9999px;padding:5px 6px 5px 12px"><div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#FB923C,#EF4444);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff">س</div><span style="font-size:13px;font-weight:700;color:#F8FAFC;font-family:\'Cairo\'">سامي</span></div>'+
+      '<button class="pd-acct-btn" aria-label="حساب" style="width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,0.12);background:linear-gradient(135deg,#A855F7,#6366F1);color:#fff;font-family:\'Cairo\';font-weight:800;font-size:16px;cursor:pointer">أ</button>';
+    hdr.appendChild(actions);
+    var avatar = actions.querySelector('.pd-acct-btn');
+    avatar.addEventListener('click', function(e){
+      e.stopPropagation();
+      var existing = actions.querySelector('.ar-acm-pop');
+      document.querySelectorAll('.ar-acm-pop').forEach(function(p){ p.remove(); });
+      if(existing) return;
+      var theme = document.documentElement.getAttribute('data-theme') || 'night';
+      var seg = function(on){ return 'flex:1;height:32px;border-radius:8px;border:none;cursor:pointer;font-family:\'Cairo\';font-weight:700;font-size:12px;background:'+(on?'#334155':'transparent')+';color:'+(on?'#F8FAFC':'#94A3B8'); };
+      var pop = document.createElement('div');
+      pop.className = 'ar-acm-pop';
+      pop.style.cssText = 'position:absolute;top:calc(100% + 8px);left:0;z-index:300;width:248px;background:#1E293B;border:1px solid rgba(255,255,255,0.1);border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,0.55);padding:12px;display:flex;flex-direction:column;gap:12px;font-family:\'Cairo\'';
+      pop.innerHTML =
+        '<div style="display:flex;align-items:center;gap:10px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.06)"><div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#FB923C,#EF4444);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#fff">أ</div><div><div style="font-size:13px;font-weight:800;color:#F8FAFC">أحمد حسن</div><div style="font-size:11px;color:#94A3B8" dir="ltr">ahmed@email.com</div></div></div>'+
+        '<div><div style="font-size:10px;font-weight:700;color:#64748B;letter-spacing:0.06em;margin-bottom:5px">اللغة</div><div style="display:flex;gap:4px;background:#0B1220;border-radius:10px;padding:4px"><button style="'+seg(true)+'">🇪🇬 AR</button><button class="acm-en" style="'+seg(false)+'">🇺🇸 EN</button></div></div>'+
+        '<div><div style="font-size:10px;font-weight:700;color:#64748B;letter-spacing:0.06em;margin-bottom:5px">المظهر</div><div style="display:flex;gap:4px;background:#0B1220;border-radius:10px;padding:4px"><button class="acm-night" style="'+seg(theme==='night')+'">🌙 ليل</button><button class="acm-black" style="'+seg(theme==='black')+'">⬛ أسود</button></div></div>'+
+        '<button class="acm-logout" style="display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:10px;cursor:pointer;font-family:\'Cairo\';background:transparent;border:1px solid rgba(239,68,68,0.25);color:#F87171;font-weight:700;font-size:13px;text-align:right"><span>↩</span>تسجيل الخروج</button>';
+      actions.appendChild(pop);
+      pop.querySelector('.acm-en').onclick = function(){ window.location.href = 'index.html'; };
+      pop.querySelector('.acm-night').onclick = function(){ document.documentElement.setAttribute('data-theme','night'); pop.remove(); arRefreshPrefs(); };
+      pop.querySelector('.acm-black').onclick = function(){ document.documentElement.setAttribute('data-theme','black'); pop.remove(); arRefreshPrefs(); };
+      pop.querySelector('.acm-logout').onclick = function(){ pop.remove(); var c=document.querySelector('.crumb-w[data-id="login"]'); if(c) c.click(); };
+    });
+  });
+}
+document.addEventListener('click', function(){ document.querySelectorAll('.ar-acm-pop').forEach(function(p){ p.remove(); }); });
+arWireAccountMenus();
 </script>
 <!-- Add Child modal (AR) -->
 <div id="ar-add-child" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(5,8,22,0.7);backdrop-filter:blur(4px);align-items:center;justify-content:center;direction:rtl;font-family:'Tajawal'">

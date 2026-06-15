@@ -60,7 +60,7 @@ export const en = {
       subtitle: 'AI Learning Adventure Begins',
       loading: 'Loading… ⚡',
       poweredBy: 'POWERED BY AI',
-      tagline: '✦ Gamified Learning ✦',
+      tagline: '✦ Family Learning ✦',
     },
   },
   auth: {
@@ -128,13 +128,33 @@ export const en = {
         captchaFailed: 'Security check failed. Please try again.',
       },
     },
+    roleSelect: {
+      title: 'Welcome to Learnexia',
+      subtitle: "Who's signing in?",
+      parentLabel: 'Parent',
+      parentSub: "Track your child's progress",
+      studentLabel: 'Student',
+      studentSub: 'Learn, play, level up',
+      footnote:
+        "Children log in with the email a parent assigned — they never create their own account.",
+      parentA11y: 'Sign in as Parent',
+      studentA11y: 'Sign in as Student',
+    },
     login: {
       eyebrow: 'Log in',
       title: 'Welcome back',
+      /** Student subtitle (existing key repurposed — was generic, now student-only). */
       subtitle: 'Log in to keep your streak alive 🔥',
-      personaParent: "👨‍👩‍👦 I'm a Parent",
-      personaStudent: "🎓 I'm a Student",
-      personaToggleLabel: 'Choose who is logging in',
+      /** Parent subtitle (NEW — Batch A). */
+      subtitleParent: "Sign in to follow your children's progress",
+      /** Role badge label keys (NEW — Batch A, two literal keys to avoid interpolated-noun gender issues). */
+      signingInAsParent: 'Signing in as Parent',
+      signingInAsStudent: 'Signing in as Student',
+      /** "Change" link on the role badge (NEW — Batch A). */
+      change: 'Change',
+      /** Student no-account notice (NEW — Batch A). */
+      studentNoAccountTitle: 'Need an account?',
+      studentNoAccountBody: 'Ask a parent to add you.',
       labelUsername: 'Email',
       labelPassword: 'Password',
       showPassword: 'Show',
@@ -281,13 +301,19 @@ export const en = {
   parent: {
     nav: {
       myChildren: 'My Children',
+      /** Shorter tab-bar label for the Children tab (PMTabBar spec). */
+      children: 'Children',
       overview: 'Overview',
       reports: 'Reports',
+      /** Helper Energy tab (PMTabBar spec; full IAP surface is a later batch). */
+      energy: 'Energy',
       activity: 'Activity',
       subjects: 'Subjects',
       settings: 'Settings',
       logout: 'Log out',
       sectionLabel: 'Parent menu',
+      /** a11y label for the parent tab bar tablist container. */
+      barLabel: 'Parent navigation',
     },
     // TODO(P5): weekly-XP delta is server analytics — static stub copy for now.
     xpWidget: {
@@ -320,6 +346,7 @@ export const en = {
       statXp: 'XP',
       statStreak: 'Streak',
       statStreakValue: '{{n}}d',
+      statEnergy: 'Energy',
       mastery: 'Mastery',
       weakest: 'Weakest:',
       viewDashboard: 'View dashboard →',
@@ -407,6 +434,20 @@ export const en = {
           },
         },
       },
+    },
+    // Per-child Child Overview drill-down (Batch C; (parent)/child/[id]).
+    childOverview: {
+      title: "{{name}}'s progress",
+      back: 'Go back',
+      notFound: "We couldn't find that child.",
+      backToChildren: 'Back to My Children',
+      kpi: {
+        time: 'Time',
+        xp: 'XP earned',
+        lessons: 'Lessons',
+      },
+      fullReport: '📈 Full report',
+      energy: '⚡ Energy',
     },
     // A4 Reports page (CO-FE-1 / P1-11-FE-9; charts deferred to P5-05).
     reports: {
@@ -699,6 +740,29 @@ export const en = {
       title: 'Dashboard coming soon!',
       body: 'Your children are all set. Learning adventures are on their way.',
       viewChildren: 'View my children',
+    },
+    // AccountMenu — avatar-triggered dropdown (post-login parent header).
+    account: {
+      /** aria-label for the trigger avatar button. */
+      menuLabel: 'Account menu',
+      /** Section heading for the language segmented control. */
+      languageLabel: 'Language',
+      /** Section heading for the theme segmented control. */
+      themeLabel: 'Theme',
+      /** "Night" segment — maps to the dark theme. */
+      themeNight: 'Night',
+      /** "Light" segment — maps to the light theme. */
+      themeLight: 'Light',
+    },
+    // Helper Energy stub screen (full IAP surface is a later batch).
+    energy: {
+      title: 'Helper Energy',
+      comingSoon: 'Energy top-ups and usage will appear here soon.',
+    },
+    // Activity / notification timeline stub screen (full timeline is a later batch).
+    activity: {
+      title: 'Activity',
+      comingSoon: 'Your children\'s recent activity will appear here soon.',
     },
   },
   child: {
@@ -1249,7 +1313,7 @@ export const ar = {
       subtitle: 'تبدأ مغامرة التعلّم بالذكاء الاصطناعي',
       loading: 'جارٍ التحميل… ⚡',
       poweredBy: 'مدعوم بالذكاء الاصطناعي',
-      tagline: '',
+      tagline: '✦ تعلّم عائلي ✦',
     },
   },
   auth: {
@@ -1317,13 +1381,33 @@ export const ar = {
         captchaFailed: 'فشل فحص الأمان. يرجى المحاولة مرة أخرى.',
       },
     },
+    roleSelect: {
+      title: 'مرحباً بك في Learnexia',
+      subtitle: 'من الذي يسجّل الدخول؟',
+      parentLabel: 'ولي الأمر',
+      parentSub: 'تابع تقدّم طفلك',
+      studentLabel: 'طالب',
+      studentSub: 'تعلّم والعب وتقدّم',
+      footnote:
+        'يدخل الأطفال بالبريد الذي يحدده ولي الأمر — لا ينشئون حساباتهم بأنفسهم.',
+      parentA11y: 'تسجيل الدخول كولي أمر',
+      studentA11y: 'تسجيل الدخول كطالب',
+    },
     login: {
       eyebrow: 'تسجيل الدخول',
       title: 'أهلاً بعودتك',
-      subtitle: 'سجّل دخولك للحفاظ على سلسلتك 🔥',
-      personaParent: 'أنا ولي أمر 👨‍👩‍👧',
-      personaStudent: 'أنا طالب 🎒',
-      personaToggleLabel: 'اختر من يقوم بتسجيل الدخول',
+      /** طالب: المفتاح الحالي مُعاد توظيفه للطلاب فقط. */
+      subtitle: 'سجّل الدخول للحفاظ على سلسلتك 🔥',
+      /** ولي الأمر: مفتاح عنوان فرعي جديد (Batch A). */
+      subtitleParent: 'سجّل الدخول لمتابعة تقدّم أطفالك',
+      /** مفاتيح شارة الدور (Batch A، مفتاحان حرفيان لتجنّب مشكلات الجندر في العربية). */
+      signingInAsParent: 'تسجيل الدخول كولي أمر',
+      signingInAsStudent: 'تسجيل الدخول كطالب',
+      /** رابط "تغيير" على شارة الدور (Batch A). */
+      change: 'تغيير',
+      /** إشعار الطالب بلا حساب (Batch A). */
+      studentNoAccountTitle: 'هل تحتاج إلى حساب؟',
+      studentNoAccountBody: 'اطلب من ولي أمرك إضافتك.',
       labelUsername: 'البريد الإلكتروني',
       labelPassword: 'كلمة المرور',
       showPassword: 'إظهار',
@@ -1467,13 +1551,19 @@ export const ar = {
   parent: {
     nav: {
       myChildren: 'أطفالي',
+      /** تسمية شريط التبويب المختصرة لتبويب الأطفال (مواصفات PMTabBar). */
+      children: 'الأطفال',
       overview: 'نظرة عامة',
       reports: 'التقارير',
+      /** تبويب طاقة المساعد (مواصفات PMTabBar؛ واجهة الشراء الكامل في دفعة لاحقة). */
+      energy: 'الطاقة',
       activity: 'النشاط',
       subjects: 'المواد',
       settings: 'الإعدادات',
       logout: 'تسجيل الخروج',
       sectionLabel: 'قائمة ولي الأمر',
+      /** تسمية إمكانية الوصول لحاوية قائمة التبويبات. */
+      barLabel: 'تنقل ولي الأمر',
     },
     // TODO(P5): فرق نقاط الخبرة الأسبوعي بيانات تحليلية من الخادم — نص مؤقت الآن.
     xpWidget: {
@@ -1506,6 +1596,7 @@ export const ar = {
       statXp: 'النقاط',
       statStreak: 'التحدى',
       statStreakValue: '{{n}} أيام',
+      statEnergy: 'الطاقة',
       mastery: 'الإتقان',
       weakest: 'الأضعف:',
       viewDashboard: 'عرض اللوحة ←',
@@ -1593,6 +1684,20 @@ export const ar = {
           },
         },
       },
+    },
+    // نظرة عامة على الطفل (Batch C؛ (parent)/child/[id]).
+    childOverview: {
+      title: 'تقدّم {{name}}',
+      back: 'رجوع',
+      notFound: 'تعذّر العثور على هذا الطفل.',
+      backToChildren: 'العودة إلى أطفالي',
+      kpi: {
+        time: 'الوقت',
+        xp: 'النقاط المكتسبة',
+        lessons: 'الدروس',
+      },
+      fullReport: '📈 التقرير الكامل',
+      energy: '⚡ الطاقة',
     },
     // A4 صفحة التقارير (CO-FE-1 / P1-11-FE-9؛ الرسوم البيانية مؤجلة إلى P5-05).
     reports: {
@@ -1888,6 +1993,29 @@ export const ar = {
       title: 'لوحة التحكم قادمة قريباً!',
       body: 'أطفالك جاهزون. مغامرات التعلم في الطريق.',
       viewChildren: 'عرض أطفالي',
+    },
+    // AccountMenu — قائمة الحساب بالضغط على الصورة الرمزية (رأس ولي الأمر بعد تسجيل الدخول).
+    account: {
+      /** تسمية إمكانية الوصول لزر الصورة الرمزية. */
+      menuLabel: 'قائمة الحساب',
+      /** عنوان قسم عنصر التحكم في اللغة. */
+      languageLabel: 'اللغة',
+      /** عنوان قسم عنصر التحكم في المظهر. */
+      themeLabel: 'المظهر',
+      /** خيار «ليل» — يُعيَّن على المظهر الداكن. */
+      themeNight: 'ليل',
+      /** خيار «فاتح» — يُعيَّن على المظهر الفاتح. */
+      themeLight: 'فاتح',
+    },
+    // شاشة طاقة المساعد المؤقتة (واجهة الشراء الكاملة في دفعة لاحقة).
+    energy: {
+      title: 'طاقة المساعد',
+      comingSoon: 'سيظهر هنا قريباً شراء الطاقة واستخدامها.',
+    },
+    // شاشة النشاط / الجدول الزمني للإشعارات (الجدول الكامل في دفعة لاحقة).
+    activity: {
+      title: 'النشاط',
+      comingSoon: 'سيظهر هنا قريباً النشاط الأخير لأطفالك.',
     },
   },
   child: {

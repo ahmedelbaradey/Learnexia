@@ -12,12 +12,9 @@
  * LinkedChildrenPanel CTA without prop-drilling through `<Slot>`.
  */
 import { Stack } from '@tamagui/core';
-import { useRouter } from 'expo-router';
 import { ScrollView, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTranslation } from 'react-i18next';
 
-import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useActiveChildStore } from '../../src/providers/activeChildStore';
 import { SettingsWeb } from './_components/SettingsWeb';
 
@@ -25,8 +22,6 @@ import { SettingsWeb } from './_components/SettingsWeb';
 const WIDE_BREAKPOINT = 768;
 
 export default function SettingsScreen() {
-  const { t } = useTranslation();
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const openAddChild = useActiveChildStore((s) => s.openAddChild);
@@ -38,9 +33,10 @@ export default function SettingsScreen() {
     return <SettingsWeb onAddChild={openAddChild} />;
   }
 
+  // Narrow: SettingsWeb now renders the unified ParentHeader (title + controls),
+  // so no ScreenHeader is needed — just a local scroll region.
   return (
     <Stack flex={1} backgroundColor="$bg" paddingTop={insets.top}>
-      <ScreenHeader title={t('parent.settings.title')} onBack={() => router.back()} />
       <ScrollView contentContainerStyle={{ paddingBottom: 48 }}>
         <SettingsWeb onAddChild={openAddChild} />
       </ScrollView>

@@ -35,6 +35,12 @@ export interface ChildStatsStub {
   masteryPercent: number;
   weakestTopicKey: WeakestTopicKey;
   activeToday: boolean;
+  /**
+   * Helper-Energy balance (0–300). DISPLAY-ONLY stub — the real balance lands
+   * with the energy backend (Batch D / P-energy). Does NOT imply a working
+   * balance beyond a number; the mini-stat is non-interactive.
+   */
+  energy: number;
   /** Locale label key the child learns in (placeholder until profile enrich). */
   locale: 'ar' | 'en';
 }
@@ -69,6 +75,8 @@ export function getChildStatsStub(childId: string): ChildStatsStub {
     masteryPercent: 40 + (h % 55),
     weakestTopicKey: WEAKEST_TOPIC_KEYS[h % WEAKEST_TOPIC_KEYS.length] ?? WEAKEST_TOPIC.Numbers,
     activeToday: h % 3 !== 0,
+    // TODO(Batch D / P-energy): replace with the real Helper-Energy balance.
+    energy: h % 301,
     locale: h % 2 === 0 ? 'en' : 'ar',
   };
 }

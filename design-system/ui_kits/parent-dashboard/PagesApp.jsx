@@ -15,15 +15,15 @@ function MyChildrenWebPage({ onPick, onAddChild, sidebarActive, onNav }) {
       <PDHeader title="My Children" sub="3 children linked to your account" />
       <div style={{ flex: 1, overflow: 'auto', padding: 28, display: 'flex', flexDirection: 'column', gap: 20, ...appFont }}>
         {/* Combined hero */}
-        <div style={{
+        <div className="pd-family-hero" style={{
           background: 'linear-gradient(135deg,#A855F7 0%,#6366F1 100%)',
           borderRadius: 24, padding: 28,
           display: 'grid', gridTemplateColumns: '1.4fr repeat(4, 1fr)', alignItems: 'center', gap: 20,
           color: '#fff', boxShadow: '0 16px 36px rgba(99,102,241,0.4), inset 0 1px 0 rgba(255,255,255,0.18)',
           position: 'relative', overflow: 'hidden',
         }}>
-          <div style={{ position: 'absolute', right: -20, top: -20, fontSize: 180, opacity: 0.18, pointerEvents: 'none' }}>👨‍👩‍👦</div>
-          <div style={{ position: 'relative' }}>
+          <div className="pd-fh-emoji" style={{ position: 'absolute', right: -20, top: -20, fontSize: 180, opacity: 0.18, pointerEvents: 'none' }}>👨‍👩‍👦</div>
+          <div className="pd-fh-title" style={{ position: 'relative' }}>
             <div style={{ fontWeight: 800, fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', opacity: 0.85 }}>This Week · Combined</div>
             <div style={{ fontWeight: 900, fontSize: 28, marginTop: 6, letterSpacing: '-0.02em' }}>Your family is on a roll</div>
             <div style={{ fontSize: 13, marginTop: 6, opacity: 0.85 }}>3 active learners · 18 lessons completed</div>
@@ -197,7 +197,7 @@ function ReportsWebPage({ sidebarActive, onNav }) {
       <div style={{ flex: 1, overflow: 'auto', padding: 28, display: 'flex', flexDirection: 'column', gap: 20, ...appFont }}>
 
         {/* KPI strip */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+        <div className="pd-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
           <PDStatCard label="Time learning"  value="14h 12m" delta="+38%" accent="#4F46E5" icon="⏱️"/>
           <PDStatCard label="XP earned"      value="2,180"   delta="+22%" accent="#FACC15" icon="⭐"/>
           <PDStatCard label="Lessons mastered" value="42"    delta="+9"   accent="#22C55E" icon="✓"/>
@@ -301,28 +301,28 @@ function SettingsWebPage({ sidebarActive, onNav }) {
   return (
     <AppShell active={sidebarActive} onNav={onNav}>
       <PDHeader title="Settings" sub="Manage your account and preferences"/>
-      <div style={{ flex: 1, overflow: 'auto', padding: 28, display: 'grid', gridTemplateColumns: '220px 1fr', gap: 24, ...appFont }}>
-        {/* tab nav */}
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div className="pd-settings-grid" style={{ flex: 1, overflow: 'auto', padding: 28, display: 'grid', gridTemplateColumns: '200px 1fr', gap: 20, ...appFont }}>
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: 3, position: 'sticky', top: 0 }}>
           {[
-            ['profile',       '👤 Profile'],
-            ['notifications', '🔔 Notifications'],
-            ['linked',        '👨‍👩‍👦 Linked children'],
-            ['security',      '🛡️ Security'],
-            ['plan',          '💎 Plan & billing'],
-            ['language',      '🌍 Language & region'],
-          ].map(([id, label]) => (
+            ['profile',       '👤', 'Profile'],
+            ['notifications', '🔔', 'Notifications'],
+            ['linked',        '👨‍👩‍👦', 'Linked children'],
+            ['security',      '🛡️', 'Security'],
+            ['plan',          '💎', 'Plan & billing'],
+            ['language',      '🌍', 'Language & region'],
+          ].map(([id, icon, label]) => (
             <button key={id} onClick={() => setTab(id)} style={{
-              textAlign: 'left', padding: '10px 14px', borderRadius: 12, border: 'none',
+              display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left',
+              padding: '10px 13px', borderRadius: 11, border: 'none',
               background: tab === id ? 'rgba(79,70,229,0.18)' : 'transparent',
               color: tab === id ? '#A5B4FC' : '#94A3B8',
-              fontWeight: tab === id ? 800 : 600, fontSize: 14,
-              cursor: 'pointer', fontFamily: 'inherit',
-            }}>{label}</button>
+              fontWeight: tab === id ? 800 : 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
+              transition: 'all 140ms ease',
+            }}><span style={{ fontSize: 16 }}>{icon}</span>{label}</button>
           ))}
         </nav>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
           {tab === 'profile' && <SettingsProfile/>}
           {tab === 'notifications' && <SettingsNotifications/>}
           {tab === 'linked' && <SettingsLinked/>}

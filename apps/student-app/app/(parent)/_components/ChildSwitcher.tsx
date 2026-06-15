@@ -9,8 +9,10 @@
  * Dropdown: `$card` popover with one row per child, footer "+ Add child" CTA that
  * opens the AddChildModal. Active child row highlighted with `$primarySoft`.
  *
- * RTL: `rowDir` drives all rows; chevron literal `‹` / `›`; avatar gradient NOT
- * mirrored; Eastern-Arabic numerals via Intl for grade/level meta.
+ * RTL: `dir={isRtl?'rtl':'ltr'}` on the root pill + dropdown panel; rows use
+ * plain `flexDirection="row"` (the proven pattern — browser flips once). Chevron
+ * literal `‹` / `›`; avatar gradient NOT mirrored; Eastern-Arabic numerals via
+ * Intl for grade/level meta.
  *
  * No new design pattern — mirrors the sidebar child-selector card grammar, driven
  * by the same Zustand store shape as `localeStore`. Lead-approved (spec §A.4).
@@ -32,9 +34,14 @@ export function formatNumber(value: number, locale: string): string {
 export interface ChildSwitcherProps {
   /** Called when the user taps "+ Add child" in the dropdown. */
   onAddChild: () => void;
+  /**
+   * Compact pill: avatar + name + chevron only (no meta subtitle), shrink-to-content.
+   * Used in the responsive header. The dropdown is unchanged.
+   */
+  compact?: boolean;
 }
 
-export function ChildSwitcher({ onAddChild }: ChildSwitcherProps) {
+export function ChildSwitcher({ onAddChild, compact = false }: ChildSwitcherProps) {
   const { t } = useTranslation();
   const { direction, isRtl, locale } = useLocale();
   const query = useMyChildren();
@@ -42,7 +49,6 @@ export function ChildSwitcher({ onAddChild }: ChildSwitcherProps) {
   const setActiveChildId = useActiveChildStore((s) => s.setActiveChildId);
   const [open, setOpen] = useState(false);
 
-  const rowDir = isRtl ? 'row-reverse' : 'row';
   const children = query.data ?? [];
 
   // Resolve the active child: stored id if still valid, else first child.
@@ -70,16 +76,17 @@ export function ChildSwitcher({ onAddChild }: ChildSwitcherProps) {
   }
 
   return (
-    <Stack position="relative">
+    <Stack position="relative" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Pill — closed state */}
       <Stack
         testID="child-switcher-pill"
-        flexDirection={rowDir}
+        flexDirection="row"
         alignItems="center"
-        gap="$2"
-        paddingVertical={12}
-        paddingHorizontal={12}
-        borderRadius={16}
+        gap={compact ? 8 : '$2'}
+        paddingVertical={compact ? 8 : 12}
+        paddingHorizontal={compact ? 10 : 12}
+        // Compact = slim capsule (design `PDChildSwitcher compact`); full = rounded card.
+        borderRadius={compact ? 9999 : 16}
         backgroundColor="$card"
         borderWidth={1}
         borderColor={open ? 'rgba(99,102,241,0.6)' : '$border'}
@@ -94,13 +101,13 @@ export function ChildSwitcher({ onAddChild }: ChildSwitcherProps) {
         aria-expanded={open}
       >
         {activeChild ? (
-          <Avatar name={activeChild.fullName ?? ''} size="sm" />
+          <Avatar name={activeChild.fullName ?? ''} size={compact ? 'xs' : 'sm'} />
         ) : (
           <Text fontSize={14} accessibilityElementsHidden>
             {'👶'}
           </Text>
         )}
-        <Stack flexDirection="column" flex={1}>
+        <Stack flexDirection="column" flex={compact ? undefined : 1}>
           <Text
             color="$fg1"
             fontSize={13}
@@ -111,7 +118,7 @@ export function ChildSwitcher({ onAddChild }: ChildSwitcherProps) {
           >
             {pillLabel}
           </Text>
-          {metaLabel ? (
+          {!compact && metaLabel ? (
             <Text color="$fg3" fontSize={11} fontFamily="$body" writingDirection={direction} textAlign={isRtl ? 'right' : 'left'}>
               {metaLabel}
             </Text>
@@ -142,11 +149,16 @@ export function ChildSwitcher({ onAddChild }: ChildSwitcherProps) {
             style={{ cursor: 'default' }}
           />
           <Stack
+            dir={isRtl ? 'rtl' : 'ltr'}
             testID="child-switcher-dropdown"
             position="absolute"
-            top={74}
-            left={0}
-            right={0}
+            // Sits just below the compact pill (small gap), NOT pill-width: a fixed
+            // comfortable width so rows don't wrap. Opens toward the inline-start to
+            // stay on-screen (pill is at the header's inline-end).
+            top={48}
+            right={isRtl ? undefined : 0}
+            left={isRtl ? 0 : undefined}
+            minWidth={240}
             zIndex={100}
             backgroundColor="$card"
             borderRadius={16}
@@ -188,7 +200,7 @@ export function ChildSwitcher({ onAddChild }: ChildSwitcherProps) {
                 return (
                   <Stack
                     key={childId}
-                    flexDirection={rowDir}
+                    flexDirection="row"
                     alignItems="center"
                     gap={10}
                     paddingVertical={8}
@@ -244,7 +256,7 @@ export function ChildSwitcher({ onAddChild }: ChildSwitcherProps) {
 
             {/* Add a child footer — dashed circle "+" + label */}
             <Stack
-              flexDirection={rowDir}
+              flexDirection="row"
               alignItems="center"
               gap={10}
               paddingVertical={8}

@@ -15,23 +15,21 @@
  * primitives (KPIStatCard, MasteryBar) — no new design pattern.
  */
 import { useMyChildren } from '@learnexia/api-client';
-import { Button, Select } from '@learnexia/ui';
+import { Button } from '@learnexia/ui';
 import { Stack, Text, type StackProps } from '@tamagui/core';
-import React, { useState } from 'react';
+import React from 'react';
+import { Platform, useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { useLocale } from '../../../src/hooks/useLocale';
 import { useActiveChildStore } from '../../../src/providers/activeChildStore';
 import { DailyActivityCard } from './DailyActivityCard';
+import { ParentHeader } from './ParentHeader';
 import { FocusAreasCard } from './FocusAreasCard';
 import { RecommendationsCard } from './RecommendationsCard';
 import { SubjectMasteryCard } from './SubjectMasteryCard';
 import { getOverviewKpiStub, type OverviewKpiStub } from './parentDashboardStubs';
 
-/** Fixed reporting-period set (enum-style; only "this week" wired in P1-11). */
-const REPORTING_PERIOD = {
-  ThisWeek: 'thisWeek',
-} as const;
 
 /**
  * Format minutes as "Xh Ym" (EN) / "Xس Yد" (AR). Digits are localized via Intl
@@ -117,11 +115,14 @@ export interface OverviewWebProps {
   onAddChild?: () => void;
 }
 
+/** Desktop threshold: full 4-col KPI grid at ≥1025 viewport width. */
+const DESKTOP_VIEWPORT_BREAKPOINT = 1025;
+
 export function OverviewWeb({ onAddChild }: OverviewWebProps) {
   const { t } = useTranslation();
   const { direction, isRtl, locale } = useLocale();
   const query = useMyChildren();
-  const [period, setPeriod] = useState<string>(REPORTING_PERIOD.ThisWeek);
+  const { width } = useWindowDimensions();
 
   const rowDir = isRtl ? 'row-reverse' : 'row';
   const children = query.data ?? [];
@@ -138,61 +139,19 @@ export function OverviewWeb({ onAddChild }: OverviewWebProps) {
   // Static "this week" range — the real range comes with Phase-5 analytics.
   const dateRange = t('parent.overview.dateRange');
 
+  // Use viewport width as the tier discriminator so the tiers align with the shell breakpoints.
+  const isDesktop = width >= DESKTOP_VIEWPORT_BREAKPOINT;
+
   return (
-    <Stack testID="overview-root" flexDirection="column" gap="$6" padding="$6" width="100%">
-      {/* Header — direction-aware row (rowDir): title block on logical-start side,
-           controls on logical-end side. In RTL rowDir=row-reverse so title appears
-           on the right (leading) and controls on the left (trailing). */}
-      <Stack testID="overview-header" flexDirection={rowDir} alignItems="flex-start" justifyContent="space-between" gap="$4" flexWrap="wrap">
-        <Stack flexDirection="column" gap="$1">
-          <Text
-            color="$fg1"
-            fontSize={22}
-            fontWeight="800"
-            fontFamily="$heading"
-            accessibilityRole="header"
-            writingDirection={direction}
-            textAlign={direction === 'rtl' ? 'right' : 'left'}
-          >
-            {t('parent.overview.title', { name: childName })}
-          </Text>
-          <Text
-            color="$fg3"
-            fontSize={12}
-            fontFamily="$body"
-            writingDirection={direction}
-            textAlign={direction === 'rtl' ? 'right' : 'left'}
-          >
-            {dateRange}
-          </Text>
-        </Stack>
+    <Stack testID="overview-root" flexDirection="column" width="100%">
+      {/* Unified parent header (title + ChildSwitcher + AccountMenu). */}
+      <ParentHeader
+        title={t('parent.overview.title', { name: childName })}
+        subtitle={dateRange}
+      />
 
-        <Stack flexDirection={rowDir} alignItems="center" gap="$3">
-          <Stack width={150}>
-            <Select
-              label={t('parent.overview.periodLabel')}
-              hideLabel
-              value={period}
-              onChange={(v) => setPeriod(String(v))}
-              options={[{ value: REPORTING_PERIOD.ThisWeek, label: t('parent.overview.periodThisWeek') }]}
-              direction={direction}
-              accessibilityLabel={t('parent.overview.periodLabel')}
-            />
-          </Stack>
-          {/* Send Report — Phase-5 stub (no-op until analytics ship). */}
-          <Button
-            variant="primary"
-            size="sm"
-            accessibilityLabel={t('parent.overview.sendReport')}
-            onPress={() => {
-              /* TODO(P5-05): wire to the reports endpoint. */
-            }}
-          >
-            {t('parent.overview.sendReport')}
-          </Button>
-        </Stack>
-      </Stack>
-
+      {/* Body content — own gutter (header is full-bleed with its own padding). */}
+      <Stack flexDirection="column" gap="$6" padding="$6">
       {/* Error state */}
       {query.isError ? (
         <Stack alignItems="center" gap="$4" paddingVertical="$8">
@@ -217,11 +176,22 @@ export function OverviewWeb({ onAddChild }: OverviewWebProps) {
           </Button>
         </Stack>
       ) : (
-        <OverviewBody childId={childId} childName={childName} rowDir={rowDir} direction={direction} locale={locale} />
+        <OverviewBody
+          childId={childId}
+          childName={childName}
+          rowDir={rowDir}
+          direction={direction}
+          locale={locale}
+          isDesktop={isDesktop}
+          isRtl={isRtl}
+        />
       )}
+      </Stack>
     </Stack>
   );
 }
+
+const IS_WEB = Platform.OS === 'web';
 
 interface OverviewBodyProps {
   childId?: string;
@@ -229,9 +199,12 @@ interface OverviewBodyProps {
   rowDir: 'row' | 'row-reverse';
   direction: 'ltr' | 'rtl';
   locale: string;
+  /** True when viewport ≥1025 (full desktop multi-column). */
+  isDesktop: boolean;
+  isRtl: boolean;
 }
 
-function OverviewBody({ childId, childName, rowDir, direction, locale }: OverviewBodyProps) {
+function OverviewBody({ childId, childName, rowDir, direction, locale, isDesktop, isRtl }: OverviewBodyProps) {
   const { t } = useTranslation();
   // Deterministic per-child stubs (TODO(P5-05)). Loading skeleton: render with
   // a placeholder id so the layout stays stable until children resolve.
@@ -239,15 +212,33 @@ function OverviewBody({ childId, childName, rowDir, direction, locale }: Overvie
   const kpi = getOverviewKpiStub(seed);
   const kpis = buildKpis(kpi, t, locale);
 
+  // KPI grid: 4-col desktop (≥1025), 2-col tablet (769–1024) + mobile (≤768).
+  // Uses CSS Grid on web for pixel-accurate column control; falls back to flex on native.
+  // Handoff: KPIs stay 2-up on mobile — NOT 1-up.
+  const kpiGridStyle: object | undefined = IS_WEB
+    ? ({
+        display: 'grid',
+        gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)',
+        gap: 14,
+        alignItems: 'stretch',
+        direction: isRtl ? 'rtl' : 'ltr',
+      } as object)
+    : undefined;
+
   return (
     <>
-      {/* 4 KPI cards (inline by decision GAP-04 — no new KPIStatCard variant). */}
-      <Stack testID="overview-kpi-region" flexDirection={rowDir} flexWrap="wrap" gap={14} alignItems="stretch">
+      {/* 4 KPI cards — CSS Grid on web (4-col desktop / 2-col tablet+mobile);
+          native falls back to flex-wrap. Per handoff KPIs stay 2-up on mobile. */}
+      <Stack
+        testID="overview-kpi-region"
+        {...(IS_WEB
+          ? { style: kpiGridStyle }
+          : { flexDirection: rowDir, flexWrap: 'wrap' as const, gap: 14, alignItems: 'stretch' })}
+      >
         {kpis.map((k) => (
           <Stack
             key={k.label}
-            flex={1}
-            minWidth={200}
+            {...(!IS_WEB ? { flex: 1, minWidth: 200 } : {})}
             borderRadius={20}
             backgroundColor="$card"
             borderWidth={1}

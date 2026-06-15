@@ -7,7 +7,7 @@
  * the splash, this hook just doesn't navigate yet.
  *
  * Targets:
- *   signed-out                        → /(auth)/login
+ *   signed-out                        → /(auth)/role-select  (Batch A: was /(auth)/login)
  *   parent, hasChildren = false       → /(onboarding)/add-child
  *   parent, hasChildren = true        → /(parent)
  *   student                           → /(child)
@@ -25,7 +25,7 @@ import {
 } from '@learnexia/shared';
 import { applyWebDirection } from '@learnexia/shared/i18n';
 import { useRouter, useSegments, useRootNavigationState } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useLocaleStore } from '../providers/localeStore';
 
@@ -53,6 +53,13 @@ export function useAuthRoute(): AuthRouteState {
   // redirect on `rootNavState?.key` so we only navigate once it's mounted.
   const rootNavState = useRootNavigationState();
   const navReady = Boolean(rootNavState?.key);
+  // Minimum splash dwell: keep the branded splash (with its progress bar) on
+  // screen for ≥5s instead of flashing past when auth resolves instantly.
+  const [minSplashElapsed, setMinSplashElapsed] = useState(false);
+  useEffect(() => {
+    const id = setTimeout(() => setMinSplashElapsed(true), 5000);
+    return () => clearTimeout(id);
+  }, []);
   const status = useAuthStore((s) => s.status);
   const setUser = useAuthStore((s) => s.setUser);
   const setLocale = useLocaleStore((s) => s.setLocale);
@@ -91,11 +98,17 @@ export function useAuthRoute(): AuthRouteState {
     if (isResolving) return;
     // Don't navigate until the root navigator is mounted (native timing guard).
     if (!navReady) return;
+    // Hold on the splash for the minimum dwell time before redirecting.
+    if (!minSplashElapsed) return;
 
     const current = (segments[0] ?? null) as TargetGroup;
 
     if (status === 'signed-out') {
-      if (current !== '(auth)') router.replace('/(auth)/login');
+      // Batch A: signed-out users go to Role Select (the new pre-login default).
+      // The `(auth)` group guard remains: if the user is already anywhere in the
+      // (auth) group (role-select, login, register, forgot-password, reset-password)
+      // we don't navigate again — idempotency preserved.
+      if (current !== '(auth)') router.replace('/(auth)/role-select');
       return;
     }
 
@@ -113,8 +126,8 @@ export function useAuthRoute(): AuthRouteState {
       if (current !== '(onboarding)') router.replace('/(onboarding)/add-child');
       return;
     }
-    if (current !== '(parent)') router.replace('/(parent)/overview');
-  }, [isResolving, navReady, status, me.data, segments, router]);
+    if (current !== '(parent)') router.replace('/(parent)/children');
+  }, [isResolving, navReady, minSplashElapsed, status, me.data, segments, router]);
 
   return { isResolving };
 }

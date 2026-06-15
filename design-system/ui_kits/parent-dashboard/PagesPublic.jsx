@@ -827,6 +827,9 @@ function SplashWebPage({ onContinue }) {
       {Array.from({ length: 26 }, (_, i) => ({ t: (i * 53) % 100, l: (i * 37 + 11) % 100, s: (i % 3) + 3, o: 0.2 + ((i * 9) % 50) / 100 })).map((s, i) => (
         <div key={i} style={{ position: 'absolute', top: `${s.t}%`, left: `${s.l}%`, width: s.s, height: s.s, borderRadius: '50%', background: '#fff', opacity: s.o, boxShadow: `0 0 ${s.s * 2}px rgba(255,255,255,${s.o})` }}/>
       ))}
+      {[['18%','22%',24],['26%','74%',18],['68%','16%',20],['72%','82%',22]].map((p,i) => (
+        <span key={'tw'+i} style={{ position: 'absolute', top: p[0], left: p[1], fontSize: p[2], filter: 'drop-shadow(0 0 6px rgba(196,181,253,0.7))' }}>✨</span>
+      ))}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22, position: 'relative' }}>
         <div style={{ width: 160, height: 160, borderRadius: '50%', background: 'radial-gradient(circle, rgba(250,204,21,0.35) 0%, rgba(168,85,247,0) 65%)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'pdpop 800ms cubic-bezier(0.34,1.56,0.64,1)' }}>
           <div style={{ fontSize: 104, filter: 'drop-shadow(0 0 24px rgba(250,204,21,0.6))' }}>🌟</div>
@@ -840,7 +843,6 @@ function SplashWebPage({ onContinue }) {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.7)', fontSize: 15, fontWeight: 500 }}>Loading… <span style={{ fontSize: 16 }}>⚡</span></div>
       </div>
-      <div style={{ position: 'absolute', bottom: 40, fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.2em', textTransform: 'uppercase' }}>Click anywhere to continue</div>
     </div>
   );
 }

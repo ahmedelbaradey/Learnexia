@@ -10,17 +10,20 @@
  * route to the children screen for now (TODO: wire to their routes as they ship).
  * The caller passes `activeKey` so each screen lights up its own nav item.
  *
- * RTL: the whole column mirrors via logical flips; nav icon+label row uses
- * `flexDirection: rowDir` so the icon sits on the leading side (right in AR,
- * left in EN) and the label's `textAlign` follows the locale. The brand wordmark
- * keeps `writingDirection="ltr"` per SKILL.md. i18n: every label is a translation
- * key.
+ * RTL: `dir={isRtl?'rtl':'ltr'}` is set on the root column and rows use plain
+ * `flexDirection="row"` (the proven pattern — the browser flips once; `dir` is
+ * not cumulative so nesting is safe). The icon sits on the leading side (right in
+ * AR, left in EN) via natural source order, and the label's `textAlign` follows
+ * the locale. The brand wordmark keeps `writingDirection="ltr"` per SKILL.md.
+ * i18n: every label is a translation key.
  *
  * Child-selector: opens an inline dropdown that lets the parent switch the active
  * child; wired to `useActiveChildStore` (same store as the header ChildSwitcher).
  *
- * Logout: bottom of sidebar; calls `useSignOutAction` which clears the local
- * session and redirects to /(auth)/login. Styled as a nav-item-like row.
+ * Bottom controls: language + theme segmented pills + the weekly-XP widget.
+ * Logout was migrated to the AccountMenu avatar dropdown in the shell header
+ * and does NOT live here (no duplicate logout). The `SidebarXpWidget`
+ * sub-component is retained.
  */
 import { useMyChildren } from '@learnexia/api-client';
 import { LOCALES, directionForLocale, type Direction, type Locale, useRestartPromptStore } from '@learnexia/shared';
@@ -34,9 +37,9 @@ import { useTranslation } from 'react-i18next';
 import { assets } from '../../../src/assets';
 import { useLocale } from '../../../src/hooks/useLocale';
 import { useLocaleStore } from '../../../src/providers/localeStore';
-import { useSignOutAction } from '../../../src/hooks/useSignOutAction';
 import { useActiveChildStore } from '../../../src/providers/activeChildStore';
 import { useThemeStore } from '../../../src/providers/themeStore';
+import { useSignOutAction } from '../../../src/hooks/useSignOutAction';
 import { formatNumber } from './ChildSwitcher';
 import { getChildStatsStub } from './parentDashboardStubs';
 
@@ -64,7 +67,8 @@ interface NavDef {
 }
 
 const NAV: readonly NavDef[] = [
-  { key: NAV_ITEM.Overview, icon: '📊', route: '/(parent)/overview' },
+  // Overview is NOT a sidebar item — it's the per-child view, reached by tapping
+  // a child in My Children.
   { key: NAV_ITEM.MyChildren, icon: '👨‍👩‍👦', route: '/(parent)/children' },
   { key: NAV_ITEM.Reports, icon: '📝', route: '/(parent)/reports' },
   // TODO(P2+): wire activity/subjects to their own routes.
@@ -91,7 +95,6 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
   const { t } = useTranslation();
   const { direction, isRtl, locale } = useLocale();
   const router = useRouter();
-  const rowDir = isRtl ? 'row-reverse' : 'row';
 
   // Child-selector dropdown state (mirrors ChildSwitcher pattern — same store shape).
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -106,14 +109,13 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
     setDropdownOpen(false);
   }
 
-  // Logout (calls sign-out + redirects to /(auth)/login).
-  const { signOut, isPending: isSigningOut } = useSignOutAction();
-
-  // Locale + theme controls (migrated from shell header into sidebar).
+  // Locale + theme controls live in the sidebar bottom section. Logout was
+  // migrated to AccountMenu (shell header avatar dropdown) — not duplicated here.
   const setLocale = useLocaleStore((s) => s.setLocale);
   const showRestartPrompt = useRestartPromptStore((s) => s.show);
   const theme = useThemeStore((s) => s.theme);
   const setTheme = useThemeStore((s) => s.setTheme);
+  const { signOut, isPending: isSigningOut } = useSignOutAction();
 
   function handleLocaleChange(nextLocale: Locale) {
     if (nextLocale === locale) return;
@@ -128,6 +130,7 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
 
   return (
     <Stack
+      dir={isRtl ? 'rtl' : 'ltr'}
       flexDirection="column"
       width={240}
       height="100%"
@@ -145,7 +148,7 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
       gap="$6"
     >
       {/* Brand — "Learnexia" stays Latin + LTR in every locale (SKILL.md). */}
-      <Stack flexDirection={rowDir} alignItems="center" gap="$2" paddingHorizontal="$2">
+      <Stack flexDirection="row" alignItems="center" gap="$2" paddingHorizontal="$2">
         <Image source={assets.logoMark} style={{ width: 36, height: 36, resizeMode: 'contain' }} accessibilityElementsHidden />
         <Text color="$fg1" fontSize={18} fontWeight="800" fontFamily="$heading" writingDirection="ltr">
           {t('common.appName')}
@@ -171,7 +174,7 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
             aria-label={t('parent.childSelector.label')}
             aria-expanded={dropdownOpen}
           >
-            <Stack flexDirection={rowDir} alignItems="center" gap="$3">
+            <Stack flexDirection="row" alignItems="center" gap="$3">
               <Avatar name={activeChild.fullName} size="sm" />
               <Stack flexDirection="column" flex={1}>
                 <Text
@@ -224,6 +227,7 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
                 style={{ cursor: 'default' }}
               />
               <Stack
+                dir={isRtl ? 'rtl' : 'ltr'}
                 testID="sidebar-child-dropdown"
                 position="absolute"
                 top={74}
@@ -270,7 +274,7 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
                     return (
                       <Stack
                         key={childId}
-                        flexDirection={rowDir}
+                        flexDirection="row"
                         alignItems="center"
                         gap={10}
                         paddingVertical={8}
@@ -326,7 +330,7 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
 
                 {/* Add a child footer — dashed circle "+" + label */}
                 <Stack
-                  flexDirection={rowDir}
+                  flexDirection="row"
                   alignItems="center"
                   gap={10}
                   paddingVertical={8}
@@ -386,7 +390,7 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
               // Icon+label row: flexDirection follows locale so icon is always
               // on the leading side (right in AR, left in EN). Icons must NOT
               // be mirrored — only the row position flips.
-              flexDirection={rowDir}
+              flexDirection="row"
               alignItems="center"
               gap="$3"
               minHeight={40}
@@ -424,11 +428,11 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
         })}
       </Stack>
 
-      {/* Bottom controls — language pill + theme pill + XP widget + logout */}
+      {/* Bottom controls — language pill + theme pill + XP widget + logout. */}
       <Stack marginTop="auto" flexDirection="column" gap={8}>
         {/* Language segmented pill */}
         <Stack
-          flexDirection={rowDir}
+          flexDirection="row"
           borderRadius={12}
           padding={4}
           gap={4}
@@ -474,7 +478,7 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
 
         {/* Theme segmented pill */}
         <Stack
-          flexDirection={rowDir}
+          flexDirection="row"
           borderRadius={12}
           padding={4}
           gap={4}
@@ -521,32 +525,33 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
         {/* Weekly-XP summary widget */}
         <SidebarXpWidget direction={direction} isRtl={isRtl} />
 
-        {/* Logout — danger-outlined button */}
+        {/* Logout — nav-item-style row; calls sign-out + redirects to login. */}
         <Stack
-          flexDirection={rowDir}
+          testID="sidebar-logout"
+          flexDirection="row"
           alignItems="center"
           gap="$3"
+          minHeight={44}
           paddingVertical={10}
-          paddingHorizontal={12}
+          paddingHorizontal={14}
           borderRadius={12}
           borderWidth={1}
           borderColor="rgba(239,68,68,0.25)"
-          backgroundColor="transparent"
-          hoverStyle={{ backgroundColor: 'rgba(239,68,68,0.06)' }}
-          cursor={isSigningOut ? 'default' : 'pointer'}
-          pressStyle={{ scale: 0.95 }}
-          onPress={isSigningOut ? undefined : signOut}
+          cursor="pointer"
+          opacity={isSigningOut ? 0.5 : 1}
+          pointerEvents={isSigningOut ? 'none' : 'auto'}
+          hoverStyle={{ backgroundColor: 'rgba(239,68,68,0.08)' }}
+          pressStyle={{ scale: 0.97 }}
+          onPress={() => void signOut()}
           accessibilityRole="button"
           accessible
           accessibilityLabel={t('parent.nav.logout')}
           aria-label={t('parent.nav.logout')}
-          opacity={isSigningOut ? 0.6 : 1}
         >
-          <Text fontSize={16} color="#F87171" accessibilityElementsHidden>{'↩'}</Text>
+          <Text fontSize={15} accessibilityElementsHidden>↪</Text>
           <Text
-            flex={1}
             color="#F87171"
-            fontSize={13}
+            fontSize={14}
             fontWeight="700"
             fontFamily="$heading"
             writingDirection={direction}
