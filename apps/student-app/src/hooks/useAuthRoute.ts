@@ -24,7 +24,7 @@ import {
   LOCALES,
 } from '@learnexia/shared';
 import { applyWebDirection } from '@learnexia/shared/i18n';
-import { useRouter, useSegments } from 'expo-router';
+import { useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { useEffect } from 'react';
 
 import { useLocaleStore } from '../providers/localeStore';
@@ -47,6 +47,12 @@ export interface AuthRouteState {
 export function useAuthRoute(): AuthRouteState {
   const router = useRouter();
   const segments = useSegments();
+  // Root navigator readiness: on native (bridgeless/New Arch) the first effect
+  // can run before the root `<Slot>` has mounted its navigation state, which
+  // throws "Attempted to navigate before mounting the Root Layout". Gate every
+  // redirect on `rootNavState?.key` so we only navigate once it's mounted.
+  const rootNavState = useRootNavigationState();
+  const navReady = Boolean(rootNavState?.key);
   const status = useAuthStore((s) => s.status);
   const setUser = useAuthStore((s) => s.setUser);
   const setLocale = useLocaleStore((s) => s.setLocale);
@@ -83,6 +89,8 @@ export function useAuthRoute(): AuthRouteState {
 
   useEffect(() => {
     if (isResolving) return;
+    // Don't navigate until the root navigator is mounted (native timing guard).
+    if (!navReady) return;
 
     const current = (segments[0] ?? null) as TargetGroup;
 
@@ -106,7 +114,7 @@ export function useAuthRoute(): AuthRouteState {
       return;
     }
     if (current !== '(parent)') router.replace('/(parent)/overview');
-  }, [isResolving, status, me.data, segments, router]);
+  }, [isResolving, navReady, status, me.data, segments, router]);
 
   return { isResolving };
 }
