@@ -13,6 +13,7 @@ using Learnexia.Modules.Gamification.Api;
 using Learnexia.Modules.Moderation.Api;
 using Learnexia.Modules.Ai.Api;
 using Learnexia.Modules.Curriculum.Api;
+using Learnexia.Modules.Billing.Api;
 using Learnexia.Shared.Kernel.Settings;
 using Learnexia.Shared.Kernel.Storage;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -147,6 +148,7 @@ builder.Services.AddGamificationModule(builder.Configuration);
 builder.Services.AddModerationModule(builder.Configuration);
 builder.Services.AddAiModule(builder.Configuration);
 builder.Services.AddCurriculumModule(builder.Configuration);
+builder.Services.AddBillingModule(builder.Configuration);
 
 // Single, cross-module MediatR registration spanning every module's Application assembly + the
 // IsolatedNotificationPublisher (ADR 0002 §4). Must come AFTER the modules register their validators /
@@ -209,6 +211,7 @@ using (var scope = app.Services.CreateScope())
     await ModerationModule.InitializeAsync(scope.ServiceProvider);
     await CurriculumModule.InitializeAsync(scope.ServiceProvider);
     await AiModule.InitializeAsync(scope.ServiceProvider);
+    await BillingModule.InitializeAsync(scope.ServiceProvider);
 }
 
 // Health probes (P1-07-BE-2) — mapped BEFORE auth, rate limiting, and error/auth-logging middleware so

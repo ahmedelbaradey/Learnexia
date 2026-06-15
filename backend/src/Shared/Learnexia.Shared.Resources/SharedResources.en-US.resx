@@ -2216,4 +2216,52 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="ReEmbedJobEnqueued" xml:space="preserve">
     <value>Re-embed job enqueued successfully. Monitor progress via the Hangfire dashboard.</value>
   </data>
+  <data name="InsufficientBalance" xml:space="preserve">
+    <value>Insufficient energy balance to complete this request.</value>
+  </data>
+  <data name="CreditAccountNotFound" xml:space="preserve">
+    <value>Credit account not found for this child.</value>
+  </data>
+  <data name="CreditDebitSucceeded" xml:space="preserve">
+    <value>Energy credits debited successfully.</value>
+  </data>
+  <data name="CreditGrantSucceeded" xml:space="preserve">
+    <value>Energy credits granted successfully.</value>
+  </data>
+  <data name="CreditReconcileSucceeded" xml:space="preserve">
+    <value>Credit account reconciliation completed.</value>
+  </data>
+  <data name="CreditIdempotentDuplicate" xml:space="preserve">
+    <value>Duplicate request detected. Prior result returned.</value>
+  </data>
+  <data name="GlobalSettingNotFound" xml:space="preserve">
+    <value>The requested global setting was not found.</value>
+  </data>
+  <data name="GlobalSettingKeyRequired" xml:space="preserve">
+    <value>The setting key is required.</value>
+  </data>
+  <data name="GlobalSettingKeyNotAllowed" xml:space="preserve">
+    <value>The setting key is not in the allowed list of managed settings.</value>
+  </data>
+  <data name="GlobalSettingValueRequired" xml:space="preserve">
+    <value>The setting value is required.</value>
+  </data>
+  <data name="GlobalSettingUpdatedByRequired" xml:space="preserve">
+    <value>The admin identity (UpdatedBy) is required.</value>
+  </data>
+  <data name="GlobalSettingValueTypeMismatch" xml:space="preserve">
+    <value>The value cannot be parsed as the declared type for this setting key.</value>
+  </data>
+  <data name="GlobalSettingValueOutOfRange" xml:space="preserve">
+    <value>The value is outside the allowed range for this setting key.</value>
+  </data>
+  <data name="GlobalSettingDailyCapExceedsMonthly" xml:space="preserve">
+    <value>The daily cap cannot exceed the monthly grant for the same tier.</value>
+  </data>
+  <data name="GlobalSettingsRetrievedSuccessfully" xml:space="preserve">
+    <value>Global settings retrieved successfully.</value>
+  </data>
+  <data name="GlobalSettingUpdatedSuccessfully" xml:space="preserve">
+    <value>Global setting updated successfully.</value>
+  </data>
 </root>

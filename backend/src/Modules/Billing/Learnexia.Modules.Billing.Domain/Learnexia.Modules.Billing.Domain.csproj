@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Learnexia.Modules.Billing.Domain</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\Learnexia.Shared.Kernel\Learnexia.Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Learnexia.Shared.Contracts\Learnexia.Shared.Contracts.csproj" />
+  </ItemGroup>
+</Project>

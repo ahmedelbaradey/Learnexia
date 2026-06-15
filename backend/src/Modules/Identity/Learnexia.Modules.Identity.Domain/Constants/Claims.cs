@@ -8,6 +8,7 @@ public static partial class Claims
         "Parent",
         "Moderation",
         "Curriculum",
+        "Billing",
     };
 
 

@@ -2215,4 +2215,52 @@
   <data name="ReEmbedJobEnqueued" xml:space="preserve">
     <value>تم إدراج مهمة إعادة التضمين بنجاح. يمكن متابعة التقدم عبر لوحة تحكم Hangfire.</value>
   </data>
+  <data name="InsufficientBalance" xml:space="preserve">
+    <value>رصيد الطاقة غير كافٍ لإتمام هذا الطلب.</value>
+  </data>
+  <data name="CreditAccountNotFound" xml:space="preserve">
+    <value>لم يتم العثور على حساب طاقة لهذا الطفل.</value>
+  </data>
+  <data name="CreditDebitSucceeded" xml:space="preserve">
+    <value>تم خصم رصيد الطاقة بنجاح.</value>
+  </data>
+  <data name="CreditGrantSucceeded" xml:space="preserve">
+    <value>تم منح رصيد الطاقة بنجاح.</value>
+  </data>
+  <data name="CreditReconcileSucceeded" xml:space="preserve">
+    <value>اكتملت مطابقة حساب الطاقة.</value>
+  </data>
+  <data name="CreditIdempotentDuplicate" xml:space="preserve">
+    <value>تم اكتشاف طلب مكرر. تم إرجاع النتيجة السابقة.</value>
+  </data>
+  <data name="GlobalSettingNotFound" xml:space="preserve">
+    <value>لم يتم العثور على الإعداد العام المطلوب.</value>
+  </data>
+  <data name="GlobalSettingKeyRequired" xml:space="preserve">
+    <value>مفتاح الإعداد مطلوب.</value>
+  </data>
+  <data name="GlobalSettingKeyNotAllowed" xml:space="preserve">
+    <value>مفتاح الإعداد غير موجود في قائمة الإعدادات المسموح بإدارتها.</value>
+  </data>
+  <data name="GlobalSettingValueRequired" xml:space="preserve">
+    <value>قيمة الإعداد مطلوبة.</value>
+  </data>
+  <data name="GlobalSettingUpdatedByRequired" xml:space="preserve">
+    <value>هوية المسؤول (UpdatedBy) مطلوبة.</value>
+  </data>
+  <data name="GlobalSettingValueTypeMismatch" xml:space="preserve">
+    <value>لا يمكن تحويل القيمة إلى النوع المحدد لهذا المفتاح.</value>
+  </data>
+  <data name="GlobalSettingValueOutOfRange" xml:space="preserve">
+    <value>القيمة خارج النطاق المسموح به لهذا المفتاح.</value>
+  </data>
+  <data name="GlobalSettingDailyCapExceedsMonthly" xml:space="preserve">
+    <value>لا يمكن أن يتجاوز الحد اليومي المنحة الشهرية للمستوى ذاته.</value>
+  </data>
+  <data name="GlobalSettingsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد الإعدادات العامة بنجاح.</value>
+  </data>
+  <data name="GlobalSettingUpdatedSuccessfully" xml:space="preserve">
+    <value>تم تحديث الإعداد العام بنجاح.</value>
+  </data>
 </root>
