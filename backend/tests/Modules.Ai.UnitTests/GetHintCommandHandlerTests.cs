@@ -77,14 +77,22 @@ public sealed class GetHintCommandHandlerTests
         var settings = settingsMock ?? BuildDefaultSettingsMock();
 
         // Wire up the scope factory mock so fire-and-forget Task.Run bodies do not throw
-        // NullReferenceException in unit tests. The returned scope resolves a no-op IPublisher.
+        // in unit tests. The scope resolves a no-op IPublisher and a no-op IAiResponseCache
+        // (DEFECT-3 fix: cache write now resolves IAiResponseCache from a fresh scope).
         // NOTE: CreateAsyncScope() is an extension method on IServiceScopeFactory that calls
         // CreateScope() internally, so we mock the interface method CreateScope() instead.
         var innerPublisher = new Mock<IPublisher>();
+        var innerCache = new Mock<IAiResponseCache>();
+        innerCache
+            .Setup(c => c.WriteAsync(It.IsAny<AiCacheWriteEntry>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
         var serviceProvider = new Mock<IServiceProvider>();
         serviceProvider
             .Setup(sp => sp.GetService(typeof(IPublisher)))
             .Returns(innerPublisher.Object);
+        serviceProvider
+            .Setup(sp => sp.GetService(typeof(IAiResponseCache)))
+            .Returns(innerCache.Object);
         var scope = new Mock<IServiceScope>();
         scope.Setup(s => s.ServiceProvider).Returns(serviceProvider.Object);
         scopeFactory

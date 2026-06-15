@@ -13,6 +13,7 @@
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
     <PackageReference Include="Moq" />
     <PackageReference Include="Microsoft.Extensions.Localization.Abstractions" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Modules\Ai\Learnexia.Modules.Ai.Application\Learnexia.Modules.Ai.Application.csproj" />

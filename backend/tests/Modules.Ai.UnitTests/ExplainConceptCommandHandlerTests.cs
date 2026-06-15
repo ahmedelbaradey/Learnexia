@@ -8,6 +8,7 @@ using Learnexia.Shared.Contracts.Learning;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Settings;
 using MediatR;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
 using Moq;
 using Resources;
@@ -55,7 +56,8 @@ public sealed class ExplainConceptCommandHandlerTests
         Mock<ILessonContextContract>? lessonContextMock = null,
         IAiTutorRateLimiter? rateLimiter = null,
         Mock<IAiResponseCache>? aiCacheMock = null,
-        Mock<IGlobalSettingsProvider>? settingsMock = null)
+        Mock<IGlobalSettingsProvider>? settingsMock = null,
+        Mock<IServiceScopeFactory>? scopeFactoryMock = null)
     {
         var currentUser = currentUserMock ?? BuildDefaultCurrentUserMock();
         var lessonCtx = lessonContextMock ?? BuildDefaultLessonContextMock();
@@ -66,6 +68,7 @@ public sealed class ExplainConceptCommandHandlerTests
         var rl = rateLimiter ?? new AiTutorRateLimiter();
         var cache = aiCacheMock ?? BuildDefaultAiCacheMock();
         var settings = settingsMock ?? BuildDefaultSettingsMock();
+        var scopeFactory = scopeFactoryMock ?? BuildNoOpScopeFactoryMock();
 
         return new ExplainConceptCommandHandler(
             currentUser.Object,
@@ -78,8 +81,37 @@ public sealed class ExplainConceptCommandHandlerTests
             redirectBuilder,
             rl,
             publisher.Object,
+            scopeFactory.Object,
             logger.Object,
             localizer.Object);
+    }
+
+    /// <summary>
+    /// Returns a no-op <see cref="IServiceScopeFactory"/> stub that resolves a no-op
+    /// <see cref="IAiResponseCache"/> on CreateScope(). Used to prevent fire-and-forget
+    /// cache writes from throwing NullReferenceException during unit tests.
+    /// </summary>
+    private static Mock<IServiceScopeFactory> BuildNoOpScopeFactoryMock()
+    {
+        var cacheMock = new Mock<IAiResponseCache>();
+        cacheMock
+            .Setup(c => c.WriteAsync(It.IsAny<AiCacheWriteEntry>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var spMock = new Mock<IServiceProvider>();
+        spMock
+            .Setup(sp => sp.GetService(typeof(IAiResponseCache)))
+            .Returns(cacheMock.Object);
+
+        var scopeMock = new Mock<IServiceScope>();
+        scopeMock.Setup(s => s.ServiceProvider).Returns(spMock.Object);
+
+        var factoryMock = new Mock<IServiceScopeFactory>();
+        factoryMock
+            .Setup(f => f.CreateScope())
+            .Returns(scopeMock.Object);
+
+        return factoryMock;
     }
 
     /// <summary>Stub user: studentId=42, grade=5, age=11, language=ar.</summary>
@@ -436,6 +468,103 @@ public sealed class ExplainConceptCommandHandlerTests
             s => s.GenerateSafeAsync(It.IsAny<AiRequest>(), It.IsAny<CancellationToken>()),
             Times.Once,
             "ISafetyLayer must be called exactly once on a cache MISS");
+    }
+
+    // ── EH-08: Cache write dispatched on NEW scope (DEFECT-3 fix) ───────────────
+
+    [Fact(DisplayName = "P304-EH-08 Cache write is dispatched on a fresh IServiceScopeFactory scope (DEFECT-3 fix)")]
+    public async Task Handle_CacheMiss_SafetyAllowed_CacheWriteUsesNewScope()
+    {
+        // Arrange — verify that the cache write is resolved from a NEW scope (not the request-scoped
+        // IAiResponseCache), so the scoped AiDbContext is independent of the SSE request lifetime.
+        // This is the DEFECT-3 regression guard: if the handler uses _ = _aiCache.WriteAsync(...)
+        // directly (request-scoped), this test will fail because the scopeFactory-resolved cache
+        // is never called. If the fix is in place, the scope-factory is used and WriteAsync is called
+        // on the fresh-scope cache.
+        const string approvedContent = "Photosynthesis is a process used by plants.";
+
+        var contextProvider = new Mock<ILearningContextProvider>();
+        contextProvider
+            .Setup(p => p.GetContextAsync(
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int?>(),
+                It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(MakePopulatedContext());
+
+        var promptMock = new Mock<IPromptBuilder>();
+        promptMock
+            .Setup(p => p.Build(It.IsAny<PromptContext>()))
+            .Returns(new PromptBuilderResult.Success(
+                new AiRequest { Prompt = "Explain photosynthesis", Task = AiTaskKind.Explain }));
+
+        var safetyMock = new Mock<ISafetyLayer>();
+        safetyMock
+            .Setup(s => s.GenerateSafeAsync(It.IsAny<AiRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SafeAiResult(
+                Allowed: true,
+                Content: approvedContent,
+                Verdict: SafetyVerdict.Allowed,
+                Results: Array.Empty<CheckResult>()));
+
+        // Distinct cache mock for the fresh scope — we assert WriteAsync is called on THIS one.
+        var freshScopeCacheMock = new Mock<IAiResponseCache>();
+        freshScopeCacheMock
+            .Setup(c => c.WriteAsync(It.IsAny<AiCacheWriteEntry>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        freshScopeCacheMock
+            .Setup(c => c.GetApprovedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string?)null);
+
+        var spMock = new Mock<IServiceProvider>();
+        spMock
+            .Setup(sp => sp.GetService(typeof(IAiResponseCache)))
+            .Returns(freshScopeCacheMock.Object);
+
+        var scopeMock = new Mock<IServiceScope>();
+        scopeMock.Setup(s => s.ServiceProvider).Returns(spMock.Object);
+
+        var scopeFactoryMock = new Mock<IServiceScopeFactory>();
+        scopeFactoryMock
+            .Setup(f => f.CreateScope())
+            .Returns(scopeMock.Object);
+
+        // Request-scope cache: always MISS — WriteAsync should NOT be called on this one.
+        var requestScopeCacheMock = new Mock<IAiResponseCache>();
+        requestScopeCacheMock
+            .Setup(c => c.GetApprovedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string?)null);
+
+        var sut = CreateSut(
+            contextProvider,
+            safetyMock,
+            promptMock,
+            aiCacheMock: requestScopeCacheMock,
+            scopeFactoryMock: scopeFactoryMock);
+
+        var command = new ExplainConceptCommand(LessonId: null, ConceptId: null, SkillId: 10, Question: null);
+
+        // Act
+        var result = await sut.Handle(command, CancellationToken.None);
+
+        // Allow the fire-and-forget Task.Run to complete before asserting.
+        await Task.Delay(100);
+
+        // Assert — response is correct.
+        result.Should().BeOfType<ExplainResult.Streamed>(
+            "safety-allowed cache-MISS path must return Streamed content");
+
+        // Key assertion: WriteAsync was called on the FRESH-SCOPE cache (scope factory was used).
+        freshScopeCacheMock.Verify(
+            c => c.WriteAsync(It.IsAny<AiCacheWriteEntry>(), It.IsAny<CancellationToken>()),
+            Times.Once,
+            "DEFECT-3 fix: cache write must resolve IAiResponseCache from a NEW scope via IServiceScopeFactory " +
+            "so the AiDbContext lifetime is independent of the disposed SSE request scope");
+
+        // Negative: WriteAsync was NOT called on the request-scope cache instance.
+        requestScopeCacheMock.Verify(
+            c => c.WriteAsync(It.IsAny<AiCacheWriteEntry>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "DEFECT-3 fix: the request-scoped IAiResponseCache field must NOT be used for the write " +
+            "(it would use the disposed request AiDbContext)");
     }
 
     // ── EH-05: IAiGateway must NOT be injected ───────────────────────────────────

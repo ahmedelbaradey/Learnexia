@@ -8,6 +8,7 @@ using Learnexia.Shared.Contracts.Learning;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using MediatR;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -46,6 +47,7 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
     private readonly RedirectResponseBuilder _redirectBuilder;
     private readonly IAiTutorRateLimiter _rateLimiter;
     private readonly IPublisher _publisher;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
@@ -60,6 +62,7 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
         RedirectResponseBuilder redirectBuilder,
         IAiTutorRateLimiter rateLimiter,
         IPublisher publisher,
+        IServiceScopeFactory scopeFactory,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
@@ -73,6 +76,7 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
         _redirectBuilder = redirectBuilder;
         _rateLimiter     = rateLimiter;
         _publisher       = publisher;
+        _scopeFactory    = scopeFactory;
         _logger          = logger;
         _localizer       = localizer;
     }
@@ -262,7 +266,23 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
             ReviewStatus:      reviewStatus,
             Confidence:        safeResult.Confidence);
 
-        _ = _aiCache.WriteAsync(writeEntry, CancellationToken.None);
+        // Fire-and-forget the cache write on a fresh scope so the scoped AiDbContext
+        // lifetime is fully independent of the SSE request scope (DEFECT-3 fix).
+        // The request scope may be disposed before the detached write task runs;
+        // creating a new scope here ensures the write has its own AiDbContext lifetime.
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await using var scope = _scopeFactory.CreateAsyncScope();
+                var cache = scope.ServiceProvider.GetRequiredService<IAiResponseCache>();
+                await cache.WriteAsync(writeEntry, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarn($"SimplifyExplanationCommandHandler: cache write fire-and-forget failed. {ex.GetType().Name}");
+            }
+        });
         // ─────────────────────────────────────────────────────────────────────────
 
         // Step 10 — emit HelpDelivered fire-and-forget.

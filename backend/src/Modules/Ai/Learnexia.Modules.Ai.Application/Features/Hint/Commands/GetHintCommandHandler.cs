@@ -382,7 +382,23 @@ public sealed class GetHintCommandHandler : ICommandHandler<GetHintCommand, Hint
             ReviewStatus:      reviewStatus,
             Confidence:        safeResult.Confidence);
 
-        _ = _aiCache.WriteAsync(writeEntry, CancellationToken.None);
+        // Fire-and-forget the cache write on a fresh scope so the scoped AiDbContext
+        // lifetime is fully independent of the SSE request scope (DEFECT-3 fix).
+        // The request scope may be disposed before the detached write task runs;
+        // creating a new scope here ensures the write has its own AiDbContext lifetime.
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await using var scope = _scopeFactory.CreateAsyncScope();
+                var cache = scope.ServiceProvider.GetRequiredService<IAiResponseCache>();
+                await cache.WriteAsync(writeEntry, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarn($"GetHintCommandHandler: cache write fire-and-forget failed. {ex.GetType().Name}");
+            }
+        });
         // ─────────────────────────────────────────────────────────────────────────
 
         // Step 12 — fire-and-forget HintUsedIntegrationEvent.
