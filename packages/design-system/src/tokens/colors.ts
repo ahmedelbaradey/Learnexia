@@ -61,6 +61,11 @@ export const colors = {
   // ---- Surfaces (dark theme) ----
   bg: '#0F172A',
   bgElevated: '#111B33',
+  /**
+   * Deepest surface — slightly darker than `$bg`. Used for the `RoleBadge`
+   * pill container (Batch A, DS-A-02). Sits below `$bg` in the elevation stack.
+   */
+  bgDeepest: '#15161D',
   card: '#1E293B',
   cardSoft: '#334155',
   bgLight: '#F8FAFC',

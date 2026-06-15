@@ -267,7 +267,7 @@ function PDHeader({ title, sub }) {
         {sub && <div style={{ fontSize: 13, color: '#94A3B8', marginTop: 2 }}>{sub}</div>}
       </div>
       <div className="pd-header-actions" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-        {child && <PDChildSwitcher compact/>}
+        {child && <span className="pd-header-switcher"><PDChildSwitcher compact/></span>}
         <select className="pd-hide-sm" style={{
           background: '#1E293B', color: '#F8FAFC', border: '1px solid rgba(255,255,255,0.1)',
           padding: '8px 12px', borderRadius: 10, fontFamily: 'inherit', fontSize: 13, fontWeight: 600,

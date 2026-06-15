@@ -20,10 +20,10 @@
 import { gradientStops, radialGradients } from '@learnexia/design-system';
 import { useFlashMessageStore } from '@learnexia/shared';
 import { Card, GradientBox } from '@learnexia/ui';
-import { Stack, Text } from '@tamagui/core';
+import { Stack, Text, type StackProps } from '@tamagui/core';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { DotPulse } from '../src/components/DotPulse';
 import { RestartPrompt } from '../src/components/RestartPrompt';
 import { useAuthRoute } from '../src/hooks/useAuthRoute';
 import { useLocale } from '../src/hooks/useLocale';
@@ -65,6 +65,13 @@ export default function SplashScreen() {
 
   const tagline = t('common.splash.tagline');
 
+  // Animated splash progress: fills 0→100% over the ~5s dwell (+2 every 100ms).
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setProgress((p) => (p >= 100 ? 100 : p + 2)), 100);
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <GradientBox
       testID="splash-screen"
@@ -93,37 +100,57 @@ export default function SplashScreen() {
         />
       ))}
 
+      {/* Emoji sparkles (updated splash) — purple-glow ✨ accents over the starfield. */}
+      {([
+        { top: '20%', left: '18%', size: 20 },
+        { top: '30%', left: '78%', size: 15 },
+        { top: '66%', left: '80%', size: 17 },
+      ] as const).map((tw) => (
+        <Stack
+          key={`tw-${tw.top}-${tw.left}`}
+          position="absolute"
+          top={tw.top}
+          left={tw.left}
+          pointerEvents="none"
+          accessibilityElementsHidden
+          aria-hidden
+        >
+          <Text fontSize={tw.size} style={{ filter: 'drop-shadow(0 0 6px rgba(196,181,253,0.7))' } as object}>
+            {'✨'}
+          </Text>
+        </Stack>
+      ))}
+
       <Stack flex={1} alignItems="center" justifyContent="center" gap="$8" paddingHorizontal="$6">
         <Stack alignItems="center" gap="$2">
-          {/* AR mascot hero — glowing star disc above the wordmark (align-splash B1).
-              🌟 is a PLACEHOLDER until real mascot art ships. AR only; EN has none. */}
-          {isRtl ? (
-            <Stack
-              width={132}
-              height={132}
-              borderRadius={9999}
-              alignItems="center"
-              justifyContent="center"
-              pointerEvents="none"
-              accessibilityElementsHidden
-              aria-hidden
-              style={
-                {
-                  backgroundImage:
-                    'radial-gradient(circle, rgba(250,204,21,0.35), rgba(168,85,247,0) 65%)',
-                } as object
-              }
+          {/* Mascot hero — glowing star disc above the wordmark (updated splash).
+              Shown in BOTH locales now (was AR-only). 🌟 is a PLACEHOLDER until
+              real mascot art ships. */}
+          <Stack
+            width={132}
+            height={132}
+            borderRadius={9999}
+            alignItems="center"
+            justifyContent="center"
+            pointerEvents="none"
+            accessibilityElementsHidden
+            aria-hidden
+            style={
+              {
+                backgroundImage:
+                  'radial-gradient(circle, rgba(250,204,21,0.35), rgba(168,85,247,0) 65%)',
+              } as object
+            }
+          >
+            <Text
+              fontSize={88}
+              lineHeight={132}
+              textAlign="center"
+              style={{ filter: 'drop-shadow(0 0 20px rgba(250,204,21,0.6))' } as object}
             >
-              <Text
-                fontSize={88}
-                lineHeight={132}
-                textAlign="center"
-                style={{ filter: 'drop-shadow(0 0 20px rgba(250,204,21,0.6))' } as object}
-              >
-                {'🌟'}
-              </Text>
-            </Stack>
-          ) : null}
+              {'🌟'}
+            </Text>
+          </Stack>
 
           <Text
             fontFamily={headingFont}
@@ -151,12 +178,10 @@ export default function SplashScreen() {
           </Text>
         </Stack>
 
-        {/* Loader group — DotPulse + progress bar + loading label (align-splash m3/m4). */}
+        {/* Loader group — progress bar + loading label (loading dots removed). */}
         <Stack alignItems="center" gap="$3">
-          <DotPulse />
-
-          {/* Decorative indeterminate progress bar (track + partial gradient fill).
-              Track stays LTR so the fill always grows left→right (align-splash B4 + RTL rule). */}
+          {/* Progress bar — fill animates 0→100% over the splash dwell. Track stays
+              LTR so the fill always grows left→right (align-splash B4 + RTL rule). */}
           <Stack
             width={220}
             height={6}
@@ -167,7 +192,7 @@ export default function SplashScreen() {
             style={{ backgroundColor: PROGRESS_TRACK, direction: 'ltr' } as object}
           >
             <GradientBox
-              width="55%"
+              width={`${progress}%` as StackProps['width']}
               height="100%"
               borderRadius={9999}
               stops={gradientStops.splashProgress.colors}

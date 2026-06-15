@@ -79,6 +79,8 @@
      Family hero and panels don't get squished/clipped by flex-shrink. */
   .pd-main > div[style*="overflow"] { min-height: 0; }
   .pd-main > div[style*="overflow"] > * { flex-shrink: 0; }
+  /* Header child switcher: hidden on desktop (the sidebar carries it); revealed only on mobile */
+  .pd-header-switcher { display: none; }
   @container pdframe (max-width: 1024px) {
     /* tablet: every multi-column grid collapses to 2 equal columns */
     .pd-main [style*="grid-template-columns"] { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
@@ -88,10 +90,27 @@
     .pd-sidebar { display: none !important; }
     .pd-bottombar { display: flex !important; }
     .pd-main [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+    /* KPI strip stays 2-per-row on mobile (not a single stacked column) */
+    .pd-main .pd-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
     .pd-header { padding: 16px 18px !important; }
     .pd-header-actions { gap: 8px !important; }
     .pd-hide-sm { display: none !important; }
+    /* Child switcher: hidden in header on desktop (sidebar has it), shown only here on mobile */
+    .pd-header-switcher { display: inline-flex !important; }
     .pd-main > div[style*="padding"] { padding: 16px !important; padding-bottom: 84px !important; }
+    /* Family hero → mobile banner: header on top, stats in a 2×2 grid */
+    .pd-main .pd-family-hero { grid-template-columns: repeat(2, 1fr) !important; padding: 22px 20px !important; gap: 22px 12px !important; }
+    .pd-family-hero .pd-fh-title { grid-column: 1 / -1 !important; text-align: center; }
+    .pd-family-hero .pd-fh-emoji { display: none !important; }
+    .pd-family-hero > div:nth-child(odd) { border-right: 1px solid rgba(255,255,255,0.16); }
+  }
+
+  /* Settings: labeled tab rail stays beside content on tablet, stacks on mobile */
+  @container pdframe (max-width: 1024px) {
+    .pd-main .pd-settings-grid { grid-template-columns: 200px 1fr !important; }
+  }
+  @container pdframe (max-width: 768px) {
+    .pd-main .pd-settings-grid { grid-template-columns: 1fr !important; }
   }
 
   /* Custom scrollbars — brand-styled, both axes */
@@ -134,7 +153,7 @@ function OverviewWebPage({ sidebarActive, onNav }) {
     <AppShell active={sidebarActive} onNav={onNav}>
       <PDHeader title="Sami's progress" sub="Mon, Nov 18 → Sun, Nov 24"/>
       <div style={{ flex: 1, overflow: 'auto', padding: 28, display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
+        <div className="pd-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
           <PDStatCard label="Time learning" value="3h 24m" delta="+42m" accent="#4F46E5" icon="⏱️"/>
           <PDStatCard label="XP earned"     value="480"    delta="+28%" accent="#FACC15" icon="⭐"/>
           <PDStatCard label="Lessons done"  value="14"     delta="+3"   accent="#22C55E" icon="✓"/>

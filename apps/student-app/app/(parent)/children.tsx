@@ -8,21 +8,15 @@
  * Narrow (<768): Mobile `ScreenHeader` + `MyChildren` list with local scroll.
  */
 import { Stack } from '@tamagui/core';
-import { useRouter } from 'expo-router';
 import { ScrollView, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTranslation } from 'react-i18next';
 
-import { ScreenHeader } from '../../src/components/ScreenHeader';
-import { MyChildren } from './_components/MyChildren';
 import { MyChildrenWeb } from './_components/MyChildrenWeb';
 
 /** Sidebar appears at the tablet breakpoint and up (design-system `media`). */
 const WIDE_BREAKPOINT = 768;
 
 export default function MyChildrenScreen() {
-  const { t } = useTranslation();
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
 
@@ -33,11 +27,12 @@ export default function MyChildrenScreen() {
     return <MyChildrenWeb />;
   }
 
+  // Narrow: MyChildrenWeb now renders the unified ParentHeader (title +
+  // controls), so no ScreenHeader is needed — just a local scroll region.
   return (
     <Stack flex={1} backgroundColor="$bg" paddingTop={insets.top}>
-      <ScreenHeader title={t('parent.myChildren.title')} onBack={() => router.back()} />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 48 }}>
-        <MyChildren />
+      <ScrollView contentContainerStyle={{ paddingBottom: 48 }}>
+        <MyChildrenWeb />
       </ScrollView>
     </Stack>
   );

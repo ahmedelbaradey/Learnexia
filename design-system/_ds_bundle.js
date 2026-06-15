@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":3,"namespace":"LearnexiaDesignSystem_dab417","components":[],"sourceHashes":{"ui_kits/parent-dashboard/AddChildModal.jsx":"5848c5167c81","ui_kits/parent-dashboard/DashboardComponents.jsx":"aaf73f3eb83d","ui_kits/parent-dashboard/PagesApp.jsx":"a590fc09f77c","ui_kits/parent-dashboard/PagesPublic.jsx":"e6adec01eb10","ui_kits/parent-dashboard/browser-window.jsx":"2e3bb69bede4","ui_kits/parent-mobile/PMComponents.jsx":"f59ff9e2ddda","ui_kits/parent-mobile/PMScreens.jsx":"23e2e4d2182d","ui_kits/parent-mobile/PMScreensExtra.jsx":"f3132acb99d8","ui_kits/parent-mobile/ios-frame.jsx":"d67eb3ffe562","ui_kits/student-mobile/MobileComponents.jsx":"00fa9cd83cf9","ui_kits/student-mobile/Screens.jsx":"454d01f8733e","ui_kits/student-mobile/ScreensAuth.jsx":"60974b30fe57","ui_kits/student-mobile/ScreensExtra.jsx":"3515d35f2f78","ui_kits/student-mobile/ios-frame.jsx":"d67eb3ffe562"},"inlinedExternals":[],"unexposedExports":[]} */
+/* @ds-bundle: {"format":3,"namespace":"LearnexiaDesignSystem_dab417","components":[],"sourceHashes":{"ui_kits/parent-dashboard/AddChildModal.jsx":"5848c5167c81","ui_kits/parent-dashboard/DashboardComponents.jsx":"c3a607663a8b","ui_kits/parent-dashboard/PagesApp.jsx":"146feac22b29","ui_kits/parent-dashboard/PagesPublic.jsx":"db38041ec02d","ui_kits/parent-dashboard/browser-window.jsx":"2e3bb69bede4","ui_kits/parent-mobile/PMComponents.jsx":"f59ff9e2ddda","ui_kits/parent-mobile/PMScreens.jsx":"a979975a0100","ui_kits/parent-mobile/PMScreensExtra.jsx":"f3132acb99d8","ui_kits/parent-mobile/ios-frame.jsx":"d67eb3ffe562","ui_kits/student-mobile/MobileComponents.jsx":"00fa9cd83cf9","ui_kits/student-mobile/Screens.jsx":"454d01f8733e","ui_kits/student-mobile/ScreensAuth.jsx":"60974b30fe57","ui_kits/student-mobile/ScreensExtra.jsx":"3515d35f2f78","ui_kits/student-mobile/ios-frame.jsx":"d67eb3ffe562"},"inlinedExternals":[],"unexposedExports":[]} */
 
 (() => {
 
@@ -1163,9 +1163,11 @@ function PDHeader({
       gap: 10,
       alignItems: 'center'
     }
-  }, child && /*#__PURE__*/React.createElement(PDChildSwitcher, {
+  }, child && /*#__PURE__*/React.createElement("span", {
+    className: "pd-header-switcher"
+  }, /*#__PURE__*/React.createElement(PDChildSwitcher, {
     compact: true
-  }), /*#__PURE__*/React.createElement("select", {
+  })), /*#__PURE__*/React.createElement("select", {
     className: "pd-hide-sm",
     style: {
       background: '#1E293B',
@@ -1584,6 +1586,7 @@ function MyChildrenWebPage({
       ...appFont
     }
   }, /*#__PURE__*/React.createElement("div", {
+    className: "pd-family-hero",
     style: {
       background: 'linear-gradient(135deg,#A855F7 0%,#6366F1 100%)',
       borderRadius: 24,
@@ -1598,6 +1601,7 @@ function MyChildrenWebPage({
       overflow: 'hidden'
     }
   }, /*#__PURE__*/React.createElement("div", {
+    className: "pd-fh-emoji",
     style: {
       position: 'absolute',
       right: -20,
@@ -1607,6 +1611,7 @@ function MyChildrenWebPage({
       pointerEvents: 'none'
     }
   }, "\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC66"), /*#__PURE__*/React.createElement("div", {
+    className: "pd-fh-title",
     style: {
       position: 'relative'
     }
@@ -2134,6 +2139,7 @@ function ReportsWebPage({
       ...appFont
     }
   }, /*#__PURE__*/React.createElement("div", {
+    className: "pd-kpi-grid",
     style: {
       display: 'grid',
       gridTemplateColumns: 'repeat(4, 1fr)',
@@ -2381,41 +2387,53 @@ function SettingsWebPage({
     title: "Settings",
     sub: "Manage your account and preferences"
   }), /*#__PURE__*/React.createElement("div", {
+    className: "pd-settings-grid",
     style: {
       flex: 1,
       overflow: 'auto',
       padding: 28,
       display: 'grid',
-      gridTemplateColumns: '220px 1fr',
-      gap: 24,
+      gridTemplateColumns: '200px 1fr',
+      gap: 20,
       ...appFont
     }
   }, /*#__PURE__*/React.createElement("nav", {
     style: {
       display: 'flex',
       flexDirection: 'column',
-      gap: 4
+      gap: 3,
+      position: 'sticky',
+      top: 0
     }
-  }, [['profile', '👤 Profile'], ['notifications', '🔔 Notifications'], ['linked', '👨‍👩‍👦 Linked children'], ['security', '🛡️ Security'], ['plan', '💎 Plan & billing'], ['language', '🌍 Language & region']].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
+  }, [['profile', '👤', 'Profile'], ['notifications', '🔔', 'Notifications'], ['linked', '👨‍👩‍👦', 'Linked children'], ['security', '🛡️', 'Security'], ['plan', '💎', 'Plan & billing'], ['language', '🌍', 'Language & region']].map(([id, icon, label]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setTab(id),
     style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
       textAlign: 'left',
-      padding: '10px 14px',
-      borderRadius: 12,
+      padding: '10px 13px',
+      borderRadius: 11,
       border: 'none',
       background: tab === id ? 'rgba(79,70,229,0.18)' : 'transparent',
       color: tab === id ? '#A5B4FC' : '#94A3B8',
       fontWeight: tab === id ? 800 : 600,
-      fontSize: 14,
+      fontSize: 13,
       cursor: 'pointer',
-      fontFamily: 'inherit'
+      fontFamily: 'inherit',
+      transition: 'all 140ms ease'
     }
-  }, label))), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 16
+    }
+  }, icon), label))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       flexDirection: 'column',
-      gap: 20
+      gap: 20,
+      minWidth: 0
     }
   }, tab === 'profile' && /*#__PURE__*/React.createElement(SettingsProfile, null), tab === 'notifications' && /*#__PURE__*/React.createElement(SettingsNotifications, null), tab === 'linked' && /*#__PURE__*/React.createElement(SettingsLinked, null), tab === 'security' && /*#__PURE__*/React.createElement(SettingsSecurity, null), tab === 'plan' && /*#__PURE__*/React.createElement(SettingsPlan, null), tab === 'language' && /*#__PURE__*/React.createElement(SettingsLanguage, null))));
 }
@@ -5797,7 +5815,16 @@ function SplashWebPage({
       opacity: s.o,
       boxShadow: `0 0 ${s.s * 2}px rgba(255,255,255,${s.o})`
     }
-  })), /*#__PURE__*/React.createElement("div", {
+  })), [['18%', '22%', 24], ['26%', '74%', 18], ['68%', '16%', 20], ['72%', '82%', 22]].map((p, i) => /*#__PURE__*/React.createElement("span", {
+    key: 'tw' + i,
+    style: {
+      position: 'absolute',
+      top: p[0],
+      left: p[1],
+      fontSize: p[2],
+      filter: 'drop-shadow(0 0 6px rgba(196,181,253,0.7))'
+    }
+  }, "\u2728")), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       flexDirection: 'column',
@@ -5868,17 +5895,7 @@ function SplashWebPage({
     style: {
       fontSize: 16
     }
-  }, "\u26A1"))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: 'absolute',
-      bottom: 40,
-      fontSize: 12,
-      fontWeight: 700,
-      color: 'rgba(255,255,255,0.45)',
-      letterSpacing: '0.2em',
-      textTransform: 'uppercase'
-    }
-  }, "Click anywhere to continue"));
+  }, "\u26A1"))));
 }
 
 // ────────────────────────────────────────────────────────────── ROLE SELECT (web)
@@ -7107,7 +7124,16 @@ function PMSplashScreen({
       opacity: s.opacity,
       boxShadow: `0 0 ${s.size * 2}px rgba(255,255,255,${s.opacity})`
     }
-  })), /*#__PURE__*/React.createElement("div", {
+  })), [['20%', '18%', 20], ['30%', '78%', 15], ['66%', '80%', 17]].map((p, i) => /*#__PURE__*/React.createElement("span", {
+    key: 'tw' + i,
+    style: {
+      position: 'absolute',
+      top: p[0],
+      left: p[1],
+      fontSize: p[2],
+      filter: 'drop-shadow(0 0 6px rgba(196,181,253,0.7))'
+    }
+  }, "\u2728")), /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
       top: '40%',

@@ -42,11 +42,14 @@ function angleToVector(angle: number): { start: { x: number; y: number }; end: {
   };
 }
 
-export function GradientFill({ stops, angle = 90, ...rest }: GradientFillProps) {
+export function GradientFill({ stops, angle = 90, children, ...rest }: GradientFillProps) {
   const Gradient = tryLoadGradient();
   if (Gradient) {
     const { start, end } = angleToVector(angle);
     return (
+      // The gradient is an absolute background layer; `children` render ON TOP in
+      // normal flow. (Previously the explicit <Gradient/> child overrode any
+      // consumer children, silently dropping anything wrapped in <GradientBox>.)
       <Stack {...rest}>
         <Gradient
           colors={stops as string[]}
@@ -54,10 +57,15 @@ export function GradientFill({ stops, angle = 90, ...rest }: GradientFillProps) 
           end={end}
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         />
+        {children}
       </Stack>
     );
   }
   // Fallback: flat first-stop color (still visible, never empty).
   const flat = stops[0] ?? '#000';
-  return <Stack backgroundColor={flat as StackProps['backgroundColor']} {...rest} />;
+  return (
+    <Stack backgroundColor={flat as StackProps['backgroundColor']} {...rest}>
+      {children}
+    </Stack>
+  );
 }
