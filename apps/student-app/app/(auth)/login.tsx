@@ -102,7 +102,7 @@ export default function LoginScreen() {
             right={direction === 'rtl' ? 0 : undefined}
             width={40}
             height={40}
-            borderRadius="$nav"
+            borderRadius={12}
             backgroundColor="$card"
             borderWidth={1}
             // $border = rgba(255,255,255,0.08) — spec §4.1 back button border
@@ -249,7 +249,7 @@ export default function LoginScreen() {
             borderWidth={1}
             // DS-A-05: rgba(245,158,11,0.25) consistently (web value, spec gap note)
             borderColor="rgba(245,158,11,0.25)"
-            borderRadius="$nav"
+            borderRadius={12}
             padding="$3"
             marginTop="$1"
             accessibilityRole="text"

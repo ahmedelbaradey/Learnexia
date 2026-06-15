@@ -57,7 +57,7 @@ export function LocaleThemeControls({ direction = 'ltr' }: LocaleThemeControlsPr
       <Stack
         flexDirection={rowDir}
         backgroundColor="$card"
-        borderRadius="$pill"
+        borderRadius={9999}
         borderWidth={1}
         borderColor="$border"
         padding={3}
@@ -77,7 +77,7 @@ export function LocaleThemeControls({ direction = 'ltr' }: LocaleThemeControlsPr
               paddingHorizontal="$3"
               alignItems="center"
               justifyContent="center"
-              borderRadius="$pill"
+              borderRadius={9999}
               cursor="pointer"
               backgroundColor={active ? '$primary' : 'transparent'}
               onPress={() => handleLocaleChange(loc)}
@@ -107,7 +107,7 @@ export function LocaleThemeControls({ direction = 'ltr' }: LocaleThemeControlsPr
         height={36}
         alignItems="center"
         justifyContent="center"
-        borderRadius="$pill"
+        borderRadius={9999}
         borderWidth={1}
         borderColor="$border"
         backgroundColor="$card"

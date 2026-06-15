@@ -69,8 +69,9 @@ export function RoleCard({
       alignItems="center"
       // Native padding: 18px; spec §3.4
       padding={18}
-      // Border radius: 20px native (spec §3.4); web override via $tablet not applicable here
-      borderRadius="$card"
+      // Border radius: 20px (spec §3.4). Numeric literal, NOT the `$card` radius
+      // token — on native New-Arch the token string isn't resolved (renders square).
+      borderRadius={20}
       backgroundColor="$card"
       borderWidth={2}
       borderColor="$borderSubtle"
@@ -119,7 +120,7 @@ export function RoleCard({
       <Stack
         width={56}
         height={56}
-        borderRadius="$button"
+        borderRadius={16}
         backgroundColor="$primarySoft"
         alignItems="center"
         justifyContent="center"

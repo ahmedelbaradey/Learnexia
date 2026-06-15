@@ -56,7 +56,7 @@ export function RoleBadge({
       testID={testID ?? 'role-badge'}
       // DS-A-02: $bgDeepest (#15161D) — promoted to design-system tokens
       backgroundColor="$bgDeepest"
-      borderRadius="$nav"
+      borderRadius={12}
       borderWidth={1}
       borderColor="$borderSubtle"
       paddingVertical="$2"
