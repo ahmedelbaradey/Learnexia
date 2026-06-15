@@ -16,6 +16,9 @@ function PMSplashScreen({ onContinue }) {
       {sparkles.map((s, i) => (
         <div key={i} style={{ position: 'absolute', top: `${s.top}%`, left: `${s.left}%`, width: s.size, height: s.size, borderRadius: '50%', background: '#fff', opacity: s.opacity, boxShadow: `0 0 ${s.size * 2}px rgba(255,255,255,${s.opacity})` }}/>
       ))}
+      {[['20%','18%',20],['30%','78%',15],['66%','80%',17]].map((p,i) => (
+        <span key={'tw'+i} style={{ position: 'absolute', top: p[0], left: p[1], fontSize: p[2], filter: 'drop-shadow(0 0 6px rgba(196,181,253,0.7))' }}>✨</span>
+      ))}
       <div style={{ position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}>
         <div style={{ width: 132, height: 132, borderRadius: '50%', background: 'radial-gradient(circle, rgba(250,204,21,0.35) 0%, rgba(168,85,247,0) 65%)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'lxpop 800ms cubic-bezier(0.34,1.56,0.64,1)' }}>
           <div style={{ fontSize: 88, filter: 'drop-shadow(0 0 20px rgba(250,204,21,0.6))', animation: 'lxpulse 2.4s ease-in-out infinite' }}>🌟</div>
