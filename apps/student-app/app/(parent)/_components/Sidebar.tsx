@@ -39,6 +39,7 @@ import { useLocale } from '../../../src/hooks/useLocale';
 import { useLocaleStore } from '../../../src/providers/localeStore';
 import { useActiveChildStore } from '../../../src/providers/activeChildStore';
 import { useThemeStore } from '../../../src/providers/themeStore';
+import { useSignOutAction } from '../../../src/hooks/useSignOutAction';
 import { formatNumber } from './ChildSwitcher';
 import { getChildStatsStub } from './parentDashboardStubs';
 
@@ -113,6 +114,7 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
   const showRestartPrompt = useRestartPromptStore((s) => s.show);
   const theme = useThemeStore((s) => s.theme);
   const setTheme = useThemeStore((s) => s.setTheme);
+  const { signOut, isPending: isSigningOut } = useSignOutAction();
 
   function handleLocaleChange(nextLocale: Locale) {
     if (nextLocale === locale) return;
@@ -425,8 +427,7 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
         })}
       </Stack>
 
-      {/* Bottom controls — language pill + theme pill + XP widget. Logout lives
-          in AccountMenu (shell header avatar dropdown), not here. */}
+      {/* Bottom controls — language pill + theme pill + XP widget + logout. */}
       <Stack marginTop="auto" flexDirection="column" gap={8}>
         {/* Language segmented pill */}
         <Stack
@@ -522,6 +523,42 @@ export function Sidebar({ activeChild, activeKey = NAV_ITEM.MyChildren }: Sideba
 
         {/* Weekly-XP summary widget */}
         <SidebarXpWidget direction={direction} isRtl={isRtl} />
+
+        {/* Logout — nav-item-style row; calls sign-out + redirects to login. */}
+        <Stack
+          testID="sidebar-logout"
+          flexDirection="row"
+          alignItems="center"
+          gap="$3"
+          minHeight={44}
+          paddingVertical={10}
+          paddingHorizontal={14}
+          borderRadius={12}
+          borderWidth={1}
+          borderColor="rgba(239,68,68,0.25)"
+          cursor="pointer"
+          opacity={isSigningOut ? 0.5 : 1}
+          pointerEvents={isSigningOut ? 'none' : 'auto'}
+          hoverStyle={{ backgroundColor: 'rgba(239,68,68,0.08)' }}
+          pressStyle={{ scale: 0.97 }}
+          onPress={() => void signOut()}
+          accessibilityRole="button"
+          accessible
+          accessibilityLabel={t('parent.nav.logout')}
+          aria-label={t('parent.nav.logout')}
+        >
+          <Text fontSize={15} accessibilityElementsHidden>↪</Text>
+          <Text
+            color="#F87171"
+            fontSize={14}
+            fontWeight="700"
+            fontFamily="$heading"
+            writingDirection={direction}
+            textAlign={isRtl ? 'right' : 'left'}
+          >
+            {t('parent.nav.logout')}
+          </Text>
+        </Stack>
       </Stack>
     </Stack>
   );
