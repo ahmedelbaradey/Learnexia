@@ -69,16 +69,23 @@ Use the `Shared.Kernel.Messaging` markers, never raw MediatR `IRequest` directly
 - One `Profile` per aggregate in `Application/Mapping/` (e.g. `ProductsProfile`). Map `Command → Entity` and `Entity → <Single>Response`. Reference: [ProductsProfile.cs](../../backend/src/Modules/Catalog/Learnexia.Modules.Catalog.Application/Mapping/ProductsProfile.cs).
 - Queries project with `_mapper.ProjectTo<TResponse>(queryable)` then `.ToPaginatedListAsync(...)` ([QueryableExtensions.cs](../../backend/src/Shared/Learnexia.Shared.Kernel/Pagination/QueryableExtensions.cs)).
 
-## 7. Data access — Option C (CURRENT STANDARD, decided 2026-06-15)
+## 7. Persistence architecture (CURRENT STANDARD, decided 2026-06-15)
 
-> **This is the standard for all NEW modules and NEW features, and the target for refactoring existing ones. It supersedes the Catalog repository/service-manager and the `I{Module}DbContext`-in-Application patterns below for new work.**
+> **The standard for all NEW modules + features, and the target for refactoring existing ones. Supersedes the Catalog repository/service-manager and the `I{Module}DbContext`-in-Application patterns below.**
 
-**No EF in the Application layer.** Application-layer command/query **handlers must not** inject a `DbContext`/`I{Module}DbContext`, must not reference EF Core types (`DbSet`, `IQueryable`, `ToListAsync`/`AnyAsync`/`FirstOrDefaultAsync`/`ProjectTo`), and the `{Module}.Application` project must not reference `Microsoft.EntityFrameworkCore`.
+**The Application layer is EF-free AND depends on SERVICES ONLY — the hard, non-negotiable rule.** The Application layer (handlers + the service-interface abstractions) may depend ONLY on **service interfaces**. FORBIDDEN anywhere in `{Module}.Application`:
+- `DbSet`, `IQueryable`
+- `Microsoft.EntityFrameworkCore` (any using/package reference)
+- **EF exceptions** (`DbUpdateException`/`DbUpdateConcurrencyException` — catch/translate at the Infrastructure boundary, e.g. `UnitOfWorkBehavior` or the repository, surfacing a domain-neutral result)
+- **a `DbContext`/`I{Module}DbContext`**, AND **a repository injected into a handler** — handlers must NOT inject/call repositories or the DbContext directly; they go through services.
 
-- All persistence **and the non-trivial logic around it** (queries, filters, **explicit transactions**, idempotency, optimistic-concurrency/`23505` retry, `ProjectTo` pagination, generated-Id flush, post-commit domain-event staging) lives behind a **service interface in `{Module}.Application/Abstractions`**, implemented in `{Module}.Infrastructure` (which owns the `DbContext`).
-- **Handlers are thin:** validate/authorize → call the service → return `BaseResponse<T>`. **Transaction boundaries live INSIDE the service, never in the handler.**
-- **Never return `IQueryable`/`DbSet`/raw EF entities across the service boundary** — return DTOs / domain results / `PaginatedResult<T>`; compose the `IQueryable`+`ProjectTo`+pagination INSIDE the impl so it stays server-side (don't lose a vector `ORDER BY`/`LIMIT` or an HNSW index to client-evaluation).
-- **Excluded (left as-is, NOT converted): the `Ai` and `Identity` modules.** Migration status of the rest (2026-06-15 survey): Parent + Curriculum already compliant; Gamification near-compliant (only a `DbUpdateException` catch leaks EF); Moderation/Billing/Notifications/Learning are the refactor targets (Learning is XL — pending an explicit go-ahead).
+The chain is **Handler → Service → Repository → EF/DbContext**:
+- **Application = services only** — handlers inject + call **service interfaces** (declared in `{Module}.Application/Abstractions`). No repository, no DbContext, no EF in Application.
+- **Services own workflows** — orchestration, business rules, idempotency. Service interface in `Application/Abstractions`, impl in `Infrastructure`; the impl uses repositories for persistence. Explicit transactions live in Infrastructure (the service / `UnitOfWorkBehavior`), never in a handler.
+- **Repositories own persistence** — they live in `Infrastructure` (own the `DbContext`), are used BY services (NOT injected into Application handlers), and return **materialized** results (entities/DTOs/`PaginatedResult<T>`) — never `IQueryable`/`DbSet` across a layer boundary (compose `IQueryable`+`ProjectTo`+pagination INSIDE the impl so it stays server-side — don't lose a vector `ORDER BY`/`LIMIT` or an HNSW index to client-evaluation).
+- **Handlers MAY orchestrate** — NOT required to be one-line shells; a handler may validate/authorize and coordinate **multiple service calls** + domain engines — but only via services (never a repo/DbContext), and never owning transactions/EF.
+
+Status (2026-06-15): ✅ Parent, Curriculum, Moderation (PR #152 — handlers call services). 🔴 **Gamification** (handlers inject `IGamificationRepository` directly → must go behind services; EF-free already done), Notifications + Billing (`IXDbContext`→services), Learning (`IBaseService<T>` `IQueryable` leak + repo-in-handlers → services). All 🔴 = handlers repointed to services; services use repositories internally. 🚫 **Ai + Identity excluded — left as-is, do NOT convert.**
 
 ### Legacy aggregators (pre-Option-C; do not adopt for new work)
 Two access aggregators, both registered Scoped:
