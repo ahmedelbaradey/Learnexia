@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Learnexia.Modules.Billing.Api</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Learnexia.Modules.Billing.Application\Learnexia.Modules.Billing.Application.csproj" />
+    <ProjectReference Include="..\Learnexia.Modules.Billing.Infrastructure\Learnexia.Modules.Billing.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Learnexia.Shared.Kernel\Learnexia.Shared.Kernel.csproj" />
+  </ItemGroup>
+</Project>

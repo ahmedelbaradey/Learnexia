@@ -1,3 +1,5 @@
+using Learnexia.Modules.Billing.Infrastructure.Persistence;
+using Learnexia.Modules.Billing.Infrastructure.Seeders;
 using Learnexia.Modules.Gamification.Infrastructure.Persistence;
 using Learnexia.Modules.Identity.Api;
 using Learnexia.Modules.Identity.Domain.Entities;
@@ -60,6 +62,8 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
             ReplaceDbContext<GamificationDbContext>(services, connectionString, "gamification");
             // P7-12 Moderation module: AuditLog lives in the "moderation" schema.
             ReplaceDbContext<ModerationDbContext>(services, connectionString, "moderation");
+            // P10-01/P10-12: BillingDbContext (billing + platform schemas — two migrations).
+            ReplaceDbContext<BillingDbContext>(services, connectionString, "billing");
 
             // Testing-host only: neutralise the IP rate limiter so the combined integration suite
             // (~250+ requests in well under a minute) never trips the production 200 req/min cap and
@@ -131,6 +135,13 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
         // Moderation: P7_12_InitialModeration creates moderation schema + AuditLogs table (P7-12).
         var moderationDb = sp.GetRequiredService<ModerationDbContext>();
         await moderationDb.Database.MigrateAsync();
+
+        // Billing: InitialBilling + AddGlobalSettings create billing + platform schemas (P10-01/P10-12).
+        var billingDb = sp.GetRequiredService<BillingDbContext>();
+        await billingDb.Database.MigrateAsync();
+        // Seed the 17 default GlobalSetting rows (seed-if-absent — idempotent).
+        var billingLogger = sp.GetRequiredService<Learnexia.Shared.Kernel.Abstractions.ILoggerManager>();
+        await GlobalSettingsSeeder.SeedAsync(billingDb, billingLogger);
 
         // Seed roles + superadmin (idempotent).
         await IdentityModule.SeedAsync(sp);

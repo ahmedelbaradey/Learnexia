@@ -94,4 +94,7 @@ public static class AdminActions
     public const string TimedEventUpdated    = "TimedEvent.Updated";
     public const string TimedEventActivated  = "TimedEvent.Activated";
     public const string TimedEventExpired    = "TimedEvent.Expired";
+
+    // ── P10-12 Billing GlobalSettings Admin ───────────────────────────────────
+    public const string GlobalSettingUpdated = "GlobalSetting.Updated";
 }

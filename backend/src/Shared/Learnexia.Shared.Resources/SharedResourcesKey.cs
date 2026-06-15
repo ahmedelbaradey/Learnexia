@@ -1537,5 +1537,57 @@
         /// </summary>
         public const string ReEmbedJobEnqueued = "ReEmbedJobEnqueued";
 
+        // ── P10-01 Billing / Credit Ledger ───────────────────────────────────────────────────────
+
+        /// <summary>Returned when a debit is attempted but the child's TotalBalance is insufficient.</summary>
+        public const string InsufficientBalance = "InsufficientBalance";
+
+        /// <summary>Returned when a credit account is not found for the given childId.</summary>
+        public const string CreditAccountNotFound = "CreditAccountNotFound";
+
+        /// <summary>Returned on successful credit debit.</summary>
+        public const string CreditDebitSucceeded = "CreditDebitSucceeded";
+
+        /// <summary>Returned on successful credit grant.</summary>
+        public const string CreditGrantSucceeded = "CreditGrantSucceeded";
+
+        /// <summary>Returned on successful credit account reconciliation query.</summary>
+        public const string CreditReconcileSucceeded = "CreditReconcileSucceeded";
+
+        /// <summary>Returned on duplicate idempotency key (no-op, prior result returned).</summary>
+        public const string CreditIdempotentDuplicate = "CreditIdempotentDuplicate";
+
+        // ── P10-12 Global Settings ───────────────────────────────────────────────────────────────
+
+        /// <summary>Returned when a requested GlobalSetting key is not found in the DB.</summary>
+        public const string GlobalSettingNotFound = "GlobalSettingNotFound";
+
+        /// <summary>Validation: the Key field is required.</summary>
+        public const string GlobalSettingKeyRequired = "GlobalSettingKeyRequired";
+
+        /// <summary>Validation: the Key is not in the managed allowlist.</summary>
+        public const string GlobalSettingKeyNotAllowed = "GlobalSettingKeyNotAllowed";
+
+        /// <summary>Validation: the NewValue field is required.</summary>
+        public const string GlobalSettingValueRequired = "GlobalSettingValueRequired";
+
+        /// <summary>Validation: the UpdatedBy field is required.</summary>
+        public const string GlobalSettingUpdatedByRequired = "GlobalSettingUpdatedByRequired";
+
+        /// <summary>Validation: NewValue cannot be parsed as the key's declared type.</summary>
+        public const string GlobalSettingValueTypeMismatch = "GlobalSettingValueTypeMismatch";
+
+        /// <summary>Validation: NewValue is out of the allowed range for the given key.</summary>
+        public const string GlobalSettingValueOutOfRange = "GlobalSettingValueOutOfRange";
+
+        /// <summary>Validation: daily cap value exceeds the monthly grant for the same tier.</summary>
+        public const string GlobalSettingDailyCapExceedsMonthly = "GlobalSettingDailyCapExceedsMonthly";
+
+        /// <summary>Returned when all global settings are retrieved successfully.</summary>
+        public const string GlobalSettingsRetrievedSuccessfully = "GlobalSettingsRetrievedSuccessfully";
+
+        /// <summary>Returned when a global setting is updated successfully.</summary>
+        public const string GlobalSettingUpdatedSuccessfully = "GlobalSettingUpdatedSuccessfully";
+
     }
 }
