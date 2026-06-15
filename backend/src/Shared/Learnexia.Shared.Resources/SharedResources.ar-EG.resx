@@ -2209,4 +2209,10 @@
   <data name="SimilarExampleUnsupportedSubject" xml:space="preserve">
     <value>لا يوجد قالب مثال للمعلم لهذه المادة حتى الآن.</value>
   </data>
+  <data name="ReEmbedEndpointNotConfigured" xml:space="preserve">
+    <value>نقطة نهاية التضمين BGE-M3 غير مُهيَّأة. يرجى ضبط Curriculum:Embedding:BaseUrl و Curriculum:Embedding:ModelVersion قبل تشغيل إعادة التضمين.</value>
+  </data>
+  <data name="ReEmbedJobEnqueued" xml:space="preserve">
+    <value>تم إدراج مهمة إعادة التضمين بنجاح. يمكن متابعة التقدم عبر لوحة تحكم Hangfire.</value>
+  </data>
 </root>

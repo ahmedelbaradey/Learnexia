@@ -2210,4 +2210,10 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="SimilarExampleUnsupportedSubject" xml:space="preserve">
     <value>The tutor does not have an example template for this subject yet.</value>
   </data>
+  <data name="ReEmbedEndpointNotConfigured" xml:space="preserve">
+    <value>The BGE-M3 embedding endpoint is not configured. Set Curriculum:Embedding:BaseUrl and Curriculum:Embedding:ModelVersion before triggering re-embed.</value>
+  </data>
+  <data name="ReEmbedJobEnqueued" xml:space="preserve">
+    <value>Re-embed job enqueued successfully. Monitor progress via the Hangfire dashboard.</value>
+  </data>
 </root>

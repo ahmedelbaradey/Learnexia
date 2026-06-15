@@ -15,7 +15,7 @@ namespace Learnexia.Modules.Ai.Application.PromptBuilder.Stubs;
 /// <para>Registered with <c>TryAddTransient</c> so that the real <c>SeededCorpusContextProvider</c>
 /// registered in BE-10 (or later by P3-07's <c>RagContextProvider</c>) overrides this stub.</para>
 /// </summary>
-internal sealed class EmptyLearningContextProvider : ILearningContextProvider
+public sealed class EmptyLearningContextProvider : ILearningContextProvider
 {
     public Task<LearningContext> GetContextAsync(
         int studentId,

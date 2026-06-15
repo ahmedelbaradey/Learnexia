@@ -30,6 +30,7 @@ public class AiDbContext : DbContext
     }
 
     public DbSet<SafetyEvent> SafetyEvents => Set<SafetyEvent>();
+    public DbSet<AiResponseCache> AiResponseCaches => Set<AiResponseCache>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));

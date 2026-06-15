@@ -1,5 +1,6 @@
 using Learnexia.Modules.Curriculum.Application.Abstractions;
 using Learnexia.Modules.Curriculum.Infrastructure.Features.Retrieval;
+using Learnexia.Modules.Curriculum.Infrastructure.Jobs;
 using Learnexia.Modules.Curriculum.Infrastructure.Persistence;
 using Learnexia.Modules.Curriculum.Infrastructure.Services;
 using Learnexia.Shared.Contracts.Ai;
@@ -78,6 +79,12 @@ public static class DependencyInjection
         // ── BE-9: CurriculumChunkSeeder — static class; called directly via CurriculumModule.InitializeAsync ──
         // No DI registration needed — CurriculumChunkSeeder.SeedAsync(IServiceProvider) is called
         // as a static method from CurriculumModule.InitializeAsync, not via the DI container.
+
+        // ── WI-A2: ReEmbedCurriculumJob (Hangfire, admin-triggered re-embed) ──────────────────────
+        // Transient — mirrors GamificationCacheRebuildJob registration pattern.
+        // Creates its own inner scope via IServiceScopeFactory so scoped deps (DbContext,
+        // IEmbeddingProvider) are always resolved in a fresh, non-HTTP scope.
+        services.AddTransient<ReEmbedCurriculumJob>();
 
         return services;
     }

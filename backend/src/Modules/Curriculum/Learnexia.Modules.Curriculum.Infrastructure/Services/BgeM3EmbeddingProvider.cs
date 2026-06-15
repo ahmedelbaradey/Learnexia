@@ -17,14 +17,15 @@ namespace Learnexia.Modules.Curriculum.Infrastructure.Services;
 /// - Injected <see cref="HttpClient"/> (base URL set at registration time).
 /// - <see cref="IOptions{EmbeddingSettings}"/> for Model/ModelVersion/AuthToken.
 /// - <see cref="ILoggerManager"/> — structured dev-only log text; never logs secrets.
-/// - Fail-soft: any failure (no endpoint, network error, non-2xx, parse error)
-///   returns <c>null</c> — callers short-circuit retrieval rather than throwing.
+/// - Fail-soft on missing config: absent <c>BaseUrl</c> → return <c>null</c> (never crash startup).
 ///
-/// <para><strong>Parity guard:</strong> logs a warning when <c>EmbeddingSettings.ModelVersion</c>
-/// is empty or does not match the seeder's <see cref="DeterministicEmbedding.PlaceholderModelVersion"/>.
-/// Once BE-0 (live TEI) is provisioned the parity guard will compare the configured
-/// <c>ModelVersion</c> against the value stamped on <c>chunk_embeddings_bge_m3</c> rows.
-/// Mismatched model versions produce incompatible vector spaces.</para>
+/// <para><strong>Parity guard (WI-A1 — fail-fast):</strong>
+/// When <c>EmbeddingSettings.ModelVersion</c> is empty or absent, <see cref="EmbedAsync"/> returns
+/// <c>null</c> immediately with a structured error log — it does NOT proceed to the TEI endpoint.
+/// Calling the real endpoint with an unconfigured model version would stamp unknown model metadata
+/// on newly embedded rows, silently creating a parity mismatch that corrupts cosine search.
+/// The constructor logs a clear warning so the lead can identify the misconfiguration at startup.
+/// The production fix is to set <c>Curriculum:Embedding:ModelVersion</c> to the pinned TEI version.</para>
 ///
 /// <para><strong>Security:</strong> <see cref="EmbeddingSettings.AuthToken"/> is a secret;
 /// this class never logs it. The Bearer header is added per-request on the HttpRequestMessage
@@ -38,6 +39,28 @@ public sealed class BgeM3EmbeddingProvider : IEmbeddingProvider
     private readonly EmbeddingSettings _settings;
     private readonly ILoggerManager _logger;
 
+    /// <summary>
+    /// Whether the provider is fully configured (BaseUrl + ModelVersion both non-empty).
+    /// Exposed internally so the re-embed job can surface a clear "not configured" error
+    /// without attempting a network call.
+    /// </summary>
+    internal bool IsConfigured =>
+        !string.IsNullOrWhiteSpace(_settings.BaseUrl) &&
+        !string.IsNullOrWhiteSpace(_settings.ModelVersion);
+
+    /// <summary>
+    /// The configured Model slug (e.g. "bge-m3").
+    /// Used by <c>ReEmbedCurriculumJob</c> to stamp the <c>Model</c> column on updated rows.
+    /// </summary>
+    internal string ActiveModel => _settings.Model;
+
+    /// <summary>
+    /// The configured ModelVersion stamp (e.g. "1.0").
+    /// Used by <c>ReEmbedCurriculumJob</c> to identify which rows need re-embedding
+    /// (stored ModelVersion != this value) and to stamp updated rows.
+    /// </summary>
+    internal string ActiveModelVersion => _settings.ModelVersion;
+
     public BgeM3EmbeddingProvider(
         HttpClient http,
         IOptions<EmbeddingSettings> settings,
@@ -47,25 +70,57 @@ public sealed class BgeM3EmbeddingProvider : IEmbeddingProvider
         _settings = settings.Value;
         _logger   = logger;
 
-        // Parity guard: warn if ModelVersion is not configured. Retrieval will still work once BE-0
-        // is live — the guard is informational, not a hard block (fail-soft contract).
-        if (string.IsNullOrWhiteSpace(_settings.ModelVersion))
+        // WI-A1: startup log of configured status so the lead can see at a glance whether RAG is
+        // dormant (no BaseUrl/ModelVersion) or active. Never log the AuthToken secret.
+        if (string.IsNullOrWhiteSpace(_settings.BaseUrl))
         {
             _logger.LogWarn(
-                "P3-07 BgeM3EmbeddingProvider: EmbeddingSettings.ModelVersion is not configured. " +
-                "Set Curriculum:Embedding:ModelVersion to the pinned TEI model version to enable parity guard.");
+                "P3-07 BgeM3EmbeddingProvider [RAG DORMANT]: Curriculum:Embedding:BaseUrl is not configured. " +
+                "EmbedAsync will return null. Set BaseUrl + ModelVersion (and AuthToken via env/secrets) once " +
+                "the TEI endpoint (BE-0) is provisioned to activate real BGE-M3 embeddings.");
+        }
+        else if (string.IsNullOrWhiteSpace(_settings.ModelVersion))
+        {
+            // WI-A1 FAIL-FAST parity guard: BaseUrl is set but ModelVersion is missing.
+            // Proceeding without ModelVersion would stamp an empty string on embedded rows,
+            // making parity detection impossible. Block at startup with a clear error.
+            _logger.LogError(
+                new InvalidOperationException("Curriculum:Embedding:ModelVersion is required when BaseUrl is set."),
+                "P3-07 BgeM3EmbeddingProvider [PARITY GUARD]: Curriculum:Embedding:ModelVersion is not configured " +
+                "but BaseUrl is set. EmbedAsync will return null to prevent stamping rows with an empty " +
+                "ModelVersion (which would corrupt parity detection). Fix: set Curriculum:Embedding:ModelVersion " +
+                "to the pinned TEI model version (e.g. '1.0').");
+        }
+        else
+        {
+            _logger.LogInfo(
+                $"P3-07 BgeM3EmbeddingProvider [CONFIGURED]: BaseUrl=<set> Model={_settings.Model} " +
+                $"ModelVersion={_settings.ModelVersion}. Auth={(!string.IsNullOrWhiteSpace(_settings.AuthToken) ? "present" : "absent")}.");
         }
     }
 
     /// <inheritdoc/>
     public async Task<Vector?> EmbedAsync(string text, CancellationToken ct = default)
     {
+        // WI-A1 FAIL-FAST: absent BaseUrl → RAG dormant (expected in dev/test without BE-0).
         if (string.IsNullOrWhiteSpace(_settings.BaseUrl))
         {
-            // No live endpoint configured — expected in dev/test without BE-0 provisioned.
             _logger.LogWarn(
                 "P3-07 BgeM3EmbeddingProvider: BaseUrl is not configured. " +
-                "Returning null (no context available). Set Curriculum:Embedding:BaseUrl once BE-0 (TEI) is live.");
+                "Returning null. Set Curriculum:Embedding:BaseUrl once BE-0 (TEI) is live.");
+            return null;
+        }
+
+        // WI-A1 FAIL-FAST parity guard: BaseUrl set but ModelVersion missing → refuse to embed.
+        // Proceeding would call TEI and stamp an empty ModelVersion on the resulting row, making
+        // parity detection impossible. Return null so retrieval returns empty (no garbage results).
+        if (string.IsNullOrWhiteSpace(_settings.ModelVersion))
+        {
+            _logger.LogError(
+                new InvalidOperationException("Parity guard: ModelVersion not configured."),
+                "P3-07 BgeM3EmbeddingProvider [PARITY GUARD FAIL-FAST]: ModelVersion is not configured. " +
+                "Refusing to embed — stamping rows with an empty ModelVersion would corrupt parity detection. " +
+                "Set Curriculum:Embedding:ModelVersion to the pinned TEI version.");
             return null;
         }
 

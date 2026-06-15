@@ -55,9 +55,11 @@ public static class DependencyInjection
         // RedirectResponseBuilder: localized refuse-and-redirect copy for the Explain (and future Hint) intents.
         services.AddTransient<RedirectResponseBuilder>();
 
-        // AiTutorRateLimiter: per-student fixed-window rate limiter for the explain endpoint (BE-5).
-        // Uses a ConcurrentDictionary as its counter store (in-process only — no IMemoryCache).
-        // Singleton — the counter dictionary must survive across requests within the same process.
+        // IAiTutorRateLimiter: registered as in-process fallback here in Application (TryAdd so
+        // the Infrastructure-registered RedisAiRateLimiter takes precedence when Redis is available).
+        // The concrete AiTutorRateLimiter is also kept as a direct Singleton so existing tests
+        // that inject it by concrete type continue to resolve (the interface is what handlers use).
+        services.TryAddSingleton<IAiTutorRateLimiter, AiTutorRateLimiter>();
         services.AddSingleton<AiTutorRateLimiter>();
 
         // ── P3-05 Hint + WhyWrong + Simplify Features ────────────────────────────────

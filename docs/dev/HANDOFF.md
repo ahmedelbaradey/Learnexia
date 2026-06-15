@@ -2,6 +2,8 @@
 
 > Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-06-06 (**FE state reconciliation — see the ⭐ block directly below; Phase-1 + Phase-2 student FE confirmed merged, P8-04 FE corrected to not-started.** Earlier: **Phase 8 — Localization backend COMPLETE + merged to main (P8-01/02/03 PR #90; P8-04 PR #91) — see the Phase 8 section directly below.** Earlier status: **P4-11 BE — Streak freeze + timed events + weekly challenges + XP boost — commit/PR ready. P4-10 BE merged. P4-09 merged via PR #80. P4-08 FE WIP on `feat/P4-08-gamification-screens-motion` (Batches 2–6 still open for FE lead). Earlier P4-* per below.**).
 > Captures what's done, the decisions, the load-building config, and what's next. If you change any of these, update this file.
+> 2026-06-15: **Phase-4 AI Runtime — Cluster B security hardening: AiResponseCache key defects fixed (on wave `feat/phase4-ai-runtime`).** Three blocking/medium security-auditor findings addressed in `AiCacheKeyBuilder` + all 4 handler call-sites (no new files in production code — only `Cache/AiCacheKeyBuilder.cs` and the 4 command handlers changed, plus `tests/Modules.Ai.UnitTests/AiCacheKeyBuilderSecurityTests.cs` added). **Finding #1 (HIGH): `subjectId` absent from all 4 key builders** — a Math concept/question with the same integer id as a Science concept/question could be served from the same cache slot. Fix: `subjectId` added to `ForExplain`, `ForHint`, `ForWhyWrong`, `ForPractice`; all 4 handlers thread `learningCtx.SubjectId` (or `lesson?.SubjectId ?? 0` for Explain/Simplify). **Finding #2 (MEDIUM): Hint key had no grade/age dimension** — a hint generated for a Grade-1 student was cacheable for a Grade-9 student. Fix: `AgeBand(jwtGrade)` added to `ForHint` (consistent with how `ForWhyWrong` already carried `AgeBand`). **Finding #3 (MEDIUM): grade/age dimension sourced from spoofable lesson/context grade, not JWT** — handlers computed `gradeResolved = lesson?.GradeId > 0 ? lesson.GradeId : grade` and passed that to the key builders; a student picking a lesson tagged at a higher grade would be keyed into an older cohort's cache entries. Fix: all 4 key builders now receive `jwtGrade` (the JWT-claim grade, resolved by `TryResolveProfile` from `ICurrentUserService`, server-trusted). `gradeResolved`/lesson grade is still passed to `PromptContext` for prompt grounding (intentional: the lesson subject/topic stays in the prompt) but does NOT drive the cache key. **Prompt-grade observation (flagged, not changed):** `PromptContext.Grade` still receives `gradeResolved` (lesson grade if available) — the generated content may therefore be slightly graded toward the lesson rather than the student's JWT grade. This is an acceptable content-personalisation trade-off and does not create a safety/cohort serving hazard because the key (now keyed on JWT grade) prevents cross-cohort cache serves. The reviewer may wish to track this separately if prompt tailoring must also be strictly JWT-grade. **SimilarExample ordering change:** `SimilarExampleCommandHandler` previously did cache lookup BEFORE context fetch (to enable early HIT). This order was reversed — context is fetched first (MISS path unchanged in cost; HIT path now does one extra context fetch, which is acceptable to ensure `subjectId` is available for the key). **Key tuples after fix:** Explain = `(SubjectId, ConceptId, AgeBand(jwtGrade), Language, Difficulty, PromptVersion, CurriculumVersion)`; Hint = `(SubjectId, QuestionId, HintLevel, AgeBand(jwtGrade), Language, PromptVersion, CurriculumVersion)`; WhyWrong = `(SubjectId, QuestionId, SHA256(NormalizedWrongAnswer), Language, AgeBand(jwtGrade), PromptVersion, CurriculumVersion)`; Practice = `(SubjectId, SkillKey, VariationIndex, AgeBand(jwtGrade), Language, PromptVersion, CurriculumVersion)`. **Tests:** 18 new tests in `AiCacheKeyBuilderSecurityTests.cs` (CK-01..18) covering: different subjectId → different key (all 4 intents), different age-band → different key, same age-band (within band) → same key (cross-student reuse preserved), band boundary correctness (grade 4 and 6 = band2; grade 7 = band3), all-inputs-same → same key (determinism), cross-intent isolation. Total: 237/237 pass (was 219). Build: 0 errors.
+> 2026-06-15: **Operationalize Phase-4 AI — Cluster A (RAG/BGE-M3 re-embed) DONE (on wave `feat/phase4-ai-runtime`).** Built the runtime operationalization of P3-07 RAG infrastructure: hardened the parity guard (Config-missing → RAG dormant/null, never crashes; BaseUrl set + empty ModelVersion → fail-fast, never mixes placeholder + real vectors), added the idempotent fail-soft **`ReEmbedCurriculumJob`** (Hangfire batches=50, no-progress break-guard), wired the AdminOnly **`POST /api/Admin/Curriculum/ReEmbed`** trigger endpoint, made similarity floor config-bound (`Curriculum:Retrieval:SimilarityDistanceFloor`, default 0.4 tuned to placeholder hash geometry), and documented the flip-to-live runbook. **What's ready:** (1) Parity-guard: absent `Curriculum:Embedding:BaseUrl` → `RagContextProvider.IsAvailable = null` (graceful dormancy), `BaseUrl` present + `ModelVersion = null/empty` → guard throws before any retrieval (never auto-fallback, never mix seeds + reals). (2) **Re-embed job:** Hangfire `ReEmbedCurriculumJob` runs `TriggerReEmbedCommand`, scans `chunk_embeddings_bge_m3` for `IsActive=false` rows (the seeded placeholders), calls `BgeM3EmbeddingProvider.EmbedAsync` in 50-row batches, retries TransientError, breaks on ProgressError (no infinite retry), posts to Curriculum schema. (3) **Endpoint:** `POST /api/Admin/Curriculum/ReEmbed` (`[Authorize(policy="Curriculum.ReEmbed")]`, AdminOnly) accepts optional `batchSize/skipCount`, queues `ReEmbedCurriculumJob` via Hangfire, returns job-id. (4) **Config-driven floor:** `Curriculum:Retrieval:SimilarityDistanceFloor` gates `RetrieveChunksQuery` (default 0.4). Tests: Curriculum integration 17/17 (6 new ReEmbed tests: job logic, progress guard, endpoint auth, batch pagination). **Flip-to-live runbook:** (1) Devops provisions BGE-M3 TEI on Hetzner [external], records base URL; (2) Set env `Curriculum__Embedding__BaseUrl` + `__ModelVersion` + `__AuthToken` (API key); (3) `POST /api/Admin/Curriculum/ReEmbed`, watch Hangfire dashboard until `chunk_embeddings_bge_m3.IsActive=1` rows = seed count; (4) Re-calibrate `Curriculum:Retrieval:SimilarityDistanceFloor` (0.4 = placeholder tuning; start ~0.3 for real BGE-M3, adjust per live eval); (5) Set `AiHelper:ContextProvider="Rag"` to activate. **Deferred:** TEI server provisioning (P3-07-BE-0, devops), live grounding + Claude API keys, P3-07 Part A offline-gen (BL stories). **Wave context:** part of `feat/phase4-ai-runtime` (Clusters B + C still in same wave PR). **Reviewer PASS, build clean, 17/17 integration + 6 new tests GREEN.**
 > 2026-06-15: **Parent-web Arabic-RTL pixel-parity polish (merged to main via PR #137; this entry follow-up).** Visual pass against the design-system `preview/` cards (esp. `ar-child-card.html`). **LOAD-BEARING ROOT CAUSE (read before touching any RTL row):** the parent surface renders inside react-native-web Views that carry an **ambient CSS `direction: rtl`** (RNW `LocaleContext`/`writingDirection`) — so an inline `flexDirection: 'row-reverse'` **double-flips back to LTR**. The fix pattern now used across these components: set an explicit **`dir={isRtl?'rtl':'ltr'}`** on the row/container + keep **natural child order** + plain `flexDirection="row"`, letting the browser do the single flip (exactly like the `dir="rtl"` preview HTML). Tamagui forwards `dir` to the DOM (verified). Do NOT reintroduce `row-reverse` on these. **Components touched (`packages/ui`):** `ChildDashboardCard` (dir-based RTL; avatar right, KPI/mastery/footer flow; edit-button+active grouped per design = bordered 32×32 `✏️` button; avatar `card`=56px size added to `Avatar`); `Tabs` settings rail (dir-based; icon right, label hugs it); `KPIStatCard` (tile content alignment + icon/value order); `MasteryBar` (progress fill now grows **right-to-left** in AR — intentionally overrides the old SKILL.md rule-6 "bars always L→R"); `TextField` (email/phone value right-aligned in RTL while keeping LTR *writing direction* so addresses stay legible). **App (`apps/student-app`):** `SettingsWeb` PanelHeader + the four settings panels (`Notifications/Security/Plan/Language`) got explicit `textAlign` (each panel has its OWN duplicated `PanelHeader` — fix all four, not one); `FocusAreasCard` confidence bars grow RTL; `AddChildModal` RTL title/subtitle/grade/app-language labels + **password `autoComplete="new-password"`** (email stays `off`) to stop Chrome autofilling the parent's saved creds into the child form. i18n: AR `parent.myChildren.statLevelShort` → `"Lv"`. **PR #137 commits:** `287d955` (code) + `5d42349` (all pending `design-system/` source+artifacts — committed wholesale per lead: previews, ui_kits, bundle/manifest/thumbnail, screenshots, uploads; no `.gitignore` change). **NOT verified:** no automated Expo-web RTL smoke (manual browser check only; Playwright sys-libs unavailable in this env). **`feat/parent-web-rtl-polish` merged earlier** (PRs #131+#132); #137 was the stacked follow-up.
 > 2026-06-14: **P7-04 BUGFIX — Admin question CorrectAnswer jsonb encode/decode (Commit pending on `fix/P7-04-question-correctanswer`).** HIGH prod bug: MCQ/FillInBlank admin question create → HTTP 500; GET→Edit round-trip → 422/double-encode. Root cause: `CorrectAnswer` is a `jsonb` column, but the write handlers persisted a bare scalar (string/array); seeder was correct (scalar→JSON). **Fix:** (a) WRITE: `AddQuestionCommandHandler` + `EditQuestionCommandHandler` now call `JsonSerializer.Serialize` on non-Matching scalar types (Matching passes through unchanged), making the write match the seeder (and all readers). (b) READ: `QuizProfile.AdminQuestionDto` decodes non-Matching `CorrectAnswer` via `DecodeJsonScalar` (mirrors `AnswerComparator.NormalizeJsonScalar`), ensuring GET→Edit is a symmetric single-encode round-trip. All writers (seeder, handlers, P7-05 RollbackToVersion which round-trips stored form) are now consistent. **No migration:** jsonb column unchanged; existing data (if any) will be double-encoded on next write. **Tests:** Authoring 21/21 + QuestionsAdmin 52/52 + Learning unit 311/311 all green. **Reviewer PASS** (no mandatory security gate for this story). **Non-blocking nit:** `DecodeJsonScalar` currently duplicates `NormalizeJsonScalar` across the Application/Domain boundary — consolidate if a shared scalar-codec seam is later introduced.
 > 2026-06-14: **🔵 PHASE-4 (AI TUTOR) — WAVE 2 MERGED to main (PR #130).** All 6 Wave-2 backend stories built→gated→merged: **P3-08** (adaptivity engine + `IAdaptivityService`), **P3-10** (spaced-repetition + `SR-Sweep` Hangfire job + `/Reviews/Due`), **P3-13** (behavioral `StudentLearningProfile` + recompute job — **mandatory child-privacy gate PASS**), **P3-02** (AI Safety Layer / `ISafetyLayer` facade = the only AI-content exit + `ai.SafetyEvents` + new `AiDbContext` — **mandatory safety gate PASS**), **P3-03** (`PromptBuilder` 4-subject ar/en + anti-injection tone frame + Shared.Contracts seams — **mandatory gate PASS**), **P3-07** (RAG / new `Curriculum` module — see the detailed P3-07 entry below; ⚠️ embeddings are PLACEHOLDERS, semantic RAG DORMANT until **P3-07-BE-0** TEI endpoint + re-embed). Integrated build green; Curriculum integration 11/11 vs real pgvector. **Wave 1 (P3-01 AI Gateway + P3-09 mastery) merged earlier via PR #126.** **Phase-4 backend now 8/12 done** (P3-01/02/03/07/08/09/10/13). **NEXT = Wave 3:** P3-04 (Explain — wires `ISafetyLayer` + `IPromptBuilder` + `SeededCorpusContextProvider`/RAG) + P3-11 (Adaptive quiz — consumes `IAdaptivityService`); then Wave 4 = P3-05 (Hints) + P3-06 (Grounded questions). **Pre-P3-04 runtime deps:** real Claude/OpenAI keys (`Ai__Providers__*__ApiKey`) via secrets; the per-task <4s NFR-1 timeout is owned by P3-04 (not P3-01). **Cross-phase:** P3-01+P3-02 unblock P7-11; P3-02 unblocks the P7-09 producer (P7-10 still blocked on P5-03). **CLAUDE.md rule #3 ("no UoW") is stale for new modules** — Learning + new modules use `UnitOfWorkBehavior` per ADR-0001 (the behavior IS the explicit transaction).
@@ -392,6 +394,151 @@ Config (appsettings.json, safe to commit):
 - **Practice-pool cache:** Seeded variant pool with dedup (P3-01-BE-13, P3-01-BE-14, plus cache parts of P3-01-BE-10).
 - **Quota dispatch:** AI credit ledger + charge-on-delivery (P10-03).
 - **This completes the 4-intent AI Helper MVP** (Explain, Hint, WhyWrong, SimilarExample) — all wired in P3-04/P3-05/P3-06. P3-12 FE consumes all 4 endpoints.
+
+## Operationalize Phase-4 AI — flip-to-live runbook — 2026-06-15 (wave `feat/phase4-ai-runtime`)
+
+This section is the canonical, end-to-end activation runbook once all Cluster A + B + C code is merged. Follow steps in order. No code change is required at any step — all flip switches are config/env.
+
+### What the wave shipped (code summary)
+
+- **Cluster A:** Parity-guard hardened (fail-fast on ModelVersion mismatch), `ReEmbedCurriculumJob` (Hangfire, idempotent, 50-row batches), `POST /api/Admin/Curriculum/ReEmbed` admin trigger, `Curriculum:Retrieval:SimilarityDistanceFloor` config-bound (default 0.4, placeholder-tuned).
+- **Cluster B:** `AiResponseCache` DB table (`ai.AiResponseCache`, UNIQUE `CacheKey`, 4 indexes), `IAiResponseCache` Redis/DB read-through (R5 gate: only `Approved + non-invalidated` served), `IGlobalSettingsProvider` + `BootstrapDefaultGlobalSettingsProvider` (reads from `AiHelper:Cache:*` in appsettings), cache-first + cache-write wired into all 4 handlers (Explain/Hint/SimilarExample/Simplify), `RedisAiRateLimiter` (Redis fixed-window, falls back to `AiTutorRateLimiter` in-process when Redis absent).
+- **Cluster C:** `PromptBuilder.Build` populates `AiRequest.CacheableSystemPrompt` with the stable tone-frame (ToneFrame.Ar / ToneFrame.En), enabling `ClaudeProvider` to emit `cache_control: ephemeral` on every request. `ILearningContextProvider` flip is config-driven via `AiHelper:ContextProvider` (already present since P3-07); `Program.cs` wires `IGlobalSettingsProvider`. All config keys documented in `appsettings.json` with safe empty defaults and inline comments.
+
+### Flip-to-live runbook (steps 1–6, in order)
+
+**Step 1 — Provider API keys [devops / secret store]**
+
+Set the following env vars in the deployment secret store (NEVER commit non-empty values):
+
+```
+Ai__Providers__Claude__ApiKey=<anthropic-api-key>
+Ai__Providers__OpenAi__ApiKey=<openai-api-key>   # optional secondary
+```
+
+Absent key behavior: `ClaudeProvider` / `OpenAiProvider` return `AiError.Unavailable`; `SafetyLayer` fails closed; students receive a localized error message. No startup crash.
+
+**Step 2 — BGE-M3 TEI provisioning [devops, external]**
+
+Stand up the BGE-M3 TEI server on Hetzner (docker-compose / deployment entry, pinned `Model` and `ModelVersion`, health endpoint, auth token). Record the base URL and model version. This is `P3-07-BE-0` (devops side) — NOT a code task.
+
+Once the TEI endpoint is live, set the following env vars:
+
+```
+Curriculum__Embedding__BaseUrl=http://<hetzner-host>:8080
+Curriculum__Embedding__ModelVersion=<version-served-by-tei>   # e.g. "1.0"
+Curriculum__Embedding__AuthToken=<bearer-token>               # NEVER commit
+Curriculum__Embedding__Model=bge-m3                           # safe to commit
+```
+
+Absent `BaseUrl` behavior: `BgeM3EmbeddingProvider.EmbedAsync` returns null, retrieval returns empty, all 4 handlers redirect. Startup logs a clear warning. No crash.
+
+**Step 3 — Re-embed curriculum chunks**
+
+Trigger the Hangfire re-embed job via the admin endpoint:
+
+```
+POST /api/Admin/Curriculum/ReEmbed
+Authorization: Bearer <admin-jwt>
+```
+
+Watch the Hangfire dashboard (`/hangfire`, Development only) or query the DB until all `chunk_embeddings_bge_m3` rows have `IsActive = true` and `ModelVersion` matches `Curriculum:Embedding:ModelVersion`. Placeholder rows (`ModelVersion = 'seed-placeholder-v0'`) must drop to zero.
+
+The job is idempotent: re-running when no placeholder rows remain is a safe no-op.
+
+**Step 4 — Re-calibrate the similarity floor**
+
+The current `Curriculum:Retrieval:SimilarityDistanceFloor = 0.4` was tuned for placeholder hash-vector geometry (`seed-placeholder-v0`). Real BGE-M3 embeddings have different distance distributions.
+
+After re-embed, run representative evaluation queries (in-corpus: Grade-3 Math fractions, Science photosynthesis; out-of-corpus: geography, history) and adjust the floor:
+
+- Typical BGE-M3 semantically-similar distances: 0.10–0.35.
+- Start at `0.3` and adjust.
+- Too strict (too low): over-redirects — students get "no context" for in-corpus questions.
+- Too loose (too high): irrelevant chunks included — retrieval quality degrades.
+
+Set in config (safe to commit; no live secret):
+
+```json
+"Curriculum": {
+  "Retrieval": {
+    "SimilarityDistanceFloor": 0.3
+  }
+}
+```
+
+**Step 5 — Activate live grounding**
+
+Set `AiHelper:ContextProvider = "Rag"` in appsettings (or env `AiHelper__ContextProvider=Rag`). No code change required.
+
+This switches `ILearningContextProvider` from `EmptyLearningContextProvider` (always-redirect) to `RagContextProvider` (live pgvector retrieval). The switch happens in `Curriculum.Infrastructure.DependencyInjection.AddCurriculumInfrastructure` which checks the key at registration time.
+
+**Do NOT flip this before Steps 3 + 4 are complete** — activating RAG over placeholder vectors returns garbage retrieval results.
+
+**Step 6 — Verify end-to-end**
+
+```
+POST /api/AiTutor/Explain
+{ "skillId": <in-corpus-skill-id>, ... }
+```
+
+Expected sequence for a cache miss on first call:
+1. `RagContextProvider` retrieves non-empty chunks (similarity floor met).
+2. `PromptBuilder` assembles the prompt with `CacheableSystemPrompt` populated (Claude will prompt-cache the tone frame).
+3. `ISafetyLayer` calls `ClaudeProvider` → response returned.
+4. `IAiResponseCache.WriteAsync` stores the entry (`ReviewStatus = Approved` if confidence ≥ 0.85, else `PendingReview`).
+
+Second identical call → cache HIT (zero Claude API calls; asserted by zero `IAiGateway` invocations).
+
+### Cache TTL matrix
+
+| Intent | TTL (Redis hot layer) | Key tuple |
+|---|---|---|
+| Explain | 24 h | `(SubjectId, ConceptId, AgeBand, Language, Difficulty, PromptVersion, CurriculumVersion)` |
+| Hint | 12 h | `(SubjectId, QuestionId, HintLevel, AgeBand, Language, PromptVersion, CurriculumVersion)` |
+| WhyWrong | 6 h | `(SubjectId, QuestionId, SHA256(NormalizedWrongAnswer), Language, AgeBand, PromptVersion, CurriculumVersion)` |
+| SimilarExample (Practice) | 24 h | `(SubjectId, SkillKey, VariationIndex, AgeBand, Language, PromptVersion, CurriculumVersion)` |
+
+`AgeBand` = `grade / 3` (floor) so Grades 1–3 share a band, Grades 4–6 share a band, etc. Prevents cross-cohort cache pollution.
+
+`WhyWrong` variant cap: 50 per `QuestionId` (LRU by `CreatedAt`). Configurable via `AiHelper:Cache:whyWrongVariantCap`.
+
+### Redis rate-limiter config
+
+- Counter key: `ai:rl:{studentId}:{windowMinute}` (UTC minute epoch).
+- Window: 60 seconds, max 10 requests per student per window.
+- Redis absent: falls back to `AiTutorRateLimiter` (in-process `ConcurrentDictionary`); no crash; no multi-instance coordination.
+- Redis present: `RedisAiRateLimiter` (atomic `INCR + EXPIRE`; shared across instances).
+- Config: `ConnectionStrings:Redis` (empty = in-process fallback).
+
+### AiResponseCache serving note (OQ-7 deferral)
+
+`AiResponseCacheRepository.GetApprovedAsync` serves only entries with `ReviewStatus = Approved AND InvalidatedAt IS NULL`. Entries are auto-approved at write time when `Confidence >= IGlobalSettingsProvider.GetDecimal("ai.cache.autoApprovalConfidence", 0.85m)`.
+
+**The `Confidence` field is currently always `null`** — `SafeAiResult` carries no confidence signal from `SafetyLayer` in this wave (OQ-7 deferred). As a result, **all new cache entries are written as `PendingReview`** and will NOT be served as cache hits until either:
+- A human reviewer marks them `Approved` via a future review UI (P7-09-style, Phase 10), OR
+- OQ-7 is resolved by wiring a confidence signal into `SafeAiResult` and a subsequent wave sets the status at write time.
+
+The cache write-path is live and stores entries — the read-through cache is dormant until the confidence/approval signal lands.
+
+### External dependencies (not built by this pipeline)
+
+| # | What | Who clears | Impact when absent |
+|---|---|---|---|
+| EXT-1 | BGE-M3 TEI endpoint on Hetzner | Devops | `BgeM3EmbeddingProvider` returns null; all handlers redirect. No crash. |
+| EXT-2 | Claude API key (`Ai:Providers:Claude:ApiKey`) | Lead / secret store | `ClaudeProvider` returns `AiError.Unavailable`; `SafetyLayer` fails closed. No crash. |
+| EXT-3 | OpenAI API key (`Ai:Providers:OpenAi:ApiKey`) | Lead / secret store | Same as EXT-2 for OpenAI tier. |
+| EXT-4 | Similarity floor calibration | Lead (after EXT-1 + Step 3 complete) | 0.4 is placeholder-tuned; real vectors may over- or under-retrieve. |
+| EXT-5 | Redis (`ConnectionStrings:Redis`) | Devops / compose | In-process fallback. Cache and rate-limiter work; no multi-instance coordination. |
+
+### Deferred (NOT in this wave)
+
+- **P3-01-BE-13 `IAiBatchGateway` / `ClaudeBatchProvider`** (offline pre-generation for cold-start cache fill) — Phase 10.
+- **P3-01-BE-14 `IAiUsageBudget` / daily-cap guardrail** — Phase 10.
+- **Human-moderation review-gate / `PendingReview` workflow / invalidation triggers** — Phase 10 (P7-09-style).
+- **`AiUsageLogs` DB persistence** — P7-11.
+- **Full BL curriculum ingestion pipeline** (BL-01..05) — backlog.
+- **OQ-7 confidence signal into `SafeAiResult`** — required before cache HITs serve (see AiResponseCache serving note above).
 
 ## P3-08 — Adjust difficulty adaptively (Adaptivity Engine) — added 2026-06-13 (branch `feat/P3-08-adaptivity-engine`)
 

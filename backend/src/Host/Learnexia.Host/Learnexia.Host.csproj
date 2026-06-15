@@ -21,6 +21,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\Learnexia.Shared.Kernel\Learnexia.Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\Shared\Learnexia.Shared.Contracts\Learnexia.Shared.Contracts.csproj" />
     <ProjectReference Include="..\..\Modules\Identity\Learnexia.Modules.Identity.Api\Learnexia.Modules.Identity.Api.csproj" />
     <ProjectReference Include="..\..\Modules\Learning\Learnexia.Modules.Learning.Api\Learnexia.Modules.Learning.Api.csproj" />
     <ProjectReference Include="..\..\Modules\Parent\Learnexia.Modules.Parent.Api\Learnexia.Modules.Parent.Api.csproj" />

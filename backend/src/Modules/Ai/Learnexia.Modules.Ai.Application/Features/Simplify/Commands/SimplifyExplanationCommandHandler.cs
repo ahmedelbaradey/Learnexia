@@ -1,6 +1,8 @@
+using Learnexia.Modules.Ai.Application.Cache;
 using Learnexia.Modules.Ai.Application.PromptBuilder;
 using Learnexia.Modules.Ai.Application.Services;
 using Learnexia.Shared.Contracts.Ai;
+using Learnexia.Shared.Kernel.Settings;
 using Learnexia.Shared.Contracts.AiTutor;
 using Learnexia.Shared.Contracts.Learning;
 using Learnexia.Shared.Kernel.Abstractions;
@@ -18,52 +20,31 @@ namespace Learnexia.Modules.Ai.Application.Features.Simplify.Commands;
 /// <see cref="ISafetyLayer.GenerateSafeAsync"/> — NEVER <c>IAiGateway</c> directly.
 /// The architecture test (P302-ARCH-04) enforces this at build time.</para>
 ///
-/// <para><strong>Reuses the P3-04 Explain pipeline</strong> with the "Simplify" intent injected into
-/// <see cref="PromptContext"/>. The prompt builder maps <see cref="HelperIntent.Simplify"/> to a
-/// "lower reading level / simpler vocabulary" directive in the system prompt.</para>
-///
-/// <para><strong>No progression side effects (FR-AI-6):</strong> this handler writes
-/// no mastery, XP, or unlock state — it generates content only.</para>
-///
-/// <para><strong>No hint-level tracking:</strong> Simplify does not increment hint usage.
-/// No <c>HintUsedIntegrationEvent</c> is emitted. Only <c>HelpRequested</c> + <c>HelpDelivered</c>
-/// instrumentation events are fired.</para>
-///
-/// Orchestration steps:
-/// <list type="number">
-///   <item>Resolve student id + rate-limit check.</item>
-///   <item>Emit <c>HelpRequested</c> fire-and-forget.</item>
-///   <item>Resolve grade/age/language from JWT claims.</item>
-///   <item>Optionally enrich with lesson title/subject/grade via <see cref="ILessonContextContract"/>.</item>
-///   <item>Fetch grounding via <see cref="ILearningContextProvider"/>.</item>
-///   <item>Empty chunks → refuse-and-redirect + emit <c>HelpDeclined{Reason=NoContext}</c>.</item>
-///   <item>Build prompt via <see cref="IPromptBuilder"/> with <see cref="HelperIntent.Simplify"/>.</item>
-///   <item>[DEFERRED (BE-11): cache-first lookup goes here.]</item>
-///   <item>Call <see cref="ISafetyLayer.GenerateSafeAsync"/> (buffers + screens).</item>
-///   <item>Safety blocked → typed error.</item>
-///   <item>[DEFERRED (BE-11): cache-write of approved response goes here.]</item>
-///   <item>Emit <c>HelpDelivered</c> fire-and-forget.</item>
-///   <item>Return <see cref="SimplifyResult.Streamed"/>.</item>
-/// </list>
+/// <para><strong>Cache-first (WI-B4):</strong> Simplify is keyed identically to Explain
+/// (ConceptId/LessonId, GradeId, Language, Difficulty=0, PromptVersion, CurriculumVersion).
+/// On HIT → returns cached content with zero gateway calls (AC-B1).
+/// On MISS → runs the normal path and writes to cache on safety-PASS.</para>
 /// </summary>
 public sealed class SimplifyExplanationCommandHandler : ICommandHandler<SimplifyExplanationCommand, SimplifyResult>
 {
-    // Claim types used to resolve grade/age/language from the student JWT.
-    private const string GradeClaim = "Grade";
-    private const string AgeClaim = "Age";
+    private const string GradeClaim    = "Grade";
+    private const string AgeClaim      = "Age";
     private const string LanguageClaim = "Language";
-    // Model used for runtime Simplify calls (Sonnet — NOT Haiku, Arabic quality floor).
     private const string SimplifyModelId = "claude-sonnet-4-6";
-    // ContextSource label for the HelpDelivered event on a live generation.
-    private const string ContextSourceLive = "SeededCorpus";
+    private const string ContextSourceLive  = "Live";
+    private const string ContextSourceCache = "Cache";
+    private const string PromptVersionV1      = "v1";
+    private const string CurriculumVersionMvp = "mvp";
 
     private readonly ICurrentUserService _currentUser;
     private readonly ILessonContextContract _lessonContext;
     private readonly ILearningContextProvider _learningContext;
     private readonly IPromptBuilder _promptBuilder;
     private readonly ISafetyLayer _safetyLayer;
+    private readonly IAiResponseCache _aiCache;
+    private readonly IGlobalSettingsProvider _settings;
     private readonly RedirectResponseBuilder _redirectBuilder;
-    private readonly AiTutorRateLimiter _rateLimiter;
+    private readonly IAiTutorRateLimiter _rateLimiter;
     private readonly IPublisher _publisher;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
@@ -74,22 +55,26 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
         ILearningContextProvider learningContext,
         IPromptBuilder promptBuilder,
         ISafetyLayer safetyLayer,
+        IAiResponseCache aiCache,
+        IGlobalSettingsProvider settings,
         RedirectResponseBuilder redirectBuilder,
-        AiTutorRateLimiter rateLimiter,
+        IAiTutorRateLimiter rateLimiter,
         IPublisher publisher,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _currentUser = currentUser;
-        _lessonContext = lessonContext;
+        _currentUser     = currentUser;
+        _lessonContext   = lessonContext;
         _learningContext = learningContext;
-        _promptBuilder = promptBuilder;
-        _safetyLayer = safetyLayer;
+        _promptBuilder   = promptBuilder;
+        _safetyLayer     = safetyLayer;
+        _aiCache         = aiCache;
+        _settings        = settings;
         _redirectBuilder = redirectBuilder;
-        _rateLimiter = rateLimiter;
-        _publisher = publisher;
-        _logger = logger;
-        _localizer = localizer;
+        _rateLimiter     = rateLimiter;
+        _publisher       = publisher;
+        _logger          = logger;
+        _localizer       = localizer;
     }
 
     public async Task<SimplifyResult> Handle(SimplifyExplanationCommand request, CancellationToken cancellationToken)
@@ -104,7 +89,6 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
                 _localizer[SharedResourcesKey.SimplifyMissingProfile]);
         }
 
-        // Step 1b — resolve skill from command for instrumentation.
         var lessonId = request.LessonId ?? 0;
 
         // Step 1c — per-student rate limit check (cost/abuse guard).
@@ -117,9 +101,6 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
         }
 
         // Step 2 — emit HelpRequested fire-and-forget (before any LLM call).
-        // HelperIntent.SimilarExample is the closest representable intent in the closed enum
-        // for a "simplify" call — both are explain-tier re-explanations.
-        // NOTE: when HelperIntent gains a Simplify variant, update this and the HelpDelivered emit.
         _ = _publisher.Publish(
             new HelpRequestedIntegrationEvent(studentId.Value, HelperIntent.Explain, 0, request.ConceptId),
             CancellationToken.None);
@@ -127,7 +108,7 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
         // Step 3 — resolve grade/age/language from JWT claims.
         TryResolveProfile(out var grade, out var age, out var language);
 
-        // Step 4 — optionally enrich with lesson context (title + subject/grade) via ILessonContextContract.
+        // Step 4 — optionally enrich with lesson context.
         LessonContextDto? lesson = null;
         if (request.LessonId.HasValue && request.LessonId > 0)
         {
@@ -137,18 +118,15 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
             }
             catch (Exception ex)
             {
-                // Non-fatal — the handler can proceed without lesson title enrichment.
                 _logger.LogError(ex, $"SimplifyExplanationCommandHandler: ILessonContextContract failed for lessonId={request.LessonId}. Proceeding without lesson context.");
             }
         }
 
-        // Resolve subject/grade from lesson context (falls back to JWT-derived values when unavailable).
-        var subjectId = lesson?.SubjectId ?? 0;
+        var subjectId    = lesson?.SubjectId ?? 0;
         var gradeResolved = lesson?.GradeId > 0 ? lesson.GradeId : grade;
-        var skillName = lesson?.Title;
+        var skillName    = lesson?.Title;
 
-        // Step 5 — fetch grounding context via ILearningContextProvider.
-        // Simplify has no WrongAnswer input (not a why-wrong path).
+        // Step 5 — fetch grounding context.
         LearningContext learningCtx;
         try
         {
@@ -162,7 +140,6 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
         catch (Exception ex)
         {
             _logger.LogError(ex, $"SimplifyExplanationCommandHandler: ILearningContextProvider failed for studentId={studentId}, lessonId={lessonId}.");
-            // Treat retrieval failure as no-context → redirect.
             learningCtx = new LearningContext(
                 Chunks: Array.Empty<ChunkDto>(),
                 QuestionText: null,
@@ -176,13 +153,12 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
 
         var skillId = learningCtx.SkillId;
 
-        // Step 6 — AC-3 scope guard: empty chunks → refuse-and-redirect. Do NOT call the LLM.
+        // Step 6 — AC-3 scope guard: empty chunks → refuse-and-redirect.
         if (learningCtx.Chunks.Count == 0)
         {
             _logger.LogInfo(
                 $"SimplifyExplanationCommandHandler: no context for studentId={studentId}, lessonId={lessonId} — refusing and redirecting.");
 
-            // Emit HelpDeclined fire-and-forget.
             _ = _publisher.Publish(
                 new HelpDeclinedIntegrationEvent(studentId.Value, HelperIntent.Explain, skillId, Reason: "NoContext"),
                 CancellationToken.None);
@@ -191,10 +167,7 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
             return new SimplifyResult.Redirect(redirectText, TargetSkillId: request.LessonId);
         }
 
-        // Step 7 — build prompt via IPromptBuilder with HelperIntent.Explain.
-        // SimplifyExplanationCommandHandler reuses the Explain template (same pipeline as P3-04-BE-6)
-        // and injects a "simplify / lower reading level" directive via the question-text context slot.
-        // When HelperIntent gains a Simplify variant, update this to HelperIntent.Simplify.
+        // Step 7 — build prompt via IPromptBuilder.
         var subject = (Subject)subjectId;
 
         var promptContext = new PromptContext(
@@ -204,7 +177,7 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
             Grade: gradeResolved,
             Age: age,
             Language: language,
-            WeakAreas: null,   // No weak-areas query at this MVP slice.
+            WeakAreas: null,
             Context: learningCtx);
 
         var promptResult = _promptBuilder.Build(promptContext);
@@ -219,15 +192,35 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
 
         var aiRequest = ((PromptBuilderResult.Success)promptResult).Request;
 
-        // ── DEFERRED (BE-11): cache-first lookup goes here. ─────────────────────────
-        // CacheKey = SHA256(ConceptId/LessonId, GradeId, Language, PromptVersion, CurriculumVersion)
-        // call IAiResponseCacheRepository.GetApprovedAsync(cacheKey, ct).
-        // On hit: return SimplifyResult.Streamed(cachedContent), emit HelpDelivered{ContextSource="Cache"}.
-        // On miss: proceed to safety call below.
-        // Requires IAiResponseCacheRepository (P3-04-BE-8) which is deferred.
-        // ─────────────────────────────────────────────────────────────────────────────
+        // ── WI-B4: cache-first lookup (AC-B1) ───────────────────────────────────
+        // Simplify shares the Explain cache key space (same tuple dimensions).
+        // Security: jwtGrade (from JWT claim, server-trusted) is used for the key's age dimension
+        // rather than gradeResolved (which can be the spoofable lesson/context grade).
+        var cacheKey = AiCacheKeyBuilder.ForExplain(
+            subjectId:         subjectId,
+            conceptId:         request.ConceptId ?? 0,
+            jwtGrade:          grade,      // JWT-claim grade — server-trusted, not spoofable.
+            language:          language,
+            difficulty:        0,
+            promptVersion:     PromptVersionV1,
+            curriculumVersion: CurriculumVersionMvp);
 
-        // Step 8 — call ISafetyLayer (buffers + screens; NEVER IAiGateway directly — arch test enforced).
+        var cachedContent = await _aiCache.GetApprovedAsync(cacheKey, cancellationToken);
+        if (cachedContent is not null)
+        {
+            _logger.LogInfo($"SimplifyExplanationCommandHandler: cache HIT for studentId={studentId}, key={cacheKey[..8]}…");
+
+            _ = _publisher.Publish(
+                new HelpDeliveredIntegrationEvent(
+                    studentId.Value, HelperIntent.Explain, skillId, request.ConceptId,
+                    SimplifyModelId, ContextSourceCache),
+                CancellationToken.None);
+
+            return new SimplifyResult.Streamed(cachedContent);
+        }
+        // ─────────────────────────────────────────────────────────────────────────
+
+        // Step 8 — call ISafetyLayer.
         SafeAiResult safeResult;
         try
         {
@@ -245,39 +238,47 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
         if (!safeResult.Allowed)
         {
             _logger.LogWarn($"SimplifyExplanationCommandHandler: safety blocked for studentId={studentId}, verdict={safeResult.Verdict}.");
+            // Safety-FAILED: DO NOT cache.
             return new SimplifyResult.Error(
                 nameof(SharedResourcesKey.SimplifySafetyBlocked),
                 _localizer[SharedResourcesKey.SimplifySafetyBlocked]);
         }
 
-        // ── DEFERRED (BE-11): cache-write of approved response goes here. ──────────
-        // After safety passes, fire-and-forget upsert to IAiResponseCacheRepository.
-        // Requires IAiResponseCacheRepository (P3-04-BE-8) which is deferred.
-        // ─────────────────────────────────────────────────────────────────────────────
+        // ── WI-B4: cache-write of approved response (fire-and-forget) ───────────
+        var approvalThreshold = _settings.GetDecimal("ai.cache.autoApprovalConfidence", 0.85m);
+        var reviewStatus      = (safeResult.Confidence >= approvalThreshold)
+            ? AiCacheReviewStatusDto.Approved
+            : AiCacheReviewStatusDto.PendingReview;
+
+        var writeEntry = new AiCacheWriteEntry(
+            CacheKey:          cacheKey,
+            Response:          safeResult.Content ?? string.Empty,
+            Type:              AiCacheEntryTypeDto.Explain,
+            SkillKey:          skillId.ToString(),
+            QuestionId:        null,
+            CurriculumVersion: CurriculumVersionMvp,
+            PromptVersion:     PromptVersionV1,
+            ModelVersion:      SimplifyModelId,
+            ReviewStatus:      reviewStatus,
+            Confidence:        safeResult.Confidence);
+
+        _ = _aiCache.WriteAsync(writeEntry, CancellationToken.None);
+        // ─────────────────────────────────────────────────────────────────────────
 
         // Step 10 — emit HelpDelivered fire-and-forget.
         _ = _publisher.Publish(
             new HelpDeliveredIntegrationEvent(
-                studentId.Value,
-                HelperIntent.Explain,   // See HelpRequested note above re: Simplify intent.
-                skillId,
-                request.ConceptId,
-                SimplifyModelId,
-                ContextSourceLive),
+                studentId.Value, HelperIntent.Explain, skillId, request.ConceptId,
+                SimplifyModelId, ContextSourceLive),
             CancellationToken.None);
 
         return new SimplifyResult.Streamed(safeResult.Content ?? string.Empty);
     }
 
-    /// <summary>
-    /// Resolves grade, age, and language from the authenticated student's JWT claims.
-    /// Defaults gracefully when claims are absent or unparseable (always sets sensible defaults
-    /// so the handler can proceed).
-    /// </summary>
     private void TryResolveProfile(out int grade, out int age, out TutorLanguage language)
     {
-        grade = 4;   // Safe default.
-        age = 10;    // Safe default.
+        grade    = 4;
+        age      = 10;
         language = TutorLanguage.Ar;
 
         var gradeStr    = _currentUser.GetClaimValue(GradeClaim);

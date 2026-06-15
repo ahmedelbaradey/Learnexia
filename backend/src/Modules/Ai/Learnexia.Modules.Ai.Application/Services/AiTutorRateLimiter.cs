@@ -18,7 +18,7 @@ namespace Learnexia.Modules.Ai.Application.Services;
 /// <para>Current defaults: <strong>10 requests per 60 seconds per student</strong>
 /// (cost/abuse bound for the explain endpoint).</para>
 /// </summary>
-public sealed class AiTutorRateLimiter
+public sealed class AiTutorRateLimiter : IAiTutorRateLimiter
 {
     // Fixed-window defaults — intentionally conservative for MVP.
     private const int MaxRequestsPerWindow = 10;

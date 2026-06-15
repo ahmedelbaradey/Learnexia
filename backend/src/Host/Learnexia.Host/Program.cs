@@ -13,6 +13,7 @@ using Learnexia.Modules.Gamification.Api;
 using Learnexia.Modules.Moderation.Api;
 using Learnexia.Modules.Ai.Api;
 using Learnexia.Modules.Curriculum.Api;
+using Learnexia.Shared.Kernel.Settings;
 using Learnexia.Shared.Kernel.Storage;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -131,6 +132,12 @@ if (!string.IsNullOrWhiteSpace(defaultConnectionString))
     builder.Services.AddHangfireServer();
 }
 
+// WI-B1: Bootstrap IGlobalSettingsProvider — reads from IConfiguration (AiHelper:Cache:* prefix).
+// Registered as the default Singleton here at the Host so all modules share one instance.
+// The Ai.Infrastructure DI also registers this (idempotent; last-registration wins, both are identical).
+// P10-12 upgrade: replace this registration with the DB-backed implementation — no caller change needed.
+builder.Services.AddSingleton<IGlobalSettingsProvider, BootstrapDefaultGlobalSettingsProvider>();
+
 // Modules (each wires its own Application + Infrastructure + JWT auth + controllers application part)
 builder.Services.AddIdentityModule(builder.Configuration);
 builder.Services.AddLearningModule(builder.Configuration);
@@ -201,6 +208,7 @@ using (var scope = app.Services.CreateScope())
     await GamificationModule.InitializeAsync(scope.ServiceProvider);
     await ModerationModule.InitializeAsync(scope.ServiceProvider);
     await CurriculumModule.InitializeAsync(scope.ServiceProvider);
+    await AiModule.InitializeAsync(scope.ServiceProvider);
 }
 
 // Health probes (P1-07-BE-2) — mapped BEFORE auth, rate limiting, and error/auth-logging middleware so
