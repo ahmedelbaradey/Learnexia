@@ -5,10 +5,12 @@ using Learnexia.Modules.Ai.Application.PromptBuilder;
 using Learnexia.Modules.Ai.Application.Services;
 using Learnexia.Shared.Contracts.Ai;
 using Learnexia.Shared.Contracts.AiTutor;
+using Learnexia.Shared.Contracts.Billing;
 using Learnexia.Shared.Contracts.Learning;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Settings;
 using MediatR;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
 using Moq;
@@ -141,6 +143,18 @@ public sealed class AiGradeClaimCacheDifferentiationTests
         var scopeFactory = new Mock<IServiceScopeFactory>();
         scopeFactory.Setup(f => f.CreateScope()).Returns(scopeMock.Object);
 
+        // P10-03: billing seam — default sufficient balance, debit always succeeds.
+        var creditSpend = new Mock<ICreditSpendService>();
+        creditSpend.Setup(c => c.GetBalanceAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new EnergyBalance(100, 0, 100, null));
+        creditSpend.Setup(c => c.TryDebitAsync(
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DebitResult(true, 3, 0, 97, DebitOutcome.Charged));
+
+        var configMock = new Mock<IConfiguration>();
+        configMock.Setup(c => c["Billing:HardStopEnabled"]).Returns("false");
+        var costResolver = new CreditCostResolver(settings.Object, configMock.Object);
+
         var handler = new ExplainConceptCommandHandler(
             userMock.Object,
             lessonCtx.Object,
@@ -151,6 +165,8 @@ public sealed class AiGradeClaimCacheDifferentiationTests
             settings.Object,
             redirectBuilder,
             new AiTutorRateLimiter(),
+            creditSpend.Object,
+            costResolver,
             publisher.Object,
             scopeFactory.Object,
             logger.Object,

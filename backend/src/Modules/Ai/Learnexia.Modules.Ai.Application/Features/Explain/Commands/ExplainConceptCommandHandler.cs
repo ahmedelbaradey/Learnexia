@@ -4,6 +4,7 @@ using Learnexia.Modules.Ai.Application.Services;
 using Learnexia.Shared.Contracts.Ai;
 using Learnexia.Shared.Kernel.Settings;
 using Learnexia.Shared.Contracts.AiTutor;
+using Learnexia.Shared.Contracts.Billing;
 using Learnexia.Shared.Contracts.Learning;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
@@ -34,6 +35,12 @@ namespace Learnexia.Modules.Ai.Application.Features.Explain.Commands;
 ///
 /// <para><strong>No progression side effects (AC-5, FR-AI-6):</strong> this handler
 /// writes no mastery, XP, or unlock state — it generates content only.</para>
+///
+/// <para><strong>Charge-on-delivery (P10-03):</strong> energy credits are debited ONLY
+/// on successful delivery — both the cache-HIT early-return and the post-safety-success
+/// path debit via <see cref="ICreditSpendService"/>. No charge on refuse/safety-block/error/
+/// pre-auth insufficient. Monthly hard-exhausted and (when HardStopEnabled) daily-cap-reached
+/// trigger a graceful decline without a gateway call.</para>
 /// </summary>
 public sealed class ExplainConceptCommandHandler : ICommandHandler<ExplainConceptCommand, ExplainResult>
 {
@@ -59,6 +66,8 @@ public sealed class ExplainConceptCommandHandler : ICommandHandler<ExplainConcep
     private readonly IGlobalSettingsProvider _settings;
     private readonly RedirectResponseBuilder _redirectBuilder;
     private readonly IAiTutorRateLimiter _rateLimiter;
+    private readonly ICreditSpendService _creditSpend;
+    private readonly CreditCostResolver _costResolver;
     private readonly IPublisher _publisher;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILoggerManager _logger;
@@ -74,6 +83,8 @@ public sealed class ExplainConceptCommandHandler : ICommandHandler<ExplainConcep
         IGlobalSettingsProvider settings,
         RedirectResponseBuilder redirectBuilder,
         IAiTutorRateLimiter rateLimiter,
+        ICreditSpendService creditSpend,
+        CreditCostResolver costResolver,
         IPublisher publisher,
         IServiceScopeFactory scopeFactory,
         ILoggerManager logger,
@@ -88,6 +99,8 @@ public sealed class ExplainConceptCommandHandler : ICommandHandler<ExplainConcep
         _settings       = settings;
         _redirectBuilder = redirectBuilder;
         _rateLimiter    = rateLimiter;
+        _creditSpend    = creditSpend;
+        _costResolver   = costResolver;
         _publisher      = publisher;
         _scopeFactory   = scopeFactory;
         _logger         = logger;
@@ -118,6 +131,44 @@ public sealed class ExplainConceptCommandHandler : ICommandHandler<ExplainConcep
                 nameof(SharedResourcesKey.ExplainConceptRateLimitExceeded),
                 _localizer[SharedResourcesKey.ExplainConceptRateLimitExceeded]);
         }
+
+        // ── P10-03: resolve cost + generate per-request idempotency key ──────────────
+        // childId ALWAYS from JWT — never from request body (security-critical, P10-03-BE-1).
+        var childId = studentId.Value;
+        var cost = _costResolver.ResolveCost(HelperIntent.Explain);
+        // One GUID per HTTP request — stored here so retries reuse the same key (no double-charge).
+        var idempotencyKey = Guid.NewGuid().ToString("N");
+        var reasonCode = CreditCostResolver.ResolveReasonCode(HelperIntent.Explain);
+
+        // ── P10-03-BE-2: pre-authorize (monthly hard-limit + optional daily hard-stop) ──
+        EnergyBalance balance;
+        try
+        {
+            balance = await _creditSpend.GetBalanceAsync(childId, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            // Fail-soft: if billing is unavailable, allow the request (never block learning).
+            _logger.LogWarn($"ExplainConceptCommandHandler: GetBalanceAsync failed for childId={childId}. Proceeding. {ex.GetType().Name}");
+            balance = new EnergyBalance(int.MaxValue, 0, int.MaxValue, null);
+        }
+
+        if (balance.TotalBalance < cost)
+        {
+            _logger.LogInfo($"ExplainConceptCommandHandler: insufficient energy for childId={childId}, balance={balance.TotalBalance}, cost={cost}.");
+            return new ExplainResult.Error(
+                nameof(SharedResourcesKey.AiInsufficientEnergy),
+                _localizer[SharedResourcesKey.AiInsufficientEnergy]);
+        }
+
+        if (_costResolver.IsHardStopEnabled && balance.DailyCapReached)
+        {
+            _logger.LogInfo($"ExplainConceptCommandHandler: daily cap reached for childId={childId}, dailyUsed={balance.DailyUsed}, cap={balance.DailyCap}. HardStop=true.");
+            return new ExplainResult.Error(
+                nameof(SharedResourcesKey.AiDailyCapReached),
+                _localizer[SharedResourcesKey.AiDailyCapReached]);
+        }
+        // ─────────────────────────────────────────────────────────────────────────────────
 
         // Step 2 — emit HelpRequested fire-and-forget (before any LLM call).
         _ = _publisher.Publish(
@@ -177,6 +228,7 @@ public sealed class ExplainConceptCommandHandler : ICommandHandler<ExplainConcep
         }
 
         // Step 6 — AC-3 scope guard: empty chunks → refuse-and-redirect. Do NOT call the LLM.
+        // NO debit on refuse-and-redirect.
         if (learningCtx.Chunks.Count == 0)
         {
             _logger.LogInfo($"ExplainConceptCommandHandler: no context for studentId={studentId}, skillId={skillId} — refusing and redirecting.");
@@ -214,7 +266,7 @@ public sealed class ExplainConceptCommandHandler : ICommandHandler<ExplainConcep
 
         var aiRequest = ((PromptBuilderResult.Success)promptResult).Request;
 
-        // ── WI-B4: cache-first lookup (P3-04-BE-9, AC-B1) ───────────────────────
+        // ── WI-B4: cache-first lookup (P3-04-BE-9, AC-B1) ───────────────────────────
         // Compute canonical cache key for Explain:
         //   (SubjectId, ConceptId, AgeBand(jwtGrade), Language, Difficulty=0, PromptVersion, CurriculumVersion).
         // Security: jwtGrade (from JWT claim, server-trusted) is used for the key's age dimension
@@ -234,6 +286,11 @@ public sealed class ExplainConceptCommandHandler : ICommandHandler<ExplainConcep
         {
             _logger.LogInfo($"ExplainConceptCommandHandler: cache HIT for studentId={studentId}, key={cacheKey[..8]}… — returning cached result (zero gateway calls).");
 
+            // ── P10-03-BE-3 DELIVERY POINT #1: cache HIT → debit ────────────────────
+            // Cache hit IS a delivery — energy charged same as live (locked economy, brief §0/D7).
+            await DebitEnergyAsync(childId, cost, reasonCode, idempotencyKey, cancellationToken);
+            // ─────────────────────────────────────────────────────────────────────────
+
             // Cache HIT — emit HelpDelivered with ContextSource="Cache" and return immediately.
             _ = _publisher.Publish(
                 new HelpDeliveredIntegrationEvent(
@@ -243,7 +300,7 @@ public sealed class ExplainConceptCommandHandler : ICommandHandler<ExplainConcep
 
             return new ExplainResult.Streamed(cachedContent);
         }
-        // ─────────────────────────────────────────────────────────────────────────
+        // ─────────────────────────────────────────────────────────────────────────────
 
         // Step 8 — cache MISS: call ISafetyLayer (buffers + screens; NEVER IAiGateway directly — arch test enforced).
         SafeAiResult safeResult;
@@ -254,6 +311,7 @@ public sealed class ExplainConceptCommandHandler : ICommandHandler<ExplainConcep
         catch (Exception ex)
         {
             _logger.LogError(ex, $"ExplainConceptCommandHandler: ISafetyLayer threw for studentId={studentId}. Returning typed error.");
+            // NO debit on generation error.
             return new ExplainResult.Error(
                 nameof(SharedResourcesKey.AiServiceUnavailable),
                 _localizer[SharedResourcesKey.AiServiceUnavailable]);
@@ -263,7 +321,7 @@ public sealed class ExplainConceptCommandHandler : ICommandHandler<ExplainConcep
         if (!safeResult.Allowed)
         {
             _logger.LogWarn($"ExplainConceptCommandHandler: safety blocked for studentId={studentId}, verdict={safeResult.Verdict}.");
-            // Safety-FAILED: DO NOT cache.
+            // Safety-FAILED: DO NOT cache. NO debit.
             return new ExplainResult.Error(
                 nameof(SharedResourcesKey.ExplainConceptSafetyBlocked),
                 _localizer[SharedResourcesKey.ExplainConceptSafetyBlocked]);
@@ -305,7 +363,20 @@ public sealed class ExplainConceptCommandHandler : ICommandHandler<ExplainConcep
                 _logger.LogWarn($"ExplainConceptCommandHandler: cache write fire-and-forget failed. {ex.GetType().Name}");
             }
         });
-        // ─────────────────────────────────────────────────────────────────────────
+        // ─────────────────────────────────────────────────────────────────────────────
+
+        // ── P10-03-BE-3 DELIVERY POINT #2: post-safety success → debit ──────────────
+        // Debit is the FINAL step of a successful delivery. Cache-write is fire-and-forget above.
+        // Debit returns InsufficientBalance on a concurrent-drain race — graceful decline (OQ-AI-3).
+        var debitResult = await DebitEnergyAsync(childId, cost, reasonCode, idempotencyKey, cancellationToken);
+        if (debitResult is { Charged: false, Outcome: DebitOutcome.InsufficientBalance })
+        {
+            _logger.LogInfo($"ExplainConceptCommandHandler: concurrent balance drain for childId={childId} — graceful decline post-safety.");
+            return new ExplainResult.Error(
+                nameof(SharedResourcesKey.AiInsufficientEnergy),
+                _localizer[SharedResourcesKey.AiInsufficientEnergy]);
+        }
+        // ─────────────────────────────────────────────────────────────────────────────
 
         // Step 10 — emit HelpDelivered fire-and-forget.
         _ = _publisher.Publish(
@@ -319,6 +390,28 @@ public sealed class ExplainConceptCommandHandler : ICommandHandler<ExplainConcep
             CancellationToken.None);
 
         return new ExplainResult.Streamed(safeResult.Content ?? string.Empty);
+    }
+
+    /// <summary>
+    /// Calls <see cref="ICreditSpendService.TryDebitAsync"/> and returns the result.
+    /// On failure (billing unavailable), logs and returns null — fail-soft so a billing
+    /// outage never hard-blocks a student from getting an AI response they earned.
+    /// </summary>
+    private async Task<DebitResult?> DebitEnergyAsync(
+        int childId, int cost, string reasonCode, string idempotencyKey, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _creditSpend.TryDebitAsync(childId, cost, reasonCode, idempotencyKey, ct);
+            if (result.Outcome == DebitOutcome.DuplicateIdempotent)
+                _logger.LogInfo($"ExplainConceptCommandHandler: idempotent debit (retry) for childId={childId}, key={idempotencyKey[..8]}…");
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarn($"ExplainConceptCommandHandler: TryDebitAsync failed for childId={childId}. Fail-soft. {ex.GetType().Name}");
+            return null;
+        }
     }
 
     private bool TryResolveProfile(out int grade, out int age, out TutorLanguage language)

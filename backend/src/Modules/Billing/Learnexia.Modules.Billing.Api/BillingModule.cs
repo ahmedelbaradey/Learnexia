@@ -1,5 +1,7 @@
+using Hangfire;
 using Learnexia.Modules.Billing.Application;
 using Learnexia.Modules.Billing.Infrastructure;
+using Learnexia.Modules.Billing.Infrastructure.Jobs;
 using Learnexia.Modules.Billing.Infrastructure.Persistence;
 using Learnexia.Modules.Billing.Infrastructure.Seeders;
 using Learnexia.Shared.Kernel.Abstractions;
@@ -51,5 +53,19 @@ public static class BillingModule
             logger.LogError(ex, "BillingModule: failed to apply migrations or seed.");
             throw;
         }
+
+        // ── Register Hangfire recurring jobs ───────────────────────────────────────
+        // AddOrUpdate is idempotent — safe to call on every startup.
+        var recurringJobs = serviceProvider.GetRequiredService<IRecurringJobManager>();
+
+        // P10-02: Monthly energy grant sweep — 01:00 UTC on the 1st of each month.
+        // The cron schedule is a deployment concern; amounts come from GlobalSettings at run time.
+        recurringJobs.AddOrUpdate<BillingGrantJob>(
+            "billing:monthly-grant",
+            job => job.RunAsync(CancellationToken.None),
+            "0 1 1 * *",
+            new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+        logger.LogInfo("BillingModule: Hangfire jobs registered (billing:monthly-grant).");
     }
 }

@@ -6,6 +6,10 @@ using System.Text.Json;
 using FluentAssertions;
 using Learnexia.Modules.Ai.Domain.Entities;
 using Learnexia.Modules.Ai.Infrastructure.Persistence;
+using Learnexia.Modules.Billing.Domain.Enums;
+using Learnexia.Modules.Billing.Infrastructure.Persistence;
+using Learnexia.Modules.Billing.Infrastructure.Seeders;
+using Learnexia.Shared.Kernel.Settings;
 using Learnexia.Modules.Curriculum.Application.Abstractions;
 using Learnexia.Modules.Curriculum.Application.Features.Retrieval.Queries.RetrieveChunks;
 using Learnexia.Modules.Curriculum.Infrastructure.Persistence;
@@ -290,6 +294,7 @@ public sealed class AiRuntimeTestFactory : WebApplicationFactory<Program>
             ReplaceDbContext<GamificationDbContext>(services, _postgresConnectionString, "gamification");
             ReplaceDbContext<ModerationDbContext>(services, _postgresConnectionString, "moderation");
             ReplaceDbContext<AiDbContext>(services, _postgresConnectionString, "ai");
+            ReplaceDbContext<BillingDbContext>(services, _postgresConnectionString, BillingDbContext.Schema);
 
             // CurriculumDbContext: needs UseVector() for pgvector support
             services.RemoveAll<DbContextOptions<CurriculumDbContext>>();
@@ -346,6 +351,13 @@ public sealed class AiRuntimeTestFactory : WebApplicationFactory<Program>
         await sp.GetRequiredService<AiDbContext>().Database.MigrateAsync();
         await sp.GetRequiredService<CurriculumDbContext>().Database.MigrateAsync();
 
+        // Billing: migrate schema + seed GlobalSettings (ai_cost.* and credits.* keys)
+        // so the pre-authorize step in AI delivery handlers can read per-intent costs.
+        var billingDb     = sp.GetRequiredService<BillingDbContext>();
+        var billingLogger = sp.GetRequiredService<Learnexia.Shared.Kernel.Abstractions.ILoggerManager>();
+        await billingDb.Database.MigrateAsync();
+        await GlobalSettingsSeeder.SeedAsync(billingDb, billingLogger);
+
         // Seed roles + superadmin + basicuser (required by sign-in / role-check tests).
         await Learnexia.Modules.Identity.Api.IdentityModule.SeedAsync(sp);
         var userManager = sp.GetRequiredService<Microsoft.AspNetCore.Identity.UserManager<Learnexia.Modules.Identity.Domain.Entities.User>>();
@@ -362,6 +374,8 @@ public sealed class AiRuntimeTestFactory : WebApplicationFactory<Program>
     /// <summary>
     /// Replaces ALL module DbContexts to point at the Testcontainers Postgres.
     /// CurriculumDbContext also enables pgvector via UseVector().
+    /// BillingDbContext is included so the energy pre-authorize path in AI delivery
+    /// handlers can resolve costs and accounts from the test container.
     /// </summary>
     internal static void ReplaceDbContexts(IServiceCollection services, string pgConn)
     {
@@ -372,6 +386,7 @@ public sealed class AiRuntimeTestFactory : WebApplicationFactory<Program>
         ReplaceDbContext<GamificationDbContext>(services, pgConn, "gamification");
         ReplaceDbContext<ModerationDbContext>(services, pgConn, "moderation");
         ReplaceDbContext<AiDbContext>(services, pgConn, "ai");
+        ReplaceDbContext<BillingDbContext>(services, pgConn, BillingDbContext.Schema);
 
         services.RemoveAll<DbContextOptions<CurriculumDbContext>>();
         services.RemoveAll<CurriculumDbContext>();
@@ -382,6 +397,45 @@ public sealed class AiRuntimeTestFactory : WebApplicationFactory<Program>
                     .UseVector()
                     .MigrationsHistoryTable("__EFMigrationsHistory", CurriculumDbContext.Schema)
                     .MigrationsAssembly(typeof(CurriculumDbContext).Assembly.FullName)));
+    }
+
+    /// <summary>
+    /// Seeds a <see cref="BillingDbContext"/> <see cref="Learnexia.Modules.Billing.Domain.Entities.CreditAccount"/>
+    /// with an ample granted balance for the given <paramref name="childId"/>.
+    ///
+    /// <para>Called after <see cref="CreateStudentJwtAsync"/> returns, using the child user-id
+    /// decoded from the JWT. This ensures the energy pre-authorize step inside AI delivery
+    /// handlers never blocks happy-path tests.</para>
+    ///
+    /// <para>Idempotent: if the account already exists, the grant is added on top of any
+    /// existing balance (same pattern as <c>EnergyEconomyTestFactory.CreateStudentWithBalanceAsync</c>).</para>
+    /// </summary>
+    internal static async Task SeedStudentBalanceAsync(
+        WebApplicationFactory<Program> factory,
+        int childId,
+        int balance = 500)
+    {
+        using var scope = factory.Services.CreateScope();
+        var db          = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
+
+        var account = await db.CreditAccounts.FirstOrDefaultAsync(a => a.ChildId == childId);
+        if (account is null)
+        {
+            account = Learnexia.Modules.Billing.Domain.Entities.CreditAccount
+                .CreateEmpty(childId, "Africa/Cairo");
+            db.CreditAccounts.Add(account);
+            await db.SaveChangesAsync(0);
+        }
+
+        var grantKey  = $"ai-e2e-seed:{childId}:{Guid.NewGuid():N}";
+        var expiresAt = DateTime.UtcNow.AddMonths(6);
+        var tx        = account.ApplyGrant(
+            balance,
+            expiresAt,
+            CreditReasonCode.MonthlyGrantFree,
+            grantKey);
+        db.CreditTransactions.Add(tx);
+        await db.SaveChangesAsync(0);
     }
 
     /// <summary>
@@ -521,8 +575,18 @@ public sealed class P3_AI_RuntimeActivation_E2E_Tests : IAsyncLifetime
     /// <summary>
     /// Provisions a unique student account and returns a signed JWT.
     /// Grade is embedded in the JWT claims (from the child profile).
+    ///
+    /// <para>W2b energy charging: when <paramref name="factory"/> is supplied the helper seeds
+    /// an ample <c>CreditAccount</c> grant (500 credits) for the new child so the
+    /// pre-authorize step in AI delivery handlers never blocks happy-path tests.
+    /// No-delivery tests (401/403/validation/redirect/safety-block) create students
+    /// without a factory reference and therefore start with zero balance — which is fine
+    /// because those paths never reach the pre-auth check.</para>
     /// </summary>
-    private async Task<string> CreateStudentJwtAsync(HttpClient client, int grade = 4)
+    private async Task<string> CreateStudentJwtAsync(
+        HttpClient client,
+        int grade = 4,
+        WebApplicationFactory<Program>? factory = null)
     {
         var parentEmail = UniqueEmail("par");
         var (prResp, prBody) = await PostAsync(client, RegisterParentUrl,
@@ -553,7 +617,51 @@ public sealed class P3_AI_RuntimeActivation_E2E_Tests : IAsyncLifetime
         var signJson = JsonDocument.Parse(signBody).RootElement;
         TryProp(signJson, "data", out var signData).Should().BeTrue("body: {0}", signBody);
         TryProp(signData, "accessToken", out var accessToken).Should().BeTrue("body: {0}", signBody);
-        return accessToken.GetString()!;
+        var jwt = accessToken.GetString()!;
+
+        // Seed energy balance so happy-path delivery tests are never blocked by pre-auth.
+        if (factory is not null)
+        {
+            var childId = GetChildIdFromJwt(jwt);
+            await AiRuntimeTestFactory.SeedStudentBalanceAsync(factory, childId, balance: 500);
+        }
+
+        return jwt;
+    }
+
+    /// <summary>
+    /// Decodes the child (student) integer user-id from a JWT bearer token.
+    /// Mirrors the same logic used in <c>P10_W2_EnergyEconomy_E2E_Tests.GetSubjectIdFromJwt</c>.
+    /// </summary>
+    private static int GetChildIdFromJwt(string jwtToken)
+    {
+        var parts   = jwtToken.Split('.');
+        var payload = parts[1];
+        var padded  = payload + new string('=', (4 - payload.Length % 4) % 4);
+        var decoded = System.Convert.FromBase64String(padded.Replace('-', '+').Replace('_', '/'));
+        var json    = System.Text.Encoding.UTF8.GetString(decoded);
+        var doc     = JsonDocument.Parse(json).RootElement;
+
+        // Learnexia-specific: "Id" claim is the integer user id (emitted as a string "23")
+        if (doc.TryGetProperty("Id", out var idProp))
+        {
+            var raw = idProp.ValueKind == JsonValueKind.Number
+                ? idProp.GetInt32().ToString()
+                : idProp.GetString() ?? "";
+            if (int.TryParse(raw, out var parsed)) return parsed;
+        }
+
+        // Fallback: standard JWT claims
+        foreach (var prop in doc.EnumerateObject())
+        {
+            if (!string.Equals(prop.Name, "id", StringComparison.OrdinalIgnoreCase)) continue;
+            var raw = prop.Value.ValueKind == JsonValueKind.Number
+                ? prop.Value.GetInt32().ToString()
+                : prop.Value.GetString() ?? "";
+            if (int.TryParse(raw, out var vi)) return vi;
+        }
+
+        throw new InvalidOperationException($"Cannot parse child id from JWT payload: {json}");
     }
 
     /// <summary>Parses raw SSE body into (eventName, data) pairs.</summary>
@@ -627,7 +735,7 @@ public sealed class P3_AI_RuntimeActivation_E2E_Tests : IAsyncLifetime
         // SseTestFactory also points at the shared Postgres but uses in-memory Redis
         // (no Redis override) — OK since cache tests have their own factories.
         var sseClient = sseFactory.CreateClient();
-        var sseToken  = await CreateStudentJwtAsync(sseClient);
+        var sseToken  = await CreateStudentJwtAsync(sseClient, factory: sseFactory);
 
         var (resp, body) = await PostAsync(sseClient, ExplainUrl,
             new { SkillId = 101, LessonId = 1, ConceptId = (int?)null, Question = (string?)null },
@@ -720,7 +828,7 @@ public sealed class P3_AI_RuntimeActivation_E2E_Tests : IAsyncLifetime
         var qaStub2    = new StubQuestionAnswerContract { CorrectAnswer = "HINT_CORRECT_SENTINEL_XYZ" };
         using var hintSseFactory = new HintSseTestFactory(_fixture.PostgresConnectionString, safeStub2, ctxStub2, qaStub2);
         var client = hintSseFactory.CreateClient();
-        var token  = await CreateStudentJwtAsync(client);
+        var token  = await CreateStudentJwtAsync(client, factory: hintSseFactory);
 
         var (resp, body) = await PostAsync(client, HintUrl,
             new { QuestionId = 55, AttemptId = 1, Intent = 2 /* Hint */, HintLevel = (int?)null, WrongAnswer = (string?)null },
@@ -787,7 +895,7 @@ public sealed class P3_AI_RuntimeActivation_E2E_Tests : IAsyncLifetime
         var qaStub   = new StubQuestionAnswerContract { CorrectAnswer = "HINT_CORRECT_SENTINEL_XYZ" };
         using var factory = new HintSseTestFactory(_fixture.PostgresConnectionString, safeStub, ctxStub, qaStub);
         var client = factory.CreateClient();
-        var token  = await CreateStudentJwtAsync(client);
+        var token  = await CreateStudentJwtAsync(client, factory: factory);
 
         var (resp, body) = await PostAsync(client, HintUrl,
             new { QuestionId = 55, AttemptId = 1, Intent = 3 /* WhyWrong */, HintLevel = (int?)null, WrongAnswer = "5" },
@@ -827,7 +935,7 @@ public sealed class P3_AI_RuntimeActivation_E2E_Tests : IAsyncLifetime
             new StubSafetyLayer { Behavior = StubSafetyLayer.Mode.Allowed, AllowedContent = "مثال مشابه: 3/4 من كمية الماء..." },
             new StubContextProvider { Behavior = StubContextProvider.Mode.NonEmpty });
         var client = factory.CreateClient();
-        var token  = await CreateStudentJwtAsync(client);
+        var token  = await CreateStudentJwtAsync(client, factory: factory);
 
         var (resp, body) = await PostAsync(client, SimilarExampleUrl,
             new { SkillId = 77, QuestionId = (int?)null },
@@ -878,7 +986,7 @@ public sealed class P3_AI_RuntimeActivation_E2E_Tests : IAsyncLifetime
             new StubSafetyLayer { Behavior = StubSafetyLayer.Mode.Allowed, AllowedContent = "بكلام أبسط: النصف هو نصف الشيء." },
             new StubContextProvider { Behavior = StubContextProvider.Mode.NonEmpty });
         var client = factory.CreateClient();
-        var token  = await CreateStudentJwtAsync(client);
+        var token  = await CreateStudentJwtAsync(client, factory: factory);
 
         var (resp, body) = await PostAsync(client, SimplifyUrl,
             new { ConceptId = 5, LessonId = 1, PreviousExplanationRef = (string?)null },
@@ -912,7 +1020,7 @@ public sealed class P3_AI_RuntimeActivation_E2E_Tests : IAsyncLifetime
             new StubSafetyLayer { Behavior = StubSafetyLayer.Mode.Allowed },
             new StubContextProvider { Behavior = StubContextProvider.Mode.NonEmpty });
         var client = factory.CreateClient();
-        var token  = await CreateStudentJwtAsync(client);
+        var token  = await CreateStudentJwtAsync(client, factory: factory);
 
         var req = new HttpRequestMessage(HttpMethod.Post, ExplainUrl)
         {
@@ -934,7 +1042,7 @@ public sealed class P3_AI_RuntimeActivation_E2E_Tests : IAsyncLifetime
             new StubSafetyLayer { Behavior = StubSafetyLayer.Mode.Allowed },
             new StubContextProvider { Behavior = StubContextProvider.Mode.Empty });
         var client = factory.CreateClient();
-        var token  = await CreateStudentJwtAsync(client);
+        var token  = await CreateStudentJwtAsync(client, factory: factory);
 
         var (resp, body) = await PostAsync(client, ExplainUrl,
             new { SkillId = 88, LessonId = (int?)null, ConceptId = (int?)null },
@@ -963,7 +1071,7 @@ public sealed class P3_AI_RuntimeActivation_E2E_Tests : IAsyncLifetime
             new StubSafetyLayer { Behavior = StubSafetyLayer.Mode.Blocked },
             new StubContextProvider { Behavior = StubContextProvider.Mode.NonEmpty });
         var client = factory.CreateClient();
-        var token  = await CreateStudentJwtAsync(client);
+        var token  = await CreateStudentJwtAsync(client, factory: factory);
 
         // Use a unique ConceptId per test run to guarantee a cache MISS on this request.
         // Tests share the same Postgres DB (AiRuntimeFixture); a prior test with subjectId=1,
@@ -1026,7 +1134,7 @@ public sealed class P3_AI_RuntimeActivation_E2E_Tests : IAsyncLifetime
             contextMode: StubContextProvider.Mode.NonEmpty);
 
         var client = blockedFactory.CreateClient();
-        var token  = await CreateStudentJwtAsync(client);
+        var token  = await CreateStudentJwtAsync(client, factory: blockedFactory);
 
         // Record the baseline cache count BEFORE the blocked request (tests share a DB;
         // prior tests may have already written entries → compare delta, not absolute zero).
@@ -1079,7 +1187,7 @@ public sealed class P3_AI_RuntimeActivation_E2E_Tests : IAsyncLifetime
             safetyMode: StubSafetyLayer.Mode.ThrowOnCall,
             contextMode: StubContextProvider.Mode.NonEmpty);
         var client = factory.CreateClient();
-        var token  = await CreateStudentJwtAsync(client);
+        var token  = await CreateStudentJwtAsync(client, factory: factory);
 
         var (resp, body) = await PostAsync(client, ExplainUrl,
             new { SkillId = 300, LessonId = 1 }, token);
@@ -1112,7 +1220,7 @@ public sealed class P3_AI_RuntimeActivation_E2E_Tests : IAsyncLifetime
         factory.FakeGateway.ResponseContent = "الكسر جزء من كل — مع cache.";
 
         var client = factory.CreateClient();
-        var token  = await CreateStudentJwtAsync(client);
+        var token  = await CreateStudentJwtAsync(client, factory: factory);
 
         // Use a unique ConceptId per test run to guarantee a MISS on the first request.
         // Tests share the same Postgres DB (AiRuntimeFixture is collection-scoped); a fixed
@@ -1202,7 +1310,7 @@ public sealed class P3_AI_RuntimeActivation_E2E_Tests : IAsyncLifetime
         factory.FakeGateway.Reset();
 
         var client = factory.CreateClient();
-        var token  = await CreateStudentJwtAsync(client);
+        var token  = await CreateStudentJwtAsync(client, factory: factory);
 
         // ConceptId=501 → cache key A
         var (r1, b1) = await PostAsync(client, ExplainUrl,
@@ -1240,7 +1348,7 @@ public sealed class P3_AI_RuntimeActivation_E2E_Tests : IAsyncLifetime
         factory.FakeGateway.Reset();
 
         var client = factory.CreateClient();
-        var token  = await CreateStudentJwtAsync(client);
+        var token  = await CreateStudentJwtAsync(client, factory: factory);
 
         // Explain with SkillId=601
         var (r1, b1) = await PostAsync(client, ExplainUrl,
@@ -1289,7 +1397,7 @@ public sealed class P3_AI_RuntimeActivation_E2E_Tests : IAsyncLifetime
         factory.FakeGateway.Reset();
 
         var client = factory.CreateClient();
-        var token  = await CreateStudentJwtAsync(client);
+        var token  = await CreateStudentJwtAsync(client, factory: factory);
 
         // Use a unique ConceptId per test run to guarantee a MISS on the first request.
         // Tests share the same Postgres DB; a prior run of 4A/4B/4C wrote Approved entries with
@@ -1428,7 +1536,7 @@ public sealed class P3_AI_RuntimeActivation_E2E_Tests : IAsyncLifetime
         }
 
         var client = factory.CreateClient();
-        var token  = await CreateStudentJwtAsync(client, grade: 4);
+        var token  = await CreateStudentJwtAsync(client, grade: 4, factory: factory);
 
         // LessonId=1 → StubLessonContextContract returns SubjectId=1 (Subject.Math), GradeId=3.
         // Without a LessonId (null), subjectId defaults to 0 which maps to Subject=0 (unsupported)
@@ -1463,7 +1571,7 @@ public sealed class P3_AI_RuntimeActivation_E2E_Tests : IAsyncLifetime
         factory.FakeGateway.Reset();
 
         var client = factory.CreateClient();
-        var token  = await CreateStudentJwtAsync(client, grade: 3);
+        var token  = await CreateStudentJwtAsync(client, grade: 3, factory: factory);
 
         // SkillId=9999 — no chunk seeded for this skill → embedding won't match anything → empty retrieval
         var (resp, body) = await PostAsync(client, ExplainUrl,
@@ -1508,7 +1616,7 @@ public sealed class P3_AI_RuntimeActivation_E2E_Tests : IAsyncLifetime
 
         // Create a Grade-5 student
         var client    = factory.CreateClient();
-        var grade5Token = await CreateStudentJwtAsync(client, grade: 5);
+        var grade5Token = await CreateStudentJwtAsync(client, grade: 5, factory: factory);
 
         // Query SkillId=801 as a Grade-5 student.
         // The RagContextProvider resolves grade from IChildLearningProfileQuery (stubbed to return the student's profile grade).
@@ -1557,7 +1665,7 @@ public sealed class P3_AI_RuntimeActivation_E2E_Tests : IAsyncLifetime
         factory.FakeGateway.Reset();
 
         var client = factory.CreateClient();
-        var token  = await CreateStudentJwtAsync(client);  // single student; grade defaults to 4
+        var token  = await CreateStudentJwtAsync(client, factory: factory);  // single student; grade defaults to 4
 
         // ConceptId=100 → cache key A
         var reqBody1 = new { SkillId = 901, LessonId = 1, ConceptId = (int?)100 };
@@ -1748,6 +1856,37 @@ public sealed class CacheValidatingAiTestFactory : WebApplicationFactory<Program
 }
 
 /// <summary>
+/// Test-only <see cref="IGlobalSettingsProvider"/> stub that overrides a fixed set of bool keys
+/// while delegating everything else to the inner provider.
+///
+/// <para>Required by <see cref="CacheCountingAiTestFactory"/> to enforce
+/// <c>ai.cache.autoApproveEnabled=false</c> during Area5A tests. The production
+/// <c>DbBackedGlobalSettingsProvider</c> reads from the DB, which does NOT have an
+/// <c>ai.cache.autoApproveEnabled</c> row (not seeded by <c>GlobalSettingsSeeder</c>),
+/// so it always defaults to <c>true</c>. This stub injects the desired value directly.</para>
+/// </summary>
+internal sealed class BoolOverrideGlobalSettingsProviderStub : IGlobalSettingsProvider
+{
+    private readonly IGlobalSettingsProvider _inner;
+    private readonly Dictionary<string, bool> _boolOverrides;
+
+    public BoolOverrideGlobalSettingsProviderStub(
+        IGlobalSettingsProvider inner,
+        Dictionary<string, bool> boolOverrides)
+    {
+        _inner         = inner;
+        _boolOverrides = boolOverrides;
+    }
+
+    public bool GetBool(string key, bool defaultValue)
+        => _boolOverrides.TryGetValue(key, out var ov) ? ov : _inner.GetBool(key, defaultValue);
+
+    public decimal GetDecimal(string key, decimal defaultValue) => _inner.GetDecimal(key, defaultValue);
+    public int GetInt(string key, int defaultValue)             => _inner.GetInt(key, defaultValue);
+    public string GetString(string key, string defaultValue)    => _inner.GetString(key, defaultValue);
+}
+
+/// <summary>
 /// Factory for cache HIT/MISS tests (Area 4 + 5 + 7B).
 ///
 /// Uses the REAL <see cref="AiResponseCacheRepository"/> backed by the Testcontainers Postgres + Redis.
@@ -1757,6 +1896,11 @@ public sealed class CacheValidatingAiTestFactory : WebApplicationFactory<Program
 ///
 /// Tests must poll the real DB (via AiDbContext) after a MISS request to wait for the async write
 /// to land before issuing the HIT request — see Area4A for the polling pattern.
+///
+/// When <paramref name="autoApproveEnabled"/> is false, registers a
+/// <see cref="BoolOverrideGlobalSettingsProviderStub"/> wrapper so the
+/// <c>ai.cache.autoApproveEnabled=false</c> signal is honoured at runtime (the DB-backed
+/// provider doesn't have this key seeded, so it defaults to true without the override).
 ///
 /// Exposes <see cref="FakeGateway"/> for call count assertions.
 /// </summary>
@@ -1826,6 +1970,29 @@ public sealed class CacheCountingAiTestFactory : WebApplicationFactory<Program>
             services.RemoveAll<IQuestionAnswerContract>();
             services.AddTransient<IQuestionAnswerContract>(
                 _ => new StubQuestionAnswerContract { CorrectAnswer = "CACHE_CORRECT_SENTINEL_XYZ" });
+
+            // When autoApproveEnabled=false, the DB-backed IGlobalSettingsProvider would normally
+            // return true for ai.cache.autoApproveEnabled (key not seeded in platform.GlobalSettings).
+            // Replace the Singleton registration with a stub that forces the key to false, while
+            // delegating all other keys to the BootstrapDefaultGlobalSettingsProvider read from config.
+            // This avoids a circular-reference DI issue that arises from decorating the Singleton.
+            if (!_autoApproveEnabled)
+            {
+                services.RemoveAll<IGlobalSettingsProvider>();
+                services.AddSingleton<IGlobalSettingsProvider>(sp =>
+                {
+                    // Use the IConfiguration (which includes our ConfigureAppConfiguration overrides)
+                    // as the inner provider so ai.cost.* / ai.cache.* values still resolve correctly.
+                    var cfg = sp.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>();
+                    var configBacked = new Learnexia.Shared.Kernel.Settings.BootstrapDefaultGlobalSettingsProvider(cfg);
+                    return new BoolOverrideGlobalSettingsProviderStub(
+                        configBacked,
+                        new Dictionary<string, bool>
+                        {
+                            ["ai.cache.autoApproveEnabled"] = false,
+                        });
+                });
+            }
 
             AiRuntimeTestFactory.DisableIpRateLimit(services);
         });

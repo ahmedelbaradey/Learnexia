@@ -7,6 +7,9 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Hangfire.Core" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Learnexia.Modules.Billing.Application\Learnexia.Modules.Billing.Application.csproj" />
     <ProjectReference Include="..\Learnexia.Modules.Billing.Infrastructure\Learnexia.Modules.Billing.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\Shared\Learnexia.Shared.Kernel\Learnexia.Shared.Kernel.csproj" />

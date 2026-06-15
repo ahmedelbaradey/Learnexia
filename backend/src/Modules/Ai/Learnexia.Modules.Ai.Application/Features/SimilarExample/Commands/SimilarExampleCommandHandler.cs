@@ -4,6 +4,7 @@ using Learnexia.Modules.Ai.Application.Services;
 using Learnexia.Shared.Contracts.Ai;
 using Learnexia.Shared.Kernel.Settings;
 using Learnexia.Shared.Contracts.AiTutor;
+using Learnexia.Shared.Contracts.Billing;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,11 @@ namespace Learnexia.Modules.Ai.Application.Features.SimilarExample.Commands;
 /// in [0, practicePoolSize-1] (from <see cref="IGlobalSettingsProvider"/>), computes the
 /// Practice cache key, and checks <see cref="IAiResponseCache"/>. HIT → returns cached
 /// content with zero gateway calls (AC-B1). MISS → runs normal path + writes to cache.</para>
+///
+/// <para><strong>Charge-on-delivery (P10-03):</strong> energy credits are debited ONLY
+/// on successful delivery — both the cache-HIT early-return and the post-safety-success path
+/// debit via <see cref="ICreditSpendService"/>. No charge on refuse/scope-guard/safety-block/
+/// error/pre-auth insufficient. Uses <c>ai_cost.practice_generation</c> (cost=5).</para>
 /// </summary>
 public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampleCommand, SimilarExampleResult>
 {
@@ -43,6 +49,8 @@ public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampl
     private readonly IGlobalSettingsProvider _settings;
     private readonly RedirectResponseBuilder _redirectBuilder;
     private readonly IAiTutorRateLimiter _rateLimiter;
+    private readonly ICreditSpendService _creditSpend;
+    private readonly CreditCostResolver _costResolver;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
@@ -56,6 +64,8 @@ public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampl
         IGlobalSettingsProvider settings,
         RedirectResponseBuilder redirectBuilder,
         IAiTutorRateLimiter rateLimiter,
+        ICreditSpendService creditSpend,
+        CreditCostResolver costResolver,
         IServiceScopeFactory scopeFactory,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
@@ -68,6 +78,8 @@ public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampl
         _settings        = settings;
         _redirectBuilder = redirectBuilder;
         _rateLimiter     = rateLimiter;
+        _creditSpend     = creditSpend;
+        _costResolver    = costResolver;
         _scopeFactory    = scopeFactory;
         _logger          = logger;
         _localizer       = localizer;
@@ -95,6 +107,42 @@ public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampl
                 nameof(SharedResourcesKey.SimilarExampleRateLimitExceeded),
                 _localizer[SharedResourcesKey.SimilarExampleRateLimitExceeded]);
         }
+
+        // ── P10-03: resolve cost + generate per-request idempotency key ──────────────
+        // SimilarExample uses practice_generation cost (=5). Client never supplies cost.
+        var childId = studentId.Value;
+        var cost = _costResolver.ResolveCost(HelperIntent.SimilarExample);
+        var idempotencyKey = Guid.NewGuid().ToString("N");
+        var reasonCode = CreditCostResolver.ResolveReasonCode(HelperIntent.SimilarExample);
+
+        // ── P10-03-BE-2: pre-authorize (monthly hard-limit + optional daily hard-stop) ──
+        EnergyBalance balance;
+        try
+        {
+            balance = await _creditSpend.GetBalanceAsync(childId, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarn($"SimilarExampleCommandHandler: GetBalanceAsync failed for childId={childId}. Proceeding. {ex.GetType().Name}");
+            balance = new EnergyBalance(int.MaxValue, 0, int.MaxValue, null);
+        }
+
+        if (balance.TotalBalance < cost)
+        {
+            _logger.LogInfo($"SimilarExampleCommandHandler: insufficient energy for childId={childId}, balance={balance.TotalBalance}, cost={cost}.");
+            return new SimilarExampleResult.Error(
+                nameof(SharedResourcesKey.AiInsufficientEnergy),
+                _localizer[SharedResourcesKey.AiInsufficientEnergy]);
+        }
+
+        if (_costResolver.IsHardStopEnabled && balance.DailyCapReached)
+        {
+            _logger.LogInfo($"SimilarExampleCommandHandler: daily cap reached for childId={childId}. HardStop=true.");
+            return new SimilarExampleResult.Error(
+                nameof(SharedResourcesKey.AiDailyCapReached),
+                _localizer[SharedResourcesKey.AiDailyCapReached]);
+        }
+        // ─────────────────────────────────────────────────────────────────────────────────
 
         // Step 2 — emit HelpRequested fire-and-forget.
         var helpRequestedEvent = new HelpRequestedIntegrationEvent(
@@ -141,7 +189,7 @@ public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampl
                 Language: language);
         }
 
-        // Step 6 — AC-7 scope guard: empty chunks → refuse-and-redirect.
+        // Step 6 — AC-7 scope guard: empty chunks → refuse-and-redirect. NO debit.
         if (learningCtx.Chunks.Count == 0)
         {
             _logger.LogInfo(
@@ -189,6 +237,10 @@ public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampl
         if (cachedContent is not null)
         {
             _logger.LogInfo($"SimilarExampleCommandHandler: cache HIT (vi={variationIndex}) for studentId={studentId}, key={cacheKey[..8]}…");
+
+            // ── P10-03-BE-3 DELIVERY POINT #1: cache HIT → debit ────────────────────
+            await DebitEnergyAsync(childId, cost, reasonCode, idempotencyKey, cancellationToken);
+            // ─────────────────────────────────────────────────────────────────────────
 
             _ = Task.Run(async () =>
             {
@@ -246,6 +298,7 @@ public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampl
         {
             _logger.LogError(ex,
                 $"SimilarExampleCommandHandler: ISafetyLayer threw for studentId={studentId}. Returning typed error.");
+            // NO debit on generation error.
             return new SimilarExampleResult.Error(
                 nameof(SharedResourcesKey.AiServiceUnavailable),
                 _localizer[SharedResourcesKey.AiServiceUnavailable]);
@@ -256,7 +309,7 @@ public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampl
         {
             _logger.LogWarn(
                 $"SimilarExampleCommandHandler: safety blocked for studentId={studentId}, verdict={safeResult.Verdict}.");
-            // Safety-FAILED: DO NOT cache.
+            // Safety-FAILED: DO NOT cache. NO debit.
             return new SimilarExampleResult.Error(
                 nameof(SharedResourcesKey.SimilarExampleSafetyBlocked),
                 _localizer[SharedResourcesKey.SimilarExampleSafetyBlocked]);
@@ -299,6 +352,17 @@ public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampl
         });
         // ─────────────────────────────────────────────────────────────────────────
 
+        // ── P10-03-BE-3 DELIVERY POINT #2: post-safety success → debit ──────────────
+        var debitResult = await DebitEnergyAsync(childId, cost, reasonCode, idempotencyKey, cancellationToken);
+        if (debitResult is { Charged: false, Outcome: DebitOutcome.InsufficientBalance })
+        {
+            _logger.LogInfo($"SimilarExampleCommandHandler: concurrent balance drain for childId={childId} — graceful decline post-safety.");
+            return new SimilarExampleResult.Error(
+                nameof(SharedResourcesKey.AiInsufficientEnergy),
+                _localizer[SharedResourcesKey.AiInsufficientEnergy]);
+        }
+        // ─────────────────────────────────────────────────────────────────────────────
+
         // Step 11 — emit HelpDelivered fire-and-forget.
         var helpDeliveredEvent = new HelpDeliveredIntegrationEvent(
             studentId.Value, HelperIntent.SimilarExample, request.SkillId, request.QuestionId,
@@ -318,6 +382,24 @@ public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampl
         });
 
         return new SimilarExampleResult.Streamed(safeResult.Content ?? string.Empty);
+    }
+
+    /// <summary>Fail-soft debit — a billing outage never hard-blocks a student.</summary>
+    private async Task<DebitResult?> DebitEnergyAsync(
+        int childId, int cost, string reasonCode, string idempotencyKey, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _creditSpend.TryDebitAsync(childId, cost, reasonCode, idempotencyKey, ct);
+            if (result.Outcome == DebitOutcome.DuplicateIdempotent)
+                _logger.LogInfo($"SimilarExampleCommandHandler: idempotent debit (retry) for childId={childId}.");
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarn($"SimilarExampleCommandHandler: TryDebitAsync failed for childId={childId}. Fail-soft. {ex.GetType().Name}");
+            return null;
+        }
     }
 
     private void TryResolveProfile(out int grade, out int age, out TutorLanguage language)

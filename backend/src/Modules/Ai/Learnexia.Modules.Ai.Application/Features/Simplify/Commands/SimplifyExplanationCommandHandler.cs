@@ -4,6 +4,7 @@ using Learnexia.Modules.Ai.Application.Services;
 using Learnexia.Shared.Contracts.Ai;
 using Learnexia.Shared.Kernel.Settings;
 using Learnexia.Shared.Contracts.AiTutor;
+using Learnexia.Shared.Contracts.Billing;
 using Learnexia.Shared.Contracts.Learning;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
@@ -25,6 +26,11 @@ namespace Learnexia.Modules.Ai.Application.Features.Simplify.Commands;
 /// (ConceptId/LessonId, GradeId, Language, Difficulty=0, PromptVersion, CurriculumVersion).
 /// On HIT → returns cached content with zero gateway calls (AC-B1).
 /// On MISS → runs the normal path and writes to cache on safety-PASS.</para>
+///
+/// <para><strong>Charge-on-delivery (P10-03):</strong> energy credits are debited ONLY
+/// on successful delivery — both the cache-HIT early-return and the post-safety-success
+/// path debit via <see cref="ICreditSpendService"/>. No charge on refuse/safety-block/error/
+/// pre-auth insufficient. Uses <c>ai_cost.deep_explanation</c> (same as Explain intent).</para>
 /// </summary>
 public sealed class SimplifyExplanationCommandHandler : ICommandHandler<SimplifyExplanationCommand, SimplifyResult>
 {
@@ -46,6 +52,8 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
     private readonly IGlobalSettingsProvider _settings;
     private readonly RedirectResponseBuilder _redirectBuilder;
     private readonly IAiTutorRateLimiter _rateLimiter;
+    private readonly ICreditSpendService _creditSpend;
+    private readonly CreditCostResolver _costResolver;
     private readonly IPublisher _publisher;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILoggerManager _logger;
@@ -61,6 +69,8 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
         IGlobalSettingsProvider settings,
         RedirectResponseBuilder redirectBuilder,
         IAiTutorRateLimiter rateLimiter,
+        ICreditSpendService creditSpend,
+        CreditCostResolver costResolver,
         IPublisher publisher,
         IServiceScopeFactory scopeFactory,
         ILoggerManager logger,
@@ -75,6 +85,8 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
         _settings        = settings;
         _redirectBuilder = redirectBuilder;
         _rateLimiter     = rateLimiter;
+        _creditSpend     = creditSpend;
+        _costResolver    = costResolver;
         _publisher       = publisher;
         _scopeFactory    = scopeFactory;
         _logger          = logger;
@@ -103,6 +115,42 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
                 nameof(SharedResourcesKey.SimplifyRateLimitExceeded),
                 _localizer[SharedResourcesKey.SimplifyRateLimitExceeded]);
         }
+
+        // ── P10-03: resolve cost + generate per-request idempotency key ──────────────
+        // Simplify shares the deep_explanation cost with Explain (locked economy model).
+        var childId = studentId.Value;
+        var cost = _costResolver.ResolveCost(HelperIntent.Explain);
+        var idempotencyKey = Guid.NewGuid().ToString("N");
+        var reasonCode = CreditCostResolver.ResolveReasonCode(HelperIntent.Explain);
+
+        // ── P10-03-BE-2: pre-authorize (monthly hard-limit + optional daily hard-stop) ──
+        EnergyBalance balance;
+        try
+        {
+            balance = await _creditSpend.GetBalanceAsync(childId, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarn($"SimplifyExplanationCommandHandler: GetBalanceAsync failed for childId={childId}. Proceeding. {ex.GetType().Name}");
+            balance = new EnergyBalance(int.MaxValue, 0, int.MaxValue, null);
+        }
+
+        if (balance.TotalBalance < cost)
+        {
+            _logger.LogInfo($"SimplifyExplanationCommandHandler: insufficient energy for childId={childId}, balance={balance.TotalBalance}, cost={cost}.");
+            return new SimplifyResult.Error(
+                nameof(SharedResourcesKey.AiInsufficientEnergy),
+                _localizer[SharedResourcesKey.AiInsufficientEnergy]);
+        }
+
+        if (_costResolver.IsHardStopEnabled && balance.DailyCapReached)
+        {
+            _logger.LogInfo($"SimplifyExplanationCommandHandler: daily cap reached for childId={childId}. HardStop=true.");
+            return new SimplifyResult.Error(
+                nameof(SharedResourcesKey.AiDailyCapReached),
+                _localizer[SharedResourcesKey.AiDailyCapReached]);
+        }
+        // ─────────────────────────────────────────────────────────────────────────────────
 
         // Step 2 — emit HelpRequested fire-and-forget (before any LLM call).
         _ = _publisher.Publish(
@@ -157,7 +205,7 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
 
         var skillId = learningCtx.SkillId;
 
-        // Step 6 — AC-3 scope guard: empty chunks → refuse-and-redirect.
+        // Step 6 — AC-3 scope guard: empty chunks → refuse-and-redirect. NO debit.
         if (learningCtx.Chunks.Count == 0)
         {
             _logger.LogInfo(
@@ -196,7 +244,7 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
 
         var aiRequest = ((PromptBuilderResult.Success)promptResult).Request;
 
-        // ── WI-B4: cache-first lookup (AC-B1) ───────────────────────────────────
+        // ── WI-B4: cache-first lookup (AC-B1) ───────────────────────────────────────
         // Simplify shares the Explain cache key space (same tuple dimensions).
         // Security: jwtGrade (from JWT claim, server-trusted) is used for the key's age dimension
         // rather than gradeResolved (which can be the spoofable lesson/context grade).
@@ -214,6 +262,10 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
         {
             _logger.LogInfo($"SimplifyExplanationCommandHandler: cache HIT for studentId={studentId}, key={cacheKey[..8]}…");
 
+            // ── P10-03-BE-3 DELIVERY POINT #1: cache HIT → debit ────────────────────
+            await DebitEnergyAsync(childId, cost, reasonCode, idempotencyKey, cancellationToken);
+            // ─────────────────────────────────────────────────────────────────────────
+
             _ = _publisher.Publish(
                 new HelpDeliveredIntegrationEvent(
                     studentId.Value, HelperIntent.Explain, skillId, request.ConceptId,
@@ -222,7 +274,7 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
 
             return new SimplifyResult.Streamed(cachedContent);
         }
-        // ─────────────────────────────────────────────────────────────────────────
+        // ─────────────────────────────────────────────────────────────────────────────
 
         // Step 8 — call ISafetyLayer.
         SafeAiResult safeResult;
@@ -233,6 +285,7 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
         catch (Exception ex)
         {
             _logger.LogError(ex, $"SimplifyExplanationCommandHandler: ISafetyLayer threw for studentId={studentId}. Returning typed error.");
+            // NO debit on generation error.
             return new SimplifyResult.Error(
                 nameof(SharedResourcesKey.AiServiceUnavailable),
                 _localizer[SharedResourcesKey.AiServiceUnavailable]);
@@ -242,7 +295,7 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
         if (!safeResult.Allowed)
         {
             _logger.LogWarn($"SimplifyExplanationCommandHandler: safety blocked for studentId={studentId}, verdict={safeResult.Verdict}.");
-            // Safety-FAILED: DO NOT cache.
+            // Safety-FAILED: DO NOT cache. NO debit.
             return new SimplifyResult.Error(
                 nameof(SharedResourcesKey.SimplifySafetyBlocked),
                 _localizer[SharedResourcesKey.SimplifySafetyBlocked]);
@@ -283,7 +336,18 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
                 _logger.LogWarn($"SimplifyExplanationCommandHandler: cache write fire-and-forget failed. {ex.GetType().Name}");
             }
         });
-        // ─────────────────────────────────────────────────────────────────────────
+        // ─────────────────────────────────────────────────────────────────────────────
+
+        // ── P10-03-BE-3 DELIVERY POINT #2: post-safety success → debit ──────────────
+        var debitResult = await DebitEnergyAsync(childId, cost, reasonCode, idempotencyKey, cancellationToken);
+        if (debitResult is { Charged: false, Outcome: DebitOutcome.InsufficientBalance })
+        {
+            _logger.LogInfo($"SimplifyExplanationCommandHandler: concurrent balance drain for childId={childId} — graceful decline post-safety.");
+            return new SimplifyResult.Error(
+                nameof(SharedResourcesKey.AiInsufficientEnergy),
+                _localizer[SharedResourcesKey.AiInsufficientEnergy]);
+        }
+        // ─────────────────────────────────────────────────────────────────────────────
 
         // Step 10 — emit HelpDelivered fire-and-forget.
         _ = _publisher.Publish(
@@ -293,6 +357,24 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
             CancellationToken.None);
 
         return new SimplifyResult.Streamed(safeResult.Content ?? string.Empty);
+    }
+
+    /// <summary>Fail-soft debit — a billing outage never hard-blocks a student.</summary>
+    private async Task<DebitResult?> DebitEnergyAsync(
+        int childId, int cost, string reasonCode, string idempotencyKey, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _creditSpend.TryDebitAsync(childId, cost, reasonCode, idempotencyKey, ct);
+            if (result.Outcome == DebitOutcome.DuplicateIdempotent)
+                _logger.LogInfo($"SimplifyExplanationCommandHandler: idempotent debit (retry) for childId={childId}.");
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarn($"SimplifyExplanationCommandHandler: TryDebitAsync failed for childId={childId}. Fail-soft. {ex.GetType().Name}");
+            return null;
+        }
     }
 
     private void TryResolveProfile(out int grade, out int age, out TutorLanguage language)

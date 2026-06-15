@@ -59,16 +59,26 @@ public class ReconcileAccountQueryHandler : BaseResponseHandler, IQueryHandler<R
                         ledgerPurchased -= t.Amount;
                         break;
                     case CreditTransactionType.Spend:
-                        // Spend draws Granted-first — use the recorded resulting balances to reconstruct the split.
-                        // Simpler approach: subtract from granted first, then purchased.
-                        if (t.Pool == CreditPool.Granted) ledgerGranted -= t.Amount;
+                        // W2 carried fix: use the exact FromGranted/FromPurchased split stored at debit time.
+                        // Legacy rows (FromGranted=0, FromPurchased=0) fall back to the Pool-based heuristic
+                        // so existing data remains reconcilable.
+                        if (t.FromGranted > 0 || t.FromPurchased > 0)
+                        {
+                            ledgerGranted -= t.FromGranted;
+                            ledgerPurchased -= t.FromPurchased;
+                        }
+                        else if (t.Pool == CreditPool.Granted) ledgerGranted -= t.Amount;
                         else if (t.Pool == CreditPool.Purchased) ledgerPurchased -= t.Amount;
                         else
                         {
-                            // Mixed: derive from the resulting-balances snapshot.
-                            var priorGranted = t.ResultingGrantedBalance + (int)(t.Amount * (1.0 * t.ResultingGrantedBalance / (t.ResultingGrantedBalance + t.ResultingPurchasedBalance + t.Amount)));
-                            // For simplicity in reconciliation, use the amount stored directly (the Debit mutator records pool).
-                            ledgerGranted -= (t.ResultingGrantedBalance - (account.GrantedBalance)); // approximate
+                            // Legacy Mixed rows without split columns: best-effort from Pool heuristic.
+                            // This branch only fires for rows written before the W2 migration.
+                            ledgerGranted -= t.ResultingGrantedBalance > 0
+                                ? Math.Min(t.Amount, t.ResultingGrantedBalance)
+                                : 0;
+                            ledgerPurchased -= t.Amount - (t.ResultingGrantedBalance > 0
+                                ? Math.Min(t.Amount, t.ResultingGrantedBalance)
+                                : 0);
                         }
                         break;
                     case CreditTransactionType.Adjustment:
