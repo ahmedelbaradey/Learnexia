@@ -1,63 +1,42 @@
 /**
- * Energy screen — stub placeholder for the Helper Energy / IAP surface.
+ * Energy screen — the parent "Helper Energy" surface (Batch D).
  *
- * The full battery / in-app purchase UI is a later batch (Batch D+). This stub
- * satisfies the parent tab bar navigation so the Energy tab routes correctly.
+ * Wide (≥768): the shell `_layout.tsx` owns the Sidebar + content ScrollView,
+ * so this page just renders `<EnergyWeb>` (same pattern as settings.tsx).
  *
- * Wide (≥768): the shell owns the Sidebar + content ScrollView — this page just
- * renders its body content directly (same pattern as reports.tsx / settings.tsx).
+ * Narrow (<768): the shell provides the tab bar; this page wraps `<EnergyWeb>`
+ * in a local ScrollView. `EnergyWeb` renders the unified ParentHeader itself.
  *
- * Narrow (<768): the shell provides the tab bar; this page renders the body
- * only (no duplicate header — the tab bar serves as the nav).
+ * IAP NOTE: the "Buy credits" CTA inside EnergyWeb is a GATED stub — it does NOT
+ * start a real purchase (no payments backend / store config wired). See
+ * EnergyWeb's `handleBuy` TODO(Batch D / P10 IAP).
  */
-import { Stack, Text } from '@tamagui/core';
-import { useWindowDimensions } from 'react-native';
-import { useTranslation } from 'react-i18next';
+import { Stack } from '@tamagui/core';
+import { ScrollView, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useLocale } from '../../src/hooks/useLocale';
-import { ParentHeader } from './_components/ParentHeader';
+import { EnergyWeb } from './_components/EnergyWeb';
 
+/** Sidebar appears at the tablet breakpoint and up (design-system `media`). */
 const WIDE_BREAKPOINT = 768;
 
 export default function EnergyScreen() {
-  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { direction } = useLocale();
 
   const isWide = width >= WIDE_BREAKPOINT;
 
+  if (isWide) {
+    // Wide: shell owns sidebar + scroll; just render the body content.
+    return <EnergyWeb />;
+  }
+
+  // Narrow: EnergyWeb renders the unified ParentHeader — just a local scroll region.
   return (
-    <Stack flex={1} backgroundColor="$bg">
-      {/* Unified header keeps ChildSwitcher + AccountMenu reachable on this stub. */}
-      <ParentHeader title={t('parent.energy.title')} />
-      <Stack
-        flex={1}
-        paddingHorizontal="$6"
-        paddingTop={isWide ? '$8' : '$6'}
-        paddingBottom="$6"
-        alignItems="center"
-        justifyContent="center"
-        gap="$4"
-      >
-        {/* Page eyebrow */}
-        <Text
-          fontSize={40}
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-        >
-          {'⚡'}
-        </Text>
-        <Text
-          color="$fg3"
-          fontSize={15}
-          fontFamily="$body"
-          writingDirection={direction}
-          textAlign="center"
-          maxWidth={300}
-        >
-          {t('parent.energy.comingSoon')}
-        </Text>
-      </Stack>
+    <Stack flex={1} backgroundColor="$bg" paddingTop={insets.top}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 48 }}>
+        <EnergyWeb />
+      </ScrollView>
     </Stack>
   );
 }

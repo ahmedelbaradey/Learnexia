@@ -754,15 +754,84 @@ export const en = {
       /** "Light" segment — maps to the light theme. */
       themeLight: 'Light',
     },
-    // Helper Energy stub screen (full IAP surface is a later batch).
+    // Helper Energy screen (Batch D). ⚡ Energy = AI-helper fuel (teal), kept
+    // distinct from ❤️ Hearts (lives, rose). IAP buy-flow is a gated stub.
     energy: {
       title: 'Helper Energy',
-      comingSoon: 'Energy top-ups and usage will appear here soon.',
+      subtitle: 'Fuel for your child\'s AI study helpers',
+      balance: {
+        heading: 'Energy left this month',
+        // {{used}} / {{total}} stay Latin (technical), e.g. "180 / 300".
+        ofTotal: 'of {{total}}',
+        reset: 'Resets in {{days}}',
+        resetDays_one: '{{value}} day',
+        resetDays_other: '{{value}} days',
+        dailyCap: '{{value}}/day cap',
+        a11y: 'Energy balance: {{balance}} of {{total}} credits left this month.',
+      },
+      meters: {
+        heading: 'Two separate meters',
+        energyName: 'Energy',
+        energyDesc: '= AI-helper fuel (this page)',
+        heartsName: 'Hearts',
+        heartsDesc: '= lives in practice',
+      },
+      usage: {
+        heading: 'Helpers used this week',
+        hints: 'Hints',
+        explain: 'Explain',
+        deep: 'Deep',
+        practice: 'Practice',
+      },
+      topUp: {
+        // {{credits}} is localized, the ⚡ glyph is fixed.
+        packTitle: '+{{credits}} ⚡',
+        packSubtitle: 'Top-up pack · added instantly',
+        buy: 'Buy {{credits}} credits',
+        // Gated IAP stub — surfaced when the disabled-style CTA is tapped.
+        comingSoon: 'In-app purchases are coming soon.',
+        priceNote: 'Children never see prices — you manage energy.',
+      },
     },
-    // Activity / notification timeline stub screen (full timeline is a later batch).
+    // Activity timeline (Batch D): filter chips + event rows. Stub feed.
     activity: {
       title: 'Activity',
-      comingSoon: 'Your children\'s recent activity will appear here soon.',
+      subtitle: 'Recent moments across your children',
+      filters: {
+        navLabel: 'Filter activity',
+        all: 'All',
+        badges: '🏅 Badges',
+        energy: '⚡ Energy',
+        alerts: '🔔 Alerts',
+      },
+      // Event action text — the child name is rendered (bold) separately by the
+      // row, so these are the action half only. `{{value}}` carries the
+      // locale-formatted digits (Eastern-Arabic in AR); `count` drives plurals.
+      events: {
+        badgeEarned: 'earned a new badge',
+        levelUp: 'leveled up to level {{value}}',
+        lessonCompleted: 'completed a lesson · {{value}}/5 correct',
+        energyUsed: 'used {{value}} AI helpers in a lesson',
+        energyLow: 'is low on energy · {{value}} ⚡ left',
+        streakReached: 'reached a {{value}}-day streak',
+        inactive: 'has been inactive for {{value}} days',
+        // Composed a11y label per row: "<name> <action>, <time>".
+        a11y: '{{name}} {{action}}, {{time}}',
+      },
+      // Relative time labels — `{{value}}` carries locale-formatted digits.
+      time: {
+        justNow: 'Just now',
+        minutes_one: '{{value}} min ago',
+        minutes_other: '{{value}} min ago',
+        hours_one: '{{value}} hr ago',
+        hours_other: '{{value}} hrs ago',
+        days_one: '{{value}} day ago',
+        days_other: '{{value}} days ago',
+      },
+      empty: {
+        title: 'Nothing here yet',
+        body: 'No activity matches this filter.',
+      },
     },
   },
   child: {
@@ -2007,15 +2076,88 @@ export const ar = {
       /** خيار «فاتح» — يُعيَّن على المظهر الفاتح. */
       themeLight: 'فاتح',
     },
-    // شاشة طاقة المساعد المؤقتة (واجهة الشراء الكاملة في دفعة لاحقة).
+    // شاشة طاقة المساعد (الدفعة د). ⚡ الطاقة = وقود مساعد الذكاء الاصطناعي
+    // (لون أزرق مخضرّ)، منفصلة عن ❤️ القلوب (الأرواح، وردي). الشراء معطّل.
     energy: {
       title: 'طاقة المساعد',
-      comingSoon: 'سيظهر هنا قريباً شراء الطاقة واستخدامها.',
+      subtitle: 'وقود مساعدي الدراسة بالذكاء الاصطناعي لطفلك',
+      balance: {
+        heading: 'الطاقة المتبقية هذا الشهر',
+        ofTotal: 'من {{total}}',
+        reset: 'تتجدد بعد {{days}}',
+        resetDays_one: 'يوم واحد',
+        resetDays_two: 'يومين',
+        resetDays_few: '{{value}} أيام',
+        resetDays_many: '{{value}} يومًا',
+        resetDays_other: '{{value}} يوم',
+        dailyCap: 'حد {{value}}/يوم',
+        a11y: 'رصيد الطاقة: {{balance}} من {{total}} نقطة متبقية هذا الشهر.',
+      },
+      meters: {
+        heading: 'مقياسان منفصلان',
+        energyName: 'الطاقة',
+        energyDesc: '= وقود مساعد الذكاء الاصطناعي (هذه الصفحة)',
+        heartsName: 'القلوب',
+        heartsDesc: '= الأرواح في التدريب',
+      },
+      usage: {
+        heading: 'المساعدون المستخدمون هذا الأسبوع',
+        hints: 'تلميحات',
+        explain: 'شرح',
+        deep: 'تعمّق',
+        practice: 'تدريب',
+      },
+      topUp: {
+        packTitle: '+{{credits}} ⚡',
+        packSubtitle: 'باقة شحن · تُضاف فورًا',
+        buy: 'اشترِ {{credits}} نقطة',
+        comingSoon: 'الشراء داخل التطبيق قادم قريبًا.',
+        priceNote: 'الأطفال لا يرون الأسعار — أنت من يدير الطاقة.',
+      },
     },
-    // شاشة النشاط / الجدول الزمني للإشعارات (الجدول الكامل في دفعة لاحقة).
+    // الجدول الزمني للنشاط (الدفعة د): رقائق التصفية + صفوف الأحداث. بيانات تجريبية.
     activity: {
       title: 'النشاط',
-      comingSoon: 'سيظهر هنا قريباً النشاط الأخير لأطفالك.',
+      subtitle: 'أحدث اللحظات عبر أطفالك',
+      filters: {
+        navLabel: 'تصفية النشاط',
+        all: 'الكل',
+        badges: '🏅 الأوسمة',
+        energy: '⚡ الطاقة',
+        alerts: '🔔 التنبيهات',
+      },
+      events: {
+        badgeEarned: 'حصل على وسام جديد',
+        levelUp: 'ارتقى إلى المستوى {{value}}',
+        lessonCompleted: 'أكمل درسًا · {{value}}/5 صحيحة',
+        energyUsed: 'استخدم {{value}} مساعدين في درس',
+        energyLow: 'طاقته منخفضة · {{value}} ⚡ متبقية',
+        streakReached: 'وصل إلى سلسلة {{value}} أيام',
+        inactive: 'غير نشط منذ {{value}} أيام',
+        a11y: '{{name}} {{action}}، {{time}}',
+      },
+      time: {
+        justNow: 'الآن',
+        minutes_one: 'منذ دقيقة',
+        minutes_two: 'منذ دقيقتين',
+        minutes_few: 'منذ {{value}} دقائق',
+        minutes_many: 'منذ {{value}} دقيقة',
+        minutes_other: 'منذ {{value}} دقيقة',
+        hours_one: 'منذ ساعة',
+        hours_two: 'منذ ساعتين',
+        hours_few: 'منذ {{value}} ساعات',
+        hours_many: 'منذ {{value}} ساعة',
+        hours_other: 'منذ {{value}} ساعة',
+        days_one: 'منذ يوم',
+        days_two: 'منذ يومين',
+        days_few: 'منذ {{value}} أيام',
+        days_many: 'منذ {{value}} يومًا',
+        days_other: 'منذ {{value}} يوم',
+      },
+      empty: {
+        title: 'لا شيء هنا بعد',
+        body: 'لا يوجد نشاط يطابق هذا التصفية.',
+      },
     },
   },
   child: {
