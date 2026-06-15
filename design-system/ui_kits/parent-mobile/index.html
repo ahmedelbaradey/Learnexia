@@ -1,0 +1,119 @@
+<!doctype html>
+<!-- @dsCard group="UI Kit — Parent Mobile" name="UI Kit · Parent Mobile" subtitle="Click-thru iPhone — Children → Child Overview → Reports → Energy" viewport="460x1100" -->
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Learnexia · Parent Mobile</title>
+<link rel="stylesheet" href="../../colors_and_type.css"/>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; min-height: 100vh;
+    background: radial-gradient(circle at 50% 30%, #1a2348, #0b0f1e 70%);
+    color: #F8FAFC; font-family: 'Poppins', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .stage { min-height: 100vh; display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 32px 16px 64px; }
+  .crumbs { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+  .crumb {
+    background: #1E293B; border: 1px solid rgba(255,255,255,0.08); color: #CBD5E1;
+    padding: 8px 14px; border-radius: 9999px; font-weight: 700; font-size: 13px; cursor: pointer;
+    transition: all 180ms cubic-bezier(0.16,1,0.3,1); font-family: inherit;
+  }
+  .crumb.active { background: #4F46E5; color: #fff; border-color: #6366F1; box-shadow: 0 6px 18px rgba(99,102,241,0.45); }
+  .crumb:hover:not(.active) { background: #334155; }
+  .hint { color: #94A3B8; font-size: 12px; text-align: center; max-width: 420px; letter-spacing: 0.02em; }
+  .crumb-group { display: flex; gap: 6px; align-items: center; }
+  .crumb-group + .crumb-group::before { content: ''; width: 1px; height: 16px; background: rgba(255,255,255,0.12); margin: 0 4px; }
+  @keyframes lxsheet { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
+  /* brand scrollbar inside phone */
+  .stage *::-webkit-scrollbar { width: 0; height: 0; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="PMComponents.jsx"></script>
+<script type="text/babel" src="PMScreens.jsx"></script>
+<script type="text/babel" src="PMScreensExtra.jsx"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+function DeviceShell({ children }) {
+  return (
+    <div style={{
+      width: 402, height: 874, borderRadius: 48, overflow: 'hidden', position: 'relative', background: '#0F172A',
+      boxShadow: '0 40px 80px rgba(0,0,0,0.5), 0 0 0 12px #1a1a1a, 0 0 0 13px rgba(255,255,255,0.08)',
+    }}>
+      <div style={{ position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)', width: 126, height: 37, borderRadius: 24, background: '#000', zIndex: 50 }}/>
+      <IOSStatusBar dark={true}/>
+      <div style={{ position: 'absolute', top: 54, left: 0, right: 0, bottom: 0 }}>{children}</div>
+      <div style={{ position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)', width: 139, height: 5, borderRadius: 100, background: 'rgba(255,255,255,0.7)', zIndex: 100 }}/>
+    </div>
+  );
+}
+
+function App() {
+  const [screen, setScreen] = React.useState('splash');
+  const [tab, setTab] = React.useState('children');
+  const [sheet, setSheet] = React.useState(false);
+  const [child, setChild] = React.useState(PM_CHILDREN[0]);
+  const [role, setRole] = React.useState('parent');
+
+  const pickChild = (c) => { setChild(c); setScreen('overview'); };
+
+  const screens = {
+    splash:   <PMSplashScreen onContinue={() => setScreen('role')}/>,
+    role:     <PMRoleSelectScreen onPick={(r) => { setRole(r); setScreen('login'); }}/>,
+    login:    <PMLoginScreen role={role} onLogin={() => setScreen('children')} onRegister={() => setScreen('register')} onBack={() => setScreen('role')}/>,
+    register: <PMRegisterScreen onRegister={() => setScreen('children')} onLogin={() => setScreen('login')}/>,
+    children: <PMChildrenScreen onPick={pickChild} onAddChild={() => setSheet(true)} onAvatar={() => setScreen('settings')}/>,
+    overview: <PMChildOverview child={child} onBack={() => setScreen('children')} onReports={() => setScreen('reports')} onEnergy={() => setScreen('energy')}/>,
+    reports:  <PMReportsScreen onAvatar={() => setScreen('settings')}/>,
+    energy:   <PMEnergyScreen onAvatar={() => setScreen('settings')}/>,
+    activity: <PMActivityScreen onAvatar={() => setScreen('settings')}/>,
+    settings: <PMSettingsScreen onLogout={() => setScreen('splash')} onAvatar={() => setScreen('settings')}/>,
+  };
+
+  const tabToScreen = (id) => { setTab(id); setScreen(id); };
+  React.useEffect(() => {
+    const tabFor = { children: 'children', reports: 'reports', energy: 'energy', activity: 'activity', settings: 'settings' };
+    if (tabFor[screen]) setTab(tabFor[screen]);
+  }, [screen]);
+
+  const showsTabBar = ['children', 'reports', 'energy', 'activity', 'settings'].includes(screen);
+
+  const groups = [
+    { name: 'Auth', items: [['splash', 'Splash'], ['role', 'Role Select'], ['login', 'Login'], ['register', 'Register']] },
+    { name: 'App',  items: [['children', 'My Children'], ['overview', 'Child Overview'], ['reports', 'Reports'], ['energy', '⚡ Energy'], ['activity', 'Activity'], ['settings', 'Settings']] },
+  ];
+
+  return (
+    <div className="stage" data-screen-label={`Parent Mobile · ${screen}`}>
+      <div className="crumbs">
+        {groups.map(g => (
+          <div key={g.name} className="crumb-group">
+            {g.items.map(([id, label]) => (
+              <button key={id} className={`crumb${screen === id ? ' active' : ''}`} onClick={() => { if (id === 'overview') setChild(PM_CHILDREN[0]); setScreen(id); }}>{label}</button>
+            ))}
+          </div>
+        ))}
+      </div>
+      <div style={{ position: 'relative' }}>
+        <DeviceShell>
+          {screens[screen]}
+          {showsTabBar && <PMTabBar active={tab} onChange={tabToScreen}/>}
+          <PMAddChildSheet open={sheet} onClose={() => setSheet(false)}/>
+        </DeviceShell>
+      </div>
+      <div className="hint">Tap any pill to jump screens. Try <b>My Children → tap a child → Reports → Energy</b>. The <b>＋ Add a child</b> button opens the photo/grade/language sheet.</div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

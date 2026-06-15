@@ -26,6 +26,9 @@ When invoked, read `README.md` first for the full design philosophy, then drill 
 | `ui_kits/parent-dashboard/index.html` | Full English web app (7 pages) + working Add Child modal |
 | `ui_kits/parent-dashboard/index-ar.html` | Full Arabic RTL web app (7 pages) + Add Child modal |
 | `ui_kits/parent-dashboard/AddChildModal.jsx` | Reusable Add Child modal (photo upload, grade tiles, language flags) |
+| `ui_kits/parent-mobile/index.html` | Full English parent companion app (8 screens) + Add Child sheet |
+| `ui_kits/parent-mobile/index-ar.html` | Full Arabic RTL parent companion app (8 screens) |
+| `ui_kits/parent-mobile/PMComponents.jsx` | Parent-mobile primitives (tab bar, child row, KPI, chart, panels, buttons) |
 | `ui_kits/helper-energy/index.html` | ⚡ Helper Energy showcase — interactive (EN/AR × mobile/web): lesson demo, indicator states, cost-confirm, out-of-energy, parent top-up |
 | `screenshots/` | PNG captures of every screen and page, en + ar |
 
@@ -147,6 +150,27 @@ Energy meters **AI-helper usage only**. It is a *separate resource from hearts* 
 4. Empty/cap states are **non-punitive** — friendly mascot, clear path forward, never a scold. Kids never see prices; "Ask a parent" routes to the parent top-up.
 5. Lean on **icon + color + number**, not text — young/low-literacy readers.
 6. Reference implementation: `ui_kits/helper-energy/index.html` (interactive, EN/AR × mobile/web). Copy battery/cost/confirm markup from there; copy DS-tab cards from `preview/*energy*`.
+
+---
+
+## Skill 11 — Parent surfaces: auth flow & Parent Mobile app
+
+**Auth flow (all parent surfaces — EN + AR, mobile + web): Splash → Role Select → Login.**
+1. **Splash** — branded 🌟 Learnexia screen + loading bar; tap/click continues.
+2. **Role Select** — "Who's signing in?" two cards: 👨‍👩‍👦 Parent / 🎓 Student. Note that children log in with a parent-assigned email (never self-register).
+3. **Login** — student-mobile login style (purple glow, 🌟 mark, fields, social). **Never** an inline parent/student toggle — instead show a read-only **"Signing in as Parent · Change"** badge (Change → Role Select). Logout → Splash.
+- Web impl: `SplashWebPage` + `RoleSelectWebPage` in `parent-dashboard/PagesPublic.jsx`; `LoginWebPage` takes `role`/`onBack`. AR mirror in `parent-dashboard/index-ar.html` (`setPageAr`).
+- Mobile impl: `PMSplashScreen` + `PMRoleSelectScreen` + `PMLoginScreen(role, onBack)` in `parent-mobile/PMScreens.jsx`; AR mirror in `parent-mobile/index-ar.html`.
+
+**Parent Mobile app** (`ui_kits/parent-mobile/`, 402×874, 10 screens, 5-tab bottom bar: Children · Reports · Energy · Activity · Settings). Reuse `PMComponents.jsx` primitives — `PMTabBar`, `PMTopBar`, `PMCard`, `PMStat`, `PMChildRow`, `PMBarChart`, `PMMasteryRow`, `PMFocusRow`, `PMButton`, `PMField`. Don't reinvent the parent dashboard for phone — copy this kit.
+
+**Child cards** (mobile + web, both langs): each has a ✏️ **edit button** (indigo tint, top-right) opening the Add/Edit sheet via `stopPropagation`.
+
+**Web is responsive** via **container queries on `.frame`** (`container-type: inline-size; container-name: pdframe`) — 3 tiers: desktop ≥1025 (sidebar + full grids) · tablet 769–1024 (grids → 2-col) · mobile ≤768 (sidebar → glass **bottom tab bar**, grids → 1-col, auth split-screens stack). Rule shape: `@container pdframe (max-width: …) { .pd-main [style*="grid-template-columns"] { … !important } }`. Gotchas when reusing: (1) the **bottom tab bar must be a descendant of `.frame`** or the container query can't match it (AR file: last child of `.frame`, `position:absolute`); (2) `AppShell` bounds the shell at `height:820` for inner scroll, so pin content children with `.pd-main > div[style*="overflow"] > * { flex-shrink:0 }` — otherwise the Family hero (which uses `overflow:hidden`) squishes to a strip and clips its title/stats.
+
+**Header controls** (reachable at every tier, since the sidebar hides on mobile): a **compact child switcher** `<PDChildSwitcher compact/>` (circle + first name pill) and a **`PDAccountMenu`** (orange "A" avatar → Language EN/AR · Theme Night/Black · Log out). Both also live in the sidebar on desktop.
+
+**Auth panels** use `padding: clamp(22px, 5vw, 56px)` so inputs never touch the edge on narrow frames — match this when adding login/register-style split screens.
 
 ---
 

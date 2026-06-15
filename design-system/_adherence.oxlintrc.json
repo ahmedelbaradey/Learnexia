@@ -17,6 +17,7 @@
           {
             "group": [
               "ui_kits/parent-dashboard/**",
+              "ui_kits/parent-mobile/**",
               "ui_kits/student-mobile/**"
             ],
             "message": "Import design-system components from 'index.js', not component internals."

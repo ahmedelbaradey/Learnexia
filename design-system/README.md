@@ -202,6 +202,7 @@ Animations are **CRITICAL** for kids and should feel snappy and rewarding.
 |---|---|---|
 | **Student Mobile** | `ui_kits/student-mobile/` | iPhone 402×874. 18-screen click-thru: Splash · Login · Register · Role/Grade/Subject onboarding · My Children · Home · Skill Tree · Lesson · Quiz · Reward · Mission Completed · Daily Mission · League · Badges · Hearts · Profile. Working **Add Child** bottom sheet (photo upload, grade tiles, language flags). Arabic RTL twin at `index-ar.html`. |
 | **Parent Web** | `ui_kits/parent-dashboard/` | Web 1280px, 7 pages: Landing · Login · Register · My Children · Dashboard · Reports · Settings. Working **Add Child** modal with photo upload. Arabic RTL twin at `index-ar.html`. |
+| **Parent Mobile** | `ui_kits/parent-mobile/` | iPhone 402×874. 10-screen parent companion app: **Splash · Role Select** · Login · Register · My Children · Child Overview · Reports · ⚡ Helper Energy · Activity · Settings. Bottom tab bar, family summary, KPI + activity chart, subject mastery, working **Add Child** sheet. Arabic RTL twin at `index-ar.html`. |
 | **Helper Energy** | `ui_kits/helper-energy/` | The ⚡ AI-help credit system. One showcase (`index.html`) with an EN/AR × mobile/web toggle: an interactive lesson demo where spending a helper drains energy live, plus indicator states, cost-confirm, out-of-energy, nudges, and the parent top-up + plan compare. See _Helper Energy_ below. |
 
 Each kit has its own `README.md` and exposes small reusable JSX components
@@ -209,6 +210,36 @@ Each kit has its own `README.md` and exposes small reusable JSX components
 
 ### Bilingual parity
 Every screen exists in **English (LTR)** and **Arabic (RTL)** with identical layout + content — Cairo headings, Tajawal body, Eastern-Arabic numerals in prose, Latin for technical strings (`820 / 1000 XP`, emails, brand name). Screenshots for both in `screenshots/{mobile,web,mobile-ar,web-ar}/`.
+
+### Auth flow (all parent surfaces — EN + AR, mobile + web)
+The entry flow is **Splash → Role Select → Login**:
+- **Splash** — branded 🌟 Learnexia screen with a loading bar; tap/click to continue.
+- **Role Select** — "Who's signing in?" with two cards: **👨‍👩‍👦 Parent** and **🎓 Student** (children never self-register — they log in with the parent-assigned email).
+- **Login** — restyled to match the student-mobile login (purple top glow, 🌟 brand mark, fields, social, forgot). **No inline parent/student toggle.** Instead the role chosen on the previous screen shows as a read-only badge — "**Signing in as Parent · Change**" (Change → back to Role Select). Logout returns to Splash.
+
+Applies to `parent-mobile/` (EN `PMScreens.jsx`, AR `index-ar.html`) and `parent-dashboard/` (EN `SplashWebPage`/`RoleSelectWebPage` in `PagesPublic.jsx`, AR `index-ar.html`).
+
+### Child cards — Edit button
+Every child card (mobile + web, EN + AR, and the preview cards) carries a small **✏️ edit button** (indigo-tinted, top-right of the card) that opens the Add/Edit child sheet/modal with `stopPropagation` so it doesn't also trigger the card's "view progress" navigation.
+
+### Home — Today's Mission
+The Student Mobile Home (EN + AR) has a **Today's Mission** card under Daily Quests: 🎯 header, "+150 XP" badge, a 3-item checklist (first item checked green), and a green "Start mission" button (`TodaysMission` in `MobileComponents.jsx`).
+
+### Responsiveness
+The **web** kit (`parent-dashboard/`, EN + AR) is **responsive across three tiers**, driven by **container queries on `.frame`** (`container-type: inline-size; container-name: pdframe`) — so panels reflow with the **frame width**, not the viewport (correct for a fixed-frame kit and its preview cards):
+- **Desktop (≥1025px)** — 240px sidebar + full multi-column grids.
+- **Tablet (769–1024px)** — every multi-column grid collapses to **2 columns**; sidebar stays.
+- **Mobile (≤768px)** — sidebar **hidden**, replaced by a glass **bottom tab bar** (Children · Overview/Dashboard · Reports · Energy · Settings); all grids stack to **1 column**; auth split-screens stack; header tightens (period selector + Send Report hidden via `.pd-hide-sm`).
+
+Built fluid (`.frame { max-width: calc(100vw - 32px) }`) with a property-name attribute selector — `@container pdframe (max-width: …) { .pd-main [style*="grid-template-columns"] { … !important } }` — so every inline grid reflows without per-element tagging. **The bottom tab bar must live *inside* `.frame`** (container queries only match descendants of the container) — in the AR plain-HTML file it's the last child of `.frame`, positioned `absolute`. Reuse this pattern for new responsive web pages. Phones can also use the dedicated **Parent Mobile** app.
+
+### Header controls (work at every tier)
+Because the sidebar is hidden on mobile, the app header carries the key controls itself:
+- **Child switcher** — a **compact pill** (circle avatar + first name + chevron) via `<PDChildSwitcher compact/>`; opens a dropdown to switch child or add one. The full-size variant (`<PDChildSwitcher/>`, with grade subtitle) still sits at the top of the sidebar on desktop.
+- **Account menu** (`PDAccountMenu`) — the orange "A" avatar at the far right opens a dropdown with **Language** (🇺🇸 EN / 🇪🇬 AR), **Theme** (🌙 Night / ⬛ Black), and **Log out**. These also remain in the sidebar footer on desktop, but the header menu keeps them reachable when the sidebar is hidden.
+
+### Bounded shell + inner scroll
+`AppShell` sets `.pd-shell { height: 820 }` so each page's content area (`flex:1; overflow:auto`) scrolls **internally** with the brand scrollbar instead of growing the whole page. Because that makes the content a bounded flex column, its direct children are pinned with `.pd-main > div[style*="overflow"] > * { flex-shrink: 0 }` — **without this the Family hero (which has `overflow:hidden`) gets squished to a thin strip and its title/stats clip.** Keep that rule when adding bounded-scroll content. The AR file bounds its app pages with `.page > div[style*="820"] { height: 820px }` + `overflow-y:auto` on the content.
 
 ### Add Child form — conventions
 - **Photo upload** with live circular-avatar preview; falls back to a colored initial.
