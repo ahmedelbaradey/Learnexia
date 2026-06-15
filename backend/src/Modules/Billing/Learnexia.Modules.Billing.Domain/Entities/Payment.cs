@@ -71,6 +71,7 @@ public class Payment : FullAuditedEntity
     /// Prevents duplicate payments for the same operation.
     /// </summary>
     public string IdempotencyKey { get; set; } = null!;
+
 }
 
 /// <summary>

@@ -18,6 +18,7 @@ using Microsoft.Extensions.Localization;
 using Moq;
 using Resources;
 using Xunit;
+#pragma warning disable CA1707
 
 namespace Modules.Billing.UnitTests;
 
@@ -88,9 +89,21 @@ public sealed class PaymentWebhookTests
         var currentUserMock = new Mock<Learnexia.Shared.Kernel.Abstractions.ICurrentUserService>();
         currentUserMock.Setup(c => c.UserId).Returns(0);
 
+        // P10-07: IEnergyPackService — stub for subscription-path tests (no pack payments here).
+        var energyPackServiceMock = new Mock<IEnergyPackService>();
+        energyPackServiceMock
+            .Setup(s => s.CreditPurchasedPackAsync(
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(PackCreditResult.Ok(1000));
+
+        // P10-09: IRefundService — stub for webhook tests (refund/dunning branches not exercised here).
+        var refundServiceMock = new Mock<IRefundService>();
+
         var handler = new HandleProviderWebhookCommandHandler(
             db,
             provider,
+            energyPackServiceMock.Object,
+            refundServiceMock.Object,
             publisher.Object,
             loggerMock.Object,
             currentUserMock.Object,

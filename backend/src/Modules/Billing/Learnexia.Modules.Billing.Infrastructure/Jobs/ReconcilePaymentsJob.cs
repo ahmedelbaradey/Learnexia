@@ -6,6 +6,7 @@ using Learnexia.Shared.Kernel.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+// WebhookEventTypes is defined in the Application project (IPaymentProvider.cs).
 
 namespace Learnexia.Modules.Billing.Infrastructure.Jobs;
 
@@ -91,16 +92,96 @@ public sealed class ReconcilePaymentsJob
         await using var scope = _scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
 
+        // Load payment (read-only to decide path).
+        var payment = await db.Payments
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == paymentId, ct);
+
+        if (payment is null
+            || payment.Status == PaymentStatus.Succeeded
+            || payment.Status == PaymentStatus.Failed
+            || payment.Status == PaymentStatus.Refunded)
+        {
+            return; // Already terminal — skip.
+        }
+
+        // ── Pack-credit re-drive guard (lost-update window fix) ─────────────────────────
+        // A Pack payment may be stale (Initiated/Pending) if the webhook handler committed
+        // the WebhookEvent (payment.succeeded, Succeeded=true) but then crashed before
+        // EnergyPackService.CreditPurchasedPackAsync completed. In that case:
+        //   • No "pack-credit:{paymentId}:*" CreditTransaction exists yet.
+        //   • Payment.Status is still Initiated/Pending.
+        // Fix: re-drive via IEnergyPackService with a reconcile-scoped providerEventId.
+        // CreditPurchasedPackAsync is idempotent — the reconcile key will not collide with
+        // any original webhook key (format: "pack-credit:{paymentId}:reconcile:{paymentId}").
+        // This prevents "paid-but-not-delivered" + reconcile-marks-Failed.
+        // Guard: only re-drive if a committed WebhookEvent exists (provider told us it succeeded).
+        if (payment.Kind == PaymentKind.Pack && payment.TargetChildId.HasValue)
+        {
+            // Check: does a committed payment.succeeded WebhookEvent exist for this payment's
+            // provider ref? This is the signal that the provider confirmed success but our
+            // credit step did not complete.
+            var hasCommittedWebhook = payment.ProviderPaymentRef is not null
+                && await db.WebhookEvents
+                    .AsNoTracking()
+                    .AnyAsync(w =>
+                        w.Succeeded == true
+                        && w.EventType == "payment.succeeded"
+                        && w.Payload.Contains(payment.ProviderPaymentRef, StringComparison.Ordinal),
+                        ct);
+
+            // Also check: is a pack-credit transaction already applied?
+            var packCreditKeyPrefix = $"pack-credit:{paymentId}:";
+            var creditAlreadyApplied = await db.CreditTransactions
+                .AsNoTracking()
+                .AnyAsync(t => t.IdempotencyKey != null
+                               && EF.Functions.Like(t.IdempotencyKey, packCreditKeyPrefix + "%"),
+                    ct);
+
+            if (creditAlreadyApplied)
+            {
+                // Credit was applied — Payment.Status may not have been flipped yet
+                // (CreditPurchasedPackAsync flips it atomically, so this is unlikely,
+                // but skip the stale sweep to avoid marking a correctly-credited payment Failed).
+                _logger.LogInfo(
+                    $"ReconcilePaymentsJob: Pack paymentId={paymentId} credit already exists — skipping stale sweep.");
+                return;
+            }
+
+            if (hasCommittedWebhook)
+            {
+                // Re-drive the pack credit. Use a reconcile-scoped providerEventId so the
+                // inner idempotency key is distinct from any original webhook key.
+                var reconcileEventId = $"reconcile:{paymentId}";
+                var energyPackService = scope.ServiceProvider.GetRequiredService<IEnergyPackService>();
+                var creditResult = await energyPackService.CreditPurchasedPackAsync(
+                    paymentId      : payment.Id,
+                    targetChildId  : payment.TargetChildId.Value,
+                    providerEventId: reconcileEventId,
+                    ct             : ct);
+
+                _logger.LogInfo(
+                    $"ReconcilePaymentsJob: Pack re-drive for paymentId={paymentId}, " +
+                    $"childId={payment.TargetChildId.Value}, duplicate={creditResult.WasDuplicate}.");
+                return; // Do NOT fall through to mark Failed.
+            }
+
+            // No committed webhook signal — pack payment is genuinely stale (no provider success).
+            // Fall through to mark Failed (standard stale sweep).
+        }
+
+        // ── Standard stale-payment sweep (non-Pack, or Pack with no webhook signal) ────
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         try
         {
-            var payment = await db.Payments
+            // Re-load within the transaction (state may have changed since the initial load).
+            var freshPayment = await db.Payments
                 .FirstOrDefaultAsync(p => p.Id == paymentId, ct);
 
-            if (payment is null
-                || payment.Status == PaymentStatus.Succeeded
-                || payment.Status == PaymentStatus.Failed
-                || payment.Status == PaymentStatus.Refunded)
+            if (freshPayment is null
+                || freshPayment.Status == PaymentStatus.Succeeded
+                || freshPayment.Status == PaymentStatus.Failed
+                || freshPayment.Status == PaymentStatus.Refunded)
             {
                 await tx.RollbackAsync(ct);
                 return; // Already terminal — skip.
@@ -110,7 +191,7 @@ public sealed class ReconcilePaymentsJob
             // IPaymentProvider.QueryPaymentStatusAsync(payment.ProviderPaymentRef) here
             // and transition to Succeeded or Failed per the provider response.
             // For now (FakePaymentProvider / no live API) mark as Failed after timeout.
-            payment.Status = PaymentStatus.Failed;
+            freshPayment.Status = PaymentStatus.Failed;
 
             await db.SaveChangesAsync(0);
             await tx.CommitAsync(ct);
@@ -123,4 +204,5 @@ public sealed class ReconcilePaymentsJob
             throw;
         }
     }
+
 }

@@ -29,4 +29,16 @@ public enum SubscriptionStatus
     /// The current cycle still grants Premium access.
     /// </summary>
     Downgrading = 3,
+
+    /// <summary>
+    /// A recurring charge failed; a retry is scheduled (<c>NextRetryAt</c>).
+    /// Parent still has Premium access during the grace window.
+    /// </summary>
+    PastDue = 4,
+
+    /// <summary>
+    /// Multiple retries have failed; entering final grace window before downgrade.
+    /// <c>GraceEndsAt</c> = <c>CurrentCycleEnd</c>; after that the subscription downgrades to Free.
+    /// </summary>
+    Dunning = 5,
 }

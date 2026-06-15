@@ -2314,4 +2314,40 @@
   <data name="WebhookEventAlreadyProcessed" xml:space="preserve">
     <value>تمت معالجة هذا الحدث مسبقاً.</value>
   </data>
+  <data name="PackCheckoutSessionCreated" xml:space="preserve">
+    <value>تم إنشاء جلسة دفع الحزمة. أعِد توجيه ولي الأمر إلى الرابط المقدَّم لإتمام عملية الدفع.</value>
+  </data>
+  <data name="PackCheckoutChildNotOwned" xml:space="preserve">
+    <value>لا تملك صلاحية شراء حزمة لهذا الطالب.</value>
+  </data>
+  <data name="PackCheckoutChildIdRequired" xml:space="preserve">
+    <value>يلزم توفر معرّف طالب صالح.</value>
+  </data>
+  <data name="PackCreditedSuccessfully" xml:space="preserve">
+    <value>تم إضافة حزمة الطاقة إلى حساب الطالب.</value>
+  </data>
+  <data name="RefundInitiatedSuccessfully" xml:space="preserve">
+    <value>تم قبول طلب الاسترداد من مزود الدفع.</value>
+  </data>
+  <data name="PaymentNotFound" xml:space="preserve">
+    <value>لم يتم العثور على الدفعة المطلوبة.</value>
+  </data>
+  <data name="PaymentNotRefundable" xml:space="preserve">
+    <value>لا يمكن استرداد إلا الدفعات التي تمت بنجاح.</value>
+  </data>
+  <data name="BillingHistoryRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد سجل الفوترة بنجاح.</value>
+  </data>
+  <data name="ReceiptRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد الإيصال بنجاح.</value>
+  </data>
+  <data name="ReceiptNotFound" xml:space="preserve">
+    <value>لم يتم العثور على الإيصال المطلوب.</value>
+  </data>
+  <data name="ReceiptDescriptionEnergyPack" xml:space="preserve">
+    <value>حزمة طاقة</value>
+  </data>
+  <data name="ReceiptDescriptionPremiumSubscription" xml:space="preserve">
+    <value>اشتراك بريميوم</value>
+  </data>
 </root>

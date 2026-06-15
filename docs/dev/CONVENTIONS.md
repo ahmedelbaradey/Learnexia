@@ -69,8 +69,18 @@ Use the `Shared.Kernel.Messaging` markers, never raw MediatR `IRequest` directly
 - One `Profile` per aggregate in `Application/Mapping/` (e.g. `ProductsProfile`). Map `Command → Entity` and `Entity → <Single>Response`. Reference: [ProductsProfile.cs](../../backend/src/Modules/Catalog/Learnexia.Modules.Catalog.Application/Mapping/ProductsProfile.cs).
 - Queries project with `_mapper.ProjectTo<TResponse>(queryable)` then `.ToPaginatedListAsync(...)` ([QueryableExtensions.cs](../../backend/src/Shared/Learnexia.Shared.Kernel/Pagination/QueryableExtensions.cs)).
 
-## 7. Repository vs. Service Manager
+## 7. Data access — Option C (CURRENT STANDARD, decided 2026-06-15)
 
+> **This is the standard for all NEW modules and NEW features, and the target for refactoring existing ones. It supersedes the Catalog repository/service-manager and the `I{Module}DbContext`-in-Application patterns below for new work.**
+
+**No EF in the Application layer.** Application-layer command/query **handlers must not** inject a `DbContext`/`I{Module}DbContext`, must not reference EF Core types (`DbSet`, `IQueryable`, `ToListAsync`/`AnyAsync`/`FirstOrDefaultAsync`/`ProjectTo`), and the `{Module}.Application` project must not reference `Microsoft.EntityFrameworkCore`.
+
+- All persistence **and the non-trivial logic around it** (queries, filters, **explicit transactions**, idempotency, optimistic-concurrency/`23505` retry, `ProjectTo` pagination, generated-Id flush, post-commit domain-event staging) lives behind a **service interface in `{Module}.Application/Abstractions`**, implemented in `{Module}.Infrastructure` (which owns the `DbContext`).
+- **Handlers are thin:** validate/authorize → call the service → return `BaseResponse<T>`. **Transaction boundaries live INSIDE the service, never in the handler.**
+- **Never return `IQueryable`/`DbSet`/raw EF entities across the service boundary** — return DTOs / domain results / `PaginatedResult<T>`; compose the `IQueryable`+`ProjectTo`+pagination INSIDE the impl so it stays server-side (don't lose a vector `ORDER BY`/`LIMIT` or an HNSW index to client-evaluation).
+- **Excluded (left as-is, NOT converted): the `Ai` and `Identity` modules.** Migration status of the rest (2026-06-15 survey): Parent + Curriculum already compliant; Gamification near-compliant (only a `DbUpdateException` catch leaks EF); Moderation/Billing/Notifications/Learning are the refactor targets (Learning is XL — pending an explicit go-ahead).
+
+### Legacy aggregators (pre-Option-C; do not adopt for new work)
 Two access aggregators, both registered Scoped:
 - **`IServiceManager`** → typed services (`IProductService : IBaseService<Product>`). Handlers call `_service.ProductService.AddAsync(...)`. Services derive from `BaseService<TEntity>`. Use this for standard CRUD-style features. Reference: [ServiceManager.cs](../../backend/src/Modules/Catalog/Learnexia.Modules.Catalog.Infrastructure/Service/ServiceManager.cs), [BaseService.cs](../../backend/src/Modules/Catalog/Learnexia.Modules.Catalog.Infrastructure/Service/BaseService.cs).
 - **`IRepositoryManager`** → typed repositories (`ICategoryRepository : IGenericRepository`). Use for custom data access not covered by `BaseService`. Reference: [RepositoryManager.cs](../../backend/src/Modules/Catalog/Learnexia.Modules.Catalog.Infrastructure/Repository/RepositoryManager.cs).

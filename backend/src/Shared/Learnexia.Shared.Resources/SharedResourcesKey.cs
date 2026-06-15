@@ -1657,5 +1657,52 @@
         /// <summary>Returned when a duplicate webhook event is received (idempotent no-op).</summary>
         public const string WebhookEventAlreadyProcessed = "WebhookEventAlreadyProcessed";
 
+        // ── P10-07 Energy-pack purchase ───────────────────────────────────────────────────────────
+
+        /// <summary>Returned when an energy-pack checkout session is created successfully (redirect URL in Data).</summary>
+        public const string PackCheckoutSessionCreated = "PackCheckoutSessionCreated";
+
+        /// <summary>
+        /// Returned (403 shape) when the authenticated parent does not own the requested child.
+        /// Intentionally generic (anti-IDOR: caller cannot distinguish "child not found" from "not your child").
+        /// </summary>
+        public const string PackCheckoutChildNotOwned = "PackCheckoutChildNotOwned";
+
+        /// <summary>Validation: ChildId must be a positive integer.</summary>
+        public const string PackCheckoutChildIdRequired = "PackCheckoutChildIdRequired";
+
+        /// <summary>Returned (internally, for logging) when a pack purchase is credited to the child account.</summary>
+        public const string PackCreditedSuccessfully = "PackCreditedSuccessfully";
+
+        // ── P10-09 Refunds + Dunning ───────────────────────────────────────────────────────────────
+
+        /// <summary>Returned when an admin refund request is accepted by the provider.</summary>
+        public const string RefundInitiatedSuccessfully = "RefundInitiatedSuccessfully";
+
+        /// <summary>Returned when a payment is not found for refund.</summary>
+        public const string PaymentNotFound = "PaymentNotFound";
+
+        /// <summary>Returned when a payment cannot be refunded (not in Succeeded state).</summary>
+        public const string PaymentNotRefundable = "PaymentNotRefundable";
+
+        // ── P10-08 Billing History + Receipts ────────────────────────────────────────────────────
+
+        /// <summary>Returned when billing history is retrieved successfully.</summary>
+        public const string BillingHistoryRetrievedSuccessfully = "BillingHistoryRetrievedSuccessfully";
+
+        /// <summary>Returned when a receipt is retrieved successfully.</summary>
+        public const string ReceiptRetrievedSuccessfully = "ReceiptRetrievedSuccessfully";
+
+        /// <summary>Returned when a receipt is not found or not owned by the requesting parent.</summary>
+        public const string ReceiptNotFound = "ReceiptNotFound";
+
+        /// <summary>Receipt description for an energy-pack purchase.</summary>
+        public const string ReceiptDescriptionEnergyPack = "ReceiptDescriptionEnergyPack";
+
+        /// <summary>Receipt description for a Premium subscription charge.</summary>
+        public const string ReceiptDescriptionPremiumSubscription = "ReceiptDescriptionPremiumSubscription";
+
+        // Note: Unauthorized already defined at line 333 (shared usage).
+
     }
 }

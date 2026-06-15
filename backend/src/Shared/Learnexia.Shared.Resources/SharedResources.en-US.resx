@@ -2315,4 +2315,40 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="WebhookEventAlreadyProcessed" xml:space="preserve">
     <value>Event already processed.</value>
   </data>
+  <data name="PackCheckoutSessionCreated" xml:space="preserve">
+    <value>Pack checkout session created. Redirect the parent to the provided URL to complete payment.</value>
+  </data>
+  <data name="PackCheckoutChildNotOwned" xml:space="preserve">
+    <value>You are not authorised to purchase a pack for this child.</value>
+  </data>
+  <data name="PackCheckoutChildIdRequired" xml:space="preserve">
+    <value>A valid child identifier is required.</value>
+  </data>
+  <data name="PackCreditedSuccessfully" xml:space="preserve">
+    <value>Energy pack credited to the child account.</value>
+  </data>
+  <data name="RefundInitiatedSuccessfully" xml:space="preserve">
+    <value>Refund request accepted by the payment provider.</value>
+  </data>
+  <data name="PaymentNotFound" xml:space="preserve">
+    <value>The requested payment was not found.</value>
+  </data>
+  <data name="PaymentNotRefundable" xml:space="preserve">
+    <value>Only payments in a succeeded state can be refunded.</value>
+  </data>
+  <data name="BillingHistoryRetrievedSuccessfully" xml:space="preserve">
+    <value>Billing history retrieved successfully.</value>
+  </data>
+  <data name="ReceiptRetrievedSuccessfully" xml:space="preserve">
+    <value>Receipt retrieved successfully.</value>
+  </data>
+  <data name="ReceiptNotFound" xml:space="preserve">
+    <value>The requested receipt was not found.</value>
+  </data>
+  <data name="ReceiptDescriptionEnergyPack" xml:space="preserve">
+    <value>Energy Pack</value>
+  </data>
+  <data name="ReceiptDescriptionPremiumSubscription" xml:space="preserve">
+    <value>Premium Subscription</value>
+  </data>
 </root>

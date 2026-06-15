@@ -53,6 +53,19 @@ public interface IPaymentProvider
     /// <param name="providerPaymentRef">Provider's reference for the recurring agreement.</param>
     /// <param name="ct">Cancellation token.</param>
     Task CancelRecurringAsync(string providerPaymentRef, CancellationToken ct);
+
+    /// <summary>
+    /// Initiates a refund for a previously succeeded payment at the provider.
+    /// The provider will send a <c>refund.succeeded</c> webhook when the refund is processed.
+    ///
+    /// <para><c>FakePaymentProvider</c> is a deterministic no-op (no real money movement;
+    /// returns success so the state machine can be tested end-to-end).</para>
+    /// </summary>
+    /// <param name="providerPaymentRef">Provider's opaque payment reference.</param>
+    /// <param name="amount">Amount to refund (server-authoritative — never client-supplied).</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns><c>true</c> if the provider acknowledged the refund request; <c>false</c> on error.</returns>
+    Task<bool> InitiateRefundAsync(string providerPaymentRef, decimal amount, CancellationToken ct);
 }
 
 /// <summary>Result of a successful <see cref="IPaymentProvider.CreateCheckoutSessionAsync"/> call.</summary>
@@ -81,4 +94,10 @@ public static class WebhookEventTypes
 {
     public const string PaymentSucceeded = "payment.succeeded";
     public const string PaymentFailed    = "payment.failed";
+
+    // ── P10-09 ────────────────────────────────────────────────────────────────────
+    /// <summary>A recurring subscription charge attempt failed (triggers dunning).</summary>
+    public const string ChargeFailed    = "charge.failed";
+    /// <summary>A refund was processed successfully by the provider.</summary>
+    public const string RefundSucceeded = "refund.succeeded";
 }

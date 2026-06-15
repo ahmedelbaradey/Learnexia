@@ -130,6 +130,20 @@ public sealed class FakePaymentProvider : IPaymentProvider
         return Task.CompletedTask;
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// Fake is a no-op — always returns <c>true</c> (deterministic success).
+    /// The actual state change (credit clawback + status flip) is driven by
+    /// the subsequent <c>refund.succeeded</c> webhook in tests.
+    /// Production: swap to real adapter when Paymob integration is live.
+    /// </remarks>
+    public Task<bool> InitiateRefundAsync(string providerPaymentRef, decimal amount, CancellationToken ct)
+    {
+        _logger.LogInfo(
+            $"FakePaymentProvider.InitiateRefund: no-op for ref={providerPaymentRef}, amount={amount}.");
+        return Task.FromResult(true);
+    }
+
     // ── Test-helper: build a correctly signed synthetic webhook payload ──────────────
     //
     // Tests call this to produce a (rawBody, signatureHeader) pair that passes

@@ -61,6 +61,12 @@ public static class GlobalSettingKeys
     public const string PaymentProviderFeesPercent = "payment.provider_fees";
     public const string FxUsdExchangeRateBuffer    = "fx.usd_exchange_rate_buffer";
 
+    // ── Dunning retry policy ─────────────────────────────────────────────────────
+    /// <summary>Maximum number of retry attempts before entering final grace/downgrade. Default = 3.</summary>
+    public const string DunningMaxRetries    = "dunning.max_retries";
+    /// <summary>Hours between dunning retry attempts. Default = 24.</summary>
+    public const string DunningRetryIntervalHours = "dunning.retry_interval_hours";
+
     // ── Allowlist: all keys that are admin-editable (validator + update command use this) ──────
     public static readonly IReadOnlySet<string> ManagedKeys = new HashSet<string>(StringComparer.Ordinal)
     {
@@ -81,5 +87,7 @@ public static class GlobalSettingKeys
         SubscriptionAnnualPriceEgp,
         PaymentProviderFeesPercent,
         FxUsdExchangeRateBuffer,
+        DunningMaxRetries,
+        DunningRetryIntervalHours,
     };
 }

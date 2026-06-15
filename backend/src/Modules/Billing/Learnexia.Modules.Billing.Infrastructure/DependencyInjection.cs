@@ -5,6 +5,7 @@ using Learnexia.Modules.Billing.Infrastructure.Persistence;
 using Learnexia.Modules.Billing.Infrastructure.Providers;
 using Learnexia.Modules.Billing.Infrastructure.Service;
 using Learnexia.Modules.Billing.Infrastructure.Services;
+using RefundService = Learnexia.Modules.Billing.Infrastructure.Services.RefundService;
 using Learnexia.Shared.Contracts.Billing;
 using Learnexia.Shared.Contracts.Parent;
 using Learnexia.Shared.Kernel.Abstractions;
@@ -81,6 +82,30 @@ public static class DependencyInjection
 
         // ReconcilePaymentsJob — sweeps stale Initiated/Pending payments.
         services.AddTransient<ReconcilePaymentsJob>();
+
+        // ── P10-07: Energy-pack purchase service (Option C seam) ────────────────────────────────
+        // IEnergyPackService owns all EF/transaction/provider logic for pack purchases.
+        // Application-layer handlers inject this seam and stay EF-free (Option C rule).
+        // Scoped: depends on the scoped BillingDbContext + ICurrentUserService + IParentChildQuery.
+        // IParentChildQuery is registered by the Parent module at Host startup.
+        services.AddScoped<IEnergyPackService, EnergyPackService>();
+
+        // ── P10-09: Refund + dunning service (Option C seam) ───────────────────────────────────
+        // IRefundService owns all EF/transaction/ledger/provider logic for refunds and dunning.
+        // Application-layer handlers inject this seam and stay EF-free (Option C rule).
+        // Scoped: depends on the scoped BillingDbContext + IPaymentProvider + ICurrentUserService.
+        // IServiceScopeFactory is used inside ProcessDunningRetriesAsync for per-subscription scopes
+        // (mirrors BillingGrantJob pattern).
+        services.AddScoped<IRefundService, RefundService>();
+
+        // ── P10-08: Billing history query service (Option C seam) ──────────────────────────────
+        // IBillingHistoryQueryService owns all EF query/projection/pagination logic.
+        // Application-layer handlers inject this seam and stay EF-free (Option C rule).
+        // Scoped: depends on the scoped BillingDbContext.
+        services.AddScoped<IBillingHistoryQueryService, BillingHistoryQueryService>();
+
+        // DunningRetryJob — Hangfire job; Transient mirrors BillingGrantJob registration.
+        services.AddTransient<DunningRetryJob>();
 
         // ── P10-12: DB-backed GlobalSettings store ───────────────────────────────────────────
         // DbBackedGlobalSettingsProvider implements both IGlobalSettingsProvider (the lean interface
