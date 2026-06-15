@@ -1589,6 +1589,35 @@
         /// <summary>Returned when a global setting is updated successfully.</summary>
         public const string GlobalSettingUpdatedSuccessfully = "GlobalSettingUpdatedSuccessfully";
 
+        // ── P10-05 Subscription / Plan management ────────────────────────────────────────────────
+
+        /// <summary>Returned when the parent's subscription is retrieved successfully.</summary>
+        public const string SubscriptionRetrievedSuccessfully = "SubscriptionRetrievedSuccessfully";
+
+        /// <summary>Returned when the plan comparison data is retrieved successfully.</summary>
+        public const string PlanComparisonRetrievedSuccessfully = "PlanComparisonRetrievedSuccessfully";
+
+        /// <summary>Returned when an upgrade request is accepted (transitions to PendingPayment).</summary>
+        public const string SubscriptionUpgradeRequested = "SubscriptionUpgradeRequested";
+
+        /// <summary>Returned when a downgrade is scheduled at next cycle end.</summary>
+        public const string SubscriptionDowngradeScheduled = "SubscriptionDowngradeScheduled";
+
+        /// <summary>Returned when the subscription is canceled successfully.</summary>
+        public const string SubscriptionCanceledSuccessfully = "SubscriptionCanceledSuccessfully";
+
+        /// <summary>Returned when no active subscription is found for the parent.</summary>
+        public const string SubscriptionNotFound = "SubscriptionNotFound";
+
+        /// <summary>Returned when trying to downgrade an already-Free subscription.</summary>
+        public const string SubscriptionAlreadyFree = "SubscriptionAlreadyFree";
+
+        /// <summary>Validation: ParentUserId must be > 0.</summary>
+        public const string SubscriptionParentIdRequired = "SubscriptionParentIdRequired";
+
+        /// <summary>Validation: BillingPeriod must be a valid enum value.</summary>
+        public const string SubscriptionBillingPeriodInvalid = "SubscriptionBillingPeriodInvalid";
+
         // ── P10-03 AI Energy spend — insufficient energy decline ─────────────────────────────────
 
         /// <summary>
@@ -1604,6 +1633,29 @@
         /// Only blocks when <c>Billing:HardStopEnabled=true</c> in configuration.
         /// </summary>
         public const string AiDailyCapReached = "AiDailyCapReached";
+
+        // ── P10-06 Payments / Webhooks ────────────────────────────────────────────────────────────
+
+        /// <summary>Returned when a checkout session is created successfully (redirect URL in Data).</summary>
+        public const string CheckoutSessionCreated = "CheckoutSessionCreated";
+
+        /// <summary>Returned when the payment provider API is unavailable (transient failure).</summary>
+        public const string PaymentProviderUnavailable = "PaymentProviderUnavailable";
+
+        /// <summary>
+        /// Returned (401 shape) when a webhook request fails HMAC signature verification.
+        /// Message is intentionally vague to avoid disclosing verification details.
+        /// </summary>
+        public const string WebhookSignatureInvalid = "WebhookSignatureInvalid";
+
+        /// <summary>Returned when the webhook body cannot be parsed after signature verification passes.</summary>
+        public const string WebhookPayloadInvalid = "WebhookPayloadInvalid";
+
+        /// <summary>Returned when a webhook event is successfully processed.</summary>
+        public const string WebhookProcessed = "WebhookProcessed";
+
+        /// <summary>Returned when a duplicate webhook event is received (idempotent no-op).</summary>
+        public const string WebhookEventAlreadyProcessed = "WebhookEventAlreadyProcessed";
 
     }
 }

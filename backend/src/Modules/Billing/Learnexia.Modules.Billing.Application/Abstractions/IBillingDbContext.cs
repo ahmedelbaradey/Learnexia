@@ -20,6 +20,14 @@ public interface IBillingDbContext
     DbSet<CreditTransaction> CreditTransactions { get; }
     DbSet<GlobalSetting> GlobalSettings { get; }
 
+    // P10-05 subscription plan entities.
+    DbSet<Plan> Plans { get; }
+    DbSet<Subscription> Subscriptions { get; }
+
+    // P10-06 payment entities.
+    DbSet<Payment> Payments { get; }
+    DbSet<WebhookEvent> WebhookEvents { get; }
+
     DatabaseFacade Database { get; }
     ChangeTracker ChangeTracker { get; }
 

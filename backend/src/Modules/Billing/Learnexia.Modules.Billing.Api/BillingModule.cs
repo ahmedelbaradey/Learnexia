@@ -8,6 +8,7 @@ using Learnexia.Shared.Kernel.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Learnexia.Modules.Billing.Api;
 
@@ -66,6 +67,13 @@ public static class BillingModule
             "0 1 1 * *",
             new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
-        logger.LogInfo("BillingModule: Hangfire jobs registered (billing:monthly-grant).");
+        // P10-06: Reconcile stale payments — runs every 30 minutes.
+        recurringJobs.AddOrUpdate<ReconcilePaymentsJob>(
+            "billing:reconcile-payments",
+            job => job.RunAsync(CancellationToken.None),
+            "*/30 * * * *",
+            new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+        logger.LogInfo("BillingModule: Hangfire jobs registered (billing:monthly-grant, billing:reconcile-payments).");
     }
 }

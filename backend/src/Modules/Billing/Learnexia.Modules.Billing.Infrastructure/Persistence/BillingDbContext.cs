@@ -31,6 +31,14 @@ public class BillingDbContext : DbContext, IBillingDbContext
     public DbSet<CreditTransaction> CreditTransactions => Set<CreditTransaction>();
     public DbSet<GlobalSetting> GlobalSettings => Set<GlobalSetting>();
 
+    // P10-05 subscription plan entities.
+    public DbSet<Plan> Plans => Set<Plan>();
+    public DbSet<Subscription> Subscriptions => Set<Subscription>();
+
+    // P10-06 payment entities.
+    public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<WebhookEvent> WebhookEvents => Set<WebhookEvent>();
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 

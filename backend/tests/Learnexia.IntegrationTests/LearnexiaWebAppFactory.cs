@@ -100,7 +100,12 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
             // because InitializeAsync (which calls _postgres.StartAsync()) runs before the host is built.
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:Default"] = _postgres.GetConnectionString()
+                ["ConnectionStrings:Default"] = _postgres.GetConnectionString(),
+                // P10-06 W3 integration tests: supply the FakePaymentProvider signing secret so
+                // the HMAC gate is exercisable. Tests use FakePaymentProvider.BuildSignedWebhookPayload
+                // with this exact value to forge correctly-signed webhooks.
+                ["Billing:PaymentProvider:FakeSigningSecret"] =
+                    P10_W3_SubscriptionPayment_IntegrationTests.TestSigningSecret,
             });
         });
     }
