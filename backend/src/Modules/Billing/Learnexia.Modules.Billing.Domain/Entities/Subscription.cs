@@ -57,4 +57,25 @@ public class Subscription : FullAuditedEntity
     /// parent switches cadence while already on Premium (Monthly ↔ Annual).
     /// </summary>
     public BillingPeriod? PendingBillingPeriod { get; set; }
+
+    // ── P10-09 Dunning fields ─────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Number of consecutive failed payment attempts in the current dunning cycle.
+    /// Reset to 0 on a successful payment. Never negative.
+    /// </summary>
+    public int FailedAttemptCount { get; set; }
+
+    /// <summary>
+    /// UTC timestamp when the next automatic retry should be attempted.
+    /// Null when not in a dunning state or when retries are exhausted.
+    /// </summary>
+    public DateTime? NextRetryAt { get; set; }
+
+    /// <summary>
+    /// UTC timestamp when the grace window ends and the subscription automatically
+    /// downgrades to Free. Set to <see cref="CurrentCycleEnd"/> when dunning retries
+    /// are exhausted (<c>Status = Dunning</c>). Null otherwise.
+    /// </summary>
+    public DateTime? GraceEndsAt { get; set; }
 }

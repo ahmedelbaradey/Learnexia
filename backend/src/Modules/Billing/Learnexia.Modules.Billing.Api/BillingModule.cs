@@ -74,6 +74,15 @@ public static class BillingModule
             "*/30 * * * *",
             new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
-        logger.LogInfo("BillingModule: Hangfire jobs registered (billing:monthly-grant, billing:reconcile-payments).");
+        // P10-09: Dunning retry sweep — runs every hour.
+        // Processes PastDue/Dunning subscriptions whose NextRetryAt has passed.
+        // Config-driven retry count/intervals come from GlobalSettings at run time.
+        recurringJobs.AddOrUpdate<DunningRetryJob>(
+            "billing:dunning-retry",
+            job => job.RunAsync(CancellationToken.None),
+            "0 * * * *",   // every hour on the hour
+            new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+        logger.LogInfo("BillingModule: Hangfire jobs registered (billing:monthly-grant, billing:reconcile-payments, billing:dunning-retry).");
     }
 }

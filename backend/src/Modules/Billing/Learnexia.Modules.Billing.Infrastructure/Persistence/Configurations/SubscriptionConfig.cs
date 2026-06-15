@@ -58,6 +58,23 @@ public class SubscriptionConfig : IEntityTypeConfiguration<Subscription>
             .HasConversion<int?>()
             .IsRequired(false);
 
+        // ── P10-09: Dunning fields ────────────────────────────────────────────────────
+        builder.Property(x => x.FailedAttemptCount)
+            .IsRequired()
+            .HasDefaultValue(0);
+
+        builder.Property(x => x.NextRetryAt)
+            .HasColumnType("timestamptz")
+            .IsRequired(false);
+
+        builder.Property(x => x.GraceEndsAt)
+            .HasColumnType("timestamptz")
+            .IsRequired(false);
+
+        // Index to support DunningRetryJob's query: WHERE Status IN (PastDue, Dunning) AND NextRetryAt <= now
+        builder.HasIndex(x => new { x.Status, x.NextRetryAt })
+            .HasDatabaseName("IX_Subscriptions_Status_NextRetryAt");
+
         // Audit columns.
         builder.Property(x => x.CreatedAt).HasColumnType("timestamptz");
         builder.Property(x => x.UpdatedAt).HasColumnType("timestamptz").IsRequired(false);

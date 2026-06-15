@@ -9,6 +9,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
+// P10-09: IRefundService (Option C — charge.failed + refund.succeeded branches stay EF-free).
 
 namespace Learnexia.Modules.Billing.Application.Features.Payments.Commands.HandleProviderWebhook;
 
@@ -33,9 +34,12 @@ namespace Learnexia.Modules.Billing.Application.Features.Payments.Commands.Handl
 ///         <see cref="Payment.Amount"/> (server-resolved). A mismatch logs a warning but does
 ///         NOT silently succeed; the handler proceeds with the server-side amount as authoritative
 ///         and does NOT allow the provider amount to inflate the credited tier.</item>
-///   <item>On <c>payment.succeeded</c>: atomic transaction flips <c>Payment→Succeeded</c>
-///         and <c>Subscription→Active Premium</c> with cycle dates, then publishes
-///         <see cref="SubscriptionActivatedIntegrationEvent"/> POST-commit.</item>
+///   <item>On <c>payment.succeeded</c> + <see cref="PaymentKind.Subscription"/>: atomic
+///         transaction flips <c>Payment→Succeeded</c> and <c>Subscription→Active Premium</c> with
+///         cycle dates, then publishes <see cref="SubscriptionActivatedIntegrationEvent"/> POST-commit.</item>
+///   <item>On <c>payment.succeeded</c> + <see cref="PaymentKind.Pack"/>: delegates to
+///         <see cref="IEnergyPackService.CreditPurchasedPackAsync"/> which atomically credits the
+///         child's <c>PurchasedBalance</c> in a single explicit transaction.</item>
 ///   <item>On <c>payment.failed</c>: flips <c>Payment→Failed</c> and publishes
 ///         <see cref="PaymentFailedIntegrationEvent"/> POST-commit.</item>
 /// </list>
@@ -50,6 +54,8 @@ public sealed class HandleProviderWebhookCommandHandler
 {
     private readonly IBillingDbContext _db;
     private readonly IPaymentProvider _paymentProvider;
+    private readonly IEnergyPackService _energyPackService;
+    private readonly IRefundService _refundService;
     private readonly IPublisher _publisher;
     private readonly ILoggerManager _logger;
     private readonly ICurrentUserService _currentUser;
@@ -58,17 +64,21 @@ public sealed class HandleProviderWebhookCommandHandler
     public HandleProviderWebhookCommandHandler(
         IBillingDbContext db,
         IPaymentProvider paymentProvider,
+        IEnergyPackService energyPackService,
+        IRefundService refundService,
         IPublisher publisher,
         ILoggerManager logger,
         ICurrentUserService currentUser,
         IStringLocalizer<SharedResources> localizer)
     {
-        _db = db;
-        _paymentProvider = paymentProvider;
-        _publisher = publisher;
-        _logger = logger;
-        _currentUser = currentUser;
-        _localizer = localizer;
+        _db                = db;
+        _paymentProvider   = paymentProvider;
+        _energyPackService = energyPackService;
+        _refundService     = refundService;
+        _publisher         = publisher;
+        _logger            = logger;
+        _currentUser       = currentUser;
+        _localizer         = localizer;
     }
 
     public async Task<BaseResponse<WebhookHandledDto>> Handle(
@@ -137,6 +147,13 @@ public sealed class HandleProviderWebhookCommandHandler
                 WebhookEventTypes.PaymentFailed =>
                     await HandlePaymentFailedAsync(parsed, cancellationToken),
 
+                // ── P10-09: New event types routed to IRefundService (EF-free branches) ──
+                WebhookEventTypes.ChargeFailed =>
+                    await HandleChargeFailedAsync(parsed, cancellationToken),
+
+                WebhookEventTypes.RefundSucceeded =>
+                    await HandleRefundSucceededAsync(parsed, cancellationToken),
+
                 _ => await HandleUnknownEventAsync(parsed, cancellationToken),
             };
         }
@@ -197,6 +214,54 @@ public sealed class HandleProviderWebhookCommandHandler
             {
                 _logger.LogInfo($"HandleProviderWebhook: amount mismatch — provider={parsed.AmountFromProvider}, server={payment.Amount}. Using server-side value.");
             }
+
+            // ── P10-07: Branch by PaymentKind ─────────────────────────────────────────
+            // Pack payments are handled entirely by IEnergyPackService (Option C seam).
+            // The WebhookEvent row inserted above serves as the outer idempotency guard.
+            // We commit only the WebhookEvent record here; the service manages its own
+            // transaction for the credit + Payment.Status flip.
+            if (payment.Kind == PaymentKind.Pack)
+            {
+                // Commit the WebhookEvent row first so the idempotency guard is in place.
+                webhookRecord.ProcessedAt = DateTime.UtcNow;
+                webhookRecord.Succeeded   = true;
+                await _db.SaveChangesAsync(0);
+                await tx.CommitAsync(ct);
+
+                if (!payment.TargetChildId.HasValue)
+                {
+                    _logger.LogInfo($"HandleProviderWebhook: Pack payment {payment.Id} has no TargetChildId — skipping credit.");
+                    return new BaseResponse<WebhookHandledDto>
+                    {
+                        Successed  = true,
+                        StatusCode = System.Net.HttpStatusCode.OK,
+                        Message    = _localizer[SharedResourcesKey.WebhookProcessed],
+                        Data       = new WebhookHandledDto(parsed.ProviderEventId, "PackNoTarget"),
+                    };
+                }
+
+                // Delegate crediting to the EnergyPackService (owns its own transaction).
+                var creditResult = await _energyPackService.CreditPurchasedPackAsync(
+                    paymentId      : payment.Id,
+                    targetChildId  : payment.TargetChildId.Value,
+                    providerEventId: parsed.ProviderEventId,
+                    ct             : ct);
+
+                _logger.LogInfo(
+                    $"HandleProviderWebhook: Pack credited — paymentId={payment.Id}, childId={payment.TargetChildId.Value}, duplicate={creditResult.WasDuplicate}.");
+
+                return new BaseResponse<WebhookHandledDto>
+                {
+                    Successed  = true,
+                    StatusCode = System.Net.HttpStatusCode.OK,
+                    Message    = _localizer[SharedResourcesKey.WebhookProcessed],
+                    Data       = new WebhookHandledDto(
+                        parsed.ProviderEventId,
+                        creditResult.WasDuplicate ? "PackDuplicate" : "PackCredited"),
+                };
+            }
+
+            // ── Subscription path (unchanged W3 logic) ────────────────────────────────
 
             // Flip Payment → Succeeded.
             payment.Status             = PaymentStatus.Succeeded;
@@ -327,6 +392,189 @@ public sealed class HandleProviderWebhookCommandHandler
                 StatusCode = System.Net.HttpStatusCode.OK,
                 Message    = _localizer[SharedResourcesKey.WebhookProcessed],
                 Data       = new WebhookHandledDto(parsed.ProviderEventId, "PaymentFailed"),
+            };
+        }
+        catch (DbUpdateException dbEx) when (IsUniqueViolation(dbEx))
+        {
+            await tx.RollbackAsync(ct);
+            return new BaseResponse<WebhookHandledDto>
+            {
+                Successed  = true,
+                StatusCode = System.Net.HttpStatusCode.OK,
+                Message    = _localizer[SharedResourcesKey.WebhookEventAlreadyProcessed],
+                Data       = new WebhookHandledDto(parsed.ProviderEventId, "ConcurrentDuplicate"),
+            };
+        }
+        catch
+        {
+            await tx.RollbackAsync(ct);
+            throw;
+        }
+    }
+
+    // ── P10-09: charge.failed → IRefundService (EF-free branch) ─────────────────────────
+
+    private async Task<BaseResponse<WebhookHandledDto>> HandleChargeFailedAsync(
+        ParsedWebhookEvent parsed,
+        CancellationToken ct)
+    {
+        // Insert the WebhookEvent idempotency record first (mirrors all other branches).
+        // If the record already exists (duplicate event) → no-op.
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+        try
+        {
+            var webhookRecord = new WebhookEvent
+            {
+                ProviderEventId = parsed.ProviderEventId,
+                EventType       = parsed.EventType,
+                Payload         = parsed.RawPayload,
+                Succeeded       = false,
+            };
+            await _db.WebhookEvents.AddAsync(webhookRecord, ct);
+
+            // Resolve the Payment row to get subscriptionId.
+            var payment = await _db.Payments
+                .FirstOrDefaultAsync(p => p.ProviderPaymentRef == parsed.PaymentRef, ct);
+
+            webhookRecord.ProcessedAt = DateTime.UtcNow;
+            webhookRecord.Succeeded   = true;
+            await _db.SaveChangesAsync(0);
+            await tx.CommitAsync(ct);
+
+            if (payment is null || !payment.SubscriptionId.HasValue)
+            {
+                _logger.LogInfo(
+                    $"HandleProviderWebhook: charge.failed for unknown ref={parsed.PaymentRef} — recorded.");
+                return new BaseResponse<WebhookHandledDto>
+                {
+                    Successed  = true,
+                    StatusCode = System.Net.HttpStatusCode.OK,
+                    Message    = _localizer[SharedResourcesKey.WebhookProcessed],
+                    Data       = new WebhookHandledDto(parsed.ProviderEventId, "ChargeFailedNoSubscription"),
+                };
+            }
+
+            // ── Delegate dunning state update to IRefundService (EF-free from here) ──────
+            var result = await _refundService.ProcessChargeFailedAsync(
+                paymentId      : payment.Id,
+                subscriptionId : payment.SubscriptionId.Value,
+                providerEventId: parsed.ProviderEventId,
+                ct             : ct);
+
+            _logger.LogInfo(
+                $"HandleProviderWebhook: charge.failed processed — subscriptionId={payment.SubscriptionId.Value}, " +
+                $"attempts={result.FailedAttemptCount}, downgradeScheduled={result.DowngradeScheduled}.");
+
+            // POST-COMMIT: emit dunning notification event.
+            await _publisher.Publish(new PaymentFailedIntegrationEvent(
+                EventId        : Guid.NewGuid(),
+                OccurredOnUtc  : DateTime.UtcNow,
+                ParentUserId   : payment.ParentUserId,
+                PaymentId      : payment.Id,
+                SubscriptionId : payment.SubscriptionId), ct);
+
+            return new BaseResponse<WebhookHandledDto>
+            {
+                Successed  = true,
+                StatusCode = System.Net.HttpStatusCode.OK,
+                Message    = _localizer[SharedResourcesKey.WebhookProcessed],
+                Data       = new WebhookHandledDto(parsed.ProviderEventId,
+                    result.DowngradeScheduled ? "DunningDowngradeScheduled" : "DunningRetryScheduled"),
+            };
+        }
+        catch (DbUpdateException dbEx) when (IsUniqueViolation(dbEx))
+        {
+            await tx.RollbackAsync(ct);
+            return new BaseResponse<WebhookHandledDto>
+            {
+                Successed  = true,
+                StatusCode = System.Net.HttpStatusCode.OK,
+                Message    = _localizer[SharedResourcesKey.WebhookEventAlreadyProcessed],
+                Data       = new WebhookHandledDto(parsed.ProviderEventId, "ConcurrentDuplicate"),
+            };
+        }
+        catch
+        {
+            await tx.RollbackAsync(ct);
+            throw;
+        }
+    }
+
+    // ── P10-09: refund.succeeded → IRefundService (EF-free branch) ──────────────────────
+
+    private async Task<BaseResponse<WebhookHandledDto>> HandleRefundSucceededAsync(
+        ParsedWebhookEvent parsed,
+        CancellationToken ct)
+    {
+        // Insert WebhookEvent idempotency record first.
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+        try
+        {
+            var webhookRecord = new WebhookEvent
+            {
+                ProviderEventId = parsed.ProviderEventId,
+                EventType       = parsed.EventType,
+                Payload         = parsed.RawPayload,
+                Succeeded       = false,
+            };
+            await _db.WebhookEvents.AddAsync(webhookRecord, ct);
+
+            var payment = await _db.Payments
+                .FirstOrDefaultAsync(p => p.ProviderPaymentRef == parsed.PaymentRef, ct);
+
+            webhookRecord.ProcessedAt = DateTime.UtcNow;
+            webhookRecord.Succeeded   = true;
+            await _db.SaveChangesAsync(0);
+            await tx.CommitAsync(ct);
+
+            if (payment is null)
+            {
+                _logger.LogInfo(
+                    $"HandleProviderWebhook: refund.succeeded for unknown ref={parsed.PaymentRef} — recorded.");
+                return new BaseResponse<WebhookHandledDto>
+                {
+                    Successed  = true,
+                    StatusCode = System.Net.HttpStatusCode.OK,
+                    Message    = _localizer[SharedResourcesKey.WebhookProcessed],
+                    Data       = new WebhookHandledDto(parsed.ProviderEventId, "RefundPaymentNotFound"),
+                };
+            }
+
+            // ── Delegate refund clawback to IRefundService (EF-free from here) ─────────
+            string outcome;
+            if (payment.Kind == PaymentKind.Pack)
+            {
+                var result = await _refundService.ProcessPackRefundAsync(
+                    paymentId      : payment.Id,
+                    providerEventId: parsed.ProviderEventId,
+                    ct             : ct);
+
+                _logger.LogInfo(
+                    $"HandleProviderWebhook: pack refund — paymentId={payment.Id}, " +
+                    $"clawedBack={result.ClawedBackAmount}, duplicate={result.WasDuplicate}.");
+
+                outcome = result.WasDuplicate ? "PackRefundDuplicate" : $"PackRefunded:{result.ClawedBackAmount}";
+            }
+            else
+            {
+                var result = await _refundService.ProcessSubscriptionRefundAsync(
+                    paymentId      : payment.Id,
+                    providerEventId: parsed.ProviderEventId,
+                    ct             : ct);
+
+                _logger.LogInfo(
+                    $"HandleProviderWebhook: subscription refund — paymentId={payment.Id}, " +
+                    $"duplicate={result.WasDuplicate}.");
+
+                outcome = result.WasDuplicate ? "SubscriptionRefundDuplicate" : "SubscriptionRefunded";
+            }
+
+            return new BaseResponse<WebhookHandledDto>
+            {
+                Successed  = true,
+                StatusCode = System.Net.HttpStatusCode.OK,
+                Message    = _localizer[SharedResourcesKey.WebhookProcessed],
+                Data       = new WebhookHandledDto(parsed.ProviderEventId, outcome),
             };
         }
         catch (DbUpdateException dbEx) when (IsUniqueViolation(dbEx))
