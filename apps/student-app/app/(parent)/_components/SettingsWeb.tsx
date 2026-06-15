@@ -38,7 +38,7 @@ import { COUNTRIES, type CountryCode } from '@learnexia/shared';
 import { Avatar, Button, Select, Tabs, TextField, type TabItem } from '@learnexia/ui';
 import { Stack, Text } from '@tamagui/core';
 import React, { useEffect, useRef, useState } from 'react';
-import { Platform } from 'react-native';
+import { Platform, useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ServerErrorBanner } from '../../../src/components/ServerErrorBanner';
@@ -81,13 +81,22 @@ export interface SettingsWebProps {
   onAddChild?: () => void;
 }
 
+/** Mobile: tab rail stacks above content (≤768). Tablet/desktop: rail beside content. */
+const SETTINGS_WIDE_BREAKPOINT = 768;
+
 export function SettingsWeb({ onAddChild }: SettingsWebProps) {
   const { t } = useTranslation();
   const { direction, locale, isRtl } = useLocale();
+  const { width } = useWindowDimensions();
   const profile = useMyProfile();
   const [activeTab, setActiveTab] = useState<SettingsTabKey>(SETTINGS_TAB.Profile);
 
   const rowDir = isRtl ? 'row-reverse' as const : 'row' as const;
+
+  // On mobile (≤768) the rail stacks above the panel (column layout);
+  // on tablet/desktop (>768) the rail sits beside the panel (row layout).
+  // Tabs always show icon + label (spec: "NOT icon-only").
+  const isWide = width > SETTINGS_WIDE_BREAKPOINT;
 
   const tabItems: TabItem[] = (Object.values(SETTINGS_TAB) as SettingsTabKey[]).map((key) => ({
     value: key,
@@ -104,9 +113,17 @@ export function SettingsWeb({ onAddChild }: SettingsWebProps) {
         subtitle={t('parent.settings.subtitle')}
       />
 
-      {/* Tab rail + active panel */}
-      <Stack flexDirection={rowDir} gap="$5" flexWrap="wrap" alignItems="flex-start" padding="$6">
-        <Stack width={220} minWidth={180}>
+      {/* Tab rail + active panel
+          Wide (>768): rail (200px fixed) beside panel → flexDirection=rowDir.
+          Mobile (≤768): rail above panel → flexDirection="column". */}
+      <Stack
+        flexDirection={isWide ? rowDir : 'column'}
+        gap="$5"
+        alignItems="flex-start"
+        padding="$6"
+      >
+        {/* Rail: fixed 220px on wide, full-width on mobile. */}
+        <Stack width={isWide ? 220 : '100%'} minWidth={isWide ? 180 : undefined}>
           <Tabs
             items={tabItems}
             value={activeTab}
@@ -117,7 +134,7 @@ export function SettingsWeb({ onAddChild }: SettingsWebProps) {
           />
         </Stack>
 
-        <Stack flex={1} minWidth={320}>
+        <Stack flex={1} minWidth={isWide ? 320 : undefined} width={isWide ? undefined : '100%'}>
           {(() => {
             switch (activeTab) {
               case SETTINGS_TAB.Profile:

@@ -31,6 +31,7 @@ import { type Direction } from '@learnexia/shared/i18n';
 import { Button, MasteryBar, type MasteryBarProps } from '@learnexia/ui';
 import { Stack, Text, type StackProps } from '@tamagui/core';
 import React, { useState } from 'react';
+import { Platform, useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { useLocale } from '../../../src/hooks/useLocale';
@@ -47,6 +48,11 @@ import {
   splitByRange,
   type ReportRangeValue,
 } from './reportsFormat';
+
+const IS_WEB = Platform.OS === 'web';
+
+/** Desktop threshold: full 4-col KPI grid at ≥1025 viewport width. */
+const DESKTOP_VIEWPORT_BREAKPOINT = 1025;
 
 /** Empty-value placeholder glyph mandated by the spec ("—", §2.2/§2.5). */
 const EMPTY_VALUE = '—';
@@ -72,7 +78,9 @@ const SUBJECT_KEYS = Object.values(OVERVIEW_SUBJECT);
 export function ReportsWeb() {
   const { t } = useTranslation();
   const { direction, isRtl, locale } = useLocale();
+  const { width } = useWindowDimensions();
   const rowDir: 'row' | 'row-reverse' = isRtl ? 'row-reverse' : 'row';
+  const isDesktop = width >= DESKTOP_VIEWPORT_BREAKPOINT;
 
   const childrenQuery = useMyChildren();
   const children = childrenQuery.data ?? [];
@@ -186,13 +194,15 @@ export function ReportsWeb() {
             </Stack>
           ) : null}
 
-          {/* ---- KPI row (§2.2) ---- */}
+          {/* ---- KPI row (§2.2) — 4-col desktop / 2-col tablet+mobile ---- */}
           <KpiRow
             windows={windows}
             range={range}
             rowDir={rowDir}
             direction={direction}
             locale={locale}
+            isDesktop={isDesktop}
+            isRtl={isRtl}
           />
 
           {/* ---- Chart slot: "Last 20 days · XP earned" (§2.4, P5-05) ---- */}
@@ -257,9 +267,12 @@ interface KpiRowProps {
   rowDir: 'row' | 'row-reverse';
   direction: Direction;
   locale: string;
+  /** True when viewport ≥1025 — renders 4 columns; false = 2 columns. */
+  isDesktop: boolean;
+  isRtl: boolean;
 }
 
-function KpiRow({ windows, range, rowDir, direction, locale }: KpiRowProps) {
+function KpiRow({ windows, range, rowDir, direction, locale, isDesktop, isRtl }: KpiRowProps) {
   const { t } = useTranslation();
   const { current, previous } = windows;
 
@@ -348,19 +361,30 @@ function KpiRow({ windows, range, rowDir, direction, locale }: KpiRowProps) {
     },
   ];
 
+  // KPI grid: 4-col desktop (≥1025), 2-col tablet (769–1024) + mobile (≤768).
+  // Uses CSS Grid on web for pixel-accurate column control; flex-wrap on native.
+  // Handoff: KPIs stay 2-up on mobile — NOT 1-up.
+  const kpiGridStyle: object | undefined = IS_WEB
+    ? ({
+        display: 'grid',
+        gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)',
+        gap: 14,
+        alignItems: 'stretch',
+        direction: isRtl ? 'rtl' : 'ltr',
+      } as object)
+    : undefined;
+
   return (
     <Stack
       testID="reports-kpi-region"
-      flexDirection={rowDir}
-      flexWrap="wrap"
-      gap={14}
-      alignItems="stretch"
+      {...(IS_WEB
+        ? { style: kpiGridStyle }
+        : { flexDirection: rowDir, flexWrap: 'wrap' as const, gap: 14, alignItems: 'stretch' })}
     >
       {tiles.map((tile) => (
         <Stack
           key={tile.key}
-          flex={1}
-          minWidth={200}
+          {...(!IS_WEB ? { flex: 1, minWidth: 200 } : {})}
           borderRadius="$card"
           backgroundColor="$card"
           borderWidth={1}
