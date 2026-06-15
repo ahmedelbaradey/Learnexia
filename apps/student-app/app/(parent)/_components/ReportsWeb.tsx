@@ -36,7 +36,9 @@ import { useTranslation } from 'react-i18next';
 
 import { useLocale } from '../../../src/hooks/useLocale';
 import { useActiveChildStore } from '../../../src/providers/activeChildStore';
+import { FocusAreasCard } from './FocusAreasCard';
 import { ParentHeader } from './ParentHeader';
+import { RecommendationsCard } from './RecommendationsCard';
 import { RecentAttemptsPanel } from './RecentAttemptsPanel';
 import { OVERVIEW_SUBJECT, type OverviewSubjectKey } from './parentDashboardStubs';
 import {
@@ -226,6 +228,26 @@ export function ReportsWeb() {
                 direction={direction}
                 borderRadius="$card"
                 testID="reports-chart-slot-tod"
+              />
+            </Stack>
+          </Stack>
+
+          {/* ---- Areas to focus + Recommendations from Lexi (parent-mobile design) ---- */}
+          <Stack flexDirection={rowDir} gap="$6" flexWrap="wrap" alignItems="flex-start">
+            <Stack flex={1} minWidth={320}>
+              <FocusAreasCard
+                childId={String(activeChild?.id ?? '')}
+                childName={childName}
+                direction={direction}
+                rowDir={rowDir}
+                locale={locale}
+              />
+            </Stack>
+            <Stack flex={1} minWidth={320}>
+              <RecommendationsCard
+                childName={childName}
+                direction={direction}
+                rowDir={rowDir}
               />
             </Stack>
           </Stack>
