@@ -8,8 +8,13 @@
  * home in the child's language). Invalid credentials show a generic banner (no
  * field-level reveal). RTL-aware.
  *
- * P1-11 additions: persona toggle, remember-me, forgot-password link, OR divider,
+ * P1-11 additions: remember-me, forgot-password link, OR divider,
  * Google/Apple/Microsoft social buttons.
+ *
+ * Batch A (auth flow redesign):
+ *  - `PersonaToggle` removed; `persona`/`setPersona` state removed.
+ *  - Accepts `role: LoginPersona` prop from the parent screen (default 'parent').
+ *  - Register-link + role-conditional footer logic moved to `login.tsx`.
  *
  * P1-12 Batch 3 Google OAuth:
  *  - expo-auth-session `useAuthRequest` + `useAutoDiscovery` against Google.
@@ -69,7 +74,6 @@ import { ServerErrorBanner } from '../../../src/components/ServerErrorBanner';
 import { useLocale } from '../../../src/hooks/useLocale';
 import { useServerError } from '../../../src/hooks/useServerError';
 import { Checkbox, OrDivider, SocialButton, SocialRow } from './loginParts';
-import { PersonaToggle } from './PersonaToggle';
 import { AppleIcon, GoogleIcon, MicrosoftIcon } from './SocialIcons';
 
 /**
@@ -121,7 +125,17 @@ function googleErrorKey(err: unknown): string {
   return 'auth.login.errors.socialFailed';
 }
 
-export function LoginForm() {
+export interface LoginFormProps {
+  /**
+   * The UI-only role hint passed from `login.tsx` via route param (Batch A).
+   * Drives placeholder copy differences. Does NOT affect which credentials are
+   * accepted — the backend role from `Me` is authoritative (F4).
+   * Default: 'parent' (matches the kit default and the no-role-param default).
+   */
+  role?: LoginPersona;
+}
+
+export function LoginForm({ role = LOGIN_PERSONAS.Parent }: LoginFormProps) {
   const { t } = useTranslation();
   const { direction } = useLocale();
   const router = useRouter();
@@ -131,7 +145,7 @@ export function LoginForm() {
   const resolveError = useServerError();
 
   // UI-only client state (NOT server data → local component state, not Zustand).
-  const [persona, setPersona] = useState<LoginPersona>(LOGIN_PERSONAS.Parent);
+  // `persona`/`setPersona` removed (Batch A) — role comes from the route param via prop.
   const [rememberMe, setRememberMe] = useState(false);
   // Google-specific error surfaced via the shared ServerErrorBanner.
   const [googleError, setGoogleError] = useState<string | null>(null);
@@ -296,24 +310,17 @@ export function LoginForm() {
 
   return (
     <Stack gap="$4">
-      <PersonaToggle
-        value={persona}
-        onChange={setPersona}
-        labelFor={(p) =>
-          p === LOGIN_PERSONAS.Parent ? t('auth.login.personaParent') : t('auth.login.personaStudent')
-        }
-        accessibilityLabel={t('auth.login.personaToggleLabel')}
-        direction={direction}
-        disabled={emailFormDisabled}
-        testID="login-persona-toggle"
-      />
-
       <Controller
         control={control}
         name="userName"
         render={({ field, fieldState }) => (
           <TextField
             label={t('auth.login.labelUsername')}
+            // Role-conditional email placeholder (spec §4.4). These are technical
+            // strings (email addresses) — NOT i18n keys; they stay Latin in all locales.
+            placeholder={
+              role === LOGIN_PERSONAS.Student ? 'sami@learnexia.com' : 'parent@email.com'
+            }
             value={field.value}
             onChangeText={field.onChange}
             keyboardType="email-address"
@@ -347,9 +354,10 @@ export function LoginForm() {
         )}
       />
 
-      {/* Remember me + Forgot password row */}
+      {/* Remember me + Forgot password row — dir + natural order (no row-reverse) per RTL contract */}
       <Stack
-        flexDirection={direction === 'rtl' ? 'row-reverse' : 'row'}
+        flexDirection="row"
+        dir={direction}
         alignItems="center"
         justifyContent="space-between"
         flexWrap="wrap"

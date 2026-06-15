@@ -7,7 +7,7 @@
  * the splash, this hook just doesn't navigate yet.
  *
  * Targets:
- *   signed-out                        → /(auth)/login
+ *   signed-out                        → /(auth)/role-select  (Batch A: was /(auth)/login)
  *   parent, hasChildren = false       → /(onboarding)/add-child
  *   parent, hasChildren = true        → /(parent)
  *   student                           → /(child)
@@ -95,7 +95,11 @@ export function useAuthRoute(): AuthRouteState {
     const current = (segments[0] ?? null) as TargetGroup;
 
     if (status === 'signed-out') {
-      if (current !== '(auth)') router.replace('/(auth)/login');
+      // Batch A: signed-out users go to Role Select (the new pre-login default).
+      // The `(auth)` group guard remains: if the user is already anywhere in the
+      // (auth) group (role-select, login, register, forgot-password, reset-password)
+      // we don't navigate again — idempotency preserved.
+      if (current !== '(auth)') router.replace('/(auth)/role-select');
       return;
     }
 

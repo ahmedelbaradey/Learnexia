@@ -38,6 +38,16 @@ export type AppConfig = typeof tamaguiConfig;
 declare module '@tamagui/core' {
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface TamaguiCustomConfig extends AppConfig {}
+
+  /**
+   * `dir` is a valid HTML attribute Tamagui forwards to the DOM on web (it's how
+   * our RTL-aware components drive layout mirroring — see the dir-based RTL
+   * pattern), but it's missing from Tamagui's prop types. Declare it here so any
+   * Stack/View can take `dir` without a per-call `@ts-expect-error`.
+   */
+  interface RNTamaguiViewNonStyleProps {
+    dir?: 'ltr' | 'rtl' | 'auto';
+  }
 }
 
 export default tamaguiConfig;

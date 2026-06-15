@@ -128,13 +128,33 @@ export const en = {
         captchaFailed: 'Security check failed. Please try again.',
       },
     },
+    roleSelect: {
+      title: 'Welcome to Learnexia',
+      subtitle: "Who's signing in?",
+      parentLabel: 'Parent',
+      parentSub: "Track your child's progress",
+      studentLabel: 'Student',
+      studentSub: 'Learn, play, level up',
+      footnote:
+        "Children log in with the email a parent assigned — they never create their own account.",
+      parentA11y: 'Sign in as Parent',
+      studentA11y: 'Sign in as Student',
+    },
     login: {
       eyebrow: 'Log in',
       title: 'Welcome back',
+      /** Student subtitle (existing key repurposed — was generic, now student-only). */
       subtitle: 'Log in to keep your streak alive 🔥',
-      personaParent: "👨‍👩‍👦 I'm a Parent",
-      personaStudent: "🎓 I'm a Student",
-      personaToggleLabel: 'Choose who is logging in',
+      /** Parent subtitle (NEW — Batch A). */
+      subtitleParent: "Sign in to follow your children's progress",
+      /** Role badge label keys (NEW — Batch A, two literal keys to avoid interpolated-noun gender issues). */
+      signingInAsParent: 'Signing in as Parent',
+      signingInAsStudent: 'Signing in as Student',
+      /** "Change" link on the role badge (NEW — Batch A). */
+      change: 'Change',
+      /** Student no-account notice (NEW — Batch A). */
+      studentNoAccountTitle: 'Need an account?',
+      studentNoAccountBody: 'Ask a parent to add you.',
       labelUsername: 'Email',
       labelPassword: 'Password',
       showPassword: 'Show',
@@ -1317,13 +1337,33 @@ export const ar = {
         captchaFailed: 'فشل فحص الأمان. يرجى المحاولة مرة أخرى.',
       },
     },
+    roleSelect: {
+      title: 'مرحباً بك في Learnexia',
+      subtitle: 'من الذي يسجّل الدخول؟',
+      parentLabel: 'ولي الأمر',
+      parentSub: 'تابع تقدّم طفلك',
+      studentLabel: 'طالب',
+      studentSub: 'تعلّم والعب وتقدّم',
+      footnote:
+        'يدخل الأطفال بالبريد الذي يحدده ولي الأمر — لا ينشئون حساباتهم بأنفسهم.',
+      parentA11y: 'تسجيل الدخول كولي أمر',
+      studentA11y: 'تسجيل الدخول كطالب',
+    },
     login: {
       eyebrow: 'تسجيل الدخول',
       title: 'أهلاً بعودتك',
-      subtitle: 'سجّل دخولك للحفاظ على سلسلتك 🔥',
-      personaParent: 'أنا ولي أمر 👨‍👩‍👧',
-      personaStudent: 'أنا طالب 🎒',
-      personaToggleLabel: 'اختر من يقوم بتسجيل الدخول',
+      /** طالب: المفتاح الحالي مُعاد توظيفه للطلاب فقط. */
+      subtitle: 'سجّل الدخول للحفاظ على سلسلتك 🔥',
+      /** ولي الأمر: مفتاح عنوان فرعي جديد (Batch A). */
+      subtitleParent: 'سجّل الدخول لمتابعة تقدّم أطفالك',
+      /** مفاتيح شارة الدور (Batch A، مفتاحان حرفيان لتجنّب مشكلات الجندر في العربية). */
+      signingInAsParent: 'تسجيل الدخول كولي أمر',
+      signingInAsStudent: 'تسجيل الدخول كطالب',
+      /** رابط "تغيير" على شارة الدور (Batch A). */
+      change: 'تغيير',
+      /** إشعار الطالب بلا حساب (Batch A). */
+      studentNoAccountTitle: 'هل تحتاج إلى حساب؟',
+      studentNoAccountBody: 'اطلب من ولي أمرك إضافتك.',
       labelUsername: 'البريد الإلكتروني',
       labelPassword: 'كلمة المرور',
       showPassword: 'إظهار',
