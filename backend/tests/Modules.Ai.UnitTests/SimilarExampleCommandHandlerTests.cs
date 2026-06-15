@@ -5,6 +5,7 @@ using Learnexia.Modules.Ai.Application.Services;
 using Learnexia.Shared.Contracts.Ai;
 using Learnexia.Shared.Contracts.AiTutor;
 using Learnexia.Shared.Kernel.Abstractions;
+using Learnexia.Shared.Kernel.Settings;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
@@ -34,10 +35,12 @@ namespace Modules.Ai.UnitTests;
 ///   - <see cref="ILearningContextProvider"/>: returns controlled context (empty vs populated chunks).
 ///   - <see cref="IPromptBuilder"/>: returns a fixed <see cref="AiRequest"/> on success paths.
 ///   - <see cref="ISafetyLayer"/>: returns controlled <see cref="SafeAiResult"/> (allowed vs blocked).
+///   - <see cref="IAiResponseCache"/>: Moq no-op (cache miss by default — returns null).
+///   - <see cref="IGlobalSettingsProvider"/>: Moq returning sensible defaults.
 ///   - <see cref="IServiceScopeFactory"/>: Moq no-op (fire-and-forget publish never awaited in tests).
 ///   - <see cref="ILoggerManager"/>: Moq no-op.
 ///   - <see cref="IStringLocalizer{SharedResources}"/>: returns key as value (test isolation).
-///   - <see cref="AiTutorRateLimiter"/>: real instance with fresh state per test.
+///   - <see cref="IAiTutorRateLimiter"/>: real <see cref="AiTutorRateLimiter"/> with fresh state per test.
 /// </summary>
 public sealed class SimilarExampleCommandHandlerTests
 {
@@ -48,13 +51,17 @@ public sealed class SimilarExampleCommandHandlerTests
         Mock<ISafetyLayer> safetyMock,
         Mock<IPromptBuilder> promptBuilderMock,
         Mock<ICurrentUserService>? currentUserMock = null,
-        AiTutorRateLimiter? rateLimiter = null)
+        IAiTutorRateLimiter? rateLimiter = null,
+        Mock<IAiResponseCache>? aiCacheMock = null,
+        Mock<IGlobalSettingsProvider>? settingsMock = null)
     {
         var currentUser = currentUserMock ?? BuildDefaultCurrentUserMock();
         var localizer = BuildLocalizerMock();
         var logger = new Mock<ILoggerManager>();
         var redirectBuilder = new RedirectResponseBuilder(localizer.Object);
         var rl = rateLimiter ?? new AiTutorRateLimiter();
+        var cache = aiCacheMock ?? BuildDefaultAiCacheMock();
+        var settings = settingsMock ?? BuildDefaultSettingsMock();
 
         // IServiceScopeFactory: no-op stub — fire-and-forget events are not asserted in unit tests.
         // The test process completes before the background Task.Run can resolve the scope.
@@ -65,6 +72,8 @@ public sealed class SimilarExampleCommandHandlerTests
             contextProviderMock.Object,
             promptBuilderMock.Object,
             safetyMock.Object,
+            cache.Object,
+            settings.Object,
             redirectBuilder,
             rl,
             scopeFactory.Object,
@@ -92,6 +101,32 @@ public sealed class SimilarExampleCommandHandlerTests
         return mock;
     }
 
+    /// <summary>Default cache: always a MISS (returns null) — exercises the live path.</summary>
+    private static Mock<IAiResponseCache> BuildDefaultAiCacheMock()
+    {
+        var mock = new Mock<IAiResponseCache>();
+        mock.Setup(c => c.GetApprovedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string?)null);
+        mock.Setup(c => c.WriteAsync(It.IsAny<AiCacheWriteEntry>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        return mock;
+    }
+
+    /// <summary>Default settings: sensible MVP defaults for autoApprovalConfidence and pool size.</summary>
+    private static Mock<IGlobalSettingsProvider> BuildDefaultSettingsMock()
+    {
+        var mock = new Mock<IGlobalSettingsProvider>();
+        mock.Setup(s => s.GetDecimal(It.IsAny<string>(), It.IsAny<decimal>()))
+            .Returns<string, decimal>((_, def) => def);
+        mock.Setup(s => s.GetInt(It.IsAny<string>(), It.IsAny<int>()))
+            .Returns<string, int>((_, def) => def);
+        mock.Setup(s => s.GetString(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns<string, string>((_, def) => def);
+        mock.Setup(s => s.GetBool(It.IsAny<string>(), It.IsAny<bool>()))
+            .Returns<string, bool>((_, def) => def);
+        return mock;
+    }
+
     /// <summary>
     /// Returns a no-op <see cref="IServiceScopeFactory"/> so fire-and-forget event publishes
     /// don't throw during the synchronous test path.
@@ -110,8 +145,6 @@ public sealed class SimilarExampleCommandHandlerTests
 
         var scopeMock = new Mock<IServiceScope>();
         scopeMock.Setup(s => s.ServiceProvider).Returns(spMock.Object);
-
-        var asyncScopeMock = new Mock<IAsyncDisposable>();
 
         var factoryMock = new Mock<IServiceScopeFactory>();
         factoryMock
@@ -317,6 +350,110 @@ public sealed class SimilarExampleCommandHandlerTests
                 It.IsAny<string?>(), It.IsAny<CancellationToken>()),
             Times.Never,
             "ILearningContextProvider must NOT be called when rate limit is exceeded");
+    }
+
+    // ── SE-06: Cache HIT → Streamed from cache; ISafetyLayer never called ───────
+
+    [Fact(DisplayName = "P306-SE-06 Cache HIT → Streamed with cached content; ISafetyLayer never called (WI-B4 AC-B1)")]
+    public async Task Handle_CacheHit_ReturnsStreamedWithCachedContentAndNeverCallsSafetyLayer()
+    {
+        // Arrange — cache returns an approved response; safety layer must NOT be invoked.
+        const string cachedContent = "Here is a cached similar example: a 3-4-5 right triangle.";
+
+        var contextProvider = new Mock<ILearningContextProvider>();
+        contextProvider
+            .Setup(p => p.GetContextAsync(
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int?>(),
+                It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(MakePopulatedContext());
+
+        var promptMock = new Mock<IPromptBuilder>();
+        // Prompt builder might not be called on HIT (handler calls it before cache in SE handler),
+        // so we set it up permissively but don't assert on it.
+        promptMock
+            .Setup(p => p.Build(It.IsAny<PromptContext>()))
+            .Returns(new PromptBuilderResult.Success(
+                new AiRequest { Prompt = "Give a similar math example", Task = AiTaskKind.Explain }));
+
+        var safetyMock = new Mock<ISafetyLayer>();
+        // No setup — any call would yield default null / throw, caught by Times.Never below.
+
+        // HIT: cache returns the pre-approved content string.
+        var aiCacheMock = new Mock<IAiResponseCache>();
+        aiCacheMock
+            .Setup(c => c.GetApprovedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(cachedContent);
+        aiCacheMock
+            .Setup(c => c.WriteAsync(It.IsAny<AiCacheWriteEntry>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var sut = CreateSut(contextProvider, safetyMock, promptMock, aiCacheMock: aiCacheMock);
+        var command = new SimilarExampleCommand(SkillId: 20, QuestionId: null);
+
+        // Act
+        var result = await sut.Handle(command, CancellationToken.None);
+
+        // Assert — content is the exact cached string.
+        result.Should().BeOfType<SimilarExampleResult.Streamed>(
+            "a cache HIT must return Streamed content immediately (WI-B4 AC-B1)");
+
+        var streamed = (SimilarExampleResult.Streamed)result;
+        streamed.Content.Should().Be(cachedContent,
+            "handler must return the exact cached content — not re-generate it");
+
+        // The central guarantee: zero AI/safety invocations on a cache HIT.
+        safetyMock.Verify(
+            s => s.GenerateSafeAsync(It.IsAny<AiRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "ISafetyLayer.GenerateSafeAsync must NOT be called on a cache HIT — " +
+            "the cached response is pre-approved; invoking the safety layer would be a zero-cost bypass violation");
+    }
+
+    // ── SE-07: Cache MISS → safety layer IS called (contrast test) ──────────────
+
+    [Fact(DisplayName = "P306-SE-07 Cache MISS → ISafetyLayer called; establishes MISS-vs-HIT contrast (WI-B4)")]
+    public async Task Handle_CacheMiss_SafetyLayerIsCalled()
+    {
+        // Arrange — default MISS cache; safety approves.
+        const string approvedContent = "Similar example: if 3² + 4² = 5², then a 3-4-5 triangle is right-angled.";
+
+        var contextProvider = new Mock<ILearningContextProvider>();
+        contextProvider
+            .Setup(p => p.GetContextAsync(
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int?>(),
+                It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(MakePopulatedContext());
+
+        var promptMock = new Mock<IPromptBuilder>();
+        promptMock
+            .Setup(p => p.Build(It.IsAny<PromptContext>()))
+            .Returns(new PromptBuilderResult.Success(
+                new AiRequest { Prompt = "Give a similar math example", Task = AiTaskKind.Explain }));
+
+        var safetyMock = new Mock<ISafetyLayer>();
+        safetyMock
+            .Setup(s => s.GenerateSafeAsync(It.IsAny<AiRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SafeAiResult(
+                Allowed: true,
+                Content: approvedContent,
+                Verdict: SafetyVerdict.Allowed,
+                Results: Array.Empty<CheckResult>()));
+
+        // Default MISS: BuildDefaultAiCacheMock() returns null (no HIT).
+        var sut = CreateSut(contextProvider, safetyMock, promptMock);
+        var command = new SimilarExampleCommand(SkillId: 20, QuestionId: null);
+
+        // Act
+        var result = await sut.Handle(command, CancellationToken.None);
+
+        // Assert — on a MISS the safety layer MUST be invoked (contrast to SE-06).
+        result.Should().BeOfType<SimilarExampleResult.Streamed>(
+            "a cache MISS with safety-allowed response must return Streamed content");
+
+        safetyMock.Verify(
+            s => s.GenerateSafeAsync(It.IsAny<AiRequest>(), It.IsAny<CancellationToken>()),
+            Times.Once,
+            "ISafetyLayer must be called exactly once on a cache MISS");
     }
 
     // ── SE-05: IAiGateway must NOT be injected ───────────────────────────────────

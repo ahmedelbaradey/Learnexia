@@ -6,6 +6,7 @@ using Learnexia.Shared.Contracts.Ai;
 using Learnexia.Shared.Contracts.AiTutor;
 using Learnexia.Shared.Contracts.Learning;
 using Learnexia.Shared.Kernel.Abstractions;
+using Learnexia.Shared.Kernel.Settings;
 using MediatR;
 using Microsoft.Extensions.Localization;
 using Moq;
@@ -35,10 +36,12 @@ namespace Modules.Ai.UnitTests;
 ///   - <see cref="ILearningContextProvider"/>: returns controlled context (empty vs populated chunks).
 ///   - <see cref="IPromptBuilder"/>: returns a fixed <see cref="AiRequest"/> on success paths.
 ///   - <see cref="ISafetyLayer"/>: returns controlled <see cref="SafeAiResult"/> (allowed vs blocked).
+///   - <see cref="IAiResponseCache"/>: Moq no-op (cache miss by default — returns null).
+///   - <see cref="IGlobalSettingsProvider"/>: Moq returning sensible defaults.
 ///   - <see cref="IPublisher"/>: Moq no-op (fire-and-forget; publish count not asserted).
 ///   - <see cref="ILoggerManager"/>: Moq no-op.
 ///   - <see cref="IStringLocalizer{SharedResources}"/>: returns key as value (test isolation).
-///   - <see cref="AiTutorRateLimiter"/>: real instance with fresh state per test.
+///   - <see cref="IAiTutorRateLimiter"/>: real <see cref="AiTutorRateLimiter"/> with fresh state per test.
 /// </summary>
 public sealed class ExplainConceptCommandHandlerTests
 {
@@ -50,7 +53,9 @@ public sealed class ExplainConceptCommandHandlerTests
         Mock<IPromptBuilder> promptBuilderMock,
         Mock<ICurrentUserService>? currentUserMock = null,
         Mock<ILessonContextContract>? lessonContextMock = null,
-        AiTutorRateLimiter? rateLimiter = null)
+        IAiTutorRateLimiter? rateLimiter = null,
+        Mock<IAiResponseCache>? aiCacheMock = null,
+        Mock<IGlobalSettingsProvider>? settingsMock = null)
     {
         var currentUser = currentUserMock ?? BuildDefaultCurrentUserMock();
         var lessonCtx = lessonContextMock ?? BuildDefaultLessonContextMock();
@@ -59,6 +64,8 @@ public sealed class ExplainConceptCommandHandlerTests
         var logger = new Mock<ILoggerManager>();
         var redirectBuilder = new RedirectResponseBuilder(localizer.Object);
         var rl = rateLimiter ?? new AiTutorRateLimiter();
+        var cache = aiCacheMock ?? BuildDefaultAiCacheMock();
+        var settings = settingsMock ?? BuildDefaultSettingsMock();
 
         return new ExplainConceptCommandHandler(
             currentUser.Object,
@@ -66,6 +73,8 @@ public sealed class ExplainConceptCommandHandlerTests
             contextProviderMock.Object,
             promptBuilderMock.Object,
             safetyMock.Object,
+            cache.Object,
+            settings.Object,
             redirectBuilder,
             rl,
             publisher.Object,
@@ -99,6 +108,32 @@ public sealed class ExplainConceptCommandHandlerTests
         var mock = new Mock<IStringLocalizer<SharedResources>>();
         mock.Setup(l => l[It.IsAny<string>()])
             .Returns<string>(key => new LocalizedString(key, key));
+        return mock;
+    }
+
+    /// <summary>Default cache: always a MISS (returns null) — exercises the live path.</summary>
+    private static Mock<IAiResponseCache> BuildDefaultAiCacheMock()
+    {
+        var mock = new Mock<IAiResponseCache>();
+        mock.Setup(c => c.GetApprovedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string?)null);
+        mock.Setup(c => c.WriteAsync(It.IsAny<AiCacheWriteEntry>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        return mock;
+    }
+
+    /// <summary>Default settings: sensible MVP defaults for autoApprovalConfidence and pool size.</summary>
+    private static Mock<IGlobalSettingsProvider> BuildDefaultSettingsMock()
+    {
+        var mock = new Mock<IGlobalSettingsProvider>();
+        mock.Setup(s => s.GetDecimal(It.IsAny<string>(), It.IsAny<decimal>()))
+            .Returns<string, decimal>((_, def) => def);
+        mock.Setup(s => s.GetInt(It.IsAny<string>(), It.IsAny<int>()))
+            .Returns<string, int>((_, def) => def);
+        mock.Setup(s => s.GetString(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns<string, string>((_, def) => def);
+        mock.Setup(s => s.GetBool(It.IsAny<string>(), It.IsAny<bool>()))
+            .Returns<string, bool>((_, def) => def);
         return mock;
     }
 
@@ -298,6 +333,109 @@ public sealed class ExplainConceptCommandHandlerTests
                 It.IsAny<string?>(), It.IsAny<CancellationToken>()),
             Times.Never,
             "ILearningContextProvider must NOT be called when rate limit is exceeded");
+    }
+
+    // ── EH-06: Cache HIT → Streamed from cache; ISafetyLayer never called ───────
+
+    [Fact(DisplayName = "P304-EH-06 Cache HIT → Streamed with cached content; ISafetyLayer never called (WI-B4 AC-B1)")]
+    public async Task Handle_CacheHit_ReturnsStreamedWithCachedContentAndNeverCallsSafetyLayer()
+    {
+        // Arrange — cache returns an approved cached response; safety layer must NOT be invoked.
+        const string cachedContent = "Photosynthesis (cached): plants convert light to glucose using chlorophyll.";
+
+        var contextProvider = new Mock<ILearningContextProvider>();
+        contextProvider
+            .Setup(p => p.GetContextAsync(
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int?>(),
+                It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(MakePopulatedContext());
+
+        var promptMock = new Mock<IPromptBuilder>();
+        promptMock
+            .Setup(p => p.Build(It.IsAny<PromptContext>()))
+            .Returns(new PromptBuilderResult.Success(
+                new AiRequest { Prompt = "Explain photosynthesis", Task = AiTaskKind.Explain }));
+
+        var safetyMock = new Mock<ISafetyLayer>();
+        // Safety layer is left with no setup — any call would throw or return null.
+        // If it is ever called, the Times.Never verification below will catch it.
+
+        // HIT: cache returns the pre-approved content string.
+        var aiCacheMock = new Mock<IAiResponseCache>();
+        aiCacheMock
+            .Setup(c => c.GetApprovedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(cachedContent);
+        aiCacheMock
+            .Setup(c => c.WriteAsync(It.IsAny<AiCacheWriteEntry>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var sut = CreateSut(contextProvider, safetyMock, promptMock, aiCacheMock: aiCacheMock);
+        var command = new ExplainConceptCommand(LessonId: null, ConceptId: null, SkillId: 10, Question: null);
+
+        // Act
+        var result = await sut.Handle(command, CancellationToken.None);
+
+        // Assert — content is the exact cached string.
+        result.Should().BeOfType<ExplainResult.Streamed>(
+            "a cache HIT must return Streamed content immediately (WI-B4 AC-B1)");
+
+        var streamed = (ExplainResult.Streamed)result;
+        streamed.Content.Should().Be(cachedContent,
+            "handler must return the exact cached content — not re-generate it");
+
+        // The central guarantee: zero AI/safety invocations on a cache HIT.
+        safetyMock.Verify(
+            s => s.GenerateSafeAsync(It.IsAny<AiRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "ISafetyLayer.GenerateSafeAsync must NOT be called on a cache HIT — " +
+            "the cached response is pre-approved; invoking the safety layer would be a zero-cost bypass violation");
+    }
+
+    // ── EH-07: Cache MISS → safety layer IS called (contrast test) ──────────────
+
+    [Fact(DisplayName = "P304-EH-07 Cache MISS → ISafetyLayer called; establishes MISS-vs-HIT contrast (WI-B4)")]
+    public async Task Handle_CacheMiss_SafetyLayerIsCalled()
+    {
+        // Arrange — default MISS cache; safety approves.
+        const string approvedContent = "Photosynthesis: light energy → chemical energy.";
+
+        var contextProvider = new Mock<ILearningContextProvider>();
+        contextProvider
+            .Setup(p => p.GetContextAsync(
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int?>(),
+                It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(MakePopulatedContext());
+
+        var promptMock = new Mock<IPromptBuilder>();
+        promptMock
+            .Setup(p => p.Build(It.IsAny<PromptContext>()))
+            .Returns(new PromptBuilderResult.Success(
+                new AiRequest { Prompt = "Explain photosynthesis", Task = AiTaskKind.Explain }));
+
+        var safetyMock = new Mock<ISafetyLayer>();
+        safetyMock
+            .Setup(s => s.GenerateSafeAsync(It.IsAny<AiRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SafeAiResult(
+                Allowed: true,
+                Content: approvedContent,
+                Verdict: SafetyVerdict.Allowed,
+                Results: Array.Empty<CheckResult>()));
+
+        // Default MISS: BuildDefaultAiCacheMock() returns null (no HIT).
+        var sut = CreateSut(contextProvider, safetyMock, promptMock);
+        var command = new ExplainConceptCommand(LessonId: null, ConceptId: null, SkillId: 10, Question: null);
+
+        // Act
+        var result = await sut.Handle(command, CancellationToken.None);
+
+        // Assert — on a MISS the safety layer MUST be invoked (contrast to EH-06).
+        result.Should().BeOfType<ExplainResult.Streamed>(
+            "a cache MISS with safety-allowed response must return Streamed content");
+
+        safetyMock.Verify(
+            s => s.GenerateSafeAsync(It.IsAny<AiRequest>(), It.IsAny<CancellationToken>()),
+            Times.Once,
+            "ISafetyLayer must be called exactly once on a cache MISS");
     }
 
     // ── EH-05: IAiGateway must NOT be injected ───────────────────────────────────

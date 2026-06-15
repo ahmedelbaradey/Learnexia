@@ -1,6 +1,8 @@
+using Learnexia.Modules.Ai.Application.Cache;
 using Learnexia.Modules.Ai.Application.PromptBuilder;
 using Learnexia.Modules.Ai.Application.Services;
 using Learnexia.Shared.Contracts.Ai;
+using Learnexia.Shared.Kernel.Settings;
 using Learnexia.Shared.Contracts.AiTutor;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
@@ -11,53 +13,36 @@ using Resources;
 namespace Learnexia.Modules.Ai.Application.Features.SimilarExample.Commands;
 
 /// <summary>
-/// Handles <see cref="SimilarExampleCommand"/> — orchestrates the AI Helper "Similar Example" intent
-/// (AI Helper intent #4 — "اديني مثال مشابه"). Part B MVP slice (P3-06-BE-10).
+/// Handles <see cref="SimilarExampleCommand"/> — orchestrates the AI Helper "Similar Example" intent.
 ///
 /// <para><strong>Safety invariant (AC-9, FR-AI-4):</strong> this handler calls
 /// <see cref="ISafetyLayer.GenerateSafeAsync"/> — NEVER <c>IAiGateway</c> directly.
 /// The architecture test (P302-ARCH-04) enforces this at build time.</para>
 ///
-/// <para><strong>Buffer → Safety → Emit pattern (OQ-2a):</strong> the full response is
-/// buffered inside <see cref="ISafetyLayer"/>, safety-screened, then returned.
-/// The SSE controller emits only the approved buffer. No unscreened token ever reaches
-/// the student — lead-approved (SSE rule-8 exception).</para>
-///
-/// <para><strong>No progression side effects (FR-AI-6):</strong> this handler writes
-/// no mastery, XP, or unlock state — it generates content only.</para>
-///
-/// Orchestration steps (P3-06-BE-10, MVP — no cache; steps (1)(2)(3)(5)(6)(7)(8)(10)(11)):
-/// <list type="number">
-///   <item>Resolve student id + rate-limit check (BE-11 abuse guard).</item>
-///   <item>Emit <c>HelpRequested { Intent=SimilarExample }</c> fire-and-forget via fresh scope.</item>
-///   <item>Resolve grade/age/language from JWT claims via <c>ICurrentUserService</c>.</item>
-///   <item>[DEFERRED (BE-13): Practice-pool cache lookup/write]</item>
-///   <item>Fetch grounding context via <c>ILearningContextProvider.GetContextAsync(studentId, skillId, questionId?, wrongAnswer:null, ct)</c>.</item>
-///   <item>Empty <c>Chunks</c> → refuse-and-redirect + emit <c>HelpDeclined { Reason=NoContext }</c> via fresh scope. No LLM call (AC-7).</item>
-///   <item>Build prompt via <c>IPromptBuilder</c> with <c>HelperIntent.SimilarExample</c>.</item>
-///   <item>Call <c>ISafetyLayer.GenerateSafeAsync</c> (buffers + screens; NEVER IAiGateway).</item>
-///   <item>Blocked → return <see cref="SimilarExampleResult.Error"/>.</item>
-///   <item>Allowed → return <see cref="SimilarExampleResult.Streamed"/>.</item>
-///   <item>Emit <c>HelpDelivered { Intent=SimilarExample, ContextSource }</c> fire-and-forget via fresh scope.</item>
-/// </list>
+/// <para><strong>Cache-first (WI-B4, Practice pool):</strong> selects a random VariationIndex
+/// in [0, practicePoolSize-1] (from <see cref="IGlobalSettingsProvider"/>), computes the
+/// Practice cache key, and checks <see cref="IAiResponseCache"/>. HIT → returns cached
+/// content with zero gateway calls (AC-B1). MISS → runs normal path + writes to cache.</para>
 /// </summary>
 public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampleCommand, SimilarExampleResult>
 {
-    // Claim types used to resolve grade/age/language from the student JWT.
-    private const string GradeClaim = "Grade";
-    private const string AgeClaim = "Age";
+    private const string GradeClaim    = "Grade";
+    private const string AgeClaim      = "Age";
     private const string LanguageClaim = "Language";
-    // Model used for runtime SimilarExample calls (Sonnet — NOT Opus, runtime path).
     private const string SimilarExampleModelId = "claude-sonnet-4-6";
-    // ContextSource label for the HelpDelivered event on a live generation.
-    private const string ContextSourceLive = "SeededCorpus";
+    private const string ContextSourceLive  = "Live";
+    private const string ContextSourceCache = "Cache";
+    private const string PromptVersionV1      = "v1";
+    private const string CurriculumVersionMvp = "mvp";
 
     private readonly ICurrentUserService _currentUser;
     private readonly ILearningContextProvider _learningContext;
     private readonly IPromptBuilder _promptBuilder;
     private readonly ISafetyLayer _safetyLayer;
+    private readonly IAiResponseCache _aiCache;
+    private readonly IGlobalSettingsProvider _settings;
     private readonly RedirectResponseBuilder _redirectBuilder;
-    private readonly AiTutorRateLimiter _rateLimiter;
+    private readonly IAiTutorRateLimiter _rateLimiter;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
@@ -67,21 +52,25 @@ public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampl
         ILearningContextProvider learningContext,
         IPromptBuilder promptBuilder,
         ISafetyLayer safetyLayer,
+        IAiResponseCache aiCache,
+        IGlobalSettingsProvider settings,
         RedirectResponseBuilder redirectBuilder,
-        AiTutorRateLimiter rateLimiter,
+        IAiTutorRateLimiter rateLimiter,
         IServiceScopeFactory scopeFactory,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _currentUser = currentUser;
+        _currentUser     = currentUser;
         _learningContext = learningContext;
-        _promptBuilder = promptBuilder;
-        _safetyLayer = safetyLayer;
+        _promptBuilder   = promptBuilder;
+        _safetyLayer     = safetyLayer;
+        _aiCache         = aiCache;
+        _settings        = settings;
         _redirectBuilder = redirectBuilder;
-        _rateLimiter = rateLimiter;
-        _scopeFactory = scopeFactory;
-        _logger = logger;
-        _localizer = localizer;
+        _rateLimiter     = rateLimiter;
+        _scopeFactory    = scopeFactory;
+        _logger          = logger;
+        _localizer       = localizer;
     }
 
     public async Task<SimilarExampleResult> Handle(
@@ -107,15 +96,9 @@ public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampl
                 _localizer[SharedResourcesKey.SimilarExampleRateLimitExceeded]);
         }
 
-        // Step 2 — emit HelpRequested fire-and-forget (instrumentation, AC-8).
-        // Fresh scope: the handler may be Scoped; publishing into a disposed request scope
-        // would cause ObjectDisposedException in any Scoped notification handler
-        // (mirrors the P3-05 fix so it doesn't use the disposed request scope).
+        // Step 2 — emit HelpRequested fire-and-forget.
         var helpRequestedEvent = new HelpRequestedIntegrationEvent(
-            studentId.Value,
-            HelperIntent.SimilarExample,
-            request.SkillId,
-            request.QuestionId);
+            studentId.Value, HelperIntent.SimilarExample, request.SkillId, request.QuestionId);
         _ = Task.Run(async () =>
         {
             try
@@ -133,37 +116,20 @@ public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampl
         // Step 3 — resolve grade/age/language from JWT claims.
         TryResolveProfile(out var grade, out var age, out var language);
 
-        // ── DEFERRED (BE-13): Practice-pool cache lookup/write ─────────────────────────────
-        // Before calling the gateway, this is where:
-        //   (1) A random VariationIndex in [0, practicePoolSize-1] would be selected.
-        //   (2) CacheKey = SHA256(SkillKey, VariationIndex, Language, PromptVersion, CurriculumVersion)
-        //   (3) IAiResponseCacheRepository.GetApprovedAsync(cacheKey, Type=Practice) would be called.
-        //   On hit (ReviewStatus=Approved, InvalidatedAt=null): return Streamed(cachedContent),
-        //   emit HelpDelivered{ContextSource="Cache"} and skip the safety call (zero LLM cost).
-        //   On miss: proceed to context fetch + safety call below.
-        //   After safety pass: compute Confidence; store in AiResponseCache (Type=Practice,
-        //   SkillKey + VariationIndex, QuestionId=null) with ReviewStatus = Approved or PendingReview.
-        //   Both practicePoolSize and autoApprovalThreshold are read via IGlobalSettingsProvider (injected)
-        //   at call time; 5 and 0.85 are the bootstrap defaults.
-        //   This path requires IAiResponseCacheRepository (P3-04-BE-8) and IGlobalSettingsProvider (P10-12).
-        // ─────────────────────────────────────────────────────────────────────────────────────
-
         // Step 5 — fetch grounding context via ILearningContextProvider.
+        // NOTE: context is fetched BEFORE the cache lookup so that subjectId is available
+        // for the cache key (security fix — Finding #1: subjectId must be in the key to
+        // prevent cross-subject cache collisions when skill IDs are not globally unique across subjects).
         LearningContext learningCtx;
         try
         {
             learningCtx = await _learningContext.GetContextAsync(
-                studentId.Value,
-                request.SkillId,
-                request.QuestionId,
-                wrongAnswer: null,
-                cancellationToken);
+                studentId.Value, request.SkillId, request.QuestionId, wrongAnswer: null, cancellationToken);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex,
                 $"SimilarExampleCommandHandler: ILearningContextProvider failed for studentId={studentId}, skillId={request.SkillId}.");
-            // Treat retrieval failure as no-context → redirect.
             learningCtx = new LearningContext(
                 Chunks: Array.Empty<ChunkDto>(),
                 QuestionText: null,
@@ -175,19 +141,14 @@ public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampl
                 Language: language);
         }
 
-        // Step 6 — AC-7 scope guard: empty chunks → refuse-and-redirect. Do NOT call the LLM.
+        // Step 6 — AC-7 scope guard: empty chunks → refuse-and-redirect.
         if (learningCtx.Chunks.Count == 0)
         {
             _logger.LogInfo(
                 $"SimilarExampleCommandHandler: no context for studentId={studentId}, skillId={request.SkillId} — refusing and redirecting.");
 
-            // Emit HelpDeclined fire-and-forget (AC-8 instrumentation).
-            // Fresh scope: ensures notification handlers with Scoped dependencies run with a live DI scope.
             var helpDeclinedEvent = new HelpDeclinedIntegrationEvent(
-                studentId.Value,
-                HelperIntent.SimilarExample,
-                request.SkillId,
-                Reason: "NoContext");
+                studentId.Value, HelperIntent.SimilarExample, request.SkillId, Reason: "NoContext");
             _ = Task.Run(async () =>
             {
                 try
@@ -206,8 +167,50 @@ public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampl
             return new SimilarExampleResult.Redirect(redirectText, TargetSkillId: request.SkillId);
         }
 
-        // Step 7 — build prompt via IPromptBuilder with HelperIntent.SimilarExample.
-        var subject = (Subject)learningCtx.SubjectId;
+        // ── WI-B4: Practice pool cache lookup (AC-B1) ───────────────────────────
+        // Select a random VariationIndex in [0, practicePoolSize-1] to rotate the pool.
+        // Security: subjectId (from learningCtx) and jwtGrade (from JWT claim, server-trusted)
+        // are included in the key to prevent cross-subject and cross-cohort cache collisions.
+        var practicePoolSize   = _settings.GetInt("ai.cache.practicePoolSize", 5);
+        var variationIndex     = practicePoolSize > 0
+            ? Random.Shared.Next(0, practicePoolSize)
+            : 0;
+        var skillKey = request.SkillId.ToString();
+        var cacheKey = AiCacheKeyBuilder.ForPractice(
+            subjectId:         learningCtx.SubjectId,
+            skillKey:          skillKey,
+            variationIndex:    variationIndex,
+            jwtGrade:          grade,      // JWT-claim grade — server-trusted, not spoofable.
+            language:          language,
+            promptVersion:     PromptVersionV1,
+            curriculumVersion: CurriculumVersionMvp);
+
+        var cachedContent = await _aiCache.GetApprovedAsync(cacheKey, cancellationToken);
+        if (cachedContent is not null)
+        {
+            _logger.LogInfo($"SimilarExampleCommandHandler: cache HIT (vi={variationIndex}) for studentId={studentId}, key={cacheKey[..8]}…");
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await using var scope = _scopeFactory.CreateAsyncScope();
+                    var publisher = scope.ServiceProvider.GetRequiredService<MediatR.IPublisher>();
+                    await publisher.Publish(
+                        new HelpDeliveredIntegrationEvent(
+                            studentId.Value, HelperIntent.SimilarExample, request.SkillId, request.QuestionId,
+                            SimilarExampleModelId, ContextSourceCache),
+                        CancellationToken.None);
+                }
+                catch (Exception ex) { _logger.LogError(ex, "SimilarExampleCommandHandler: HelpDelivered (cache) fire-and-forget failed."); }
+            });
+
+            return new SimilarExampleResult.Streamed(cachedContent);
+        }
+        // ─────────────────────────────────────────────────────────────────────────
+
+        // Step 7 — build prompt via IPromptBuilder.
+        var subject      = (Subject)learningCtx.SubjectId;
         var gradeResolved = learningCtx.GradeId > 0 ? learningCtx.GradeId : grade;
 
         var promptContext = new PromptContext(
@@ -217,7 +220,7 @@ public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampl
             Grade: gradeResolved,
             Age: age,
             Language: language,
-            WeakAreas: null,   // No weak-areas query at this MVP slice.
+            WeakAreas: null,
             Context: learningCtx);
 
         var promptResult = _promptBuilder.Build(promptContext);
@@ -233,7 +236,7 @@ public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampl
 
         var aiRequest = ((PromptBuilderResult.Success)promptResult).Request;
 
-        // Step 8 — call ISafetyLayer (buffers + screens; NEVER IAiGateway directly — arch test enforced).
+        // Step 8 — call ISafetyLayer.
         SafeAiResult safeResult;
         try
         {
@@ -253,20 +256,37 @@ public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampl
         {
             _logger.LogWarn(
                 $"SimilarExampleCommandHandler: safety blocked for studentId={studentId}, verdict={safeResult.Verdict}.");
+            // Safety-FAILED: DO NOT cache.
             return new SimilarExampleResult.Error(
                 nameof(SharedResourcesKey.SimilarExampleSafetyBlocked),
                 _localizer[SharedResourcesKey.SimilarExampleSafetyBlocked]);
         }
 
-        // Step 11 — emit HelpDelivered fire-and-forget (AC-8 instrumentation).
-        // Fresh scope: ensures notification handlers with Scoped dependencies run with a live DI scope.
+        // ── WI-B4: cache-write (fire-and-forget) ────────────────────────────────
+        var approvalThreshold = _settings.GetDecimal("ai.cache.autoApprovalConfidence", 0.85m);
+        var reviewStatus      = (safeResult.Confidence >= approvalThreshold)
+            ? AiCacheReviewStatusDto.Approved
+            : AiCacheReviewStatusDto.PendingReview;
+
+        var writeEntry = new AiCacheWriteEntry(
+            CacheKey:          cacheKey,
+            Response:          safeResult.Content ?? string.Empty,
+            Type:              AiCacheEntryTypeDto.Practice,
+            SkillKey:          skillKey,
+            QuestionId:        null,   // Decision 4: null for Practice type.
+            CurriculumVersion: CurriculumVersionMvp,
+            PromptVersion:     PromptVersionV1,
+            ModelVersion:      SimilarExampleModelId,
+            ReviewStatus:      reviewStatus,
+            Confidence:        safeResult.Confidence);
+
+        _ = _aiCache.WriteAsync(writeEntry, CancellationToken.None);
+        // ─────────────────────────────────────────────────────────────────────────
+
+        // Step 11 — emit HelpDelivered fire-and-forget.
         var helpDeliveredEvent = new HelpDeliveredIntegrationEvent(
-            studentId.Value,
-            HelperIntent.SimilarExample,
-            request.SkillId,
-            request.QuestionId,
-            ModelUsed: SimilarExampleModelId,
-            ContextSource: ContextSourceLive);
+            studentId.Value, HelperIntent.SimilarExample, request.SkillId, request.QuestionId,
+            SimilarExampleModelId, ContextSourceLive);
         _ = Task.Run(async () =>
         {
             try
@@ -284,15 +304,10 @@ public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampl
         return new SimilarExampleResult.Streamed(safeResult.Content ?? string.Empty);
     }
 
-    /// <summary>
-    /// Resolves grade, age, and language from the authenticated student's JWT claims.
-    /// Defaults gracefully when claims are absent or unparseable (never returns false — always sets
-    /// sensible defaults so the handler can proceed).
-    /// </summary>
     private void TryResolveProfile(out int grade, out int age, out TutorLanguage language)
     {
-        grade = 4;   // Safe default.
-        age = 10;    // Safe default.
+        grade    = 4;
+        age      = 10;
         language = TutorLanguage.Ar;
 
         var gradeStr    = _currentUser.GetClaimValue(GradeClaim);
