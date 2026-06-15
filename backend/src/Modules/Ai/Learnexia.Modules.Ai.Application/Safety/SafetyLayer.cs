@@ -4,6 +4,7 @@ using Learnexia.Modules.Ai.Domain.Safety;
 using Learnexia.Modules.Ai.Application.Options;
 using Learnexia.Shared.Contracts.Ai;
 using Learnexia.Shared.Kernel.Abstractions;
+using Learnexia.Shared.Kernel.Settings;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
 using Resources;
@@ -29,26 +30,39 @@ namespace Learnexia.Modules.Ai.Application.Safety;
 ///   <item>If any <see cref="CheckOutcome.NeedsRegeneration"/> (and no Block) → bounded regen (Q7).</item>
 ///   <item>Block path: write <see cref="SafetyEvent"/> via <see cref="IAiSafetyEventStore"/>
 ///         (reason codes only — never raw content), return localized fallback.</item>
-///   <item>Pass path: return screened content as <see cref="SafeAiResult.Allowed"/> = true.</item>
+///   <item>Pass path: return screened content as <see cref="SafeAiResult.Allowed"/> = true,
+///         with <see cref="SafeAiResult.Confidence"/> set to the safety-pass confidence
+///         from <see cref="IGlobalSettingsProvider"/> (<c>ai.cache.safetyPassConfidence</c>).</item>
 /// </list>
 ///
 /// <para><strong>Fail-closed on every exception path.</strong> Cancellation, gateway errors,
 /// check exceptions — all result in a blocked fallback, never unscreened content.</para>
 ///
+/// <para><strong>Confidence signal (AI Cache Activation):</strong> because the three safety
+/// checks (Toxicity, AgeAppropriateness, Hallucination) are boolean pass/fail classifiers —
+/// none produces a numeric model-confidence score at this phase — the confidence is set from
+/// a configuration-driven safety-pass value (<c>AiHelper:Cache:safetyPassConfidence</c>,
+/// default 0.90). This value is assigned ONLY when ALL enabled checks pass. Blocked, fallback,
+/// and error results receive <c>null</c> so they can never reach the auto-approve gate.</para>
+///
 /// <para><strong>R5 coupling (runtime-review gate):</strong> the returned <see cref="SafeAiResult"/>
-/// carries <c>Confidence</c> forwarded from the raw gateway result. Feature handlers (P3-04/05/06)
-/// use it — with the <c>SafetyVerdict</c> — to decide <c>ReviewStatus</c> when writing to
-/// <c>ai.AiResponseCache</c>. The Safety Layer is the gatekeeper; the cache write is owned by
-/// the calling handler.</para>
+/// carries <c>Confidence</c> for use by feature handlers (P3-04/05/06) to decide
+/// <c>ReviewStatus</c> when writing to <c>ai.AiResponseCache</c>. The Safety Layer is the
+/// gatekeeper; the cache write is owned by the calling handler.</para>
 /// </summary>
 public sealed class SafetyLayer : ISafetyLayer
 {
+    // IGlobalSettingsProvider key for the safety-pass confidence value.
+    // Resolved via BootstrapDefaultGlobalSettingsProvider → AiHelper:Cache:safetyPassConfidence.
+    private const string SafetyPassConfidenceKey = "ai.cache.safetyPassConfidence";
+
     private readonly IAiGateway                        _gateway;
     private readonly IToxicityCheck                    _toxicityCheck;
     private readonly IAgeAppropriatenessCheck          _ageCheck;
     private readonly IHallucinationCheck               _hallucinationCheck;
     private readonly IAiSafetyEventStore               _eventStore;
     private readonly SafetyOptions                     _options;
+    private readonly IGlobalSettingsProvider           _settings;
     private readonly IStringLocalizer<SharedResources> _localizer;
     private readonly ILoggerManager                    _logger;
 
@@ -59,6 +73,7 @@ public sealed class SafetyLayer : ISafetyLayer
         IHallucinationCheck hallucinationCheck,
         IAiSafetyEventStore eventStore,
         IOptions<SafetyOptions> options,
+        IGlobalSettingsProvider settings,
         IStringLocalizer<SharedResources> localizer,
         ILoggerManager logger)
     {
@@ -68,6 +83,7 @@ public sealed class SafetyLayer : ISafetyLayer
         _hallucinationCheck = hallucinationCheck;
         _eventStore         = eventStore;
         _options            = options.Value;
+        _settings           = settings;
         _localizer          = localizer;
         _logger             = logger;
     }
@@ -121,12 +137,21 @@ public sealed class SafetyLayer : ISafetyLayer
                 if (!hasBlock && !hasRegen)
                 {
                     // ── Step 7 (pass path) ────────────────────────────────────────
+                    // All enabled checks passed. Assign a setting-driven safety-pass confidence.
+                    // The three safety checks (Toxicity, Age, Hallucination) are boolean classifiers
+                    // at this phase — none produces a numeric model-confidence score. We therefore
+                    // assign a configuration-driven sentinel that expresses "this response passed ALL
+                    // safety gates" (default 0.90, raise/lower via AiHelper:Cache:safetyPassConfidence).
+                    // This MUST only be set here on the genuine pass path — never on block/fallback.
+                    var safetyPassConfidence = _settings.GetDecimal(
+                        SafetyPassConfidenceKey, defaultValue: 0.90m);
+
                     return new SafeAiResult(
                         Allowed:    true,
                         Content:    content,
                         Verdict:    SafetyVerdict.Allowed,
                         Results:    checkResults,
-                        Confidence: null /* forwarded from gateway when available in P3-04+ */);
+                        Confidence: safetyPassConfidence);
                 }
 
                 if (hasBlock || attempt >= _options.MaxRegenerationAttempts)

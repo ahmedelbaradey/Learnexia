@@ -511,15 +511,30 @@ Second identical call → cache HIT (zero Claude API calls; asserted by zero `IA
 - Redis present: `RedisAiRateLimiter` (atomic `INCR + EXPIRE`; shared across instances).
 - Config: `ConnectionStrings:Redis` (empty = in-process fallback).
 
-### AiResponseCache serving note (OQ-7 deferral)
+### DEFECT-3 fix — cache write scope-isolation (branch `feat/ai-runtime-activation-e2e`)
 
-`AiResponseCacheRepository.GetApprovedAsync` serves only entries with `ReviewStatus = Approved AND InvalidatedAt IS NULL`. Entries are auto-approved at write time when `Confidence >= IGlobalSettingsProvider.GetDecimal("ai.cache.autoApprovalConfidence", 0.85m)`.
+**Bug:** All 4 handlers issued the cache write as `_ = _aiCache.WriteAsync(writeEntry, CancellationToken.None)` using the request-scoped `IAiResponseCache` (which depends on the scoped `AiDbContext`). When the SSE response completed, the request scope disposed `AiDbContext` BEFORE the detached task ran → `ObjectDisposedException` swallowed by `AiResponseCacheRepository`'s fail-soft catch → cache row never persisted. Cache HITs were therefore never served in production.
 
-**The `Confidence` field is currently always `null`** — `SafeAiResult` carries no confidence signal from `SafetyLayer` in this wave (OQ-7 deferred). As a result, **all new cache entries are written as `PendingReview`** and will NOT be served as cache hits until either:
-- A human reviewer marks them `Approved` via a future review UI (P7-09-style, Phase 10), OR
-- OQ-7 is resolved by wiring a confidence signal into `SafeAiResult` and a subsequent wave sets the status at write time.
+**Fix (mirroring P3-05 `HintUsedIntegrationEvent` pattern):** The write is now dispatched inside `Task.Run` that creates a fresh `IServiceScopeFactory.CreateAsyncScope()`, resolves `IAiResponseCache` from the new scope, and awaits `WriteAsync`. The new scope has its own `AiDbContext` lifetime, completely independent of the request scope. The write remains non-blocking (does not delay the SSE response) and fail-soft (errors are caught + logged as Warn only).
 
-The cache write-path is live and stores entries — the read-through cache is dormant until the confidence/approval signal lands.
+**Files changed:**
+- `ExplainConceptCommandHandler`: added `IServiceScopeFactory` injection; cache write wrapped in `Task.Run` + fresh scope.
+- `SimplifyExplanationCommandHandler`: same.
+- `GetHintCommandHandler`: already had `IServiceScopeFactory`; cache write (line 385 before fix) wrapped in fresh scope.
+- `SimilarExampleCommandHandler`: already had `IServiceScopeFactory`; cache write (line 283 before fix) wrapped in fresh scope.
+- Tests: `ExplainConceptCommandHandlerTests` — added `IServiceScopeFactory` parameter + `BuildNoOpScopeFactoryMock` + new EH-08 regression test that proves `CreateScope()` is used and the fresh-scope `IAiResponseCache.WriteAsync` is called. Hint/SimilarExample test scope mocks updated to also resolve `IAiResponseCache` (no longer log spurious warn on write).
+
+**Activation gating untouched:** Confidence/auto-approve gate, kill-switch, cache key, SSE contract — all unchanged.
+
+**Handoff to api-tester:** The E2E HIT/MISS tests that were previously using an in-memory cache stub should be re-pointed at the real `AiResponseCacheRepository` (in-memory EF or Postgres) to prove end-to-end DB persistence on cache MISS followed by HIT on the second call.
+
+### AiResponseCache serving — OQ-7 RESOLVED (AI Cache Activation, branch `feat/ai-runtime-activation-e2e`)
+
+`AiResponseCacheRepository.GetApprovedAsync` serves only entries with `ReviewStatus = Approved AND InvalidatedAt IS NULL`. **OQ-7 is now resolved:** `SafetyLayer` populates `SafeAiResult.Confidence` with `ai.cache.safetyPassConfidence` (default **0.90**) ONLY on the all-checks-pass path (null on every block/fallback/cancel/catch path). An entry is auto-approved (servable) at write time when `Allowed` + `Confidence >= ai.cache.autoApprovalConfidence` (0.85) + the kill-switch `ai.cache.autoApproveEnabled` (default **true**). So safety-passed responses are now cached AND served. **Kill-switch:** set `AiHelper:Cache:autoApproveEnabled=false` to stop NEW approvals (restores dormant write behavior). **Residual (security #6, accepted):** the kill-switch is an *approval freeze*, not a *serving freeze* — already-`Approved` rows keep serving (DB + Redis until TTL). For an incident "stop serving everything now" you'd need a GET-path short-circuit + bulk `InvalidatedAt` sweep + Redis flush (follow-up if go-live requires a panic button).
+
+**AI-runtime KNOWN GAPS surfaced by the E2E suite (NOT fixed — distinct from the unrelated Curriculum `DEFECT-1/2` entries above):**
+- **AI-DEFECT-1 (HIGH):** `Grade` is NOT a JWT claim, so `TryResolveProfile` in the AI handlers always defaults `jwtGrade=4` → every student is age-band `band2`. Consequence: the cache key's grade/age dimension is constant (no grade differentiation), and the PR #140 cross-cohort isolation is nominal in practice. The SafetyLayer age check uses a broad 6-18 band so it won't catch a grade-mismatched explanation. Fix needs a `Grade` claim minted into the student JWT (Identity) — investigate where the student's grade lives (likely Learning/profile, not the Identity user record) before adding the claim. Until then: grade-correct caching + grade-specific age screening are inactive.
+- **AI-DEFECT-2 (MEDIUM, product decision):** `AiCacheKeyBuilder.ForExplain` keys on `ConceptId` but NOT `SkillId` — two skills sharing a concept share an Explain cache slot. Decide: concept-level caching (current) is acceptable, or add `SkillId` for skill-level granularity.
 
 ### External dependencies (not built by this pipeline)
 

@@ -129,7 +129,9 @@ public sealed class SimilarExampleCommandHandlerTests
 
     /// <summary>
     /// Returns a no-op <see cref="IServiceScopeFactory"/> so fire-and-forget event publishes
-    /// don't throw during the synchronous test path.
+    /// and cache writes don't throw during the synchronous test path.
+    /// Resolves both <see cref="IPublisher"/> and <see cref="IAiResponseCache"/> (DEFECT-3 fix:
+    /// the handler now resolves IAiResponseCache from a fresh scope for the cache write).
     /// </summary>
     private static Mock<IServiceScopeFactory> BuildNoOpScopeFactoryMock()
     {
@@ -138,10 +140,18 @@ public sealed class SimilarExampleCommandHandlerTests
             .Setup(p => p.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
+        var cacheMock = new Mock<IAiResponseCache>();
+        cacheMock
+            .Setup(c => c.WriteAsync(It.IsAny<AiCacheWriteEntry>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
         var spMock = new Mock<IServiceProvider>();
         spMock
             .Setup(sp => sp.GetService(typeof(IPublisher)))
             .Returns(publisherMock.Object);
+        spMock
+            .Setup(sp => sp.GetService(typeof(IAiResponseCache)))
+            .Returns(cacheMock.Object);
 
         var scopeMock = new Mock<IServiceScope>();
         scopeMock.Setup(s => s.ServiceProvider).Returns(spMock.Object);

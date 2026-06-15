@@ -5,6 +5,7 @@ using Learnexia.Modules.Ai.Domain.Entities;
 using Learnexia.Modules.Ai.Domain.Safety;
 using Learnexia.Shared.Contracts.Ai;
 using Learnexia.Shared.Kernel.Abstractions;
+using Learnexia.Shared.Kernel.Settings;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -44,7 +45,8 @@ public sealed class SafetyLayerTests
         Mock<IAgeAppropriatenessCheck> ageMock,
         Mock<IHallucinationCheck>      hallucMock,
         Mock<IAiSafetyEventStore>      storeMock,
-        SafetyOptions?                 options = null)
+        SafetyOptions?                 options = null,
+        Mock<IGlobalSettingsProvider>? settingsMock = null)
     {
         var opts = options ?? new SafetyOptions
         {
@@ -61,6 +63,9 @@ public sealed class SafetyLayerTests
 
         var loggerMock = new Mock<ILoggerManager>();
 
+        // Default settings: return caller-supplied defaults (pass-through behaviour).
+        var settings = settingsMock ?? BuildDefaultSettingsMock();
+
         return new SafetyLayer(
             gatewayMock.Object,
             toxicityMock.Object,
@@ -68,8 +73,24 @@ public sealed class SafetyLayerTests
             hallucMock.Object,
             storeMock.Object,
             Options.Create(opts),
+            settings.Object,
             localizerMock.Object,
             loggerMock.Object);
+    }
+
+    /// <summary>Default settings mock: returns caller-supplied fallback for every key.</summary>
+    private static Mock<IGlobalSettingsProvider> BuildDefaultSettingsMock()
+    {
+        var mock = new Mock<IGlobalSettingsProvider>();
+        mock.Setup(s => s.GetDecimal(It.IsAny<string>(), It.IsAny<decimal>()))
+            .Returns<string, decimal>((_, def) => def);
+        mock.Setup(s => s.GetInt(It.IsAny<string>(), It.IsAny<int>()))
+            .Returns<string, int>((_, def) => def);
+        mock.Setup(s => s.GetString(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns<string, string>((_, def) => def);
+        mock.Setup(s => s.GetBool(It.IsAny<string>(), It.IsAny<bool>()))
+            .Returns<string, bool>((_, def) => def);
+        return mock;
     }
 
     private static AiRequest MakeRequest(string prompt = "Explain photosynthesis.") =>
@@ -120,6 +141,10 @@ public sealed class SafetyLayerTests
         result.Content.Should().NotBe("toxic content here",
             "unsafe content must never be returned to the student");
 
+        // Confidence must be null on blocked results (never set on any failure path).
+        result.Confidence.Should().BeNull(
+            "Confidence must be null for blocked results — only set on genuine safety-pass path");
+
         // Assert — SafetyEvent was written
         storeMock.Verify(s => s.AppendAsync(
             It.Is<SafetyEvent>(e =>
@@ -164,6 +189,12 @@ public sealed class SafetyLayerTests
         result.Allowed.Should().BeTrue("all checks passed");
         result.Verdict.Should().Be(SafetyVerdict.Allowed);
         result.Content.Should().Be(safeContent, "safe content must be returned unchanged");
+
+        // Confidence must be populated on the pass path (AI Cache Activation requirement).
+        result.Confidence.Should().NotBeNull(
+            "SafetyLayer must populate Confidence on the pass path so the auto-approve gate can fire");
+        result.Confidence.Should().BeGreaterThan(0m,
+            "safety-pass confidence must be a positive decimal (config-driven, default 0.90)");
 
         // No SafetyEvent on pass.
         storeMock.Verify(s => s.AppendAsync(It.IsAny<SafetyEvent>(), It.IsAny<CancellationToken>()),

@@ -27,6 +27,16 @@ namespace Learnexia.Modules.Ai.Infrastructure.Cache;
 /// <para><strong>WRITE path:</strong> DB upsert first (INSERT … ON CONFLICT DO UPDATE), then
 /// populate Redis. Both steps are fail-soft — errors are logged and swallowed.</para>
 ///
+/// <para><strong>Auto-approve kill-switch (<c>AiHelper:Cache:autoApproveEnabled</c>):</strong>
+/// Even if the calling handler sets <see cref="AiCacheReviewStatusDto.Approved"/> (because
+/// <see cref="SafeAiResult.Confidence"/> met the threshold), the repository enforces a
+/// final kill-switch check via <see cref="IGlobalSettingsProvider"/>
+/// (<c>ai.cache.autoApproveEnabled</c>, default <c>true</c>).
+/// When the flag is <c>false</c>, any incoming <see cref="AiCacheReviewStatusDto.Approved"/>
+/// status is downgraded to <see cref="AiCacheReviewStatus.PendingReview"/> before writing —
+/// no entry is ever served from the R5 gate. This is the activation kill-switch that restores
+/// the pre-activation dormant behaviour without code change.</para>
+///
 /// <para><strong>WhyWrong LRU cap:</strong> before writing a WhyWrong entry, count existing
 /// rows for the same QuestionId; if at or above cap (from
 /// <see cref="IGlobalSettingsProvider"/>), evict the oldest row (by CreatedAt).</para>
@@ -41,6 +51,10 @@ public sealed class AiResponseCacheRepository : IAiResponseCache
 {
     // Redis key prefix for Ai response cache entries.
     private const string RedisKeyPrefix = "ai:rc:";
+
+    // IGlobalSettingsProvider key for the auto-approve kill-switch.
+    // Maps to AiHelper:Cache:autoApproveEnabled in appsettings.json via BootstrapDefaultGlobalSettingsProvider.
+    private const string AutoApproveEnabledKey = "ai.cache.autoApproveEnabled";
 
     // Default TTLs per intent (when IGlobalSettingsProvider does not override).
     private static readonly TimeSpan DefaultExplainTtl   = TimeSpan.FromHours(24);
@@ -125,6 +139,22 @@ public sealed class AiResponseCacheRepository : IAiResponseCache
     {
         try
         {
+            // ── Auto-approve kill-switch ─────────────────────────────────────────
+            // If AutoApproveEnabled is false (admin kill-switch), downgrade any Approved
+            // status to PendingReview before writing. This ensures the R5 gate never serves
+            // cached content when activation is explicitly disabled — restoring the pre-activation
+            // dormant behaviour without requiring a code deployment.
+            // The handler already applies the confidence threshold check; this is the final
+            // repository-level enforcement layer.
+            var autoApproveEnabled = _settings.GetBool(AutoApproveEnabledKey, defaultValue: true);
+            AiCacheReviewStatusDto effectiveStatus = entry.ReviewStatus;
+            if (!autoApproveEnabled && effectiveStatus == AiCacheReviewStatusDto.Approved)
+            {
+                _logger.LogInfo($"AiResponseCacheRepository: AutoApproveEnabled=false — downgrading entry from Approved to PendingReview for key={entry.CacheKey[..8]}…");
+                effectiveStatus = AiCacheReviewStatusDto.PendingReview;
+            }
+            // ────────────────────────────────────────────────────────────────────
+
             // WhyWrong LRU cap: enforce before writing.
             if (entry.Type == AiCacheEntryTypeDto.WhyWrong && entry.QuestionId.HasValue)
                 await EnforceWhyWrongCapAsync(entry.QuestionId.Value, cancellationToken);
@@ -145,7 +175,7 @@ public sealed class AiResponseCacheRepository : IAiResponseCache
                     CurriculumVersion = entry.CurriculumVersion,
                     PromptVersion     = entry.PromptVersion,
                     ModelVersion      = entry.ModelVersion,
-                    ReviewStatus      = (AiCacheReviewStatus)(int)entry.ReviewStatus,
+                    ReviewStatus      = (AiCacheReviewStatus)(int)effectiveStatus,
                     Confidence        = entry.Confidence,
                     CreatedAt         = DateTime.UtcNow,
                 };
@@ -155,7 +185,7 @@ public sealed class AiResponseCacheRepository : IAiResponseCache
             {
                 // Update to latest response + review status (e.g. approval threshold change).
                 existing.Response      = entry.Response;
-                existing.ReviewStatus  = (AiCacheReviewStatus)(int)entry.ReviewStatus;
+                existing.ReviewStatus  = (AiCacheReviewStatus)(int)effectiveStatus;
                 existing.Confidence    = entry.Confidence;
                 existing.ModelVersion  = entry.ModelVersion;
                 existing.PromptVersion = entry.PromptVersion;
@@ -165,7 +195,7 @@ public sealed class AiResponseCacheRepository : IAiResponseCache
             await _dbContext.SaveChangesAsync(cancellationToken);
 
             // Populate Redis when the entry is Approved (only approved entries get hot-layer hits).
-            if (entry.ReviewStatus == AiCacheReviewStatusDto.Approved)
+            if (effectiveStatus == AiCacheReviewStatusDto.Approved)
             {
                 var redisKey = RedisKeyPrefix + entry.CacheKey;
                 var ttl = GetTtlForType((AiCacheEntryType)(int)entry.Type);
