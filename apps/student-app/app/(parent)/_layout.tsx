@@ -55,21 +55,18 @@ const WIDE_BREAKPOINT = 768;
 function segmentToNavKey(segments: string[]): NavItemKey {
   const last = segments[segments.length - 1];
   switch (last) {
-    case 'overview':
-      return NAV_ITEM.Overview;
     case 'children':
+      return NAV_ITEM.MyChildren;
+    // Overview is the per-child view (opened from My Children) — no longer a
+    // sidebar item, so keep My Children highlighted while it's open.
+    case 'overview':
       return NAV_ITEM.MyChildren;
     case 'reports':
       return NAV_ITEM.Reports;
     case 'settings':
       return NAV_ITEM.Settings;
     default:
-      // Per-child drill-down (`child/[id]`) is reached from My Children — keep
-      // that nav item highlighted while the pushed sub-screen is open. The last
-      // segment for the dynamic route is the id, so we match on the `child`
-      // parent segment rather than `last`.
-      if (segments.includes('child')) return NAV_ITEM.MyChildren;
-      return NAV_ITEM.Overview;
+      return NAV_ITEM.MyChildren;
   }
 }
 

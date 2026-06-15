@@ -38,7 +38,7 @@ import { COUNTRIES, type CountryCode } from '@learnexia/shared';
 import { Avatar, Button, Select, Tabs, TextField, type TabItem } from '@learnexia/ui';
 import { Stack, Text } from '@tamagui/core';
 import React, { useEffect, useRef, useState } from 'react';
-import { Platform, useWindowDimensions } from 'react-native';
+import { Platform, ScrollView, useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ServerErrorBanner } from '../../../src/components/ServerErrorBanner';
@@ -105,6 +105,33 @@ export function SettingsWeb({ onAddChild }: SettingsWebProps) {
     testID: `settings-tab-${key}`,
   }));
 
+  // Active tab panel — shared by the wide rail layout and the mobile chip-rail layout.
+  const panelNode = (() => {
+    switch (activeTab) {
+      case SETTINGS_TAB.Profile:
+        return (
+          <ProfilePanel
+            direction={direction}
+            rowDir={rowDir}
+            profile={profile.data}
+            isLoading={profile.isPending}
+          />
+        );
+      case SETTINGS_TAB.Language:
+        return <LanguagePanel direction={direction} rowDir={rowDir} locale={locale} />;
+      case SETTINGS_TAB.Notifications:
+        return <NotificationsPanel direction={direction} rowDir={rowDir} />;
+      case SETTINGS_TAB.LinkedChildren:
+        return <LinkedChildrenPanel direction={direction} rowDir={rowDir} onAddChild={onAddChild} />;
+      case SETTINGS_TAB.Security:
+        return <SecurityPanel direction={direction} rowDir={rowDir} />;
+      case SETTINGS_TAB.Billing:
+        return <PlanPanel direction={direction} rowDir={rowDir} />;
+      default:
+        return <ComingSoonPanel direction={direction} />;
+    }
+  })();
+
   return (
     <Stack testID="settings-root" flexDirection="column" width="100%">
       {/* Unified parent header — title + ChildSwitcher + AccountMenu. */}
@@ -113,55 +140,94 @@ export function SettingsWeb({ onAddChild }: SettingsWebProps) {
         subtitle={t('parent.settings.subtitle')}
       />
 
-      {/* Tab rail + active panel
-          Wide (>768): rail (200px fixed) beside panel → flexDirection=rowDir.
-          Mobile (≤768): rail above panel → flexDirection="column". */}
-      <Stack
-        flexDirection={isWide ? rowDir : 'column'}
-        gap="$5"
-        alignItems="flex-start"
-        padding="$6"
-      >
-        {/* Rail: fixed 220px on wide, full-width on mobile. */}
-        <Stack width={isWide ? 220 : '100%'} minWidth={isWide ? 180 : undefined}>
-          <Tabs
-            items={tabItems}
-            value={activeTab}
-            onChange={(v) => setActiveTab(v as SettingsTabKey)}
-            direction={direction}
-            accessibilityLabel={t('parent.settings.tabs.navLabel')}
-            testID="settings-tabs-nav"
-          />
+      {/* WIDE (>768): 220px vertical rail beside the panel.
+          MOBILE (≤768): a sticky, frosted, horizontally scroll-snapping CHIP rail
+          on top, then the panel below. */}
+      {isWide ? (
+        <Stack flexDirection={rowDir} gap="$5" alignItems="flex-start" padding="$6">
+          <Stack width={220} minWidth={180}>
+            <Tabs
+              items={tabItems}
+              value={activeTab}
+              onChange={(v) => setActiveTab(v as SettingsTabKey)}
+              direction={direction}
+              accessibilityLabel={t('parent.settings.tabs.navLabel')}
+              testID="settings-tabs-nav"
+            />
+          </Stack>
+          <Stack flex={1} minWidth={320}>{panelNode}</Stack>
         </Stack>
-
-        <Stack flex={1} minWidth={isWide ? 320 : undefined} width={isWide ? undefined : '100%'}>
-          {(() => {
-            switch (activeTab) {
-              case SETTINGS_TAB.Profile:
+      ) : (
+        <Stack flexDirection="column" width="100%">
+          {/* Sticky frosted chip rail */}
+          <Stack
+            dir={isRtl ? 'rtl' : 'ltr'}
+            borderBottomWidth={1}
+            borderBottomColor="$borderSubtle"
+            style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 30,
+              backgroundColor: 'rgba(15,23,42,0.72)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+            } as object}
+          >
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ flexDirection: 'row', gap: 8, paddingHorizontal: 14, paddingVertical: 12 }}
+              style={{ scrollSnapType: 'x mandatory' } as object}
+              accessibilityRole="tablist"
+              aria-label={t('parent.settings.tabs.navLabel')}
+            >
+              {tabItems.map((item) => {
+                const active = item.value === activeTab;
                 return (
-                  <ProfilePanel
-                    direction={direction}
-                    rowDir={rowDir}
-                    profile={profile.data}
-                    isLoading={profile.isPending}
-                  />
+                  <Stack
+                    key={item.value}
+                    testID={item.testID}
+                    flexDirection="row"
+                    alignItems="center"
+                    gap={6}
+                    paddingVertical={8}
+                    paddingHorizontal={14}
+                    borderRadius={9999}
+                    flexShrink={0}
+                    backgroundColor={active ? '$primary' : '$card'}
+                    borderWidth={1}
+                    borderColor={active ? '$primary' : '$border'}
+                    cursor="pointer"
+                    pressStyle={{ scale: 0.96 }}
+                    onPress={() => setActiveTab(item.value as SettingsTabKey)}
+                    style={{ scrollSnapAlign: 'start' } as object}
+                    accessibilityRole="tab"
+                    accessible
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={item.label}
+                    aria-label={item.label}
+                  >
+                    {item.icon ? (
+                      <Text fontSize={14} accessibilityElementsHidden>{item.icon}</Text>
+                    ) : null}
+                    <Text
+                      color={active ? '$fg1' : '$fg3'}
+                      fontSize={13}
+                      fontWeight={active ? '800' : '600'}
+                      fontFamily="$heading"
+                      writingDirection={direction}
+                    >
+                      {item.label}
+                    </Text>
+                  </Stack>
                 );
-              case SETTINGS_TAB.Language:
-                return <LanguagePanel direction={direction} rowDir={rowDir} locale={locale} />;
-              case SETTINGS_TAB.Notifications:
-                return <NotificationsPanel direction={direction} rowDir={rowDir} />;
-              case SETTINGS_TAB.LinkedChildren:
-                return <LinkedChildrenPanel direction={direction} rowDir={rowDir} onAddChild={onAddChild} />;
-              case SETTINGS_TAB.Security:
-                return <SecurityPanel direction={direction} rowDir={rowDir} />;
-              case SETTINGS_TAB.Billing:
-                return <PlanPanel direction={direction} rowDir={rowDir} />;
-              default:
-                return <ComingSoonPanel direction={direction} />;
-            }
-          })()}
+              })}
+            </ScrollView>
+          </Stack>
+
+          <Stack width="100%" padding="$4">{panelNode}</Stack>
         </Stack>
-      </Stack>
+      )}
     </Stack>
   );
 }

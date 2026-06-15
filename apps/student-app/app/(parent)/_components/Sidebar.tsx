@@ -67,7 +67,8 @@ interface NavDef {
 }
 
 const NAV: readonly NavDef[] = [
-  { key: NAV_ITEM.Overview, icon: '📊', route: '/(parent)/overview' },
+  // Overview is NOT a sidebar item — it's the per-child view, reached by tapping
+  // a child in My Children.
   { key: NAV_ITEM.MyChildren, icon: '👨‍👩‍👦', route: '/(parent)/children' },
   { key: NAV_ITEM.Reports, icon: '📝', route: '/(parent)/reports' },
   // TODO(P2+): wire activity/subjects to their own routes.

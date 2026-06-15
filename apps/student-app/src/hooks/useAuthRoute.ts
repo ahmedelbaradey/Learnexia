@@ -126,7 +126,7 @@ export function useAuthRoute(): AuthRouteState {
       if (current !== '(onboarding)') router.replace('/(onboarding)/add-child');
       return;
     }
-    if (current !== '(parent)') router.replace('/(parent)/overview');
+    if (current !== '(parent)') router.replace('/(parent)/children');
   }, [isResolving, navReady, minSplashElapsed, status, me.data, segments, router]);
 
   return { isResolving };

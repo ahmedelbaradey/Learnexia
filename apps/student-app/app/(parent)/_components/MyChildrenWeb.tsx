@@ -80,6 +80,7 @@ export function MyChildrenWeb() {
   const [editingChild, setEditingChild] = useState<EditingChild | null>(null);
 
   const openAddChild = useActiveChildStore((s) => s.openAddChild);
+  const setActiveChildId = useActiveChildStore((s) => s.setActiveChildId);
   const rowDir = isRtl ? 'row-reverse' : 'row';
   const children = query.data ?? [];
   const childIds = children.map((c) => String(c.id));
@@ -187,7 +188,12 @@ export function MyChildrenWeb() {
                       testID={`child-card-${id}`}
                       fullName={child.fullName ?? ''}
                       stats={stub}
-                      onViewDashboard={() => router.push(`/(parent)/child/${id}`)}
+                      onViewDashboard={() => {
+                        // Use the Overview page as the per-child view: set the active
+                        // child, then navigate to Overview (keyed off the active child).
+                        setActiveChildId(id);
+                        router.push('/(parent)/overview');
+                      }}
                       onEdit={() =>
                         setEditingChild({
                           id: childId,
