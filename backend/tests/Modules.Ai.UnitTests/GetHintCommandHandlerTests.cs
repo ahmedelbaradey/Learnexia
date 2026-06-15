@@ -5,10 +5,12 @@ using Learnexia.Modules.Ai.Application.PromptBuilder;
 using Learnexia.Modules.Ai.Application.Services;
 using Learnexia.Shared.Contracts.Ai;
 using Learnexia.Shared.Contracts.AiTutor;
+using Learnexia.Shared.Contracts.Billing;
 using Learnexia.Shared.Contracts.Learning;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Settings;
 using MediatR;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
@@ -62,7 +64,9 @@ public sealed class GetHintCommandHandlerTests
         IAiTutorRateLimiter? rateLimiter = null,
         int maxHintLevels = 3,
         Mock<IAiResponseCache>? aiCacheMock = null,
-        Mock<IGlobalSettingsProvider>? settingsMock = null)
+        Mock<IGlobalSettingsProvider>? settingsMock = null,
+        Mock<ICreditSpendService>? creditSpendMock = null,
+        bool hardStopEnabled = false)
     {
         var currentUser   = currentUserMock   ?? BuildDefaultCurrentUserMock();
         var questionAnswer = questionAnswerMock ?? BuildDefaultQuestionAnswerMock();
@@ -75,6 +79,8 @@ public sealed class GetHintCommandHandlerTests
         var hintOptions   = Options.Create(new HintOptions { MaxHintLevels = maxHintLevels });
         var cache = aiCacheMock ?? BuildDefaultAiCacheMock();
         var settings = settingsMock ?? BuildDefaultSettingsMock();
+        var creditSpend = creditSpendMock ?? BuildDefaultCreditSpendMock();
+        var costResolver = BuildCreditCostResolver(settings, hardStopEnabled);
 
         // Wire up the scope factory mock so fire-and-forget Task.Run bodies do not throw
         // in unit tests. The scope resolves a no-op IPublisher and a no-op IAiResponseCache
@@ -109,11 +115,37 @@ public sealed class GetHintCommandHandlerTests
             settings.Object,
             redirectBuilder,
             rl,
+            creditSpend.Object,
+            costResolver,
             publisher.Object,
             scopeFactory.Object,
             logger.Object,
             localizer.Object,
             hintOptions);
+    }
+
+    /// <summary>Default credit-spend stub: balance=100 (always sufficient), debit returns Charged.</summary>
+    private static Mock<ICreditSpendService> BuildDefaultCreditSpendMock()
+    {
+        var mock = new Mock<ICreditSpendService>();
+        mock.Setup(c => c.GetBalanceAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new EnergyBalance(100, 0, 100, null));
+        mock.Setup(c => c.TryDebitAsync(
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DebitResult(true, 1, 0, 99, DebitOutcome.Charged));
+        return mock;
+    }
+
+    /// <summary>Builds a <see cref="CreditCostResolver"/> backed by the given settings mock + a minimal config.</summary>
+    private static CreditCostResolver BuildCreditCostResolver(
+        Mock<IGlobalSettingsProvider>? settingsMock = null,
+        bool hardStopEnabled = false)
+    {
+        var settings = (settingsMock ?? BuildDefaultSettingsMock()).Object;
+        var configMock = new Mock<IConfiguration>();
+        configMock.Setup(c => c["Billing:HardStopEnabled"])
+            .Returns(hardStopEnabled ? "true" : "false");
+        return new CreditCostResolver(settings, configMock.Object);
     }
 
     /// <summary>Stub user: studentId=42, grade=5, age=11, language=ar.</summary>
@@ -649,5 +681,213 @@ public sealed class GetHintCommandHandlerTests
         ctorParams.Should().Contain(
             typeof(ISafetyLayer),
             "GetHintCommandHandler must inject ISafetyLayer (safety invariant)");
+    }
+
+    // ── P10-03-BE-5: No-charge cases for Hint/WhyWrong ───────────────────────────
+
+    [Fact(DisplayName = "P1003-HH-P10-01 Insufficient monthly balance → Error; TryDebitAsync never called (P10-03-BE-5)")]
+    public async Task Handle_InsufficientMonthlyBalance_ReturnsErrorAndNeverDebits()
+    {
+        // Arrange — balance=0, cost for Hint=1 → pre-auth blocks.
+        var creditSpendMock = new Mock<ICreditSpendService>();
+        creditSpendMock
+            .Setup(c => c.GetBalanceAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new EnergyBalance(0, 0, 0, null));
+
+        var contextProvider = new Mock<ILearningContextProvider>();
+        var safetyMock = new Mock<ISafetyLayer>();
+        var promptMock = new Mock<IPromptBuilder>();
+
+        var sut = CreateSut(contextProvider, safetyMock, promptMock, creditSpendMock: creditSpendMock);
+        var command = new GetHintCommand(QuestionId: 1, AttemptId: 5,
+            Intent: HelperIntent.Hint, HintLevel: null, WrongAnswer: null);
+
+        // Act
+        var result = await sut.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Should().BeOfType<HintResult.Error>(
+            "monthly hard-exhausted must surface as a typed Error — locked economy model P10-03");
+
+        var error = (HintResult.Error)result;
+        error.Code.Should().Contain("Insufficient",
+            "error code must identify the insufficient-energy condition");
+
+        creditSpendMock.Verify(
+            c => c.TryDebitAsync(
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "TryDebitAsync must NOT be called when monthly balance is insufficient (no-charge rule)");
+
+        safetyMock.Verify(
+            s => s.GenerateSafeAsync(It.IsAny<AiRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "ISafetyLayer must NOT be called when monthly balance is insufficient (no gateway call)");
+    }
+
+    [Fact(DisplayName = "P1003-HH-P10-02 Safety block → Error; TryDebitAsync never called (P10-03-BE-5 no-charge on block)")]
+    public async Task Handle_SafetyBlock_NeverDebits()
+    {
+        // Arrange — sufficient balance; safety blocks.
+        var creditSpendMock = new Mock<ICreditSpendService>();
+        creditSpendMock
+            .Setup(c => c.GetBalanceAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new EnergyBalance(100, 0, 100, null));
+
+        var contextProvider = new Mock<ILearningContextProvider>();
+        contextProvider
+            .Setup(p => p.GetContextAsync(
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int?>(),
+                It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(MakePopulatedContext());
+
+        var promptMock = new Mock<IPromptBuilder>();
+        promptMock
+            .Setup(p => p.Build(It.IsAny<PromptContext>()))
+            .Returns(new PromptBuilderResult.Success(
+                new AiRequest { Prompt = "Give a hint", Task = AiTaskKind.Hint }));
+
+        var safetyMock = new Mock<ISafetyLayer>();
+        safetyMock
+            .Setup(s => s.GenerateSafeAsync(It.IsAny<AiRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SafeAiResult(
+                Allowed: false, Content: null, Verdict: SafetyVerdict.Blocked, Results: Array.Empty<CheckResult>()));
+
+        var sut = CreateSut(contextProvider, safetyMock, promptMock, creditSpendMock: creditSpendMock);
+        var command = new GetHintCommand(QuestionId: 1, AttemptId: 5,
+            Intent: HelperIntent.Hint, HintLevel: null, WrongAnswer: null);
+
+        // Act
+        var result = await sut.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Should().BeOfType<HintResult.Error>("safety block must return Error");
+
+        creditSpendMock.Verify(
+            c => c.TryDebitAsync(
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "TryDebitAsync must NOT be called when safety blocks the response (no delivery = no charge)");
+    }
+
+    [Fact(DisplayName = "P1003-HH-P10-03 No-reveal violation (Hint) → Error; TryDebitAsync never called (P10-03-BE-5)")]
+    public async Task Handle_NoRevealViolation_NeverDebits()
+    {
+        // Arrange — safety approves but content contains the correct answer → no-reveal violation.
+        // The no-reveal violation returns before any debit (step 11 < debit step).
+        const string correctAnswer = "4";
+        const string violatingContent = "The answer is 4 because two plus two equals 4."; // contains "4"
+
+        var creditSpendMock = new Mock<ICreditSpendService>();
+        creditSpendMock
+            .Setup(c => c.GetBalanceAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new EnergyBalance(100, 0, 100, null));
+
+        var contextProvider = new Mock<ILearningContextProvider>();
+        contextProvider
+            .Setup(p => p.GetContextAsync(
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int?>(),
+                It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(MakePopulatedContext());
+
+        var questionAnswerMock = BuildDefaultQuestionAnswerMock(correctAnswer, currentHintLevel: 1);
+
+        var promptMock = new Mock<IPromptBuilder>();
+        promptMock
+            .Setup(p => p.Build(It.IsAny<PromptContext>()))
+            .Returns(new PromptBuilderResult.Success(
+                new AiRequest { Prompt = "Give a hint", Task = AiTaskKind.Hint }));
+
+        var safetyMock = new Mock<ISafetyLayer>();
+        safetyMock
+            .Setup(s => s.GenerateSafeAsync(It.IsAny<AiRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SafeAiResult(
+                Allowed: true,
+                Content: violatingContent,
+                Verdict: SafetyVerdict.Allowed,
+                Results: Array.Empty<CheckResult>()));
+
+        var sut = CreateSut(contextProvider, safetyMock, promptMock,
+            questionAnswerMock: questionAnswerMock, creditSpendMock: creditSpendMock);
+        var command = new GetHintCommand(QuestionId: 1, AttemptId: 5,
+            Intent: HelperIntent.Hint, HintLevel: null, WrongAnswer: null);
+
+        // Act
+        var result = await sut.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Should().BeOfType<HintResult.Error>(
+            "no-reveal violation must return Error (OQ-4 guard)");
+
+        var error = (HintResult.Error)result;
+        error.Code.Should().Contain("NoReveal",
+            "error code must identify the no-reveal violation");
+
+        creditSpendMock.Verify(
+            c => c.TryDebitAsync(
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "TryDebitAsync must NOT be called on no-reveal violation (no delivery occurred = no charge)");
+    }
+
+    [Fact(DisplayName = "P1003-HH-P10-04 Cache HIT (Hint) → exactly one TryDebitAsync call (P10-03-BE-3 delivery point #1)")]
+    public async Task Handle_HintCacheHit_DebitCalledExactlyOnce()
+    {
+        // Arrange — cache HIT; debit must occur at the cache-HIT delivery point.
+        const string cachedHint = "Think about adding equal groups (cached).";
+
+        var creditSpendMock = new Mock<ICreditSpendService>();
+        creditSpendMock
+            .Setup(c => c.GetBalanceAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new EnergyBalance(100, 0, 100, null));
+        creditSpendMock
+            .Setup(c => c.TryDebitAsync(
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DebitResult(true, 1, 0, 99, DebitOutcome.Charged));
+
+        var contextProvider = new Mock<ILearningContextProvider>();
+        contextProvider
+            .Setup(p => p.GetContextAsync(
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int?>(),
+                It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(MakePopulatedContext());
+
+        var promptMock = new Mock<IPromptBuilder>();
+        promptMock
+            .Setup(p => p.Build(It.IsAny<PromptContext>()))
+            .Returns(new PromptBuilderResult.Success(
+                new AiRequest { Prompt = "Give a hint", Task = AiTaskKind.Hint }));
+
+        var aiCacheMock = new Mock<IAiResponseCache>();
+        aiCacheMock
+            .Setup(c => c.GetApprovedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(cachedHint);
+        aiCacheMock
+            .Setup(c => c.WriteAsync(It.IsAny<AiCacheWriteEntry>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var safetyMock = new Mock<ISafetyLayer>();
+
+        var sut = CreateSut(contextProvider, safetyMock, promptMock,
+            aiCacheMock: aiCacheMock, creditSpendMock: creditSpendMock);
+        var command = new GetHintCommand(QuestionId: 1, AttemptId: 5,
+            Intent: HelperIntent.Hint, HintLevel: null, WrongAnswer: null);
+
+        // Act
+        var result = await sut.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Should().BeOfType<HintResult.Streamed>("cache HIT must return Streamed");
+
+        creditSpendMock.Verify(
+            c => c.TryDebitAsync(
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Once,
+            "TryDebitAsync must be called exactly once on cache HIT (delivery point #1 — P10-03-BE-3)");
+
+        safetyMock.Verify(
+            s => s.GenerateSafeAsync(It.IsAny<AiRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "ISafetyLayer must NOT be called on cache HIT");
     }
 }

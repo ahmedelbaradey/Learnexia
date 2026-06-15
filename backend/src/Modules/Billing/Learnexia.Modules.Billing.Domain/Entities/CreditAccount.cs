@@ -117,6 +117,9 @@ public class CreditAccount : FullAuditedEntity
 
         var tx = BuildTransaction(CreditTransactionType.Spend, pool, fromGranted + fromPurchased, reasonCode, idempotencyKey);
         tx.RelatedActionId = relatedActionId;
+        // Record exact split so ReconcileAccountQueryHandler can reconstruct Mixed-pool debits exactly.
+        tx.FromGranted = fromGranted;
+        tx.FromPurchased = fromPurchased;
         return tx;
     }
 

@@ -47,6 +47,15 @@ public class CreditTransactionConfig : IEntityTypeConfiguration<CreditTransactio
         builder.Property(x => x.ResultingGrantedBalance).IsRequired();
         builder.Property(x => x.ResultingPurchasedBalance).IsRequired();
 
+        // Ledger split columns (W2 carried fix — exact Mixed-pool reconcile).
+        builder.Property(x => x.FromGranted)
+            .IsRequired()
+            .HasDefaultValue(0);
+
+        builder.Property(x => x.FromPurchased)
+            .IsRequired()
+            .HasDefaultValue(0);
+
         builder.Property(x => x.OccurredAtUtc)
             .IsRequired()
             .HasColumnType("timestamptz");

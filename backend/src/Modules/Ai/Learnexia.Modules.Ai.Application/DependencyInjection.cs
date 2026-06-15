@@ -62,6 +62,12 @@ public static class DependencyInjection
         services.TryAddSingleton<IAiTutorRateLimiter, AiTutorRateLimiter>();
         services.AddSingleton<AiTutorRateLimiter>();
 
+        // ── P10-03 CreditCostResolver — server-side intent→cost mapping ──────────────
+        // Singleton: reads IGlobalSettingsProvider (Singleton) + IConfiguration (Singleton).
+        // ICreditSpendService implementation is registered by AddBillingInfrastructure in the
+        // Billing module — no Billing.* project reference needed here (module isolation rule 1).
+        services.AddSingleton<CreditCostResolver>();
+
         // ── P3-05 Hint + WhyWrong + Simplify Features ────────────────────────────────
 
         // HintOptions: config-bound POCO for MaxHintLevels (OQ-5).

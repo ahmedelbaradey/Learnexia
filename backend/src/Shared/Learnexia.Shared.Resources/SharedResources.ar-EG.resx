@@ -2263,4 +2263,10 @@
   <data name="GlobalSettingUpdatedSuccessfully" xml:space="preserve">
     <value>تم تحديث الإعداد العام بنجاح.</value>
   </data>
+  <data name="AiInsufficientEnergy" xml:space="preserve">
+    <value>نفدت طاقتك للمساعدة الذكية هذا الشهر. سيتم تجديد طاقتك في بداية الشهر القادم.</value>
+  </data>
+  <data name="AiDailyCapReached" xml:space="preserve">
+    <value>لقد بلغت حدك اليومي من المساعدة الذكية. ستُجدَّد طاقتك اليومية غداً.</value>
+  </data>
 </root>

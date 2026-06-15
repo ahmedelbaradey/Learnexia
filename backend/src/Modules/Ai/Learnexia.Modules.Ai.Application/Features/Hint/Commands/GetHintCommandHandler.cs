@@ -8,6 +8,7 @@ using Learnexia.Modules.Ai.Application.Services;
 using Learnexia.Shared.Contracts.Ai;
 using Learnexia.Shared.Kernel.Settings;
 using Learnexia.Shared.Contracts.AiTutor;
+using Learnexia.Shared.Contracts.Billing;
 using Learnexia.Shared.Contracts.Learning;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
@@ -35,6 +36,12 @@ namespace Learnexia.Modules.Ai.Application.Features.Hint.Commands;
 /// wrong answer is normalized + hashed; the cache key uses the compound key with AgeBand.
 /// Per-student uniqueness is NOT required — the same wrong-reasoning pattern can be reused
 /// for all students at the same developmental level.</para>
+///
+/// <para><strong>Charge-on-delivery (P10-03):</strong> energy credits are debited ONLY
+/// on successful delivery — both the cache-HIT early-return and the post-safety-success path
+/// debit via <see cref="ICreditSpendService"/>. No charge on refuse/scope-guard/no-reveal-violation/
+/// safety-block/error/pre-auth insufficient. Cost is intent-specific: Hint=1, WhyWrong=2
+/// (resolved via <see cref="CreditCostResolver"/> from GlobalSettings <c>ai_cost.*</c> keys).</para>
 /// </summary>
 public sealed class GetHintCommandHandler : ICommandHandler<GetHintCommand, HintResult>
 {
@@ -56,6 +63,8 @@ public sealed class GetHintCommandHandler : ICommandHandler<GetHintCommand, Hint
     private readonly IGlobalSettingsProvider _settings;
     private readonly RedirectResponseBuilder _redirectBuilder;
     private readonly IAiTutorRateLimiter _rateLimiter;
+    private readonly ICreditSpendService _creditSpend;
+    private readonly CreditCostResolver _costResolver;
     private readonly IPublisher _publisher;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILoggerManager _logger;
@@ -72,6 +81,8 @@ public sealed class GetHintCommandHandler : ICommandHandler<GetHintCommand, Hint
         IGlobalSettingsProvider settings,
         RedirectResponseBuilder redirectBuilder,
         IAiTutorRateLimiter rateLimiter,
+        ICreditSpendService creditSpend,
+        CreditCostResolver costResolver,
         IPublisher publisher,
         IServiceScopeFactory scopeFactory,
         ILoggerManager logger,
@@ -87,6 +98,8 @@ public sealed class GetHintCommandHandler : ICommandHandler<GetHintCommand, Hint
         _settings        = settings;
         _redirectBuilder = redirectBuilder;
         _rateLimiter     = rateLimiter;
+        _creditSpend     = creditSpend;
+        _costResolver    = costResolver;
         _publisher       = publisher;
         _scopeFactory    = scopeFactory;
         _logger          = logger;
@@ -114,6 +127,42 @@ public sealed class GetHintCommandHandler : ICommandHandler<GetHintCommand, Hint
                 nameof(SharedResourcesKey.HintRateLimitExceeded),
                 _localizer[SharedResourcesKey.HintRateLimitExceeded]);
         }
+
+        // ── P10-03: resolve cost + generate per-request idempotency key ──────────────
+        // Cost is intent-specific: Hint=1, WhyWrong=2. Client never supplies cost.
+        var childId = studentId.Value;
+        var cost = _costResolver.ResolveCost(request.Intent);
+        var idempotencyKey = Guid.NewGuid().ToString("N");
+        var reasonCode = CreditCostResolver.ResolveReasonCode(request.Intent);
+
+        // ── P10-03-BE-2: pre-authorize (monthly hard-limit + optional daily hard-stop) ──
+        EnergyBalance balance;
+        try
+        {
+            balance = await _creditSpend.GetBalanceAsync(childId, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarn($"GetHintCommandHandler: GetBalanceAsync failed for childId={childId}. Proceeding. {ex.GetType().Name}");
+            balance = new EnergyBalance(int.MaxValue, 0, int.MaxValue, null);
+        }
+
+        if (balance.TotalBalance < cost)
+        {
+            _logger.LogInfo($"GetHintCommandHandler: insufficient energy for childId={childId}, balance={balance.TotalBalance}, cost={cost}, intent={request.Intent}.");
+            return new HintResult.Error(
+                nameof(SharedResourcesKey.AiInsufficientEnergy),
+                _localizer[SharedResourcesKey.AiInsufficientEnergy]);
+        }
+
+        if (_costResolver.IsHardStopEnabled && balance.DailyCapReached)
+        {
+            _logger.LogInfo($"GetHintCommandHandler: daily cap reached for childId={childId}. HardStop=true, intent={request.Intent}.");
+            return new HintResult.Error(
+                nameof(SharedResourcesKey.AiDailyCapReached),
+                _localizer[SharedResourcesKey.AiDailyCapReached]);
+        }
+        // ─────────────────────────────────────────────────────────────────────────────────
 
         // Step 2 — emit HelpRequested fire-and-forget.
         var helpRequestedEvent = new HelpRequestedIntegrationEvent(
@@ -160,7 +209,7 @@ public sealed class GetHintCommandHandler : ICommandHandler<GetHintCommand, Hint
         var currentHintLevel = questionAnswer.CurrentHintLevel;
         var maxLevels        = _hintOptions.MaxHintLevels;
 
-        // Step 5 — MaxHintLevels bound check (BE-8).
+        // Step 5 — MaxHintLevels bound check (BE-8). NO debit — not a delivery.
         if (request.Intent == HelperIntent.Hint && currentHintLevel > maxLevels)
         {
             _logger.LogInfo(
@@ -198,7 +247,7 @@ public sealed class GetHintCommandHandler : ICommandHandler<GetHintCommand, Hint
 
         var skillId = learningCtx.SkillId;
 
-        // Step 7 — AC-3 scope guard: empty chunks → refuse-and-redirect.
+        // Step 7 — AC-3 scope guard: empty chunks → refuse-and-redirect. NO debit.
         if (learningCtx.Chunks.Count == 0)
         {
             _logger.LogInfo(
@@ -286,6 +335,10 @@ public sealed class GetHintCommandHandler : ICommandHandler<GetHintCommand, Hint
         {
             _logger.LogInfo($"GetHintCommandHandler: cache HIT for intent={request.Intent}, studentId={studentId}, key={cacheKey[..8]}…");
 
+            // ── P10-03-BE-3 DELIVERY POINT #1: cache HIT → debit ────────────────────
+            await DebitEnergyAsync(childId, cost, reasonCode, idempotencyKey, cancellationToken);
+            // ─────────────────────────────────────────────────────────────────────────
+
             // Fire-and-forget HintUsed on cache HIT too (for accurate usage tracking).
             await FireHintUsedAsync(request, studentId.Value, currentHintLevel);
 
@@ -320,6 +373,7 @@ public sealed class GetHintCommandHandler : ICommandHandler<GetHintCommand, Hint
         catch (Exception ex)
         {
             _logger.LogError(ex, $"GetHintCommandHandler: ISafetyLayer threw for studentId={studentId}. Returning typed error.");
+            // NO debit on generation error.
             return new HintResult.Error(
                 nameof(SharedResourcesKey.AiServiceUnavailable),
                 _localizer[SharedResourcesKey.AiServiceUnavailable]);
@@ -329,7 +383,7 @@ public sealed class GetHintCommandHandler : ICommandHandler<GetHintCommand, Hint
         if (!safeResult.Allowed)
         {
             _logger.LogWarn($"GetHintCommandHandler: safety blocked for studentId={studentId}, intent={request.Intent}, verdict={safeResult.Verdict}.");
-            // Safety-FAILED: DO NOT cache.
+            // Safety-FAILED: DO NOT cache. NO debit.
             return new HintResult.Error(
                 nameof(SharedResourcesKey.ExplainConceptSafetyBlocked),
                 _localizer[SharedResourcesKey.ExplainConceptSafetyBlocked]);
@@ -337,7 +391,7 @@ public sealed class GetHintCommandHandler : ICommandHandler<GetHintCommand, Hint
 
         var content = safeResult.Content ?? string.Empty;
 
-        // Step 11 — post-generation no-reveal check (OQ-4, AC-1) — Hint intent only.
+        // Step 11 — post-generation no-reveal check (OQ-4, AC-1) — Hint intent only. NO debit on violation.
         if (request.Intent == HelperIntent.Hint)
         {
             var correctAnswer = questionAnswer.CorrectAnswer;
@@ -351,7 +405,7 @@ public sealed class GetHintCommandHandler : ICommandHandler<GetHintCommand, Hint
                     _logger.LogWarn(
                         $"GetHintCommandHandler: no-reveal violation (normalized) — hint for questionId={request.QuestionId} " +
                         $"contains CorrectAnswer after normalization. Blocking response (studentId={studentId}).");
-                    // No-reveal violation: DO NOT cache this response.
+                    // No-reveal violation: DO NOT cache this response. NO debit (no delivery occurred).
                     return new HintResult.Error(
                         nameof(SharedResourcesKey.HintNoRevealViolation),
                         _localizer[SharedResourcesKey.HintNoRevealViolation]);
@@ -401,6 +455,17 @@ public sealed class GetHintCommandHandler : ICommandHandler<GetHintCommand, Hint
         });
         // ─────────────────────────────────────────────────────────────────────────
 
+        // ── P10-03-BE-3 DELIVERY POINT #2: post-safety + no-reveal pass → debit ─────
+        var debitResult = await DebitEnergyAsync(childId, cost, reasonCode, idempotencyKey, cancellationToken);
+        if (debitResult is { Charged: false, Outcome: DebitOutcome.InsufficientBalance })
+        {
+            _logger.LogInfo($"GetHintCommandHandler: concurrent balance drain for childId={childId}, intent={request.Intent} — graceful decline post-safety.");
+            return new HintResult.Error(
+                nameof(SharedResourcesKey.AiInsufficientEnergy),
+                _localizer[SharedResourcesKey.AiInsufficientEnergy]);
+        }
+        // ─────────────────────────────────────────────────────────────────────────────
+
         // Step 12 — fire-and-forget HintUsedIntegrationEvent.
         await FireHintUsedAsync(request, studentId.Value, currentHintLevel);
 
@@ -432,6 +497,24 @@ public sealed class GetHintCommandHandler : ICommandHandler<GetHintCommand, Hint
     }
 
     // ── Private helpers ────────────────────────────────────────────────────────
+
+    /// <summary>Fail-soft debit — a billing outage never hard-blocks a student.</summary>
+    private async Task<DebitResult?> DebitEnergyAsync(
+        int childId, int cost, string reasonCode, string idempotencyKey, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _creditSpend.TryDebitAsync(childId, cost, reasonCode, idempotencyKey, ct);
+            if (result.Outcome == DebitOutcome.DuplicateIdempotent)
+                _logger.LogInfo($"GetHintCommandHandler: idempotent debit (retry) for childId={childId}.");
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarn($"GetHintCommandHandler: TryDebitAsync failed for childId={childId}. Fail-soft. {ex.GetType().Name}");
+            return null;
+        }
+    }
 
     private Task FireHintUsedAsync(GetHintCommand request, int studentId, int currentHintLevel)
     {

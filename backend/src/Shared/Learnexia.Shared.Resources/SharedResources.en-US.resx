@@ -2264,4 +2264,10 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="GlobalSettingUpdatedSuccessfully" xml:space="preserve">
     <value>Global setting updated successfully.</value>
   </data>
+  <data name="AiInsufficientEnergy" xml:space="preserve">
+    <value>You have run out of energy for AI assistance this month. Your energy will be topped up at the start of next month.</value>
+  </data>
+  <data name="AiDailyCapReached" xml:space="preserve">
+    <value>You have reached your daily AI assistance limit. Your daily energy will reset tomorrow.</value>
+  </data>
 </root>

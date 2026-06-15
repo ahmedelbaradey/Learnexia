@@ -1589,5 +1589,21 @@
         /// <summary>Returned when a global setting is updated successfully.</summary>
         public const string GlobalSettingUpdatedSuccessfully = "GlobalSettingUpdatedSuccessfully";
 
+        // ── P10-03 AI Energy spend — insufficient energy decline ─────────────────────────────────
+
+        /// <summary>
+        /// Returned by all 4 AI Helper handlers when the child's energy balance is insufficient
+        /// (monthly hard limit) or the daily cap is reached with HardStopEnabled=true.
+        /// Surfaces via the SSE "error" frame — client shows the low-energy UI.
+        /// Never thrown as an exception — always a typed graceful decline.
+        /// </summary>
+        public const string AiInsufficientEnergy = "AiInsufficientEnergy";
+
+        /// <summary>
+        /// Returned when the daily energy cap has been reached (soft-cap, non-blocking by default).
+        /// Only blocks when <c>Billing:HardStopEnabled=true</c> in configuration.
+        /// </summary>
+        public const string AiDailyCapReached = "AiDailyCapReached";
+
     }
 }

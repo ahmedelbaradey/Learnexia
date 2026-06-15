@@ -39,6 +39,20 @@ public class CreditTransaction : FullAuditedEntity
     public int ResultingGrantedBalance { get; set; }
     public int ResultingPurchasedBalance { get; set; }
 
+    // ── Ledger split (W2 carried fix — exact reconcile for Mixed-pool debits) ──
+
+    /// <summary>
+    /// For <see cref="CreditTransactionType.Spend"/> rows: the portion of <see cref="Amount"/>
+    /// drawn from the granted pool. Zero for non-Spend rows.
+    /// </summary>
+    public int FromGranted { get; set; }
+
+    /// <summary>
+    /// For <see cref="CreditTransactionType.Spend"/> rows: the portion of <see cref="Amount"/>
+    /// drawn from the purchased pool. Zero for non-Spend rows.
+    /// </summary>
+    public int FromPurchased { get; set; }
+
     // ── Timestamps ───────────────────────────────────────────────────────────────
 
     /// <summary>UTC time the event logically occurred (not the DB insert wall-clock time).</summary>

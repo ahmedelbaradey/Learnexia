@@ -1,4 +1,6 @@
 using Learnexia.Modules.Billing.Application.Abstractions;
+using Learnexia.Modules.Billing.Infrastructure.Contracts;
+using Learnexia.Modules.Billing.Infrastructure.Jobs;
 using Learnexia.Modules.Billing.Infrastructure.Persistence;
 using Learnexia.Modules.Billing.Infrastructure.Service;
 using Learnexia.Modules.Billing.Infrastructure.Services;
@@ -42,7 +44,20 @@ public static class DependencyInjection
 
         // ICreditSpendService — the cross-module seam consumed by the Ai module (W2/P10-03).
         // Scoped: depends on the scoped BillingDbContext + ICurrentUserService.
+        // W2b: also injects IGlobalSettingsProvider (Singleton) + ISystemClock (Singleton)
+        // for the atomic DailyUsed increment + GetBalanceAsync daily-cap population.
         services.AddScoped<ICreditSpendService, CreditSpendService>();
+
+        // ISystemClock — stateless singleton, deterministic time seam for daily-cap and grant jobs.
+        services.AddSingleton<ISystemClock, SystemClock>();
+
+        // IBillingSubscriptionContract — stub returns all children as Free tier until P10-05 lands.
+        // Scoped: reads BillingDbContext (also Scoped).
+        services.AddScoped<IBillingSubscriptionContract, ConfigDefaultSubscriptionContract>();
+
+        // BillingGrantJob — Hangfire job; Transient mirrors StreakSweepJob registration.
+        // Creates its own inner scope per child via IServiceScopeFactory.
+        services.AddTransient<BillingGrantJob>();
 
         // ── P10-12: DB-backed GlobalSettings store ───────────────────────────────────────────
         // DbBackedGlobalSettingsProvider implements both IGlobalSettingsProvider (the lean interface

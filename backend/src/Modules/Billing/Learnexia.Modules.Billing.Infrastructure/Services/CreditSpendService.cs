@@ -1,8 +1,11 @@
 using Learnexia.Modules.Billing.Application.Abstractions;
+using Learnexia.Modules.Billing.Application.Services;
+using Learnexia.Modules.Billing.Domain.Constants;
 using Learnexia.Modules.Billing.Domain.Entities;
 using Learnexia.Modules.Billing.Domain.Enums;
 using Learnexia.Shared.Contracts.Billing;
 using Learnexia.Shared.Kernel.Abstractions;
+using Learnexia.Shared.Kernel.Settings;
 using Microsoft.EntityFrameworkCore;
 
 namespace Learnexia.Modules.Billing.Infrastructure.Services;
@@ -13,7 +16,8 @@ namespace Learnexia.Modules.Billing.Infrastructure.Services;
 ///
 /// <para><strong>Atomicity:</strong> <see cref="TryDebitAsync"/> opens an explicit transaction,
 /// loads the account with the <c>xmin</c> concurrency token, checks idempotency, checks balance,
-/// debits Granted-first, inserts the ledger row, and commits — all in one transaction.
+/// debits Granted-first, <strong>increments <c>DailyUsed</c> with lazy reset (P10-03/P10-04 W2b)</strong>,
+/// inserts the ledger row, and commits — all in one transaction.
 /// On <see cref="DbUpdateConcurrencyException"/> it retries up to <c>MaxRetries</c>.</para>
 ///
 /// <para><strong>Idempotency:</strong> if the idempotency key already exists in
@@ -24,6 +28,11 @@ namespace Learnexia.Modules.Billing.Infrastructure.Services;
 ///
 /// <para><strong>Granted-first:</strong> <see cref="CreditAccount.GrantedBalance"/> is consumed
 /// before <see cref="CreditAccount.PurchasedBalance"/>.</para>
+///
+/// <para><strong>Daily counter:</strong> <see cref="CreditAccount.DailyUsed"/> is incremented
+/// inside the same transaction as the balance debit. When <see cref="CreditAccount.DailyUsedDateLocal"/>
+/// is stale (different from child-local today), it is reset to 0 before incrementing. This is the
+/// only write path for <c>DailyUsed</c> — <c>EnergyStatusQueryHandler</c> is read-only.</para>
 /// </summary>
 public class CreditSpendService : ICreditSpendService
 {
@@ -32,12 +41,21 @@ public class CreditSpendService : ICreditSpendService
     private readonly IBillingDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly ILoggerManager _logger;
+    private readonly IGlobalSettingsProvider _settings;
+    private readonly ISystemClock _clock;
 
-    public CreditSpendService(IBillingDbContext db, ICurrentUserService currentUser, ILoggerManager logger)
+    public CreditSpendService(
+        IBillingDbContext db,
+        ICurrentUserService currentUser,
+        ILoggerManager logger,
+        IGlobalSettingsProvider settings,
+        ISystemClock clock)
     {
         _db = db;
         _currentUser = currentUser;
         _logger = logger;
+        _settings = settings;
+        _clock = clock;
     }
 
     /// <inheritdoc/>
@@ -85,17 +103,35 @@ public class CreditSpendService : ICreditSpendService
             .AsNoTracking()
             .FirstOrDefaultAsync(a => a.ChildId == childId, ct);
 
+        // Daily cap from GlobalSettings (free-tier default until P10-05 subscription tier).
+        var dailyCap = _settings.GetInt(GlobalSettingKeys.FreeDailyCap, 10);
+
         if (account is null)
         {
             // Return zero balance — account will be created on first grant.
-            return new EnergyBalance(0, 0, 0, null);
+            return new EnergyBalance(
+                GrantedBalance: 0,
+                PurchasedBalance: 0,
+                TotalBalance: 0,
+                GrantExpiresAtUtc: null,
+                DailyUsed: 0,
+                DailyCap: dailyCap,
+                DailyCapReached: false);
         }
 
+        // Lazy daily-reset (read-side only — no write here; the write happens in TryDebitAsync).
+        var effectiveDailyUsed = DailyCapHelper.IsStale(account.DailyUsedDateLocal, account.ChildTimeZoneId, _clock)
+            ? 0
+            : account.DailyUsed;
+
         return new EnergyBalance(
-            account.GrantedBalance,
-            account.PurchasedBalance,
-            account.TotalBalance,
-            account.GrantExpiresAtUtc);
+            GrantedBalance: account.GrantedBalance,
+            PurchasedBalance: account.PurchasedBalance,
+            TotalBalance: account.TotalBalance,
+            GrantExpiresAtUtc: account.GrantExpiresAtUtc,
+            DailyUsed: effectiveDailyUsed,
+            DailyCap: dailyCap,
+            DailyCapReached: effectiveDailyUsed >= dailyCap);
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────────
@@ -136,6 +172,17 @@ public class CreditSpendService : ICreditSpendService
 
         var creditTransaction = account.Debit(fromGranted, fromPurchased, reasonCode, idempotencyKey);
         await _db.CreditTransactions.AddAsync(creditTransaction, ct);
+
+        // ── P10-03/P10-04 W2b: increment DailyUsed inside the same atomic transaction ──────────
+        // Lazy reset: if DailyUsedDateLocal is stale (different from child-local today), reset to 0 first.
+        var todayLocal = DailyCapHelper.Today(account.ChildTimeZoneId, _clock);
+        if (DailyCapHelper.IsStale(account.DailyUsedDateLocal, account.ChildTimeZoneId, _clock))
+        {
+            account.DailyUsed = 0;
+        }
+        account.DailyUsed += amount;
+        account.DailyUsedDateLocal = todayLocal;
+        // ─────────────────────────────────────────────────────────────────────────────────────────
 
         await _db.SaveChangesAsync(_currentUser.UserId ?? 0);
         await tx.CommitAsync(ct);
