@@ -206,6 +206,18 @@ public class AuthenticationIdentityService : IAuthenticationService
             new(CustomClaimTypes.LearningLanguage, user.LearningLanguage),
         };
 
+        // AI-DEFECT-1: emit Grade + Age claims for student accounts so that AI Helper handlers
+        // resolve the real grade from the JWT (not the fallback default of 4).
+        // Guard on HasValue — parent/admin accounts have null Grade/Age on the User entity and
+        // must not receive these claims. Grade changes (P7-08 OverrideChildGrade) take effect on
+        // the next token refresh; live invalidation is not required (documented in HANDOFF.md).
+        var isStudent = roles.Any(r => string.Equals(r, Roles.Student.ToString(),
+            StringComparison.OrdinalIgnoreCase));
+        if (isStudent && user.Grade.HasValue)
+            claims.Add(new Claim(CustomClaimTypes.Grade, user.Grade.Value.ToString()));
+        if (isStudent && user.Age.HasValue)
+            claims.Add(new Claim(CustomClaimTypes.Age, user.Age.Value.ToString()));
+
         foreach (var roleName in roles)
         {
             claims.Add(new Claim(ClaimTypes.Role, roleName));
