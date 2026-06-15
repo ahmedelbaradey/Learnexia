@@ -15,7 +15,7 @@
  * primitives (KPIStatCard, MasteryBar) — no new design pattern.
  */
 import { useMyChildren } from '@learnexia/api-client';
-import { Button, Select } from '@learnexia/ui';
+import { Button } from '@learnexia/ui';
 import { Stack, Text, type StackProps } from '@tamagui/core';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -23,15 +23,12 @@ import { useTranslation } from 'react-i18next';
 import { useLocale } from '../../../src/hooks/useLocale';
 import { useActiveChildStore } from '../../../src/providers/activeChildStore';
 import { DailyActivityCard } from './DailyActivityCard';
+import { ParentHeader } from './ParentHeader';
 import { FocusAreasCard } from './FocusAreasCard';
 import { RecommendationsCard } from './RecommendationsCard';
 import { SubjectMasteryCard } from './SubjectMasteryCard';
 import { getOverviewKpiStub, type OverviewKpiStub } from './parentDashboardStubs';
 
-/** Fixed reporting-period set (enum-style; only "this week" wired in P1-11). */
-const REPORTING_PERIOD = {
-  ThisWeek: 'thisWeek',
-} as const;
 
 /**
  * Format minutes as "Xh Ym" (EN) / "Xس Yد" (AR). Digits are localized via Intl
@@ -121,7 +118,6 @@ export function OverviewWeb({ onAddChild }: OverviewWebProps) {
   const { t } = useTranslation();
   const { direction, isRtl, locale } = useLocale();
   const query = useMyChildren();
-  const [period, setPeriod] = useState<string>(REPORTING_PERIOD.ThisWeek);
 
   const rowDir = isRtl ? 'row-reverse' : 'row';
   const children = query.data ?? [];
@@ -139,60 +135,15 @@ export function OverviewWeb({ onAddChild }: OverviewWebProps) {
   const dateRange = t('parent.overview.dateRange');
 
   return (
-    <Stack testID="overview-root" flexDirection="column" gap="$6" padding="$6" width="100%">
-      {/* Header — direction-aware row (rowDir): title block on logical-start side,
-           controls on logical-end side. In RTL rowDir=row-reverse so title appears
-           on the right (leading) and controls on the left (trailing). */}
-      <Stack testID="overview-header" flexDirection={rowDir} alignItems="flex-start" justifyContent="space-between" gap="$4" flexWrap="wrap">
-        <Stack flexDirection="column" gap="$1">
-          <Text
-            color="$fg1"
-            fontSize={22}
-            fontWeight="800"
-            fontFamily="$heading"
-            accessibilityRole="header"
-            writingDirection={direction}
-            textAlign={direction === 'rtl' ? 'right' : 'left'}
-          >
-            {t('parent.overview.title', { name: childName })}
-          </Text>
-          <Text
-            color="$fg3"
-            fontSize={12}
-            fontFamily="$body"
-            writingDirection={direction}
-            textAlign={direction === 'rtl' ? 'right' : 'left'}
-          >
-            {dateRange}
-          </Text>
-        </Stack>
+    <Stack testID="overview-root" flexDirection="column" width="100%">
+      {/* Unified parent header (title + ChildSwitcher + AccountMenu). */}
+      <ParentHeader
+        title={t('parent.overview.title', { name: childName })}
+        subtitle={dateRange}
+      />
 
-        <Stack flexDirection={rowDir} alignItems="center" gap="$3">
-          <Stack width={150}>
-            <Select
-              label={t('parent.overview.periodLabel')}
-              hideLabel
-              value={period}
-              onChange={(v) => setPeriod(String(v))}
-              options={[{ value: REPORTING_PERIOD.ThisWeek, label: t('parent.overview.periodThisWeek') }]}
-              direction={direction}
-              accessibilityLabel={t('parent.overview.periodLabel')}
-            />
-          </Stack>
-          {/* Send Report — Phase-5 stub (no-op until analytics ship). */}
-          <Button
-            variant="primary"
-            size="sm"
-            accessibilityLabel={t('parent.overview.sendReport')}
-            onPress={() => {
-              /* TODO(P5-05): wire to the reports endpoint. */
-            }}
-          >
-            {t('parent.overview.sendReport')}
-          </Button>
-        </Stack>
-      </Stack>
-
+      {/* Body content — own gutter (header is full-bleed with its own padding). */}
+      <Stack flexDirection="column" gap="$6" padding="$6">
       {/* Error state */}
       {query.isError ? (
         <Stack alignItems="center" gap="$4" paddingVertical="$8">
@@ -219,6 +170,7 @@ export function OverviewWeb({ onAddChild }: OverviewWebProps) {
       ) : (
         <OverviewBody childId={childId} childName={childName} rowDir={rowDir} direction={direction} locale={locale} />
       )}
+      </Stack>
     </Stack>
   );
 }

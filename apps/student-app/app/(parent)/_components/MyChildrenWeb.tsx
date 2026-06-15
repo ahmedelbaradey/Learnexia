@@ -1,13 +1,13 @@
 /**
  * MyChildrenWeb — the parent-dashboard "My Children" main content (captures
  * `web/04-my-children.png` + `web-ar/04`): a page header row (title + subtitle
- * + period select + Send Report) with its own padding and a hairline bottom
- * border, the family-summary hero, a "pick a child" row with "+ Add Child", a
- * 3-column grid of child cards, and the trailing dashed add card.
+ * only — no period select / Send Report, per the design) with its own padding
+ * and a hairline bottom border, the family-summary hero, a "pick a child" row
+ * with "+ Add Child", a 3-column grid of child cards, and the trailing dashed
+ * add card.
  *
  * Children come from `useMyChildren` (P1-04); per-child + family stats are
- * Phase-5 stubs (TODO(P5)). "Send Report" and the period select are no-op stubs
- * (Phase 5 — analytics). RTL + ar/en throughout; tokens only.
+ * Phase-5 stubs (TODO(P5)). RTL + ar/en throughout; tokens only.
  *
  * Layout (align-my-children C-43): the card grid is a CSS Grid `repeat(3,1fr)`
  * on web (in AR the grid container is direction:rtl so the columns reverse and
@@ -24,7 +24,7 @@
  * position where pointer-events fail. Text alignment follows locale direction.
  */
 import { useMyChildren } from '@learnexia/api-client';
-import { Button, Select } from '@learnexia/ui';
+import { Button } from '@learnexia/ui';
 import { Stack, Text } from '@tamagui/core';
 import { useRouter } from 'expo-router';
 import { MotiView } from 'moti';
@@ -40,13 +40,9 @@ import {
 } from '../../../src/components/AddChildModal';
 import { AddChildCard } from './AddChildCard';
 import { ChildDashboardCard } from './ChildDashboardCard';
+import { ParentHeader } from './ParentHeader';
 import { FamilySummaryStrip } from './FamilySummaryStrip';
 import { getChildStatsStub, getFamilyTotalsStub } from './parentDashboardStubs';
-
-/** Fixed reporting-period set (enum-style; only "this week" wired in P1-11). */
-const REPORTING_PERIOD = {
-  ThisWeek: 'thisWeek',
-} as const;
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -74,7 +70,6 @@ export function MyChildrenWeb() {
   const { direction, isRtl } = useLocale();
   const router = useRouter();
   const query = useMyChildren();
-  const [period, setPeriod] = useState<string>(REPORTING_PERIOD.ThisWeek);
   /**
    * Edit-child state (bug #4 fix):
    * null = edit modal closed; non-null = edit modal open for this child.
@@ -90,11 +85,12 @@ export function MyChildrenWeb() {
   const childIds = children.map((c) => String(c.id));
   const totals = getFamilyTotalsStub(childIds);
 
-  // 3-column CSS Grid on web (C-43); AR reverses column order via direction:rtl.
+  // Responsive CSS Grid on web (C-43): cards are ≥340px (a little wider) and the
+  // column count auto-fills to the container. AR reverses column order via direction:rtl.
   const gridStyle = IS_WEB
     ? ({
         display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
         gap: 16,
         alignItems: 'stretch',
         direction: isRtl ? 'rtl' : 'ltr',
@@ -103,66 +99,13 @@ export function MyChildrenWeb() {
 
   return (
     <Stack flexDirection="column" width="100%">
-      {/* Header row — its own 20/32 padding + hairline bottom border (H-1/H-2) */}
-      <Stack
-        flexDirection={rowDir}
-        alignItems="flex-start"
-        justifyContent="space-between"
-        gap="$4"
-        flexWrap="wrap"
-        paddingVertical={20}
-        paddingHorizontal={32}
-        borderBottomWidth={1}
-        borderBottomColor="$border"
-      >
-        <Stack flexDirection="column" gap="$1">
-          <Text
-            color="$fg1"
-            fontSize={22}
-            fontWeight="800"
-            fontFamily="$heading"
-            accessibilityRole="header"
-            writingDirection={direction}
-            textAlign={isRtl ? 'right' : 'left'}
-          >
-            {t('parent.myChildren.title')}
-          </Text>
-          <Text
-            color="$fg3"
-            fontSize={13}
-            fontFamily="$body"
-            writingDirection={direction}
-            textAlign={isRtl ? 'right' : 'left'}
-          >
-            {t('parent.myChildren.subtitle', { count: children.length })}
-          </Text>
-        </Stack>
-
-        <Stack flexDirection={rowDir} alignItems="center" gap="$3">
-          <Stack width={150}>
-            <Select
-              label={t('parent.myChildren.periodLabel')}
-              hideLabel
-              value={period}
-              onChange={(v) => setPeriod(String(v))}
-              options={[{ value: REPORTING_PERIOD.ThisWeek, label: t('parent.myChildren.periodThisWeek') }]}
-              direction={direction}
-              accessibilityLabel={t('parent.myChildren.periodLabel')}
-            />
-          </Stack>
-          {/* Send Report — Phase-5 stub (no-op until analytics ship). */}
-          <Button
-            variant="primary"
-            size="sm"
-            accessibilityLabel={t('parent.myChildren.sendReport')}
-            onPress={() => {
-              /* TODO(P5): wire to the reports endpoint. */
-            }}
-          >
-            {t('parent.myChildren.sendReport')}
-          </Button>
-        </Stack>
-      </Stack>
+      {/* Unified parent header — My Children's header is just title + subtitle
+          (+ ChildSwitcher/AccountMenu the header renders): no period select or
+          Send Report here, per the design. */}
+      <ParentHeader
+        title={t('parent.myChildren.title')}
+        subtitle={t('parent.myChildren.subtitle', { count: children.length })}
+      />
 
       {/* Content area — 28px gutter, 20px section gap (L-2/L-3). */}
       <Stack flexDirection="column" gap={20} padding={28}>

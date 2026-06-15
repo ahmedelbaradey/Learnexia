@@ -90,7 +90,7 @@ export function ChildDashboardCard({
       flexDirection="column"
       gap={16}
       flex={1}
-      minWidth={300}
+      minWidth={340}
       borderRadius="$modal"
       borderWidth={1}
       borderColor="rgba(255,255,255,0.06)"

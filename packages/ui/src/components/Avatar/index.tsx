@@ -18,7 +18,7 @@ import { Image } from 'react-native';
 
 import { Text } from '../../internal/primitives';
 
-export type AvatarSize = 'sm' | 'md' | 'card' | 'lg' | 'xl';
+export type AvatarSize = 'xs' | 'sm' | 'md' | 'card' | 'lg' | 'xl';
 
 export interface AvatarProps {
   /** Display name — first character is used as the initial. */
@@ -47,6 +47,7 @@ const AVATAR_PALETTE = {
 const PALETTE_KEYS = Object.keys(AVATAR_PALETTE) as AvatarColor[];
 
 const SIZE_PX: Record<AvatarSize, number> = {
+  xs: 28,
   sm: 40,
   md: 48,
   card: 56,
@@ -55,6 +56,7 @@ const SIZE_PX: Record<AvatarSize, number> = {
 };
 
 const FONT_PX: Record<AvatarSize, number> = {
+  xs: 13,
   sm: 16,
   md: 20,
   card: 22,

@@ -60,7 +60,7 @@ export const en = {
       subtitle: 'AI Learning Adventure Begins',
       loading: 'Loading… ⚡',
       poweredBy: 'POWERED BY AI',
-      tagline: '✦ Gamified Learning ✦',
+      tagline: '✦ Family Learning ✦',
     },
   },
   auth: {
@@ -301,13 +301,19 @@ export const en = {
   parent: {
     nav: {
       myChildren: 'My Children',
+      /** Shorter tab-bar label for the Children tab (PMTabBar spec). */
+      children: 'Children',
       overview: 'Overview',
       reports: 'Reports',
+      /** Helper Energy tab (PMTabBar spec; full IAP surface is a later batch). */
+      energy: 'Energy',
       activity: 'Activity',
       subjects: 'Subjects',
       settings: 'Settings',
       logout: 'Log out',
       sectionLabel: 'Parent menu',
+      /** a11y label for the parent tab bar tablist container. */
+      barLabel: 'Parent navigation',
     },
     // TODO(P5): weekly-XP delta is server analytics — static stub copy for now.
     xpWidget: {
@@ -719,6 +725,29 @@ export const en = {
       title: 'Dashboard coming soon!',
       body: 'Your children are all set. Learning adventures are on their way.',
       viewChildren: 'View my children',
+    },
+    // AccountMenu — avatar-triggered dropdown (post-login parent header).
+    account: {
+      /** aria-label for the trigger avatar button. */
+      menuLabel: 'Account menu',
+      /** Section heading for the language segmented control. */
+      languageLabel: 'Language',
+      /** Section heading for the theme segmented control. */
+      themeLabel: 'Theme',
+      /** "Night" segment — maps to the dark theme. */
+      themeNight: 'Night',
+      /** "Light" segment — maps to the light theme. */
+      themeLight: 'Light',
+    },
+    // Helper Energy stub screen (full IAP surface is a later batch).
+    energy: {
+      title: 'Helper Energy',
+      comingSoon: 'Energy top-ups and usage will appear here soon.',
+    },
+    // Activity / notification timeline stub screen (full timeline is a later batch).
+    activity: {
+      title: 'Activity',
+      comingSoon: 'Your children\'s recent activity will appear here soon.',
     },
   },
   child: {
@@ -1269,7 +1298,7 @@ export const ar = {
       subtitle: 'تبدأ مغامرة التعلّم بالذكاء الاصطناعي',
       loading: 'جارٍ التحميل… ⚡',
       poweredBy: 'مدعوم بالذكاء الاصطناعي',
-      tagline: '',
+      tagline: '✦ تعلّم عائلي ✦',
     },
   },
   auth: {
@@ -1507,13 +1536,19 @@ export const ar = {
   parent: {
     nav: {
       myChildren: 'أطفالي',
+      /** تسمية شريط التبويب المختصرة لتبويب الأطفال (مواصفات PMTabBar). */
+      children: 'الأطفال',
       overview: 'نظرة عامة',
       reports: 'التقارير',
+      /** تبويب طاقة المساعد (مواصفات PMTabBar؛ واجهة الشراء الكامل في دفعة لاحقة). */
+      energy: 'الطاقة',
       activity: 'النشاط',
       subjects: 'المواد',
       settings: 'الإعدادات',
       logout: 'تسجيل الخروج',
       sectionLabel: 'قائمة ولي الأمر',
+      /** تسمية إمكانية الوصول لحاوية قائمة التبويبات. */
+      barLabel: 'تنقل ولي الأمر',
     },
     // TODO(P5): فرق نقاط الخبرة الأسبوعي بيانات تحليلية من الخادم — نص مؤقت الآن.
     xpWidget: {
@@ -1928,6 +1963,29 @@ export const ar = {
       title: 'لوحة التحكم قادمة قريباً!',
       body: 'أطفالك جاهزون. مغامرات التعلم في الطريق.',
       viewChildren: 'عرض أطفالي',
+    },
+    // AccountMenu — قائمة الحساب بالضغط على الصورة الرمزية (رأس ولي الأمر بعد تسجيل الدخول).
+    account: {
+      /** تسمية إمكانية الوصول لزر الصورة الرمزية. */
+      menuLabel: 'قائمة الحساب',
+      /** عنوان قسم عنصر التحكم في اللغة. */
+      languageLabel: 'اللغة',
+      /** عنوان قسم عنصر التحكم في المظهر. */
+      themeLabel: 'المظهر',
+      /** خيار «ليل» — يُعيَّن على المظهر الداكن. */
+      themeNight: 'ليل',
+      /** خيار «فاتح» — يُعيَّن على المظهر الفاتح. */
+      themeLight: 'فاتح',
+    },
+    // شاشة طاقة المساعد المؤقتة (واجهة الشراء الكاملة في دفعة لاحقة).
+    energy: {
+      title: 'طاقة المساعد',
+      comingSoon: 'سيظهر هنا قريباً شراء الطاقة واستخدامها.',
+    },
+    // شاشة النشاط / الجدول الزمني للإشعارات (الجدول الكامل في دفعة لاحقة).
+    activity: {
+      title: 'النشاط',
+      comingSoon: 'سيظهر هنا قريباً النشاط الأخير لأطفالك.',
     },
   },
   child: {

@@ -54,10 +54,10 @@ export function useAuthRoute(): AuthRouteState {
   const rootNavState = useRootNavigationState();
   const navReady = Boolean(rootNavState?.key);
   // Minimum splash dwell: keep the branded splash (with its progress bar) on
-  // screen for ≥2.5s instead of flashing past when auth resolves instantly.
+  // screen for ≥5s instead of flashing past when auth resolves instantly.
   const [minSplashElapsed, setMinSplashElapsed] = useState(false);
   useEffect(() => {
-    const id = setTimeout(() => setMinSplashElapsed(true), 2500);
+    const id = setTimeout(() => setMinSplashElapsed(true), 5000);
     return () => clearTimeout(id);
   }, []);
   const status = useAuthStore((s) => s.status);

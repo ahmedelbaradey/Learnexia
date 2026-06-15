@@ -9,20 +9,15 @@
  * Narrow (<768): mobile `ScreenHeader` + local scroll (Overview pattern).
  */
 import { Stack } from '@tamagui/core';
-import { useRouter } from 'expo-router';
 import { ScrollView, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTranslation } from 'react-i18next';
 
-import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { ReportsWeb } from './_components/ReportsWeb';
 
 /** Sidebar appears at the tablet breakpoint and up (design-system `media`). */
 const WIDE_BREAKPOINT = 768;
 
 export default function ReportsScreen() {
-  const { t } = useTranslation();
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
 
@@ -33,9 +28,10 @@ export default function ReportsScreen() {
     return <ReportsWeb />;
   }
 
+  // Narrow: ReportsWeb now renders the unified ParentHeader (title + controls),
+  // so no ScreenHeader is needed — just a local scroll region.
   return (
     <Stack flex={1} backgroundColor="$bg" paddingTop={insets.top}>
-      <ScreenHeader title={t('parent.nav.reports')} onBack={() => router.back()} />
       <ScrollView contentContainerStyle={{ paddingBottom: 48 }}>
         <ReportsWeb />
       </ScrollView>

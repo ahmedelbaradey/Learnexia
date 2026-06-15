@@ -28,13 +28,14 @@ import {
   type AttemptListItemDto,
 } from '@learnexia/api-client';
 import { type Direction } from '@learnexia/shared/i18n';
-import { Button, MasteryBar, Select, type MasteryBarProps } from '@learnexia/ui';
+import { Button, MasteryBar, type MasteryBarProps } from '@learnexia/ui';
 import { Stack, Text, type StackProps } from '@tamagui/core';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useLocale } from '../../../src/hooks/useLocale';
 import { useActiveChildStore } from '../../../src/providers/activeChildStore';
+import { ParentHeader } from './ParentHeader';
 import { RecentAttemptsPanel } from './RecentAttemptsPanel';
 import { OVERVIEW_SUBJECT, type OverviewSubjectKey } from './parentDashboardStubs';
 import {
@@ -46,10 +47,6 @@ import {
   splitByRange,
   type ReportRangeValue,
 } from './reportsFormat';
-
-/** Send-Report stub timings (L6): 2s button cooldown, toast visible 4s. */
-const SEND_COOLDOWN_MS = 2000;
-const SEND_TOAST_MS = 4000;
 
 /** Empty-value placeholder glyph mandated by the spec ("—", §2.2/§2.5). */
 const EMPTY_VALUE = '—';
@@ -90,25 +87,9 @@ export function ReportsWeb() {
 
   const attemptsQuery = useStudentAttempts(activeChild?.id);
 
-  const [range, setRange] = useState<ReportRangeValue>(REPORT_RANGE.Week);
-
-  // Send Report stub (L6): toast + 2s cooldown, no network call.
-  const [toastVisible, setToastVisible] = useState(false);
-  const [sendCooldown, setSendCooldown] = useState(false);
-  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-  useEffect(
-    () => () => {
-      timersRef.current.forEach(clearTimeout);
-    },
-    [],
-  );
-  const handleSendReport = () => {
-    if (sendCooldown) return;
-    setToastVisible(true);
-    setSendCooldown(true);
-    timersRef.current.push(setTimeout(() => setSendCooldown(false), SEND_COOLDOWN_MS));
-    timersRef.current.push(setTimeout(() => setToastVisible(false), SEND_TOAST_MS));
-  };
+  // Report range is fixed to "this week" (the selector + Send Report were removed
+  // from the header per the design — no period/send controls on any parent page).
+  const [range] = useState<ReportRangeValue>(REPORT_RANGE.Week);
 
   const isLoading =
     childrenQuery.isLoading || (activeChild != null && attemptsQuery.isLoading);
@@ -121,89 +102,20 @@ export function ReportsWeb() {
   const windows = splitByRange(attempts, range);
 
   return (
-    <Stack testID="reports-root" flexDirection="column" gap="$6" padding="$6" width="100%">
-      {/* ---- Page header (§2.1) ---- */}
-      <Stack
-        testID="reports-header"
-        flexDirection={rowDir}
-        alignItems="flex-start"
-        justifyContent="space-between"
-        gap="$4"
-        flexWrap="wrap"
-        paddingBottom={20}
-        borderBottomWidth={1}
-        borderBottomColor="$borderSubtle"
-      >
-        <Stack flexDirection="column" gap={2}>
-          <Text
-            color="$fg1"
-            fontSize={20}
-            fontWeight="800"
-            fontFamily="$heading"
-            accessibilityRole="header"
-            writingDirection={direction}
-          >
-            {activeChild
-              ? t('parent.reports.title', { name: childName })
-              : t('parent.nav.reports')}
-          </Text>
-          <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction}>
-            {t('parent.reports.subtitle')}
-          </Text>
-        </Stack>
+    <Stack testID="reports-root" flexDirection="column" width="100%">
+      {/* ---- Unified parent header (§2.1) — range select + Send Report are
+           wide-only `actions`; ChildSwitcher + AccountMenu always show. ---- */}
+      <ParentHeader
+        title={
+          activeChild
+            ? t('parent.reports.title', { name: childName })
+            : t('parent.nav.reports')
+        }
+        subtitle={t('parent.reports.subtitle')}
+      />
 
-        <Stack flexDirection={rowDir} alignItems="center" gap={10} flexWrap="wrap">
-          <Stack width={150}>
-            <Select
-              label={t('parent.reports.range.label')}
-              hideLabel
-              size="sm"
-              value={range}
-              onChange={(v) => setRange(v as ReportRangeValue)}
-              options={[
-                { value: REPORT_RANGE.Week, label: t('parent.reports.range.week') },
-                { value: REPORT_RANGE.Month, label: t('parent.reports.range.month') },
-                { value: REPORT_RANGE.All, label: t('parent.reports.range.all') },
-              ]}
-              direction={direction}
-              accessibilityLabel={t('parent.reports.range.label')}
-              testID="reports-range-select"
-            />
-          </Stack>
-          <Button
-            variant="primary"
-            size="sm"
-            disabled={sendCooldown}
-            accessibilityLabel={t('parent.reports.send')}
-            onPress={handleSendReport}
-            testID="reports-send-button"
-          >
-            {t('parent.reports.send')}
-          </Button>
-        </Stack>
-      </Stack>
-
-      {/* ---- Send-Report toast (L6 stub — Settings notice pattern) ---- */}
-      {toastVisible ? (
-        <Stack
-          testID="reports-send-toast"
-          backgroundColor="$successSoft"
-          borderRadius="$sm"
-          padding={12}
-          accessibilityLiveRegion="polite"
-        >
-          <Text
-            color="$success"
-            fontSize={14}
-            fontFamily="$body"
-            writingDirection={direction}
-            textAlign={isRtl ? 'right' : 'left'}
-          >
-            {t('parent.reports.sendToast')}
-          </Text>
-        </Stack>
-      ) : null}
-
+      {/* Body content — own gutter (header is full-bleed with its own padding). */}
+      <Stack flexDirection="column" gap="$6" padding="$6">
       {/* ---- Page states ---- */}
       {childrenQuery.isError ? (
         <ErrorStrip
@@ -319,6 +231,7 @@ export function ReportsWeb() {
           ) : null}
         </>
       )}
+      </Stack>
     </Stack>
   );
 }
