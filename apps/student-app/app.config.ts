@@ -43,6 +43,9 @@ const config: ExpoConfig = {
    */
   extra: {
     googleClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? '',
+    eas: {
+      projectId: '3b8ed4d1-0e2b-4df2-9da4-ece1431c69ce',
+    },
   },
 };
 
