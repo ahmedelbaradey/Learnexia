@@ -2,9 +2,11 @@ using Learnexia.Modules.Billing.Application.Abstractions;
 using Learnexia.Modules.Billing.Infrastructure.Contracts;
 using Learnexia.Modules.Billing.Infrastructure.Jobs;
 using Learnexia.Modules.Billing.Infrastructure.Persistence;
+using Learnexia.Modules.Billing.Infrastructure.Providers;
 using Learnexia.Modules.Billing.Infrastructure.Service;
 using Learnexia.Modules.Billing.Infrastructure.Services;
 using Learnexia.Shared.Contracts.Billing;
+using Learnexia.Shared.Contracts.Parent;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Logging;
 using Learnexia.Shared.Kernel.Settings;
@@ -51,13 +53,34 @@ public static class DependencyInjection
         // ISystemClock — stateless singleton, deterministic time seam for daily-cap and grant jobs.
         services.AddSingleton<ISystemClock, SystemClock>();
 
-        // IBillingSubscriptionContract — stub returns all children as Free tier until P10-05 lands.
-        // Scoped: reads BillingDbContext (also Scoped).
-        services.AddScoped<IBillingSubscriptionContract, ConfigDefaultSubscriptionContract>();
+        // IBillingSubscriptionContract — real implementation (P10-05).
+        // Replaces the ConfigDefaultSubscriptionContract stub.
+        // Scoped: reads BillingDbContext (also Scoped) + IParentChildQuery (Scoped in Parent module).
+        // IParentChildQuery is registered by the Parent module at Host startup.
+        services.AddScoped<IBillingSubscriptionContract, RealBillingSubscriptionContract>();
 
         // BillingGrantJob — Hangfire job; Transient mirrors StreakSweepJob registration.
         // Creates its own inner scope per child via IServiceScopeFactory.
         services.AddTransient<BillingGrantJob>();
+
+        // ── P10-06: Payment provider seam ───────────────────────────────────────────────
+        // Config-driven selection: Billing:PaymentProvider:Provider = "Fake" (default) | "Paymob" (external).
+        // Only FakePaymentProvider is built here; the real adapter is [EXTERNAL] — swap in later.
+        // Scoped: aligns with the handler / BillingDbContext lifetime.
+        var providerName = configuration["Billing:PaymentProvider:Provider"] ?? "Fake";
+        if (string.Equals(providerName, "Fake", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddScoped<IPaymentProvider, FakePaymentProvider>();
+        }
+        else
+        {
+            // TODO (EXTERNAL): register real PaymobPaymentProvider here when the adapter is built.
+            // Until then, fall back to Fake so the application starts without secrets.
+            services.AddScoped<IPaymentProvider, FakePaymentProvider>();
+        }
+
+        // ReconcilePaymentsJob — sweeps stale Initiated/Pending payments.
+        services.AddTransient<ReconcilePaymentsJob>();
 
         // ── P10-12: DB-backed GlobalSettings store ───────────────────────────────────────────
         // DbBackedGlobalSettingsProvider implements both IGlobalSettingsProvider (the lean interface

@@ -2270,4 +2270,49 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="AiDailyCapReached" xml:space="preserve">
     <value>You have reached your daily AI assistance limit. Your daily energy will reset tomorrow.</value>
   </data>
+  <data name="SubscriptionRetrievedSuccessfully" xml:space="preserve">
+    <value>Subscription retrieved successfully.</value>
+  </data>
+  <data name="PlanComparisonRetrievedSuccessfully" xml:space="preserve">
+    <value>Plan comparison retrieved successfully.</value>
+  </data>
+  <data name="SubscriptionUpgradeRequested" xml:space="preserve">
+    <value>Upgrade request accepted. Complete payment to activate Premium.</value>
+  </data>
+  <data name="SubscriptionDowngradeScheduled" xml:space="preserve">
+    <value>Downgrade to Free scheduled. Your Premium access continues until the end of the current billing period.</value>
+  </data>
+  <data name="SubscriptionCanceledSuccessfully" xml:space="preserve">
+    <value>Subscription canceled successfully.</value>
+  </data>
+  <data name="SubscriptionNotFound" xml:space="preserve">
+    <value>No active subscription was found for this account.</value>
+  </data>
+  <data name="SubscriptionAlreadyFree" xml:space="preserve">
+    <value>Your subscription is already on the Free plan.</value>
+  </data>
+  <data name="SubscriptionParentIdRequired" xml:space="preserve">
+    <value>A valid parent account is required.</value>
+  </data>
+  <data name="SubscriptionBillingPeriodInvalid" xml:space="preserve">
+    <value>The billing period must be Monthly or Annual.</value>
+  </data>
+  <data name="CheckoutSessionCreated" xml:space="preserve">
+    <value>Checkout session created. Redirect the user to the provided URL to complete payment.</value>
+  </data>
+  <data name="PaymentProviderUnavailable" xml:space="preserve">
+    <value>The payment service is temporarily unavailable. Please try again shortly.</value>
+  </data>
+  <data name="WebhookSignatureInvalid" xml:space="preserve">
+    <value>Request could not be authenticated.</value>
+  </data>
+  <data name="WebhookPayloadInvalid" xml:space="preserve">
+    <value>The request payload could not be processed.</value>
+  </data>
+  <data name="WebhookProcessed" xml:space="preserve">
+    <value>Event processed.</value>
+  </data>
+  <data name="WebhookEventAlreadyProcessed" xml:space="preserve">
+    <value>Event already processed.</value>
+  </data>
 </root>

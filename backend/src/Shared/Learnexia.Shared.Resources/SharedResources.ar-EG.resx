@@ -2269,4 +2269,49 @@
   <data name="AiDailyCapReached" xml:space="preserve">
     <value>لقد بلغت حدك اليومي من المساعدة الذكية. ستُجدَّد طاقتك اليومية غداً.</value>
   </data>
+  <data name="SubscriptionRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد بيانات الاشتراك بنجاح.</value>
+  </data>
+  <data name="PlanComparisonRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد مقارنة الخطط بنجاح.</value>
+  </data>
+  <data name="SubscriptionUpgradeRequested" xml:space="preserve">
+    <value>تم قبول طلب الترقية. أكمل الدفع لتفعيل الخطة المميزة.</value>
+  </data>
+  <data name="SubscriptionDowngradeScheduled" xml:space="preserve">
+    <value>تم جدولة التخفيض إلى الخطة المجانية. يستمر وصولك المميز حتى نهاية فترة الفوترة الحالية.</value>
+  </data>
+  <data name="SubscriptionCanceledSuccessfully" xml:space="preserve">
+    <value>تم إلغاء الاشتراك بنجاح.</value>
+  </data>
+  <data name="SubscriptionNotFound" xml:space="preserve">
+    <value>لم يتم العثور على اشتراك نشط لهذا الحساب.</value>
+  </data>
+  <data name="SubscriptionAlreadyFree" xml:space="preserve">
+    <value>اشتراكك بالفعل على الخطة المجانية.</value>
+  </data>
+  <data name="SubscriptionParentIdRequired" xml:space="preserve">
+    <value>يلزم توفر حساب ولي أمر صالح.</value>
+  </data>
+  <data name="SubscriptionBillingPeriodInvalid" xml:space="preserve">
+    <value>يجب أن تكون دورة الفوترة شهرية أو سنوية.</value>
+  </data>
+  <data name="CheckoutSessionCreated" xml:space="preserve">
+    <value>تم إنشاء جلسة الدفع. أعِد توجيه المستخدم إلى الرابط المقدَّم لإتمام عملية الدفع.</value>
+  </data>
+  <data name="PaymentProviderUnavailable" xml:space="preserve">
+    <value>خدمة الدفع غير متاحة مؤقتاً. يرجى المحاولة مرة أخرى بعد قليل.</value>
+  </data>
+  <data name="WebhookSignatureInvalid" xml:space="preserve">
+    <value>تعذَّر التحقق من الطلب.</value>
+  </data>
+  <data name="WebhookPayloadInvalid" xml:space="preserve">
+    <value>تعذَّرت معالجة محتوى الطلب.</value>
+  </data>
+  <data name="WebhookProcessed" xml:space="preserve">
+    <value>تمت معالجة الحدث.</value>
+  </data>
+  <data name="WebhookEventAlreadyProcessed" xml:space="preserve">
+    <value>تمت معالجة هذا الحدث مسبقاً.</value>
+  </data>
 </root>
