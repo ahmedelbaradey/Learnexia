@@ -200,3 +200,178 @@ export function getFocusAreasStub(childId: string): FocusAreaStub[] {
   ];
   return rows;
 }
+
+/* ================================================================== */
+/* Batch D — Helper Energy screen stubs.                              */
+/*                                                                    */
+/* A Phase-10 billing/energy-ledger BACKEND exists on `main`, but it  */
+/* has NO api-client hooks yet (no generated query/mutation seam).    */
+/* So balance + weekly usage are DISPLAY-ONLY deterministic stubs.    */
+/* When the energy api-client lands, swap getEnergyBalanceStub /      */
+/* getEnergyUsageStub for the real query and the top-up pack for the  */
+/* real IAP product (see energy.tsx IAP TODO).                        */
+/* ================================================================== */
+
+/** Helper-Energy balance + reset window (DISPLAY-ONLY stub). */
+export interface EnergyBalanceStub {
+  /** Energy credits remaining this period (⚡). */
+  balance: number;
+  /** Monthly allowance cap (the "/ 300" denominator). */
+  cap: number;
+  /** Days until the monthly allowance resets. */
+  resetsInDays: number;
+  /** Per-day spend cap (e.g. 20/day). */
+  dailyCap: number;
+}
+
+/** One weekly-usage tile: an AI-helper kind + how many times it was used. */
+export interface EnergyUsageStub {
+  /** Stable, non-localized key (drives icon/color + the i18n label). */
+  kind: 'hints' | 'explain' | 'deep' | 'practice';
+  /** Times this helper was used this week. */
+  count: number;
+}
+
+/** One purchasable top-up pack (IAP product placeholder — NOT wired). */
+export interface EnergyTopUpPackStub {
+  /** Stable product id (maps to a store product when IAP is wired). */
+  id: string;
+  /** Credits granted (⚡). */
+  credits: number;
+  /** Display price string — Latin technical string, NOT localized digits. */
+  priceLabel: string;
+}
+
+/**
+ * DISPLAY-ONLY balance stub. Deterministic per parent/family seed so the
+ * battery is stable across renders. TODO(Batch D / P10 energy api-client):
+ * replace with the real energy-ledger balance query once hooks are generated.
+ */
+export function getEnergyBalanceStub(seed = 'family'): EnergyBalanceStub {
+  const h = hash(seed);
+  return {
+    // Mirrors the design preview (180 / 300) but stays deterministic.
+    balance: 120 + (h % 121),
+    cap: 300,
+    resetsInDays: 5 + (h % 20),
+    dailyCap: 20,
+  };
+}
+
+/**
+ * DISPLAY-ONLY weekly-usage stub (deterministic). TODO(Batch D / P10): swap
+ * for the real per-helper usage breakdown from the energy-ledger api-client.
+ */
+export function getEnergyUsageStub(seed = 'family'): EnergyUsageStub[] {
+  const h = hash(seed);
+  return [
+    { kind: 'hints', count: 24 + (h % 24) },
+    { kind: 'explain', count: 6 + (h % 12) },
+    { kind: 'deep', count: 2 + (h % 8) },
+    { kind: 'practice', count: 1 + (h % 6) },
+  ];
+}
+
+/**
+ * Top-up pack catalogue (stub). IAP IS GATED — these are display placeholders
+ * only; the "Buy" CTA is a coming-soon stub (see energy.tsx). TODO(Batch D /
+ * P10 IAP): replace with real store products + a payments-backed purchase flow.
+ */
+export function getEnergyTopUpPacksStub(): EnergyTopUpPackStub[] {
+  return [{ id: 'energy-500', credits: 500, priceLabel: '$2.99' }];
+}
+
+/* ================================================================== */
+/* Batch D — Activity timeline stubs.                                 */
+/*                                                                    */
+/* No activity/notification endpoint exists yet. These are typed,     */
+/* deterministic placeholders so the timeline + filter chips are      */
+/* fully exercisable. TODO(P-activity): replace with the real         */
+/* activity-feed query when the endpoint lands.                       */
+/* ================================================================== */
+
+/** Activity event category — also the filter-chip taxonomy. */
+export const ACTIVITY_CATEGORY = {
+  Badge: 'badge',
+  Energy: 'energy',
+  Alert: 'alert',
+} as const;
+
+export type ActivityCategory =
+  (typeof ACTIVITY_CATEGORY)[keyof typeof ACTIVITY_CATEGORY];
+
+/** Specific event kind (drives icon/color + the i18n message). */
+export const ACTIVITY_KIND = {
+  BadgeEarned: 'badgeEarned',
+  LevelUp: 'levelUp',
+  LessonCompleted: 'lessonCompleted',
+  EnergyUsed: 'energyUsed',
+  EnergyLow: 'energyLow',
+  StreakReached: 'streakReached',
+  Inactive: 'inactive',
+} as const;
+
+export type ActivityKind = (typeof ACTIVITY_KIND)[keyof typeof ACTIVITY_KIND];
+
+/** Which filter chip an event kind belongs to. */
+const ACTIVITY_KIND_CATEGORY: Record<ActivityKind, ActivityCategory> = {
+  [ACTIVITY_KIND.BadgeEarned]: ACTIVITY_CATEGORY.Badge,
+  [ACTIVITY_KIND.LevelUp]: ACTIVITY_CATEGORY.Badge,
+  [ACTIVITY_KIND.LessonCompleted]: ACTIVITY_CATEGORY.Badge,
+  [ACTIVITY_KIND.EnergyUsed]: ACTIVITY_CATEGORY.Energy,
+  [ACTIVITY_KIND.EnergyLow]: ACTIVITY_CATEGORY.Energy,
+  [ACTIVITY_KIND.StreakReached]: ACTIVITY_CATEGORY.Alert,
+  [ACTIVITY_KIND.Inactive]: ACTIVITY_CATEGORY.Alert,
+};
+
+export function categoryForKind(kind: ActivityKind): ActivityCategory {
+  return ACTIVITY_KIND_CATEGORY[kind];
+}
+
+/** One timeline event (typed, deterministic stub). */
+export interface ActivityEventStub {
+  id: string;
+  kind: ActivityKind;
+  category: ActivityCategory;
+  /** Child display name (who the event is about). */
+  childName: string;
+  /** Minutes ago this happened (drives the relative-time label). */
+  minutesAgo: number;
+  /**
+   * Optional numeric detail used by the message (e.g. streak days, lesson
+   * score, helpers used). Localized at render via Intl.
+   */
+  amount?: number;
+}
+
+/**
+ * Deterministic activity-event feed (stub). Mixed types across the three
+ * filter categories so every chip resolves to ≥1 event AND the empty state is
+ * reachable by combining filters in tests. TODO(P-activity): replace with the
+ * real activity endpoint.
+ */
+export function getActivityEventsStub(): ActivityEventStub[] {
+  const make = (
+    id: string,
+    kind: ActivityKind,
+    childName: string,
+    minutesAgo: number,
+    amount?: number,
+  ): ActivityEventStub => ({
+    id,
+    kind,
+    category: categoryForKind(kind),
+    childName,
+    minutesAgo,
+    amount,
+  });
+  return [
+    make('a1', ACTIVITY_KIND.BadgeEarned, 'Sami', 2),
+    make('a2', ACTIVITY_KIND.LessonCompleted, 'Layla', 40, 5),
+    make('a3', ACTIVITY_KIND.EnergyUsed, 'Sami', 60, 3),
+    make('a4', ACTIVITY_KIND.StreakReached, 'Sami', 180, 7),
+    make('a5', ACTIVITY_KIND.EnergyLow, 'Yusuf', 600, 12),
+    make('a6', ACTIVITY_KIND.Inactive, 'Yusuf', 1440, 2),
+    make('a7', ACTIVITY_KIND.LevelUp, 'Layla', 1500, 4),
+  ];
+}
