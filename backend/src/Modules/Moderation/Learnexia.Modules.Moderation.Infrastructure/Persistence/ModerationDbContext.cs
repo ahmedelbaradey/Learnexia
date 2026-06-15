@@ -1,4 +1,3 @@
-using Learnexia.Modules.Moderation.Application.Abstractions;
 using Learnexia.Modules.Moderation.Domain.Entities;
 using Learnexia.Shared.Kernel.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -17,8 +16,11 @@ namespace Learnexia.Modules.Moderation.Infrastructure.Persistence;
 ///
 /// The <c>AuditLog</c> table is append-only: no Update or Delete command, handler, or endpoint exists.
 /// The API layer enforces immutability. A future DB-layer revoke (P7-12 Q3) can be added in migration.
+///
+/// Option C (2026-06-16): the Application layer no longer references this DbContext directly.
+/// All EF access is mediated by <c>AuditLogQueryService</c> and <c>AuditLogWriter</c>.
 /// </summary>
-public class ModerationDbContext : DbContext, IModerationDbContext
+public class ModerationDbContext : DbContext
 {
     public const string Schema = "moderation";
 

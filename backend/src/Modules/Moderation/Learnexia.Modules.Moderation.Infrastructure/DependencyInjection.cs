@@ -27,8 +27,10 @@ public static class DependencyInjection
                            .MigrationsHistoryTable("__EFMigrationsHistory", ModerationDbContext.Schema)
                            .MigrationsAssembly(typeof(ModerationDbContext).Assembly.FullName)));
 
-        // Register the IModerationDbContext abstraction so the Application layer stays decoupled.
-        services.AddScoped<IModerationDbContext>(sp => sp.GetRequiredService<ModerationDbContext>());
+        // Option-C service seams: all EF/persistence logic lives behind these interfaces.
+        // Registered Scoped so they share the per-request ModerationDbContext instance.
+        services.AddScoped<IAuditLogQueryService, AuditLogQueryService>();
+        services.AddScoped<IAuditLogWriter, AuditLogWriter>();
 
         services.AddHttpContextAccessor();
         services.AddSingleton<ILoggerManager, LoggerManager>();
