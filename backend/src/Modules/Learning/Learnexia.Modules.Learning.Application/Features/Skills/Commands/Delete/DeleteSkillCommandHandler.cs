@@ -5,7 +5,6 @@ using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -21,21 +20,25 @@ namespace Learnexia.Modules.Learning.Application.Features.Skills.Commands.Delete
 /// No explicit nested transaction is required — the UoW transaction boundary covers everything.
 ///
 /// Publishes <see cref="AdminActionPerformedEvent"/> post-commit, best-effort.
+///
+/// Option-C refactor: FirstOrDefaultAsync + GetNodeBySkillIdAsync + GetEdgesForNodeAsync moved
+/// into ISkillService (GetSkillTrackedAsync, GetNodeBySkillIdTrackedAsync, GetEdgesForNodeTrackedAsync,
+/// StageSkillUpdateAsync, StageNodeUpdateAsync, StageEdgeUpdateAsync).
 /// </summary>
 public class DeleteSkillCommandHandler : BaseResponseHandler, ICommandHandler<DeleteSkillCommand, BaseResponse<string>>
 {
     private readonly ILoggerManager _logger;
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public DeleteSkillCommandHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _currentUser = currentUser;
         _logger = logger;
         _localizer = localizer;
@@ -48,36 +51,34 @@ public class DeleteSkillCommandHandler : BaseResponseHandler, ICommandHandler<De
             if (request is null)
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
-            var skill = await _repository.Learning
-                .GetByCondition<Skill>(s => s.Id == request.Id, trackChanges: true)
-                .FirstOrDefaultAsync(cancellationToken);
+            var skill = await _service.SkillService.GetSkillTrackedAsync(request.Id, cancellationToken);
 
             if (skill is null)
                 return NotFound<string>(_localizer[SharedResourcesKey.SkillNotFound]);
 
             // Cascade: find the wrapping KnowledgeNode (if any) and its live edges.
-            var node = await _repository.Learning.GetNodeBySkillIdAsync(request.Id, cancellationToken);
+            var node = await _service.SkillService.GetNodeBySkillIdTrackedAsync(request.Id, cancellationToken);
             int edgeCount = 0;
 
             if (node is not null)
             {
                 // Soft-delete all live edges that reference this node.
-                var edges = await _repository.Learning.GetEdgesForNodeAsync(node.Id, trackChanges: true, cancellationToken);
+                var edges = await _service.SkillService.GetEdgesForNodeTrackedAsync(node.Id, cancellationToken);
                 foreach (var edge in edges)
                 {
                     edge.IsDeleted = true;
-                    await _repository.Learning.UpdateAsync(edge);
+                    await _service.SkillService.StageEdgeUpdateAsync(edge, cancellationToken);
                 }
                 edgeCount = edges.Count;
 
                 // Soft-delete the node itself.
                 node.IsDeleted = true;
-                await _repository.Learning.UpdateAsync(node);
+                await _service.SkillService.StageNodeUpdateAsync(node, cancellationToken);
             }
 
             // Soft-delete the skill; UnitOfWorkBehavior stamps DeletedAt/DeletedBy on commit.
             skill.IsDeleted = true;
-            await _repository.Learning.UpdateAsync(skill);
+            await _service.SkillService.StageSkillUpdateAsync(skill, cancellationToken);
 
             // Raise domain event on the tracked Skill aggregate — dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12).
             skill.RaiseDomainEvent(new AdminActionPerformedDomainEvent(

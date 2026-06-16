@@ -14,21 +14,24 @@ namespace Learnexia.Modules.Learning.Application.Features.KnowledgeGraph.Command
 /// Handles <see cref="RemoveKnowledgeEdgeCommand"/>.
 /// Soft-deletes the edge (sets IsDeleted = true).
 /// Publishes <see cref="AdminActionPerformedEvent"/> post-commit, best-effort.
+///
+/// Option-C refactor: GetKnowledgeEdgeByIdAsync + UpdateAsync moved into
+/// IKnowledgeGraphService (GetEdgeTrackedAsync + StageEdgeUpdateAsync).
 /// </summary>
 public class RemoveKnowledgeEdgeCommandHandler : BaseResponseHandler, ICommandHandler<RemoveKnowledgeEdgeCommand, BaseResponse<string>>
 {
     private readonly ILoggerManager _logger;
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public RemoveKnowledgeEdgeCommandHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _currentUser = currentUser;
         _logger = logger;
         _localizer = localizer;
@@ -41,14 +44,14 @@ public class RemoveKnowledgeEdgeCommandHandler : BaseResponseHandler, ICommandHa
             if (request is null)
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
-            var edge = await _repository.Learning.GetKnowledgeEdgeByIdAsync(request.EdgeId, trackChanges: true, cancellationToken);
+            var edge = await _service.KnowledgeGraphService.GetEdgeTrackedAsync(request.EdgeId, cancellationToken);
 
             if (edge is null)
                 return NotFound<string>(_localizer[SharedResourcesKey.KnowledgeEdgeNotFound]);
 
             // Soft-delete: UnitOfWorkBehavior stamps DeletedAt/DeletedBy on commit.
             edge.IsDeleted = true;
-            await _repository.Learning.UpdateAsync(edge);
+            await _service.KnowledgeGraphService.StageEdgeUpdateAsync(edge, cancellationToken);
 
             // Raise domain event on the tracked aggregate — dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12).
             edge.RaiseDomainEvent(new AdminActionPerformedDomainEvent(

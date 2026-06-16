@@ -5,7 +5,6 @@ using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -16,22 +15,24 @@ namespace Learnexia.Modules.Learning.Application.Features.Questions.Commands.Set
 /// Inactive questions are hidden from student-facing reads but remain in the DB.
 ///
 /// P7-12: Domain event raised on the QuizQuestion aggregate — dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12 fix).
+///
+/// Option-C refactor: FirstOrDefaultAsync moved into IQuizQuestionService.GetQuestionTrackedAsync.
 /// </summary>
 public class SetQuestionActiveCommandHandler
     : BaseResponseHandler, ICommandHandler<SetQuestionActiveCommand, BaseResponse<string>>
 {
     private readonly ILoggerManager _logger;
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public SetQuestionActiveCommandHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _currentUser = currentUser;
         _logger = logger;
         _localizer = localizer;
@@ -46,15 +47,13 @@ public class SetQuestionActiveCommandHandler
             if (request is null)
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
-            var question = await _repository.Learning
-                .GetByCondition<QuizQuestion>(q => q.Id == request.Id, trackChanges: true)
-                .FirstOrDefaultAsync(cancellationToken);
+            var question = await _service.QuizQuestionService.GetQuestionTrackedAsync(request.Id, cancellationToken);
 
             if (question is null)
                 return NotFound<string>(_localizer[SharedResourcesKey.QuizQuestionNotFound]);
 
             question.IsActive = request.IsActive;
-            await _repository.Learning.UpdateAsync(question);
+            await _service.QuizQuestionService.StageQuestionUpdateAsync(question, cancellationToken);
 
             var action = request.IsActive
                 ? AdminActions.QuizQuestionActivated

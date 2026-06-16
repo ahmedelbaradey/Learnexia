@@ -8,7 +8,6 @@ using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Entities;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 // Disambiguate Learning.Domain.Entities.Unit from MediatR.Unit
@@ -38,24 +37,27 @@ namespace Learnexia.Modules.Learning.Application.Features.Lifecycle.Commands.Rol
 /// P7-05 security notes:
 /// - PublishedByUserId on the new ContentVersion is from JWT — never from the snapshot.
 /// - Snapshot is read server-side from ContentVersions — never from the client request.
+///
+/// Option C: all EF access delegated to ILifecycleService via ILearningServiceManager.
+/// This handler injects only ILearningServiceManager — no ILearningRepositoryManager, no EF types.
 /// </summary>
 public class RollbackToVersionCommandHandler
     : BaseResponseHandler, ICommandHandler<RollbackToVersionCommand, BaseResponse<string>>
 {
     private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
 
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public RollbackToVersionCommandHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _currentUser = currentUser;
         _logger = logger;
         _localizer = localizer;
@@ -68,7 +70,7 @@ public class RollbackToVersionCommandHandler
         try
         {
             // Load the requested ContentVersion snapshot.
-            var versionRow = await _repository.Learning
+            var versionRow = await _service.LifecycleService
                 .GetVersionAsync(request.EntityType, request.EntityId, request.VersionNumber, cancellationToken);
 
             if (versionRow is null)
@@ -82,23 +84,19 @@ public class RollbackToVersionCommandHandler
             {
                 case VersionedEntityType.Subject:
                 {
-                    var live = await _repository.Learning
-                        .GetByCondition<Subject>(s => s.Id == request.EntityId, trackChanges: true)
-                        .IgnoreQueryFilters()
-                        .FirstOrDefaultAsync(cancellationToken);
+                    var live = await _service.LifecycleService
+                        .GetTrackedSubjectIgnoreFiltersAsync(request.EntityId, cancellationToken);
 
                     if (live is null)
                         return NotFound<string>(_localizer[SharedResourcesKey.VersionedEntityNotFound]);
 
-                    // Security #3: soft-deleted entities must not be rolled back — rolling back a
-                    // deleted entity would create a ContentVersion row for a deleted entity and
-                    // could inadvertently re-expose it.
+                    // Security #3: soft-deleted entities must not be rolled back.
                     if (live.IsDeleted == true)
                         return NotFound<string>(_localizer[SharedResourcesKey.VersionedEntityNotFound]);
 
                     ApplySubjectSnapshot(live, versionRow.Snapshot);
                     live.LifecycleState = LifecycleState.Published;
-                    await _repository.Learning.UpdateAsync(live);
+                    await _service.LifecycleService.StageEntityUpdateAsync(live, cancellationToken);
                     entityTypeName   = nameof(Subject);
                     trackedAggregate = live;
                     break;
@@ -106,10 +104,8 @@ public class RollbackToVersionCommandHandler
 
                 case VersionedEntityType.Unit:
                 {
-                    var live = await _repository.Learning
-                        .GetByCondition<LearningUnit>(u => u.Id == request.EntityId, trackChanges: true)
-                        .IgnoreQueryFilters()
-                        .FirstOrDefaultAsync(cancellationToken);
+                    var live = await _service.LifecycleService
+                        .GetTrackedUnitIgnoreFiltersAsync(request.EntityId, cancellationToken);
 
                     if (live is null)
                         return NotFound<string>(_localizer[SharedResourcesKey.VersionedEntityNotFound]);
@@ -120,7 +116,7 @@ public class RollbackToVersionCommandHandler
 
                     ApplyUnitSnapshot(live, versionRow.Snapshot);
                     live.LifecycleState = LifecycleState.Published;
-                    await _repository.Learning.UpdateAsync(live);
+                    await _service.LifecycleService.StageEntityUpdateAsync(live, cancellationToken);
                     entityTypeName   = nameof(LearningUnit);
                     trackedAggregate = live;
                     break;
@@ -128,10 +124,8 @@ public class RollbackToVersionCommandHandler
 
                 case VersionedEntityType.Lesson:
                 {
-                    var live = await _repository.Learning
-                        .GetByCondition<Lesson>(l => l.Id == request.EntityId, trackChanges: true)
-                        .IgnoreQueryFilters()
-                        .FirstOrDefaultAsync(cancellationToken);
+                    var live = await _service.LifecycleService
+                        .GetTrackedLessonIgnoreFiltersAsync(request.EntityId, cancellationToken);
 
                     if (live is null)
                         return NotFound<string>(_localizer[SharedResourcesKey.VersionedEntityNotFound]);
@@ -142,7 +136,7 @@ public class RollbackToVersionCommandHandler
 
                     ApplyLessonSnapshot(live, versionRow.Snapshot);
                     live.LifecycleState = LifecycleState.Published;
-                    await _repository.Learning.UpdateAsync(live);
+                    await _service.LifecycleService.StageEntityUpdateAsync(live, cancellationToken);
                     entityTypeName   = nameof(Lesson);
                     trackedAggregate = live;
                     break;
@@ -150,10 +144,8 @@ public class RollbackToVersionCommandHandler
 
                 case VersionedEntityType.QuizQuestion:
                 {
-                    var live = await _repository.Learning
-                        .GetByCondition<QuizQuestion>(q => q.Id == request.EntityId, trackChanges: true)
-                        .IgnoreQueryFilters()
-                        .FirstOrDefaultAsync(cancellationToken);
+                    var live = await _service.LifecycleService
+                        .GetTrackedQuizQuestionIgnoreFiltersAsync(request.EntityId, cancellationToken);
 
                     if (live is null)
                         return NotFound<string>(_localizer[SharedResourcesKey.VersionedEntityNotFound]);
@@ -164,7 +156,7 @@ public class RollbackToVersionCommandHandler
 
                     ApplyQuizQuestionSnapshot(live, versionRow.Snapshot);
                     live.LifecycleState = LifecycleState.Published;
-                    await _repository.Learning.UpdateAsync(live);
+                    await _service.LifecycleService.StageEntityUpdateAsync(live, cancellationToken);
                     entityTypeName   = nameof(QuizQuestion);
                     trackedAggregate = live;
                     break;
@@ -175,10 +167,10 @@ public class RollbackToVersionCommandHandler
             }
 
             // Create a new ContentVersion row to record the rollback (append-only history).
-            var maxVersion = await _repository.Learning
+            var maxVersion = await _service.LifecycleService
                 .GetMaxVersionNumberAsync(request.EntityType, request.EntityId, cancellationToken);
 
-            var owningSubject = await _repository.Learning
+            var owningSubject = await _service.LifecycleService
                 .GetOwningSubjectAsync(request.EntityType, request.EntityId, cancellationToken);
 
             var rollbackVersion = new ContentVersion
@@ -192,7 +184,7 @@ public class RollbackToVersionCommandHandler
                 Language          = owningSubject?.Language ?? ContentLanguage.Ar,
             };
 
-            await _repository.Learning.AddAsync(rollbackVersion, cancellationToken);
+            await _service.LifecycleService.StageAddContentVersionAsync(rollbackVersion, cancellationToken);
 
             // Raise domain event on the tracked aggregate — dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12).
             trackedAggregate.RaiseDomainEvent(new AdminActionPerformedDomainEvent(

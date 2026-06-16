@@ -1,0 +1,111 @@
+using Learnexia.Modules.Learning.Domain.Entities;
+using Learnexia.Modules.Learning.Domain.Enums;
+
+namespace Learnexia.Modules.Learning.Application.Abstractions;
+
+/// <summary>
+/// Service seam for KnowledgeGraph admin authoring (AddEdge, RemoveEdge) and graph read queries
+/// (GetGraph, GetPrerequisites, GetUnlockedBy). All EF calls — AnyAsync, ToListAsync, Select,
+/// IgnoreQueryFilters — live inside the Infrastructure implementation; Application stays EF-free.
+/// </summary>
+public interface IKnowledgeGraphService
+{
+    // ── AddEdge guard helpers ─────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns the KnowledgeNode for the given id (non-tracked), or null when not found.
+    /// Global IsDeleted filter applies so soft-deleted nodes are excluded.
+    /// </summary>
+    Task<KnowledgeNode?> GetNodeByIdAsync(int nodeId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Resolves the Subject (Language field populated) for the given KnowledgeNode via
+    /// KnowledgeNode.SubjectId. Returns null when the node or its subject cannot be resolved.
+    /// Used by the cross-language guard in AddKnowledgeEdgeCommandHandler.
+    /// AsNoTracking, IgnoreQueryFilters on Subject so structural resolution always works.
+    /// </summary>
+    Task<Subject?> GetSubjectForNodeAsync(int nodeId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns true when a live KnowledgeEdge with the same (SourceNodeId, TargetNodeId, RelationshipType)
+    /// triple already exists. Used by the duplicate guard in AddKnowledgeEdgeCommandHandler.
+    /// </summary>
+    Task<bool> EdgeDuplicateExistsAsync(int sourceNodeId, int targetNodeId, int relationshipType, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all live (non-deleted) Prerequisite-typed KnowledgeEdge rows.
+    /// Used by SkillGraphValidator.AssertAcyclic before inserting a new Prerequisite edge.
+    /// </summary>
+    Task<List<KnowledgeEdge>> GetAllPrerequisiteEdgesAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Stages a new KnowledgeEdge via AddAsync. Returns the tracked instance so the handler
+    /// can raise a domain event on it.
+    /// No SaveChangesAsync — the UoW behavior commits after the handler.
+    /// </summary>
+    Task<KnowledgeEdge> StageAddEdgeAsync(KnowledgeEdge edge, CancellationToken ct = default);
+
+    // ── RemoveEdge path ───────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns the tracked KnowledgeEdge for the given id (EF change-tracking ON), or null when not found.
+    /// The caller sets IsDeleted = true and the UoW behavior commits the soft-delete.
+    /// </summary>
+    Task<KnowledgeEdge?> GetEdgeTrackedAsync(int edgeId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Stages an update to the already-tracked KnowledgeEdge entity (calls repository UpdateAsync).
+    /// No SaveChangesAsync — the UoW behavior commits after the handler.
+    /// </summary>
+    Task StageEdgeUpdateAsync(KnowledgeEdge edge, CancellationToken ct = default);
+
+    // ── GetGraph query path ───────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns all live (non-deleted) KnowledgeNodes for the given subject.
+    /// Admin view — includes nodes that wrap inactive skills (IgnoreQueryFilters NOT applied;
+    /// the global soft-delete filter excludes deleted nodes; IsActive is not filtered here).
+    /// </summary>
+    Task<List<KnowledgeNode>> GetGraphNodesAsync(int subjectId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all live (non-deleted) KnowledgeEdges where both source and target belong to the
+    /// given subject. Used by GetGraphQueryHandler.
+    /// </summary>
+    Task<List<KnowledgeEdge>> GetGraphEdgesAsync(int subjectId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Given a set of SkillIds, returns the subset whose corresponding Skill.IsActive == true.
+    /// Used by GetGraphQueryHandler to build the skillActiveMap for node DTOs.
+    /// Returns a dictionary of SkillId → IsActive.
+    /// </summary>
+    Task<Dictionary<int, bool>> GetSkillActiveMapAsync(IReadOnlyCollection<int> skillIds, CancellationToken ct = default);
+
+    // ── GetPrerequisites / GetUnlockedBy query paths ──────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns true when a non-deleted KnowledgeNode with the given id exists.
+    /// Used by GetPrerequisitesQueryHandler and GetUnlockedByQueryHandler for the 404 check.
+    /// </summary>
+    Task<bool> NodeExistsAsync(int nodeId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns nodes that are sources of Prerequisite edges targeting the given nodeId
+    /// ("what must be mastered before this node"). AsNoTracking.
+    /// </summary>
+    Task<List<KnowledgeNode>> GetPrerequisiteNodesAsync(int nodeId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns nodes that are targets of Prerequisite edges sourced from the given nodeId
+    /// ("what does mastering this node unlock"). AsNoTracking.
+    /// </summary>
+    Task<List<KnowledgeNode>> GetUnlockedByNodeAsync(int nodeId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Given a set of SkillIds, returns the subset whose corresponding Skill.IsActive == true
+    /// as a HashSet for O(1) membership tests.
+    /// Used by GetPrerequisitesQueryHandler and GetUnlockedByQueryHandler to filter inactive-skill
+    /// nodes before mapping to StudentKnowledgeNodeDto (security: students must not discover hidden skills).
+    /// </summary>
+    Task<HashSet<int>> GetActiveSkillIdsAsync(IReadOnlyCollection<int> skillIds, CancellationToken ct = default);
+}

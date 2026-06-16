@@ -5,7 +5,6 @@ using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -17,22 +16,24 @@ namespace Learnexia.Modules.Learning.Application.Features.ContentBlocks.Commands
 ///
 /// P7-12: ContentBlock is FullAuditedEntity (not AggregateRoot) — domain event raised on parent Lesson.
 /// Dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12 fix).
+///
+/// Option-C: all EF calls moved into IContentBlockService (Infrastructure). Handler is now thin.
 /// </summary>
 public class DeleteContentBlockCommandHandler
     : BaseResponseHandler, ICommandHandler<DeleteContentBlockCommand, BaseResponse<string>>
 {
     private readonly ILoggerManager _logger;
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public DeleteContentBlockCommandHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _currentUser = currentUser;
         _logger = logger;
         _localizer = localizer;
@@ -47,21 +48,18 @@ public class DeleteContentBlockCommandHandler
             if (request is null)
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
-            var block = await _repository.Learning
-                .GetByCondition<ContentBlock>(cb => cb.Id == request.Id, trackChanges: true)
-                .FirstOrDefaultAsync(cancellationToken);
+            var block = await _service.ContentBlockService.GetContentBlockTrackedAsync(request.Id, cancellationToken);
 
             if (block is null)
                 return NotFound<string>(_localizer[SharedResourcesKey.ContentBlockNotFound]);
 
             // Soft-delete: set the flag; UnitOfWorkBehavior stamps DeletedAt/DeletedBy.
             block.IsDeleted = true;
-            await _repository.Learning.UpdateAsync(block);
+            await _service.ContentBlockService.StageContentBlockUpdateAsync(block, cancellationToken);
 
             // ContentBlock is FullAuditedEntity (not AggregateRoot) — raise on the parent Lesson aggregate.
-            var lesson = await _repository.Learning
-                .GetByCondition<Lesson>(l => l.Id == block.LessonId, trackChanges: true)
-                .FirstOrDefaultAsync(cancellationToken);
+            // EF identity map may have the Lesson already tracked; if not, load it now.
+            var lesson = await _service.ContentBlockService.GetLessonTrackedAsync(block.LessonId, cancellationToken);
 
             // Dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12).
             lesson?.RaiseDomainEvent(new AdminActionPerformedDomainEvent(

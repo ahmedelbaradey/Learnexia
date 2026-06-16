@@ -5,10 +5,8 @@ using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
-using LearningUnit = Learnexia.Modules.Learning.Domain.Entities.Unit;
 
 namespace Learnexia.Modules.Learning.Application.Features.Subjects.Commands.Delete;
 
@@ -16,22 +14,24 @@ namespace Learnexia.Modules.Learning.Application.Features.Subjects.Commands.Dele
 /// P7-01: Soft-deletes a Subject by setting IsDeleted = true (FullAuditedEntity pattern).
 /// The UnitOfWorkBehavior will stamp DeletedAt/DeletedBy after SaveChangesAsync.
 /// Blocks deletion when the Subject still has non-deleted Units ("Subject not empty" guard).
-/// Publishes <see cref="AdminActionPerformedEvent"/> post-commit, best-effort.
+/// Publishes <see cref="AdminActionPerformedDomainEvent"/> post-commit, best-effort.
+///
+/// Option C: all EF queries delegated to ISubjectService. Handler injects only ILearningServiceManager.
 /// </summary>
 public class DeleteSubjectCommandHandler : BaseResponseHandler, ICommandHandler<DeleteSubjectCommand, BaseResponse<string>>
 {
     private readonly ILoggerManager _logger;
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public DeleteSubjectCommandHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _currentUser = currentUser;
         _logger = logger;
         _localizer = localizer;
@@ -44,23 +44,18 @@ public class DeleteSubjectCommandHandler : BaseResponseHandler, ICommandHandler<
             if (request is null)
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
-            var subject = await _repository.Learning
-                .GetByCondition<Subject>(s => s.Id == request.Id, trackChanges: true)
-                .FirstOrDefaultAsync(cancellationToken);
-
+            var subject = await _service.SubjectService.GetSubjectTrackedAsync(request.Id, cancellationToken);
             if (subject is null)
                 return NotFound<string>(_localizer[SharedResourcesKey.SubjectNotFound]);
 
             // "Subject not empty" guard — block soft-delete when non-deleted Units still exist.
-            var hasUnits = await _repository.Learning
-                .AnyAsync<LearningUnit>(u => u.SubjectId == request.Id);
-
+            var hasUnits = await _service.SubjectService.SubjectHasUnitsAsync(request.Id, cancellationToken);
             if (hasUnits)
                 return BadRequest<string>(_localizer[SharedResourcesKey.SubjectNotEmpty]);
 
             // Soft-delete: set the flag; UnitOfWorkBehavior stamps DeletedAt/DeletedBy.
             subject.IsDeleted = true;
-            await _repository.Learning.UpdateAsync(subject);
+            await _service.SubjectService.StageSubjectUpdateAsync(subject, cancellationToken);
 
             // Raise domain event on the tracked aggregate — dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12).
             subject.RaiseDomainEvent(new AdminActionPerformedDomainEvent(

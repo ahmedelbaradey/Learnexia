@@ -24,30 +24,29 @@ namespace Learnexia.Modules.Learning.Application.Features.Attempts.Commands.Aban
 /// StudentId is resolved from the authenticated JWT — NEVER from the client.
 /// UnitOfWorkBehavior owns the commit — do NOT call SaveChangesAsync here.
 ///
-/// Concurrency note: a race between a final SubmitAnswer and this AbandonAttempt arriving
-/// simultaneously may produce aggregates that exclude the last answer. Acceptable for Phase 2.
+/// Option C (no EF in Application): all DB access delegated to IAttemptWriteService.
 /// </summary>
 public class AbandonAttemptCommandHandler : BaseResponseHandler,
     ICommandHandler<AbandonAttemptCommand, BaseResponse<AttemptSummaryDto>>
 {
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly IMapper _mapper;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public AbandonAttemptCommandHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         IMapper mapper,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service     = service;
         _currentUser = currentUser;
-        _mapper = mapper;
-        _logger = logger;
-        _localizer = localizer;
+        _mapper      = mapper;
+        _logger      = logger;
+        _localizer   = localizer;
     }
 
     public async Task<BaseResponse<AttemptSummaryDto>> Handle(
@@ -62,9 +61,7 @@ public class AbandonAttemptCommandHandler : BaseResponseHandler,
                 return Unauthorized<AttemptSummaryDto>(_localizer[SharedResourcesKey.Unauthorized]);
 
             // Step 2 — Load the attempt with tracking (needs update).
-            var attempt = _repository.Learning
-                .GetByCondition<Attempt>(a => a.Id == request.AttemptId, trackChanges: true)
-                .FirstOrDefault();
+            var attempt = await _service.AttemptWriteService.GetAttemptTrackedAsync(request.AttemptId, cancellationToken);
             if (attempt is null)
                 return NotFound<AttemptSummaryDto>(_localizer[SharedResourcesKey.AttemptNotFound]);
 
@@ -76,14 +73,13 @@ public class AbandonAttemptCommandHandler : BaseResponseHandler,
             if (attempt.Status == AttemptStatus.Abandoned)
             {
                 // Idempotent: attempt is already abandoned — return current state without mutation.
-                var idempotentAnswers = _repository.Learning
-                    .GetByCondition<StudentAnswer>(sa => sa.AttemptId == request.AttemptId, trackChanges: false)
-                    .ToList();
+                var idempotentAnswers = await _service.AttemptWriteService
+                    .GetAnswersForAttemptAsync(request.AttemptId, cancellationToken);
 
                 var idempotentDto = _mapper.Map<AttemptSummaryDto>(attempt);
-                idempotentDto.TotalAnswers = idempotentAnswers.Count;
+                idempotentDto.TotalAnswers   = idempotentAnswers.Count;
                 idempotentDto.CorrectAnswers = idempotentAnswers.Count(a => a.IsCorrect);
-                idempotentDto.Status = attempt.Status.ToString();
+                idempotentDto.Status         = attempt.Status.ToString();
 
                 var idempotentResult = Success(idempotentDto);
                 idempotentResult.Message = _localizer[SharedResourcesKey.AttemptAbandonedSuccessfully];
@@ -94,27 +90,23 @@ public class AbandonAttemptCommandHandler : BaseResponseHandler,
                 return BusinessValidation<AttemptSummaryDto>(_localizer[SharedResourcesKey.AttemptAlreadyCompleted]);
 
             // Step 5 — Load all StudentAnswer rows for this attempt (fresh query; zero answers is valid).
-            var answers = _repository.Learning
-                .GetByCondition<StudentAnswer>(sa => sa.AttemptId == request.AttemptId, trackChanges: false)
-                .ToList();
+            var answers = await _service.AttemptWriteService
+                .GetAnswersForAttemptAsync(request.AttemptId, cancellationToken);
 
             // Step 6 — Recompute aggregates over the partial set of answers captured so far.
-            // Zero answers → AccuracyPercentage = 0 (no divide-by-zero). Previously submitted
-            // StudentAnswer rows are not touched — only the Attempt aggregate fields are updated.
             RecomputeAggregates(attempt, answers);
 
             // Step 7 — Transition status.
             attempt.Status = AttemptStatus.Abandoned;
 
             // Step 8 — Stage update. UnitOfWorkBehavior commits atomically; do NOT call SaveChangesAsync.
-            await _repository.Learning.UpdateAsync(attempt);
+            await _service.AttemptWriteService.StageAttemptUpdateAsync(attempt, cancellationToken);
 
-            // Step 9 — Map and return summary DTO. TotalAnswers/CorrectAnswers filled explicitly
-            // (AutoMapper ignores those two members — see QuizProfile).
+            // Step 9 — Map and return summary DTO.
             var dto = _mapper.Map<AttemptSummaryDto>(attempt);
-            dto.TotalAnswers = answers.Count;
+            dto.TotalAnswers   = answers.Count;
             dto.CorrectAnswers = answers.Count(a => a.IsCorrect);
-            dto.Status = attempt.Status.ToString();
+            dto.Status         = attempt.Status.ToString();
 
             var result = Success(dto);
             result.Message = _localizer[SharedResourcesKey.AttemptAbandonedSuccessfully];
@@ -130,25 +122,22 @@ public class AbandonAttemptCommandHandler : BaseResponseHandler,
 
     /// <summary>
     /// Recomputes attempt-level aggregates from the current list of submitted answers.
-    /// DurationSeconds uses server-side elapsed time (UtcNow - StartedAt) as the authoritative value;
-    /// per-question TimeSpentSeconds is advisory (client-reported).
+    /// DurationSeconds uses server-side elapsed time (UtcNow - StartedAt) as the authoritative value.
     /// Divide-by-zero is guarded: zero answers → AccuracyPercentage = 0.
     /// </summary>
     private static void RecomputeAggregates(Attempt attempt, IList<StudentAnswer> answers)
     {
         var answered = answers.Count;
-        var correct = answers.Count(a => a.IsCorrect);
+        var correct  = answers.Count(a => a.IsCorrect);
 
         attempt.AccuracyPercentage = answered == 0
             ? 0.0
             : Math.Round((double)correct / answered * 100, 2);
 
-        // Normalize StartedAt to UTC before subtracting: Npgsql returns `timestamp with time zone`
-        // columns with Kind=Local even though AttemptService stores UtcNow, so a naive
-        // (UtcNow - StartedAt) is off by the server's UTC offset.
+        // Normalize StartedAt to UTC before subtracting.
         var now = DateTime.UtcNow;
         attempt.DurationSeconds = Math.Max(0, (int)(now - attempt.StartedAt.ToUniversalTime()).TotalSeconds);
-        attempt.HintsUsedCount = answers.Count(a => a.HintUsed);
-        attempt.CompletedAt = now;
+        attempt.HintsUsedCount  = answers.Count(a => a.HintUsed);
+        attempt.CompletedAt     = now;
     }
 }

@@ -1,11 +1,9 @@
 using AutoMapper;
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Features.KnowledgeGraph.Dtos;
-using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -21,22 +19,25 @@ namespace Learnexia.Modules.Learning.Application.Features.KnowledgeGraph.Queries
 ///   so inactive-skill existence is not disclosed to students.
 /// - Nodes wrapping an inactive skill are filtered out of the result, consistent with the
 ///   <c>IsActive</c> filter applied on the student SkillTree endpoint.
+///
+/// Option-C refactor: KnowledgeNodeExistsAsync + GetPrerequisiteNodesAsync + Skill.Select().ToListAsync()
+/// moved into IKnowledgeGraphService (NodeExistsAsync + GetPrerequisiteNodesAsync + GetActiveSkillIdsAsync).
 /// </summary>
 public class GetPrerequisitesQueryHandler
     : BaseResponseHandler, IQueryHandler<GetPrerequisitesQuery, BaseResponse<List<StudentKnowledgeNodeDto>>>
 {
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly IMapper _mapper;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public GetPrerequisitesQueryHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         IMapper mapper,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _mapper = mapper;
         _logger = logger;
         _localizer = localizer;
@@ -48,11 +49,11 @@ public class GetPrerequisitesQueryHandler
     {
         try
         {
-            var nodeExists = await _repository.Learning.KnowledgeNodeExistsAsync(request.NodeId, cancellationToken);
+            var nodeExists = await _service.KnowledgeGraphService.NodeExistsAsync(request.NodeId, cancellationToken);
             if (!nodeExists)
                 return NotFound<List<StudentKnowledgeNodeDto>>(_localizer[SharedResourcesKey.KnowledgeNodeNotFound]);
 
-            var nodes = await _repository.Learning.GetPrerequisiteNodesAsync(request.NodeId, cancellationToken);
+            var nodes = await _service.KnowledgeGraphService.GetPrerequisiteNodesAsync(request.NodeId, cancellationToken);
 
             if (!nodes.Any())
                 return EmptyCollection(new List<StudentKnowledgeNodeDto>());
@@ -63,17 +64,9 @@ public class GetPrerequisitesQueryHandler
                 .Where(n => n.SkillId.HasValue)
                 .Select(n => n.SkillId!.Value)
                 .Distinct()
-                .ToHashSet();
+                .ToList();
 
-            var activeSkillIds = new HashSet<int>();
-            if (skillIds.Count > 0)
-            {
-                activeSkillIds = (await _repository.Learning
-                    .GetByCondition<Skill>(s => skillIds.Contains(s.Id) && s.IsActive, trackChanges: false)
-                    .Select(s => s.Id)
-                    .ToListAsync(cancellationToken))
-                    .ToHashSet();
-            }
+            var activeSkillIds = await _service.KnowledgeGraphService.GetActiveSkillIdsAsync(skillIds, cancellationToken);
 
             var visibleNodes = nodes
                 .Where(n => !n.SkillId.HasValue || activeSkillIds.Contains(n.SkillId.Value))

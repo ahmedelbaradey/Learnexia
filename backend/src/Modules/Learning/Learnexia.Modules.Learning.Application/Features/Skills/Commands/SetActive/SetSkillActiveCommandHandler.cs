@@ -5,7 +5,6 @@ using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -14,21 +13,24 @@ namespace Learnexia.Modules.Learning.Application.Features.Skills.Commands.SetAct
 /// <summary>
 /// Toggles <c>Skill.IsActive</c>. Inactive skills are hidden from student-facing reads.
 /// Publishes <see cref="AdminActionPerformedEvent"/> post-commit, best-effort.
+///
+/// Option-C refactor: GetByCondition + FirstOrDefaultAsync + UpdateAsync moved into
+/// ISkillService (GetSkillTrackedByIdAsync + StageSkillUpdateAsync).
 /// </summary>
 public class SetSkillActiveCommandHandler : BaseResponseHandler, ICommandHandler<SetSkillActiveCommand, BaseResponse<string>>
 {
     private readonly ILoggerManager _logger;
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public SetSkillActiveCommandHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _currentUser = currentUser;
         _logger = logger;
         _localizer = localizer;
@@ -41,15 +43,13 @@ public class SetSkillActiveCommandHandler : BaseResponseHandler, ICommandHandler
             if (request is null)
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
-            var skill = await _repository.Learning
-                .GetByCondition<Skill>(s => s.Id == request.SkillId, trackChanges: true)
-                .FirstOrDefaultAsync(cancellationToken);
+            var skill = await _service.SkillService.GetSkillTrackedByIdAsync(request.SkillId, cancellationToken);
 
             if (skill is null)
                 return NotFound<string>(_localizer[SharedResourcesKey.SkillNotFound]);
 
             skill.IsActive = request.IsActive;
-            await _repository.Learning.UpdateAsync(skill);
+            await _service.SkillService.StageSkillUpdateAsync(skill, cancellationToken);
 
             var action = request.IsActive ? AdminActions.SkillActivated : AdminActions.SkillDeactivated;
 

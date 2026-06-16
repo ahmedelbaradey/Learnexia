@@ -1,11 +1,9 @@
 using Learnexia.Modules.Learning.Application.Abstractions;
-using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Events;
 using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 using LearningUnit = Learnexia.Modules.Learning.Domain.Entities.Unit;
@@ -16,22 +14,24 @@ namespace Learnexia.Modules.Learning.Application.Features.Units.Commands.Reorder
 /// Batch-updates SequenceOrder on the given Units.
 /// All Units must belong to the same SubjectId — cross-subject reorder is rejected.
 /// The UnitOfWorkBehavior's transaction wraps all staged updates atomically (deferred-commit module).
-/// Publishes <see cref="AdminActionPerformedEvent"/> post-commit, best-effort.
+/// Publishes <see cref="AdminActionPerformedDomainEvent"/> post-commit, best-effort.
+///
+/// Option C: all EF queries delegated to IUnitService. Handler injects only ILearningServiceManager.
 /// </summary>
 public class ReorderUnitsCommandHandler : BaseResponseHandler, ICommandHandler<ReorderUnitsCommand, BaseResponse<string>>
 {
     private readonly ILoggerManager _logger;
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public ReorderUnitsCommandHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _currentUser = currentUser;
         _logger = logger;
         _localizer = localizer;
@@ -45,9 +45,7 @@ public class ReorderUnitsCommandHandler : BaseResponseHandler, ICommandHandler<R
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
             // Load all specified units with tracking.
-            var units = await _repository.Learning
-                .GetByCondition<LearningUnit>(u => request.UnitIds.Contains(u.Id), trackChanges: true)
-                .ToListAsync(cancellationToken);
+            var units = await _service.UnitService.GetUnitsTrackedByIdsAsync(request.UnitIds, cancellationToken);
 
             if (units.Count != request.UnitIds.Count)
                 return NotFound<string>(_localizer[SharedResourcesKey.UnitNotFound]);
@@ -62,7 +60,7 @@ public class ReorderUnitsCommandHandler : BaseResponseHandler, ICommandHandler<R
             for (var i = 0; i < request.UnitIds.Count; i++)
             {
                 unitsById[request.UnitIds[i]].SequenceOrder = i;
-                await _repository.Learning.UpdateAsync(unitsById[request.UnitIds[i]]);
+                await _service.UnitService.StageUnitUpdateAsync(unitsById[request.UnitIds[i]], cancellationToken);
             }
 
             // Raise domain event on the first tracked unit (representative for the batch).

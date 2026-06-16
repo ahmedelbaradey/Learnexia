@@ -1,13 +1,11 @@
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Dtos;
 using Learnexia.Modules.Learning.Application.Helpers;
-using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Modules.Learning.Domain.Services;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -30,22 +28,24 @@ namespace Learnexia.Modules.Learning.Application.Features.Subjects.Queries.GetSu
 /// for defense-in-depth), the static <c>IsLocked</c> placeholder is used.
 ///
 /// A subject with no units returns 200 + empty collection.
+///
+/// Option C: all EF queries delegated to ISubjectService. Handler injects only ILearningServiceManager.
 /// </summary>
 public class GetSubjectLessonsQueryHandler
     : BaseResponseHandler, IQueryHandler<GetSubjectLessonsQuery, BaseResponse<List<UnitWithLessonsDto>>>
 {
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public GetSubjectLessonsQueryHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _currentUser = currentUser;
         _logger = logger;
         _localizer = localizer;
@@ -60,9 +60,7 @@ public class GetSubjectLessonsQueryHandler
             // Load the subject to verify it exists and to check its language.
             // P7-01: IsActive == true filter — inactive subject returns 404 for students.
             // P7-05: LifecycleState == Published filter — Draft/Archived subjects not served to students.
-            var subject = await _repository.Learning
-                .GetByCondition<Subject>(s => s.Id == request.SubjectId && s.IsActive && s.LifecycleState == LifecycleState.Published, false)
-                .FirstOrDefaultAsync(cancellationToken);
+            var subject = await _service.SubjectService.GetActivePublishedSubjectAsync(request.SubjectId, cancellationToken);
 
             if (subject is null)
                 return NotFound<List<UnitWithLessonsDto>>(_localizer[SharedResourcesKey.SubjectNotFound]);
@@ -77,15 +75,8 @@ public class GetSubjectLessonsQueryHandler
             {
                 // P7-01: Also require IsActive on the redirected subject (student path).
                 // P7-05: Also require LifecycleState == Published on the redirected subject.
-                var correctSubject = await _repository.Learning
-                    .GetByCondition<Subject>(
-                        s => s.GradeId == subject.GradeId
-                          && s.SubjectCode == subject.SubjectCode
-                          && s.Language == resolved
-                          && s.IsActive
-                          && s.LifecycleState == LifecycleState.Published,
-                        trackChanges: false)
-                    .FirstOrDefaultAsync(cancellationToken);
+                var correctSubject = await _service.SubjectService.GetActivePublishedSubjectByNaturalKeyAsync(
+                    subject.GradeId, subject.SubjectCode, resolved, cancellationToken);
 
                 if (correctSubject is not null)
                 {
@@ -104,11 +95,7 @@ public class GetSubjectLessonsQueryHandler
 
             // P7-01: IsActive == true filter — inactive units hidden from student reads.
             // P7-05: LifecycleState == Published filter — Draft/Archived units not served to students.
-            var units = await _repository.Learning
-                .GetByCondition<Unit>(u => u.SubjectId == effectiveSubjectId && u.IsActive && u.LifecycleState == LifecycleState.Published, false)
-                .Include(u => u.Lessons)
-                .OrderBy(u => u.SequenceOrder)
-                .ToListAsync(cancellationToken);
+            var units = await _service.SubjectService.GetUnitsWithLessonsAsync(effectiveSubjectId, cancellationToken);
 
             if (!units.Any())
                 return EmptyCollection(new List<UnitWithLessonsDto>());
@@ -119,22 +106,15 @@ public class GetSubjectLessonsQueryHandler
             {
                 // ── Authenticated path: derive NodeState from LearningPathEngine ────────────────────
 
-                // Bulk-fetch the 5 engine inputs.
-                var nodes = await _repository.Learning
-                    .GetSubjectKnowledgeNodesAsync(effectiveSubjectId, cancellationToken);
-                var edges = await _repository.Learning
-                    .GetSubjectKnowledgeEdgesAsync(effectiveSubjectId, cancellationToken);
-                var masteryBySkillId = await _repository.Learning
-                    .GetSkillMasteryForStudentInSubjectAsync(studentId.Value, effectiveSubjectId, cancellationToken);
-                var completedLessonIds = await _repository.Learning
-                    .GetCompletedLessonIdsForStudentInSubjectAsync(studentId.Value, effectiveSubjectId, cancellationToken);
-                var allLessons = await _repository.Learning
-                    .GetSubjectLessonsAsync(effectiveSubjectId, cancellationToken);
+                // Bulk-fetch the 6 engine inputs via service — no EF types in Application.
+                var nodes = await _service.SubjectService.GetSubjectKnowledgeNodesAsync(effectiveSubjectId, cancellationToken);
+                var edges = await _service.SubjectService.GetSubjectKnowledgeEdgesAsync(effectiveSubjectId, cancellationToken);
+                var masteryBySkillId = await _service.SubjectService.GetSkillMasteryForStudentInSubjectAsync(studentId.Value, effectiveSubjectId, cancellationToken);
+                var completedLessonIds = await _service.SubjectService.GetCompletedLessonIdsForStudentInSubjectAsync(studentId.Value, effectiveSubjectId, cancellationToken);
+                var allLessons = await _service.SubjectService.GetSubjectLessonsAsync(effectiveSubjectId, cancellationToken);
 
                 // Load skills for the subject (needed for MasteryThreshold + Name on MissingPrerequisiteDto).
-                var skills = await _repository.Learning
-                    .GetByCondition<Skill>(sk => sk.Concept.SubjectId == effectiveSubjectId, false)
-                    .ToListAsync(cancellationToken);
+                var skills = await _service.SubjectService.GetSubjectSkillsAsync(effectiveSubjectId, cancellationToken);
                 var skillsById = skills.ToDictionary(sk => sk.Id);
 
                 // Run the engine once for the whole subject.

@@ -12,20 +12,23 @@ namespace Learnexia.Modules.Learning.Application.Features.Lifecycle.Queries.GetV
 /// Handles <see cref="GetVersionHistoryQuery"/>.
 /// Returns ContentVersion rows for (EntityType, EntityId), newest first.
 /// AdminOnly — enforced at the controller layer.
+///
+/// Option C: all EF access delegated to ILifecycleService via ILearningServiceManager.
+/// This handler injects only ILearningServiceManager — no ILearningRepositoryManager, no EF types.
 /// </summary>
 public class GetVersionHistoryQueryHandler
     : BaseResponseHandler, IQueryHandler<GetVersionHistoryQuery, BaseResponse<List<ContentVersionDto>>>
 {
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public GetVersionHistoryQueryHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _logger = logger;
         _localizer = localizer;
     }
@@ -39,7 +42,7 @@ public class GetVersionHistoryQueryHandler
             if (request.EntityId <= 0)
                 return BadRequest<List<ContentVersionDto>>(_localizer[SharedResourcesKey.EntityIdRequired]);
 
-            var versions = await _repository.Learning
+            var versions = await _service.LifecycleService
                 .GetVersionHistoryAsync(request.EntityType, request.EntityId, cancellationToken);
 
             var dtos = versions.Select(v => new ContentVersionDto

@@ -1,11 +1,9 @@
 using AutoMapper;
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Features.Questions.Dtos;
-using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -17,22 +15,24 @@ namespace Learnexia.Modules.Learning.Application.Features.Questions.Queries.GetB
 ///
 /// SECURITY: This handler is wired to AdminOnly-gated endpoints only.
 /// The global soft-delete filter means deleted questions are never visible here.
+///
+/// Option-C refactor: FirstOrDefaultAsync moved into IQuizQuestionService.GetQuestionByIdAsync.
 /// </summary>
 public class GetQuestionByIdQueryHandler
     : BaseResponseHandler, IQueryHandler<GetQuestionByIdQuery, BaseResponse<AdminQuestionDto>>
 {
     private readonly ILoggerManager _logger;
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly IMapper _mapper;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public GetQuestionByIdQueryHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         IMapper mapper,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _mapper = mapper;
         _logger = logger;
         _localizer = localizer;
@@ -44,9 +44,7 @@ public class GetQuestionByIdQueryHandler
     {
         try
         {
-            var question = await _repository.Learning
-                .GetByCondition<QuizQuestion>(q => q.Id == request.Id, false)
-                .FirstOrDefaultAsync(cancellationToken);
+            var question = await _service.QuizQuestionService.GetQuestionByIdAsync(request.Id, cancellationToken);
 
             if (question is null)
                 return NotFound<AdminQuestionDto>(_localizer[SharedResourcesKey.QuizQuestionNotFound]);

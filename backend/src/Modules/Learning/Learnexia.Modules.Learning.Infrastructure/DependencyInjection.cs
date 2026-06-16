@@ -33,6 +33,12 @@ public static class DependencyInjection
         services.AddScoped<ILearningRepositoryManager, LearningRepositoryManager>();
         services.AddScoped<ILearningServiceManager, LearningServiceManager>();
 
+        // Stage 6: Attempts + Dashboard (Option C — no EF in Application)
+        services.AddScoped<IAttemptWriteService, AttemptWriteService>();
+        services.AddScoped<IAttemptQueryService, AttemptQueryService>();
+        services.AddScoped<IStartAttemptService, StartAttemptService>();
+        services.AddScoped<IDashboardQueryService, DashboardQueryService>();
+
         // P3-09: Internal mastery seam for P3-08/P3-10/P3-11 in-process consumers.
         services.AddScoped<IMasteryService, MasteryService>();
 

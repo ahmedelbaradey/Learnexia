@@ -5,7 +5,6 @@ using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -13,22 +12,24 @@ namespace Learnexia.Modules.Learning.Application.Features.Subjects.Commands.SetA
 
 /// <summary>
 /// Toggles <c>Subject.IsActive</c>. Inactive subjects are hidden from student-facing reads.
-/// Publishes <see cref="AdminActionPerformedEvent"/> post-commit, best-effort.
+/// Publishes <see cref="AdminActionPerformedDomainEvent"/> post-commit, best-effort.
+///
+/// Option C: all EF queries delegated to ISubjectService. Handler injects only ILearningServiceManager.
 /// </summary>
 public class SetSubjectActiveCommandHandler : BaseResponseHandler, ICommandHandler<SetSubjectActiveCommand, BaseResponse<string>>
 {
     private readonly ILoggerManager _logger;
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public SetSubjectActiveCommandHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _currentUser = currentUser;
         _logger = logger;
         _localizer = localizer;
@@ -41,15 +42,12 @@ public class SetSubjectActiveCommandHandler : BaseResponseHandler, ICommandHandl
             if (request is null)
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
-            var subject = await _repository.Learning
-                .GetByCondition<Subject>(s => s.Id == request.SubjectId, trackChanges: true)
-                .FirstOrDefaultAsync(cancellationToken);
-
+            var subject = await _service.SubjectService.GetSubjectTrackedAsync(request.SubjectId, cancellationToken);
             if (subject is null)
                 return NotFound<string>(_localizer[SharedResourcesKey.SubjectNotFound]);
 
             subject.IsActive = request.IsActive;
-            await _repository.Learning.UpdateAsync(subject);
+            await _service.SubjectService.StageSubjectUpdateAsync(subject, cancellationToken);
 
             var action = request.IsActive ? AdminActions.SubjectActivated : AdminActions.SubjectDeactivated;
 

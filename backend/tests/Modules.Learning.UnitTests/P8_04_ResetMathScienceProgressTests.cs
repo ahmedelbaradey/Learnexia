@@ -1,9 +1,11 @@
 using FluentAssertions;
+using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Features.Progress.Commands.ResetMathScienceProgress;
 using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Modules.Learning.Infrastructure.Persistence;
 using Learnexia.Modules.Learning.Infrastructure.Repository;
+using Learnexia.Modules.Learning.Infrastructure.Service;
 using Learnexia.Shared.Kernel.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -51,11 +53,15 @@ public sealed class P8_04_ResetMathScienceProgressTests
 
     private static ResetMathScienceProgressCommandHandler BuildHandler(LearningDbContext db)
     {
-        var repoManager = new LearningRepositoryManager(db, new StubCurrentUserService());
+        var currentUser    = new StubCurrentUserService();
+        var repository     = new LearningRepository(db, currentUser);
+        var localizer      = new NullStringLocalizer();
+        var progressService = new ProgressService(repository, null!, localizer);
+        var serviceManager  = new StubLearningServiceManager(progressService);
         return new ResetMathScienceProgressCommandHandler(
-            repository: repoManager,
+            service: serviceManager,
             logger: new NullLoggerManager(),
-            localizer: new NullStringLocalizer());
+            localizer: localizer);
     }
 
     /// <summary>
@@ -269,5 +275,39 @@ public sealed class P8_04_ResetMathScienceProgressTests
         public LocalizedString this[string name] => new(name, name);
         public LocalizedString this[string name, params object[] arguments] => new(name, name);
         public IEnumerable<LocalizedString> GetAllStrings(bool includeParentCultures) => [];
+    }
+
+    /// <summary>
+    /// Minimal stub of <see cref="ILearningServiceManager"/> — only ProgressService is wired;
+    /// all other properties throw NotImplementedException to make missing wiring obvious in tests.
+    /// </summary>
+    private sealed class StubLearningServiceManager : ILearningServiceManager
+    {
+        private readonly IProgressService _progress;
+
+        public StubLearningServiceManager(IProgressService progress) => _progress = progress;
+
+        public IProgressService ProgressService => _progress;
+
+        // Unimplemented members — not exercised by this test
+        public IGradeService GradeService => throw new NotImplementedException();
+        public ISubjectService SubjectService => throw new NotImplementedException();
+        public IUnitService UnitService => throw new NotImplementedException();
+        public ILessonService LessonService => throw new NotImplementedException();
+        public IContentBlockService ContentBlockService => throw new NotImplementedException();
+        public IConceptService ConceptService => throw new NotImplementedException();
+        public ISkillService SkillService => throw new NotImplementedException();
+        public IAttemptService AttemptService => throw new NotImplementedException();
+        public IQuizQuestionService QuizQuestionService => throw new NotImplementedException();
+        public IKnowledgeGraphService KnowledgeGraphService => throw new NotImplementedException();
+        public ILifecycleService LifecycleService => throw new NotImplementedException();
+        public IMasteryQueryService MasteryQueryService => throw new NotImplementedException();
+        public IReviewsService ReviewsService => throw new NotImplementedException();
+
+        // Stage 6 — not exercised by this test
+        public IAttemptWriteService AttemptWriteService => throw new NotImplementedException();
+        public IAttemptQueryService AttemptQueryService => throw new NotImplementedException();
+        public IStartAttemptService StartAttemptService => throw new NotImplementedException();
+        public IDashboardQueryService DashboardQueryService => throw new NotImplementedException();
     }
 }
