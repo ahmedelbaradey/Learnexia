@@ -8,7 +8,9 @@ using Learnexia.Modules.Billing.Application.Abstractions;
 using Learnexia.Modules.Billing.Application.Features.Payments.Commands.HandleProviderWebhook;
 using Learnexia.Modules.Billing.Domain.Entities;
 using Learnexia.Modules.Billing.Domain.Enums;
+using Learnexia.Modules.Billing.Infrastructure.Persistence;
 using Learnexia.Modules.Billing.Infrastructure.Providers;
+using Learnexia.Modules.Billing.Infrastructure.Services;
 using Learnexia.Shared.Contracts.Billing;
 using MediatR;
 using Microsoft.Data.Sqlite;
@@ -60,7 +62,7 @@ public sealed class PaymentWebhookTests
         return new FakePaymentProvider(config, loggerMock.Object);
     }
 
-    private static (HandleProviderWebhookCommandHandler Handler, Mock<IPublisher> Publisher, Learnexia.Modules.Billing.Infrastructure.Persistence.BillingDbContext Db)
+    private static (HandleProviderWebhookCommandHandler Handler, Mock<IPublisher> Publisher, BillingDbContext Db)
         BuildHandler(FakePaymentProvider? provider = null)
     {
         provider ??= BuildFakeProvider();
@@ -70,10 +72,10 @@ public sealed class PaymentWebhookTests
         var connection = new SqliteConnection("DataSource=:memory:");
         connection.Open();
 
-        var options = new DbContextOptionsBuilder<Learnexia.Modules.Billing.Infrastructure.Persistence.BillingDbContext>()
+        var options = new DbContextOptionsBuilder<BillingDbContext>()
             .UseSqlite(connection)
             .Options;
-        var db = new Learnexia.Modules.Billing.Infrastructure.Persistence.BillingDbContext(options);
+        var db = new BillingDbContext(options);
         db.Database.EnsureCreated();
 
         var publisher = new Mock<IPublisher>();
@@ -86,9 +88,6 @@ public sealed class PaymentWebhookTests
         var localizerMock = new Mock<IStringLocalizer<SharedResources>>();
         localizerMock.Setup(l => l[It.IsAny<string>()]).Returns<string>(k => new LocalizedString(k, k));
 
-        var currentUserMock = new Mock<Learnexia.Shared.Kernel.Abstractions.ICurrentUserService>();
-        currentUserMock.Setup(c => c.UserId).Returns(0);
-
         // P10-07: IEnergyPackService — stub for subscription-path tests (no pack payments here).
         var energyPackServiceMock = new Mock<IEnergyPackService>();
         energyPackServiceMock
@@ -99,21 +98,25 @@ public sealed class PaymentWebhookTests
         // P10-09: IRefundService — stub for webhook tests (refund/dunning branches not exercised here).
         var refundServiceMock = new Mock<IRefundService>();
 
-        var handler = new HandleProviderWebhookCommandHandler(
+        // Option C: build the real WebhookEventService (owns the EF/transaction/event logic).
+        var webhookEventService = new WebhookEventService(
             db,
-            provider,
             energyPackServiceMock.Object,
             refundServiceMock.Object,
             publisher.Object,
+            loggerMock.Object);
+
+        var handler = new HandleProviderWebhookCommandHandler(
+            provider,
+            webhookEventService,
             loggerMock.Object,
-            currentUserMock.Object,
             localizerMock.Object);
 
         return (handler, publisher, db);
     }
 
     private static async Task<(int PaymentId, string ProviderRef, Subscription Sub)> SeedPendingPaymentAsync(
-        Learnexia.Modules.Billing.Infrastructure.Persistence.BillingDbContext db,
+        BillingDbContext db,
         string providerRef,
         decimal amount = 199m)
     {

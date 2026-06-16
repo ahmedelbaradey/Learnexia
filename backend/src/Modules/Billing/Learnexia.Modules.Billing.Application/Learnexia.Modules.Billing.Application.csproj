@@ -9,7 +9,7 @@
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
     <PackageReference Include="AutoMapper" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <!-- Microsoft.EntityFrameworkCore removed: Option C — Application layer is EF-free -->
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Learnexia.Modules.Billing.Domain\Learnexia.Modules.Billing.Domain.csproj" />

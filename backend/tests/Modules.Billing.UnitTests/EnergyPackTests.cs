@@ -115,9 +115,9 @@ public sealed class EnergyPackTests
     }
 
     /// <summary>
-    /// Builds the webhook handler, wiring up a MOCKED <see cref="IEnergyPackService"/>.
-    /// This avoids triggering the real EnergyPackService's EF calls (and the SQLite xmin issue).
-    /// The mock is returned so callers can verify interactions on it.
+    /// Builds the webhook handler, wiring up a MOCKED <see cref="IEnergyPackService"/> via the real
+    /// <see cref="WebhookEventService"/> (Option C: handler injects IWebhookEventService; real service
+    /// does all the EF writes). The mock pack service is returned so callers can verify interactions.
     /// </summary>
     private static (HandleProviderWebhookCommandHandler Handler, Mock<IPublisher> Publisher,
                     Mock<IEnergyPackService> PackService, BillingDbContext Db)
@@ -145,17 +145,19 @@ public sealed class EnergyPackTests
         var loggerMock = new Mock<Learnexia.Shared.Kernel.Abstractions.ILoggerManager>();
         var localizerMock = new Mock<IStringLocalizer<SharedResources>>();
         localizerMock.Setup(l => l[It.IsAny<string>()]).Returns<string>(k => new LocalizedString(k, k));
-        var currentUserMock = new Mock<Learnexia.Shared.Kernel.Abstractions.ICurrentUserService>();
-        currentUserMock.Setup(c => c.UserId).Returns(0);
 
-        var handler = new HandleProviderWebhookCommandHandler(
+        // Option C: build the real WebhookEventService (owns EF/transaction/event logic).
+        var webhookEventService = new WebhookEventService(
             db,
-            provider,
             packServiceMock.Object,
             refundServiceMock.Object,
             publisherMock.Object,
+            loggerMock.Object);
+
+        var handler = new HandleProviderWebhookCommandHandler(
+            provider,
+            webhookEventService,
             loggerMock.Object,
-            currentUserMock.Object,
             localizerMock.Object);
 
         return (handler, publisherMock, packServiceMock, db);
