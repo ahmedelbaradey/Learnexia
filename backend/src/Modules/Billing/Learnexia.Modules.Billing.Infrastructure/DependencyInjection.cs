@@ -128,6 +128,31 @@ public static class DependencyInjection
         // commit (mirrors Gamification/Learning admin handlers). No module-local IAuditLogWriter
         // registration is needed — the cross-module Moderation AuditLogEventHandler persists the row.
 
+        // ── Option C — new service seams (handlers stay EF-free) ─────────────────────────────────
+
+        // ICreditLedgerService — owns all ledger write/read paths for CreditAccount.
+        // Scoped: depends on scoped BillingDbContext + ILoggerManager (Singleton — safe).
+        services.AddScoped<ICreditLedgerService, CreditLedgerService>();
+
+        // IWebhookEventService — owns all webhook idempotency + state flip logic.
+        // Scoped: depends on scoped BillingDbContext + IEnergyPackService + IRefundService.
+        services.AddScoped<IWebhookEventService, WebhookEventService>();
+
+        // ISubscriptionCheckoutService — owns subscription checkout payment creation.
+        // Scoped: depends on scoped BillingDbContext + IPaymentProvider + IGlobalSettingsProvider.
+        services.AddScoped<ISubscriptionCheckoutService, SubscriptionCheckoutService>();
+
+        // ISubscriptionService — owns cancel / downgrade / upgrade / read flows.
+        // Scoped: depends on scoped BillingDbContext + IGlobalSettingsProvider + IPaymentProvider.
+        services.AddScoped<ISubscriptionService, SubscriptionService>();
+
+        // IGlobalSettingService — owns GlobalSetting admin write + read flows.
+        // IGlobalSettingValidationService — provides cross-key direct-DB reads for the validator.
+        // Both implemented by GlobalSettingService (scoped singleton per scope).
+        services.AddScoped<GlobalSettingService>();
+        services.AddScoped<IGlobalSettingService>(sp => sp.GetRequiredService<GlobalSettingService>());
+        services.AddScoped<IGlobalSettingValidationService>(sp => sp.GetRequiredService<GlobalSettingService>());
+
         return services;
     }
 }

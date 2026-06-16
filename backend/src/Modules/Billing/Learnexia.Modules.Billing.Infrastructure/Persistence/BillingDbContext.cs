@@ -1,4 +1,3 @@
-using Learnexia.Modules.Billing.Application.Abstractions;
 using Learnexia.Modules.Billing.Domain.Entities;
 using Learnexia.Shared.Kernel.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -18,8 +17,8 @@ namespace Learnexia.Modules.Billing.Infrastructure.Persistence;
 /// </list>
 /// </para>
 ///
-/// <para>Implements <see cref="IBillingDbContext"/> so Application-layer handlers can use the
-/// abstraction without referencing the Infrastructure project.</para>
+/// <para>Implements <see cref="IBillingDbContext"/> (declared in the same namespace) so
+/// Infrastructure-layer services can use the abstraction for testing seams.</para>
 /// </summary>
 public class BillingDbContext : DbContext, IBillingDbContext
 {

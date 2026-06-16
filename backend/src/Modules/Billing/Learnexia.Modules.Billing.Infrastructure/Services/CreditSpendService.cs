@@ -1,5 +1,6 @@
 using Learnexia.Modules.Billing.Application.Abstractions;
 using Learnexia.Modules.Billing.Application.Services;
+using Learnexia.Modules.Billing.Infrastructure.Persistence;
 using Learnexia.Modules.Billing.Domain.Constants;
 using Learnexia.Modules.Billing.Domain.Entities;
 using Learnexia.Modules.Billing.Domain.Enums;

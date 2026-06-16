@@ -2,7 +2,6 @@ using FluentValidation;
 using Learnexia.Modules.Billing.Application.Abstractions;
 using Learnexia.Modules.Billing.Domain.Constants;
 using Learnexia.Modules.Billing.Domain.Enums;
-using Microsoft.EntityFrameworkCore;
 using Resources;
 
 namespace Learnexia.Modules.Billing.Application.Features.GlobalSettings.Commands.UpdateGlobalSetting;
@@ -18,17 +17,18 @@ namespace Learnexia.Modules.Billing.Application.Features.GlobalSettings.Commands
 ///   <item>NewValue must be parseable as the key's declared type.</item>
 ///   <item>Per-key range rules (non-negative costs, confidence ∈ [0,1], etc.).</item>
 ///   <item>Cross-key: <c>free_daily_cap ≤ free_monthly</c> and <c>premium_daily_cap ≤ premium_monthly</c>
-///         (reads the related key direct-from-DB to avoid stale-cache during batch updates).</item>
+///         (reads the related key direct-from-DB via <see cref="IGlobalSettingValidationService"/>
+///         to avoid stale-cache during batch updates).</item>
 /// </list>
 /// </para>
 /// </summary>
 public sealed class UpdateGlobalSettingValidator : AbstractValidator<UpdateGlobalSettingCommand>
 {
-    private readonly IBillingDbContext _db;
+    private readonly IGlobalSettingValidationService _validationService;
 
-    public UpdateGlobalSettingValidator(IBillingDbContext db)
+    public UpdateGlobalSettingValidator(IGlobalSettingValidationService validationService)
     {
-        _db = db;
+        _validationService = validationService;
 
         RuleFor(x => x.Key)
             .NotEmpty()
@@ -58,9 +58,8 @@ public sealed class UpdateGlobalSettingValidator : AbstractValidator<UpdateGloba
             .MustAsync(async (cmd, ct) =>
             {
                 if (!int.TryParse(cmd.NewValue, out var newCap)) return false;
-                var monthlyRow = await _db.GlobalSettings.AsNoTracking()
-                    .FirstOrDefaultAsync(s => s.Key == GlobalSettingKeys.FreeMonthlyCredits, ct);
-                if (monthlyRow is null || !int.TryParse(monthlyRow.Value, out var monthly)) return true;
+                var raw = await _validationService.GetRawValueAsync(GlobalSettingKeys.FreeMonthlyCredits, ct);
+                if (raw is null || !int.TryParse(raw, out var monthly)) return true;
                 return newCap <= monthly;
             })
             .When(cmd => cmd.Key == GlobalSettingKeys.FreeDailyCap && !string.IsNullOrEmpty(cmd.NewValue))
@@ -72,9 +71,8 @@ public sealed class UpdateGlobalSettingValidator : AbstractValidator<UpdateGloba
             .MustAsync(async (cmd, ct) =>
             {
                 if (!int.TryParse(cmd.NewValue, out var newCap)) return false;
-                var monthlyRow = await _db.GlobalSettings.AsNoTracking()
-                    .FirstOrDefaultAsync(s => s.Key == GlobalSettingKeys.PremiumMonthlyCredits, ct);
-                if (monthlyRow is null || !int.TryParse(monthlyRow.Value, out var monthly)) return true;
+                var raw = await _validationService.GetRawValueAsync(GlobalSettingKeys.PremiumMonthlyCredits, ct);
+                if (raw is null || !int.TryParse(raw, out var monthly)) return true;
                 return newCap <= monthly;
             })
             .When(cmd => cmd.Key == GlobalSettingKeys.PremiumDailyCap && !string.IsNullOrEmpty(cmd.NewValue))

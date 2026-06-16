@@ -1,4 +1,4 @@
-using Learnexia.Modules.Billing.Application.Abstractions;
+using Learnexia.Modules.Billing.Infrastructure.Persistence;
 using Learnexia.Shared.Contracts.Billing;
 using Microsoft.EntityFrameworkCore;
 

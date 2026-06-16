@@ -3,16 +3,15 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
-namespace Learnexia.Modules.Billing.Application.Abstractions;
+namespace Learnexia.Modules.Billing.Infrastructure.Persistence;
 
 /// <summary>
-/// Application-layer abstraction over <c>BillingDbContext</c>.
-/// Lets command/query handlers use the DbContext without depending on the Infrastructure project
-/// (module isolation inward-dependency rule).
+/// Infrastructure-layer abstraction over <c>BillingDbContext</c>.
+/// Consumed only within Billing.Infrastructure (by <c>CreditSpendService</c>,
+/// <c>RefundService</c>, <c>ConfigDefaultSubscriptionContract</c>, and DI registration).
 ///
-/// <para>Registered in DI by <c>AddBillingInfrastructure</c> as the concrete <c>BillingDbContext</c>
-/// (which implements this interface). The <c>BillingDbContext</c> is also registered separately
-/// for EF tooling (migrations, design-time factory).</para>
+/// <para>Moved from <c>Billing.Application.Abstractions</c> during the Option C refactor —
+/// Application layer must be EF-free, so EF-typed interfaces cannot live there.</para>
 /// </summary>
 public interface IBillingDbContext
 {

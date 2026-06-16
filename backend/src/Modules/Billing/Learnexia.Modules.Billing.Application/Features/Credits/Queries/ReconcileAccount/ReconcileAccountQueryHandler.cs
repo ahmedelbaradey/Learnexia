@@ -1,10 +1,8 @@
 using Learnexia.Modules.Billing.Application.Abstractions;
 using Learnexia.Modules.Billing.Application.Features.Credits.Dtos;
-using Learnexia.Modules.Billing.Domain.Enums;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -12,93 +10,26 @@ namespace Learnexia.Modules.Billing.Application.Features.Credits.Queries.Reconci
 
 public class ReconcileAccountQueryHandler : BaseResponseHandler, IQueryHandler<ReconcileAccountQuery, BaseResponse<ReconciliationResultDto>>
 {
-    private readonly IBillingDbContext _db;
+    private readonly ICreditLedgerService _ledger;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
-    public ReconcileAccountQueryHandler(IBillingDbContext db, ILoggerManager logger, IStringLocalizer<SharedResources> localizer)
+    public ReconcileAccountQueryHandler(
+        ICreditLedgerService ledger, ILoggerManager logger, IStringLocalizer<SharedResources> localizer)
     {
-        _db = db; _logger = logger; _localizer = localizer;
+        _ledger = ledger; _logger = logger; _localizer = localizer;
     }
 
     public async Task<BaseResponse<ReconciliationResultDto>> Handle(ReconcileAccountQuery request, CancellationToken cancellationToken)
     {
         try
         {
-            var account = await _db.CreditAccounts
-                .AsNoTracking()
-                .FirstOrDefaultAsync(a => a.ChildId == request.ChildId, cancellationToken);
+            var result = await _ledger.ReconcileAsync(request.ChildId, cancellationToken);
 
-            if (account is null)
+            if (result is null)
                 return NotFound<ReconciliationResultDto>(_localizer[SharedResourcesKey.CreditAccountNotFound]);
 
-            // Recompute pools from ledger — sum with sign convention:
-            // Grant/Purchase/Adjustment(AdminCredit) → +; Spend/Expiry/Refund/Adjustment(AdminDebit) → −
-            var transactions = await _db.CreditTransactions
-                .AsNoTracking()
-                .Where(t => t.CreditAccountId == account.Id)
-                .ToListAsync(cancellationToken);
-
-            var ledgerGranted = 0;
-            var ledgerPurchased = 0;
-
-            foreach (var t in transactions)
-            {
-                switch (t.Type)
-                {
-                    case CreditTransactionType.Grant:
-                        ledgerGranted += t.Amount;
-                        break;
-                    case CreditTransactionType.Expiry:
-                        ledgerGranted -= t.Amount;
-                        break;
-                    case CreditTransactionType.Purchase:
-                        ledgerPurchased += t.Amount;
-                        break;
-                    case CreditTransactionType.Refund:
-                        ledgerPurchased -= t.Amount;
-                        break;
-                    case CreditTransactionType.Spend:
-                        // W2 carried fix: use the exact FromGranted/FromPurchased split stored at debit time.
-                        // Legacy rows (FromGranted=0, FromPurchased=0) fall back to the Pool-based heuristic
-                        // so existing data remains reconcilable.
-                        if (t.FromGranted > 0 || t.FromPurchased > 0)
-                        {
-                            ledgerGranted -= t.FromGranted;
-                            ledgerPurchased -= t.FromPurchased;
-                        }
-                        else if (t.Pool == CreditPool.Granted) ledgerGranted -= t.Amount;
-                        else if (t.Pool == CreditPool.Purchased) ledgerPurchased -= t.Amount;
-                        else
-                        {
-                            // Legacy Mixed rows without split columns: best-effort from Pool heuristic.
-                            // This branch only fires for rows written before the W2 migration.
-                            ledgerGranted -= t.ResultingGrantedBalance > 0
-                                ? Math.Min(t.Amount, t.ResultingGrantedBalance)
-                                : 0;
-                            ledgerPurchased -= t.Amount - (t.ResultingGrantedBalance > 0
-                                ? Math.Min(t.Amount, t.ResultingGrantedBalance)
-                                : 0);
-                        }
-                        break;
-                    case CreditTransactionType.Adjustment:
-                        if (t.ReasonCode == CreditReasonCode.AdminCredit) ledgerGranted += t.Amount;
-                        else ledgerGranted -= t.Amount;
-                        break;
-                }
-            }
-
-            var hasDrift = ledgerGranted != account.GrantedBalance || ledgerPurchased != account.PurchasedBalance;
-
-            return Success(new ReconciliationResultDto
-            {
-                ChildId = request.ChildId,
-                StoredGrantedBalance = account.GrantedBalance,
-                StoredPurchasedBalance = account.PurchasedBalance,
-                LedgerGrantedBalance = ledgerGranted,
-                LedgerPurchasedBalance = ledgerPurchased,
-                HasDrift = hasDrift,
-            });
+            return Success(result);
         }
         catch (Exception ex)
         {
