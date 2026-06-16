@@ -1,6 +1,5 @@
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Features.Mastery.Dtos;
-using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
@@ -17,22 +16,25 @@ namespace Learnexia.Modules.Learning.Application.Features.Mastery.Queries.GetStu
 /// or route — ensuring IDOR safety (a student reads only their own mastery data).
 ///
 /// Empty list is a valid response (200) — student has not yet completed any skill attempts.
+///
+/// Option C: all EF access delegated to IMasteryQueryService via ILearningServiceManager.
+/// This handler injects only ILearningServiceManager — no ILearningRepositoryManager, no EF types.
 /// </summary>
 public class GetStudentMasteryQueryHandler
     : BaseResponseHandler, IQueryHandler<GetStudentMasteryQuery, BaseResponse<List<MasteryDto>>>
 {
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public GetStudentMasteryQueryHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository  = repository;
+        _service     = service;
         _currentUser = currentUser;
         _logger      = logger;
         _localizer   = localizer;
@@ -50,7 +52,7 @@ public class GetStudentMasteryQueryHandler
                 return Unauthorized<List<MasteryDto>>(_localizer[SharedResourcesKey.Unauthorized]);
 
             // Step 2 — Fetch all mastery rows for this student.
-            var rows = await _repository.Learning
+            var rows = await _service.MasteryQueryService
                 .GetAllMasteryForStudentAsync(studentId.Value, cancellationToken);
 
             // Step 3 — Map to response DTOs.

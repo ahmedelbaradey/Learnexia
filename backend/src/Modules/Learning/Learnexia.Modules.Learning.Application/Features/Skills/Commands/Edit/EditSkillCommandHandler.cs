@@ -5,7 +5,6 @@ using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -16,24 +15,25 @@ namespace Learnexia.Modules.Learning.Application.Features.Skills.Commands.Edit;
 /// Mass-assignment guard: IsActive and IsDeleted are ignored on the Edit map (see SkillsProfile).
 ///
 /// P7-12: Domain event raised on the tracked Skill aggregate (post-commit via UnitOfWorkBehavior, ADR 0002).
+///
+/// Option-C refactor: the post-update re-fetch via _repository.Learning.GetByCondition replaced
+/// by _service.SkillService.GetSkillTrackedByIdAsync, which returns the entity already in
+/// EF's identity map (the UpdateAsync in LearningBaseService.UpdateAsync fetched it with trackChanges=true).
 /// </summary>
 public class EditSkillCommandHandler : BaseResponseHandler, ICommandHandler<EditSkillCommand, BaseResponse<string>>
 {
     private readonly ILoggerManager _logger;
     private readonly ILearningServiceManager _service;
-    private readonly ILearningRepositoryManager _repository;
     private readonly ICurrentUserService _currentUser;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public EditSkillCommandHandler(
         ILearningServiceManager service,
-        ILearningRepositoryManager repository,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
         _service = service;
-        _repository = repository;
         _currentUser = currentUser;
         _logger = logger;
         _localizer = localizer;
@@ -50,10 +50,9 @@ public class EditSkillCommandHandler : BaseResponseHandler, ICommandHandler<Edit
 
             if (result.Successed)
             {
-                // The service fetched the Skill with trackChanges=true — it is in the EF ChangeTracker.
-                var tracked = await _repository.Learning
-                    .GetByCondition<Skill>(s => s.Id == request.Id, trackChanges: true)
-                    .FirstOrDefaultAsync(cancellationToken);
+                // LearningBaseService.UpdateAsync fetches with trackChanges=true — the entity is
+                // already in EF's identity map; GetSkillTrackedByIdAsync returns that same instance.
+                var tracked = await _service.SkillService.GetSkillTrackedByIdAsync(request.Id, cancellationToken);
 
                 // Raise domain event on the tracked aggregate — dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12).
                 tracked?.RaiseDomainEvent(new AdminActionPerformedDomainEvent(

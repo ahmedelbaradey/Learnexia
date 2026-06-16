@@ -24,21 +24,26 @@ namespace Learnexia.Modules.Learning.Application.Features.KnowledgeGraph.Command
 ///      Catches <see cref="InvalidOperationException"/> → Successed=false + cycle message.
 ///
 /// On success: persists the new edge and publishes <see cref="AdminActionPerformedEvent"/>.
+///
+/// Option-C refactor: all repository calls moved into IKnowledgeGraphService
+/// (GetNodeByIdAsync, GetSubjectForNodeAsync, EdgeDuplicateExistsAsync,
+///  GetAllPrerequisiteEdgesAsync, StageAddEdgeAsync).
+/// The KNOWN RACE (P7-03 Finding #3) is preserved as documented.
 /// </summary>
 public class AddKnowledgeEdgeCommandHandler : BaseResponseHandler, ICommandHandler<AddKnowledgeEdgeCommand, BaseResponse<string>>
 {
     private readonly ILoggerManager _logger;
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public AddKnowledgeEdgeCommandHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _currentUser = currentUser;
         _logger = logger;
         _localizer = localizer;
@@ -52,20 +57,20 @@ public class AddKnowledgeEdgeCommandHandler : BaseResponseHandler, ICommandHandl
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
             // Guard 1 — both nodes must exist.
-            var sourceNode = await _repository.Learning.GetKnowledgeNodeByIdAsync(request.SourceNodeId, trackChanges: false, cancellationToken);
+            var sourceNode = await _service.KnowledgeGraphService.GetNodeByIdAsync(request.SourceNodeId, cancellationToken);
             if (sourceNode is null)
                 return NotFound<string>(_localizer[SharedResourcesKey.KnowledgeNodeNotFound]);
 
-            var targetNode = await _repository.Learning.GetKnowledgeNodeByIdAsync(request.TargetNodeId, trackChanges: false, cancellationToken);
+            var targetNode = await _service.KnowledgeGraphService.GetNodeByIdAsync(request.TargetNodeId, cancellationToken);
             if (targetNode is null)
                 return NotFound<string>(_localizer[SharedResourcesKey.KnowledgeNodeNotFound]);
 
             // Guard 2 — cross-language check: both nodes' subjects must share the same Language.
-            var sourceSubject = await _repository.Learning.GetSubjectForNodeAsync(request.SourceNodeId, cancellationToken);
+            var sourceSubject = await _service.KnowledgeGraphService.GetSubjectForNodeAsync(request.SourceNodeId, cancellationToken);
             if (sourceSubject is null)
                 return BadRequest<string>(_localizer[SharedResourcesKey.KnowledgeNodeSubjectNotResolvable]);
 
-            var targetSubject = await _repository.Learning.GetSubjectForNodeAsync(request.TargetNodeId, cancellationToken);
+            var targetSubject = await _service.KnowledgeGraphService.GetSubjectForNodeAsync(request.TargetNodeId, cancellationToken);
             if (targetSubject is null)
                 return BadRequest<string>(_localizer[SharedResourcesKey.KnowledgeNodeSubjectNotResolvable]);
 
@@ -73,7 +78,7 @@ public class AddKnowledgeEdgeCommandHandler : BaseResponseHandler, ICommandHandl
                 return BadRequest<string>(_localizer[SharedResourcesKey.KnowledgeEdgeCrossLanguageForbidden]);
 
             // Guard 3 — duplicate composite-unique triple.
-            var isDuplicate = await _repository.Learning.KnowledgeEdgeDuplicateExistsAsync(
+            var isDuplicate = await _service.KnowledgeGraphService.EdgeDuplicateExistsAsync(
                 request.SourceNodeId,
                 request.TargetNodeId,
                 (int)request.RelationshipType,
@@ -85,15 +90,15 @@ public class AddKnowledgeEdgeCommandHandler : BaseResponseHandler, ICommandHandl
             // Guard 4 — acyclic check for Prerequisite edges.
             if (request.RelationshipType == EdgeRelationshipType.Prerequisite)
             {
-                var existingPrereqEdges = await _repository.Learning.GetAllPrerequisiteEdgesAsync(cancellationToken);
+                var existingPrereqEdges = await _service.KnowledgeGraphService.GetAllPrerequisiteEdgesAsync(cancellationToken);
 
                 // Build a synthetic proposed edge for the validator (Id=0 is fine — unused by DFS).
                 var proposedEdge = new KnowledgeEdge
                 {
-                    SourceNodeId = request.SourceNodeId,
-                    TargetNodeId = request.TargetNodeId,
+                    SourceNodeId     = request.SourceNodeId,
+                    TargetNodeId     = request.TargetNodeId,
                     RelationshipType = EdgeRelationshipType.Prerequisite,
-                    Strength = request.Strength ?? 1.0m
+                    Strength         = request.Strength ?? 1.0m
                 };
 
                 var allEdgesForCheck = existingPrereqEdges.Append(proposedEdge);
@@ -125,12 +130,12 @@ public class AddKnowledgeEdgeCommandHandler : BaseResponseHandler, ICommandHandl
             // Persist the new edge.
             var edge = new KnowledgeEdge
             {
-                SourceNodeId = request.SourceNodeId,
-                TargetNodeId = request.TargetNodeId,
+                SourceNodeId     = request.SourceNodeId,
+                TargetNodeId     = request.TargetNodeId,
                 RelationshipType = request.RelationshipType,
-                Strength = request.Strength ?? 1.0m
+                Strength         = request.Strength ?? 1.0m
             };
-            await _repository.Learning.AddAsync(edge, cancellationToken);
+            await _service.KnowledgeGraphService.StageAddEdgeAsync(edge, cancellationToken);
 
             // Raise domain event on the tracked KnowledgeEdge aggregate — dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12).
             edge.RaiseDomainEvent(new AdminActionPerformedDomainEvent(

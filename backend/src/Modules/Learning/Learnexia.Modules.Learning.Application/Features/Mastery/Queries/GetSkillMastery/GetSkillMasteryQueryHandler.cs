@@ -18,22 +18,25 @@ namespace Learnexia.Modules.Learning.Application.Features.Mastery.Queries.GetSki
 /// Zero-data case: if no mastery row exists (student has not yet attempted the skill, or unknown skillId),
 /// returns a <see cref="MasteryDto"/> with <c>Status = NotStarted</c> and <c>MasteryPercentage = 0</c>.
 /// Never returns 404 or 500 for the zero-data / unknown-skill case.
+///
+/// Option C: all EF access delegated to IMasteryQueryService via ILearningServiceManager.
+/// This handler injects only ILearningServiceManager — no ILearningRepositoryManager, no EF types.
 /// </summary>
 public class GetSkillMasteryQueryHandler
     : BaseResponseHandler, IQueryHandler<GetSkillMasteryQuery, BaseResponse<MasteryDto>>
 {
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public GetSkillMasteryQueryHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository  = repository;
+        _service     = service;
         _currentUser = currentUser;
         _logger      = logger;
         _localizer   = localizer;
@@ -55,7 +58,7 @@ public class GetSkillMasteryQueryHandler
                 return Unauthorized<MasteryDto>(_localizer[SharedResourcesKey.Unauthorized]);
 
             // Step 3 — Fetch the mastery row (may be null if the student hasn't touched this skill).
-            var row = await _repository.Learning
+            var row = await _service.MasteryQueryService
                 .GetSkillMasteryForStudentAsync(studentId.Value, request.SkillId, cancellationToken);
 
             // Step 4 — Zero-data default: return NotStarted instead of 404/500.

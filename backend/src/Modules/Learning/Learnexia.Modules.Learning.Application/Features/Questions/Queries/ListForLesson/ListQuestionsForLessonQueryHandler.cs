@@ -1,11 +1,9 @@
 using AutoMapper;
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Features.Questions.Dtos;
-using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -18,22 +16,25 @@ namespace Learnexia.Modules.Learning.Application.Features.Questions.Queries.List
 ///
 /// SECURITY: This handler is wired to AdminOnly-gated endpoints only.
 /// Student reads use StartAttemptCommandHandler which returns QuizQuestionDto (no CorrectAnswer).
+///
+/// Option-C refactor: AnyAsync + OrderBy + Take + ToListAsync moved into
+/// IQuizQuestionService (LessonExistsAsync + GetQuestionsForLessonAsync).
 /// </summary>
 public class ListQuestionsForLessonQueryHandler
     : BaseResponseHandler, IQueryHandler<ListQuestionsForLessonQuery, BaseResponse<List<AdminQuestionDto>>>
 {
     private readonly ILoggerManager _logger;
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly IMapper _mapper;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public ListQuestionsForLessonQueryHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         IMapper mapper,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _mapper = mapper;
         _logger = logger;
         _localizer = localizer;
@@ -46,20 +47,14 @@ public class ListQuestionsForLessonQueryHandler
         try
         {
             // Verify the lesson exists (global IsDeleted filter active).
-            var lessonExists = await _repository.Learning
-                .AnyAsync<Lesson>(l => l.Id == request.LessonId);
-
+            var lessonExists = await _service.QuizQuestionService.LessonExistsAsync(request.LessonId, cancellationToken);
             if (!lessonExists)
                 return NotFound<List<AdminQuestionDto>>(_localizer[SharedResourcesKey.LessonNotFound]);
 
             // Return all non-deleted questions (global filter excludes IsDeleted=true).
             // IsActive is NOT filtered here — admin sees all, including inactive.
             // Cap at 500 as a DoS backstop (mirrors the reorder bound; a lesson realistically has <50 questions).
-            var questions = await _repository.Learning
-                .GetByCondition<QuizQuestion>(q => q.LessonId == request.LessonId, false)
-                .OrderBy(q => q.SequenceOrder)
-                .Take(500)
-                .ToListAsync(cancellationToken);
+            var questions = await _service.QuizQuestionService.GetQuestionsForLessonAsync(request.LessonId, cancellationToken);
 
             var dtos = _mapper.Map<List<AdminQuestionDto>>(questions);
             return Success(dtos);

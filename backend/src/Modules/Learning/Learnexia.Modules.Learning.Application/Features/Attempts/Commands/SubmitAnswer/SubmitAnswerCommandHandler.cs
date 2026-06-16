@@ -1,7 +1,6 @@
 using AutoMapper;
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Features.Attempts.Dtos;
-using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Modules.Learning.Domain.Services;
 using Learnexia.Shared.Contracts.Learning;
@@ -21,15 +20,16 @@ namespace Learnexia.Modules.Learning.Application.Features.Attempts.Commands.Subm
 /// StudentAnswer row. UnitOfWorkBehavior owns the commit — do NOT call SaveChangesAsync here.
 ///
 /// StudentId is resolved from the JWT (ICurrentUserService) — never from the client request.
-/// IsCorrect is computed server-side via AnswerComparator.AreEqual, dispatching per QuestionType
-/// (MCQ/TrueFalse/FillInBlank/Matching).
+/// IsCorrect is computed server-side via AnswerComparator.AreEqual, dispatching per QuestionType.
 /// HintAvailable is a stub (false) today; P3-04 will wire AI-tutor hint availability.
 /// On success, publishes AnswerSubmittedIntegrationEvent (skipped when QuizQuestion.SkillId is null).
+///
+/// Option C (no EF in Application): all DB access delegated to IAttemptWriteService.
 /// </summary>
 public class SubmitAnswerCommandHandler : BaseResponseHandler,
     ICommandHandler<SubmitAnswerCommand, BaseResponse<SubmitAnswerResponse>>
 {
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly IMapper _mapper;
     private readonly ILoggerManager _logger;
@@ -37,19 +37,19 @@ public class SubmitAnswerCommandHandler : BaseResponseHandler,
     private readonly IPublisher _publisher;
 
     public SubmitAnswerCommandHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         IMapper mapper,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer,
         IPublisher publisher)
     {
-        _repository = repository;
+        _service     = service;
         _currentUser = currentUser;
-        _mapper = mapper;
-        _logger = logger;
-        _localizer = localizer;
-        _publisher = publisher;
+        _mapper      = mapper;
+        _logger      = logger;
+        _localizer   = localizer;
+        _publisher   = publisher;
     }
 
     public async Task<BaseResponse<SubmitAnswerResponse>> Handle(
@@ -63,10 +63,9 @@ public class SubmitAnswerCommandHandler : BaseResponseHandler,
             if (studentId is null)
                 return Unauthorized<SubmitAnswerResponse>(_localizer[SharedResourcesKey.Unauthorized]);
 
-            // Step 2 — Load the attempt with tracking (needed to verify state; child rows are written separately).
-            var attempt = _repository.Learning
-                .GetByCondition<Attempt>(a => a.Id == request.AttemptId, trackChanges: true)
-                .FirstOrDefault();
+            // Step 2 — Load the attempt with tracking (needed to verify state).
+            var attempt = await _service.AttemptWriteService
+                .GetAttemptTrackedAsync(request.AttemptId, cancellationToken);
             if (attempt is null)
                 return NotFound<SubmitAnswerResponse>(_localizer[SharedResourcesKey.AttemptNotFound]);
 
@@ -79,43 +78,32 @@ public class SubmitAnswerCommandHandler : BaseResponseHandler,
                 return BusinessValidation<SubmitAnswerResponse>(
                     _localizer[SharedResourcesKey.AttemptNotInProgress]);
 
-            // Step 5 — Load the question and enforce same-lesson guard to prevent cross-lesson injection.
-            var question = _repository.Learning
-                .GetByCondition<QuizQuestion>(
-                    q => q.Id == request.QuestionId && q.LessonId == attempt.LessonId,
-                    trackChanges: false)
-                .FirstOrDefault();
+            // Step 5 — Load the question and enforce same-lesson guard.
+            var question = await _service.AttemptWriteService
+                .GetQuestionForAnswerAsync(request.QuestionId, attempt.LessonId, cancellationToken);
             if (question is null)
                 return NotFound<SubmitAnswerResponse>(_localizer[SharedResourcesKey.QuestionNotFound]);
 
-            // Step 6 — Re-answer guard: reject if the student already answered this question in this attempt.
-            var alreadyAnswered = _repository.Learning
-                .GetByCondition<StudentAnswer>(
-                    sa => sa.AttemptId == request.AttemptId && sa.QuestionId == request.QuestionId,
-                    trackChanges: false)
-                .Any();
+            // Step 6 — Re-answer guard: reject if the student already answered this question.
+            var alreadyAnswered = await _service.AttemptWriteService
+                .IsAlreadyAnsweredAsync(request.AttemptId, request.QuestionId, cancellationToken);
             if (alreadyAnswered)
                 return BusinessValidation<SubmitAnswerResponse>(
                     _localizer[SharedResourcesKey.QuestionAlreadyAnswered]);
 
             // Step 7 — Correctness check: per-QuestionType comparison via AnswerComparator.
-            // P2-07 introduced per-type semantics (bool.TryParse for TrueFalse, trim+OrdinalIgnoreCase
-            // for FillInBlank, MCQ unchanged). CO-BE-2: Matching uses order-independent pair-set
-            // equality on the {"pairs":[{"leftId","rightId"}]} contract (see AnswerComparator docs).
             var isCorrect = AnswerComparator.AreEqual(
                 question.QuestionType,
                 request.AnswerPayload,
                 question.CorrectAnswer);
 
-            // Step 8 — Stage the new StudentAnswer via AutoMapper (IsCorrect is computed here, not from command).
+            // Step 8 — Stage the new StudentAnswer via AutoMapper.
             // UnitOfWorkBehavior commits atomically — do NOT call SaveChangesAsync.
-            var studentAnswer = _mapper.Map<StudentAnswer>(request);
+            var studentAnswer = _mapper.Map<Learnexia.Modules.Learning.Domain.Entities.StudentAnswer>(request);
             studentAnswer.IsCorrect = isCorrect;
-            await _repository.Learning.AddAsync(studentAnswer, cancellationToken);
+            await _service.AttemptWriteService.StageAddStudentAnswerAsync(studentAnswer, cancellationToken);
 
             // Publish AnswerSubmittedIntegrationEvent (Option B — direct publish per lead decision).
-            // Skip when QuestionType has no SkillId; the integration event requires SkillId.
-            // TODO P3-09: track no-skill answers separately for analytics.
             if (question.SkillId.HasValue)
             {
                 try
@@ -132,8 +120,6 @@ public class SubmitAnswerCommandHandler : BaseResponseHandler,
                 }
                 catch (Exception publishEx)
                 {
-                    // Fail-soft: log + continue. We do NOT fail the user request because of a publisher failure.
-                    // Ghost-event-on-rollback risk is accepted per ADR 0002; outbox is a future hardening story.
                     _logger.LogError(publishEx, $"P2-07: AnswerSubmittedIntegrationEvent publish failed for AttemptId={attempt.Id}, QuestionId={question.Id}, StudentId={studentId.Value}");
                 }
             }
@@ -145,10 +131,10 @@ public class SubmitAnswerCommandHandler : BaseResponseHandler,
             // Step 9 — Return feedback response.
             var response = new SubmitAnswerResponse
             {
-                IsCorrect = isCorrect,
+                IsCorrect     = isCorrect,
                 // CorrectAnswer is returned only when wrong — never give it away for free.
                 CorrectAnswer = isCorrect ? null : question.CorrectAnswer,
-                HintAvailable = false, // TODO P3-04: AI-tutor hint availability — wire to AI tutor surface
+                HintAvailable = false, // TODO P3-04: AI-tutor hint availability
             };
 
             var result = Success(response);
@@ -157,7 +143,6 @@ public class SubmitAnswerCommandHandler : BaseResponseHandler,
         }
         catch (Exception ex)
         {
-            // Step 10 — Log server-side; do NOT echo ex.Message to the client.
             _logger.LogError(ex, "Error in SubmitAnswerCommand");
             return ServerError<SubmitAnswerResponse>();
         }

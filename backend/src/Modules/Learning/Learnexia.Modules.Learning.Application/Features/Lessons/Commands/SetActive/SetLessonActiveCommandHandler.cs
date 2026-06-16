@@ -5,7 +5,6 @@ using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -13,24 +12,26 @@ namespace Learnexia.Modules.Learning.Application.Features.Lessons.Commands.SetAc
 
 /// <summary>
 /// Toggles <c>Lesson.IsActive</c>. Inactive lessons are hidden from student-facing reads.
-/// Publishes <see cref="AdminActionPerformedEvent"/> post-commit, best-effort.
+/// Publishes <see cref="AdminActionPerformedDomainEvent"/> post-commit, best-effort.
 /// Mirrors <c>SetUnitActiveCommandHandler</c> exactly.
+///
+/// Option-C: all EF calls moved into ILessonService (Infrastructure). Handler is now thin.
 /// </summary>
 public class SetLessonActiveCommandHandler
     : BaseResponseHandler, ICommandHandler<SetLessonActiveCommand, BaseResponse<string>>
 {
     private readonly ILoggerManager _logger;
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public SetLessonActiveCommandHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _currentUser = currentUser;
         _logger = logger;
         _localizer = localizer;
@@ -45,15 +46,13 @@ public class SetLessonActiveCommandHandler
             if (request is null)
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
-            var lesson = await _repository.Learning
-                .GetByCondition<Lesson>(l => l.Id == request.LessonId, trackChanges: true)
-                .FirstOrDefaultAsync(cancellationToken);
+            var lesson = await _service.LessonService.GetLessonTrackedAsync(request.LessonId, cancellationToken);
 
             if (lesson is null)
                 return NotFound<string>(_localizer[SharedResourcesKey.LessonNotFound]);
 
             lesson.IsActive = request.IsActive;
-            await _repository.Learning.UpdateAsync(lesson);
+            await _service.LessonService.StageLessonUpdateAsync(lesson, cancellationToken);
 
             var action = request.IsActive ? AdminActions.LessonActivated : AdminActions.LessonDeactivated;
 

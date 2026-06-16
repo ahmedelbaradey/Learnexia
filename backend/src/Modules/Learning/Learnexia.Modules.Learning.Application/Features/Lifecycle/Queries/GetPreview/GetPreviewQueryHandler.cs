@@ -1,16 +1,11 @@
-using System.Text.Json;
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Features.Lifecycle.Dtos;
-using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
-// Disambiguate Learning.Domain.Entities.Unit from MediatR.Unit (indirect via Shared.Kernel.Messaging)
-using LearningUnit = Learnexia.Modules.Learning.Domain.Entities.Unit;
 
 namespace Learnexia.Modules.Learning.Application.Features.Lifecycle.Queries.GetPreview;
 
@@ -23,20 +18,23 @@ namespace Learnexia.Modules.Learning.Application.Features.Lifecycle.Queries.GetP
 ///
 /// SECURITY: IgnoreQueryFilters() is intentional here — admins must see Draft content.
 /// This handler MUST NOT be reachable by student roles (enforced by [Authorize(AdminOnly)] on the endpoint).
+///
+/// Option C: all EF access delegated to ILifecycleService via ILearningServiceManager.
+/// This handler injects only ILearningServiceManager — no ILearningRepositoryManager, no EF types.
 /// </summary>
 public class GetPreviewQueryHandler
     : BaseResponseHandler, IQueryHandler<GetPreviewQuery, BaseResponse<PreviewDto>>
 {
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public GetPreviewQueryHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _logger = logger;
         _localizer = localizer;
     }
@@ -54,68 +52,45 @@ public class GetPreviewQueryHandler
             string snapshot;
 
             // Load the entity ignoring ALL query filters (soft-delete + global filters).
-            // IgnoreQueryFilters is the correct call here: the global filter excludes IsDeleted rows,
-            // and there is no separate LifecycleState global filter (LifecycleState filtering is
-            // applied per-query in student reads). However we still want to see archived/draft rows.
             switch (request.EntityType)
             {
                 case VersionedEntityType.Subject:
                 {
-                    var entity = await _repository.Learning
-                        .GetByCondition<Subject>(s => s.Id == request.EntityId, trackChanges: false)
-                        .IgnoreQueryFilters()
-                        .FirstOrDefaultAsync(cancellationToken);
-
-                    if (entity is null)
+                    var result = await _service.LifecycleService
+                        .GetPreviewSubjectAsync(request.EntityId, cancellationToken);
+                    if (result is null)
                         return NotFound<PreviewDto>(_localizer[SharedResourcesKey.VersionedEntityNotFound]);
-
-                    currentState = entity.LifecycleState;
-                    snapshot = JsonSerializer.Serialize(entity);
+                    (currentState, snapshot) = result.Value;
                     break;
                 }
 
                 case VersionedEntityType.Unit:
                 {
-                    var entity = await _repository.Learning
-                        .GetByCondition<LearningUnit>(u => u.Id == request.EntityId, trackChanges: false)
-                        .IgnoreQueryFilters()
-                        .FirstOrDefaultAsync(cancellationToken);
-
-                    if (entity is null)
+                    var result = await _service.LifecycleService
+                        .GetPreviewUnitAsync(request.EntityId, cancellationToken);
+                    if (result is null)
                         return NotFound<PreviewDto>(_localizer[SharedResourcesKey.VersionedEntityNotFound]);
-
-                    currentState = entity.LifecycleState;
-                    snapshot = JsonSerializer.Serialize(entity);
+                    (currentState, snapshot) = result.Value;
                     break;
                 }
 
                 case VersionedEntityType.Lesson:
                 {
-                    var entity = await _repository.Learning
-                        .GetByCondition<Lesson>(l => l.Id == request.EntityId, trackChanges: false)
-                        .IgnoreQueryFilters()
-                        .FirstOrDefaultAsync(cancellationToken);
-
-                    if (entity is null)
+                    var result = await _service.LifecycleService
+                        .GetPreviewLessonAsync(request.EntityId, cancellationToken);
+                    if (result is null)
                         return NotFound<PreviewDto>(_localizer[SharedResourcesKey.VersionedEntityNotFound]);
-
-                    currentState = entity.LifecycleState;
-                    snapshot = JsonSerializer.Serialize(entity);
+                    (currentState, snapshot) = result.Value;
                     break;
                 }
 
                 case VersionedEntityType.QuizQuestion:
                 {
-                    var entity = await _repository.Learning
-                        .GetByCondition<QuizQuestion>(q => q.Id == request.EntityId, trackChanges: false)
-                        .IgnoreQueryFilters()
-                        .FirstOrDefaultAsync(cancellationToken);
-
-                    if (entity is null)
+                    var result = await _service.LifecycleService
+                        .GetPreviewQuizQuestionAsync(request.EntityId, cancellationToken);
+                    if (result is null)
                         return NotFound<PreviewDto>(_localizer[SharedResourcesKey.VersionedEntityNotFound]);
-
-                    currentState = entity.LifecycleState;
-                    snapshot = JsonSerializer.Serialize(entity);
+                    (currentState, snapshot) = result.Value;
                     break;
                 }
 
@@ -124,21 +99,21 @@ public class GetPreviewQueryHandler
             }
 
             // Resolve the owning Subject's language for traceability.
-            var owningSubject = await _repository.Learning
+            var owningSubject = await _service.LifecycleService
                 .GetOwningSubjectAsync(request.EntityType, request.EntityId, cancellationToken);
 
             var dto = new PreviewDto
             {
-                EntityType    = request.EntityType,
-                EntityId      = request.EntityId,
-                CurrentState  = currentState,
-                Language      = owningSubject?.Language ?? ContentLanguage.Ar,
-                Snapshot      = snapshot,
+                EntityType   = request.EntityType,
+                EntityId     = request.EntityId,
+                CurrentState = currentState,
+                Language     = owningSubject?.Language ?? ContentLanguage.Ar,
+                Snapshot     = snapshot,
             };
 
-            var result = Success(dto);
-            result.Message = _localizer[SharedResourcesKey.PreviewRetrievedSuccessfully];
-            return result;
+            var result2 = Success(dto);
+            result2.Message = _localizer[SharedResourcesKey.PreviewRetrievedSuccessfully];
+            return result2;
         }
         catch (Exception ex)
         {

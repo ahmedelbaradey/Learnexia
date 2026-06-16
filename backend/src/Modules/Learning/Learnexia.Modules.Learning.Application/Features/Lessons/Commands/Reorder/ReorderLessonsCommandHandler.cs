@@ -5,7 +5,6 @@ using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -14,24 +13,27 @@ namespace Learnexia.Modules.Learning.Application.Features.Lessons.Commands.Reord
 /// <summary>
 /// Batch-updates SequenceOrder on the given Lessons.
 /// All Lessons must belong to the same UnitId — cross-unit reorder is rejected.
-/// Publishes <see cref="AdminActionPerformedEvent"/> post-commit, best-effort.
+/// Publishes <see cref="AdminActionPerformedDomainEvent"/> post-commit, best-effort.
 /// Mirrors <c>ReorderUnitsCommandHandler</c> exactly.
+///
+/// Option-C: all EF calls moved into ILessonService.GetLessonsTrackedByIdsAsync (Infrastructure).
+/// Handler is now thin.
 /// </summary>
 public class ReorderLessonsCommandHandler
     : BaseResponseHandler, ICommandHandler<ReorderLessonsCommand, BaseResponse<string>>
 {
     private readonly ILoggerManager _logger;
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public ReorderLessonsCommandHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _currentUser = currentUser;
         _logger = logger;
         _localizer = localizer;
@@ -47,9 +49,7 @@ public class ReorderLessonsCommandHandler
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
             // Load all specified lessons with tracking.
-            var lessons = await _repository.Learning
-                .GetByCondition<Lesson>(l => request.LessonIds.Contains(l.Id), trackChanges: true)
-                .ToListAsync(cancellationToken);
+            var lessons = await _service.LessonService.GetLessonsTrackedByIdsAsync(request.LessonIds, cancellationToken);
 
             if (lessons.Count != request.LessonIds.Count)
                 return NotFound<string>(_localizer[SharedResourcesKey.LessonNotFound]);
@@ -64,7 +64,7 @@ public class ReorderLessonsCommandHandler
             for (var i = 0; i < request.LessonIds.Count; i++)
             {
                 lessonsById[request.LessonIds[i]].SequenceOrder = i;
-                await _repository.Learning.UpdateAsync(lessonsById[request.LessonIds[i]]);
+                await _service.LessonService.StageLessonUpdateAsync(lessonsById[request.LessonIds[i]], cancellationToken);
             }
 
             // Raise domain event on the first tracked lesson (representative for the batch).

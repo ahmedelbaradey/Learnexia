@@ -1,6 +1,5 @@
 using AutoMapper;
 using Learnexia.Modules.Learning.Application.Abstractions;
-using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Events;
 using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
@@ -15,24 +14,26 @@ namespace Learnexia.Modules.Learning.Application.Features.Units.Commands.Add;
 /// <summary>
 /// P7-12 fix (Bucket C): Domain event is raised directly on the mapped Unit instance.
 /// See AddSubjectCommandHandler for the full rationale — same GetByCondition-null bug and same fix.
+///
+/// Option C: all EF queries delegated to IUnitService. Handler injects only ILearningServiceManager.
 /// </summary>
 public class AddUnitCommandHandler : BaseResponseHandler, ICommandHandler<AddUnitCommand, BaseResponse<string>>
 {
     private readonly ILoggerManager _logger;
     private readonly IMapper _mapper;
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public AddUnitCommandHandler(
         IMapper mapper,
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
         _mapper = mapper;
-        _repository = repository;
+        _service = service;
         _currentUser = currentUser;
         _logger = logger;
         _localizer = localizer;
@@ -46,22 +47,14 @@ public class AddUnitCommandHandler : BaseResponseHandler, ICommandHandler<AddUni
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
             // DEFECT-2 fix: pre-check parent Subject existence before staging the insert.
-            // Without this, a bad SubjectId reaches SaveChangesAsync → FK violation → DbUpdateException → 500.
-            var subjectExists = await _repository.Learning
-                .AnyAsync<Subject>(s => s.Id == request.SubjectId);
-
+            var subjectExists = await _service.UnitService.SubjectExistsAsync(request.SubjectId, cancellationToken);
             if (!subjectExists)
                 return NotFound<string>(_localizer[SharedResourcesKey.SubjectNotFound]);
 
             // P7-12 fix: map and stage inline so we retain the tracked-instance reference.
             var unit = _mapper.Map<LearningUnit>(request);
-            await _repository.Learning.AddAsync(unit, cancellationToken);
-
-            // P7-12 Bucket C fix: flush within the UoW's open transaction so the DB assigns
-            // unit.Id BEFORE we raise the domain event. The UoW's own SaveChangesAsync after
-            // this handler returns is then a no-op (no new staged changes). No double-insert.
             var adminUserId = _currentUser.UserId.GetValueOrDefault();
-            await _repository.Learning.FlushAsync(adminUserId, cancellationToken);
+            await _service.UnitService.StageAddUnitAsync(unit, adminUserId, cancellationToken);
 
             // Raise domain event on the tracked aggregate — dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12).
             // Details: structural ids only; no PII.

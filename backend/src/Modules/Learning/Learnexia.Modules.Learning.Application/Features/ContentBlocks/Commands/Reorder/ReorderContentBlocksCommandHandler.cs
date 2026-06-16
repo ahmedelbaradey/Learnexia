@@ -5,7 +5,6 @@ using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -18,22 +17,24 @@ namespace Learnexia.Modules.Learning.Application.Features.ContentBlocks.Commands
 /// P7-12: ContentBlock is FullAuditedEntity (not AggregateRoot) — domain event raised on the
 /// parent Lesson aggregate (representative for the batch).
 /// Dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12 fix).
+///
+/// Option-C: all EF calls moved into IContentBlockService (Infrastructure). Handler is now thin.
 /// </summary>
 public class ReorderContentBlocksCommandHandler
     : BaseResponseHandler, ICommandHandler<ReorderContentBlocksCommand, BaseResponse<string>>
 {
     private readonly ILoggerManager _logger;
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public ReorderContentBlocksCommandHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _currentUser = currentUser;
         _logger = logger;
         _localizer = localizer;
@@ -49,11 +50,7 @@ public class ReorderContentBlocksCommandHandler
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
             // Load all specified blocks with tracking.
-            var blocks = await _repository.Learning
-                .GetByCondition<ContentBlock>(
-                    cb => request.ContentBlockIds.Contains(cb.Id),
-                    trackChanges: true)
-                .ToListAsync(cancellationToken);
+            var blocks = await _service.ContentBlockService.GetContentBlocksTrackedByIdsAsync(request.ContentBlockIds, cancellationToken);
 
             if (blocks.Count != request.ContentBlockIds.Count)
                 return NotFound<string>(_localizer[SharedResourcesKey.ContentBlockNotFound]);
@@ -68,15 +65,13 @@ public class ReorderContentBlocksCommandHandler
             for (var i = 0; i < request.ContentBlockIds.Count; i++)
             {
                 blocksById[request.ContentBlockIds[i]].SequenceOrder = i;
-                await _repository.Learning.UpdateAsync(blocksById[request.ContentBlockIds[i]]);
+                await _service.ContentBlockService.StageContentBlockUpdateAsync(blocksById[request.ContentBlockIds[i]], cancellationToken);
             }
 
             // ContentBlock is FullAuditedEntity (not AggregateRoot) — raise on the parent Lesson aggregate.
-            // Dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12).
-            var lesson = await _repository.Learning
-                .GetByCondition<Lesson>(l => l.Id == lessonIds[0], trackChanges: true)
-                .FirstOrDefaultAsync(cancellationToken);
+            var lesson = await _service.ContentBlockService.GetLessonTrackedAsync(lessonIds[0], cancellationToken);
 
+            // Dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12).
             lesson?.RaiseDomainEvent(new AdminActionPerformedDomainEvent(
                 AdminUserId: _currentUser.UserId.GetValueOrDefault(),
                 Action: AdminActions.ContentBlockReordered,

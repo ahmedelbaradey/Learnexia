@@ -1,13 +1,11 @@
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Features.Subjects.Dtos;
 using Learnexia.Modules.Learning.Application.Helpers;
-using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Modules.Learning.Domain.Services;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -26,11 +24,13 @@ namespace Learnexia.Modules.Learning.Application.Features.Subjects.Queries.GetSu
 ///
 /// Empty subject list → 200 + empty collection (not 404).
 /// Invalid grade number (outside 1–6) → 400. Unknown grade number → 404.
+///
+/// Option C: all EF queries delegated to ISubjectService. Handler injects only ILearningServiceManager.
 /// </summary>
 public class GetSubjectsForGradeQueryHandler
     : BaseResponseHandler, IQueryHandler<GetSubjectsForGradeQuery, BaseResponse<List<StudentSubjectDto>>>
 {
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
@@ -45,12 +45,12 @@ public class GetSubjectsForGradeQueryHandler
     };
 
     public GetSubjectsForGradeQueryHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _currentUser = currentUser;
         _logger = logger;
         _localizer = localizer;
@@ -65,10 +65,7 @@ public class GetSubjectsForGradeQueryHandler
             if (request.Grade < 1 || request.Grade > 6)
                 return BadRequest<List<StudentSubjectDto>>(_localizer[SharedResourcesKey.GradeOutOfRange]);
 
-            var grade = await _repository.Learning
-                .GetByCondition<Grade>(g => g.Number == request.Grade, false)
-                .FirstOrDefaultAsync(cancellationToken);
-
+            var grade = await _service.SubjectService.GetGradeByNumberAsync(request.Grade, cancellationToken);
             if (grade is null)
                 return NotFound<List<StudentSubjectDto>>(_localizer[SharedResourcesKey.GradeNotFound]);
 
@@ -78,9 +75,7 @@ public class GetSubjectsForGradeQueryHandler
             // Load all ACTIVE + PUBLISHED subjects for the grade once, then resolve per-code in memory.
             // P7-01: IsActive == true filter — inactive subjects hidden from student reads.
             // P7-05: LifecycleState == Published filter — Draft/Archived subjects not served to students.
-            var allGradeSubjects = await _repository.Learning
-                .GetByCondition<Subject>(s => s.GradeId == grade.Id && s.IsActive && s.LifecycleState == LifecycleState.Published, false)
-                .ToListAsync(cancellationToken);
+            var allGradeSubjects = await _service.SubjectService.GetActivePublishedSubjectsForGradeAsync(grade.Id, cancellationToken);
 
             var dtos = new List<StudentSubjectDto>(AllSubjectCodes.Length);
 

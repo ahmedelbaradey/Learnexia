@@ -5,7 +5,6 @@ using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -15,22 +14,24 @@ namespace Learnexia.Modules.Learning.Application.Features.Subjects.Commands.Reor
 /// Batch-updates SequenceOrder on the given Subjects.
 /// All Subjects must belong to the same (GradeId, Language) tree — cross-tree reorder is rejected.
 /// The UnitOfWorkBehavior's transaction wraps all staged updates atomically (deferred-commit module).
-/// Publishes <see cref="AdminActionPerformedEvent"/> post-commit, best-effort.
+/// Publishes <see cref="AdminActionPerformedDomainEvent"/> post-commit, best-effort.
+///
+/// Option C: all EF queries delegated to ISubjectService. Handler injects only ILearningServiceManager.
 /// </summary>
 public class ReorderSubjectsCommandHandler : BaseResponseHandler, ICommandHandler<ReorderSubjectsCommand, BaseResponse<string>>
 {
     private readonly ILoggerManager _logger;
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public ReorderSubjectsCommandHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _currentUser = currentUser;
         _logger = logger;
         _localizer = localizer;
@@ -44,9 +45,7 @@ public class ReorderSubjectsCommandHandler : BaseResponseHandler, ICommandHandle
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
             // Load all specified subjects with tracking.
-            var subjects = await _repository.Learning
-                .GetByCondition<Subject>(s => request.SubjectIds.Contains(s.Id), trackChanges: true)
-                .ToListAsync(cancellationToken);
+            var subjects = await _service.SubjectService.GetSubjectsTrackedByIdsAsync(request.SubjectIds, cancellationToken);
 
             if (subjects.Count != request.SubjectIds.Count)
                 return NotFound<string>(_localizer[SharedResourcesKey.SubjectNotFound]);
@@ -63,7 +62,7 @@ public class ReorderSubjectsCommandHandler : BaseResponseHandler, ICommandHandle
             for (var i = 0; i < request.SubjectIds.Count; i++)
             {
                 subjectsById[request.SubjectIds[i]].SequenceOrder = i;
-                await _repository.Learning.UpdateAsync(subjectsById[request.SubjectIds[i]]);
+                await _service.SubjectService.StageSubjectUpdateAsync(subjectsById[request.SubjectIds[i]], cancellationToken);
             }
 
             // Raise domain event on the first tracked subject (representative for the batch).

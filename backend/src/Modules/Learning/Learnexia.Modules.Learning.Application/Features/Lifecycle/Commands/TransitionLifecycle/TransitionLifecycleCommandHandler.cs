@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
@@ -8,7 +7,6 @@ using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Entities;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 // Disambiguate Learning.Domain.Entities.Unit from MediatR.Unit
@@ -29,8 +27,8 @@ namespace Learnexia.Modules.Learning.Application.Features.Lifecycle.Commands.Tra
 ///
 /// On transition to Published:
 /// - Loads the entity with trackChanges=true.
-/// - Serializes it to JSON as the snapshot.
-/// - Resolves the owning Subject language via <see cref="ILearningRepository.GetOwningSubjectAsync"/>.
+/// - Serializes it to JSON as the snapshot (via ILifecycleService.SerializeSnapshot).
+/// - Resolves the owning Subject language via ILifecycleService.GetOwningSubjectAsync.
 /// - Creates a new <see cref="ContentVersion"/> row (VersionNumber = maxExisting + 1).
 ///
 /// The UnitOfWorkBehavior wraps all staged writes in a single transaction.
@@ -43,22 +41,25 @@ namespace Learnexia.Modules.Learning.Application.Features.Lifecycle.Commands.Tra
 /// P7-05 security notes:
 /// - PublishedByUserId is read from JWT (_currentUser.UserId) — NEVER from the request body.
 /// - No client-supplied Snapshot — snapshot is server-generated from the live entity.
+///
+/// Option C: all EF access delegated to ILifecycleService via ILearningServiceManager.
+/// This handler injects only ILearningServiceManager — no ILearningRepositoryManager, no EF types.
 /// </summary>
 public class TransitionLifecycleCommandHandler
     : BaseResponseHandler, ICommandHandler<TransitionLifecycleCommand, BaseResponse<string>>
 {
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public TransitionLifecycleCommandHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _currentUser = currentUser;
         _logger = logger;
         _localizer = localizer;
@@ -78,10 +79,8 @@ public class TransitionLifecycleCommandHandler
             {
                 case VersionedEntityType.Subject:
                 {
-                    var entity = await _repository.Learning
-                        .GetByCondition<Subject>(s => s.Id == request.EntityId, trackChanges: true)
-                        .IgnoreQueryFilters()
-                        .FirstOrDefaultAsync(cancellationToken);
+                    var entity = await _service.LifecycleService
+                        .GetTrackedSubjectIgnoreFiltersAsync(request.EntityId, cancellationToken);
 
                     if (entity is null)
                         return NotFound<string>(_localizer[SharedResourcesKey.VersionedEntityNotFound]);
@@ -94,7 +93,7 @@ public class TransitionLifecycleCommandHandler
                     if (validation is not null) return validation;
 
                     entity.LifecycleState = request.TargetState;
-                    await _repository.Learning.UpdateAsync(entity);
+                    await _service.LifecycleService.StageEntityUpdateAsync(entity, cancellationToken);
 
                     if (request.TargetState == LifecycleState.Published)
                         await CreateSnapshotAsync(request.EntityType, entity.Id, entity, cancellationToken);
@@ -106,10 +105,8 @@ public class TransitionLifecycleCommandHandler
 
                 case VersionedEntityType.Unit:
                 {
-                    var entity = await _repository.Learning
-                        .GetByCondition<LearningUnit>(u => u.Id == request.EntityId, trackChanges: true)
-                        .IgnoreQueryFilters()
-                        .FirstOrDefaultAsync(cancellationToken);
+                    var entity = await _service.LifecycleService
+                        .GetTrackedUnitIgnoreFiltersAsync(request.EntityId, cancellationToken);
 
                     if (entity is null)
                         return NotFound<string>(_localizer[SharedResourcesKey.VersionedEntityNotFound]);
@@ -122,7 +119,7 @@ public class TransitionLifecycleCommandHandler
                     if (validation is not null) return validation;
 
                     entity.LifecycleState = request.TargetState;
-                    await _repository.Learning.UpdateAsync(entity);
+                    await _service.LifecycleService.StageEntityUpdateAsync(entity, cancellationToken);
 
                     if (request.TargetState == LifecycleState.Published)
                         await CreateSnapshotAsync(request.EntityType, entity.Id, entity, cancellationToken);
@@ -134,10 +131,8 @@ public class TransitionLifecycleCommandHandler
 
                 case VersionedEntityType.Lesson:
                 {
-                    var entity = await _repository.Learning
-                        .GetByCondition<Lesson>(l => l.Id == request.EntityId, trackChanges: true)
-                        .IgnoreQueryFilters()
-                        .FirstOrDefaultAsync(cancellationToken);
+                    var entity = await _service.LifecycleService
+                        .GetTrackedLessonIgnoreFiltersAsync(request.EntityId, cancellationToken);
 
                     if (entity is null)
                         return NotFound<string>(_localizer[SharedResourcesKey.VersionedEntityNotFound]);
@@ -150,7 +145,7 @@ public class TransitionLifecycleCommandHandler
                     if (validation is not null) return validation;
 
                     entity.LifecycleState = request.TargetState;
-                    await _repository.Learning.UpdateAsync(entity);
+                    await _service.LifecycleService.StageEntityUpdateAsync(entity, cancellationToken);
 
                     if (request.TargetState == LifecycleState.Published)
                         await CreateSnapshotAsync(request.EntityType, entity.Id, entity, cancellationToken);
@@ -162,10 +157,8 @@ public class TransitionLifecycleCommandHandler
 
                 case VersionedEntityType.QuizQuestion:
                 {
-                    var entity = await _repository.Learning
-                        .GetByCondition<QuizQuestion>(q => q.Id == request.EntityId, trackChanges: true)
-                        .IgnoreQueryFilters()
-                        .FirstOrDefaultAsync(cancellationToken);
+                    var entity = await _service.LifecycleService
+                        .GetTrackedQuizQuestionIgnoreFiltersAsync(request.EntityId, cancellationToken);
 
                     if (entity is null)
                         return NotFound<string>(_localizer[SharedResourcesKey.VersionedEntityNotFound]);
@@ -178,7 +171,7 @@ public class TransitionLifecycleCommandHandler
                     if (validation is not null) return validation;
 
                     entity.LifecycleState = request.TargetState;
-                    await _repository.Learning.UpdateAsync(entity);
+                    await _service.LifecycleService.StageEntityUpdateAsync(entity, cancellationToken);
 
                     if (request.TargetState == LifecycleState.Published)
                         await CreateSnapshotAsync(request.EntityType, entity.Id, entity, cancellationToken);
@@ -264,12 +257,8 @@ public class TransitionLifecycleCommandHandler
     /// Assigns VersionNumber = maxExisting + 1.
     /// PublishedByUserId is stamped from the JWT.
     ///
-    /// Security #4: snapshot serializes ONLY the editorial (whitelist) fields that the
-    /// corresponding <c>ApplyXxxSnapshot</c> rollback method restores — not the full
-    /// EF-tracked entity (which would cause circular-reference JsonException via navigations,
-    /// and produce bloated/nondeterministic snapshots). Snapshot ↔ rollback are symmetric:
-    /// the same field names are used by <see cref="RollbackToVersionCommandHandler"/>'s
-    /// <c>ApplyXxxSnapshot</c> helpers to deserialise and reapply state.
+    /// Security #4: snapshot serializes ONLY the editorial (whitelist) fields — via
+    /// ILifecycleService.SerializeSnapshot (same whitelist as ApplyXxxSnapshot in the rollback handler).
     /// </summary>
     private async Task CreateSnapshotAsync(
         VersionedEntityType entityType,
@@ -277,59 +266,15 @@ public class TransitionLifecycleCommandHandler
         object entity,
         CancellationToken cancellationToken)
     {
-        var maxVersion = await _repository.Learning
+        var maxVersion = await _service.LifecycleService
             .GetMaxVersionNumberAsync(entityType, entityId, cancellationToken);
 
-        var owningSubject = await _repository.Learning
+        var owningSubject = await _service.LifecycleService
             .GetOwningSubjectAsync(entityType, entityId, cancellationToken);
 
         var language = owningSubject?.Language ?? ContentLanguage.Ar;
 
-        // Serialize a whitelist-DTO of only the editorial fields — symmetric with the
-        // ApplyXxxSnapshot rollback helpers in RollbackToVersionCommandHandler.
-        var snapshot = entityType switch
-        {
-            VersionedEntityType.Subject when entity is Subject s => JsonSerializer.Serialize(new
-            {
-                s.Name,
-                s.Country,
-                SubjectCode    = (int)s.SubjectCode,
-                Language       = (int)s.Language,
-                s.SequenceOrder,
-                s.IsActive,
-            }),
-            VersionedEntityType.Unit when entity is LearningUnit u => JsonSerializer.Serialize(new
-            {
-                u.Name,
-                u.SequenceOrder,
-                u.IsActive,
-            }),
-            VersionedEntityType.Lesson when entity is Lesson l => JsonSerializer.Serialize(new
-            {
-                l.Name,
-                Difficulty      = (int)l.Difficulty,
-                l.SequenceOrder,
-                l.IsLocked,
-                l.IsActive,
-                l.EstimatedMinutes,
-                l.Explanation,
-                l.Visual,
-                l.IsBoss,
-            }),
-            VersionedEntityType.QuizQuestion when entity is QuizQuestion q => JsonSerializer.Serialize(new
-            {
-                q.QuestionText,
-                QuestionType = (int)q.QuestionType,
-                q.Options,
-                q.CorrectAnswer,
-                Difficulty   = (int)q.Difficulty,
-                GeneratedBy  = (int)q.GeneratedBy,
-                q.SequenceOrder,
-                q.IsActive,
-            }),
-            _ => throw new InvalidOperationException(
-                $"No snapshot whitelist defined for EntityType={entityType}"),
-        };
+        var snapshot = _service.LifecycleService.SerializeSnapshot(entityType, entity);
 
         var version = new ContentVersion
         {
@@ -342,6 +287,6 @@ public class TransitionLifecycleCommandHandler
             Language          = language,
         };
 
-        await _repository.Learning.AddAsync(version, cancellationToken);
+        await _service.LifecycleService.StageAddContentVersionAsync(version, cancellationToken);
     }
 }

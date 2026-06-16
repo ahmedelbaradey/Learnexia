@@ -19,23 +19,28 @@ namespace Learnexia.Modules.Learning.Application.Features.Skills.Commands.Add;
 /// <c>Successed=false</c> and does NOT create an orphan skill.
 ///
 /// P7-12: Domain event raised on the Skill aggregate (post-commit via UnitOfWorkBehavior, ADR 0002).
+///
+/// Option-C refactor: AnyAsync + AddAsync calls moved into ISkillService
+/// (ConceptExistsAsync, GetSubjectByConceptIdAsync, StageAddSkillAsync, StageAddKnowledgeNodeAsync).
+/// IMapper is kept in the handler to apply the SkillsProfile mass-assignment guards
+/// (Name, MasteryThreshold, EstimatedTimeMinutes, ConceptId — IsActive/IsDeleted ignored).
 /// </summary>
 public class AddSkillCommandHandler : BaseResponseHandler, ICommandHandler<AddSkillCommand, BaseResponse<string>>
 {
     private readonly ILoggerManager _logger;
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly IMapper _mapper;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public AddSkillCommandHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         IMapper mapper,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _currentUser = currentUser;
         _mapper = mapper;
         _logger = logger;
@@ -52,33 +57,31 @@ public class AddSkillCommandHandler : BaseResponseHandler, ICommandHandler<AddSk
             // DEFECT-2 fix: explicit Concept existence check before staging the insert.
             // GetSubjectByConceptIdAsync returns null when the concept is missing, but making
             // the 404 explicit here ensures the correct status code and message is returned.
-            var conceptExists = await _repository.Learning
-                .AnyAsync<Concept>(c => c.Id == request.ConceptId);
-
+            var conceptExists = await _service.SkillService.ConceptExistsAsync(request.ConceptId, cancellationToken);
             if (!conceptExists)
                 return NotFound<string>(_localizer[SharedResourcesKey.ConceptNotFound]);
 
             // Resolve the Concept → Subject chain needed for the auto-created KnowledgeNode.
-            var subject = await _repository.Learning.GetSubjectByConceptIdAsync(request.ConceptId, cancellationToken);
-
+            var subject = await _service.SkillService.GetSubjectByConceptIdAsync(request.ConceptId, cancellationToken);
             if (subject is null)
                 return BadRequest<string>(_localizer[SharedResourcesKey.SkillNodeAutoCreateFailed]);
 
-            // Map command → entity and stage the skill.
+            // Map command → entity applying SkillsProfile mass-assignment guards
+            // (IsActive and IsDeleted are ignored by the profile; all other fields are mapped).
             var skill = _mapper.Map<Skill>(request);
-            await _repository.Learning.AddAsync(skill, cancellationToken);
+            await _service.SkillService.StageAddSkillAsync(skill, cancellationToken);
 
-            // Auto-create the wrapping KnowledgeNode.
+            // Auto-create the wrapping KnowledgeNode in the same UoW transaction.
             var node = new KnowledgeNode
             {
-                Name = request.Name,
-                NodeType = KnowledgeNodeType.Skill,
-                SubjectId = subject.Id,
-                GradeId = subject.GradeId,
+                Name       = request.Name,
+                NodeType   = KnowledgeNodeType.Skill,
+                SubjectId  = subject.Id,
+                GradeId    = subject.GradeId,
                 Difficulty = 3,
-                Skill = skill
+                Skill      = skill
             };
-            await _repository.Learning.AddAsync(node, cancellationToken);
+            await _service.SkillService.StageAddKnowledgeNodeAsync(node, cancellationToken);
 
             // Raise domain event on the Skill aggregate — dispatched post-commit by UnitOfWorkBehavior (ADR 0002 / P7-12).
             skill.RaiseDomainEvent(new AdminActionPerformedDomainEvent(

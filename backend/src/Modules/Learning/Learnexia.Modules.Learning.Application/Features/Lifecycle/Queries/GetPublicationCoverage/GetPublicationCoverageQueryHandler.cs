@@ -1,11 +1,9 @@
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Features.Lifecycle.Dtos;
-using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -21,6 +19,9 @@ namespace Learnexia.Modules.Learning.Application.Features.Lifecycle.Queries.GetP
 /// Admin read — no IsActive filter applied; global IsDeleted filter is still active.
 /// Does NOT apply LifecycleState filter — shows all states (Draft/Published/Archived) so admins
 /// can see exactly which trees have been published and which remain draft.
+///
+/// Option C: all EF access delegated to ILifecycleService via ILearningServiceManager.
+/// This handler injects only ILearningServiceManager — no ILearningRepositoryManager, no EF types.
 /// </summary>
 public class GetPublicationCoverageQueryHandler
     : BaseResponseHandler, IQueryHandler<GetPublicationCoverageQuery, BaseResponse<PublicationCoverageReportDto>>
@@ -36,16 +37,16 @@ public class GetPublicationCoverageQueryHandler
         (SubjectCode.ENGLISH, ContentLanguage.En),   // pinned
     };
 
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public GetPublicationCoverageQueryHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _logger = logger;
         _localizer = localizer;
     }
@@ -59,15 +60,14 @@ public class GetPublicationCoverageQueryHandler
             if (request.GradeId <= 0)
                 return BadRequest<PublicationCoverageReportDto>(_localizer[SharedResourcesKey.EmptyIdValidation]);
 
-            var grade = await _repository.Learning
-                .GetByCondition<Grade>(g => g.Id == request.GradeId, trackChanges: false)
-                .FirstOrDefaultAsync(cancellationToken);
+            var grade = await _service.LifecycleService
+                .GetGradeByIdNoTrackingAsync(request.GradeId, cancellationToken);
 
             if (grade is null)
                 return NotFound<PublicationCoverageReportDto>(_localizer[SharedResourcesKey.GradeNotFound]);
 
             // Load all non-deleted subjects for this grade. Admin read: no IsActive filter.
-            var subjects = await _repository.Learning
+            var subjects = await _service.LifecycleService
                 .GetSubjectsForCoverageAsync(request.GradeId, cancellationToken);
 
             var subjectLookup = subjects.ToDictionary(s => (s.SubjectCode, s.Language));

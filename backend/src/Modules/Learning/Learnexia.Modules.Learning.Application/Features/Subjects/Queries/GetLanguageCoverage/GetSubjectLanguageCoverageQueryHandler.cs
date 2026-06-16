@@ -1,10 +1,8 @@
 using Learnexia.Modules.Learning.Application.Abstractions;
-using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -19,11 +17,13 @@ namespace Learnexia.Modules.Learning.Application.Features.Subjects.Queries.GetLa
 ///
 /// Admin read — soft-deleted subjects are excluded by the global query filter (only non-deleted trees
 /// are "present"), and IsActive filtering is NOT applied (admins see inactive too).
+///
+/// Option C: all EF queries delegated to ISubjectService. Handler injects only ILearningServiceManager.
 /// </summary>
 public class GetSubjectLanguageCoverageQueryHandler
     : BaseResponseHandler, IQueryHandler<GetSubjectLanguageCoverageQuery, BaseResponse<SubjectLanguageCoverageReportDto>>
 {
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
@@ -39,11 +39,11 @@ public class GetSubjectLanguageCoverageQueryHandler
     };
 
     public GetSubjectLanguageCoverageQueryHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _logger = logger;
         _localizer = localizer;
     }
@@ -57,18 +57,13 @@ public class GetSubjectLanguageCoverageQueryHandler
             if (request.GradeId <= 0)
                 return BadRequest<SubjectLanguageCoverageReportDto>(_localizer[SharedResourcesKey.EmptyIdValidation]);
 
-            var grade = await _repository.Learning
-                .GetByCondition<Grade>(g => g.Id == request.GradeId, trackChanges: false)
-                .FirstOrDefaultAsync(cancellationToken);
-
+            var grade = await _service.SubjectService.GetGradeByIdAsync(request.GradeId, cancellationToken);
             if (grade is null)
                 return NotFound<SubjectLanguageCoverageReportDto>(_localizer[SharedResourcesKey.GradeNotFound]);
 
             // Load all non-deleted subjects for this grade (global IsDeleted filter is active).
             // Admin read: no IsActive filter — show inactive trees too.
-            var subjects = await _repository.Learning
-                .GetByCondition<Subject>(s => s.GradeId == request.GradeId, trackChanges: false)
-                .ToListAsync(cancellationToken);
+            var subjects = await _service.SubjectService.GetSubjectsForGradeAdminAsync(request.GradeId, cancellationToken);
 
             var subjectLookup = subjects
                 .ToDictionary(s => (s.SubjectCode, s.Language));

@@ -7,7 +7,6 @@ using Learnexia.Modules.Learning.Domain.Services;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -30,22 +29,24 @@ namespace Learnexia.Modules.Learning.Application.Features.Subjects.Queries.GetSu
 ///
 /// Concepts ordered by Id (surrogate for absent SequenceOrder — deferred to P2-11).
 /// Skills within each concept ordered by Id.
+///
+/// Option C: all EF queries delegated to ISubjectService. Handler injects only ILearningServiceManager.
 /// </summary>
 public class GetSubjectSkillTreeQueryHandler
     : BaseResponseHandler, IQueryHandler<GetSubjectSkillTreeQuery, BaseResponse<List<ConceptNodeDto>>>
 {
-    private readonly ILearningRepositoryManager _repository;
+    private readonly ILearningServiceManager _service;
     private readonly ICurrentUserService _currentUser;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     public GetSubjectSkillTreeQueryHandler(
-        ILearningRepositoryManager repository,
+        ILearningServiceManager service,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _repository = repository;
+        _service = service;
         _currentUser = currentUser;
         _logger = logger;
         _localizer = localizer;
@@ -60,9 +61,7 @@ public class GetSubjectSkillTreeQueryHandler
             // Load the subject to verify it exists and to check its language.
             // P7-01: IsActive == true filter — inactive subject returns 404 for students.
             // P7-05: LifecycleState == Published filter — Draft/Archived subjects not served to students.
-            var subject = await _repository.Learning
-                .GetByCondition<Subject>(s => s.Id == request.SubjectId && s.IsActive && s.LifecycleState == LifecycleState.Published, false)
-                .FirstOrDefaultAsync(cancellationToken);
+            var subject = await _service.SubjectService.GetActivePublishedSubjectAsync(request.SubjectId, cancellationToken);
 
             if (subject is null)
                 return NotFound<List<ConceptNodeDto>>(_localizer[SharedResourcesKey.SubjectNotFound]);
@@ -77,15 +76,8 @@ public class GetSubjectSkillTreeQueryHandler
             {
                 // P7-01: Also require IsActive on the redirected subject (student path).
                 // P7-05: Also require LifecycleState == Published on the redirected subject.
-                var correctSubject = await _repository.Learning
-                    .GetByCondition<Subject>(
-                        s => s.GradeId == subject.GradeId
-                          && s.SubjectCode == subject.SubjectCode
-                          && s.Language == resolved
-                          && s.IsActive
-                          && s.LifecycleState == LifecycleState.Published,
-                        trackChanges: false)
-                    .FirstOrDefaultAsync(cancellationToken);
+                var correctSubject = await _service.SubjectService.GetActivePublishedSubjectByNaturalKeyAsync(
+                    subject.GradeId, subject.SubjectCode, resolved, cancellationToken);
 
                 if (correctSubject is not null)
                 {
@@ -105,16 +97,8 @@ public class GetSubjectSkillTreeQueryHandler
             var effectiveSubjectId = subject.Id;
 
             // P7-03: Include only active skills (IsActive == true) in the student-facing tree.
-            // The global EF query filter only excludes soft-deleted skills (IsDeleted != true);
-            // inactive skills must be filtered explicitly here so students cannot see them.
-            // P7-05: Include only Published lessons in the skill tree — Draft/Archived lessons
-            // are not served to students.
-            var concepts = await _repository.Learning
-                .GetByCondition<Concept>(c => c.SubjectId == effectiveSubjectId, false)
-                .Include(c => c.Skills.Where(sk => sk.IsActive))
-                    .ThenInclude(sk => sk.Lessons.Where(l => l.IsActive && l.LifecycleState == LifecycleState.Published))
-                .OrderBy(c => c.Id)
-                .ToListAsync(cancellationToken);
+            // P7-05: Include only Published lessons in the skill tree.
+            var concepts = await _service.SubjectService.GetConceptsWithSkillsAndLessonsAsync(effectiveSubjectId, cancellationToken);
 
             if (!concepts.Any())
                 return EmptyCollection(new List<ConceptNodeDto>());
@@ -125,17 +109,12 @@ public class GetSubjectSkillTreeQueryHandler
             {
                 // ── Authenticated path: derive NodeState from LearningPathEngine ────────────────────
 
-                // Bulk-fetch the 5 engine inputs.
-                var nodes = await _repository.Learning
-                    .GetSubjectKnowledgeNodesAsync(effectiveSubjectId, cancellationToken);
-                var edges = await _repository.Learning
-                    .GetSubjectKnowledgeEdgesAsync(effectiveSubjectId, cancellationToken);
-                var masteryBySkillId = await _repository.Learning
-                    .GetSkillMasteryForStudentInSubjectAsync(studentId.Value, effectiveSubjectId, cancellationToken);
-                var completedLessonIds = await _repository.Learning
-                    .GetCompletedLessonIdsForStudentInSubjectAsync(studentId.Value, effectiveSubjectId, cancellationToken);
-                var lessons = await _repository.Learning
-                    .GetSubjectLessonsAsync(effectiveSubjectId, cancellationToken);
+                // Bulk-fetch the 5 engine inputs via service — no EF types in Application.
+                var nodes = await _service.SubjectService.GetSubjectKnowledgeNodesAsync(effectiveSubjectId, cancellationToken);
+                var edges = await _service.SubjectService.GetSubjectKnowledgeEdgesAsync(effectiveSubjectId, cancellationToken);
+                var masteryBySkillId = await _service.SubjectService.GetSkillMasteryForStudentInSubjectAsync(studentId.Value, effectiveSubjectId, cancellationToken);
+                var completedLessonIds = await _service.SubjectService.GetCompletedLessonIdsForStudentInSubjectAsync(studentId.Value, effectiveSubjectId, cancellationToken);
+                var lessons = await _service.SubjectService.GetSubjectLessonsAsync(effectiveSubjectId, cancellationToken);
 
                 // Build skillsById for the engine (all skills in subject, already loaded via concepts).
                 var skillsById = concepts
