@@ -1,9 +1,7 @@
 using Learnexia.Modules.Notifications.Application.Abstractions;
-using Learnexia.Modules.Notifications.Domain.Entities;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -11,34 +9,27 @@ namespace Learnexia.Modules.Notifications.Application.Features.Reengagement.Comm
 
 /// <summary>
 /// Upserts a device push token for the authenticated user (P4-09 B4-4 / AC4).
-/// Upsert logic:
-/// 1. Token already registered for this user → update <c>LastUsedAtUtc</c> + re-activate if revoked.
-/// 2. Token exists but belongs to a different user (device rotation) → transfer ownership to current user.
-/// 3. Token doesn't exist → insert new row (subject to F-05 per-user cap enforcement).
-/// F-05: before inserting a new token, if the user already has <see cref="MaxTokensPerUser"/>
-/// active tokens, the oldest one is deactivated to prevent unbounded row growth from misbehaving clients.
+/// Upsert logic (global-lookup + reassign-or-insert + F-05 per-user cap eviction) lives
+/// inside <see cref="IDeviceTokenService"/> (Option-C rule).
 /// </summary>
 public sealed class RegisterDeviceCommandHandler
     : BaseResponseHandler,
       ICommandHandler<RegisterDeviceCommand, BaseResponse<string>>
 {
-    // F-05: hard cap on active device tokens per user — deactivates the oldest when exceeded.
-    private const int MaxTokensPerUser = 10;
-
-    private readonly INotificationsDbContext _db;
+    private readonly IDeviceTokenService _deviceTokenService;
     private readonly ICurrentUserService _currentUserService;
     private readonly ISystemClock _clock;
     private readonly IStringLocalizer<SharedResources> _localizer;
     private readonly ILoggerManager _logger;
 
     public RegisterDeviceCommandHandler(
-        INotificationsDbContext db,
+        IDeviceTokenService deviceTokenService,
         ICurrentUserService currentUserService,
         ISystemClock clock,
         IStringLocalizer<SharedResources> localizer,
         ILoggerManager logger)
     {
-        _db                 = db;
+        _deviceTokenService = deviceTokenService;
         _currentUserService = currentUserService;
         _clock              = clock;
         _localizer          = localizer;
@@ -55,40 +46,12 @@ public sealed class RegisterDeviceCommandHandler
             if (userId is null)
                 return Unauthorized<string>(_localizer[SharedResourcesKey.UnauthorizedAccess]);
 
-            var nowUtc = _clock.UtcNow;
-
-            // Look for the token globally (not just for this user) — handles rotation/transfer.
-            var existing = await _db.UserDeviceTokens
-                .FirstOrDefaultAsync(t => t.ExpoPushToken == request.ExpoPushToken, cancellationToken);
-
-            if (existing is not null)
-            {
-                // Transfer ownership if the token moved to a new user (device shared/rotated).
-                existing.ReassignTo(userId.Value, nowUtc);
-            }
-            else
-            {
-                // F-05: enforce per-user active token cap before inserting a new row.
-                // A misbehaving client cannot create unbounded rows for the same user.
-                int activeCount = await _db.UserDeviceTokens
-                    .CountAsync(t => t.UserId == userId.Value && t.IsActive, cancellationToken);
-
-                if (activeCount >= MaxTokensPerUser)
-                {
-                    var oldest = await _db.UserDeviceTokens
-                        .Where(t => t.UserId == userId.Value && t.IsActive)
-                        .OrderBy(t => t.RegisteredAtUtc)
-                        .FirstAsync(cancellationToken);
-
-                    oldest.Deactivate();
-                    _logger.LogInfo($"P4-09: device token cap ({MaxTokensPerUser}) reached for userId={userId.Value}; deactivating oldest tokenId={oldest.Id}.");
-                }
-
-                var newToken = UserDeviceToken.Register(userId.Value, request.ExpoPushToken, request.Platform.ToLowerInvariant(), nowUtc);
-                await _db.UserDeviceTokens.AddAsync(newToken, cancellationToken);
-            }
-
-            await _db.SaveChangesAsync(cancellationToken);
+            await _deviceTokenService.RegisterAsync(
+                userId.Value,
+                request.ExpoPushToken,
+                request.Platform,
+                _clock.UtcNow,
+                cancellationToken);
 
             return Success<string>(_localizer[SharedResourcesKey.DeviceTokenRegisteredSuccessfully]);
         }

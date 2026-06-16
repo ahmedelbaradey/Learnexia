@@ -3,7 +3,6 @@ using Learnexia.Modules.Notifications.Application.Features.Reengagement.Dtos;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -12,24 +11,24 @@ namespace Learnexia.Modules.Notifications.Application.Features.Reengagement.Quer
 /// <summary>
 /// Returns the authenticated user's in-app notification inbox (P4-09 B4-4 / AC4).
 /// Self-scoped: RecipientExternalUserId = currentUser — no IDOR surface.
-/// Paginated, newest-first, includes all categories so the bell icon can render any type.
+/// Paginated, newest-first. EF/pagination lives in <see cref="INotificationInboxService"/> (Option-C rule).
 /// </summary>
 public sealed class ListMyInboxQueryHandler
     : BaseResponseHandler,
       IQueryHandler<ListMyInboxQuery, BaseResponse<PagedInboxResult>>
 {
-    private readonly INotificationsDbContext _db;
+    private readonly INotificationInboxService _inboxService;
     private readonly ICurrentUserService _currentUserService;
     private readonly IStringLocalizer<SharedResources> _localizer;
     private readonly ILoggerManager _logger;
 
     public ListMyInboxQueryHandler(
-        INotificationsDbContext db,
+        INotificationInboxService inboxService,
         ICurrentUserService currentUserService,
         IStringLocalizer<SharedResources> localizer,
         ILoggerManager logger)
     {
-        _db                 = db;
+        _inboxService       = inboxService;
         _currentUserService = currentUserService;
         _localizer          = localizer;
         _logger             = logger;
@@ -48,37 +47,7 @@ public sealed class ListMyInboxQueryHandler
             var take = Math.Clamp(request.Take, 1, 100);
             var skip = Math.Max(0, request.Skip);
 
-            var baseQuery = _db.Notifications
-                .AsNoTracking()
-                .Where(n => n.RecipientExternalUserId == userId.Value);
-
-            var total = await baseQuery.CountAsync(cancellationToken);
-
-            var items = await baseQuery
-                .OrderByDescending(n => n.CreatedAtUtc)
-                .Skip(skip)
-                .Take(take)
-                .Select(n => new InboxItemDto
-                {
-                    Id           = n.Id,
-                    Title        = n.Title,
-                    Body         = n.Body,
-                    Category     = n.Category,
-                    Code         = n.Code,
-                    Data         = n.Data,
-                    IsRead       = n.IsRead,
-                    CreatedAtUtc = n.CreatedAtUtc,
-                    OpenedAtUtc  = n.ReadAtUtc,
-                })
-                .ToListAsync(cancellationToken);
-
-            var result = new PagedInboxResult
-            {
-                Items      = items,
-                TotalCount = total,
-                Skip       = skip,
-                Take       = take,
-            };
+            var result = await _inboxService.ListInboxAsync(userId.Value, skip, take, cancellationToken);
 
             return Success(result, _localizer[SharedResourcesKey.InboxRetrievedSuccessfully]);
         }
