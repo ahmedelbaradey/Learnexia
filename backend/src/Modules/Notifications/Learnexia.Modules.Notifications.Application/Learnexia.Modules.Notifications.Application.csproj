@@ -6,10 +6,7 @@
     <PackageReference Include="MediatR" />
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
-    <!-- F-04: atomic SETNX dedupe — IConnectionMultiplexer for thread-safe Redis operations -->
-    <PackageReference Include="StackExchange.Redis" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Learnexia.Modules.Notifications.Domain\Learnexia.Modules.Notifications.Domain.csproj" />

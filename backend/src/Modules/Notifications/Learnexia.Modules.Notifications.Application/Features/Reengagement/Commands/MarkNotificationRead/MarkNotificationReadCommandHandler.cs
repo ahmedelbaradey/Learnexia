@@ -2,7 +2,6 @@ using Learnexia.Modules.Notifications.Application.Abstractions;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -10,27 +9,28 @@ namespace Learnexia.Modules.Notifications.Application.Features.Reengagement.Comm
 
 /// <summary>
 /// Marks one notification as read (P4-09 B4-4 / AC6).
-/// Anti-IDOR: loads the row and asserts <c>RecipientExternalUserId == currentUser</c>.
+/// Anti-IDOR: asserts <c>RecipientExternalUserId == currentUser</c> via service.
 /// Stamps <c>OpenedAtUtc</c> for analytics + emits <c>analytics.reengagement.opened</c> log marker.
+/// EF access lives in <see cref="INotificationInboxService"/> (Option-C rule).
 /// </summary>
 public sealed class MarkNotificationReadCommandHandler
     : BaseResponseHandler,
       ICommandHandler<MarkNotificationReadCommand, BaseResponse<string>>
 {
-    private readonly INotificationsDbContext _db;
+    private readonly INotificationInboxService _inboxService;
     private readonly ICurrentUserService _currentUserService;
     private readonly ISystemClock _clock;
     private readonly IStringLocalizer<SharedResources> _localizer;
     private readonly ILoggerManager _logger;
 
     public MarkNotificationReadCommandHandler(
-        INotificationsDbContext db,
+        INotificationInboxService inboxService,
         ICurrentUserService currentUserService,
         ISystemClock clock,
         IStringLocalizer<SharedResources> localizer,
         ILoggerManager logger)
     {
-        _db                 = db;
+        _inboxService       = inboxService;
         _currentUserService = currentUserService;
         _clock              = clock;
         _localizer          = localizer;
@@ -47,8 +47,11 @@ public sealed class MarkNotificationReadCommandHandler
             if (userId is null)
                 return Unauthorized<string>(_localizer[SharedResourcesKey.UnauthorizedAccess]);
 
-            var notification = await _db.Notifications
-                .FirstOrDefaultAsync(n => n.Id == request.NotificationId, cancellationToken);
+            var notification = await _inboxService.MarkReadAsync(
+                request.NotificationId,
+                userId.Value,
+                _clock.UtcNow,
+                cancellationToken);
 
             if (notification is null)
                 return NotFound<string>(_localizer[SharedResourcesKey.NotificationNotFound]);
@@ -56,12 +59,6 @@ public sealed class MarkNotificationReadCommandHandler
             // Anti-IDOR: only the recipient may mark their own notification as read.
             if (notification.RecipientExternalUserId != userId.Value)
                 return Forbidden<string>(_localizer[SharedResourcesKey.NotificationAccessForbidden]);
-
-            if (!notification.IsRead)
-            {
-                notification.MarkRead(_clock.UtcNow);
-                await _db.SaveChangesAsync(cancellationToken);
-            }
 
             // AC6: analytics emit — no PII (only IDs + category).
             _logger.LogInfo(

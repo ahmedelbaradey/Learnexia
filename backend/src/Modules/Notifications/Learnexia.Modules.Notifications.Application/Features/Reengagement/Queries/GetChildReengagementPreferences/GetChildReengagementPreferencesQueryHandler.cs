@@ -1,12 +1,9 @@
 using Learnexia.Modules.Notifications.Application.Abstractions;
 using Learnexia.Modules.Notifications.Application.Features.Reengagement.Dtos;
-using Learnexia.Modules.Notifications.Domain.Entities;
-using Learnexia.Modules.Notifications.Domain.Enums;
 using Learnexia.Shared.Contracts.Parent;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -14,13 +11,7 @@ namespace Learnexia.Modules.Notifications.Application.Features.Reengagement.Quer
 
 /// <summary>
 /// Loads (and synthesises defaults for) the parent's per-child re-engagement preferences (P4-09 B4-3 / AC3).
-///
-/// The 3 schedulable categories are <see cref="NotificationCategory.StreakAtRisk"/>,
-/// <see cref="NotificationCategory.DailyMissionReminder"/>, and
-/// <see cref="NotificationCategory.LapseWinBack"/>. For any category without a persisted row a
-/// default-valued DTO is returned in-memory (nothing is written on read — mirrors
-/// <c>GetMyNotificationPreferencesQueryHandler</c>).
-///
+/// Default synthesis and EF access live in <see cref="IChildReengagementPreferenceService"/> (Option-C rule).
 /// Anti-IDOR / anti-enumeration: any failure of the parent-child link check returns the same
 /// generic Forbidden message regardless of whether the child exists.
 /// </summary>
@@ -28,28 +19,20 @@ public sealed class GetChildReengagementPreferencesQueryHandler
     : BaseResponseHandler,
       IQueryHandler<GetChildReengagementPreferencesQuery, BaseResponse<List<ChildReengagementPreferenceDto>>>
 {
-    // The 3 categories that are parent-controlled per-child (AC1).
-    private static readonly NotificationCategory[] ReengagementCategories =
-    [
-        NotificationCategory.StreakAtRisk,
-        NotificationCategory.DailyMissionReminder,
-        NotificationCategory.LapseWinBack,
-    ];
-
-    private readonly INotificationsDbContext _db;
+    private readonly IChildReengagementPreferenceService _preferenceService;
     private readonly ICurrentUserService _currentUserService;
     private readonly IParentChildQuery _parentChildQuery;
     private readonly IStringLocalizer<SharedResources> _localizer;
     private readonly ILoggerManager _logger;
 
     public GetChildReengagementPreferencesQueryHandler(
-        INotificationsDbContext db,
+        IChildReengagementPreferenceService preferenceService,
         ICurrentUserService currentUserService,
         IParentChildQuery parentChildQuery,
         IStringLocalizer<SharedResources> localizer,
         ILoggerManager logger)
     {
-        _db                 = db;
+        _preferenceService  = preferenceService;
         _currentUserService = currentUserService;
         _parentChildQuery   = parentChildQuery;
         _localizer          = localizer;
@@ -73,27 +56,7 @@ public sealed class GetChildReengagementPreferencesQueryHandler
                 return Forbidden<List<ChildReengagementPreferenceDto>>(
                     _localizer[SharedResourcesKey.NotAuthorizedForChild]);
 
-            // Load all persisted rows for this (parentId, childId).
-            var stored = await _db.ChildReengagementPreferences
-                .AsNoTracking()
-                .Where(p => p.ParentId == parentId.Value && p.ChildId == request.ChildId)
-                .ToDictionaryAsync(p => p.Category, cancellationToken);
-
-            // Synthesise one DTO per schedulable category; use defaults where no row exists.
-            var result = new List<ChildReengagementPreferenceDto>(ReengagementCategories.Length);
-
-            foreach (var category in ReengagementCategories)
-            {
-                if (stored.TryGetValue(category, out var row))
-                {
-                    result.Add(ToDto(row));
-                }
-                else
-                {
-                    // Conservative defaults (AC3): Push=false, InApp=true, DailyCap=3.
-                    result.Add(BuildDefault(category));
-                }
-            }
+            var result = await _preferenceService.GetForChildAsync(parentId.Value, request.ChildId, cancellationToken);
 
             return Success(result, _localizer[SharedResourcesKey.ChildPreferencesRetrievedSuccessfully]);
         }
@@ -104,36 +67,6 @@ public sealed class GetChildReengagementPreferencesQueryHandler
                 _localizer[SharedResourcesKey.SystemErrorRetrievingData]);
         }
     }
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
-
-    private static ChildReengagementPreferenceDto ToDto(ChildReengagementPreference row)
-        => new()
-        {
-            Category            = row.Category,
-            Email               = row.Email,
-            Push                = row.Push,
-            InApp               = row.InApp,
-            QuietHoursStartLocal = row.QuietHoursStartLocal.ToString("HH:mm"),
-            QuietHoursEndLocal  = row.QuietHoursEndLocal.ToString("HH:mm"),
-            TimeZoneId          = row.TimeZoneId,
-            DailyCap            = row.DailyCap,
-        };
-
-    private static ChildReengagementPreferenceDto BuildDefault(NotificationCategory category)
-        => new()
-        {
-            Category            = category,
-            Email               = false,
-            Push                = false,   // Conservative default — parent must opt-in (AC3).
-            InApp               = true,
-            QuietHoursStartLocal = "22:00",
-            QuietHoursEndLocal  = "08:00",
-            TimeZoneId          = "Africa/Cairo",
-            DailyCap            = 3,
-        };
 
     // Override Success to accept a localised message (mirrors existing handler pattern).
     private BaseResponse<T> Success<T>(T entity, string message) => new()

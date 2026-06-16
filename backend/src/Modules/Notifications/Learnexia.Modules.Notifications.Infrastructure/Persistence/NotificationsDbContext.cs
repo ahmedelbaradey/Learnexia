@@ -1,4 +1,3 @@
-using Learnexia.Modules.Notifications.Application.Abstractions;
 using Learnexia.Modules.Notifications.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -6,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 namespace Learnexia.Modules.Notifications.Infrastructure.Persistence;
 
 public sealed class NotificationsDbContext(DbContextOptions<NotificationsDbContext> options)
-    : DbContext(options), INotificationsDbContext
+    : DbContext(options)
 {
     public const string Schema = "notifications";
 

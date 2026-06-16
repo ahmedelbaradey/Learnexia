@@ -3,6 +3,7 @@ using Learnexia.Modules.Notifications.Infrastructure.Email;
 using Learnexia.Modules.Notifications.Infrastructure.Persistence;
 using Learnexia.Modules.Notifications.Infrastructure.Push;
 using Learnexia.Modules.Notifications.Infrastructure.Reengagement;
+using Learnexia.Modules.Notifications.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
@@ -19,14 +20,19 @@ public static class DependencyInjection
                 .UseNpgsql(configuration.GetConnectionString("Default"),
                 sql => sql.MigrationsHistoryTable("__EFMigrationsHistory", NotificationsDbContext.Schema)));
 
-        services.AddScoped<INotificationsDbContext>(sp => sp.GetRequiredService<NotificationsDbContext>());
-
         AddEmailSender(services, configuration);
         AddPushSender(services, configuration);
 
-        // NudgeDispatcher composes IPushSender + INotificationsDbContext + ISystemClock.
-        // Scoped — matches the lifetime of INotificationsDbContext.
+        // NudgeDispatcher composes IPushSender + IDeviceTokenService + INotificationInboxService + ISystemClock.
+        // Scoped — matches the lifetime of NotificationsDbContext.
         services.AddScoped<INudgeDispatcher, NudgeDispatcher>();
+
+        // Option-C service layer: EF-free Application handlers inject only these interfaces.
+        services.AddScoped<INotificationInboxService, NotificationInboxService>();
+        services.AddScoped<INotificationPreferenceService, NotificationPreferenceService>();
+        services.AddScoped<IChildReengagementPreferenceService, ChildReengagementPreferenceService>();
+        services.AddScoped<IDeviceTokenService, DeviceTokenService>();
+        services.AddScoped<IReengagementDedupeStore, ReengagementDedupeStore>();
 
         return services;
     }

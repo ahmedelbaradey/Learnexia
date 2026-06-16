@@ -6,8 +6,6 @@ using Learnexia.Shared.Contracts.Identity;
 using Learnexia.Shared.Contracts.Parent;
 using Learnexia.Shared.Kernel.Abstractions;
 using MediatR;
-using Microsoft.Extensions.Caching.Distributed;
-using StackExchange.Redis;
 
 namespace Learnexia.Modules.Notifications.Application.IntegrationEventHandlers.Reengagement;
 
@@ -15,37 +13,38 @@ namespace Learnexia.Modules.Notifications.Application.IntegrationEventHandlers.R
 /// Consumes <see cref="LapseWinBackIntegrationEvent"/> (published by <c>LapseWinBackJob</c>)
 /// and dispatches a <c>LapseWinBack</c> nudge ("We miss you! Your hearts are full and missions await")
 /// (P4-09 B4-5 / AC1). One-shot semantics enforced by Redis dedupe per (studentId, category, day).
+/// EF access lifted to services (Option-C rule).
 /// </summary>
 public sealed class LapseWinBackIntegrationEventHandler
     : INotificationHandler<LapseWinBackIntegrationEvent>
 {
-    private readonly INotificationsDbContext _db;
+    private readonly IChildReengagementPreferenceService _preferenceService;
+    private readonly INotificationInboxService _inboxService;
+    private readonly IReengagementDedupeStore _dedupeStore;
     private readonly IParentChildQuery _parentChildQuery;
-    private readonly IDistributedCache _cache;
-    private readonly IConnectionMultiplexer? _redisMultiplexer;
     private readonly INudgeDispatcher _dispatcher;
     private readonly IUserLookup? _userLookup;
     private readonly ISystemClock _clock;
     private readonly ILoggerManager _logger;
 
     public LapseWinBackIntegrationEventHandler(
-        INotificationsDbContext db,
+        IChildReengagementPreferenceService preferenceService,
+        INotificationInboxService inboxService,
+        IReengagementDedupeStore dedupeStore,
         IParentChildQuery parentChildQuery,
-        IDistributedCache cache,
         INudgeDispatcher dispatcher,
         ISystemClock clock,
         ILoggerManager logger,
-        IConnectionMultiplexer? redisMultiplexer = null,
         IUserLookup? userLookup = null)
     {
-        _db               = db;
-        _parentChildQuery = parentChildQuery;
-        _cache            = cache;
-        _redisMultiplexer = redisMultiplexer;
-        _dispatcher       = dispatcher;
-        _clock            = clock;
-        _logger           = logger;
-        _userLookup       = userLookup;
+        _preferenceService = preferenceService;
+        _inboxService      = inboxService;
+        _dedupeStore       = dedupeStore;
+        _parentChildQuery  = parentChildQuery;
+        _dispatcher        = dispatcher;
+        _clock             = clock;
+        _logger            = logger;
+        _userLookup        = userLookup;
     }
 
     public async Task Handle(LapseWinBackIntegrationEvent ev, CancellationToken ct)
@@ -62,8 +61,8 @@ public sealed class LapseWinBackIntegrationEventHandler
             var category = NotificationCategory.LapseWinBack;
             const string code = "LAPSE_WIN_BACK";
 
-            var prefs      = await ReengagementHandlerHelper.GetOrDefaultPrefsAsync(_db, parentId.Value, ev.StudentId, category, ct);
-            var sentsToday = await ReengagementHandlerHelper.CountSentTodayAsync(_db, ev.StudentId, category, _clock.UtcNow, ct);
+            var prefs      = await ReengagementHandlerHelper.GetOrDefaultPrefsAsync(_preferenceService, parentId.Value, ev.StudentId, category, ct);
+            var sentsToday = await ReengagementHandlerHelper.CountSentTodayAsync(_inboxService, ev.StudentId, category, _clock.UtcNow, ct);
             var eval       = ReengagementEvaluator.Evaluate(prefs, _clock.UtcNow, sentsToday);
 
             if (!eval.Eligible)
@@ -72,7 +71,7 @@ public sealed class LapseWinBackIntegrationEventHandler
                 return;
             }
 
-            var acquired = await ReengagementHandlerHelper.TryAcquireDedupeAsync(_cache, _redisMultiplexer, _logger, ev.StudentId, category, ev.OccurredOnUtc, ct);
+            var acquired = await ReengagementHandlerHelper.TryAcquireDedupeAsync(_dedupeStore, _logger, ev.StudentId, category, ev.OccurredOnUtc, ct);
             if (!acquired)
             {
                 _logger.LogInfo($"analytics.reengagement.dedupe_hit category={category} childId={ev.StudentId}");
