@@ -1,3 +1,4 @@
+using Learnexia.Modules.Gamification.Domain.Exceptions;
 using Learnexia.Modules.Gamification.Infrastructure.Persistence;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.DomainEvents;
@@ -60,8 +61,20 @@ public sealed class UnitOfWorkBehavior<TRequest, TResponse> : IPipelineBehavior<
 
         var response = await next();                                  // handler stages changes only
 
-        await _db.SaveChangesAsync(_currentUser.UserId.GetValueOrDefault());
-        await transaction.CommitAsync(cancellationToken);             // commit boundary
+        try
+        {
+            await _db.SaveChangesAsync(_currentUser.UserId.GetValueOrDefault());
+            await transaction.CommitAsync(cancellationToken);         // commit boundary
+        }
+        catch (DbUpdateException dbEx)
+        {
+            // Translate EF-specific DbUpdateException into a domain-neutral exception so that
+            // Application handlers can handle idempotency races without referencing EF Core types.
+            // The ConstraintHint carries the inner exception message (constraint name / 23505)
+            // so handlers can narrow their catch to the expected idempotency index.
+            var hint = dbEx.InnerException?.Message ?? dbEx.Message;
+            throw new GamificationUniqueConstraintException(hint, dbEx);
+        }
 
         // After a successful commit ONLY: collect, dispatch, then clear domain events.
         var aggregates = _db.ChangeTracker

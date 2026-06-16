@@ -1,8 +1,6 @@
 using Learnexia.Modules.Gamification.Application.Abstractions;
-using Learnexia.Modules.Gamification.Application.Features.Badges.Commands.AwardBadge;
 using Learnexia.Modules.Gamification.Domain.Enums;
 using Learnexia.Modules.Gamification.Domain.Events;
-using Learnexia.Modules.Gamification.Domain.Services;
 using Learnexia.Shared.Kernel.Abstractions;
 using MediatR;
 
@@ -18,9 +16,8 @@ namespace Learnexia.Modules.Gamification.Application.IntegrationEventHandlers;
 /// student from level 4 to 5). The <c>alreadyEarned</c> set passed to <c>BadgePredicateEvaluator</c>
 /// prevents infinite chains — each badge awards at most once per student.
 ///
-/// Loads all <c>LevelThreshold</c>-type badge definitions + the student's earned set,
-/// calls <see cref="BadgePredicateEvaluator.Match"/> with <c>value = notification.NewLevel</c>,
-/// and sends one <see cref="AwardBadgeCommand"/> per matched definition.
+/// Delegates all catalog + earned-set reads and command dispatch to <see cref="IBadgeService"/>
+/// so this handler stays repository-free per §7 CONVENTIONS.
 ///
 /// Practice Mode by-construction: <c>AwardLessonCompletedXpCommandHandler</c> and
 /// <c>AwardAnswerSubmittedXpCommandHandler</c> both short-circuit in Practice Mode;
@@ -33,51 +30,33 @@ namespace Learnexia.Modules.Gamification.Application.IntegrationEventHandlers;
 public sealed class StudentLeveledUpBadgeHandler
     : INotificationHandler<StudentLeveledUpDomainEvent>
 {
-    private readonly IGamificationRepository _repo;
+    private readonly IBadgeService _badgeService;
     private readonly IMediator _mediator;
     private readonly ILoggerManager _logger;
 
     public StudentLeveledUpBadgeHandler(
-        IGamificationRepository repo,
+        IBadgeService badgeService,
         IMediator mediator,
         ILoggerManager logger)
     {
-        _repo = repo;
-        _mediator = mediator;
-        _logger = logger;
+        _badgeService = badgeService;
+        _mediator     = mediator;
+        _logger       = logger;
     }
 
     public async Task Handle(StudentLeveledUpDomainEvent notification, CancellationToken ct)
     {
         try
         {
-            var definitions = await _repo.GetBadgeDefinitionsByTriggerAsync(BadgeTriggerType.LevelThreshold, ct);
-            if (definitions.Count == 0) return;
-
-            var earned = await _repo.GetEarnedBadgeIdsAsync(notification.StudentId, ct);
-            var matches = BadgePredicateEvaluator
-                .Match(BadgeTriggerType.LevelThreshold, value: notification.NewLevel, definitions, earned)
-                .ToList();
-
-            foreach (var def in matches)
-            {
-                try
-                {
-                    await _mediator.Send(new AwardBadgeCommand(
-                        StudentId: notification.StudentId,
-                        BadgeDefinitionId: def.Id,
-                        OriginEventId: Guid.NewGuid(),
-                        OriginEventType: nameof(StudentLeveledUpDomainEvent),
-                        AwardedAtUtc: notification.OccurredOnUtc), ct);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex,
-                        $"P4-05: Error awarding badge {def.Code} for StudentLeveledUp " +
-                        $"(studentId={notification.StudentId}, newLevel={notification.NewLevel}, " +
-                        $"eventId={notification.EventId}).");
-                }
-            }
+            await _badgeService.EvaluateAndDispatchBadgesAsync(
+                triggerType:     BadgeTriggerType.LevelThreshold,
+                value:           notification.NewLevel,
+                studentId:       notification.StudentId,
+                originEventType: nameof(StudentLeveledUpDomainEvent),
+                originEventId:   notification.EventId,
+                awardedAtUtc:    notification.OccurredOnUtc,
+                mediator:        _mediator,
+                ct:              ct);
         }
         catch (Exception ex)
         {

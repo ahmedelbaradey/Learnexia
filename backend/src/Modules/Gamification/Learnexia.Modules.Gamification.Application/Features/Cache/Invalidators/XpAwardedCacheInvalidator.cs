@@ -29,12 +29,14 @@ namespace Learnexia.Modules.Gamification.Application.Features.Cache.Invalidators
 ///
 /// Fail-soft: the outer try/catch ensures no exception propagates back to the upstream UoW or the
 /// <c>IsolatedNotificationPublisher</c> dispatch chain (ADR 0002 §3).
+///
+/// Repository-free per §7 CONVENTIONS — reads are delegated to <see cref="IGamificationQueryService"/>.
 /// </summary>
 internal sealed class XpAwardedCacheInvalidator : INotificationHandler<XpAwardedDomainEvent>
 {
     private readonly IGamificationCache _cache;
     private readonly ILeagueLeaderboard _leaderboard;
-    private readonly IGamificationRepository _repo;
+    private readonly IGamificationQueryService _queryService;
     private readonly ISystemClock _clock;
     private readonly GamificationCacheOptions _opts;
     private readonly ILoggerManager _logger;
@@ -42,17 +44,17 @@ internal sealed class XpAwardedCacheInvalidator : INotificationHandler<XpAwarded
     public XpAwardedCacheInvalidator(
         IGamificationCache cache,
         ILeagueLeaderboard leaderboard,
-        IGamificationRepository repo,
+        IGamificationQueryService queryService,
         ISystemClock clock,
         IOptions<GamificationCacheOptions> opts,
         ILoggerManager logger)
     {
-        _cache       = cache;
-        _leaderboard = leaderboard;
-        _repo        = repo;
-        _clock       = clock;
-        _opts        = opts.Value;
-        _logger      = logger;
+        _cache        = cache;
+        _leaderboard  = leaderboard;
+        _queryService = queryService;
+        _clock        = clock;
+        _opts         = opts.Value;
+        _logger       = logger;
     }
 
     public async Task Handle(XpAwardedDomainEvent notification, CancellationToken ct)
@@ -73,7 +75,7 @@ internal sealed class XpAwardedCacheInvalidator : INotificationHandler<XpAwarded
 
             // 3. Update the sorted-set with the authoritative post-commit WeeklyXp from Postgres.
             //    Reads profile → membership → ZADD CH. Both steps are optional (no membership = no-op).
-            var profile = await _repo.GetProfileByStudentIdAsync(notification.StudentId, ct);
+            var profile = await _queryService.GetProfileEntityForCacheAsync(notification.StudentId, ct);
             if (profile is null) return;
 
             // Use event timestamp for period key (same logic as IncrementLeagueXpCommandHandler)
@@ -81,7 +83,7 @@ internal sealed class XpAwardedCacheInvalidator : INotificationHandler<XpAwarded
             var (eventWeeklyKey, _, _) = MissionPeriodCalculator.GetCurrentPeriod(
                 MissionType.Weekly, notification.OccurredAtUtc);
 
-            var membership = await _repo.GetMembershipForStudentAsync(
+            var membership = await _queryService.GetMembershipForCacheAsync(
                 profile.Id, eventWeeklyKey, ct);
             if (membership is null)
             {

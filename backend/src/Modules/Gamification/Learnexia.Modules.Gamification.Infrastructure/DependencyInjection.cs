@@ -46,6 +46,17 @@ public static class DependencyInjection
 
         services.AddScoped<IGamificationRepository, GamificationRepository>();
 
+        // ── §7 Service layer (Handler → Service → Repository) ──────────────────────────────────
+        // Handlers inject ONLY these service interfaces; the repo stays invisible to Application.
+        services.AddScoped<IXpService, XpService>();
+        services.AddScoped<IStreakService, StreakService>();
+        services.AddScoped<IHeartService, HeartService>();
+        services.AddScoped<IBadgeService, BadgeService>();
+        services.AddScoped<IMissionService, MissionService>();
+        services.AddScoped<ILeagueService, LeagueService>();
+        services.AddScoped<IGamificationAdminService, GamificationAdminService>();
+        services.AddScoped<IGamificationQueryService, GamificationQueryService>();
+
         // ── P4-10 Batch 1-A: decorator wiring ──────────────────────────────────────────────────
         // Each Postgres*Query is registered as its concrete type.
         // The interface is registered via a factory delegate that wraps the Postgres impl in a
