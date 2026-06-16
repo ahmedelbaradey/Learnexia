@@ -1,6 +1,7 @@
 using Learnexia.Modules.Billing.Application.Abstractions;
 using Learnexia.Modules.Billing.Infrastructure.Contracts;
 using Learnexia.Modules.Billing.Infrastructure.Jobs;
+using Learnexia.Modules.Billing.Infrastructure.Options;
 using Learnexia.Modules.Billing.Infrastructure.Persistence;
 using Learnexia.Modules.Billing.Infrastructure.Providers;
 using Learnexia.Modules.Billing.Infrastructure.Service;
@@ -37,6 +38,12 @@ public static class DependencyInjection
 
         // Register IBillingDbContext → resolves to BillingDbContext (the scoped instance above).
         services.AddScoped<IBillingDbContext>(sp => sp.GetRequiredService<BillingDbContext>());
+
+        // ── BillingConcurrencyOptions — xmin OCC retry policy ──────────────────────────────────────
+        // Bound from Billing:Concurrency in appsettings. Consumed by CreditLedgerService and
+        // CreditSpendService (exponential back-off + jitter between concurrent-conflict retries).
+        services.Configure<BillingConcurrencyOptions>(
+            configuration.GetSection(BillingConcurrencyOptions.SectionName));
 
         // Logger (Singleton, mirrors Ai/Gamification pattern).
         services.AddSingleton<ILoggerManager, LoggerManager>();

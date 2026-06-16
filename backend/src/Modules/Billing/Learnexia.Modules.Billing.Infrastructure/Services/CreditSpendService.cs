@@ -1,5 +1,6 @@
 using Learnexia.Modules.Billing.Application.Abstractions;
 using Learnexia.Modules.Billing.Application.Services;
+using Learnexia.Modules.Billing.Infrastructure.Options;
 using Learnexia.Modules.Billing.Infrastructure.Persistence;
 using Learnexia.Modules.Billing.Domain.Constants;
 using Learnexia.Modules.Billing.Domain.Entities;
@@ -8,6 +9,7 @@ using Learnexia.Shared.Contracts.Billing;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Settings;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Learnexia.Modules.Billing.Infrastructure.Services;
 
@@ -37,26 +39,27 @@ namespace Learnexia.Modules.Billing.Infrastructure.Services;
 /// </summary>
 public class CreditSpendService : ICreditSpendService
 {
-    private const int MaxRetries = 3;
-
     private readonly IBillingDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly ILoggerManager _logger;
     private readonly IGlobalSettingsProvider _settings;
     private readonly ISystemClock _clock;
+    private readonly BillingConcurrencyOptions _concurrency;
 
     public CreditSpendService(
         IBillingDbContext db,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IGlobalSettingsProvider settings,
-        ISystemClock clock)
+        ISystemClock clock,
+        IOptions<BillingConcurrencyOptions> concurrencyOptions)
     {
-        _db = db;
+        _db          = db;
         _currentUser = currentUser;
-        _logger = logger;
-        _settings = settings;
-        _clock = clock;
+        _logger      = logger;
+        _settings    = settings;
+        _clock       = clock;
+        _concurrency = concurrencyOptions.Value;
     }
 
     /// <inheritdoc/>
@@ -70,16 +73,21 @@ public class CreditSpendService : ICreditSpendService
         if (!Enum.TryParse<CreditReasonCode>(reasonCode, ignoreCase: true, out var reasonEnum))
             reasonEnum = CreditReasonCode.Unspecified;
 
-        for (var attempt = 0; attempt <= MaxRetries; attempt++)
+        var maxRetries = _concurrency.MaxRetries;
+
+        for (var attempt = 0; attempt <= maxRetries; attempt++)
         {
             try
             {
                 return await ExecuteDebitCoreAsync(childId, amount, reasonEnum, idempotencyKey, ct);
             }
-            catch (DbUpdateConcurrencyException) when (attempt < MaxRetries)
+            catch (DbUpdateConcurrencyException) when (attempt < maxRetries)
             {
+                // Transaction from the failed attempt is already disposed/rolled back by
+                // the `await using var tx` scope inside ExecuteDebitCoreAsync — safe to delay here.
                 _logger.LogWarn($"CreditSpendService: concurrency conflict attempt {attempt + 1} childId={childId}. Retrying.");
                 _db.ChangeTracker.Clear();
+                await ApplyBackoffDelayAsync(attempt, ct);
             }
             catch (DbUpdateException dbEx) when (IsUniqueViolation(dbEx))
             {
@@ -93,8 +101,8 @@ public class CreditSpendService : ICreditSpendService
             }
         }
 
-        _logger.LogError(new Exception("Retries exhausted"), $"CreditSpendService: exceeded {MaxRetries} retries childId={childId}");
-        throw new InvalidOperationException($"CreditSpendService: exceeded {MaxRetries} retries for childId={childId}");
+        _logger.LogError(new Exception("Retries exhausted"), $"CreditSpendService: exceeded {maxRetries} retries childId={childId}");
+        throw new InvalidOperationException($"CreditSpendService: exceeded {maxRetries} retries for childId={childId}");
     }
 
     /// <inheritdoc/>
@@ -210,6 +218,26 @@ public class CreditSpendService : ICreditSpendService
                 ? prior.ResultingGrantedBalance + prior.ResultingPurchasedBalance
                 : 0,
             Outcome: DebitOutcome.DuplicateIdempotent);
+    }
+
+    /// <summary>
+    /// Applies exponential back-off + jitter before the next retry attempt.
+    ///
+    /// <para>Formula: delay = min(MaxDelayMs, BaseDelayMs * 2^attempt) + Random.Shared.Next(0, JitterMs + 1)</para>
+    ///
+    /// <para>Called AFTER <c>ChangeTracker.Clear()</c> and AFTER the failed transaction's
+    /// <c>await using</c> scope has exited (disposed → rolled back). No lock is held
+    /// during the delay.</para>
+    /// </summary>
+    private Task ApplyBackoffDelayAsync(int attempt, CancellationToken ct)
+    {
+        // Clamp the shift exponent + use long arithmetic so a misconfigured MaxRetries (>= 31)
+        // can never overflow the back-off computation; the delay stays bounded by MaxDelayMs.
+        var shift         = Math.Min(attempt, 30);
+        var deterministic = (int)Math.Min(_concurrency.MaxDelayMs, (long)_concurrency.BaseDelayMs * (1L << shift));
+        var jitter        = Random.Shared.Next(0, _concurrency.JitterMs + 1);
+        var delayMs       = deterministic + jitter;
+        return Task.Delay(delayMs, ct);
     }
 
     private static bool IsUniqueViolation(DbUpdateException ex)

@@ -54,6 +54,22 @@
 
 **Sweep progress:** ✅ Moderation → ⬜ Gamification → Notifications → Billing → Learning (Ai + Identity excluded per CONVENTIONS §7 scope).
 
+
+## Option C refactor — Billing module DONE (2026-06-16)
+
+**Behavior-preserving refactor; Application layer now EF-free. PR #155 expanded to include money-path QC suite + BILLING-HARDEN-01 contention hardening.**
+
+### What's in PR #155 now
+
+**Part 1: Option C refactor** — Five services (`ICreditLedgerService`, `IWebhookEventService`, `ISubscriptionCheckoutService`, `ISubscriptionService`, `IGlobalSettingService`) own all credit-ledger/webhook/subscription/checkout/global-setting persistence and workflows. All explicit transactions, xmin optimistic-concurrency retry, 23505 idempotency, post-commit integration/admin events, and server-side amount reconciliation moved inside the services. Seventeen handlers thinned to validate/authorize/delegate/map only. `IBillingDbContext` relocated to `Infrastructure/Persistence`. `Billing.Application` now EF-free.
+
+**Part 2: Money-path QC suite** — qc-test-designer designed 75 cases; api-tester implemented + ran **61/61 green** (P10 **124/124** total). All 18 locked-economy invariants covered (HIT+MISS charge, debit-on-delivery, caps, idempotency/23505, xmin never-negative, HMAC-first + forged-amount-ignored, IDOR). Test file: `backend/tests/Learnexia.IntegrationTests/P10_QC_BillingMoneyPaths_Tests.cs`. Documentation: `docs/qc/P10-Billing/` (backend-test-cases, coverage-report, execution-report).
+
+**Part 3: BILLING-HARDEN-01 (contention hardening)** — credit-debit OCC retry loop hardened: `MaxRetries` 3→6 (configurable via `Billing:Concurrency` in appsettings.json), exponential backoff + jitter applied AFTER rollback/`ChangeTracker.Clear()` (never under a held lock), shift-overflow clamp with `long` math. Resolves **D-01** (5 concurrent debits now 5/5, BE-TC-23 tightened ≥4/5→==5/5). **D-02 closed as a non-defect** (parent JWT `Id` claim mapping verified consistent; `id=0`/Free is the intended new-parent default).
+
+**Verification:** Build 0 errors; Tests Billing unit 93/93 + P10 integration 124/124 all pass; security-auditor 0 Critical/High (money invariants, idempotency, IDOR, delay-outside-lock all preserved); no migration; reviewer PASS.
+
+**Sweep progress:** ✅ Moderation → ✅ Billing → ⬜ Gamification → Notifications → Learning (Ai + Identity excluded per CONVENTIONS §7 scope).
 ## P3-01 — AI Gateway seam — added 2026-06-13 (branch `feat/P3-01-ai-gateway`)
 
 Built the full AI gateway infrastructure seam (BE-1 through BE-9). No HTTP endpoint ships in this story; the gateway is an in-process DI seam for P3-02/P3-03/P3-04+.
