@@ -15,6 +15,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
+using Learnexia.Modules.Billing.Application.Abstractions;
 using Learnexia.Modules.Billing.Domain.Entities;
 using Learnexia.Modules.Billing.Domain.Enums;
 using Learnexia.Modules.Billing.Infrastructure.Persistence;
@@ -200,33 +201,144 @@ public sealed class P10_QC_BillingMoneyPaths_Tests : IAsyncLifetime
     private async Task GrantCreditsAsync(string adminToken, int childId, int amount,
         DateTime? expiresAt = null, string? key = null)
     {
-        var (resp, _, body) = await SendAsync(HttpMethod.Post, $"{CreditsBaseUrl}/Grant",
-            new { ChildId = childId, Amount = amount,
-                  ExpiresAtUtc   = (expiresAt ?? DateTime.UtcNow.AddDays(30)).ToString("O"),
-                  IdempotencyKey = key ?? $"qc-grant:{childId}:{Guid.NewGuid():N}",
-                  IsPremium      = false },
-            adminToken);
-        ((int)resp.StatusCode).Should().BeOneOf(new[] { 200, 201 }, $"Grant credits; body: {body}");
+        // P10-13 CUTOVER: the admin Grant endpoint is now family-wallet scoped (requires ParentId, not ChildId).
+        // Seed helpers that used to call the HTTP grant now provision the wallet model directly so that
+        // CreditSpendService (which reads ChildEnergyAllocation) finds the balance. This preserves all
+        // test behavioral assertions unchanged — only the seed mechanism is updated.
+        await ProvisionWalletAllocationAsync(childId, amount);
     }
 
     private async Task<int> GetBalanceAsync(string adminToken, int childId)
     {
-        var (resp, root, body) = await SendAsync(HttpMethod.Get, $"{CreditsBaseUrl}/{childId}", null, adminToken);
-        resp.StatusCode.Should().Be(HttpStatusCode.OK, $"GET Credits/{childId}; body: {body}");
-        TryProp(root, "data", out var data);
-        TryProp(data, "totalBalance", out var tb);
-        return tb.GetInt32();
+        // P10-13 CUTOVER (AC13-8): the HTTP /Credits/Spend endpoint now debits the WALLET
+        // (CreditLedgerService.SpendAsync was re-homed to allocation-first → shared
+        // FamilyEnergyAccount.PurchasedBalance, same algorithm as the AI spend path). Tests that
+        // exercise the HTTP spend path therefore read the wallet balance =
+        // ChildEnergyAllocation.Remaining + shared FamilyEnergyAccount.PurchasedBalance.
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
+
+        var alloc = await db.ChildEnergyAllocations.AsNoTracking()
+            .Where(a => a.ChildId == childId)
+            .OrderByDescending(a => a.CycleStartUtc)
+            .FirstOrDefaultAsync();
+
+        var purchased = 0;
+        if (alloc is not null)
+        {
+            var wallet = await db.FamilyEnergyAccounts.AsNoTracking()
+                .FirstOrDefaultAsync(w => w.Id == alloc.FamilyEnergyAccountId);
+            purchased = wallet?.PurchasedBalance ?? 0;
+        }
+
+        return (alloc?.Remaining ?? 0) + purchased;
     }
 
     private async Task<int> CountSpendTxAsync(int childId)
     {
+        // P10-13 CUTOVER: /Credits/Spend now writes wallet-model Spend rows linked to the child's
+        // ChildEnergyAllocation / FamilyEnergyAccount (CreditAccountId is null on wallet rows).
+        // Count Spend rows linked to the child's allocation or wallet.
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
-        var account = await db.CreditAccounts.AsNoTracking().FirstOrDefaultAsync(a => a.ChildId == childId);
-        if (account is null) return 0;
+
+        var allocIds = await db.ChildEnergyAllocations.AsNoTracking()
+            .Where(a => a.ChildId == childId).Select(a => (int?)a.Id).ToListAsync();
+        var walletIds = await db.ChildEnergyAllocations.AsNoTracking()
+            .Where(a => a.ChildId == childId).Select(a => (int?)a.FamilyEnergyAccountId).ToListAsync();
+
+        if (allocIds.Count == 0) return 0;
+
         return await db.CreditTransactions.AsNoTracking()
-            .CountAsync(t => t.CreditAccountId == account.Id &&
-                             t.Type == CreditTransactionType.Spend);
+            .CountAsync(t => t.Type == CreditTransactionType.Spend &&
+                             (allocIds.Contains(t.ChildEnergyAllocationId)
+                              || walletIds.Contains(t.FamilyEnergyAccountId)));
+    }
+
+    /// <summary>
+    /// Provisions a FamilyEnergyAccount + ChildEnergyAllocation for a standalone student (no real parent).
+    /// This is needed after GrantCreditsAsync (which writes to CreditAccount) so the new
+    /// CreditSpendService (which reads ChildEnergyAllocation) can debit correctly.
+    /// </summary>
+    private async Task ProvisionWalletAllocationAsync(int childId, int amount)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
+
+        // Use a synthetic parentUserId = -(childId) as a placeholder (no real parent for admin-created students).
+        var syntheticParentId = -(childId);
+
+        var wallet = await db.FamilyEnergyAccounts.FirstOrDefaultAsync(w => w.ParentUserId == syntheticParentId);
+        if (wallet is null)
+        {
+            wallet = FamilyEnergyAccount.CreateEmpty(syntheticParentId);
+            db.FamilyEnergyAccounts.Add(wallet);
+            await db.SaveChangesAsync(0);
+        }
+
+        var cycleStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var cycleEnd   = cycleStart.AddMonths(1).AddSeconds(-1);
+
+        var alloc = await db.ChildEnergyAllocations.FirstOrDefaultAsync(
+            a => a.FamilyEnergyAccountId == wallet.Id && a.ChildId == childId && a.CycleStartUtc == cycleStart);
+        if (alloc is null)
+        {
+            alloc = new ChildEnergyAllocation
+            {
+                FamilyEnergyAccountId = wallet.Id,
+                ChildId               = childId,
+                CycleStartUtc         = cycleStart,
+                CycleEndUtc           = cycleEnd,
+                AllocatedAmount       = amount,
+                SpentAmount           = 0,
+            };
+            db.ChildEnergyAllocations.Add(alloc);
+        }
+        else
+        {
+            alloc.AllocatedAmount += amount;
+        }
+
+        wallet.SubscriptionBalance += amount;
+        await db.SaveChangesAsync(0);
+    }
+
+    /// <summary>
+    /// Returns the FamilyEnergyAccount.PurchasedBalance for the family associated with childId.
+    /// Searches in order:
+    ///   1. Via ChildEnergyAllocation → FamilyEnergyAccount (works after ProvisionWalletAllocationAsync)
+    ///   2. Via Pack Payment row → ParentUserId → FamilyEnergyAccount (works for CreateFamilyAsync tests
+    ///      where EnergyPackService.CreditPurchasedPackAsync created the wallet for the parent)
+    /// </summary>
+    private async Task<int> GetPurchasedBalanceFromWalletAsync(int childId)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
+
+        // Path 1: via allocation row (synthetic-parent tests from ProvisionWalletAllocationAsync).
+        var alloc = await db.ChildEnergyAllocations.AsNoTracking()
+            .Where(a => a.ChildId == childId).OrderByDescending(a => a.CycleStartUtc).FirstOrDefaultAsync();
+        if (alloc is not null)
+        {
+            var walletViaAlloc = await db.FamilyEnergyAccounts.AsNoTracking()
+                .FirstOrDefaultAsync(w => w.Id == alloc.FamilyEnergyAccountId);
+            if (walletViaAlloc is not null) return walletViaAlloc.PurchasedBalance;
+        }
+
+        // Path 2: via pack Payment row — pack webhook creates FamilyEnergyAccount keyed by ParentUserId.
+        // Find the most recent succeeded Pack payment targeting this child to get the parent's wallet.
+        var payment = await db.Payments.AsNoTracking()
+            .Where(p => p.TargetChildId == childId && p.Kind == Learnexia.Modules.Billing.Domain.Enums.PaymentKind.Pack)
+            .OrderByDescending(p => p.Id)
+            .FirstOrDefaultAsync();
+        if (payment is not null)
+        {
+            var walletViaPayment = await db.FamilyEnergyAccounts.AsNoTracking()
+                .FirstOrDefaultAsync(w => w.ParentUserId == payment.ParentUserId);
+            if (walletViaPayment is not null) return walletViaPayment.PurchasedBalance;
+        }
+
+        return 0;
     }
 
     private async Task<int> CountWebhookEventsAsync(string providerEventId)
@@ -305,6 +417,7 @@ public sealed class P10_QC_BillingMoneyPaths_Tests : IAsyncLifetime
         var adminToken = await GetAdminTokenAsync();
         var childId    = await CreateStudentAsync(adminToken);
         await GrantCreditsAsync(adminToken, childId, 10);
+        // ProvisionWalletAllocationAsync is now called internally by GrantCreditsAsync (P10-13 cutover).
 
         var ikey = $"tc12:{Guid.NewGuid():N}";
         var (resp, root, body) = await SendAsync(HttpMethod.Post, $"{CreditsBaseUrl}/Spend",
@@ -329,6 +442,7 @@ public sealed class P10_QC_BillingMoneyPaths_Tests : IAsyncLifetime
         var adminToken = await GetAdminTokenAsync();
         var childId    = await CreateStudentAsync(adminToken);
         await GrantCreditsAsync(adminToken, childId, 3);
+        // ProvisionWalletAllocationAsync is now called internally by GrantCreditsAsync (P10-13 cutover).
 
         var spendBefore = await CountSpendTxAsync(childId);
         var ikey = $"tc13:{Guid.NewGuid():N}";
@@ -363,6 +477,7 @@ public sealed class P10_QC_BillingMoneyPaths_Tests : IAsyncLifetime
         var adminToken = await GetAdminTokenAsync();
         var childId    = await CreateStudentAsync(adminToken);
         await GrantCreditsAsync(adminToken, childId, 3); // exactly enough for one Explain (cost 3)
+        // ProvisionWalletAllocationAsync is now called internally by GrantCreditsAsync (P10-13 cutover).
 
         // First spend: should succeed
         var (r1, root1, b1) = await SendAsync(HttpMethod.Post, $"{CreditsBaseUrl}/Spend",
@@ -398,23 +513,26 @@ public sealed class P10_QC_BillingMoneyPaths_Tests : IAsyncLifetime
     {
         // Drive DailyUsed >= free_daily_cap (10) then verify one more spend still succeeds.
         // We use /Credits/Spend (admin seam) for determinism here.
-        // Note: CreditLedgerService.ExecuteDebitAsync does NOT increment DailyUsed (known gap).
-        // So we seed DailyUsed directly via DB and verify EnergyStatus shows the cap warning.
+        // Seed DailyUsed directly via ChildDailyUsage (wallet model) and verify EnergyStatus shows the cap warning.
         var adminToken = await GetAdminTokenAsync();
         var childId    = await CreateStudentAsync(adminToken);
         await GrantCreditsAsync(adminToken, childId, 100);
-
-        // Seed DailyUsed = 10 directly so we don't need 10 AI SSE calls
+        // P10-13 CUTOVER: /Credits/Spend debits the WALLET; GrantCreditsAsync now provisions via wallet directly.
+        // CUTOVER: EnergyStatus + the daily soft-cap counter now live in ChildDailyUsage (wallet model),
+        // NOT CreditAccount.DailyUsed. Seed DailyUsed = cap directly on ChildDailyUsage.
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
-            var account = await db.CreditAccounts.FirstOrDefaultAsync(a => a.ChildId == childId);
-            if (account is not null)
+            var usage = await db.ChildDailyUsages.FirstOrDefaultAsync(d => d.ChildId == childId);
+            if (usage is null)
             {
-                account.DailyUsed = 10;
-                account.DailyUsedDateLocal = DateOnly.FromDateTime(DateTime.Now).ToString("yyyy-MM-dd");
+                usage = ChildDailyUsage.Create(childId);
+                db.ChildDailyUsages.Add(usage);
                 await db.SaveChangesAsync(0);
             }
+            usage.DailyUsed = 10;  // exactly at cap (free_daily_cap=10 from GlobalSettings seed)
+            usage.DailyUsedDateLocal = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            await db.SaveChangesAsync(0);
         }
 
         // GET energy status: should show DailyCapReached=true (WARNING, not block)
@@ -448,6 +566,7 @@ public sealed class P10_QC_BillingMoneyPaths_Tests : IAsyncLifetime
         var adminToken = await GetAdminTokenAsync();
         var childId    = await CreateStudentAsync(adminToken);
         await GrantCreditsAsync(adminToken, childId, 10);
+        // ProvisionWalletAllocationAsync is now called internally by GrantCreditsAsync (P10-13 cutover).
 
         var ikey = $"idem-A:{Guid.NewGuid():N}";
 
@@ -482,6 +601,7 @@ public sealed class P10_QC_BillingMoneyPaths_Tests : IAsyncLifetime
         var adminToken = await GetAdminTokenAsync();
         var childId    = await CreateStudentAsync(adminToken);
         await GrantCreditsAsync(adminToken, childId, 10);
+        // ProvisionWalletAllocationAsync is now called internally by GrantCreditsAsync (P10-13 cutover).
 
         var ikey = $"idem-par:{Guid.NewGuid():N}";
         var tasks = Enumerable.Range(0, 5).Select(_ =>
@@ -560,13 +680,10 @@ public sealed class P10_QC_BillingMoneyPaths_Tests : IAsyncLifetime
         var webhookCount = await CountWebhookEventsAsync(eventId);
         webhookCount.Should().Be(1, "exactly one WebhookEvent row (deduped)");
 
-        // PurchasedBalance credited exactly once (1 pack_size)
-        using var scope = _factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
-        var account = await db.CreditAccounts.AsNoTracking().FirstOrDefaultAsync(a => a.ChildId == childId);
-        account.Should().NotBeNull();
-        // pack_size from GlobalSettings default = 1000
-        account!.PurchasedBalance.Should().Be(1000, "pack credited exactly once");
+        // PurchasedBalance credited exactly once (1 pack_size) — reads from FamilyEnergyAccount (wallet model).
+        // Pack purchase now credits shared FamilyEnergyAccount.PurchasedBalance (P10-13-BE-12 re-home).
+        var purchasedBal = await GetPurchasedBalanceFromWalletAsync(childId);
+        purchasedBal.Should().Be(1000, "pack credited exactly once — FamilyEnergyAccount.PurchasedBalance must be 1000");
     }
 
     [Fact(DisplayName = "BE-TC-22 Pack credit idempotency: webhook replay does not double-credit")]
@@ -595,11 +712,9 @@ public sealed class P10_QC_BillingMoneyPaths_Tests : IAsyncLifetime
         TryProp(root2, "data", out var d2); TryProp(d2, "outcome", out var o2);
         o2.GetString().Should().Be("Duplicate", $"replay must be idempotent; body: {b2}");
 
-        // PurchasedBalance = 1000 (not 2000)
-        using var scope = _factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
-        var account = await db.CreditAccounts.AsNoTracking().FirstOrDefaultAsync(a => a.ChildId == childId);
-        account!.PurchasedBalance.Should().Be(1000, "replay must not double-credit");
+        // PurchasedBalance = 1000 (not 2000) — reads from FamilyEnergyAccount (wallet model).
+        var purchasedBal = await GetPurchasedBalanceFromWalletAsync(childId);
+        purchasedBal.Should().Be(1000, "replay must not double-credit — FamilyEnergyAccount.PurchasedBalance must be 1000");
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -618,6 +733,7 @@ public sealed class P10_QC_BillingMoneyPaths_Tests : IAsyncLifetime
         var adminToken = await GetAdminTokenAsync();
         var childId    = await CreateStudentAsync(adminToken);
         await GrantCreditsAsync(adminToken, childId, 10);
+        // ProvisionWalletAllocationAsync is now called internally by GrantCreditsAsync (P10-13 cutover).
 
         // 5 parallel debits of 2, each with distinct idempotency key
         var tasks = Enumerable.Range(0, 5).Select(i =>
@@ -653,6 +769,7 @@ public sealed class P10_QC_BillingMoneyPaths_Tests : IAsyncLifetime
         var adminToken = await GetAdminTokenAsync();
         var childId    = await CreateStudentAsync(adminToken);
         await GrantCreditsAsync(adminToken, childId, 5);
+        // ProvisionWalletAllocationAsync is now called internally by GrantCreditsAsync (P10-13 cutover).
 
         // 5 parallel debits of 2 (total demand 10 > balance 5)
         var tasks = Enumerable.Range(0, 5).Select(i =>
@@ -1115,13 +1232,10 @@ public sealed class P10_QC_BillingMoneyPaths_Tests : IAsyncLifetime
         var (whResp, whRoot, whBody) = await PostWebhookAsync(rawBody, sig);
         whResp.StatusCode.Should().Be(HttpStatusCode.OK, $"pack webhook; body: {whBody}");
 
-        // GET balance: PurchasedBalance = pack_size (1000)
-        var (balResp, balRoot, balBody) = await SendAsync(HttpMethod.Get,
-            $"{CreditsBaseUrl}/{childId}", null, adminToken);
-        balResp.StatusCode.Should().Be(HttpStatusCode.OK, $"balance; body: {balBody}");
-        TryProp(balRoot, "data", out var balData);
-        TryProp(balData, "purchasedBalance", out var pb);
-        pb.GetInt32().Should().Be(1000, "PurchasedBalance must equal pack_size after pack webhook");
+        // Pack purchase credits FamilyEnergyAccount.PurchasedBalance (not per-child CreditAccount — P10-13-BE-12 re-home).
+        // Read directly from the wallet to verify the shared PurchasedBalance = pack_size (1000).
+        var purchasedBal = await GetPurchasedBalanceFromWalletAsync(childId);
+        purchasedBal.Should().Be(1000, "FamilyEnergyAccount.PurchasedBalance must equal pack_size after pack webhook");
 
         var (payStatus, _) = await GetPaymentFromDbAsync(pid.GetInt32());
         payStatus.Should().Be(PaymentStatus.Succeeded);
@@ -1182,22 +1296,19 @@ public sealed class P10_QC_BillingMoneyPaths_Tests : IAsyncLifetime
         var (raw1, sig1) = BuildWebhook($"evt-tc49-credit:{Guid.NewGuid():N}", "payment.succeeded", providerRef, 50m);
         await PostWebhookAsync(raw1, sig1);
 
-        // Verify PurchasedBalance = 1000
-        var (balResp1, balRoot1, _) = await SendAsync(HttpMethod.Get,
-            $"{CreditsBaseUrl}/{childId}", null, adminToken);
-        TryProp(balRoot1, "data", out var bd1); TryProp(bd1, "purchasedBalance", out var pb1);
-        pb1.GetInt32().Should().Be(1000);
+        // Pack credit lands on FamilyEnergyAccount.PurchasedBalance (P10-13-BE-12 re-home).
+        // Verify PurchasedBalance = 1000 via wallet DB read.
+        var pb1 = await GetPurchasedBalanceFromWalletAsync(childId);
+        pb1.Should().Be(1000, "FamilyEnergyAccount.PurchasedBalance must be 1000 after pack webhook");
 
         // Now refund
         var (raw2, sig2) = BuildWebhook($"evt-tc49-refund:{Guid.NewGuid():N}", "refund.succeeded", providerRef, 50m);
         var (rResp, rRoot, rBody) = await PostWebhookAsync(raw2, sig2);
         rResp.StatusCode.Should().Be(HttpStatusCode.OK, $"refund webhook; body: {rBody}");
 
-        // PurchasedBalance should be 0 now
-        var (balResp2, balRoot2, balBody2) = await SendAsync(HttpMethod.Get,
-            $"{CreditsBaseUrl}/{childId}", null, adminToken);
-        TryProp(balRoot2, "data", out var bd2); TryProp(bd2, "purchasedBalance", out var pb2);
-        pb2.GetInt32().Should().Be(0, $"full clawback; body: {balBody2}");
+        // PurchasedBalance should be 0 now (full clawback) — read from wallet model.
+        var pb2 = await GetPurchasedBalanceFromWalletAsync(childId);
+        pb2.Should().Be(0, "FamilyEnergyAccount.PurchasedBalance must be 0 after full refund clawback");
 
         var (payStatus, _) = await GetPaymentFromDbAsync(paymentId);
         payStatus.Should().Be(PaymentStatus.Refunded);
@@ -1232,13 +1343,12 @@ public sealed class P10_QC_BillingMoneyPaths_Tests : IAsyncLifetime
         var (rResp, rRoot, rBody) = await PostWebhookAsync(raw2, sig2);
         rResp.StatusCode.Should().Be(HttpStatusCode.OK, $"refund webhook; body: {rBody}");
 
-        // Balance must be 0, never negative
-        var (_, balRoot, _) = await SendAsync(HttpMethod.Get,
-            $"{CreditsBaseUrl}/{childId}", null, adminToken);
-        TryProp(balRoot, "data", out var bd);
-        TryProp(bd, "purchasedBalance", out var pb); TryProp(bd, "totalBalance", out var tb);
-        pb.GetInt32().Should().Be(0, "purchased balance after refund clamp");
-        tb.GetInt32().Should().BeGreaterThanOrEqualTo(0, "total balance must never go negative — STOP if negative");
+        // Balance must be 0 (or non-negative), never negative — read from wallet model.
+        // Pack credits go to FamilyEnergyAccount.PurchasedBalance (P10-13-BE-12).
+        // After spending 400 out of 1000, only 600 remain; refund claws back min(600, pack_size).
+        var pbAfterRefund = await GetPurchasedBalanceFromWalletAsync(childId);
+        pbAfterRefund.Should().Be(0, "FamilyEnergyAccount.PurchasedBalance after refund clamp must be 0 (600 clawed back)");
+        pbAfterRefund.Should().BeGreaterThanOrEqualTo(0, "FamilyEnergyAccount.PurchasedBalance must never go negative — STOP if negative");
     }
 
     [Fact(DisplayName = "BE-TC-51 No double-refund: replayed refund.succeeded is a no-op")]
@@ -1265,12 +1375,10 @@ public sealed class P10_QC_BillingMoneyPaths_Tests : IAsyncLifetime
         var (rResp, rRoot, rBody) = await PostWebhookAsync(raw3, sig3);
         rResp.StatusCode.Should().Be(HttpStatusCode.OK, $"replay refund; body: {rBody}");
 
-        // Balance must not go negative (no second clawback)
-        var (_, balRoot, balBody) = await SendAsync(HttpMethod.Get,
-            $"{CreditsBaseUrl}/{childId}", null, adminToken);
-        TryProp(balRoot, "data", out var bd);
-        TryProp(bd, "totalBalance", out var tb);
-        tb.GetInt32().Should().BeGreaterThanOrEqualTo(0, $"total balance must be >=0 after replay; body: {balBody}");
+        // Balance must not go negative (no second clawback) — read from wallet model.
+        // After first refund PurchasedBalance = 0; second refund must not take it below 0.
+        var walletBalAfterReplay = await GetPurchasedBalanceFromWalletAsync(childId);
+        walletBalAfterReplay.Should().BeGreaterThanOrEqualTo(0, "FamilyEnergyAccount.PurchasedBalance must be >=0 after double-refund replay (no second clawback)");
     }
 
     [Fact(DisplayName = "BE-TC-52 Subscription refund → Free, no clawback of granted credits")]
@@ -1473,18 +1581,21 @@ public sealed class P10_QC_BillingMoneyPaths_Tests : IAsyncLifetime
     [Fact(DisplayName = "BE-TC-65 Child can view OWN balance; parent can view linked child's balance")]
     public async Task BE_TC_65_Own_And_Linked_Balance_Allowed()
     {
+        // P10-13 CUTOVER: GET /Credits/{childId} has been removed (CreditAccount retired).
+        // The per-child balance is now exposed via GET /api/Billing/Energy/{childId}/Status.
+        // Test intent: own-child and linked-parent reads are allowed (not denied).
         var adminToken = await GetAdminTokenAsync();
         var (childId, childToken, parentToken, _) = await CreateFamilyAsync("tc65");
         await GrantCreditsAsync(adminToken, childId, 20);
 
-        // Child views own balance
-        var (r1, root1, b1) = await SendAsync(HttpMethod.Get, $"{CreditsBaseUrl}/{childId}", null, childToken);
-        r1.StatusCode.Should().Be(HttpStatusCode.OK, $"child own balance; body: {b1}");
+        // Child views own energy status
+        var (r1, root1, b1) = await SendAsync(HttpMethod.Get, $"{EnergyBaseUrl}/{childId}/Status", null, childToken);
+        r1.StatusCode.Should().Be(HttpStatusCode.OK, $"child own energy status; body: {b1}");
         TryProp(root1, "successed", out var s1); s1.GetBoolean().Should().BeTrue($"body: {b1}");
 
-        // Parent views linked child's balance
-        var (r2, root2, b2) = await SendAsync(HttpMethod.Get, $"{CreditsBaseUrl}/{childId}", null, parentToken);
-        r2.StatusCode.Should().Be(HttpStatusCode.OK, $"parent linked child balance; body: {b2}");
+        // Parent views linked child's energy status
+        var (r2, root2, b2) = await SendAsync(HttpMethod.Get, $"{EnergyBaseUrl}/{childId}/Status", null, parentToken);
+        r2.StatusCode.Should().Be(HttpStatusCode.OK, $"parent linked child energy status; body: {b2}");
         TryProp(root2, "successed", out var s2); s2.GetBoolean().Should().BeTrue($"body: {b2}");
     }
 
@@ -1560,14 +1671,16 @@ public sealed class P10_QC_BillingMoneyPaths_Tests : IAsyncLifetime
                   IdempotencyKey = $"tc68:{Guid.NewGuid():N}" }, parentToken);
         r1.StatusCode.Should().Be(HttpStatusCode.Forbidden, $"Spend as parent must 403; body: {b1}");
 
-        // POST /Credits/Grant as parent → 403
+        // POST /Credits/Grant as parent → 403 (P10-13: Grant now requires ParentId body field; still [Authorize("Billing.Create")])
         var (r2, _, b2) = await SendAsync(HttpMethod.Post, $"{CreditsBaseUrl}/Grant",
-            new { ChildId = childId, Amount = 10, ExpiresAtUtc = DateTime.UtcNow.AddDays(30).ToString("O"),
-                  IdempotencyKey = $"tc68g:{Guid.NewGuid():N}", IsPremium = false }, parentToken);
+            new { ParentId = childId, Amount = 10,
+                  IdempotencyKey = $"tc68g:{Guid.NewGuid():N}" }, parentToken);
         r2.StatusCode.Should().Be(HttpStatusCode.Forbidden, $"Grant as parent must 403; body: {b2}");
 
-        // GET /Credits/{childId}/Reconcile as parent → 403
-        var (r3, _, b3) = await SendAsync(HttpMethod.Get, $"{CreditsBaseUrl}/{childId}/Reconcile",
+        // P10-13 CUTOVER: GET /Credits/{childId}/Reconcile route is now GET /Credits/Reconcile/{parentId}
+        // (family-wallet scoped — parentId in the route). Still requires Billing.View → 403 for parent token.
+        var dummyParentId = 99999; // high-value id that won't exist — auth gate fires before business logic
+        var (r3, _, b3) = await SendAsync(HttpMethod.Get, $"{CreditsBaseUrl}/Reconcile/{dummyParentId}",
             null, parentToken);
         r3.StatusCode.Should().Be(HttpStatusCode.Forbidden, $"Reconcile as parent must 403; body: {b3}");
     }
@@ -1585,11 +1698,13 @@ public sealed class P10_QC_BillingMoneyPaths_Tests : IAsyncLifetime
     [Fact(DisplayName = "BE-TC-70 Unauthenticated money endpoints → 401")]
     public async Task BE_TC_70_Unauthenticated_MoneyEndpoints_401()
     {
+        // P10-13 CUTOVER: GET /Credits/{childId} has been removed (CreditAccount retired).
+        // Use GET /Energy/{childId}/Status instead — still [Authorize], still returns 401 for anon.
         var adminToken = await GetAdminTokenAsync();
         var childId    = await CreateStudentAsync(adminToken);
 
-        var (r1, _, b1) = await SendAsync(HttpMethod.Get, $"{CreditsBaseUrl}/{childId}");
-        r1.StatusCode.Should().Be(HttpStatusCode.Unauthorized, $"GET Credits anon; body: {b1}");
+        var (r1, _, b1) = await SendAsync(HttpMethod.Get, $"{EnergyBaseUrl}/{childId}/Status");
+        r1.StatusCode.Should().Be(HttpStatusCode.Unauthorized, $"GET Energy/Status anon; body: {b1}");
 
         var (r2, _, b2) = await SendAsync(HttpMethod.Post, SubscriptionCheckoutUrl);
         r2.StatusCode.Should().Be(HttpStatusCode.Unauthorized, $"POST Checkout anon; body: {b2}");
@@ -1665,11 +1780,14 @@ public sealed class P10_QC_BillingMoneyPaths_Tests : IAsyncLifetime
     [Fact(DisplayName = "BE-TC-73 Envelope shape: Successed spelling + correct status code on success")]
     public async Task BE_TC_73_Envelope_Successed_Spelling_And_StatusCode()
     {
+        // P10-13 CUTOVER: GET /Credits/{childId} removed (CreditAccount retired).
+        // Use GET /Energy/{childId}/Status to exercise the BaseResponse envelope shape invariant —
+        // same envelope contract, still returns 200 + BaseResponse<EnergyStatusDto>.
         var adminToken = await GetAdminTokenAsync();
         var childId    = await CreateStudentAsync(adminToken);
         await GrantCreditsAsync(adminToken, childId, 20);
 
-        var (resp, root, body) = await SendAsync(HttpMethod.Get, $"{CreditsBaseUrl}/{childId}", null, adminToken);
+        var (resp, root, body) = await SendAsync(HttpMethod.Get, $"{EnergyBaseUrl}/{childId}/Status", null, adminToken);
         resp.StatusCode.Should().Be(HttpStatusCode.OK, $"body: {body}");
 
         // Must have 'successed' (spelled Successed in source, serialized camelCase as 'successed')

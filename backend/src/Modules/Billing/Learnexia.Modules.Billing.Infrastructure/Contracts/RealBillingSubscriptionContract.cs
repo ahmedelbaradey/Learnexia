@@ -8,8 +8,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Learnexia.Modules.Billing.Infrastructure.Contracts;
 
 /// <summary>
-/// Real implementation of <see cref="IBillingSubscriptionContract"/> — replaces
-/// <see cref="ConfigDefaultSubscriptionContract"/> when P10-05 lands.
+/// Real implementation of <see cref="IBillingSubscriptionContract"/> — replaces the
+/// old stub (which read from <c>billing.CreditAccounts</c>, now retired).
 ///
 /// <para><strong>Tier resolution:</strong> a child's tier = their FAMILY's current plan tier.
 /// <list type="bullet">
@@ -20,13 +20,13 @@ namespace Learnexia.Modules.Billing.Infrastructure.Contracts;
 /// </list>
 /// </para>
 ///
-/// <para><strong>Module isolation (rule 1):</strong> parent/child link data is NOT stored in the
-/// Billing module. We consume it via <see cref="IParentChildQuery"/> (a <c>Shared.Contracts</c>
-/// seam implemented by the Parent module). No cross-module FK.</para>
+/// <para><strong>CreditAccount RETIRED:</strong> Active children are now resolved via
+/// <see cref="IParentChildQuery"/> (the cross-module <c>Shared.Contracts</c> seam) rather than
+/// reading the retired <c>billing.CreditAccounts</c> table. This ensures the grant job picks up
+/// ALL family children, including those who have never yet received a grant allocation row.</para>
 ///
-/// <para><strong>Source of active children:</strong> We start from <c>billing.CreditAccounts</c>
-/// (the same set the stub used) — every child that has ever received a grant has a row. New children
-/// without a row receive their first account on the next grant run, which is correct behaviour.</para>
+/// <para><strong>Module isolation (rule 1):</strong> parent/child link data is NOT stored in the
+/// Billing module. We consume it via <see cref="IParentChildQuery"/>. No cross-module FK.</para>
 /// </summary>
 public sealed class RealBillingSubscriptionContract : IBillingSubscriptionContract
 {
@@ -48,14 +48,7 @@ public sealed class RealBillingSubscriptionContract : IBillingSubscriptionContra
     public async Task<IReadOnlyList<ActiveChildPlanDto>> GetActiveChildrenWithTierAsync(
         CancellationToken ct = default)
     {
-        // 1. Load all known children from CreditAccounts (billing schema).
-        var children = await _db.CreditAccounts
-            .AsNoTracking()
-            .Select(a => new { a.ChildId, a.ChildTimeZoneId })
-            .ToListAsync(ct);
-
-        // 2. Load all Active Premium parent user ids from Subscriptions (one query).
-        //    We load all Premium parent ids into a HashSet for O(1) lookups.
+        // 1. Load all Active Premium parent user ids from Subscriptions (one query).
         var premiumParentIds = await _db.Subscriptions
             .AsNoTracking()
             .Where(s => s.Status == SubscriptionStatus.Active && s.PlanCode == PlanCode.Premium)
@@ -64,26 +57,34 @@ public sealed class RealBillingSubscriptionContract : IBillingSubscriptionContra
 
         var premiumSet = new HashSet<int>(premiumParentIds);
 
-        // 3. For each child resolve their parent → look up tier.
-        var result = new List<ActiveChildPlanDto>(children.Count);
+        // 2. Collect known family wallets (provisioned families).
+        //    Each FamilyEnergyAccount.ParentUserId maps to a parent whose children may be active.
+        //    We also include Premium-subscribed parents who may not yet have a wallet.
+        var walletParentIds = await _db.FamilyEnergyAccounts
+            .AsNoTracking()
+            .Select(w => w.ParentUserId)
+            .ToListAsync(ct);
 
-        foreach (var child in children)
+        // Union: wallet parents + Premium-subscribed parents (they'll get a wallet on their first grant).
+        var allParentIds = walletParentIds.Union(premiumParentIds).ToList();
+
+        // 3. For each parent resolve their children → build the result list.
+        var result = new List<ActiveChildPlanDto>();
+
+        foreach (var parentId in allParentIds)
         {
             try
             {
-                int? parentId = await _parentChildQuery.FindParentForChildAsync(child.ChildId, ct);
+                var childIds = await _parentChildQuery.GetChildIdsForParentAsync(parentId, ct);
+                var tier = premiumSet.Contains(parentId) ? PlanTier.Premium : PlanTier.Free;
 
-                var tier = parentId.HasValue && premiumSet.Contains(parentId.Value)
-                    ? PlanTier.Premium
-                    : PlanTier.Free;
-
-                result.Add(new ActiveChildPlanDto(child.ChildId, tier, child.ChildTimeZoneId));
+                foreach (var childId in childIds)
+                    result.Add(new ActiveChildPlanDto(childId, tier, "Africa/Cairo"));
             }
             catch (Exception ex)
             {
-                // Fail-soft per child: log and default to Free so the grant job continues.
-                _logger.LogError(ex, $"RealBillingSubscriptionContract: failed to resolve tier for childId={child.ChildId}. Defaulting to Free.");
-                result.Add(new ActiveChildPlanDto(child.ChildId, PlanTier.Free, child.ChildTimeZoneId));
+                // Fail-soft per parent: log and skip so the grant job continues for other families.
+                _logger.LogError(ex, $"RealBillingSubscriptionContract: failed to resolve children for parentId={parentId}. Skipping.");
             }
         }
 

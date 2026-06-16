@@ -1,10 +1,9 @@
-using Learnexia.Modules.Billing.Application.Abstractions;
 using Learnexia.Modules.Billing.Application.Services;
-using Learnexia.Modules.Billing.Infrastructure.Options;
-using Learnexia.Modules.Billing.Infrastructure.Persistence;
 using Learnexia.Modules.Billing.Domain.Constants;
 using Learnexia.Modules.Billing.Domain.Entities;
 using Learnexia.Modules.Billing.Domain.Enums;
+using Learnexia.Modules.Billing.Infrastructure.Options;
+using Learnexia.Modules.Billing.Infrastructure.Persistence;
 using Learnexia.Shared.Contracts.Billing;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Settings;
@@ -14,32 +13,35 @@ using Microsoft.Extensions.Options;
 namespace Learnexia.Modules.Billing.Infrastructure.Services;
 
 /// <summary>
-/// Implements <see cref="ICreditSpendService"/> — the cross-module seam consumed by the
-/// Ai module handlers (W2/P10-03) without referencing any <c>Billing.*</c> project.
+/// Re-implementation of <see cref="ICreditSpendService"/> for the P10-13 family-wallet model.
 ///
-/// <para><strong>Atomicity:</strong> <see cref="TryDebitAsync"/> opens an explicit transaction,
-/// loads the account with the <c>xmin</c> concurrency token, checks idempotency, checks balance,
-/// debits Granted-first, <strong>increments <c>DailyUsed</c> with lazy reset (P10-03/P10-04 W2b)</strong>,
-/// inserts the ledger row, and commits — all in one transaction.
-/// On <see cref="DbUpdateConcurrencyException"/> it retries up to <c>MaxRetries</c>.</para>
+/// <para><strong>Algorithm (allocation-first → purchased-fallback):</strong>
+/// <list type="number">
+///   <item>Idempotency pre-check.</item>
+///   <item>Load the child's active <c>ChildEnergyAllocation</c> row (with <c>xmin</c>).</item>
+///   <item>Debit the allocation row first (only the child's own allowance is touched).</item>
+///   <item>If <c>Remaining &lt; amount</c>, draw the shortfall from the shared family
+///         <c>FamilyEnergyAccount.PurchasedBalance</c> (fallback path — the shared row is
+///         NOT read or locked on the normal allocation-covered path).</item>
+///   <item>If neither covers it, return typed <c>InsufficientBalance</c> (no DB write).</item>
+///   <item>Increment the per-child <c>ChildDailyUsage</c> row (lazy reset) inside the same txn (OQ-G).</item>
+///   <item>Write <c>SpendAllocation</c> and/or <c>SpendPurchasedFallback</c> ledger rows.</item>
+///   <item>Commit. On <c>DbUpdateConcurrencyException</c> retry with exponential back-off (HARDEN-01).</item>
+/// </list>
+/// </para>
 ///
-/// <para><strong>Idempotency:</strong> if the idempotency key already exists in
-/// <c>CreditTransactions</c>, the prior result is returned without a second debit.</para>
+/// <para><strong>GetBalanceAsync:</strong> returns derived totals from the child's active allocation
+/// row + shared purchased balance. Creates the <c>ChildDailyUsage</c> row on first use.</para>
 ///
-/// <para><strong>Never-negative:</strong> the balance re-check inside the transaction ensures
-/// the account is not over-drawn even under concurrent debits from multiple requests.</para>
-///
-/// <para><strong>Granted-first:</strong> <see cref="CreditAccount.GrantedBalance"/> is consumed
-/// before <see cref="CreditAccount.PurchasedBalance"/>.</para>
-///
-/// <para><strong>Daily counter:</strong> <see cref="CreditAccount.DailyUsed"/> is incremented
-/// inside the same transaction as the balance debit. When <see cref="CreditAccount.DailyUsedDateLocal"/>
-/// is stale (different from child-local today), it is reset to 0 before incrementing. This is the
-/// only write path for <c>DailyUsed</c> — <c>EnergyStatusQueryHandler</c> is read-only.</para>
+/// <para><strong>AI module compatibility:</strong> the signature of <see cref="TryDebitAsync"/> is
+/// FROZEN. <see cref="DebitResult.FromGranted"/> and <see cref="FromPurchased"/> in the result are
+/// populated to avoid breaking Ai handler code that reads those fields (they map to
+/// <c>FromAllocation</c> and <c>FromPurchasedFallback</c> respectively). The new init-only
+/// <c>FromAllocation</c> / <c>FromPurchasedFallback</c> carry the wallet semantics.</para>
 /// </summary>
 public class CreditSpendService : ICreditSpendService
 {
-    private readonly IBillingDbContext _db;
+    private readonly BillingDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly ILoggerManager _logger;
     private readonly IGlobalSettingsProvider _settings;
@@ -47,7 +49,7 @@ public class CreditSpendService : ICreditSpendService
     private readonly BillingConcurrencyOptions _concurrency;
 
     public CreditSpendService(
-        IBillingDbContext db,
+        BillingDbContext db,
         ICurrentUserService currentUser,
         ILoggerManager logger,
         IGlobalSettingsProvider settings,
@@ -61,6 +63,8 @@ public class CreditSpendService : ICreditSpendService
         _clock       = clock;
         _concurrency = concurrencyOptions.Value;
     }
+
+    // ── TryDebitAsync ─────────────────────────────────────────────────────────────
 
     /// <inheritdoc/>
     public async Task<DebitResult> TryDebitAsync(
@@ -83,8 +87,6 @@ public class CreditSpendService : ICreditSpendService
             }
             catch (DbUpdateConcurrencyException) when (attempt < maxRetries)
             {
-                // Transaction from the failed attempt is already disposed/rolled back by
-                // the `await using var tx` scope inside ExecuteDebitCoreAsync — safe to delay here.
                 _logger.LogWarn($"CreditSpendService: concurrency conflict attempt {attempt + 1} childId={childId}. Retrying.");
                 _db.ChangeTracker.Clear();
                 await ApplyBackoffDelayAsync(attempt, ct);
@@ -101,49 +103,57 @@ public class CreditSpendService : ICreditSpendService
             }
         }
 
-        _logger.LogError(new Exception("Retries exhausted"), $"CreditSpendService: exceeded {maxRetries} retries childId={childId}");
-        throw new InvalidOperationException($"CreditSpendService: exceeded {maxRetries} retries for childId={childId}");
+        _logger.LogError(new Exception("Retries exhausted"), $"CreditSpendService: exceeded {_concurrency.MaxRetries} retries childId={childId}");
+        throw new InvalidOperationException($"CreditSpendService: exceeded {_concurrency.MaxRetries} retries for childId={childId}");
     }
+
+    // ── GetBalanceAsync ───────────────────────────────────────────────────────────
 
     /// <inheritdoc/>
     public async Task<EnergyBalance> GetBalanceAsync(int childId, CancellationToken ct = default)
     {
-        var account = await _db.CreditAccounts
-            .AsNoTracking()
-            .FirstOrDefaultAsync(a => a.ChildId == childId, ct);
-
-        // Daily cap from GlobalSettings (free-tier default until P10-05 subscription tier).
         var dailyCap = _settings.GetInt(GlobalSettingKeys.FreeDailyCap, 10);
 
-        if (account is null)
+        // Find the child's active allocation row (latest cycle).
+        var allocation = await _db.ChildEnergyAllocations
+            .AsNoTracking()
+            .Where(a => a.ChildId == childId)
+            .OrderByDescending(a => a.CycleStartUtc)
+            .FirstOrDefaultAsync(ct);
+
+        // Find the family purchased balance via the wallet.
+        int purchasedBalance = 0;
+        if (allocation is not null)
         {
-            // Return zero balance — account will be created on first grant.
-            return new EnergyBalance(
-                GrantedBalance: 0,
-                PurchasedBalance: 0,
-                TotalBalance: 0,
-                GrantExpiresAtUtc: null,
-                DailyUsed: 0,
-                DailyCap: dailyCap,
-                DailyCapReached: false);
+            var wallet = await _db.FamilyEnergyAccounts
+                .AsNoTracking()
+                .FirstOrDefaultAsync(w => w.Id == allocation.FamilyEnergyAccountId, ct);
+            purchasedBalance = wallet?.PurchasedBalance ?? 0;
         }
 
-        // Lazy daily-reset (read-side only — no write here; the write happens in TryDebitAsync).
-        var effectiveDailyUsed = DailyCapHelper.IsStale(account.DailyUsedDateLocal, account.ChildTimeZoneId, _clock)
+        // Daily usage row.
+        var dailyUsage = await _db.ChildDailyUsages
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d => d.ChildId == childId, ct);
+
+        var effectiveDailyUsed = dailyUsage is null || DailyCapHelper.IsStale(dailyUsage.DailyUsedDateLocal, dailyUsage.ChildTimeZoneId, _clock)
             ? 0
-            : account.DailyUsed;
+            : dailyUsage.DailyUsed;
+
+        var grantedBalance  = allocation?.Remaining ?? 0;
+        var totalBalance    = grantedBalance + purchasedBalance;
 
         return new EnergyBalance(
-            GrantedBalance: account.GrantedBalance,
-            PurchasedBalance: account.PurchasedBalance,
-            TotalBalance: account.TotalBalance,
-            GrantExpiresAtUtc: account.GrantExpiresAtUtc,
-            DailyUsed: effectiveDailyUsed,
-            DailyCap: dailyCap,
-            DailyCapReached: effectiveDailyUsed >= dailyCap);
+            GrantedBalance      : grantedBalance,
+            PurchasedBalance    : purchasedBalance,
+            TotalBalance        : totalBalance,
+            GrantExpiresAtUtc   : allocation?.CycleEndUtc,
+            DailyUsed           : effectiveDailyUsed,
+            DailyCap            : dailyCap,
+            DailyCapReached     : effectiveDailyUsed >= dailyCap);
     }
 
-    // ── Private helpers ───────────────────────────────────────────────────────────
+    // ── Core debit logic ──────────────────────────────────────────────────────────
 
     private async Task<DebitResult> ExecuteDebitCoreAsync(
         int childId,
@@ -154,54 +164,156 @@ public class CreditSpendService : ICreditSpendService
     {
         await using var tx = await _db.Database.BeginTransactionAsync(ct);
 
-        // Idempotency pre-check (cheaper than catching constraint violation).
+        // ── Idempotency pre-check ──────────────────────────────────────────────────
         if (await _db.CreditTransactions.AnyAsync(t => t.IdempotencyKey == idempotencyKey, ct))
         {
             await tx.RollbackAsync(ct);
             return await BuildIdempotentResultAsync(idempotencyKey, ct);
         }
 
-        var account = await _db.CreditAccounts
-            .FirstOrDefaultAsync(a => a.ChildId == childId, ct);
+        // ── Load the child's active allocation row (xmin for OCC) ─────────────────
+        var allocation = await _db.ChildEnergyAllocations
+            .Where(a => a.ChildId == childId)
+            .OrderByDescending(a => a.CycleStartUtc)
+            .FirstOrDefaultAsync(ct);
 
-        if (account is null || account.TotalBalance < amount)
+        var fromAllocation      = 0;
+        var fromPurchasedFallback = 0;
+        CreditTransaction? spendAllocTx = null;
+        CreditTransaction? spendPurchasedTx = null;
+        // Guard row persisted under the BARE idempotencyKey for every spend shape so that
+        // the pre-check (AnyAsync on bare key) fires correctly on retry (SECURITY HIGH-1).
+        // On alloc-only path: the main ledger row already uses the bare key — guard not needed.
+        // On purchased-only path: same, purchased row uses the bare key — guard not needed.
+        // On mixed path: alloc row uses "{key}:alloc", purchased row uses "{key}:purchased" —
+        //   a guard row under the bare key MUST be inserted so retries are blocked.
+        CreditTransaction? idempotencyGuardTx = null;
+
+        if (allocation is not null && allocation.Remaining >= amount)
         {
-            await tx.RollbackAsync(ct);
-            return new DebitResult(
-                Charged: false,
-                FromGranted: 0,
-                FromPurchased: 0,
-                ResultingTotal: account?.TotalBalance ?? 0,
-                Outcome: DebitOutcome.InsufficientBalance);
+            // Normal path: allocation row covers the full cost — shared purchased row stays COLD.
+            // The ledger row uses the bare idempotencyKey; no separate guard needed.
+            fromAllocation = amount;
+            spendAllocTx = allocation.Debit(amount, reasonCode, idempotencyKey);
+        }
+        else
+        {
+            // Shortfall path or no allocation: determine how much the allocation can cover.
+            var allocationCoverage = allocation?.Remaining ?? 0;
+            var shortfall          = amount - allocationCoverage;
+
+            // Load the family wallet for the purchased-fallback debit (only NOW on shortfall).
+            var walletId = allocation?.FamilyEnergyAccountId;
+            FamilyEnergyAccount? wallet = walletId.HasValue
+                ? await _db.FamilyEnergyAccounts.FirstOrDefaultAsync(w => w.Id == walletId.Value, ct)
+                : null;
+
+            if (wallet is null || wallet.PurchasedBalance < shortfall)
+            {
+                // Neither covers it — no write.
+                await tx.RollbackAsync(ct);
+                var resultingTotal = (allocation?.Remaining ?? 0) + (wallet?.PurchasedBalance ?? 0);
+                return new DebitResult(
+                    Charged       : false,
+                    FromGranted   : 0,
+                    FromPurchased : 0,
+                    ResultingTotal: resultingTotal,
+                    Outcome       : DebitOutcome.InsufficientBalance);
+            }
+
+            // Debit allocation for whatever it has, then shortfall from purchased.
+            fromAllocation        = allocationCoverage;
+            fromPurchasedFallback = shortfall;
+
+            if (allocationCoverage > 0 && allocation is not null)
+            {
+                // MIXED spend: allocation covers part, purchased covers shortfall.
+                // Persist a guard row under the BARE key first, so both the pre-check AND
+                // the DB unique constraint protect against double-debit on retry.
+                idempotencyGuardTx = new CreditTransaction
+                {
+                    FamilyEnergyAccountId     = allocation.FamilyEnergyAccountId,
+                    ChildEnergyAllocationId   = allocation.Id,
+                    Type                      = CreditTransactionType.Spend,
+                    Pool                      = CreditPool.Granted,
+                    SourceBucket              = EnergyBucket.Subscription,
+                    Amount                    = amount,
+                    ReasonCode                = reasonCode,
+                    FromGranted               = allocationCoverage,
+                    FromPurchased             = shortfall,
+                    ResultingGrantedBalance   = allocation.Remaining - allocationCoverage, // post-debit
+                    ResultingPurchasedBalance = wallet.PurchasedBalance - shortfall,       // post-debit
+                    OccurredAtUtc             = DateTime.UtcNow,
+                    IdempotencyKey            = idempotencyKey,
+                    RelatedActionId           = idempotencyKey,
+                };
+
+                var allocIdempotencyKey = $"{idempotencyKey}:alloc";
+                spendAllocTx = allocation.Debit(allocationCoverage, reasonCode, allocIdempotencyKey);
+            }
+
+            // purchased-only (allocationCoverage == 0): use bare key on the purchased row directly.
+            var purchasedIdempotencyKey = allocationCoverage > 0 ? $"{idempotencyKey}:purchased" : idempotencyKey;
+            spendPurchasedTx = wallet.DebitPurchasedFallback(
+                amount         : shortfall,
+                idempotencyKey : purchasedIdempotencyKey,
+                childEnergyAllocationId: allocation?.Id,
+                relatedActionId: idempotencyKey);
         }
 
-        // Granted-first split.
-        var fromGranted = Math.Min(amount, account.GrantedBalance);
-        var fromPurchased = amount - fromGranted;
+        // ── Write ledger rows ──────────────────────────────────────────────────────
+        // Guard row first (mixed path only) — hits the unique constraint on retry before
+        // any accounting rows are written.
+        if (idempotencyGuardTx is not null)
+            _db.CreditTransactions.Add(idempotencyGuardTx);
 
-        var creditTransaction = account.Debit(fromGranted, fromPurchased, reasonCode, idempotencyKey);
-        await _db.CreditTransactions.AddAsync(creditTransaction, ct);
-
-        // ── P10-03/P10-04 W2b: increment DailyUsed inside the same atomic transaction ──────────
-        // Lazy reset: if DailyUsedDateLocal is stale (different from child-local today), reset to 0 first.
-        var todayLocal = DailyCapHelper.Today(account.ChildTimeZoneId, _clock);
-        if (DailyCapHelper.IsStale(account.DailyUsedDateLocal, account.ChildTimeZoneId, _clock))
+        if (spendAllocTx is not null)
         {
-            account.DailyUsed = 0;
+            if (allocation?.FamilyEnergyAccountId > 0)
+                spendAllocTx.FamilyEnergyAccountId = allocation.FamilyEnergyAccountId;
+            _db.CreditTransactions.Add(spendAllocTx);
         }
-        account.DailyUsed += amount;
-        account.DailyUsedDateLocal = todayLocal;
-        // ─────────────────────────────────────────────────────────────────────────────────────────
+
+        if (spendPurchasedTx is not null)
+            _db.CreditTransactions.Add(spendPurchasedTx);
+
+        // ── Daily usage increment (OQ-G — per-child row, survives allocation reset) ──
+        var dailyUsage = await _db.ChildDailyUsages.FirstOrDefaultAsync(d => d.ChildId == childId, ct);
+        if (dailyUsage is null)
+        {
+            dailyUsage = ChildDailyUsage.Create(childId);
+            _db.ChildDailyUsages.Add(dailyUsage);
+            await _db.SaveChangesAsync(_currentUser.UserId ?? 0); // flush to get Id
+        }
+
+        var todayLocal = DailyCapHelper.Today(dailyUsage.ChildTimeZoneId, _clock);
+        if (DailyCapHelper.IsStale(dailyUsage.DailyUsedDateLocal, dailyUsage.ChildTimeZoneId, _clock))
+            dailyUsage.DailyUsed = 0;
+        dailyUsage.DailyUsed        += amount;
+        dailyUsage.DailyUsedDateLocal = todayLocal;
 
         await _db.SaveChangesAsync(_currentUser.UserId ?? 0);
         await tx.CommitAsync(ct);
 
+        // Compute resulting total for the result.
+        var resultingAllocationRemaining  = allocation?.Remaining ?? 0;
+        var walletForResult               = spendPurchasedTx is not null
+            ? await _db.FamilyEnergyAccounts.AsNoTracking()
+                .FirstOrDefaultAsync(w => w.Id == allocation!.FamilyEnergyAccountId, ct)
+            : null;
+        var resultingPurchasedBalance = walletForResult?.PurchasedBalance ?? 0;
+        var resultingTotalBalance     = resultingAllocationRemaining + resultingPurchasedBalance;
+
         return new DebitResult(
-            Charged: true,
-            FromGranted: fromGranted,
-            FromPurchased: fromPurchased,
-            ResultingTotal: account.TotalBalance,
-            Outcome: DebitOutcome.Charged);
+            Charged       : true,
+            FromGranted   : fromAllocation,         // Ai handlers read .FromGranted — maps to allocation
+            FromPurchased : fromPurchasedFallback,  // Ai handlers read .FromPurchased — maps to fallback
+            ResultingTotal: resultingTotalBalance,
+            Outcome       : DebitOutcome.Charged)
+        {
+            FromAllocation        = fromAllocation,
+            FromPurchasedFallback = fromPurchasedFallback,
+        };
     }
 
     private async Task<DebitResult> BuildIdempotentResultAsync(string idempotencyKey, CancellationToken ct)
@@ -211,37 +323,27 @@ public class CreditSpendService : ICreditSpendService
             .FirstOrDefaultAsync(t => t.IdempotencyKey == idempotencyKey, ct);
 
         return new DebitResult(
-            Charged: true,
-            FromGranted: 0,
-            FromPurchased: 0,
+            Charged       : true,
+            FromGranted   : 0,
+            FromPurchased : 0,
             ResultingTotal: prior is not null
                 ? prior.ResultingGrantedBalance + prior.ResultingPurchasedBalance
                 : 0,
             Outcome: DebitOutcome.DuplicateIdempotent);
     }
 
-    /// <summary>
-    /// Applies exponential back-off + jitter before the next retry attempt.
-    ///
-    /// <para>Formula: delay = min(MaxDelayMs, BaseDelayMs * 2^attempt) + Random.Shared.Next(0, JitterMs + 1)</para>
-    ///
-    /// <para>Called AFTER <c>ChangeTracker.Clear()</c> and AFTER the failed transaction's
-    /// <c>await using</c> scope has exited (disposed → rolled back). No lock is held
-    /// during the delay.</para>
-    /// </summary>
+    // ── Helpers ───────────────────────────────────────────────────────────────────
+
+    /// <summary>HARDEN-01: exponential back-off with jitter; clamped exponent; long arithmetic.</summary>
     private Task ApplyBackoffDelayAsync(int attempt, CancellationToken ct)
     {
-        // Clamp the shift exponent + use long arithmetic so a misconfigured MaxRetries (>= 31)
-        // can never overflow the back-off computation; the delay stays bounded by MaxDelayMs.
         var shift         = Math.Min(attempt, 30);
         var deterministic = (int)Math.Min(_concurrency.MaxDelayMs, (long)_concurrency.BaseDelayMs * (1L << shift));
         var jitter        = Random.Shared.Next(0, _concurrency.JitterMs + 1);
-        var delayMs       = deterministic + jitter;
-        return Task.Delay(delayMs, ct);
+        return Task.Delay(deterministic + jitter, ct);
     }
 
     private static bool IsUniqueViolation(DbUpdateException ex)
-        => ex.InnerException?.Message.Contains("23505", StringComparison.Ordinal) == true
-           || ex.InnerException?.Message.Contains("UX_CreditTransactions_IdempotencyKey",
-               StringComparison.OrdinalIgnoreCase) == true;
+        => ex.InnerException is Npgsql.PostgresException pg
+           && pg.SqlState == Npgsql.PostgresErrorCodes.UniqueViolation;
 }

@@ -7,6 +7,7 @@ using Learnexia.Modules.Billing.Domain.Entities;
 using Learnexia.Modules.Billing.Domain.Enums;
 using Learnexia.Modules.Billing.Infrastructure.Options;
 using Learnexia.Modules.Billing.Infrastructure.Persistence;
+using Learnexia.Shared.Contracts.Parent;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Settings;
 using Microsoft.EntityFrameworkCore;
@@ -17,16 +18,24 @@ namespace Learnexia.Modules.Billing.Infrastructure.Services;
 /// <summary>
 /// Infrastructure implementation of <see cref="ICreditLedgerService"/> (Option C).
 ///
-/// <para>Owns ALL EF Core access, transaction management, idempotency, optimistic-concurrency
-/// retry, and ledger logic for credit-account operations. Application-layer handlers inject
-/// <see cref="ICreditLedgerService"/> and never reference EF or <c>BillingDbContext</c>.</para>
+/// <para><strong>CreditAccount RETIRED:</strong> All per-child <c>CreditAccount</c> paths
+/// (GrantAsync on per-child, RefundAsync, AdjustAsync, ExpireGrantAsync, ApplyPurchaseAsync,
+/// GetCreditAccountAsync, per-child ReconcileAsync) have been removed. Energy movement is
+/// entirely through the Family Wallet + the immutable <c>CreditTransaction</c> ledger.</para>
 ///
-/// <para><strong>Optimistic-concurrency retry:</strong> debits load the account via the <c>xmin</c>
-/// concurrency token. On <c>DbUpdateConcurrencyException</c> the handler retries up to
-/// <c>MaxRetries</c> times (ChangeTracker cleared between attempts), with exponential
-/// back-off and jitter between each retry. The back-off delay fires AFTER the failed
-/// transaction is disposed/rolled back and AFTER <c>ChangeTracker.Clear()</c> — never
-/// while a DB transaction or row lock is held.</para>
+/// <para><strong>Retained active methods:</strong>
+/// <list type="bullet">
+///   <item><see cref="GrantFamilyWalletAsync"/> — admin comp deposit to the family <c>PurchasedBalance</c>.</item>
+///   <item><see cref="SpendAsync"/> — wallet debit (allocation-first → purchased fallback).</item>
+///   <item><see cref="ReconcileFamilyWalletAsync"/> — recompute family wallet from the ledger.</item>
+///   <item><see cref="GetEnergyStatusAsync"/> — per-child energy status from the wallet.</item>
+/// </list>
+/// </para>
+///
+/// <para><strong>Optimistic-concurrency retry (SpendAsync):</strong> debits load the allocation
+/// row via <c>xmin</c> concurrency token. On <c>DbUpdateConcurrencyException</c> the handler
+/// retries up to <c>MaxRetries</c> times (ChangeTracker cleared between attempts), with
+/// exponential back-off and jitter between each retry.</para>
 ///
 /// <para><strong>23505 idempotency guard:</strong> unique-key violations on
 /// <c>UX_CreditTransactions_IdempotencyKey</c> are caught and treated as idempotent
@@ -37,55 +46,94 @@ public sealed class CreditLedgerService : ICreditLedgerService
     private readonly BillingDbContext _db;
     private readonly ILoggerManager _logger;
     private readonly BillingConcurrencyOptions _concurrency;
+    private readonly IParentChildQuery _parentChildQuery;
+    private readonly ICurrentUserService _currentUser;
+    private readonly ISystemClock _clock;
 
     public CreditLedgerService(
         BillingDbContext db,
         ILoggerManager logger,
-        IOptions<BillingConcurrencyOptions> concurrencyOptions)
+        IOptions<BillingConcurrencyOptions> concurrencyOptions,
+        IParentChildQuery parentChildQuery,
+        ICurrentUserService currentUser,
+        ISystemClock clock)
     {
-        _db          = db;
-        _logger      = logger;
-        _concurrency = concurrencyOptions.Value;
+        _db               = db;
+        _logger           = logger;
+        _concurrency      = concurrencyOptions.Value;
+        _parentChildQuery = parentChildQuery;
+        _currentUser      = currentUser;
+        _clock            = clock;
     }
 
-    // ── GrantAsync ───────────────────────────────────────────────────────────────
+    // ── GrantFamilyWalletAsync ────────────────────────────────────────────────────
 
-    public async Task<CreditLedgerResult> GrantAsync(
-        int childId,
+    /// <summary>
+    /// Admin comp: deposits <paramref name="amount"/> into the shared family
+    /// <c>FamilyEnergyAccount.PurchasedBalance</c> and writes an immutable ledger row.
+    /// Creates the <c>FamilyEnergyAccount</c> if it does not yet exist.
+    /// Idempotent per <paramref name="idempotencyKey"/>. Does NOT touch <c>CreditAccount</c>.
+    /// </summary>
+    public async Task<CreditLedgerResult> GrantFamilyWalletAsync(
+        int parentId,
         int amount,
-        DateTime expiresAtUtc,
-        bool isPremium,
         string idempotencyKey,
         int actorUserId,
         CancellationToken ct)
     {
         await using var tx = await _db.Database.BeginTransactionAsync(ct);
 
+        // Idempotency pre-check
         if (await _db.CreditTransactions.AnyAsync(t => t.IdempotencyKey == idempotencyKey, ct))
         {
             await tx.RollbackAsync(ct);
             return CreditLedgerResult.Duplicate();
         }
 
-        var account = await _db.CreditAccounts.FirstOrDefaultAsync(a => a.ChildId == childId, ct);
-        if (account is null)
+        // Resolve or create the family wallet
+        var wallet = await _db.FamilyEnergyAccounts
+            .FirstOrDefaultAsync(w => w.ParentUserId == parentId, ct);
+
+        if (wallet is null)
         {
-            account = CreditAccount.CreateEmpty(childId);
-            await _db.CreditAccounts.AddAsync(account, ct);
+            wallet = FamilyEnergyAccount.CreateEmpty(parentId);
+            _db.FamilyEnergyAccounts.Add(wallet);
+            await _db.SaveChangesAsync(actorUserId);
         }
 
-        var reasonCode = isPremium ? CreditReasonCode.MonthlyGrantPremium : CreditReasonCode.MonthlyGrantFree;
-        var creditTransaction = account.ApplyGrant(amount, expiresAtUtc, reasonCode, idempotencyKey);
-        await _db.CreditTransactions.AddAsync(creditTransaction, ct);
+        // Deposit into PurchasedBalance (permanent admin comp, never expires)
+        wallet.PurchasedBalance += amount;
+
+        // Write immutable ledger row
+        var grantTx = new CreditTransaction
+        {
+            FamilyEnergyAccountId     = wallet.Id,
+            Type                      = CreditTransactionType.Grant,
+            Pool                      = CreditPool.Purchased,
+            SourceBucket              = EnergyBucket.Purchased,
+            Amount                    = amount,
+            ReasonCode                = CreditReasonCode.AdminCredit,
+            ResultingGrantedBalance   = wallet.SubscriptionBalance,
+            ResultingPurchasedBalance = wallet.PurchasedBalance,
+            OccurredAtUtc             = DateTime.UtcNow,
+            IdempotencyKey            = idempotencyKey,
+        };
+        _db.CreditTransactions.Add(grantTx);
 
         await _db.SaveChangesAsync(actorUserId);
         await tx.CommitAsync(ct);
 
-        return CreditLedgerResult.Ok(account.TotalBalance, charged: false);
+        return CreditLedgerResult.Ok(wallet.PurchasedBalance + wallet.SubscriptionBalance, charged: false);
     }
 
-    // ── SpendAsync ───────────────────────────────────────────────────────────────
+    // ── SpendAsync (P10-13 CUTOVER: wallet-backed, no CreditAccount) ─────────────
 
+    /// <summary>
+    /// HTTP <c>POST /Credits/Spend</c> debit path. Debits the WALLET using the
+    /// allocation-first → shared <c>FamilyEnergyAccount.PurchasedBalance</c>-fallback
+    /// algorithm (mirrors <c>CreditSpendService.ExecuteDebitCoreAsync</c>).
+    /// Does NOT touch <c>CreditAccount</c>.
+    /// </summary>
     public async Task<CreditLedgerResult> SpendAsync(
         int childId,
         int amount,
@@ -104,20 +152,24 @@ public sealed class CreditLedgerService : ICreditLedgerService
         {
             try
             {
-                return await ExecuteDebitAsync(childId, amount, reasonEnum, idempotencyKey, relatedActionId, actorUserId, ct);
+                return await ExecuteWalletDebitAsync(childId, amount, reasonEnum, idempotencyKey, relatedActionId, actorUserId, ct);
             }
             catch (DbUpdateConcurrencyException) when (attempt < maxRetries)
             {
-                // Transaction from the failed attempt is already disposed/rolled back by
-                // the `await using var tx` scope inside ExecuteDebitAsync — safe to delay here.
                 _logger.LogWarn($"CreditLedgerService: concurrency conflict attempt {attempt + 1} childId={childId}. Retrying.");
                 _db.ChangeTracker.Clear();
                 await ApplyBackoffDelayAsync(attempt, ct);
             }
-            catch (DbUpdateException dbEx) when (IsUniqueViolation(dbEx))
+            catch (DbUpdateException dbEx) when (IsIdempotencyKeyViolation(dbEx))
             {
                 _logger.LogInfo($"CreditLedgerService: idempotent duplicate key={idempotencyKey}.");
                 return await BuildIdempotentDebitResultAsync(idempotencyKey, ct);
+            }
+            catch (DbUpdateException dbEx) when (IsUniqueViolation(dbEx) && attempt < maxRetries)
+            {
+                _logger.LogWarn($"CreditLedgerService: unique-violation concurrency conflict attempt {attempt + 1} childId={childId}. Retrying.");
+                _db.ChangeTracker.Clear();
+                await ApplyBackoffDelayAsync(attempt, ct);
             }
         }
 
@@ -125,275 +177,141 @@ public sealed class CreditLedgerService : ICreditLedgerService
         throw new InvalidOperationException($"CreditLedgerService: exceeded {maxRetries} retries for childId={childId}");
     }
 
-    // ── RefundAsync ──────────────────────────────────────────────────────────────
+    // ── ReconcileFamilyWalletAsync ─────────────────────────────────────────────────
 
-    public async Task<CreditLedgerResult> RefundAsync(
-        int childId,
-        int amount,
-        string idempotencyKey,
-        string? relatedPaymentId,
-        int actorUserId,
-        CancellationToken ct)
+    /// <summary>
+    /// Recomputes the family wallet balances from the immutable ledger.
+    /// Returns <c>null</c> if no <c>FamilyEnergyAccount</c> exists for the parent.
+    /// Does NOT touch <c>CreditAccount</c>.
+    /// </summary>
+    public async Task<ReconciliationResultDto?> ReconcileFamilyWalletAsync(int parentId, CancellationToken ct)
     {
-        await using var tx = await _db.Database.BeginTransactionAsync(ct);
-
-        if (await _db.CreditTransactions.AnyAsync(t => t.IdempotencyKey == idempotencyKey, ct))
-        {
-            await tx.RollbackAsync(ct);
-            return CreditLedgerResult.Duplicate();
-        }
-
-        var account = await _db.CreditAccounts.FirstOrDefaultAsync(a => a.ChildId == childId, ct);
-        if (account is null)
-        {
-            await tx.RollbackAsync(ct);
-            return CreditLedgerResult.AccountNotFound();
-        }
-
-        var creditTransaction = account.Refund(amount, idempotencyKey, relatedPaymentId);
-        await _db.CreditTransactions.AddAsync(creditTransaction, ct);
-
-        await _db.SaveChangesAsync(actorUserId);
-        await tx.CommitAsync(ct);
-
-        return CreditLedgerResult.Ok(account.TotalBalance);
-    }
-
-    // ── AdjustAsync ──────────────────────────────────────────────────────────────
-
-    public async Task<CreditLedgerResult> AdjustAsync(
-        int childId,
-        int delta,
-        string idempotencyKey,
-        string? adminNote,
-        int actorUserId,
-        CancellationToken ct)
-    {
-        await using var tx = await _db.Database.BeginTransactionAsync(ct);
-
-        if (await _db.CreditTransactions.AnyAsync(t => t.IdempotencyKey == idempotencyKey, ct))
-        {
-            await tx.RollbackAsync(ct);
-            return CreditLedgerResult.Duplicate();
-        }
-
-        var account = await _db.CreditAccounts.FirstOrDefaultAsync(a => a.ChildId == childId, ct);
-        if (account is null)
-        {
-            await tx.RollbackAsync(ct);
-            return CreditLedgerResult.AccountNotFound();
-        }
-
-        var creditTransaction = account.Adjust(delta, idempotencyKey, adminNote);
-        await _db.CreditTransactions.AddAsync(creditTransaction, ct);
-
-        await _db.SaveChangesAsync(actorUserId);
-        await tx.CommitAsync(ct);
-
-        return CreditLedgerResult.Ok(account.TotalBalance);
-    }
-
-    // ── ExpireGrantAsync ─────────────────────────────────────────────────────────
-
-    public async Task<CreditLedgerResult> ExpireGrantAsync(
-        int childId,
-        string idempotencyKey,
-        int actorUserId,
-        CancellationToken ct)
-    {
-        await using var tx = await _db.Database.BeginTransactionAsync(ct);
-
-        if (await _db.CreditTransactions.AnyAsync(t => t.IdempotencyKey == idempotencyKey, ct))
-        {
-            await tx.RollbackAsync(ct);
-            return CreditLedgerResult.Duplicate();
-        }
-
-        var account = await _db.CreditAccounts.FirstOrDefaultAsync(a => a.ChildId == childId, ct);
-        if (account is null)
-        {
-            await tx.RollbackAsync(ct);
-            return CreditLedgerResult.AccountNotFound();
-        }
-
-        if (account.GrantedBalance == 0)
-        {
-            await tx.RollbackAsync(ct);
-            return CreditLedgerResult.Ok(account.TotalBalance);
-        }
-
-        var creditTransaction = account.ExpireGrant(idempotencyKey);
-        await _db.CreditTransactions.AddAsync(creditTransaction, ct);
-
-        await _db.SaveChangesAsync(actorUserId);
-        await tx.CommitAsync(ct);
-
-        return CreditLedgerResult.Ok(account.TotalBalance);
-    }
-
-    // ── ApplyPurchaseAsync ───────────────────────────────────────────────────────
-
-    public async Task<CreditLedgerResult> ApplyPurchaseAsync(
-        int childId,
-        int amount,
-        string idempotencyKey,
-        string? relatedPaymentId,
-        int actorUserId,
-        CancellationToken ct)
-    {
-        await using var tx = await _db.Database.BeginTransactionAsync(ct);
-
-        if (await _db.CreditTransactions.AnyAsync(t => t.IdempotencyKey == idempotencyKey, ct))
-        {
-            await tx.RollbackAsync(ct);
-            return CreditLedgerResult.Duplicate();
-        }
-
-        var account = await _db.CreditAccounts.FirstOrDefaultAsync(a => a.ChildId == childId, ct);
-        if (account is null)
-        {
-            account = CreditAccount.CreateEmpty(childId);
-            await _db.CreditAccounts.AddAsync(account, ct);
-        }
-
-        var creditTransaction = account.ApplyPurchase(amount, idempotencyKey, relatedPaymentId);
-        await _db.CreditTransactions.AddAsync(creditTransaction, ct);
-
-        await _db.SaveChangesAsync(actorUserId);
-        await tx.CommitAsync(ct);
-
-        return CreditLedgerResult.Ok(account.TotalBalance, charged: false);
-    }
-
-    // ── GetCreditAccountAsync ─────────────────────────────────────────────────────
-
-    public async Task<CreditAccountDto?> GetCreditAccountAsync(int childId, CancellationToken ct)
-    {
-        var account = await _db.CreditAccounts
+        var wallet = await _db.FamilyEnergyAccounts
             .AsNoTracking()
-            .FirstOrDefaultAsync(a => a.ChildId == childId, ct);
+            .FirstOrDefaultAsync(w => w.ParentUserId == parentId, ct);
 
-        if (account is null) return null;
+        if (wallet is null) return null;
 
-        return new CreditAccountDto
-        {
-            ChildId          = account.ChildId,
-            GrantedBalance   = account.GrantedBalance,
-            PurchasedBalance = account.PurchasedBalance,
-            TotalBalance     = account.TotalBalance,
-            GrantExpiresAtUtc = account.GrantExpiresAtUtc,
-            DailyUsed        = account.DailyUsed,
-        };
-    }
-
-    // ── ReconcileAsync ────────────────────────────────────────────────────────────
-
-    public async Task<ReconciliationResultDto?> ReconcileAsync(int childId, CancellationToken ct)
-    {
-        var account = await _db.CreditAccounts
-            .AsNoTracking()
-            .FirstOrDefaultAsync(a => a.ChildId == childId, ct);
-
-        if (account is null) return null;
-
+        // Fetch all ledger rows for this family wallet
         var transactions = await _db.CreditTransactions
             .AsNoTracking()
-            .Where(t => t.CreditAccountId == account.Id)
+            .Where(t => t.FamilyEnergyAccountId == wallet.Id)
             .ToListAsync(ct);
 
-        var ledgerGranted   = 0;
-        var ledgerPurchased = 0;
+        var ledgerSubscription = 0;
+        var ledgerPurchased    = 0;
 
         foreach (var t in transactions)
         {
             switch (t.Type)
             {
                 case CreditTransactionType.Grant:
-                    ledgerGranted += t.Amount;
+                    if (t.SourceBucket == EnergyBucket.Subscription || t.Pool == CreditPool.Granted)
+                        ledgerSubscription += t.Amount;
+                    else
+                        ledgerPurchased += t.Amount;
                     break;
+
                 case CreditTransactionType.Expiry:
-                    ledgerGranted -= t.Amount;
+                    if (t.SourceBucket == EnergyBucket.Subscription || t.Pool == CreditPool.Granted)
+                        ledgerSubscription -= t.Amount;
+                    else
+                        ledgerPurchased -= t.Amount;
                     break;
+
                 case CreditTransactionType.Purchase:
                     ledgerPurchased += t.Amount;
                     break;
+
                 case CreditTransactionType.Refund:
                     ledgerPurchased -= t.Amount;
                     break;
+
                 case CreditTransactionType.Spend:
-                    if (t.FromGranted > 0 || t.FromPurchased > 0)
-                    {
-                        ledgerGranted   -= t.FromGranted;
+                    // Purchased-fallback spend (SourceBucket=Purchased) debits shared purchased pool.
+                    if (t.SourceBucket == EnergyBucket.Purchased || t.Pool == CreditPool.Purchased)
+                        ledgerPurchased -= t.Amount;
+                    // Mixed guard rows (bare key) have full amount/fromGranted/fromPurchased
+                    else if (t.FromPurchased > 0)
                         ledgerPurchased -= t.FromPurchased;
-                    }
-                    else if (t.Pool == CreditPool.Granted)   ledgerGranted   -= t.Amount;
-                    else if (t.Pool == CreditPool.Purchased) ledgerPurchased -= t.Amount;
-                    else
-                    {
-                        ledgerGranted -= t.ResultingGrantedBalance > 0
-                            ? Math.Min(t.Amount, t.ResultingGrantedBalance)
-                            : 0;
-                        ledgerPurchased -= t.Amount - (t.ResultingGrantedBalance > 0
-                            ? Math.Min(t.Amount, t.ResultingGrantedBalance)
-                            : 0);
-                    }
                     break;
+
                 case CreditTransactionType.Adjustment:
-                    if (t.ReasonCode == CreditReasonCode.AdminCredit) ledgerGranted += t.Amount;
-                    else                                               ledgerGranted -= t.Amount;
+                    // Admin credit (from GrantFamilyWalletAsync) lands in purchased pool
+                    if (t.ReasonCode == CreditReasonCode.AdminCredit)
+                        ledgerPurchased += t.Amount;
+                    else
+                        ledgerPurchased -= t.Amount;
                     break;
             }
         }
 
         return new ReconciliationResultDto
         {
-            ChildId                 = childId,
-            StoredGrantedBalance    = account.GrantedBalance,
-            StoredPurchasedBalance  = account.PurchasedBalance,
-            LedgerGrantedBalance    = ledgerGranted,
-            LedgerPurchasedBalance  = ledgerPurchased,
-            HasDrift                = ledgerGranted != account.GrantedBalance || ledgerPurchased != account.PurchasedBalance,
+            ParentId                   = parentId,
+            StoredSubscriptionBalance  = wallet.SubscriptionBalance,
+            StoredPurchasedBalance     = wallet.PurchasedBalance,
+            LedgerSubscriptionBalance  = ledgerSubscription,
+            LedgerPurchasedBalance     = ledgerPurchased,
+            HasDrift                   = ledgerSubscription != wallet.SubscriptionBalance
+                                         || ledgerPurchased != wallet.PurchasedBalance,
         };
     }
 
     // ── GetEnergyStatusAsync ──────────────────────────────────────────────────────
 
+    /// <summary>
+    /// P10-13 CUTOVER: reads the WALLET, not the legacy <c>CreditAccount</c>.
+    /// </summary>
     public async Task<EnergyStatusDto> GetEnergyStatusAsync(
         int childId,
         IGlobalSettingsProvider settingsProvider,
         ISystemClock clock,
         CancellationToken ct)
     {
-        var account = await _db.CreditAccounts
-            .AsNoTracking()
-            .FirstOrDefaultAsync(a => a.ChildId == childId, ct);
-
         var dailyCap         = settingsProvider.GetInt(GlobalSettingKeys.FreeDailyCap, 10);
         var monthlyAllotment = settingsProvider.GetInt(GlobalSettingKeys.FreeMonthlyCredits, 100);
 
-        if (account is null)
+        // Child's active allocation row (latest cycle) → granted (subscription) balance.
+        var allocation = await _db.ChildEnergyAllocations
+            .AsNoTracking()
+            .Where(a => a.ChildId == childId)
+            .OrderByDescending(a => a.CycleStartUtc)
+            .FirstOrDefaultAsync(ct);
+
+        // Shared family purchased balance
+        FamilyEnergyAccount? wallet = null;
+        if (allocation is not null)
         {
-            return new EnergyStatusDto
-            {
-                GrantedBalance   = 0,
-                PurchasedBalance = 0,
-                TotalBalance     = 0,
-                GrantExpiresAtUtc = null,
-                DailyUsed        = 0,
-                DailyCap         = dailyCap,
-                DailyCapReached  = false,
-                LowEnergy        = false,
-                WarningState     = WarningState.None,
-            };
+            wallet = await _db.FamilyEnergyAccounts
+                .AsNoTracking()
+                .FirstOrDefaultAsync(w => w.Id == allocation.FamilyEnergyAccountId, ct);
+        }
+        else
+        {
+            var parentId = await _parentChildQuery.FindParentForChildAsync(childId, ct);
+            if (parentId.HasValue)
+                wallet = await _db.FamilyEnergyAccounts
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(w => w.ParentUserId == parentId.Value, ct);
         }
 
-        var effectiveDailyUsed = DailyCapHelper.IsStale(account.DailyUsedDateLocal, account.ChildTimeZoneId, clock)
-            ? 0
-            : account.DailyUsed;
+        var grantedBalance   = allocation?.Remaining ?? 0;
+        var purchasedBalance = wallet?.PurchasedBalance ?? 0;
+        var total            = grantedBalance + purchasedBalance;
+
+        // Per-child daily usage (lazy-reset read)
+        var dailyUsage = await _db.ChildDailyUsages
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d => d.ChildId == childId, ct);
+
+        var effectiveDailyUsed = dailyUsage is null
+            || DailyCapHelper.IsStale(dailyUsage.DailyUsedDateLocal, dailyUsage.ChildTimeZoneId, clock)
+                ? 0
+                : dailyUsage.DailyUsed;
 
         var dailyCapReached = effectiveDailyUsed >= dailyCap;
         var approaching     = !dailyCapReached && effectiveDailyUsed >= (int)(dailyCap * 0.8);
-        var total           = account.TotalBalance;
         var lowThreshold    = (int)Math.Ceiling(monthlyAllotment * 0.10);
         var lowEnergy       = total > 0 && total <= lowThreshold;
         var empty           = total == 0;
@@ -410,21 +328,26 @@ public sealed class CreditLedgerService : ICreditLedgerService
 
         return new EnergyStatusDto
         {
-            GrantedBalance   = account.GrantedBalance,
-            PurchasedBalance = account.PurchasedBalance,
-            TotalBalance     = total,
-            GrantExpiresAtUtc = account.GrantExpiresAtUtc,
-            DailyUsed        = effectiveDailyUsed,
-            DailyCap         = dailyCap,
-            DailyCapReached  = dailyCapReached,
-            LowEnergy        = lowEnergy,
-            WarningState     = warningState,
+            GrantedBalance    = grantedBalance,
+            PurchasedBalance  = purchasedBalance,
+            TotalBalance      = total,
+            GrantExpiresAtUtc = allocation?.CycleEndUtc,
+            DailyUsed         = effectiveDailyUsed,
+            DailyCap          = dailyCap,
+            DailyCapReached   = dailyCapReached,
+            LowEnergy         = lowEnergy,
+            WarningState      = warningState,
         };
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────────
 
-    private async Task<CreditLedgerResult> ExecuteDebitAsync(
+    /// <summary>
+    /// Wallet debit (mirrors <c>CreditSpendService.ExecuteDebitCoreAsync</c>):
+    /// allocation-first → shared <c>FamilyEnergyAccount.PurchasedBalance</c> fallback.
+    /// Does NOT touch <c>CreditAccount</c>.
+    /// </summary>
+    private async Task<CreditLedgerResult> ExecuteWalletDebitAsync(
         int childId,
         int amount,
         CreditReasonCode reasonCode,
@@ -435,36 +358,138 @@ public sealed class CreditLedgerService : ICreditLedgerService
     {
         await using var tx = await _db.Database.BeginTransactionAsync(ct);
 
-        var account = await _db.CreditAccounts.FirstOrDefaultAsync(a => a.ChildId == childId, ct);
-
-        if (account is null)
-        {
-            await tx.RollbackAsync(ct);
-            return CreditLedgerResult.AccountNotFound();
-        }
-
+        // Idempotency pre-check
         if (await _db.CreditTransactions.AnyAsync(t => t.IdempotencyKey == idempotencyKey, ct))
         {
             await tx.RollbackAsync(ct);
             return await BuildIdempotentDebitResultAsync(idempotencyKey, ct);
         }
 
-        if (account.TotalBalance < amount)
+        // Load the child's active allocation row (latest cycle)
+        var allocation = await _db.ChildEnergyAllocations
+            .Where(a => a.ChildId == childId)
+            .OrderByDescending(a => a.CycleStartUtc)
+            .FirstOrDefaultAsync(ct);
+
+        // Resolve the family wallet via the allocation row when present, else via the parent
+        FamilyEnergyAccount? wallet;
+        if (allocation is not null)
         {
-            await tx.RollbackAsync(ct);
-            return CreditLedgerResult.InsufficientBalance();
+            wallet = await _db.FamilyEnergyAccounts
+                .FirstOrDefaultAsync(w => w.Id == allocation.FamilyEnergyAccountId, ct);
+        }
+        else
+        {
+            var parentId = await _parentChildQuery.FindParentForChildAsync(childId, ct);
+            wallet = parentId.HasValue
+                ? await _db.FamilyEnergyAccounts.FirstOrDefaultAsync(w => w.ParentUserId == parentId.Value, ct)
+                : null;
         }
 
-        var fromGranted   = Math.Min(amount, account.GrantedBalance);
-        var fromPurchased = amount - fromGranted;
+        var allocationRemaining = allocation?.Remaining ?? 0;
+        var purchasedAvailable  = wallet?.PurchasedBalance ?? 0;
 
-        var creditTransaction = account.Debit(fromGranted, fromPurchased, reasonCode, idempotencyKey, relatedActionId);
-        await _db.CreditTransactions.AddAsync(creditTransaction, ct);
+        if (allocation is null && wallet is null)
+        {
+            await tx.RollbackAsync(ct);
+            return CreditLedgerResult.AccountNotFound();
+        }
+
+        var fromAllocation        = 0;
+        var fromPurchasedFallback = 0;
+        CreditTransaction? spendAllocTx       = null;
+        CreditTransaction? spendPurchasedTx   = null;
+        CreditTransaction? idempotencyGuardTx = null;
+
+        if (allocation is not null && allocationRemaining >= amount)
+        {
+            fromAllocation = amount;
+            spendAllocTx   = allocation.Debit(amount, reasonCode, idempotencyKey, relatedActionId);
+        }
+        else
+        {
+            var allocationCoverage = allocationRemaining;
+            var shortfall          = amount - allocationCoverage;
+
+            if (wallet is null || purchasedAvailable < shortfall)
+            {
+                await tx.RollbackAsync(ct);
+                return CreditLedgerResult.InsufficientBalance();
+            }
+
+            fromAllocation        = allocationCoverage;
+            fromPurchasedFallback = shortfall;
+
+            if (allocationCoverage > 0 && allocation is not null)
+            {
+                idempotencyGuardTx = new CreditTransaction
+                {
+                    FamilyEnergyAccountId     = allocation.FamilyEnergyAccountId,
+                    ChildEnergyAllocationId   = allocation.Id,
+                    Type                      = CreditTransactionType.Spend,
+                    Pool                      = CreditPool.Granted,
+                    SourceBucket              = EnergyBucket.Subscription,
+                    Amount                    = amount,
+                    ReasonCode                = reasonCode,
+                    FromGranted               = allocationCoverage,
+                    FromPurchased             = shortfall,
+                    ResultingGrantedBalance   = allocation.Remaining - allocationCoverage,
+                    ResultingPurchasedBalance = wallet.PurchasedBalance - shortfall,
+                    OccurredAtUtc             = DateTime.UtcNow,
+                    IdempotencyKey            = idempotencyKey,
+                    RelatedActionId           = relatedActionId ?? idempotencyKey,
+                };
+
+                var allocIdempotencyKey = $"{idempotencyKey}:alloc";
+                spendAllocTx = allocation.Debit(allocationCoverage, reasonCode, allocIdempotencyKey, relatedActionId);
+            }
+
+            var purchasedIdempotencyKey = allocationCoverage > 0 ? $"{idempotencyKey}:purchased" : idempotencyKey;
+            spendPurchasedTx = wallet.DebitPurchasedFallback(
+                amount                 : shortfall,
+                idempotencyKey         : purchasedIdempotencyKey,
+                childEnergyAllocationId: allocation?.Id,
+                relatedActionId        : relatedActionId ?? idempotencyKey);
+        }
+
+        if (idempotencyGuardTx is not null)
+            _db.CreditTransactions.Add(idempotencyGuardTx);
+
+        if (spendAllocTx is not null)
+        {
+            if (allocation?.FamilyEnergyAccountId > 0)
+                spendAllocTx.FamilyEnergyAccountId = allocation.FamilyEnergyAccountId;
+            _db.CreditTransactions.Add(spendAllocTx);
+        }
+
+        if (spendPurchasedTx is not null)
+            _db.CreditTransactions.Add(spendPurchasedTx);
+
+        // Daily usage increment
+        var dailyUsage = await _db.ChildDailyUsages.FirstOrDefaultAsync(d => d.ChildId == childId, ct);
+        if (dailyUsage is null)
+        {
+            dailyUsage = ChildDailyUsage.Create(childId);
+            _db.ChildDailyUsages.Add(dailyUsage);
+            await _db.SaveChangesAsync(actorUserId);
+        }
+
+        var todayLocal = DailyCapHelper.Today(dailyUsage.ChildTimeZoneId, _clock);
+        if (DailyCapHelper.IsStale(dailyUsage.DailyUsedDateLocal, dailyUsage.ChildTimeZoneId, _clock))
+            dailyUsage.DailyUsed = 0;
+        dailyUsage.DailyUsed        += amount;
+        dailyUsage.DailyUsedDateLocal = todayLocal;
 
         await _db.SaveChangesAsync(actorUserId);
         await tx.CommitAsync(ct);
 
-        return CreditLedgerResult.Ok(account.TotalBalance, charged: true, fromGranted: fromGranted, fromPurchased: fromPurchased);
+        var resultingTotal = (allocation?.Remaining ?? 0) + (wallet?.PurchasedBalance ?? 0);
+
+        return CreditLedgerResult.Ok(
+            resultingTotal,
+            charged      : true,
+            fromGranted  : fromAllocation,
+            fromPurchased: fromPurchasedFallback);
     }
 
     private async Task<CreditLedgerResult> BuildIdempotentDebitResultAsync(string idempotencyKey, CancellationToken ct)
@@ -481,17 +506,11 @@ public sealed class CreditLedgerService : ICreditLedgerService
 
     /// <summary>
     /// Applies exponential back-off + jitter before the next retry attempt.
-    ///
-    /// <para>Formula: delay = min(MaxDelayMs, BaseDelayMs * 2^attempt) + Random.Shared.Next(0, JitterMs + 1)</para>
-    ///
-    /// <para>Called AFTER <c>ChangeTracker.Clear()</c> and AFTER the failed transaction's
-    /// <c>await using</c> scope has exited (disposed → rolled back). No lock is held
-    /// during the delay.</para>
+    /// Called AFTER <c>ChangeTracker.Clear()</c> and AFTER the failed transaction's
+    /// <c>await using</c> scope has exited. No lock is held during the delay.
     /// </summary>
     private Task ApplyBackoffDelayAsync(int attempt, CancellationToken ct)
     {
-        // Clamp the shift exponent + use long arithmetic so a misconfigured MaxRetries (>= 31)
-        // can never overflow the back-off computation; the delay stays bounded by MaxDelayMs.
         var shift         = Math.Min(attempt, 30);
         var deterministic = (int)Math.Min(_concurrency.MaxDelayMs, (long)_concurrency.BaseDelayMs * (1L << shift));
         var jitter        = Random.Shared.Next(0, _concurrency.JitterMs + 1);
@@ -502,5 +521,13 @@ public sealed class CreditLedgerService : ICreditLedgerService
     private static bool IsUniqueViolation(DbUpdateException ex)
         => ex.InnerException?.Message.Contains("23505", StringComparison.Ordinal) == true
            || ex.InnerException?.Message.Contains("UX_CreditTransactions_IdempotencyKey",
+               StringComparison.OrdinalIgnoreCase) == true;
+
+    /// <summary>
+    /// True only for the CreditTransactions idempotency-key unique-constraint violation
+    /// (<c>UX_CreditTransactions_IdempotencyKey</c>) — the single signal of an idempotent replay.
+    /// </summary>
+    private static bool IsIdempotencyKeyViolation(DbUpdateException ex)
+        => ex.InnerException?.Message.Contains("UX_CreditTransactions_IdempotencyKey",
                StringComparison.OrdinalIgnoreCase) == true;
 }

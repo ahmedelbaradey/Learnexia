@@ -26,7 +26,8 @@ public class BillingDbContext : DbContext, IBillingDbContext
 
     public BillingDbContext(DbContextOptions<BillingDbContext> options) : base(options) { }
 
-    public DbSet<CreditAccount> CreditAccounts => Set<CreditAccount>();
+    // CreditAccounts DbSet removed — CreditAccount entity retired, table dropped in
+    // DropLegacyCreditAccounts migration. CreditAccountMigrationService uses raw SQL.
     public DbSet<CreditTransaction> CreditTransactions => Set<CreditTransaction>();
     public DbSet<GlobalSetting> GlobalSettings => Set<GlobalSetting>();
 
@@ -37,6 +38,11 @@ public class BillingDbContext : DbContext, IBillingDbContext
     // P10-06 payment entities.
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<WebhookEvent> WebhookEvents => Set<WebhookEvent>();
+
+    // P10-13 family energy wallet entities.
+    public DbSet<FamilyEnergyAccount> FamilyEnergyAccounts => Set<FamilyEnergyAccount>();
+    public DbSet<ChildEnergyAllocation> ChildEnergyAllocations => Set<ChildEnergyAllocation>();
+    public DbSet<ChildDailyUsage> ChildDailyUsages => Set<ChildDailyUsage>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));

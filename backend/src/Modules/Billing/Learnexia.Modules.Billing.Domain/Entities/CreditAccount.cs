@@ -178,15 +178,17 @@ public class CreditAccount : FullAuditedEntity
         string? reason = null)
         => new()
         {
-            CreditAccount = this,
-            Type = type,
-            Pool = pool,
-            Amount = amount,
-            ReasonCode = reasonCode,
-            Reason = reason,
-            ResultingGrantedBalance = GrantedBalance,
+            // CreditAccount navigation removed from CreditTransaction (DropLegacyCreditAccounts).
+            // CreditAccountId is retained as a plain nullable int (historical marker only).
+            CreditAccountId           = Id,
+            Type                      = type,
+            Pool                      = pool,
+            Amount                    = amount,
+            ReasonCode                = reasonCode,
+            Reason                    = reason,
+            ResultingGrantedBalance   = GrantedBalance,
             ResultingPurchasedBalance = PurchasedBalance,
-            OccurredAtUtc = DateTime.UtcNow,
-            IdempotencyKey = idempotencyKey,
+            OccurredAtUtc             = DateTime.UtcNow,
+            IdempotencyKey            = idempotencyKey,
         };
 }

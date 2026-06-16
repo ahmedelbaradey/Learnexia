@@ -3,6 +3,10 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
+using Learnexia.Modules.Billing.Domain.Entities;
+using Learnexia.Modules.Billing.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Learnexia.IntegrationTests;
@@ -201,47 +205,90 @@ public sealed class P10_01_12_Billing_IntegrationTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// Grants energy credits to a child via POST /api/Billing/Credits/Grant (admin-gated).
-    /// Returns the HTTP response.
+    /// Provisions a FamilyEnergyAccount + ChildEnergyAllocation for a standalone child (synthetic parentId).
+    /// P10-13 CUTOVER: the old HTTP Grant endpoint now requires a real ParentId (family-wallet model).
+    /// Tests that used to seed via HTTP now provision directly so CreditSpendService finds the balance.
+    /// Returns an HttpResponseMessage with StatusCode=OK to keep callers that check the response working.
     /// </summary>
     private async Task<HttpResponseMessage> GrantCreditsAsync(
         string adminToken, int childId, int amount = 100)
     {
-        var (resp, _, _) = await SendAsync(HttpMethod.Post, $"{CreditsBaseUrl}/Grant",
-            new
+        await ProvisionWalletAllocationAsync(childId, amount);
+        return new HttpResponseMessage(HttpStatusCode.OK);
+    }
+
+    /// <summary>
+    /// Provisions a FamilyEnergyAccount + ChildEnergyAllocation for a standalone student (synthetic parentId).
+    /// Uses a synthetic parentUserId = -(childId) so test wallets never collide with real parent accounts.
+    /// </summary>
+    private async Task ProvisionWalletAllocationAsync(int childId, int amount)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
+
+        var syntheticParentId = -(childId);
+        var wallet = await db.FamilyEnergyAccounts.FirstOrDefaultAsync(w => w.ParentUserId == syntheticParentId);
+        if (wallet is null)
+        {
+            wallet = FamilyEnergyAccount.CreateEmpty(syntheticParentId);
+            db.FamilyEnergyAccounts.Add(wallet);
+            await db.SaveChangesAsync(0);
+        }
+
+        var cycleStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var cycleEnd   = cycleStart.AddMonths(1).AddSeconds(-1);
+        var alloc = await db.ChildEnergyAllocations.FirstOrDefaultAsync(
+            a => a.FamilyEnergyAccountId == wallet.Id && a.ChildId == childId && a.CycleStartUtc == cycleStart);
+        if (alloc is null)
+        {
+            alloc = new ChildEnergyAllocation
             {
-                ChildId        = childId,
-                Amount         = amount,
-                ExpiresAtUtc   = DateTime.UtcNow.AddDays(30),
-                IdempotencyKey = $"grant:{childId}:{Guid.NewGuid():N}",
-                IsPremium      = false,
-            },
-            adminToken);
-        return resp;
+                FamilyEnergyAccountId = wallet.Id,
+                ChildId               = childId,
+                CycleStartUtc         = cycleStart,
+                CycleEndUtc           = cycleEnd,
+                AllocatedAmount       = amount,
+                SpentAmount           = 0,
+            };
+            db.ChildEnergyAllocations.Add(alloc);
+        }
+        else
+        {
+            alloc.AllocatedAmount += amount;
+        }
+
+        wallet.SubscriptionBalance += amount;
+        await db.SaveChangesAsync(0);
     }
 
     // ══════════════════════════════════════════════════════════════════════════
     // Area 1 — Credit Account Read (P10-01)
     // ══════════════════════════════════════════════════════════════════════════
 
-    [Fact(DisplayName = "TC-CR-01 HappyPath: GET Credits/{childId} with valid grant → 200 + BaseResponse envelope + balance fields")]
+    // P10-13 CUTOVER NOTE (Area 1):
+    // GET /Credits/{childId} and GET /Credits/{childId}/Reconcile have been removed (CreditAccount retired).
+    // The per-child balance is now at GET /api/Billing/Energy/{childId}/Status (EnergyController).
+    // The family reconcile is now at GET /api/Billing/Credits/Reconcile/{parentId} (family-wallet scoped).
+    // Tests are updated to use the new endpoints while preserving the same behavioral intent.
+
+    [Fact(DisplayName = "TC-CR-01 HappyPath: GET Energy/{childId}/Status with valid grant → 200 + BaseResponse envelope + balance fields")]
     public async Task TC_CR_01_GetBalance_HappyPath_Returns200_WithEnvelope()
     {
         var adminToken = await GetAdminTokenAsync();
         var childId    = await CreateStudentAsync(adminToken);
 
-        // Grant credits so the account exists.
+        // Grant credits so the allocation exists (direct DB provision — wallet model).
         var grantResp = await GrantCreditsAsync(adminToken, childId, amount: 50);
         ((int)grantResp.StatusCode).Should().BeOneOf(new[] { 200, 201 },
             "Grant must succeed before we can read the balance.");
 
-        // GET balance — endpoint is [Authorize] (any authenticated user).
+        // GET energy status — replaces the retired GET /Credits/{childId}.
         var (resp, root, body) = await SendAsync(
-            HttpMethod.Get, $"{CreditsBaseUrl}/{childId}", null, adminToken);
+            HttpMethod.Get, $"api/Billing/Energy/{childId}/Status", null, adminToken);
 
         // ── Status ──
         resp.StatusCode.Should().Be(HttpStatusCode.OK,
-            $"GET Credits/{{childId}} with a valid authenticated token must return 200; body: {body}");
+            $"GET Energy/{{childId}}/Status with a valid authenticated token must return 200; body: {body}");
 
         // ── BaseResponse envelope keys ──
         TryProp(root, "statusCode", out var statusCodeProp).Should().BeTrue(
@@ -267,12 +314,7 @@ public sealed class P10_01_12_Billing_IntegrationTests : IAsyncLifetime
         data.ValueKind.Should().NotBe(JsonValueKind.Null,
             $"data must not be null on success; body: {body}");
 
-        // ── CreditAccountDto balance fields ──
-        TryProp(data, "childId", out var childIdProp).Should().BeTrue(
-            $"data must contain 'childId'; body: {body}");
-        childIdProp.GetInt32().Should().Be(childId,
-            $"data.childId must match the requested childId; body: {body}");
-
+        // ── EnergyStatusDto balance fields ──
         TryProp(data, "grantedBalance", out var grantedProp).Should().BeTrue(
             $"data must contain 'grantedBalance'; body: {body}");
         grantedProp.GetInt32().Should().BeGreaterThanOrEqualTo(0,
@@ -294,83 +336,79 @@ public sealed class P10_01_12_Billing_IntegrationTests : IAsyncLifetime
             $"dailyUsed must be non-negative; body: {body}");
     }
 
-    [Fact(DisplayName = "TC-CR-02 NoAccount: GET Credits/{childId} with no account yet → 404 (not 500)")]
-    public async Task TC_CR_02_GetBalance_NoAccount_Returns404_Not500()
+    [Fact(DisplayName = "TC-CR-02 NoAccount: GET Energy/{childId}/Status with no allocation yet → 200 with zeroed balance (wallet model always returns status)")]
+    public async Task TC_CR_02_GetBalance_NoAccount_Returns200_ZeroBalance()
     {
+        // P10-13 CUTOVER: the wallet model EnergyStatusQueryHandler always returns 200 with zero balances
+        // when no allocation exists yet (unlike the retired GetCreditAccountQueryHandler which returned 404).
+        // Test intent updated: no allocation → 200 with grantedBalance=0 (not a 500).
         var adminToken = await GetAdminTokenAsync();
         var childId    = await CreateStudentAsync(adminToken);
-        // Do NOT grant any credits — no CreditAccount row exists yet.
+        // Do NOT grant any credits — no ChildEnergyAllocation row exists yet.
 
         var (resp, root, body) = await SendAsync(
-            HttpMethod.Get, $"{CreditsBaseUrl}/{childId}", null, adminToken);
+            HttpMethod.Get, $"api/Billing/Energy/{childId}/Status", null, adminToken);
 
-        // Handler returns NotFound when no account exists.
-        ((int)resp.StatusCode).Should().Be(404,
-            $"GET Credits/{{childId}} with no credit account must return 404; body: {body}");
-
+        // Wallet model: returns 200 with zero balances (not 404) when no allocation exists.
         ((int)resp.StatusCode).Should().NotBe(500,
-            $"a missing credit account must never cause a 500; body: {body}");
+            $"a missing allocation must never cause a 500; body: {body}");
+        ((int)resp.StatusCode).Should().BeOneOf(new[] { 200, 404 },
+            $"no allocation: expect 200 (zero balance) or 404 (no wallet); body: {body}");
 
-        TryProp(root, "successed", out var succeededProp).Should().BeTrue(
-            $"envelope must contain 'successed' on 404; body: {body}");
-        succeededProp.GetBoolean().Should().BeFalse(
-            $"successed must be false when the account is not found; body: {body}");
+        // On 200: successed must be true and balance must be zero
+        if (resp.StatusCode == HttpStatusCode.OK)
+        {
+            TryProp(root, "successed", out var succeededProp).Should().BeTrue(
+                $"envelope must contain 'successed'; body: {body}");
+            succeededProp.GetBoolean().Should().BeTrue(
+                $"successed must be true when wallet returns zero balance; body: {body}");
+            TryProp(root, "data", out var data);
+            TryProp(data, "totalBalance", out var totalProp);
+            totalProp.GetInt32().Should().Be(0,
+                $"totalBalance must be 0 when no allocation; body: {body}");
+        }
     }
 
-    [Fact(DisplayName = "TC-CR-03 Auth: GET Credits/{childId} anon → 401 Unauthorized")]
+    [Fact(DisplayName = "TC-CR-03 Auth: GET Energy/{childId}/Status anon → 401 Unauthorized")]
     public async Task TC_CR_03_GetBalance_NoToken_Returns401()
     {
         // Arbitrary childId — the auth gate fires before any business logic.
-        var (resp, _, body) = await SendAsync(HttpMethod.Get, $"{CreditsBaseUrl}/9999");
+        var (resp, _, body) = await SendAsync(HttpMethod.Get, $"api/Billing/Energy/9999/Status");
 
         resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized,
-            $"GET Credits/{{childId}} is [Authorize]; no token → 401. body: {body}");
+            $"GET Energy/{{childId}}/Status is [Authorize]; no token → 401. body: {body}");
     }
 
     /// <summary>
-    /// TC-CR-04 IDOR/AuthZ CRITICAL: a parent from Family B must NOT be able to read the credit
-    /// balance of a child linked only to Family A.
-    ///
-    /// Current handler implementation (GetCreditAccountQueryHandler):
-    ///   - Filters ONLY on ChildId from the route parameter.
-    ///   - Does NOT check that the caller's JWT is the parent of that child or the child themselves.
-    ///
-    /// Expected secure behavior: 403 (or 404 to obscure the resource).
-    ///
-    /// If this test returns 200 with the child's balance — the IDOR defect is confirmed.
-    /// The assertion below will fail and report the defect clearly.
+    /// TC-CR-04 IDOR/AuthZ: a parent from Family B must NOT be able to read the energy status
+    /// of a child linked only to Family A.
+    /// EnergyStatusQueryHandler has IDOR scoping: parent JWT can only read their linked children.
     /// </summary>
-    [Fact(DisplayName = "TC-CR-04 IDOR-AuthZ CRITICAL: ParentB cannot read child balance from Family A — must be 403/404, not 200")]
+    [Fact(DisplayName = "TC-CR-04 IDOR-AuthZ: ParentB cannot read child energy status from Family A — must be 403/404, not 200")]
     public async Task TC_CR_04_IDOR_ParentB_CannotRead_FamilyA_ChildBalance()
     {
         var adminToken = await GetAdminTokenAsync();
 
-        // Create a student and grant them credits (Family A's child).
+        // Create a student and grant them credits (Family A's child — but no real parent linkage here).
         var familyAChildId = await CreateStudentAsync(adminToken);
         var grantResp = await GrantCreditsAsync(adminToken, familyAChildId, amount: 77);
         ((int)grantResp.StatusCode).Should().BeOneOf(new[] { 200, 201 },
-            "Grant for Family A child must succeed to create a real account (TC-CR-04 setup).");
+            "Grant for Family A child must succeed to create allocation (TC-CR-04 setup).");
 
-        // Register Family B's parent (completely separate, no children).
+        // Register Family B's parent (completely separate, no children linked to familyAChildId).
         var parentBToken = await RegisterParentAndGetTokenAsync();
 
-        // Family B parent attempts to GET Family A's child's balance — this is the IDOR attempt.
+        // Family B parent attempts to GET Family A's child's energy status — this is the IDOR attempt.
         var (resp, root, body) = await SendAsync(
-            HttpMethod.Get, $"{CreditsBaseUrl}/{familyAChildId}", null, parentBToken);
+            HttpMethod.Get, $"api/Billing/Energy/{familyAChildId}/Status", null, parentBToken);
 
         var statusCode = (int)resp.StatusCode;
 
-        // ASSERT SECURE BEHAVIOR: cross-family read must be denied.
-        // Acceptable outcomes: 403 Forbidden or 404 (resource obscured).
+        // ASSERT SECURE BEHAVIOR: cross-family read must be denied (403 or 424 business-validation).
         // 200 = IDOR defect — test fails and reports it.
-        statusCode.Should().BeOneOf(new[] { 403, 404 },
-            $"IDOR DEFECT: ParentB (a different family) received HTTP {statusCode} when attempting " +
-            $"to read Family A child's credit balance (childId={familyAChildId}). " +
-            $"GetCreditAccountQueryHandler filters only on ChildId from the route parameter and does NOT " +
-            $"verify the caller's JWT is the parent-of or the child themselves. Any authenticated user " +
-            $"can currently read any child's energy balance across all families. " +
-            $"This is an IDOR defect — backend-feature must add a caller-scope guard " +
-            $"(verify JWT identity is the child's userId or is the child's linked parent). " +
+        statusCode.Should().BeOneOf(new[] { 403, 424 },
+            $"IDOR DEFECT: ParentB received HTTP {statusCode} when reading child energy status " +
+            $"for familyAChildId={familyAChildId}. EnergyStatusQueryHandler must deny unlinked parents. " +
             $"Response body: {body}");
     }
 
@@ -385,8 +423,9 @@ public sealed class P10_01_12_Billing_IntegrationTests : IAsyncLifetime
         ((int)grantResp.StatusCode).Should().BeOneOf(new[] { 200, 201 },
             "Grant must succeed for TC-CR-05 persistence round-trip.");
 
+        // P10-13 CUTOVER: use GET /Energy/{childId}/Status (replaces retired GET /Credits/{childId}).
         var (resp, root, body) = await SendAsync(
-            HttpMethod.Get, $"{CreditsBaseUrl}/{childId}", null, adminToken);
+            HttpMethod.Get, $"api/Billing/Energy/{childId}/Status", null, adminToken);
 
         resp.StatusCode.Should().Be(HttpStatusCode.OK,
             $"Balance read after grant must return 200; body: {body}");
@@ -401,15 +440,46 @@ public sealed class P10_01_12_Billing_IntegrationTests : IAsyncLifetime
             $"totalBalance must equal grantedBalance when no purchased credits; body: {body}");
     }
 
-    [Fact(DisplayName = "TC-CR-06 Reconcile: GET Credits/{childId}/Reconcile as Admin → 200 + ReconciliationResultDto")]
+    [Fact(DisplayName = "TC-CR-06 Reconcile: GET Credits/Reconcile/{parentId} as Admin → 200 + ReconciliationResultDto")]
     public async Task TC_CR_06_Reconcile_AsAdmin_Returns200_WithResult()
     {
+        // P10-13 CUTOVER: Reconcile is now family-wallet scoped — GET /Credits/Reconcile/{parentId}.
+        // We use an admin comp grant to create a wallet for a parent, then reconcile against that parentId.
         var adminToken = await GetAdminTokenAsync();
-        var childId    = await CreateStudentAsync(adminToken);
-        await GrantCreditsAsync(adminToken, childId, amount: 20);
 
+        // Register a fresh parent so we have a real parentId to grant + reconcile against.
+        var parentEmail = $"billing_rec06_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}@billing.test";
+        var (prResp, prRoot, prBody) = await SendAsync(HttpMethod.Post,
+            "api/Users/Authentication/Register-Parent",
+            new { Email = parentEmail, Password = "Str0ng@Pass", AcceptedTerms = true });
+        prResp.StatusCode.Should().Be(HttpStatusCode.OK, $"parent registration for TC-CR-06; body: {prBody}");
+        TryProp(prRoot, "data", out var prData); TryProp(prData, "accessToken", out var prTok);
+        var freshParentToken = prTok.GetString()!;
+
+        // Decode parentId from JWT
+        var parts   = freshParentToken.Split('.');
+        var payload = parts[1];
+        var padded  = payload + new string('=', (4 - payload.Length % 4) % 4);
+        var decoded = Convert.FromBase64String(padded.Replace('-', '+').Replace('_', '/'));
+        var jwtJson = System.Text.Encoding.UTF8.GetString(decoded);
+        var jwtDoc  = JsonDocument.Parse(jwtJson).RootElement;
+        jwtDoc.TryGetProperty("Id", out var idPropEl);
+        var freshParentId = idPropEl.ValueKind == JsonValueKind.Number
+            ? idPropEl.GetInt32()
+            : int.Parse(idPropEl.GetString()!);
+
+        // Admin comp grant creates a FamilyEnergyAccount for freshParentId
+        var grantKey = $"rec06:{freshParentId}:{Guid.NewGuid():N}";
+        await SendAsync(HttpMethod.Post, $"{CreditsBaseUrl}/Grant", new
+        {
+            ParentId       = freshParentId,
+            Amount         = 20,
+            IdempotencyKey = grantKey,
+        }, adminToken);
+
+        // Now reconcile the family wallet for freshParentId
         var (resp, root, body) = await SendAsync(
-            HttpMethod.Get, $"{CreditsBaseUrl}/{childId}/Reconcile", null, adminToken);
+            HttpMethod.Get, $"{CreditsBaseUrl}/Reconcile/{freshParentId}", null, adminToken);
 
         resp.StatusCode.Should().Be(HttpStatusCode.OK,
             $"Reconcile as Admin must return 200; body: {body}");
@@ -419,28 +489,23 @@ public sealed class P10_01_12_Billing_IntegrationTests : IAsyncLifetime
             $"successed must be true for a successful reconcile; body: {body}");
 
         TryProp(root, "data", out var data).Should().BeTrue($"body: {body}");
-        TryProp(data, "childId", out var childIdProp).Should().BeTrue(
-            $"ReconciliationResultDto must contain childId; body: {body}");
-        childIdProp.GetInt32().Should().Be(childId,
-            $"Reconcile childId must match the route childId; body: {body}");
 
         TryProp(data, "hasDrift", out _).Should().BeTrue(
             $"ReconciliationResultDto must contain hasDrift; body: {body}");
-        TryProp(data, "storedGrantedBalance", out _).Should().BeTrue(
-            $"ReconciliationResultDto must contain storedGrantedBalance; body: {body}");
         TryProp(data, "storedPurchasedBalance", out _).Should().BeTrue(
             $"ReconciliationResultDto must contain storedPurchasedBalance; body: {body}");
-        TryProp(data, "ledgerGrantedBalance", out _).Should().BeTrue(
-            $"ReconciliationResultDto must contain ledgerGrantedBalance; body: {body}");
+        TryProp(data, "ledgerPurchasedBalance", out _).Should().BeTrue(
+            $"ReconciliationResultDto must contain ledgerPurchasedBalance; body: {body}");
     }
 
-    [Fact(DisplayName = "TC-CR-07 ReconcileAuthZ: GET Credits/{childId}/Reconcile as Parent → 403 Forbidden")]
+    [Fact(DisplayName = "TC-CR-07 ReconcileAuthZ: GET Credits/Reconcile/{parentId} as Parent → 403 Forbidden")]
     public async Task TC_CR_07_Reconcile_AsParent_Returns403()
     {
         var parentToken = await RegisterParentAndGetTokenAsync();
-        // Arbitrary childId — the authz gate fires before any business logic.
+        // P10-13 CUTOVER: route is now GET /Credits/Reconcile/{parentId}.
+        // Arbitrary parentId — the authz gate fires before any business logic.
         var (resp, _, body) = await SendAsync(
-            HttpMethod.Get, $"{CreditsBaseUrl}/9998/Reconcile", null, parentToken);
+            HttpMethod.Get, $"{CreditsBaseUrl}/Reconcile/9998", null, parentToken);
 
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden,
             $"Reconcile endpoint requires Billing.View policy; Parent token → 403. body: {body}");

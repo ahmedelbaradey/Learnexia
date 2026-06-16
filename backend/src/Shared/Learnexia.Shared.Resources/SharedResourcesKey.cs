@@ -1704,5 +1704,34 @@
 
         // Note: Unauthorized already defined at line 333 (shared usage).
 
+        // ── P10-13 Family Energy Wallet ────────────────────────────────────────────────────────────
+
+        /// <summary>Returned when the family energy wallet overview is retrieved successfully.</summary>
+        public const string FamilyEnergyOverviewRetrieved = "FamilyEnergyOverviewRetrieved";
+
+        /// <summary>Returned when the requesting parent does not own the family energy wallet (IDOR guard).</summary>
+        public const string FamilyEnergyWalletNotOwned = "FamilyEnergyWalletNotOwned";
+
+        /// <summary>Returned when the family energy wallet is not found for the parent.</summary>
+        public const string FamilyEnergyWalletNotFound = "FamilyEnergyWalletNotFound";
+
+        /// <summary>
+        /// Returned when a child's AI spend is denied because neither their allocation row
+        /// nor the shared family purchased balance has sufficient energy.
+        /// </summary>
+        public const string FamilyEnergyInsufficientBalance = "FamilyEnergyInsufficientBalance";
+
+        /// <summary>Returned when the monthly subscription grant allocation job processes a family successfully.</summary>
+        public const string FamilyEnergyGrantAllocated = "FamilyEnergyGrantAllocated";
+
+        /// <summary>Returned when the monthly subscription grant is already allocated for this family+cycle (idempotent).</summary>
+        public const string FamilyEnergyGrantAlreadyAllocated = "FamilyEnergyGrantAlreadyAllocated";
+
+        /// <summary>Returned when the clean-cutover migration completes successfully.</summary>
+        public const string FamilyEnergyMigrationCompleted = "FamilyEnergyMigrationCompleted";
+
+        /// <summary>Returned when the pack-credit re-home credits the shared family purchased balance successfully (P10-13-BE-12).</summary>
+        public const string FamilyEnergyPackCredited = "FamilyEnergyPackCredited";
+
     }
 }

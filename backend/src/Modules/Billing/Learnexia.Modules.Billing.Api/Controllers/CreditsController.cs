@@ -1,7 +1,6 @@
 using Learnexia.Modules.Billing.Api.Bases;
 using Learnexia.Modules.Billing.Application.Features.Credits.Commands.GrantCredit;
 using Learnexia.Modules.Billing.Application.Features.Credits.Commands.SpendCredit;
-using Learnexia.Modules.Billing.Application.Features.Credits.Queries.GetCreditAccount;
 using Learnexia.Modules.Billing.Application.Features.Credits.Queries.ReconcileAccount;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,34 +8,33 @@ using Microsoft.AspNetCore.Mvc;
 namespace Learnexia.Modules.Billing.Api.Controllers;
 
 /// <summary>
-/// Exposes the credit-account read seam and (admin) ledger operations.
-/// The cross-module debit seam (<c>ICreditSpendService</c>) is injected directly —
-/// it does NOT go through an HTTP endpoint (intra-process, module isolation).
+/// Exposes the (admin) family-wallet ledger operations.
+///
+/// <para><strong>CreditAccount RETIRED:</strong> The per-child <c>GET /Credits/{childId}</c> read
+/// (GetCreditAccountQuery), the per-child grant, and all other per-child CreditAccount paths
+/// (ApplyPurchase, Adjust, ExpireGrant, per-child Refund) have been removed. Use
+/// <c>GET /api/Billing/Energy</c> for the child energy status and
+/// <c>GET /api/Billing/FamilyEnergy/Overview</c> for the parent wallet overview.</para>
+///
+/// <para>The cross-module debit seam (<c>ICreditSpendService</c>) is injected directly —
+/// it does NOT go through an HTTP endpoint (intra-process, module isolation).</para>
 /// </summary>
 [Route("api/Billing/[controller]")]
 [ApiController]
 public class CreditsController : AppControllerBase
 {
     /// <summary>
-    /// Returns the current energy balance for a child.
+    /// Admin/ops: reconciles the stored family wallet balances against the ledger sum.
+    /// Family-scoped (by parentId). Does NOT auto-heal. Does NOT touch CreditAccount.
     /// </summary>
-    [HttpGet("{childId:int}")]
-    [Authorize]
-    public async Task<IActionResult> GetBalance([FromRoute] int childId)
-        => NewResult(await Mediator.Send(new GetCreditAccountQuery { ChildId = childId }));
-
-    /// <summary>
-    /// Admin/ops: reconciles the stored account balance against the ledger sum.
-    /// Does NOT auto-heal.
-    /// </summary>
-    [HttpGet("{childId:int}/Reconcile")]
+    [HttpGet("Reconcile/{parentId:int}")]
     [Authorize("Billing.View")]
-    public async Task<IActionResult> Reconcile([FromRoute] int childId)
-        => NewResult(await Mediator.Send(new ReconcileAccountQuery { ChildId = childId }));
+    public async Task<IActionResult> Reconcile([FromRoute] int parentId)
+        => NewResult(await Mediator.Send(new ReconcileAccountQuery { ParentId = parentId }));
 
     /// <summary>
-    /// Internal: grants monthly energy credits. Called by the P10-02 Hangfire grant job
-    /// (not a public HTTP endpoint in production — exposed here for dev/ops tooling).
+    /// Admin/ops: deposits energy into the shared family wallet's PurchasedBalance as a permanent
+    /// admin comp. Family-scoped (by parentId in the body). Does NOT touch CreditAccount.
     /// </summary>
     [HttpPost("Grant")]
     [Authorize("Billing.Create")]

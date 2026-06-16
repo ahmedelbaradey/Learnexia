@@ -334,49 +334,107 @@ public sealed class P10_W2_EnergyEconomy_E2E_Tests : IAsyncLifetime
         var childToken = accessTok.GetString()!;
         var childId    = GetSubjectIdFromJwt(childToken);
 
-        // Seed balance directly via BillingDbContext (bypasses HTTP — no Billing.Create policy needed)
+        // Seed balance directly via BillingDbContext (bypasses HTTP — no Billing.Create policy needed).
+        // P10-13 wallet model: provision FamilyEnergyAccount + ChildEnergyAllocation so CreditSpendService
+        // finds balance when the AI module debits.
+        //
+        // IMPORTANT: Do NOT create CreditAccount rows here. BillingModule.InitializeAsync calls
+        // CreditAccountMigrationService.MigrateAsync() on every factory startup. That migration
+        // finds ALL CreditAccount rows, tries to migrate them, but NEVER DELETES them (feature code bug).
+        // On the next factory startup, the migration throws because it sees leftover rows.
+        // Avoid creating CreditAccount rows to prevent cross-test contamination.
+        // (Area 7 tests create CreditAccount manually INSIDE the test body after startup completes, which
+        // is fine because the migration already ran at that point.)
         if (seedBalance > 0)
         {
             using var scope = factory.Services.CreateScope();
             var db          = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
-            var account     = await db.CreditAccounts.FirstOrDefaultAsync(a => a.ChildId == childId);
-            if (account is null)
+
+            // Provision FamilyEnergyAccount + ChildEnergyAllocation (the model CreditSpendService uses).
+            // Use synthetic parentUserId = -(childId) to avoid collisions with real parent ids.
+            var syntheticParentId = -(childId);
+            var wallet = await db.FamilyEnergyAccounts.FirstOrDefaultAsync(w => w.ParentUserId == syntheticParentId);
+            if (wallet is null)
             {
-                account = Learnexia.Modules.Billing.Domain.Entities.CreditAccount
-                    .CreateEmpty(childId, "Africa/Cairo");
-                db.CreditAccounts.Add(account);
+                wallet = Learnexia.Modules.Billing.Domain.Entities.FamilyEnergyAccount.CreateEmpty(syntheticParentId);
+                db.FamilyEnergyAccounts.Add(wallet);
                 await db.SaveChangesAsync(0);
             }
 
-            var grantKey = $"test-seed-grant:{childId}:{Guid.NewGuid():N}";
-            var expiresAt = DateTime.UtcNow.AddMonths(1);
-            var tx = account.ApplyGrant(
-                seedBalance,
-                expiresAt,
-                Learnexia.Modules.Billing.Domain.Enums.CreditReasonCode.MonthlyGrantFree,
-                grantKey);
-            db.CreditTransactions.Add(tx);
+            var cycleStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var cycleEnd   = cycleStart.AddMonths(1).AddSeconds(-1);
+            var alloc = await db.ChildEnergyAllocations.FirstOrDefaultAsync(
+                a => a.FamilyEnergyAccountId == wallet.Id && a.ChildId == childId && a.CycleStartUtc == cycleStart);
+            if (alloc is null)
+            {
+                alloc = new Learnexia.Modules.Billing.Domain.Entities.ChildEnergyAllocation
+                {
+                    FamilyEnergyAccountId = wallet.Id,
+                    ChildId               = childId,
+                    CycleStartUtc         = cycleStart,
+                    CycleEndUtc           = cycleEnd,
+                    AllocatedAmount       = seedBalance,
+                    SpentAmount           = 0,
+                };
+                db.ChildEnergyAllocations.Add(alloc);
+            }
+            else
+            {
+                alloc.AllocatedAmount += seedBalance;
+            }
+            wallet.SubscriptionBalance += seedBalance;
             await db.SaveChangesAsync(0);
         }
 
         return (childId, childToken, parentToken);
     }
 
-    /// <summary>Reads the current total balance from BillingDbContext for <paramref name="childId"/>.</summary>
+    /// <summary>
+    /// Reads the current total balance from BillingDbContext for <paramref name="childId"/>.
+    /// P10-13 wallet model: reads ChildEnergyAllocation.Remaining + FamilyEnergyAccount.PurchasedBalance.
+    /// DailyUsed comes from ChildDailyUsage table (lazy-reset per child timezone).
+    /// TxCount counts Spend transactions linked to the child's allocation or wallet.
+    /// </summary>
     private static async Task<(int Total, int DailyUsed, int TxCount)>
         ReadBalanceAsync(EnergyEconomyTestFactory factory, int childId)
     {
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
-        var account = await db.CreditAccounts
+
+        // Wallet model balance (P10-13).
+        var allocation = await db.ChildEnergyAllocations
             .AsNoTracking()
-            .FirstOrDefaultAsync(a => a.ChildId == childId);
-        var txCount = account is null
-            ? 0
-            : await db.CreditTransactions.AsNoTracking()
-                .CountAsync(t => t.CreditAccountId == account.Id &&
-                                 t.Type == Learnexia.Modules.Billing.Domain.Enums.CreditTransactionType.Spend);
-        return (account?.TotalBalance ?? 0, account?.DailyUsed ?? 0, txCount);
+            .Where(a => a.ChildId == childId)
+            .OrderByDescending(a => a.CycleStartUtc)
+            .FirstOrDefaultAsync();
+
+        int purchasedBalance = 0;
+        if (allocation is not null)
+        {
+            var wallet = await db.FamilyEnergyAccounts.AsNoTracking()
+                .FirstOrDefaultAsync(w => w.Id == allocation.FamilyEnergyAccountId);
+            purchasedBalance = wallet?.PurchasedBalance ?? 0;
+        }
+
+        var grantedRemaining = allocation?.Remaining ?? 0;
+        var totalBalance     = grantedRemaining + purchasedBalance;
+
+        // Daily usage from ChildDailyUsage table (P10-13-BE-4).
+        var dailyUsage = await db.ChildDailyUsages.AsNoTracking()
+            .FirstOrDefaultAsync(d => d.ChildId == childId);
+        var dailyUsed = dailyUsage?.DailyUsed ?? 0;
+
+        // Spend tx count linked to this child's allocation or wallet.
+        var allocIds  = await db.ChildEnergyAllocations.AsNoTracking()
+            .Where(a => a.ChildId == childId).Select(a => (int?)a.Id).ToListAsync();
+        var walletIds = await db.ChildEnergyAllocations.AsNoTracking()
+            .Where(a => a.ChildId == childId).Select(a => (int?)a.FamilyEnergyAccountId).ToListAsync();
+        var txCount = await db.CreditTransactions.AsNoTracking()
+            .CountAsync(t => t.Type == Learnexia.Modules.Billing.Domain.Enums.CreditTransactionType.Spend
+                             && (allocIds.Contains(t.ChildEnergyAllocationId)
+                                 || walletIds.Contains(t.FamilyEnergyAccountId)));
+
+        return (totalBalance, dailyUsed, txCount);
     }
 
     /// <summary>
@@ -471,6 +529,27 @@ public sealed class P10_W2_EnergyEconomy_E2E_Tests : IAsyncLifetime
         }
 
         throw new InvalidOperationException($"Cannot parse user id from JWT payload: {json}");
+    }
+
+    /// <summary>
+    /// Provisions an empty <see cref="FamilyEnergyAccount"/> for <paramref name="realParentId"/> if one
+    /// does not already exist. Required for ENERGY-7A/7B/7C: BillingGrantJob discovers families by reading
+    /// FamilyEnergyAccounts.ParentUserId via RealBillingSubscriptionContract. When seedBalance=0,
+    /// CreateStudentWithBalanceAsync does not provision any wallet (the synthetic-parent path only runs
+    /// for seedBalance&gt;0), so the job finds no families and grants nothing.
+    /// </summary>
+    private static async Task ProvisionEmptyFamilyWalletAsync(EnergyEconomyTestFactory factory, int realParentId)
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
+
+        var existing = await db.FamilyEnergyAccounts.AsNoTracking()
+            .FirstOrDefaultAsync(w => w.ParentUserId == realParentId);
+        if (existing is not null) return; // already exists — idempotent
+
+        var wallet = Learnexia.Modules.Billing.Domain.Entities.FamilyEnergyAccount.CreateEmpty(realParentId);
+        db.FamilyEnergyAccounts.Add(wallet);
+        await db.SaveChangesAsync(0);
     }
 
     // =========================================================================
@@ -798,18 +877,23 @@ public sealed class P10_W2_EnergyEconomy_E2E_Tests : IAsyncLifetime
         ParseSseFrames(body1).Should().Contain(f => f.Event == "error",
             "balance={0} < cost={1} must block; body={0}", CostExplain - 1, CostExplain, body1);
 
-        // Top up: seed additional credits directly
+        // Top up: seed additional credits directly via wallet model (P10-13).
+        // CreditSpendService reads ChildEnergyAllocation; we add 10 to AllocatedAmount + wallet SubscriptionBalance.
         {
             using var scope = factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
-            var account = await db.CreditAccounts.FirstAsync(a => a.ChildId == childId);
-            var grantKey = $"topup:{childId}:{Guid.NewGuid():N}";
-            var tx = account.ApplyGrant(
-                10, DateTime.UtcNow.AddMonths(1),
-                Learnexia.Modules.Billing.Domain.Enums.CreditReasonCode.MonthlyGrantFree,
-                grantKey);
-            db.CreditTransactions.Add(tx);
-            await db.SaveChangesAsync(0);
+            var alloc = await db.ChildEnergyAllocations
+                .Where(a => a.ChildId == childId)
+                .OrderByDescending(a => a.CycleStartUtc)
+                .FirstOrDefaultAsync();
+            if (alloc is not null)
+            {
+                alloc.AllocatedAmount += 10;
+                var wallet = await db.FamilyEnergyAccounts.FirstOrDefaultAsync(w => w.Id == alloc.FamilyEnergyAccountId);
+                if (wallet is not null)
+                    wallet.SubscriptionBalance += 10;
+                await db.SaveChangesAsync(0);
+            }
         }
 
         var (balanceAfterTopUp, _, spendBefore) = await ReadBalanceAsync(factory, childId);
@@ -992,14 +1076,20 @@ public sealed class P10_W2_EnergyEconomy_E2E_Tests : IAsyncLifetime
         var (childId, childToken, _) = await CreateStudentWithBalanceAsync(factory, seedBalance: 50, tag: "6A");
         var client = factory.CreateClient();
 
-        // Drive spend to exactly the daily cap via direct DB manipulation to avoid slow looping:
-        // Manually set DailyUsed = dailyCap and DailyUsedDateLocal = today.
+        // Drive spend to exactly the daily cap via direct DB manipulation to avoid slow looping.
+        // P10-13: daily cap is tracked in ChildDailyUsage, not CreditAccount.DailyUsed.
         {
             using var scope = factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
-            var account = await db.CreditAccounts.FirstAsync(a => a.ChildId == childId);
-            account.DailyUsed = DefaultDailyCap;  // exactly at cap
-            account.DailyUsedDateLocal = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            var usage = await db.ChildDailyUsages.FirstOrDefaultAsync(d => d.ChildId == childId);
+            if (usage is null)
+            {
+                usage = Learnexia.Modules.Billing.Domain.Entities.ChildDailyUsage.Create(childId);
+                db.ChildDailyUsages.Add(usage);
+                await db.SaveChangesAsync(0);
+            }
+            usage.DailyUsed = DefaultDailyCap;  // exactly at cap
+            usage.DailyUsedDateLocal = DateTime.UtcNow.ToString("yyyy-MM-dd");
             await db.SaveChangesAsync(0);
         }
 
@@ -1054,12 +1144,19 @@ public sealed class P10_W2_EnergyEconomy_E2E_Tests : IAsyncLifetime
         var client = factory.CreateClient();
 
         // Manually set DailyUsed = dailyCap (reached) and DailyUsedDateLocal = today.
+        // P10-13: daily cap is tracked in ChildDailyUsage, not CreditAccount.DailyUsed.
         {
             using var scope = factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
-            var account = await db.CreditAccounts.FirstAsync(a => a.ChildId == childId);
-            account.DailyUsed = DefaultDailyCap;
-            account.DailyUsedDateLocal = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            var usage = await db.ChildDailyUsages.FirstOrDefaultAsync(d => d.ChildId == childId);
+            if (usage is null)
+            {
+                usage = Learnexia.Modules.Billing.Domain.Entities.ChildDailyUsage.Create(childId);
+                db.ChildDailyUsages.Add(usage);
+                await db.SaveChangesAsync(0);
+            }
+            usage.DailyUsed = DefaultDailyCap;
+            usage.DailyUsedDateLocal = DateTime.UtcNow.ToString("yyyy-MM-dd");
             await db.SaveChangesAsync(0);
         }
 
@@ -1106,22 +1203,16 @@ public sealed class P10_W2_EnergyEconomy_E2E_Tests : IAsyncLifetime
             safetyMode: StubSafetyLayer.Mode.Allowed,
             contextMode: StubContextProvider.Mode.NonEmpty);
 
-        // Create child with zero balance
-        var (childId, childToken, _) = await CreateStudentWithBalanceAsync(factory, seedBalance: 0, tag: "7A");
+        // Create child with zero balance (no CreditAccount seeding — CreditAccounts table dropped in
+        // DropLegacyCreditAccounts migration; BillingGrantJob uses IBillingSubscriptionContract + wallet).
+        var (childId, childToken, parentToken7A) = await CreateStudentWithBalanceAsync(factory, seedBalance: 0, tag: "7A");
 
-        // Manually create the CreditAccount for this child so the job can see it.
-        {
-            using var scope = factory.Services.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
-            var existing = await db.CreditAccounts.FirstOrDefaultAsync(a => a.ChildId == childId);
-            if (existing is null)
-            {
-                var account = Learnexia.Modules.Billing.Domain.Entities.CreditAccount
-                    .CreateEmpty(childId, "Africa/Cairo");
-                db.CreditAccounts.Add(account);
-                await db.SaveChangesAsync(0);
-            }
-        }
+        // P10-13 CUTOVER: BillingGrantJob discovers children via RealBillingSubscriptionContract which reads
+        // FamilyEnergyAccounts.ParentUserId. When seedBalance=0, CreateStudentWithBalanceAsync skips wallet
+        // provisioning (the synthetic wallet path only runs for seedBalance>0). We must provision an empty
+        // FamilyEnergyAccount for the REAL parentId so the job can discover this family.
+        var realParentId7A = GetSubjectIdFromJwt(parentToken7A);
+        await ProvisionEmptyFamilyWalletAsync(factory, realParentId7A);
 
         var (balanceBefore, _, _) = await ReadBalanceAsync(factory, childId);
         balanceBefore.Should().Be(0, "child must start with zero balance");
@@ -1147,19 +1238,12 @@ public sealed class P10_W2_EnergyEconomy_E2E_Tests : IAsyncLifetime
             safetyMode: StubSafetyLayer.Mode.Allowed,
             contextMode: StubContextProvider.Mode.NonEmpty);
 
-        // Create child + zero balance account
-        var (childId, childToken, _) = await CreateStudentWithBalanceAsync(factory, seedBalance: 0, tag: "7B");
-        {
-            using var scope = factory.Services.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
-            var existing = await db.CreditAccounts.FirstOrDefaultAsync(a => a.ChildId == childId);
-            if (existing is null)
-            {
-                db.CreditAccounts.Add(
-                    Learnexia.Modules.Billing.Domain.Entities.CreditAccount.CreateEmpty(childId, "Africa/Cairo"));
-                await db.SaveChangesAsync(0);
-            }
-        }
+        // Create child with zero balance (no CreditAccount seeding — table dropped in DropLegacyCreditAccounts).
+        var (childId, childToken, parentToken7B) = await CreateStudentWithBalanceAsync(factory, seedBalance: 0, tag: "7B");
+
+        // P10-13 CUTOVER: provision empty FamilyEnergyAccount for the REAL parentId so BillingGrantJob finds this family.
+        var realParentId7B = GetSubjectIdFromJwt(parentToken7B);
+        await ProvisionEmptyFamilyWalletAsync(factory, realParentId7B);
 
         // Run job twice for the same UTC month.
         using (var scope1 = factory.Services.CreateScope())
@@ -1189,19 +1273,12 @@ public sealed class P10_W2_EnergyEconomy_E2E_Tests : IAsyncLifetime
             contextMode: StubContextProvider.Mode.NonEmpty);
         factory.FakeGateway.ResponseContent = "شرح بعد منح الرصيد الشهري.";
 
-        // Create child with zero balance
-        var (childId, childToken, _) = await CreateStudentWithBalanceAsync(factory, seedBalance: 0, tag: "7C");
-        {
-            using var scope = factory.Services.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
-            var existing = await db.CreditAccounts.FirstOrDefaultAsync(a => a.ChildId == childId);
-            if (existing is null)
-            {
-                db.CreditAccounts.Add(
-                    Learnexia.Modules.Billing.Domain.Entities.CreditAccount.CreateEmpty(childId, "Africa/Cairo"));
-                await db.SaveChangesAsync(0);
-            }
-        }
+        // Create child with zero balance (no CreditAccount seeding — table dropped in DropLegacyCreditAccounts).
+        var (childId, childToken, parentToken7C) = await CreateStudentWithBalanceAsync(factory, seedBalance: 0, tag: "7C");
+
+        // P10-13 CUTOVER: provision empty FamilyEnergyAccount for the REAL parentId so BillingGrantJob finds this family.
+        var realParentId7C = GetSubjectIdFromJwt(parentToken7C);
+        await ProvisionEmptyFamilyWalletAsync(factory, realParentId7C);
 
         // Run grant job to give the child their monthly grant
         using (var scope = factory.Services.CreateScope())
