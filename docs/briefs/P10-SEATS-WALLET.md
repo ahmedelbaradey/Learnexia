@@ -1,0 +1,278 @@
+# Pipeline Brief — P10-13..17 Family Energy Wallet, Seats, Grace/Enforcement, Redistribution & Purchased-Refund Reconciliation
+
+> **BACKEND SCOPE ONLY.** Frontend (parent "Family Energy" overview, seat-management, grace banner / choose-active-children, allocation editor, refund-request UI) is owned by a **different lead** — every `*-FE` task here is flagged out-of-scope and is not planned, designed, or built by this pipeline.
+>
+> **Cluster:** the 5-story "family-energy-model" wave authored 2026-06-16 — **P10-13** (wallet + per-child allocation + child-first spend + migration), **P10-14** (seats + seat-reserved add-child), **P10-15** (grace + enforcement + NoSeat/Locked lifecycle), **P10-16** (sibling redistribution), **P10-17** (purchased-energy refund reconciliation).
+>
+> **Continuity:** this brief sits **on top of** `docs/briefs/phase-10-billing.md` (the P10-01..P10-12 cluster brief). That cluster is **BUILT** — the `Billing` module exists with a live **per-child `CreditAccount`** model. This wave **re-homes ownership** to a parent/family wallet and **migrates the data**. It does NOT re-scaffold the module.
+>
+> **THE LOCKED FAMILY ENERGY MODEL (approved 2026-06-16) is authoritative and may not be reinterpreted.** It is restated in §1 and is the source of every acceptance criterion below. Where it conflicts with the older per-child `CreditAccount` semantics in `phase-10-billing.md`, **the locked model wins** and a migration bridges the two.
+
+---
+
+## Summary & traceability
+
+| Field | Value |
+|---|---|
+| **Task (1 line)** | Re-home energy ownership from the live per-child `CreditAccount` to a **parent/family `FamilyEnergyAccount`** with two non-convertible buckets (temporary subscription + permanent purchased), allocate subscription energy per active **seat** child, spend child-allocation-first → shared-purchased-fallback, add seats + seat-reserved add-child + grace/enforcement (NoSeat/Locked) + sibling redistribution + purchased-only refund reconciliation, and migrate existing `CreditAccount` data. |
+| **User stories** | `user-stories/Phase-10-Payments-Billing/P10-13-family-energy-wallet-per-child-allocation.md`, `P10-14-child-seats-and-seat-reserved-add-child.md`, `P10-15-seat-enforcement-grace-period-noseat-locked-lifecycle.md`, `P10-16-family-energy-redistribution.md`, `P10-17-refund-reconciliation-unused-purchased-energy.md` |
+| **BE task files** | `tasks/Backend/Phase-10-Payments-Billing/P10-13-BE.md` … `P10-17-BE.md` |
+| **FR-IDs** | P10-13 → **FR-CREDIT-4** (new); P10-14 → **FR-PAY-7** (new); P10-15 → **FR-PAY-11** (new); P10-16 → **FR-PAY-7** (new); P10-17 → **FR-PAY-5** (extends). All are **absent from the SRS FR list** — dangling traceability (carries the prior cluster's OQ-SRS-1; flag to the SRS-keeper, not a build blocker). |
+| **BRD goal** | **G3** (monetization / sustainable economy) primarily; **G1** (never block learning — locked-child keeps progress; AI degrades gracefully) as the hard invariant. |
+| **Epic / phase** | Payment, Billing & Credits · Phase 10 (post-MVP) |
+| **Story points** | 8 + 8 + 8 + 5 + 5 = **34 SP** |
+| **Module** | **`Billing`** (exists). No new module. Touches **Parent** (add-child wiring) and **Shared.Contracts/Billing** (new seams) only. |
+| **Security** | **`security-auditor` is MANDATORY on every story in this wave** (money-derived entitlement + child data). |
+
+---
+
+## Business context & value
+
+- **Who benefits:** the **parent** (one wallet, pays per seat, controls who is active, rebalances energy between siblings, refunds unused packs); the **child/student** (each active-seat child gets a predictable own allowance; a locked child never loses progress); the **business** (seat-based monetization, anti-abuse boundary, no cross-family resale).
+- **Value:** moves the economy from "per-child credits" to a **family plan with paid seats** — the commercially intended model. A parent buys included + extra seats; only paid active seats mint monthly energy; the parent allocates/redistributes it; a permanent purchased reserve backs the family; reductions are graceful (grace period, never delete a child).
+- **Success measures (from the stories, not invented):** grant equals `PlanEnergyPerSeat × ActivePaidSeats` (no energy from unpaid children); spend always hits the child's own allocation row first (no shared-row contention); buckets never convert; reductions never delete a child or destroy progress; transfers are zero-sum and intra-family only; refunds touch purchased-only and reconcile to the immutable ledger; migration reconciles every balance.
+
+---
+
+## Acceptance criteria (testable, traced to the locked rules)
+
+### P10-13 — Family wallet, per-child allocation, child-first spend, migration
+- **AC13-1** Exactly one `FamilyEnergyAccount` per parent, holding **two distinct, non-convertible balances** (`SubscriptionBalance` temporary, `PurchasedBalance` permanent). No code path moves energy between buckets. *(LOCKED bucket rule)*
+- **AC13-2** Monthly subscription grant deposited into the wallet = **`PlanEnergyPerSeat × ActivePaidSeats`**; only paid active seats mint energy; a child profile alone mints none. *(LOCKED seat→entitlement)*
+- **AC13-3** On grant, the wallet subscription balance is **allocated EQUALLY by default** across active-seat children into per-child `ChildEnergyAllocation` rows; integer-division remainder distributed deterministically (allocated sum == grant exactly — no energy lost/invented).
+- **AC13-4** A child's AI spend debits **their own `ChildEnergyAllocation` row first**; only the shortfall draws from the **shared family purchased** balance; the shared purchased row is **never** touched when the child's own allowance covers the cost (cold-row / hotspot-avoidance hard rule).
+- **AC13-5** Every movement (grant-allocation, spend-per-source-bucket, purchased fallback, transfer in/out, expiry, refund) is an append-only entry in an **immutable per-child ledger** with type, amount, **source bucket**, resulting balances, UTC timestamp, idempotency key; family-level purchased movements also ledgered.
+- **AC13-6** At cycle rollover the **subscription** balance + all per-child subscription allocations reset/expire (`Expire` ledger rows); the **purchased** balance is untouched; unspent subscription energy never converts to purchased and never carries over.
+- **AC13-7** Charging unchanged: charge-on-delivery; **cache HIT and MISS both charge**; **no charge** on failure/safety-refusal; per-intent **Hint=1 / WhyWrong=2 / Explain=3 / SimilarExample=5** (GlobalSettings P10-12); daily soft cap (P10-04) still applies. *This wave changes only WHICH rows are debited, not when/how much.*
+- **AC13-8** A data migration moves the live per-child `CreditAccount` model to wallet+allocations: one `FamilyEnergyAccount` per parent; each child's `PurchasedBalance` rolls up into the **shared** family purchased balance; each child's `GrantedBalance` becomes that child's current-cycle `ChildEnergyAllocation`; pre-migration ledger preserved/linked; balances reconcile before old paths retire. Seeded `credits.premium_monthly` (5000) / `credits.free_monthly` (100) become **`PlanEnergyPerSeat`** (per-seat, not per-child).
+- **AC13-9** Billing owns wallet/buckets/allocation/ledger; Identity owns child profiles (loose `int`, no cross-module FK); AI spends only through the existing `ICreditSpendService` seam; no free-text literals (localized keys/enums).
+
+### P10-14 — Seats & seat-reserved add-child
+- **AC14-1** A plan defines **`IncludedSeats`** (config per tier) + a **max-seats** ceiling (config); the subscription tracks **`PurchasedExtraSeats`** on top of included.
+- **AC14-2** **Active seat count = `IncludedSeats + PurchasedExtraSeats`** while the subscription is billing-active (including grace) — drives P10-13's grant denominator.
+- **AC14-3** Parent can view seat status: total / occupied / free + which children hold active seats vs NoSeat/Locked.
+- **AC14-4** Parent can **buy N extra seats** (monthly add-on) at the config extra-seat price, **web checkout only (no native IAP)**; confirmed **only via the verified, idempotent provider webhook**; on success `PurchasedExtraSeats` increases and the change is **ledgered**; on failure no seats added. Buying seats **never creates purchased energy** and **never grants energy directly** (count-only; no proration MVP).
+- **AC14-5** Parent can cancel an extra seat: stops **future** billing/grants, starts a **grace period** (enforcement deferred to P10-15), never refunds subscription energy, never deletes a child.
+- **AC14-6** Parent `AddChildCommandHandler` (`POST /api/Parent/Add-Child`) **reserves/checks a seat FIRST** via a new `Shared.Contracts/Billing` seam, **before** creating the child. Free seat → reserve + create + bind. No seat → reject cleanly with a localized "no free seat" error, **no child created**, no orphaned reservation. Reservation+create must not leave the system inconsistent (compensate/release on failure); reservation idempotent under retry. Cross-module via Shared.Contracts only (no FK).
+
+### P10-15 — Grace, enforcement, NoSeat/Locked lifecycle
+- **AC15-1** Any seat-reducing event — downgrade (P10-05), seat-cancel (P10-14), payment-failure/dunning (P10-09) — starts a **grace window** instead of enforcing immediately; during grace the affected seats stay active (allocations live, AI spend continues; current-cycle grants not revoked mid-grace). Grace is **idempotent** (repeated triggers do not stack/shorten).
+- **AC15-2** On grace expiry, enforce: allowed-active children = current paid active seats. If holders ≤ paid seats, nothing locked. If holders > paid seats, over-limit children → **NoSeat/Locked**; honor the parent's pre-chosen set else a **deterministic default** (recommend keep earliest-activated — tie-break is a LEAD FLAG).
+- **AC15-3** Enforcement **NEVER deletes a child** and never touches Identity/Learning/Gamification records — Billing-only writes. (Hard invariant; security-auditor must verify no cascade.)
+- **AC15-4** A NoSeat/Locked child has **no entitlement allowance row**, **cannot spend AI energy** (seat-based spend gate denies with a friendly localized message), but keeps profile, progress, XP, streaks, history, mastery, achievements. Re-activatable when a seat frees up.
+- **AC15-5** Already-spent energy never reclaimed on enforcement; the locked child's **unspent** allocation is forfeited per P10-13 reset rules (never converted to purchased). Purchased reserve untouched by enforcement. Every lock/forfeit ledgered.
+- **AC15-6** Parent can **choose which children keep active seats**, constrained to the paid-active-seat limit (selecting more is rejected; fewer allowed); choice usable during grace or after enforcement; parent-gated + family-scoped; applying it updates seat assignments + Locked/Active state and is ledgered.
+
+### P10-16 — Sibling redistribution
+- **AC16-1** Parent can move **unspent allocated allowance** between their **own** children (decrement source row, increment destination by the same amount); zero-sum (family total unchanged).
+- **AC16-2** Only **UNSPENT** allocated energy is movable; cap = source child's current **Remaining** (allocated − spent), never the original allocation; already-spent never reclaimable; over-allocation rejected.
+- **AC16-3** **Family-only** — both children must belong to the same `FamilyEnergyAccount`; a child outside the family is rejected (cross-family impossible **by construction**, not just policy — anti-resale).
+- **AC16-4** Touches **bucket (A) allocated allowance only** — never moves/converts/creates purchased (bucket B); buckets stay non-convertible.
+- **AC16-5** Every movement = **paired** append-only ledger entries (source debit + destination credit), each with transfer type, amount, resulting allocation balance, UTC timestamp, a shared **correlation id**, and an idempotency key.
+- **AC16-6** Atomic (both ledger rows + both allocation updates commit, or none) — explicit transaction; idempotent on the key.
+- **AC16-7** Parent can view the per-child remaining (movable) split. Parent-gated; children can never transfer; a parent can never touch another family's allocations.
+
+### P10-17 — Purchased-energy refund reconciliation
+- **AC17-1** Parent can request a refund of **unused purchased energy** for a prior pack.
+- **AC17-2** **Refundable = purchased − consumed-purchased**, computed by **reconciling the immutable ledger** (sum of `Purchase` rows minus the `Spend` rows that drew from the **shared family purchased** row — bucket B only; bucket A rows are never included). Example: bought 10000, used 3000 → 7000 refundable.
+- **AC17-3** **Subscription/entitlement (bucket A) energy is NEVER refundable.**
+- **AC17-4** Already-consumed purchased energy can never be refunded; refundable **clamped ≥ 0** and never exceeds the remaining purchased balance.
+- **AC17-5** A successful refund = an **idempotent `Refund` ledger row** linked to the original `Purchase`, decrementing the shared family purchased balance; purchased balance **never goes negative**.
+- **AC17-6** Reconciled against the **immutable ledger** as the single source of truth (not a mutable cached balance) — both at quote time and at settlement.
+- **AC17-7** Settled **only via the verified provider webhook** (`refund.succeeded`); the in-app request only initiates. Parent-gated; children can't request.
+
+---
+
+## §1 — The LOCKED family energy model (authoritative — restated for downstream agents)
+
+- **Ownership:** energy is **parent/family-owned** in one `FamilyEnergyAccount` per parent, with **two separate, NON-CONVERTIBLE buckets**:
+  - **(A) Subscription/Entitlement** — TEMPORARY/monthly. `amount = PlanEnergyPerSeat × ActivePaidSeats`. Granted into the wallet, then **allocated** to active-seat children as per-child allowances (**EQUAL split by default**; parent may customize/redistribute — P10-16). **Resets each cycle. CANNOT convert to purchased.**
+  - **(B) Purchased (pack)** — PERMANENT, never expires, a **SHARED family reserve** (NOT allocated per child).
+- **Spend order (per child):** child's **own allocation row FIRST** → then the **shared family purchased row** (fallback only). Normal AI spend touches only the child's allocation row; the shared purchased row stays **cold** (only the fallback path may touch it) so concurrent siblings do not contend on one hot row.
+- **Redistribution (P10-16):** parent may move **unspent** allocated energy between their own children; already-spent never reclaimed; all transfers ledgered (paired, correlated).
+- **Seats (P10-14):** plan = INCLUDED seats + EXTRA PAID seats (monthly add-on). Only paid ACTIVE seats mint entitlement energy; a child profile alone mints none. No energy proration for seats in MVP. Canceling a seat stops FUTURE grants; seat changes never create purchased energy.
+- **Grace & enforcement (P10-15):** seat reduction (downgrade / seat cancel / payment failure) is NOT instant — a **grace period** starts, seats stay temporarily active, then on expiry limits enforce. After enforcement: NEVER delete children; over-limit children → NoSeat/Locked and KEEP progress + XP + history + achievements. Parent chooses which children keep active seats.
+- **Transfers:** ONLY within the same family (sibling→sibling). NEVER across families.
+- **Refunds (P10-17 / refines P10-09):** apply ONLY to PURCHASED energy, NEVER subscription grants. Refundable = purchased − consumed purchased; reconcile with the immutable ledger.
+- **All movements** in an immutable per-child ledger. Payments via VERIFIED provider webhook only.
+- **Charging unchanged:** charge-on-delivery; cache HIT and MISS both charge; no charge on failure/safety-refusal; per-intent Hint=1/WhyWrong=2/Explain=3/SimilarExample=5; daily soft cap.
+
+---
+
+## §2 — Affected modules & data (new vs existing)
+
+### What EXISTS today (verified in `backend/src/Modules/Billing`)
+- **Per-child model (to be superseded):** `CreditAccount` (`ChildId` int, `GrantedBalance`, `PurchasedBalance`, `TotalBalance`, `GrantExpiresAtUtc`, P10-04 daily-cap columns `DailyUsed`/`DailyUsedDateLocal`/`ChildTimeZoneId`, `Version` = `xmin`). Mutators: `ApplyGrant`, `Debit` (Granted-first), `ApplyPurchase`, `ExpireGrant`, `Refund`, `Adjust`.
+- **Ledger (to be extended, not replaced):** `CreditTransaction` (append-only; `CreditAccountId` FK in `billing`; `Type`, `Pool`, `Amount`, `ReasonCode`, `Reason`, `ResultingGrantedBalance`/`ResultingPurchasedBalance`, `FromGranted`/`FromPurchased`, `OccurredAtUtc`, `IdempotencyKey` unique = `UX_CreditTransactions_IdempotencyKey`, `RelatedActionId`, `RelatedPaymentId`). Enums: `CreditPool {Granted, Purchased, Mixed}`, `CreditTransactionType`, `CreditReasonCode`.
+- **Spend seam (signature reused unchanged):** `Shared.Contracts/Billing/ICreditSpendService.TryDebitAsync(int childId, int amount, string reasonCode, string idempotencyKey, ct)` + `GetBalanceAsync(int childId, ct)`; result `DebitResult(Charged, FromGranted, FromPurchased, ResultingTotal, Outcome)` + `DebitOutcome {Charged, InsufficientBalance, DuplicateIdempotent}`. Impl = `CreditSpendService` (xmin retry, idempotency pre-check, Granted-first, daily-counter increment inside the same transaction). **Consumed by the 4 Ai handlers — must stay untouched.**
+- **Grant job (to be rewritten):** `BillingGrantJob` (Hangfire `"0 1 1 * *"`, `[DisableConcurrentExecution]`, paged 500, per-child fail-soft, expire-before-grant per child; reads `credits.free_monthly`/`credits.premium_monthly`; tier via `IBillingSubscriptionContract.GetActiveChildrenWithTierAsync` stub).
+- **Subscription/Plan:** `Subscription` (`ParentUserId` int, `PlanCode`, `BillingPeriod`, `Status`, `CurrentCycleStart/End`, `PendingPlanCode`, `PendingBillingPeriod`, dunning fields `FailedAttemptCount`/`NextRetryAt`/`GraceEndsAt`). `Plan` (Code, Name, IsActive — benefits resolved from GlobalSettings; **no seat fields yet**). `SubscriptionService`, `SubscriptionCheckoutService`.
+- **Payments/refunds:** `Payment` (`SubscriptionId?`, `ParentUserId`, `ProviderPaymentRef`, `Amount`, `Currency`, `Status`, `Kind`, `TargetChildId?`, `IdempotencyKey`). `PaymentKind {Subscription=0, Pack=1}` (**no `Seat` member yet**). `WebhookEvent` (provider-event dedup). `RefundService` (`ProcessPackRefundAsync` claws back from a **single child's** `PurchasedBalance` — to be superseded by family-shared-row reconciliation; `ProcessSubscriptionRefundAsync`, `ProcessChargeFailedAsync`, `InitiateRefundAsync`, `ProcessDunningRetriesAsync`). `EnergyPackService` (`CreditPurchasedPackAsync` credits a **specific child's** purchased balance — to be re-homed to the shared family reserve). `IPaymentProvider` + `FakePaymentProvider`.
+- **Settings:** `GlobalSettingKeys` constants + DB-backed `DbBackedGlobalSettingsProvider` + `GlobalSettingsSeeder` + admin `UpdateGlobalSettingCommand`. Existing keys include `FreeMonthlyCredits`/`PremiumMonthlyCredits` (→ become `PlanEnergyPerSeat`), `FreeDailyCap`/`PremiumDailyCap`, `PackPriceEgp`/`PackSize`, AI cost keys, `SubscriptionMonthlyPriceEgp`/`AnnualPriceEgp`, dunning keys.
+- **Parent add-child:** `AddChildCommandHandler` — JWT-resolved parent → `IChildAccountService.CreateChildAsync` → `ILinkParentStudentService.LinkAsync`. **No seat reservation today.** Localized via `IStringLocalizer<SharedResources>`.
+
+### NEW entities / fields / enums (this wave)
+| Entity / field | Story | Notes |
+|---|---|---|
+| **`FamilyEnergyAccount`** (AggregateRoot, schema `billing`) | P10-13 | `ParentUserId` (int, unique index — one wallet/parent), `SubscriptionBalance` (int≥0, temporary), `PurchasedBalance` (int≥0, permanent), `SubscriptionExpiresAtUtc` (DateTime?), `Version` (`xmin`). Mutators `DepositSubscriptionGrant` / `ExpireSubscription` / `ApplyPurchase` / `DebitPurchasedFallback` — **no method moves energy between buckets**. |
+| **`ChildEnergyAllocation`** (AggregateRoot, schema `billing`) | P10-13 | `FamilyEnergyAccountId` (FK in billing), `ChildId` (int loose), `AllocatedAmount` (int≥0), `SpentAmount` (int≥0), `Remaining` derived (≥0), `CycleStartUtc`/`CycleEndUtc`, `Version` (`xmin`). Mutators `Allocate`/`Debit`/`SendTransfer`/`ReceiveTransfer`/`Expire`. Unique `(FamilyEnergyAccountId, ChildId, CycleStartUtc)`; index `(ChildId)` for spend hot path. |
+| **`CreditTransaction` extensions** | P10-13/16 | `SourceBucket` (enum `EnergyBucket {Subscription, Purchased}`), nullable `ChildEnergyAllocationId`, `FamilyEnergyAccountId` link, `CorrelationId` (Guid, for paired transfers). New `CreditReasonCode` members: `GrantAllocation`, `SpendAllocation`, `SpendPurchasedFallback`, `SubscriptionExpire`, `TransferIn`, `TransferOut`, `SeatLock`/`SeatLockForfeit`, `PurchasedRefund` (enum; no literals). |
+| **`EnergyBucket`** enum | P10-13 | `Subscription`, `Purchased`. |
+| **`Plan.IncludedSeats`** (int, config-seeded per tier) | P10-14 | |
+| **`Subscription.PurchasedExtraSeats`** (int, default 0) | P10-14 | + grace fields (P10-15): `SeatGraceStartedAt`/`SeatGraceEndsAt` (DateTime?), `SeatGraceReason` enum `{Downgrade, SeatCancel, PaymentFailure}`. |
+| **`SeatReservation`** (entity, schema `billing`) | P10-14 | `Id`, `SubscriptionId` (FK in billing), `ChildId` (loose int), `Status` enum `SeatStatus {Reserved, Active, Released, NoSeat}`, `ReservedAt`, `ReleasedAt?`. Unique filtered index `(SubscriptionId, ChildId) WHERE Status IN (Reserved, Active)` (no double-occupancy). |
+| **`SeatState`** enum `{Active, NoSeatLocked}` | P10-15 | child seat lifecycle (stored `HasConversion<int>()`). |
+| **`PaymentKind.Seat`** | P10-14 | extend the enum (+ migration) so extra-seat checkout reuses `Payment`. |
+
+### NEW Shared.Contracts/Billing seams (cross-module, no FK)
+- **`ISeatQuery.GetActiveSeatsAsync(int parentUserId, ct)` → `ActiveSeatInfo { ActivePaidSeats, ActiveChildIds[] }`** — the equal-split denominator + which children to allocate to (P10-13 consumes; P10-14/15 own). Loose int ids.
+- **`ISubscriptionSeatContract`** — `ReserveSeatAsync(parentUserId, childId, idempotencyKey, ct) → SeatReservationResult`, `ReleaseSeatAsync(parentUserId, childId, ct)`, `HasFreeSeatAsync(parentUserId, ct) → bool` (P10-14; consumed by Parent add-child). Impl in `Billing.Infrastructure`, delegates to `ISeatService`.
+- **`ISeatStateQuery.IsChildSeatActiveAsync(int childId)`** (and/or `GetParentSeatSnapshot(parentUserId)`) — the locked-check for the spend gate + Parent (P10-15). **Extend the seat seam introduced by P10-14, do not add a parallel contract.**
+
+### Module isolation (HARD)
+- **Billing owns** `FamilyEnergyAccount`, both buckets, `ChildEnergyAllocation`, the ledger, seats/allocations, subscription, payments, refunds.
+- **Identity owns** child profiles; Billing references children by **loose `int`** only — **no cross-module FK**.
+- **AI** spends only through the existing `ICreditSpendService` seam — **zero AI-module edits in this wave** (only the Billing impl behind the seam changes).
+- **Parent** references **only** `Shared.Contracts/Billing.ISubscriptionSeatContract` — never any `Billing.*` project.
+- Persistence = **Option C service-only** (CONVENTIONS §7): `Billing.Application` is EF-free; handlers call services in `Application/Abstractions`; EF/transactions live in `Infrastructure` services. No UoW (ADR 0001) — explicit transactions in services. **No free-text string literals** — localized `SharedResourcesKey` + enums.
+
+---
+
+## §3 — Handoff → db-migration
+
+All migrations target the existing **`BillingDbContext`** / schema **`billing`**. They must be **serialized** against each other and any concurrent `billing`-schema work (PARALLELISM.md — `BillingDbContext`, `Program.cs`, `.sln`, `Shared.Contracts` are shared-file edits). Sequence them in dependency order.
+
+1. **`AddFamilyEnergyWallet`** (P10-13) — additive new tables + ledger column extensions:
+   - `FamilyEnergyAccount`: unique index on `ParentUserId`; `xmin` row version; non-negative-balance check constraints; `SubscriptionExpiresAtUtc` as `timestamptz`.
+   - `ChildEnergyAllocation`: FK to `FamilyEnergyAccount` (cascade, within billing); unique `(FamilyEnergyAccountId, ChildId, CycleStartUtc)`; index `(ChildId)` for the spend hot path; `xmin`; `timestamptz` cycle columns; non-negative `AllocatedAmount`/`SpentAmount`.
+   - `CreditTransaction` add columns: `SourceBucket` (int via `HasConversion<int>()`), `ChildEnergyAllocationId` (nullable FK in billing), `FamilyEnergyAccountId` (nullable link), `CorrelationId` (uuid, nullable). Preserve `UX_CreditTransactions_IdempotencyKey`. *(Reuse this ledger for transfers — P10-16 needs no new table.)*
+2. **`AddSeatModel`** (P10-14) — `Plan.IncludedSeats`, `Subscription.PurchasedExtraSeats`; `SeatReservation` table with the **filtered unique index** `(SubscriptionId, ChildId) WHERE Status IN (Reserved, Active)`; extend `PaymentKind` with `Seat`. Serialized after `AddFamilyEnergyWallet`.
+3. **`AddSeatGraceAndLockState`** (P10-15) — `Subscription.SeatGraceStartedAt/EndsAt/Reason`; `SeatReservation`/child `SeatState` column (`HasConversion<int>()`). Serialized after `AddSeatModel`.
+4. **`AddAllocationTransferLedger`** (P10-16) — only if `CorrelationId`/`IdempotencyKey`/transfer reason codes were not already folded into `AddFamilyEnergyWallet`. **Recommend folding the transfer fields into `AddFamilyEnergyWallet`** to avoid a second ledger migration; this becomes a no-op or a tiny enum-value addition.
+5. **`MigrateCreditAccountsToFamilyWallet`** (P10-13, AC13-8) — **data migration**, paired with a one-shot **`CreditAccountMigrationService`** (logic in the service, not the EF migration): for each parent, create one `FamilyEnergyAccount`; roll each child's `PurchasedBalance` into the shared family `PurchasedBalance`; map each child's `GrantedBalance` → that child's current-cycle `ChildEnergyAllocation`; preserve/link the pre-migration ledger; **reconcile** each migrated family total against summed old balances + ledger before retiring `CreditAccount` write paths. **Idempotent + rerun-safe** (skip already-migrated families). Old per-child grant/spend paths retire **only after reconcile passes**.
+
+**Concurrency / constraints to enforce at DB level (defence-in-depth):** non-negative balances on wallet + allocation; `xmin` concurrency tokens; idempotency uniqueness on ledger; filtered unique seat-occupancy index. **No cross-module FK** anywhere (loose `int` `ChildId`/`ParentUserId`).
+
+**Open the OQs in §6 before authoring the data migration** — especially OQ-A (does any production `CreditAccount` data actually exist to migrate?), OQ-B (parent↔child mapping source), OQ-C (initial seat occupancy + active-seat count at migration time).
+
+---
+
+## §4 — Handoff → backend-feature
+
+### P10-13 (wallet + allocation + spend + grant rewrite + migration)
+- **Domain:** `FamilyEnergyAccount`, `ChildEnergyAllocation`, `EnergyBucket`, `CreditTransaction`/`CreditReasonCode` extensions (mutators return ledger rows; never SaveChanges — mirror the existing `CreditAccount` pattern).
+- **`IFamilyEnergyAllocationService.AllocateSubscriptionGrantAsync(parentUserId, grantAmount, cycleStart, cycleEnd, idempotencyKey)`** — explicit transaction: deposit `grantAmount` into wallet `SubscriptionBalance`; compute EQUAL split across active-seat children (deterministic remainder, allocated sum == grant); upsert `ChildEnergyAllocation` rows; write `GrantAllocation` per-child + family ledger entries. **Idempotent on `(parentUserId, cycleStart)`.** Active-seat children from `ISeatQuery`.
+- **Grant-job rewrite (P10-13-BE-6):** the **per-family** grant amount fed to the wallet = **`PlanEnergyPerSeat × ActivePaidSeats`** (read `PlanEnergyPerSeat` from `IGlobalSettingsProvider` — the former `credits.premium_monthly`/`credits.free_monthly`, **now per-seat**); the job calls `AllocateSubscriptionGrantAsync` **once per family** (not per child); rollover expires the prior cycle's subscription balance + allocations (purchased untouched). Re-running for the same family+cycle is idempotent. **No per-child grant path remains.** The job stops branching on a per-child tier and instead resolves seats per family.
+- **Spend re-implementation behind `ICreditSpendService.TryDebitAsync(childId, …)` (same signature):** explicit transaction → load the child's `ChildEnergyAllocation` (with `xmin`) → **debit the allocation row first**; if `Remaining < amount`, draw only the **shortfall** from the wallet `PurchasedBalance` (touch the shared row **only** on shortfall — keep it cold); if neither covers it, return typed `InsufficientBalance` (no write); write `SpendAllocation` and/or `SpendPurchasedFallback` ledger rows; commit. Keep `DbUpdateConcurrencyException` + bounded retry and unique-key→idempotent-success. **Daily-counter increment** (P10-04) stays inside the same transaction — decide where it now lives (allocation row vs wallet — see OQ-G). Extend `DebitResult` with `FromAllocation`/`FromPurchasedFallback` (additive; existing AI consumers compile unchanged).
+- **`ISeatQuery`** temporary in-Billing impl if P10-14/15 not yet landed (active child count, config-gated) — flag cutover.
+- **Migration service** (above). **Parent read:** `GetFamilyEnergyOverviewQuery(parentUserId)` → `{SubscriptionBalance, PurchasedBalance, SubscriptionExpiresAtUtc, Children:[{ChildId, Allocated, Spent, Remaining}]}`; family-scope authz; `BaseResponse<T>`/`Successed`; no `ValidationBehavior` on queries. Controller `FamilyEnergyController` — `GET /api/Billing/FamilyEnergy/Overview`, `[Authorize]` **parent-JWT-only** (child JWTs rejected) + owning-parent authz.
+
+### P10-14 (seats + seat-reserved add-child)
+- **Domain:** `Plan.IncludedSeats`, `Subscription.PurchasedExtraSeats`, `SeatReservation`, `SeatStatus`, `PaymentKind.Seat`.
+- **`ISeatService`** (workflow service): `GetActiveSeatCountAsync(parentUserId)` = `IncludedSeats + PurchasedExtraSeats` while billing-active (incl. grace); `ReserveSeatAsync(parentUserId, childId, idempotencyKey)` → atomic free-seat check (active count − occupied reservations) + insert `SeatReservation{Reserved}`, **idempotent**, returns `{Reserved, NoFreeSeat, AlreadyReserved}`; `ReleaseSeatAsync`; `GetSeatStatusAsync` → total/occupied/free + per-child status. Enforces **max-seats** from `IGlobalSettingsProvider` (never hard-coded).
+- **`ISubscriptionSeatContract`** seam (Shared.Contracts) + impl in Billing.Infrastructure delegating to `ISeatService`.
+- **Parent wiring (P10-14-BE-5):** inject `ISubscriptionSeatContract` into `AddChildCommandHandler`; **reserve a seat BEFORE `CreateChildAsync`**; on `NoFreeSeat` → localized `BaseResponse` error (new `SharedResourcesKey.NoFreeSeatAvailable`, AR+EN), **create no child**; on success → create + link, then mark the seat `Active`; if create/link fails after reserving → `ReleaseSeatAsync` (compensation). Parent uses the seam only — never `Billing.*`.
+- **Extra-seat checkout (P10-14-BE-6):** `StartSeatCheckoutCommand(parentUserId, seatQuantity)` — owning-parent (JWT), max-seats guard, **server-side** extra-seat monthly price from GlobalSettings (never client-supplied), `Payment{Kind=Seat, Status=Initiated, IdempotencyKey, Quantity}`, `IPaymentProvider.CreateCheckoutSession` (**web checkout only**), returns redirect URL. FluentValidation validator.
+- **Extra-seat webhook branch (P10-14-BE-7):** extend `HandleProviderWebhookCommand` with a `Kind=Seat` branch — signature-verify + dedup on `ProviderEventId` (`WebhookEvent`); on `payment.succeeded` in an explicit transaction increment `Subscription.PurchasedExtraSeats` + flip Payment→Succeeded + append an immutable ledger row; idempotent on `ProviderEventId` AND payment idempotency key; **never grants/creates energy** (count-only).
+- **Cancel-extra-seat (P10-14-BE-8):** `CancelExtraSeatCommand` — decrement future billing + start a grace marker (enforcement = P10-15), provider cancel-recurring if applicable, never refunds energy / never deletes a child, ledgered.
+- **Query + controller (P10-14-BE-9):** `GetSeatStatusQuery`; `SeatController` parent-JWT-only — `GET /api/Billing/Seats/Status`, `POST /api/Billing/Seats/Checkout`, `POST /api/Billing/Seats/Cancel`.
+
+### P10-15 (grace + enforcement + locked lifecycle)
+- **Domain fields:** `SeatState {Active, NoSeatLocked}`; subscription/seat grace fields (`SeatGraceStartedAt/EndsAt/Reason`).
+- **`ISeatGraceService.StartGraceAsync(parentUserId, reason)`** — sets grace start/end (config-driven length via `IGlobalSettingsProvider`, e.g. `seats.grace_days` — **no hard-coded number; LEAD FLAG**) + reason; **idempotent** (no stacking/shortening if a window is already open). Called from the P10-05 downgrade handler, the P10-14 seat-cancel handler, and the P10-09 `charge.failed` branch (each injects this shared service). **Note: P10-09's existing `ProcessChargeFailedAsync` already sets a subscription `GraceEndsAt = CurrentCycleEnd`; reconcile/align the seat grace with that (OQ-D) rather than introducing a second, conflicting grace clock.**
+- **`ISeatEnforcementService.EnforceAsync(parentUserId)` + Hangfire `SeatEnforcementJob`** — runs on grace expiry: explicit transaction; compute paid active seats (P10-13/`ISeatQuery`) vs current seat-holders; if over limit honor the parent's pre-chosen set else a deterministic default (recommend earliest-activated — tie-break LEAD FLAG); move over-limit children to `NoSeatLocked`; forfeit their **unspent** allocation per P10-13 reset rules (never convert to purchased, never reclaim spent); append an immutable ledger row per locked child; **idempotent per family+cycle**. **NEVER delete a child; never touch Identity/Learning/Gamification.** Mirror `BillingGrantJob`/`DunningRetryJob` scope-per-iteration + fail-soft.
+- **Seat-based spend gate (P10-15-BE-4):** extend the spend path so a `NoSeatLocked` child is denied AI spend **gracefully** (localized `SharedResourcesKey.ChildSeatLockedNoEnergy`, EN+AR) **before** touching any allocation or the shared purchased row. Resolve seat state via `ISeatStateQuery`. *(Coordinate with the spend re-impl in P10-13-BE-7 — same code path.)*
+- **Parent CQRS (P10-15-BE-5):** `GetSeatStatusQuery` (per-child state + paid active seats + grace window); `ChooseActiveChildrenCommand(parentUserId, childIds[])` — family-scope authz; validator rejects `childIds.Count > paidActiveSeats` (`SeatChoiceExceedsLimit`); applies chosen set, locks the rest, re-joins chosen into allocation, ledgers each change; `ReactivateChildSeatCommand(parentUserId, childId)` — assign a free seat or fail (`NoFreeSeatAvailable`). Controller `SeatController` parent-JWT-only — `GET /Status`, `POST /ChooseActive`, `POST /Reactivate`.
+- **`ISeatStateQuery`** seam (extend the P10-14 seat seam, not a parallel contract).
+
+### P10-16 (sibling redistribution)
+- **Ledger:** transfer reason codes (`TransferIn`/`TransferOut`) + `CorrelationId` + idempotency on the existing P10-13 ledger (no new table).
+- **`IFamilyAllocationService`** (Infrastructure impl): `GetFamilyAllocationAsync(parentUserId)` (per active-seat child: allocated, spent, remaining); `TransferAllocationAsync(parentUserId, fromChildId, toChildId, amount)` — load wallet + both allocation rows; **same-family guard** (both children belong to this `FamilyEnergyAccount`); reject `amount<=0` or `amount > source.Remaining` (only unspent movable); reject source==dest or dest not active-seat; one explicit transaction: decrement source, increment dest, append **paired** `TransferOut`/`TransferIn` ledger rows (same `CorrelationId`), commit; **idempotent** on the key. **Touches bucket A only — never reads/writes the shared purchased reserve.**
+- **CQRS:** `GetFamilyAllocationQuery` (query — no `ValidationBehavior`); `TransferAllocationCommand` + validator (shape rules: `amount>0`, `fromChildId!=toChildId`, ids present — business rules live in the service); `parentUserId` from JWT only. Controller (extend `FamilyEnergyController`) — `GET /api/Billing/FamilyEnergy/Allocation`, `POST /api/Billing/FamilyEnergy/Transfer`, parent-JWT + family-scope. Localized keys (EN+AR) for all outcomes.
+
+### P10-17 (purchased-refund reconciliation — refines P10-09)
+- **`IRefundService.ComputeRefundableAsync(familyAccountId, purchasePaymentId)` → `RefundableQuoteDto {purchasedTotal, consumedPurchased, refundable, currency}`** — refundable = `purchasedTotal − consumedPurchased`, **clamped ≥ 0**, by reconciling the immutable family ledger (sum of bucket-B `Purchase` rows minus bucket-B `Spend`/`SpendPurchasedFallback` rows — **subscription/allocation rows never included**). Pure idempotent read.
+- **`RequestPurchasedEnergyRefundCommand(parentUserId, purchasePaymentId, reason)`** — parent-JWT-only + owning-parent/family-scope; `RefundReason` **enum** (no free text); compute refundable (reject if ≤0 with a localized key), then `InitiateProviderRefundAsync` → `IPaymentProvider.Refund`. **Balance/ledger change is webhook-driven, NOT here.**
+- **Refine the `refund.succeeded` webhook branch (replaces P10-09's per-child clawback):** for a purchased-pack refund, explicit transaction — **re-reconcile** from the ledger (never trust request-time figure), append an **idempotent `Refund` ledger row** linked to the original `Purchase`, decrement the **shared family** purchased balance (clamped — never negative). Idempotent on provider refund event id (`WebhookEvent`) AND on `LedgerEntry.IdempotencyKey`. **Supersede `RefundService.ProcessPackRefundAsync`'s single-child `CreditAccount.PurchasedBalance` clawback** with the shared-row reconciliation — refine, do not add a parallel path.
+- **Query + controller:** `GetRefundableQuoteQuery`; `RefundController` parent-JWT-only — `GET /api/Billing/Refunds/Quote/{purchasePaymentId}`, `POST /api/Billing/Refunds/Request`.
+
+### Cross-cutting backend conventions (all stories)
+`BaseResponse<T>` via `BaseResponseHandler`; controllers `NewResult(...)`; success flag spelled `Successed`. Inject `ILoggerManager` (not `ILogger<T>`). `ValidationBehavior` on commands only. No UoW — explicit transactions in services. Permission policies exist but aren't enforced — add `[Authorize]` deliberately (parent-JWT-only on every endpoint here; child JWTs rejected). **Never log card data / PII / secrets.** **Design patterns: ask first** — mirror existing Billing service shapes; do not invent abstractions (the locked model maps cleanly to the existing service-per-concern shape, so no new pattern should be needed — if one seems required, stop and ask).
+
+---
+
+## §5 — Handoff → frontend
+
+**OUT OF SCOPE for this backend lead — owned by a different (frontend) lead.** Listed only so this lead can flag the read/command shapes the FE will consume. Do **not** plan, design (`designer`), build (`frontend`), or e2e-test (`frontend-e2e-tester`) any of these here:
+- P10-13-FE — parent "Family Energy" overview (wallet balances + per-child allocation list; read-only) → consumes `GET /api/Billing/FamilyEnergy/Overview`.
+- P10-14-FE — parent seat management (view/buy/cancel seats; no-free-seat error in add-child) → `GET /Seats/Status`, `POST /Seats/Checkout`, `POST /Seats/Cancel`.
+- P10-15-FE — grace banner + choose-active-children + locked-child badge → `GET /Seats/Status`, `POST /Seats/ChooseActive`, `POST /Seats/Reactivate`.
+- P10-16-FE — allocation editor / move-energy-between-children → `GET /FamilyEnergy/Allocation`, `POST /FamilyEnergy/Transfer`.
+- P10-17-FE — refundable balance in billing history + refund request → `GET /Refunds/Quote/{id}`, `POST /Refunds/Request`.
+- Kid energy meter (P10-10) is unchanged by this wave (still reads child-scoped energy status).
+
+---
+
+## §6 — Open questions / assumptions / risks
+
+### RESOLVED — LEAD DECISIONS (2026-06-16, baked into the Execution Plan `docs/plans/P10-SEATS-WALLET.md`)
+
+> All blocking OQs below are **RESOLVED**. The decisions are authoritative; downstream agents implement them verbatim. `security-auditor` remains MANDATORY on every story.
+
+- **OQ-A — RESOLVED (CreditAccount data → CLEAN CUTOVER):** The system is **PRE-LAUNCH** — there is **no real `CreditAccount` data** (test data only). The P10-13 data migration is therefore a **CLEAN CUTOVER**, not a reconciled production backfill: provision the wallet/allocation model, **guard that no orphan `CreditAccount` rows remain** after cutover, and **retire the old per-child `CreditAccount` write-paths** (grant/spend/pack/refund) once the wallet is live. The idempotent/rerun-safe service is still written (so re-runs are safe), but it asserts the clean-cutover invariant rather than reconciling money against live balances.
+- **OQ-B — RESOLVED (parent↔child seam = existing `IParentChildQuery.GetChildIdsForParentAsync`):** Use the **existing** `Shared.Contracts/Parent/IParentChildQuery.GetChildIdsForParentAsync(parentUserId)` (and `IsParentOfChildAsync` for ownership checks) to group children into one family wallet at runtime and at migration time. **No new seam needed.** Billing never reaches into Identity/Parent directly — only through this contract.
+- **OQ-C — RESOLVED (included seats + ceiling):** `IncludedSeats` = **Free: 1**, **Premium: 3**. **Max-seats ceiling = 5** (hard cap, config key, applies to `IncludedSeats + PurchasedExtraSeats`). Free/included-only plans expose their included seat(s) but **cannot buy extra seats** (gate in seat-checkout against plan tier). Seeded as P10-12 GlobalSettings keys — never hard-coded.
+- **OQ-D — RESOLVED (extra-seat price):** Extra-seat price = **169 EGP/month**, stored consistent with the existing `subscription.monthly_price_egp` EGP convention (config key, server-resolved, never client-supplied). Built + tested against `FakePaymentProvider`, web-checkout only. No MVP feature flag required beyond the tier gate.
+- **OQ-E — RESOLVED (grace = REUSE the P10-09 dunning grace clock, 7 days, UNIFIED):** Seat grace is **NOT a separate timer.** The **single source of truth is the Billing Subscription Lifecycle**: payment-renewal-fail → `Subscription` **PastDue** → **7-day dunning grace** (seats stay active, children keep AI, monthly allocations usable, parent notified) → recover → **Active** (seats unchanged) → grace expires → entitlement enforcement. The **7-day window maps onto `Subscription.GraceEndsAt`**. **RECONCILIATION (explicit backend-feature task):** the existing P10-09 dunning = **3 retries × 24h**; the 7-day grace window must be reconciled onto `Subscription.GraceEndsAt` so there is **one grace clock**, not two. During grace: seats stay active, allocations live, AI spend continues, current-cycle grants not revoked; a second reduction event during an open window does **NOT** stack/shorten.
+- **OQ-F — RESOLVED (enforcement tie-break = keep EARLIEST-RESERVED seats):** When the parent has not chosen by enforcement time and holders > paid seats, the deterministic default is **keep the earliest-reserved seats** (earliest `SeatReservation.ReservedAt`) so enforcement is deterministic and idempotent. Parent can re-choose afterwards.
+- **OQ-G — RESOLVED (daily soft-cap = separate per-child daily-usage row):** The P10-04 daily soft-cap counter lives on a **per-child daily-usage row** (NOT on `ChildEnergyAllocation`) so it **survives allocation reset/expiry**. The spend re-impl increments it inside the spend transaction; the migration carries the counter forward. Per-child daily-usage row carries `DailyUsed`/`DailyUsedDateLocal`/`ChildTimeZoneId`.
+- **OQ-H — RESOLVED (mid-cycle seat-cancel forfeit → wallet, dropped at next reset):** When a seat is canceled mid-cycle (or downgrade/payment-failure reduces seats), the child keeps their allocation **through grace**; on enforcement the **unspent** portion is **returned to the family wallet `SubscriptionBalance` and dropped at the next cycle reset** (option (a)) — **never converted to purchased**, never reclaimed if already spent. P10-15 enforcement and P10-13 reset agree on this.
+- **OQ-I — RESOLVED (redistribution IS in this MVP wave):** Sibling→sibling redistribution (**P10-16**) is **IN scope** for this wave. Unlimited zero-sum within source `Remaining` (no per-cycle cap/cooldown in v1). The transfer **idempotency key is client-supplied** (FE owner passes it) so a retried POST does not double-move; pair it with the `CorrelationId`.
+- **OQ-J — RESOLVED (multi-pack refund = FIFO per original `Purchase` payment, partial allowed):** Refund is **per original `Purchase` payment, FIFO** consumption attribution — refundable = that payment's purchased amount minus its attributable consumed share, capped at the current shared purchased balance. **Partial refunds (unused remainder only) are v1** (not all-or-nothing). Refundable unit is energy reconciled to currency at the original purchase price. Parent request + the existing admin `InitiateRefundCommand` (P10-09-BE-5) both supported.
+- **OQ-K — RESOLVED (fake-only, web checkout only):** The wave **builds + tests entirely against `FakePaymentProvider`**; the live provider adapter + real card-on-file recurring remain EXTERNAL/devops. "No native IAP — **web checkout only**" holds for seat add-ons.
+- **OQ-L — RESOLVED (PlanEnergyPerSeat = REUSE existing keys, per-seat semantics, NO rename/re-seed):** **Reuse the existing** `credits.free_monthly` (100) / `credits.premium_monthly` (5000) GlobalSettings keys, now **interpreted PER-SEAT** (multiplied by active paid seats). **No rename**, **no re-seed**. The label/meaning shifts to per-seat in coordination with P10-12; downstream code reads the existing keys via `IGlobalSettingsProvider` and multiplies by `ActivePaidSeats`.
+
+### Additional accepted technical defaults (RESOLVED 2026-06-16)
+- parent↔child resolution at runtime + migration via existing `IParentChildQuery.GetChildIdsForParentAsync`;
+- daily soft-cap counter on a per-child daily-usage row that survives allocation reset;
+- enforcement tie-break = keep earliest-reserved seats;
+- mid-cycle seat-cancel forfeit returns unspent to the wallet + dropped at next reset (never converted to purchased);
+- multi-pack refund = FIFO per original payment (partial allowed);
+- build/test on `FakePaymentProvider`, web-checkout only.
+
+### Assumptions (state, do not act on without the OQs)
+- The `Billing` module, `BillingDbContext`/schema `billing`, Hangfire, Redis, the `IPaymentProvider`+`FakePaymentProvider` seam, `WebhookEvent` dedup, the DB-backed `IGlobalSettingsProvider`, and the `ICreditSpendService` seam all **exist and work** (verified in code) — this wave extends them, it does not scaffold them.
+- The child id used as the allocation/spend key = the `StudentId`/`ChildId` the rest of the system uses (loose int; AI resolves it from `ICurrentUserService.UserId`; `EnergyPackService` already uses `IParentChildQuery.IsParentOfChildAsync`).
+- The 4 Ai handlers consume only `ICreditSpendService.TryDebitAsync(childId, …)` and need **no edits** — only the Billing impl behind the seam changes (signature preserved; `DebitResult` extended additively).
+- `IBillingSubscriptionContract` (active children + tier) and `IParentChildQuery` are the existing cross-module read seams; a parent↔children grouping seam may need extending (OQ-B).
+
+### Top risks
+- **R1 — destructive migration off the live `CreditAccount` model.** A wrong parent↔child grouping, a missed balance, or a non-idempotent rerun corrupts the family economy. *Mitigation:* resolve OQ-A/OQ-B first; idempotent + rerun-safe service; reconcile every migrated total against summed old balances + preserved ledger **before** retiring old paths; security-auditor reviews the migration.
+- **R2 — spend integrity under the new two-row algorithm.** Wrong row debited, the shared purchased row becoming a contention hotspot, double-charge, charge-on-refuse, cross-child spend, or client-controlled cost = economy bypass / unfair charge. *Mitigation:* allocation-row-first with the shared row touched only on shortfall; `xmin` + bounded retry; DB-unique idempotency; server-side cost from GlobalSettings; child id from session; the spend gate denies locked children **before** any balance touch; mandatory security-auditor.
+- **R3 — enforcement cascading into Identity/Learning/Gamification.** A bug that deletes a child or drops progress violates the hard "never delete / keep progress" invariant (G1). *Mitigation:* Billing-only writes; no cross-module FK; security-auditor must verify no cascade; idempotent per family+cycle.
+- **R4 — bucket-convertibility leak.** Any path that moves energy subscription↔purchased, or a transfer/refund touching the wrong bucket, breaks the locked non-convertible rule and the refund/redistribution correctness. *Mitigation:* no convert method exists by construction; transfers touch bucket A only; refunds reconcile bucket B only; reviewer + security-auditor reject any cross-bucket path.
+- **R5 — seat-reservation / add-child consistency.** A reserved seat with no child (or a child with no seat) on partial failure. *Mitigation:* reserve→create→activate with compensating release; idempotent reservation; filtered unique occupancy index.
+- **R6 — refund negative-balance / double-refund race + grace-clock conflict (P10-09 vs P10-15).** *Mitigation:* re-reconcile at settlement inside an explicit transaction, clamp ≥0, double idempotency (WebhookEvent + ledger key); unify/align the grace clock per OQ-E.
+- **R7 — serialized `billing`-schema migrations.** Five interdependent migrations on one `BillingDbContext`; concurrent authoring corrupts the model snapshot. *Mitigation:* strictly serialize migration authoring in the order in §3 (PARALLELISM.md shared-file rule).
+
+---
+
+## §7 — Recommended pipeline order (first cut — the `planner` finalizes the executable plan)
+
+> **Lead gates to clear before any batch:** resolve the **blocking** OQs — at minimum **OQ-A** (migration data reality), **OQ-B** (parent↔child seam), **OQ-C/OQ-D** (seat numbers/price), **OQ-E** (grace), **OQ-G** (daily-cap home), **OQ-L** (PlanEnergyPerSeat key) — they drive the schema + migration and cannot be guessed. **`security-auditor` is MANDATORY on every story's backend batch** in this wave.
+
+Dependency spine: **P10-14 (seats) and P10-13 (wallet) are mutually entangled** — P10-13's grant denominator needs `ISeatQuery` (owned by P10-14/15), and P10-15's allocation forfeit needs P10-13's allocation rows. The task files break the cycle with a **temporary in-Billing `ISeatQuery`** so P10-13 can land first, then P10-14 takes over the seam.
+
+- **GATE** — lead resolves blocking OQs; confirm the locked model + `PlanEnergyPerSeat` key semantics with P10-12.
+- **Batch 1 — P10-13 wallet foundation** (db-migration: `AddFamilyEnergyWallet` + ledger extensions → backend-feature: wallet/allocation entities, allocation service, spend re-impl behind the seam, grant-job rewrite, temporary `ISeatQuery`, overview read/controller). **security-auditor (spend + child data)** → api-tester (overview, spend cost-mapping, allocation-first→purchased-fallback, idempotency, cross-child guard, no-convert) → reviewer.
+- **Batch 1b — P10-13 data migration** (db-migration + `CreditAccountMigrationService` + reconcile). Can follow immediately after Batch 1's schema lands; **security-auditor (migration integrity)** → reviewer. *(Gate on OQ-A/OQ-B.)*
+- **Batch 2 — P10-14 seats** (db-migration `AddSeatModel` + `PaymentKind.Seat` → backend-feature: seat model, `ISeatService`, `ISubscriptionSeatContract`, Parent add-child wiring, extra-seat checkout/webhook/cancel, seat-status; replaces the temporary `ISeatQuery`). **security-auditor (money + child data + add-child)** → api-tester (seat reserve/release, no-free-seat reject + no orphan, webhook idempotent seat increment, server-side price, max-seats) → reviewer. *(Depends on Batch 1's wallet + the existing P10-05/P10-06.)*
+- **Batch 3 — P10-15 grace + enforcement** (db-migration `AddSeatGraceAndLockState` → backend-feature: grace service wired into downgrade/seat-cancel/payment-failure, enforcement service + Hangfire job, seat-based spend gate, parent choose-active/reactivate, `ISeatStateQuery`). **security-auditor (no child deletion, no cross-module cascade, family-scope, idempotent enforcement)** → api-tester (grace start idempotent, enforcement locks over-limit only, locked child denied spend gracefully, choose-active ≤ limit, reactivate) → reviewer. *(Depends on Batch 2 seats + Batch 1 allocations.)*
+- **Batch 4 — P10-16 redistribution + P10-17 refund reconciliation** (parallel-capable; both ledger-only on the P10-13 ledger but **serialize any migration edits**). P10-16: transfer service + CQRS + controller. P10-17: refundable reconciliation + request command + webhook refine + quote/controller. **security-auditor MANDATORY on each (money + child data; cross-family guard; no-negative / no-double-refund; bucket-B-only)** → api-tester (zero-sum transfer, cap at Remaining, cross-family reject, paired ledger; refundable math 10000−3000→7000, subscription excluded, clamp ≥0, webhook-driven idempotent settlement) → reviewer. *(Both depend on Batch 1's wallet+ledger; P10-17 also refines P10-09's `RefundService`.)*
+- **committer** — per-story branch `feat/P10-1x-…`, full-description PR, **HANDOFF.md updated in the same PR** (record the locked-model decisions, the wallet/allocation/seat seams, the `PlanEnergyPerSeat` key change, the migration reconcile, the spend-row change, and that FE is owned by the other lead).
+
+*Within a story, run independent sub-batches in parallel (Mode A); across stories respect the spine above. All five `*-FE` tasks are out of scope (other lead).*
+
+---
+
+*Brief author: analyzer · Date: 2026-06-16 · Backend-only brief for the P10-13..17 family-energy-model wave, validated against the live Billing module on `feat/phase4-ai-runtime`.*
