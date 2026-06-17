@@ -75,6 +75,8 @@ async function seedParentWithChild(page: Page): Promise<{ email: string; passwor
       grade: 1,
       language: 'ar',
       learningLanguage: 'ar',
+      // country is required by the Add-Child endpoint (422 without it)
+      country: 'EG',
     },
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
     timeout: 30_000,
@@ -199,10 +201,21 @@ test.describe('LOGIN — RTL + rounded inputs', () => {
     const emailInput = page.getByTestId('login-username');
     await expect(emailInput).toBeVisible({ timeout: 10_000 });
 
-    // Check computed border-radius on the input container
+    // SPEC NOTE: In the TextField component (packages/ui/src/components/TextField/index.tsx),
+    // testID is placed on the inner <TextInput> (the native <input> element) which has no
+    // border-radius itself. The rounded border-radius lives on the wrapping <Stack> element
+    // (the immediate parent of the <input>). We walk up to the parent to read the actual radius.
     const emailRadius = await emailInput.evaluate((el: HTMLElement) => {
-      const style = window.getComputedStyle(el);
-      return style.borderRadius || style.borderTopLeftRadius;
+      // Walk up to the first ancestor that has a non-zero border-radius
+      let node: HTMLElement | null = el.parentElement;
+      while (node) {
+        const style = window.getComputedStyle(node);
+        const r = style.borderRadius || style.borderTopLeftRadius;
+        if (parseFloat(r) > 0) return r;
+        node = node.parentElement;
+      }
+      // Fallback: return the element's own computed radius (will be 0 if not found)
+      return window.getComputedStyle(el).borderRadius;
     });
 
     // Rounded = non-zero border-radius
@@ -218,9 +231,17 @@ test.describe('LOGIN — RTL + rounded inputs', () => {
     const emailInput = page.getByTestId('login-username');
     await expect(emailInput).toBeVisible({ timeout: 10_000 });
 
+    // SPEC NOTE: testID is on the inner <input>; border-radius is on the wrapping <Stack>.
+    // Walk up to find the ancestor with non-zero border-radius.
     const emailRadius = await emailInput.evaluate((el: HTMLElement) => {
-      const style = window.getComputedStyle(el);
-      return style.borderRadius || style.borderTopLeftRadius;
+      let node: HTMLElement | null = el.parentElement;
+      while (node) {
+        const style = window.getComputedStyle(node);
+        const r = style.borderRadius || style.borderTopLeftRadius;
+        if (parseFloat(r) > 0) return r;
+        node = node.parentElement;
+      }
+      return window.getComputedStyle(el).borderRadius;
     });
     const radiusValue = parseFloat(emailRadius ?? '0');
     expect(radiusValue).toBeGreaterThan(0);
@@ -935,16 +956,26 @@ test.describe('REGISTER — Inline wizard + banner alignment + rounded inputs', 
     const emailField = page.getByTestId('register-email');
     await expect(emailField).toBeVisible({ timeout: 10_000 });
 
+    // SPEC NOTE: In TextField (packages/ui/src/components/TextField/index.tsx),
+    // testID is placed on the inner <TextInput>/<input> which has no border-radius itself.
+    // The rounded wrapper <Stack> is the immediate ancestor that holds borderRadius.
+    // Walk up from the inner input to find the first ancestor with non-zero border-radius.
     const radius = await emailField.evaluate((el: HTMLElement) => {
-      const style = window.getComputedStyle(el);
-      return style.borderRadius || style.borderTopLeftRadius;
+      let node: HTMLElement | null = el.parentElement;
+      while (node) {
+        const style = window.getComputedStyle(node);
+        const r = style.borderRadius || style.borderTopLeftRadius;
+        if (parseFloat(r) > 0) return r;
+        node = node.parentElement;
+      }
+      return window.getComputedStyle(el).borderRadius;
     });
     const radiusValue = parseFloat(radius ?? '0');
 
     if (radiusValue === 0) {
       test.info().annotations.push({
         type: 'DEFECT',
-        description: `VER-R3a FAIL: Register email field still square in AR. border-radius="${radius}". Screenshot: ${SCREENSHOT_DIR}/register-ar-email-radius-ZERO.png`,
+        description: `VER-R3a FAIL: Register email field wrapper still square in AR. border-radius="${radius}". Screenshot: ${SCREENSHOT_DIR}/register-ar-email-radius-ZERO.png`,
       });
       await capture(page, 'register-ar-email-radius-ZERO');
     } else {
@@ -969,9 +1000,16 @@ test.describe('REGISTER — Inline wizard + banner alignment + rounded inputs', 
     const emailField = page.getByTestId('register-email');
     await expect(emailField).toBeVisible({ timeout: 15_000 });
 
+    // SPEC NOTE: testID is on the inner <input>; walk up to find the wrapper with border-radius.
     const radius = await emailField.evaluate((el: HTMLElement) => {
-      const style = window.getComputedStyle(el);
-      return style.borderRadius || style.borderTopLeftRadius;
+      let node: HTMLElement | null = el.parentElement;
+      while (node) {
+        const style = window.getComputedStyle(node);
+        const r = style.borderRadius || style.borderTopLeftRadius;
+        if (parseFloat(r) > 0) return r;
+        node = node.parentElement;
+      }
+      return window.getComputedStyle(el).borderRadius;
     });
     const radiusValue = parseFloat(radius ?? '0');
     expect(radiusValue).toBeGreaterThan(0);

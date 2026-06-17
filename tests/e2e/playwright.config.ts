@@ -34,7 +34,10 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // Limit to 2 workers in local dev to prevent Metro bundler degradation under
+  // heavy parallel load (Expo Metro gets unstable when many tests run simultaneously).
+  // CI uses 1 worker for full determinism.
+  workers: process.env.CI ? 1 : 2,
   reporter: [['html', { open: 'never' }], ['list']],
   // Global test timeout — applies to tests AND beforeAll/beforeEach hooks.
   // P1-11-FE setup flows (register + add-child) can take up to 2 minutes per group.
