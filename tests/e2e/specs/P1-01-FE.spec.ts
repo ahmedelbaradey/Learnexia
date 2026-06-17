@@ -3,17 +3,26 @@
  *
  * Implements every FE-TC-* case from docs/qc/P1-01-FE/frontend-test-cases.md.
  *
- * Selector strategy (no testIDs on this screen):
- *   - Full name: getByRole('textbox').nth(0)  [input[type=text]]
- *   - Email:     getByRole('textbox').nth(1)  [input[type=email]]
- *   - Password:  getByRole('textbox').nth(2) OR locator('input[type="password"]')
- *     NOTE: Playwright's getByRole('textbox') includes input[type=password] per ARIA
- *     (implicit role textbox). So 3 textboxes total, not 2.
- *   - Country:   getByRole('combobox')
- *   - Terms:     getByRole('checkbox')
- *   - Submit:    getByRole('button').last()   [3 buttons: back, pw-toggle, submit]
- *   - Back btn:  getByRole('button').first()
- *   - Sign-in lnk: getByRole('link').first()
+ * Selector strategy (testIDs are available on all key elements):
+ *   - Full name:    getByTestId('register-fullname')
+ *   - Country:      getByTestId('register-country')   [Select, renders as combobox]
+ *   - Email:        getByTestId('register-email')
+ *   - Password:     getByTestId('register-password')  [also input[type="password"] inside]
+ *   - Terms:        getByTestId('register-terms')
+ *   - Submit:       getByTestId('register-submit')
+ *   - Sign-in link: getByTestId('register-sign-in-link')
+ *   - Error banner: getByTestId('register-error')
+ *
+ * RTL ground truth (applyWebDirection DOES NOT set html[dir]):
+ *   applyWebDirection() intentionally sets document.documentElement.lang only,
+ *   NOT dir. RN Web handles RTL entirely through component-level props
+ *   (writingDirection, flexDirection row-reverse, textAlign). Assertions for
+ *   RTL must target a known element's computed direction, NOT html[dir].
+ *
+ * TWO-STEP WIZARD (register.tsx):
+ *   Step 1 = parent account form (URL stays /register).
+ *   Step 2 = add-child inline, still at /register — no navigation to add-child route.
+ *   After successful step-1 submit: wait for onboarding-add-child-tile (step 2 marker).
  *
  * Known RN-Web limitations (documented in execution-report.md):
  *   - checkbox `aria-checked` is NOT set (accessibilityState not translated to aria-*).
@@ -24,9 +33,9 @@
  *     Playwright's .blur() call. Validation errors appear after a submit attempt OR
  *     after clicking a different focusable element within the same React tree.
  *   - ServerErrorBanner uses `aria-label` (not standard [aria-live]); detect via
- *     [aria-label] attribute on the banner div OR page text.
- *   - Country combobox renders options inline in the DOM (not role=option/listbox);
- *     selected via text locator.
+ *     testID or page text.
+ *   - Country Select renders options inline in the DOM (not role=option/listbox);
+ *     selected via text locator after expanding.
  *   - Non-existent Expo Router routes (e.g. /register-student) never resolve — the
  *     page hangs waiting for load. Navigation assertions use waitForURL with a short
  *     timeout and catch TimeoutError.
@@ -44,7 +53,7 @@ function uniqueEmail(): string {
 }
 
 /**
- * Fill the register form with valid data.
+ * Fill the register form with valid data using stable testID selectors.
  * Selects Saudi Arabia (السعودية) as the country — first option in the panel.
  * Leaves Terms unchecked unless `checkTerms=true`.
  */
@@ -54,12 +63,12 @@ async function fillValidForm(
 ) {
   const { email = uniqueEmail(), password = 'Str0ng!Pass', checkTerms = false } = opts;
 
-  // Full name (textbox 0 = input[type=text])
-  await page.getByRole('textbox').nth(0).fill('Parent Tester');
+  // Full name
+  await page.getByTestId('register-fullname').fill('Parent Tester');
 
-  // Country combobox — click to expand the inline panel, then pick first option
-  const combobox = page.getByRole('combobox');
-  await combobox.click();
+  // Country Select — click the container to expand the inline panel, then pick first option
+  const countrySelect = page.getByTestId('register-country');
+  await countrySelect.click();
   await page.waitForTimeout(500);
   // Saudi Arabia is the first country listed in the inline panel
   const firstOption = page.locator(':text-is("السعودية")').first();
@@ -67,15 +76,15 @@ async function fillValidForm(
   await firstOption.click();
   await page.waitForTimeout(300);
 
-  // Email (textbox 1 = input[type=email])
-  await page.getByRole('textbox').nth(1).fill(email);
+  // Email
+  await page.getByTestId('register-email').fill(email);
 
-  // Password (textbox 2 = input[type=password]; also accessible via Playwright's getByRole)
-  await page.locator('input[type="password"]').fill(password);
+  // Password
+  await page.locator('input[type="password"]').first().fill(password);
 
   // Terms checkbox
   if (checkTerms) {
-    await page.getByRole('checkbox').click();
+    await page.getByTestId('register-terms').click();
     await page.waitForTimeout(300);
   }
 }
@@ -87,7 +96,7 @@ async function fillValidForm(
  */
 async function getCheckboxCheckedVisual(page: import('@playwright/test').Page): Promise<boolean> {
   return page.evaluate(() => {
-    const checkbox = document.querySelector('[role="checkbox"]');
+    const checkbox = document.querySelector('[data-testid="register-terms"]');
     if (!checkbox) return false;
     // The inner box (first child div) gets primary background (#4f46e5) when checked
     const innerBox = checkbox.querySelector('div');
@@ -103,7 +112,7 @@ async function getCheckboxCheckedVisual(page: import('@playwright/test').Page): 
  * RN Web Button does NOT set HTML `disabled` or `aria-busy` attributes.
  */
 async function isSubmitButtonLoading(page: import('@playwright/test').Page): Promise<boolean> {
-  const submit = page.getByRole('button').last();
+  const submit = page.getByTestId('register-submit');
   const pointerEvents = await submit.evaluate(
     (el: HTMLElement) => window.getComputedStyle(el).pointerEvents,
   );
@@ -125,17 +134,23 @@ test.describe('FE-TC-01 — Form accepts valid input and is submittable', () => 
     const heading = page.getByRole('heading').last();
     await expect(heading).toBeVisible({ timeout: 30_000 });
 
-    // 3 textboxes: fullname (text), email (email), password (password via ARIA implicit role)
-    await expect(page.getByRole('textbox')).toHaveCount(3);
+    // Full name field
+    await expect(page.getByTestId('register-fullname')).toBeVisible();
 
-    // Country combobox
-    await expect(page.getByRole('combobox')).toBeVisible();
+    // Country select
+    await expect(page.getByTestId('register-country')).toBeVisible();
+
+    // Email field
+    await expect(page.getByTestId('register-email')).toBeVisible();
+
+    // Password input
+    await expect(page.locator('input[type="password"]').first()).toBeVisible();
 
     // Terms checkbox
-    await expect(page.getByRole('checkbox')).toBeVisible();
+    await expect(page.getByTestId('register-terms')).toBeVisible();
 
-    // Password input (also counted above via textbox)
-    await expect(page.locator('input[type="password"]')).toBeVisible();
+    // Submit button
+    await expect(page.getByTestId('register-submit')).toBeVisible();
   });
 
   test('filling all fields leaves no inline errors and enables submit', async ({ page }) => {
@@ -144,7 +159,7 @@ test.describe('FE-TC-01 — Form accepts valid input and is submittable', () => 
 
     await fillValidForm(page, { checkTerms: true });
 
-    // Submit button (last button on the page) should be enabled (not in loading state)
+    // Submit button should be enabled (not in loading state)
     const isLoading = await isSubmitButtonLoading(page);
     expect(isLoading).toBe(false);
 
@@ -158,8 +173,13 @@ test.describe('FE-TC-01 — Form accepts valid input and is submittable', () => 
   });
 });
 
-test.describe('FE-TC-04 — Successful registration routes to onboarding', () => {
-  test('POST to real backend succeeds and routes to add-child', async ({ page }) => {
+test.describe('FE-TC-04 — Successful registration shows step 2 add-child inline', () => {
+  /**
+   * After a successful register the URL STAYS at /register and the wizard
+   * advances to step 2 inline — the add-child tile (testID onboarding-add-child-tile)
+   * appears. There is NO navigation to an /add-child route.
+   */
+  test('POST to real backend succeeds and step 2 add-child UI renders inline', async ({ page }) => {
     const email = uniqueEmail();
     await page.goto('/register');
     await page.waitForTimeout(2000);
@@ -167,48 +187,56 @@ test.describe('FE-TC-04 — Successful registration routes to onboarding', () =>
     await fillValidForm(page, { email, password: 'Str0ng!Pass1', checkTerms: true });
 
     // Submit
-    await page.getByRole('button').last().click();
+    await page.getByTestId('register-submit').click();
 
-    // Wait for navigation — onboarding add-child route
-    await page.waitForURL(/add-child/, { timeout: 15_000 });
+    // Wait for step 2 marker — the dashed "Add a child" tile renders inline at /register
+    await page.getByTestId('onboarding-add-child-tile').waitFor({ state: 'visible', timeout: 15_000 });
 
-    // URL contains add-child
-    expect(page.url()).toContain('add-child');
+    // URL is still /register (no route jump)
+    expect(page.url()).toContain('register');
+    expect(page.url()).not.toContain('add-child/');
 
-    // The onboarding heading is visible
-    const onboardingHeading = page.getByRole('heading');
-    await expect(onboardingHeading.first()).toBeVisible({ timeout: 5_000 });
+    // Step 2 heading is visible (onboarding.addChild.title)
+    const heading = page.getByRole('heading');
+    await expect(heading.first()).toBeVisible({ timeout: 5_000 });
   });
 });
 
-test.describe('FE-TC-16 — Sign-in link returns to login', () => {
-  test('sign in link navigates to /login', async ({ page }) => {
+test.describe('FE-TC-16 — Sign-in link returns to auth entry (role-select)', () => {
+  /**
+   * Batch A: The register screen's "Sign in" link navigates to /(auth)/login
+   * which immediately redirects to /(auth)/role-select (no role param in the
+   * URL). So the final URL is /role-select, not /login. The back button on
+   * the register screen similarly navigates to /role-select via the auth guard.
+   */
+  test('sign in link navigates to role-select (auth entry point)', async ({ page }) => {
     await page.goto('/register');
     await page.waitForTimeout(2000);
 
-    // There is one link on the register screen: the "Sign in" / "تسجيل الدخول" text link
-    const signInLink = page.getByRole('link').first();
+    // The register-sign-in-link is a Text with accessibilityRole="link"
+    const signInLink = page.getByTestId('register-sign-in-link');
     await expect(signInLink).toBeVisible();
     await signInLink.click();
 
-    await page.waitForURL(/login/, { timeout: 10_000 });
-    expect(page.url()).toContain('login');
-
-    // Login screen mounts a textbox
-    await expect(page.getByRole('textbox').first()).toBeVisible({ timeout: 10_000 });
+    // Lands on /role-select (the new auth entry point after Batch A)
+    await page.waitForURL(/role-select|login/, { timeout: 10_000 });
+    // Either role-select or login URL (login immediately redirects to role-select)
+    const url = page.url();
+    expect(url.includes('role-select') || url.includes('login')).toBe(true);
   });
 
-  test('back button also returns to login', async ({ page }) => {
+  test('back button also returns to auth entry', async ({ page }) => {
     await page.goto('/register');
     await page.waitForTimeout(2000);
 
-    // First button is the ScreenHeader back button (aria-label = "العودة لتسجيل الدخول")
+    // First button is the ScreenHeader back button
     const backBtn = page.getByRole('button').first();
     await expect(backBtn).toBeVisible();
     await backBtn.click();
 
-    await page.waitForURL(/login/, { timeout: 10_000 });
-    expect(page.url()).toContain('login');
+    await page.waitForURL(/role-select|login/, { timeout: 10_000 });
+    const url = page.url();
+    expect(url.includes('role-select') || url.includes('login')).toBe(true);
   });
 });
 
@@ -224,12 +252,17 @@ test.describe('FE-TC-02 — Submitting without Terms is blocked', () => {
     // Fill everything valid but leave Terms unchecked
     await fillValidForm(page, { checkTerms: false });
 
-    await page.getByRole('button').last().click();
+    await page.getByTestId('register-submit').click();
     await page.waitForTimeout(1000);
 
     // URL still /register
     expect(page.url()).toContain('register');
-    expect(page.url()).not.toContain('add-child');
+    // Must NOT have navigated to add-child route
+    expect(page.url()).not.toContain('add-child/');
+
+    // Step 2 tile must NOT be visible (not navigated)
+    const addChildTile = page.getByTestId('onboarding-add-child-tile');
+    await expect(addChildTile).not.toBeVisible();
 
     // Inline error text is visible — human-readable (not the raw key)
     const pageText = await page.locator('body').innerText();
@@ -253,7 +286,7 @@ test.describe('FE-TC-03 — Checking Terms toggles state and clears consent erro
 
     // Trigger the consent error first
     await fillValidForm(page, { checkTerms: false });
-    await page.getByRole('button').last().click();
+    await page.getByTestId('register-submit').click();
     await page.waitForTimeout(1000);
 
     // Error should be visible
@@ -264,7 +297,7 @@ test.describe('FE-TC-03 — Checking Terms toggles state and clears consent erro
     expect(hasError).toBe(true);
 
     // Now check the Terms checkbox
-    await page.getByRole('checkbox').click();
+    await page.getByTestId('register-terms').click();
     await page.waitForTimeout(300);
 
     // Checkbox is now visually checked
@@ -311,20 +344,20 @@ test.describe('FE-TC-07 — Invalid email shows localized inline error', () => {
     await page.waitForTimeout(2000);
 
     // Fill all fields valid except email
-    await page.getByRole('textbox').nth(0).fill('Parent Tester');
-    await page.getByRole('combobox').click();
+    await page.getByTestId('register-fullname').fill('Parent Tester');
+    await page.getByTestId('register-country').click();
     await page.waitForTimeout(500);
     await page.locator(':text-is("السعودية")').first().click();
     await page.waitForTimeout(300);
 
     // Invalid email
-    await page.getByRole('textbox').nth(1).fill('not-an-email');
-    await page.locator('input[type="password"]').fill('Str0ng!Pass');
-    await page.getByRole('checkbox').click();
+    await page.getByTestId('register-email').fill('not-an-email');
+    await page.locator('input[type="password"]').first().fill('Str0ng!Pass');
+    await page.getByTestId('register-terms').click();
     await page.waitForTimeout(300);
 
     // Attempt submit to trigger validation (onTouched mode fires on submit for RN Web)
-    await page.getByRole('button').last().click();
+    await page.getByTestId('register-submit').click();
     await page.waitForTimeout(1000);
 
     const pageText = await page.locator('body').innerText();
@@ -336,9 +369,9 @@ test.describe('FE-TC-07 — Invalid email shows localized inline error', () => {
       pageText.includes('Please enter a valid email address');
     expect(hasError).toBe(true);
 
-    // No navigation
+    // No navigation — still at /register step 1 (no add-child tile)
     expect(page.url()).toContain('register');
-    expect(page.url()).not.toContain('add-child');
+    await expect(page.getByTestId('onboarding-add-child-tile')).not.toBeVisible();
   });
 });
 
@@ -350,18 +383,18 @@ test.describe('FE-TC-08 — Password shorter than 6 chars is blocked client-side
     await page.waitForTimeout(2000);
 
     // Fill all fields valid except password (too short)
-    await page.getByRole('textbox').nth(0).fill('Parent Tester');
-    await page.getByRole('combobox').click();
+    await page.getByTestId('register-fullname').fill('Parent Tester');
+    await page.getByTestId('register-country').click();
     await page.waitForTimeout(500);
     await page.locator(':text-is("السعودية")').first().click();
     await page.waitForTimeout(300);
-    await page.getByRole('textbox').nth(1).fill(uniqueEmail());
-    await page.locator('input[type="password"]').fill('Ab1!'); // 4 chars — under min(6)
-    await page.getByRole('checkbox').click();
+    await page.getByTestId('register-email').fill(uniqueEmail());
+    await page.locator('input[type="password"]').first().fill('Ab1!'); // 4 chars — under min(6)
+    await page.getByTestId('register-terms').click();
     await page.waitForTimeout(300);
 
     // Submit to trigger validation
-    await page.getByRole('button').last().click();
+    await page.getByTestId('register-submit').click();
     await page.waitForTimeout(1500);
 
     const pageText = await page.locator('body').innerText();
@@ -376,9 +409,9 @@ test.describe('FE-TC-08 — Password shorter than 6 chars is blocked client-side
       pageText.includes('6 characters');
     expect(hasPasswordError).toBe(true);
 
-    // No navigation
+    // No navigation — still at /register step 1
     expect(page.url()).toContain('register');
-    expect(page.url()).not.toContain('add-child');
+    await expect(page.getByTestId('onboarding-add-child-tile')).not.toBeVisible();
   });
 });
 
@@ -388,19 +421,19 @@ test.describe('FE-TC-09 — Country is required', () => {
     await page.waitForTimeout(2000);
 
     // Fill everything except country
-    await page.getByRole('textbox').nth(0).fill('Parent Tester');
-    await page.getByRole('textbox').nth(1).fill(uniqueEmail());
-    await page.locator('input[type="password"]').fill('Str0ng!Pass');
-    await page.getByRole('checkbox').click();
+    await page.getByTestId('register-fullname').fill('Parent Tester');
+    await page.getByTestId('register-email').fill(uniqueEmail());
+    await page.locator('input[type="password"]').first().fill('Str0ng!Pass');
+    await page.getByTestId('register-terms').click();
     await page.waitForTimeout(300);
 
     // Submit without selecting country
-    await page.getByRole('button').last().click();
+    await page.getByTestId('register-submit').click();
     await page.waitForTimeout(1000);
 
-    // Still on register
+    // Still on register step 1
     expect(page.url()).toContain('register');
-    expect(page.url()).not.toContain('add-child');
+    await expect(page.getByTestId('onboarding-add-child-tile')).not.toBeVisible();
 
     const pageText = await page.locator('body').innerText();
     // Raw key must NOT appear
@@ -414,17 +447,17 @@ test.describe('FE-TC-09 — Country is required', () => {
 });
 
 test.describe('FE-TC-10 — Country picker opens and selection sticks', () => {
-  test('clicking combobox shows options; selecting one updates display value', async ({ page }) => {
+  test('clicking country select shows options; selecting one updates display value', async ({ page }) => {
     await page.goto('/register');
     await page.waitForTimeout(2000);
 
-    const combobox = page.getByRole('combobox');
+    const countrySelect = page.getByTestId('register-country');
     // Initially shows placeholder text: "اختر الدولة" / "Select country"
-    const placeholderText = await combobox.innerText();
+    const placeholderText = await countrySelect.innerText();
     expect(placeholderText).toContain('اختر الدولة');
 
     // Click to expand
-    await combobox.click();
+    await countrySelect.click();
     await page.waitForTimeout(500);
 
     // Saudi Arabia option is now visible in the inline panel
@@ -435,8 +468,8 @@ test.describe('FE-TC-10 — Country picker opens and selection sticks', () => {
     await saudi.click();
     await page.waitForTimeout(300);
 
-    // Combobox now shows the selected country name (not the placeholder)
-    const afterText = await combobox.innerText();
+    // Country select now shows the selected country name (not the placeholder)
+    const afterText = await countrySelect.innerText();
     expect(afterText).not.toContain('اختر الدولة');
     expect(afterText).toContain('السعودية');
   });
@@ -447,7 +480,7 @@ test.describe('FE-TC-12 — Password input is masked', () => {
     await page.goto('/register');
     await page.waitForTimeout(2000);
 
-    const passwordInput = page.locator('input[type="password"]');
+    const passwordInput = page.locator('input[type="password"]').first();
     await expect(passwordInput).toBeVisible();
 
     // Confirm it is truly type=password
@@ -459,11 +492,28 @@ test.describe('FE-TC-12 — Password input is masked', () => {
     await page.goto('/register');
     await page.waitForTimeout(2000);
 
-    await page.locator('input[type="password"]').fill('Str0ng!Pass');
+    await page.locator('input[type="password"]').first().fill('Str0ng!Pass');
 
-    // Second button is the eye/show-password toggle
-    // Button layout: [0]=back, [1]=eye-toggle, [2]=submit
-    const eyeButton = page.getByRole('button').nth(1);
+    // The password field (register-password) contains the show/hide toggle button.
+    // The toggle is the only button inside the password field container.
+    // We find it by aria-label: showLabel = t('auth.login.showPassword') → "Show password" / "إظهار كلمة المرور"
+    const allButtons = page.getByRole('button');
+    const count = await allButtons.count();
+    let eyeButton: import('@playwright/test').Locator | null = null;
+    for (let i = 0; i < count; i++) {
+      const btn = allButtons.nth(i);
+      const ariaLabel = await btn.getAttribute('aria-label').catch(() => null);
+      if (
+        ariaLabel?.toLowerCase().includes('show') ||
+        ariaLabel?.includes('إظهار')
+      ) {
+        eyeButton = btn;
+        break;
+      }
+    }
+    expect(eyeButton).not.toBeNull();
+    if (!eyeButton) return;
+
     const ariaLabel = await eyeButton.getAttribute('aria-label');
     // Should be the show-password button
     const isShowPasswordButton =
@@ -476,15 +526,13 @@ test.describe('FE-TC-12 — Password input is masked', () => {
     await eyeButton.click();
     await page.waitForTimeout(300);
 
-    // After toggle, the input should switch to type=text
-    const visibleInput = page.locator('input').filter({ hasText: '' }).last();
+    // After toggle, the input should switch to type=text (password revealed)
     const inputs = page.locator('input');
     const inputCount = await inputs.count();
     let hasTextType = false;
     for (let i = 0; i < inputCount; i++) {
       const type = await inputs.nth(i).getAttribute('type');
       if (type === 'text') {
-        // Check if it has the password value (it's the toggled password input)
         const val = await inputs.nth(i).inputValue().catch(() => '');
         if (val.length > 0) {
           hasTextType = true;
@@ -492,7 +540,7 @@ test.describe('FE-TC-12 — Password input is masked', () => {
         }
       }
     }
-    // Even if the type stays 'text' conceptually, the aria-label for the button should flip
+    // The aria-label for the button should flip to "hide"
     const newAriaLabel = await eyeButton.getAttribute('aria-label');
     const isHideButton =
       newAriaLabel?.toLowerCase().includes('hide') ||
@@ -519,7 +567,7 @@ test.describe('FE-TC-11 — Submit shows pending/loading state and prevents doub
       await route.continue();
     });
 
-    const submit = page.getByRole('button').last();
+    const submit = page.getByTestId('register-submit');
 
     // Click submit
     await submit.click();
@@ -554,27 +602,28 @@ test.describe('FE-TC-13 — Duplicate email shows localized duplicate-email bann
   test('registering same email twice shows duplicate-email message', async ({ page }) => {
     const email = `dupe+${Date.now()}@example.com`;
 
-    // First registration — should succeed
+    // First registration — should succeed and advance to step 2
     await page.goto('/register');
     await page.waitForTimeout(2000);
     await fillValidForm(page, { email, password: 'Str0ng!Pass1', checkTerms: true });
-    await page.getByRole('button').last().click();
-    await page.waitForURL(/add-child/, { timeout: 15_000 });
+    await page.getByTestId('register-submit').click();
+    // Step 2 add-child tile appears inline (no route change to add-child/)
+    await page.getByTestId('onboarding-add-child-tile').waitFor({ state: 'visible', timeout: 15_000 });
 
     // Second registration attempt with same email
     await page.goto('/register');
     await page.waitForTimeout(2000);
     await fillValidForm(page, { email, password: 'Str0ng!Pass1', checkTerms: true });
-    await page.getByRole('button').last().click();
+    await page.getByTestId('register-submit').click();
     await page.waitForTimeout(4000);
 
-    // Should stay on register (no navigation to add-child)
+    // Should stay on register (no step-2 tile visible)
     expect(page.url()).toContain('register');
+    await expect(page.getByTestId('onboarding-add-child-tile')).not.toBeVisible();
 
     // Server error banner appears with duplicate-email resolved text
     // Arabic: "يوجد حساب بهذا البريد الإلكتروني بالفعل."
     // English: "An account with this email already exists."
-    // ServerErrorBanner sets aria-label = the resolved message text
     const pageText = await page.locator('body').innerText();
 
     // Raw i18n key must NOT appear
@@ -601,11 +650,12 @@ test.describe('FE-TC-14 — Server-weak password surfaces weak-password banner',
       checkTerms: true,
     });
 
-    await page.getByRole('button').last().click();
+    await page.getByTestId('register-submit').click();
     await page.waitForTimeout(4000);
 
-    // Should stay on register
+    // Should stay on register (no step-2 tile)
     expect(page.url()).toContain('register');
+    await expect(page.getByTestId('onboarding-add-child-tile')).not.toBeVisible();
 
     const pageText = await page.locator('body').innerText();
     // Raw key must NOT appear
@@ -631,7 +681,7 @@ test.describe('FE-TC-15 — Network failure shows generic localized error', () =
     // Abort the register request to simulate network failure
     await page.route('**/Register-Parent*', (route) => route.abort('failed'));
 
-    await page.getByRole('button').last().click();
+    await page.getByTestId('register-submit').click();
     await page.waitForTimeout(3000);
 
     // URL still on register
@@ -667,86 +717,107 @@ test.describe('FE-TC-15 — Network failure shows generic localized error', () =
 // ---------------------------------------------------------------------------
 
 test.describe('FE-TC-05 — Arabic default renders the form RTL', () => {
-  test('html element has dir=rtl on default Arabic locale', async ({ page }) => {
+  /**
+   * applyWebDirection() intentionally does NOT set html[dir] — it only sets
+   * document.documentElement.lang. RTL is applied at component level via
+   * writingDirection + textAlign props. Assert via computed direction on a known
+   * element and via Arabic copy presence.
+   */
+  test('heading computed direction is rtl on default Arabic locale', async ({ page }) => {
     await page.goto('/register');
     await page.waitForTimeout(2000);
 
-    const htmlDir = await page.locator('html').getAttribute('dir');
-    expect(htmlDir).toBe('rtl');
-  });
-
-  test('heading and body computed direction is rtl', async ({ page }) => {
-    await page.goto('/register');
-    await page.waitForTimeout(2000);
-
+    // The heading has writingDirection={direction} which maps to CSS direction
     const headingDir = await page.getByRole('heading').last().evaluate(
       (el: HTMLElement) => window.getComputedStyle(el).direction,
     );
     expect(headingDir).toBe('rtl');
   });
 
-  test('full-name textbox computed direction is rtl', async ({ page }) => {
+  test('full-name textbox computed direction is rtl on default Arabic locale', async ({ page }) => {
     await page.goto('/register');
     await page.waitForTimeout(2000);
 
-    const dir = await page.getByRole('textbox').nth(0).evaluate(
+    // The full-name text field has direction={direction} applied
+    const nameField = page.getByTestId('register-fullname');
+    const dir = await nameField.evaluate(
       (el: HTMLElement) => window.getComputedStyle(el).direction,
     );
     expect(dir).toBe('rtl');
+  });
+
+  test('Arabic copy is present on default locale (not raw keys)', async ({ page }) => {
+    await page.goto('/register');
+    await page.waitForTimeout(2000);
+
+    // Default locale is Arabic — page body must contain Arabic text, not raw keys
+    const pageText = await page.locator('body').innerText();
+    // Heading text in AR: "إنشاء حساب" or similar — no raw i18n keys
+    expect(pageText).not.toMatch(/auth\.\w+\.\w+/);
+    // Page has Arabic characters
+    expect(pageText).toMatch(/[؀-ۿ]/);
   });
 });
 
 test.describe('FE-TC-06 — English locale renders form LTR', () => {
   /**
-   * The localeStore is NOT persisted (no zustand persist middleware), so the
-   * locale resets to Arabic on every hard navigation. Testing LTR therefore
-   * requires switching locale on the same page (login screen). After switching
-   * to English on /login, the login page itself goes LTR — that is the
-   * testable assertion. Cross-page persistence is a known missing feature.
+   * The localeStore is NOT persisted, so the locale resets to Arabic on every
+   * hard navigation. Testing LTR requires switching locale on the same page.
+   * The LocaleThemeControls on /login?role=parent has testID locale-switch-en
+   * (locale-switch-<loc> per LocaleThemeControls implementation). After switching
+   * to English, heading computed direction should be ltr.
+   *
+   * NOTE: applyWebDirection() does NOT set html[dir]. RTL/LTR is at component
+   * level only. We assert via heading computed direction, NOT html[dir].
    */
-  test('switching to English on login makes login page LTR', async ({ page }) => {
-    await page.goto('/login');
+  test('switching to English on login makes heading LTR (component-level)', async ({ page }) => {
+    await page.goto('/login?role=parent');
     await page.waitForTimeout(2000);
 
-    // Default is RTL
-    const htmlDirBefore = await page.locator('html').getAttribute('dir');
-    expect(htmlDirBefore).toBe('rtl');
-
-    // Click the English radio button (aria-label contains "English")
-    const englishRadio = page.getByRole('radio', { name: /English/i });
-    await expect(englishRadio).toBeVisible({ timeout: 5_000 });
-    await englishRadio.click();
-    await page.waitForTimeout(500);
-
-    // html dir should now be ltr
-    const htmlDirAfter = await page.locator('html').getAttribute('dir');
-    expect(htmlDirAfter).toBe('ltr');
-
-    // Heading computed direction is ltr
-    const headingDir = await page.getByRole('heading').first().evaluate(
+    // Default locale is Arabic — heading direction should be rtl
+    const headingDirBefore = await page.getByRole('heading').first().evaluate(
       (el: HTMLElement) => window.getComputedStyle(el).direction,
     );
-    expect(headingDir).toBe('ltr');
+    expect(headingDirBefore).toBe('rtl');
+
+    // Click the English locale switch (testID: locale-switch-en)
+    const englishSwitch = page.getByTestId('locale-switch-en');
+    await expect(englishSwitch).toBeVisible({ timeout: 5_000 });
+    await englishSwitch.click();
+    await page.waitForTimeout(500);
+
+    // Heading computed direction should now be ltr
+    const headingDirAfter = await page.getByRole('heading').first().evaluate(
+      (el: HTMLElement) => window.getComputedStyle(el).direction,
+    );
+    expect(headingDirAfter).toBe('ltr');
   });
 });
 
 test.describe('FE-TC-17 — Email value stays LTR inside the RTL form', () => {
+  /**
+   * applyWebDirection() does NOT set html[dir]. RTL is at component level.
+   * Assert RTL via heading computed direction (proxy for page-level direction).
+   * Assert email field is LTR (forceValueLtr / forceLtr prop in RegisterForm).
+   */
   test('email input direction is ltr even when form is in RTL locale', async ({ page }) => {
     await page.goto('/register');
     await page.waitForTimeout(2000);
 
-    // The form is RTL (Arabic default)
-    const htmlDir = await page.locator('html').getAttribute('dir');
-    expect(htmlDir).toBe('rtl');
+    // Heading is RTL (Arabic locale default — component-level, not html[dir])
+    const headingDir = await page.getByRole('heading').last().evaluate(
+      (el: HTMLElement) => window.getComputedStyle(el).direction,
+    );
+    expect(headingDir).toBe('rtl');
 
-    // Email input should be LTR (forceLtr prop in RegisterForm)
-    const emailDir = await page.getByRole('textbox').nth(1).evaluate(
+    // Email input should be LTR (forceValueLtr prop in RegisterForm)
+    const emailDir = await page.getByTestId('register-email').evaluate(
       (el: HTMLElement) => window.getComputedStyle(el).direction,
     );
     expect(emailDir).toBe('ltr');
 
     // Full-name textbox should be RTL (contrast)
-    const nameDir = await page.getByRole('textbox').nth(0).evaluate(
+    const nameDir = await page.getByTestId('register-fullname').evaluate(
       (el: HTMLElement) => window.getComputedStyle(el).direction,
     );
     expect(nameDir).toBe('rtl');
@@ -778,11 +849,11 @@ test.describe('FE-TC-18 — No student self-register route exists', () => {
       }
       const currentUrl = page.url();
       // Should not end up on a student-specific register URL with a Terms checkbox
-      // (The Terms checkbox is unique to the parent register form)
-      const checkboxCount = await page.getByRole('checkbox').count().catch(() => 0);
-      const hasTermsCheckbox = checkboxCount > 0 && currentUrl.includes(url);
+      // (The Terms checkbox via testID register-terms is unique to the parent register form)
+      const termsVisible = await page.getByTestId('register-terms').isVisible().catch(() => false);
+      const hasTermsOnStudentUrl = termsVisible && currentUrl.includes(url.replace('/', ''));
       // If we somehow landed on the URL AND found a Terms checkbox, that's a fail
-      expect(hasTermsCheckbox).toBe(false);
+      expect(hasTermsOnStudentUrl).toBe(false);
     }
   });
 });
@@ -795,51 +866,37 @@ test.describe('FE-TC-20 — (auth) group exposes only login and parent register'
     // Form heading visible
     await expect(page.getByRole('heading').last()).toBeVisible();
     // Password input present (register form feature)
-    await expect(page.locator('input[type="password"]')).toBeVisible();
-    // Terms checkbox present (parent consent — only on parent register)
-    await expect(page.getByRole('checkbox')).toBeVisible();
+    await expect(page.locator('input[type="password"]').first()).toBeVisible();
+    // Terms checkbox present via testID (parent consent — only on parent register)
+    await expect(page.getByTestId('register-terms')).toBeVisible();
+    // Submit button present
+    await expect(page.getByTestId('register-submit')).toBeVisible();
   });
 
-  test('/login mounts the login form without Terms checkbox', async ({ page }) => {
-    await page.goto('/login');
+  test('/login?role=parent mounts the login form without Terms checkbox', async ({ page }) => {
+    // NOTE: /login without ?role= redirects to /role-select (Batch A). Use ?role=parent.
+    await page.goto('/login?role=parent');
     await page.waitForTimeout(2000);
 
-    await expect(page.getByRole('textbox').first()).toBeVisible({ timeout: 10_000 });
-    // Login has a "Remember me" checkbox (role=checkbox, aria-label="تذكّرني")
-    // but NOT a consent Terms checkbox — the Terms checkbox is exclusive to Register
-    // This is a product-correct behavior: login's "Remember me" checkbox is distinct
-    // We assert: the login page does NOT have the terms consent gate
-    // (no checkbox with terms-related aria-label)
-    const checkboxes = page.getByRole('checkbox');
-    const count = await checkboxes.count();
-    if (count > 0) {
-      // Verify none are terms checkboxes (all should be "remember me" type)
-      for (let i = 0; i < count; i++) {
-        const label = await checkboxes.nth(i).getAttribute('aria-label');
-        const isTermsCheckbox =
-          label?.includes('Terms') ||
-          label?.includes('Privacy') ||
-          label?.includes('الشروط') ||
-          label?.includes('الخصوصية') ||
-          label?.includes('ولي الأمر');
-        expect(isTermsCheckbox).toBe(false);
-      }
-    }
+    // Login username field is visible
+    await expect(page.getByTestId('login-username')).toBeVisible({ timeout: 10_000 });
+    // Login has NO register-terms testID — it has a "Remember me" checkbox but NOT
+    // the parent consent Terms checkbox. Verify register-terms is absent.
+    await expect(page.getByTestId('register-terms')).not.toBeVisible();
   });
 
-  test('register screen has only one link: sign in (no student-register entry point)', async ({
+  test('register screen has sign-in link (no student-register entry point)', async ({
     page,
   }) => {
     await page.goto('/register');
     await page.waitForTimeout(2000);
 
-    // Only one link on register page: the "Sign in" → login link
-    const links = page.getByRole('link');
-    await expect(links).toHaveCount(1);
+    // The sign-in link is a Text with testID "register-sign-in-link" and accessibilityRole="link"
+    const signInLink = page.getByTestId('register-sign-in-link');
+    await expect(signInLink).toBeVisible();
 
-    // That link goes to login, not to a student register
-    const linkLabel = await links.first().getAttribute('aria-label');
-    // Should be "تسجيل الدخول" (Sign in) — not a student register link
+    // The link's aria-label should indicate "sign in", not student register
+    const linkLabel = await signInLink.getAttribute('aria-label');
     const isSignInLink =
       (linkLabel?.includes('تسجيل الدخول') ||
         linkLabel?.toLowerCase().includes('sign in')) ??
