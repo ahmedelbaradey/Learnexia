@@ -81,7 +81,8 @@ export function useGroupGuard(group: GroupName): GroupGuardState {
     if (isResolving) return;
 
     if (status === 'signed-out') {
-      router.replace('/(auth)/login');
+      // Signed-out goes to Role Select (the pre-login default), matching useAuthRoute.
+      router.replace('/(auth)/role-select');
       return;
     }
 
@@ -105,7 +106,9 @@ export function useGroupGuard(group: GroupName): GroupGuardState {
         if (!data.hasChildren) {
           router.replace('/(onboarding)/add-child');
         } else {
-          router.replace('/(parent)/overview');
+          // Parents land on My Children (Overview is the per-child view now),
+          // matching useAuthRoute.
+          router.replace('/(parent)/children');
         }
       }
       // Correct group: student in (child) — no redirect.
