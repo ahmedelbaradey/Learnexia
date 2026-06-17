@@ -58,6 +58,20 @@ public class SubscriptionConfig : IEntityTypeConfiguration<Subscription>
             .HasConversion<int?>()
             .IsRequired(false);
 
+        // ── P10-14: Extra seats purchased add-on ─────────────────────────────────────
+        builder.Property(x => x.PurchasedExtraSeats)
+            .IsRequired()
+            .HasDefaultValue(0);
+
+        // ── P10-14-BE-8: scheduled (cycle-end) extra-seat cancellation marker ─────────
+        builder.Property(x => x.PendingExtraSeatRemovals)
+            .IsRequired()
+            .HasDefaultValue(0);
+
+        builder.Property(x => x.ExtraSeatCancelEffectiveAt)
+            .HasColumnType("timestamptz")
+            .IsRequired(false);
+
         // ── P10-09: Dunning fields ────────────────────────────────────────────────────
         builder.Property(x => x.FailedAttemptCount)
             .IsRequired()

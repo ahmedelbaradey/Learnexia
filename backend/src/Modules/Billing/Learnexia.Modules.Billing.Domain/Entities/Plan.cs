@@ -25,4 +25,13 @@ public class Plan : FullAuditedEntity
 
     /// <summary>Whether this plan is currently offered to new subscribers.</summary>
     public bool IsActive { get; set; } = true;
+
+    // ── P10-14: Seat entitlement ─────────────────────────────────────────────────
+
+    /// <summary>
+    /// Number of child seats included in this plan tier at no extra cost (P10-14-BE-1).
+    /// Config-seeded per tier: Free = 1, Premium = 3 (OQ-C — locked 2026-06-16).
+    /// Resolved from <c>GlobalSettings</c> via seed; never hard-coded in business logic.
+    /// </summary>
+    public int IncludedSeats { get; set; }
 }

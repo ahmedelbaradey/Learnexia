@@ -10,4 +10,7 @@ public enum PaymentKind
 
     /// <summary>A one-off energy-pack purchase for a specific child.</summary>
     Pack = 1,
+
+    /// <summary>A monthly extra-seat add-on purchase (P10-14). Confirmed via the provider webhook only.</summary>
+    Seat = 2,
 }

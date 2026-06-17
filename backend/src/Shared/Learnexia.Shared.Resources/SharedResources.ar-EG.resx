@@ -2378,4 +2378,32 @@
   <data name="FamilyEnergyPackCredited" xml:space="preserve">
     <value>تم إضافة حزمة الطاقة إلى محفظة العائلة بنجاح.</value>
   </data>
+  <!-- P10-14 Seats & seat-reserved add-child -->
+  <data name="NoFreeSeatAvailable" xml:space="preserve">
+    <value>لا توجد مقعد متاح. يرجى شراء مقعد إضافي قبل إضافة طفل جديد.</value>
+  </data>
+  <data name="SeatCheckoutSessionCreated" xml:space="preserve">
+    <value>تم إنشاء جلسة دفع للمقاعد. يرجى إتمام الدفع لتفعيل المقاعد الإضافية.</value>
+  </data>
+  <data name="SeatCheckoutExceedsMaxSeats" xml:space="preserve">
+    <value>إضافة هذه المقاعد ستتجاوز الحد الأقصى المسموح به للعائلة. يرجى تقليل الكمية.</value>
+  </data>
+  <data name="SeatCheckoutFreePlanNotAllowed" xml:space="preserve">
+    <value>شراء مقاعد إضافية غير متاح في الخطة المجانية. يرجى الترقية إلى الخطة المدفوعة أولاً.</value>
+  </data>
+  <data name="SeatCheckoutQuantityRequired" xml:space="preserve">
+    <value>يجب أن تكون كمية المقاعد عدداً صحيحاً موجباً.</value>
+  </data>
+  <data name="SeatStatusRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد حالة المقاعد بنجاح.</value>
+  </data>
+  <data name="SeatCancelledSuccessfully" xml:space="preserve">
+    <value>تم إلغاء المقعد الإضافي. سيدخل التغيير حيز التنفيذ بعد انتهاء فترة السماح الحالية.</value>
+  </data>
+  <data name="SeatCancelInsufficientExtraSeats" xml:space="preserve">
+    <value>لا تملك هذا العدد من المقاعد الإضافية المشتراة للإلغاء.</value>
+  </data>
+  <data name="SeatPurchaseConfirmed" xml:space="preserve">
+    <value>تم تأكيد شراء المقعد الإضافي. أصبحت مقاعدك الجديدة نشطة الآن.</value>
+  </data>
 </root>

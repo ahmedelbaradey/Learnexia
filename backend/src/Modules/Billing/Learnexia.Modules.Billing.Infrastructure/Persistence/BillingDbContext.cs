@@ -44,6 +44,9 @@ public class BillingDbContext : DbContext, IBillingDbContext
     public DbSet<ChildEnergyAllocation> ChildEnergyAllocations => Set<ChildEnergyAllocation>();
     public DbSet<ChildDailyUsage> ChildDailyUsages => Set<ChildDailyUsage>();
 
+    // P10-14 seat reservation entity.
+    public DbSet<SeatReservation> SeatReservations => Set<SeatReservation>();
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 

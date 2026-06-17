@@ -12,6 +12,7 @@
 - `â€”` â€” no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
+- **P10-14 (Backend + Tests)** — Child seats model: Subscription.IncludedSeats/PurchasedExtraSeats + Plan.IncludedSeats + SeatReservation state machine (Initiated→Reserved→Active|Cancelled). Parent add-child reserve-before-create pattern (via ISubscriptionSeatContract cross-module seam); 409+no-child on no free seat. Webhook seat branch: inline seats.max ceiling guard + per-payment Status==Initiated idempotency (single-tx, no energy mint). Mid-cycle MONEY proration (SeatPrice × qty × remaining-cycle-ratio, server-side, legacy-timestamp Kind normalization). Cycle-end cancel via PendingExtraSeatRemovals marker (no grace, no energy reclaim). Regression fixes: WEBHOOK-SEAT-04 ceiling, 10 stale-seed tests, TC-GS-04 17→21 renamed. Tests: P10_14 22/22, blast-radius 191/191 (P10_14+P10_13+P1_03+P2_12+P10_01_12), Billing unit 93/93, Ai unit 287/287, build 0 errors. Security-auditor PASS (High #1 fixed; Med #2 removed; Med #3 deferred P10-15 + rationale). Reviewer PASS. Known-red CI (pre-existing, not this PR): ~19 AI-SSE tests (LLM keys), BE-TC-24 (comments), BE-TC-19b (assertion). Stacked on #158 (base feat/P10-13). — committed
 - **Wave 3:** P10-05 (subscription plans — Plan + Subscription + RealBillingSubscriptionContract family tier via IParentChildQuery, upgrade/downgrade/cancel state machine IDOR-scoped endpoints) + P10-06 (pay-for-subscription — IPaymentProvider + FakePaymentProvider (config-selected) + Payment + WebhookEvent + checkout idempotency + signature-gated webhook verify-before-mutation HMAC FixedTimeEquals + ProviderEventId replay dedup + server-side amount/tier check → SubscriptionActivatedIntegrationEvent → grant; ReconcilePaymentsJob). 2 migrations BillingPlansSubscriptions + AddPaymentAndWebhookTables. Test-infra: SQLite :memory: for txn tests. Tests: Billing 67/67, W3 integration 20/20 (SubscriptionPayment), regressions green (W2 energy 21, AI E2E 24, W1 Billing 19). Reviewer PASS + mandatory security gate PASS (0 blocking; signature verify before mutation, idempotent under concurrency, forged amount no escalate). Go-live follow-ups (HANDOFF): webhook amount alerting, provider fail-fast, body-size/rate cap. — committed
 - **P7-12 (Backend + Tests)** — Curriculum admin creates now produce audit rows (real entity id via ILearningRepository.FlushAsync pattern) + OccurredAtUtc UTC normalization at read boundary + LoggerManager.LogError exception logging fix. Bucket C + D defects found during verify pass now fixed. P7-12 audit 22/22, full P7 410/414 (4 pre-existing/flaky). Reviewer PASS + security-auditor PASS + completeness-critic PASS. — committed
 - **P7-07 (Backend + Tests)** — Account-delete cascade 500 + post-commit side-effect ordering + refresh guard bugfix (nested txn removed; Identity-scoped post-commit domain-event buffer for session revocation + event publishing on commit; RefreshToken rejects suspended/deleted before minting). P7-07 integration 22/22, P1-02 refresh 26/26, Identity unit 10/10. Reviewer PASS + mandatory security gate PASS. — committed
@@ -158,7 +159,7 @@
 | P8-04 | Change a child's learning language (parent-only, fresh start) | âœ… | ðŸŸ¡ |
 
 ## Phase 10 - Payment, Billing & Credits *(story IDs `P10-xx`, post-MVP)*
-> Task breakdown authored 2026-06-13 (PR #124) - **all ✅ not started; planning only.** AI credit economy ("⚡ طاقة المساعد") + monetization; **parent-driven** (web checkout, no native IAP); new `Billing` module owns the dual-pool ledger + subscriptions + payments; Global Settings (P10-12) makes the economy runtime-tunable. **Renumbered from Phase 9** (which `main` owns as **Notifications**) - files under `*/Phase-10-Payments-Billing/`. `P10-03` (spend) is hard-blocked on the AI Helper cluster (P3-01..06).
+> Task breakdown authored 2026-06-13 (PR #124). AI credit economy ("⚡ طاقة المساعد") + monetization; **parent-driven** (web checkout, no native IAP); new `Billing` module owns the dual-pool ledger + subscriptions + payments; Global Settings (P10-12) makes the economy runtime-tunable. **Renumbered from Phase 9** (which `main` owns as **Notifications**) - files under `*/Phase-10-Payments-Billing/`. `P10-03` (spend) is hard-blocked on the AI Helper cluster (P3-01..06). **Stacked wave (PRs #157 → #158 → #159):** P10-12 intake + P10-13 (family wallet) + P10-14 (child seats & add-child) + P10-15/16/18 (enforcement, redistribution, pause).
 | Story | Title | Backend | Frontend |
 |---|---|:--:|:--:|
 | P10-01 | Credit (energy) account & ledger *(enabler)* | ✅ | — |
@@ -173,7 +174,11 @@
 | P10-10 | Kid-facing energy UI (⚡ read-only) | — | ✅ |
 | P10-11 | Admin: configure plans, grants & costs | ✅ | ✅ |
 | P10-12 | Runtime config via Global Settings *(enabler)* | ✅ | — |
-
+| P10-13 | Family wallet (shared budget: per-child seat reservation, cycle-cumulative spend) | ✅ | ✅ |
+| P10-14 | Child seats & seat-reserved add-child (seat model, mid-cycle money proration, cycle-end cancel) | 🟡 | — |
+| P10-15 | Seat enforcement, grace period & NoSeat/Locked lifecycle | 🔲 | 🔲 |
+| P10-16 | Family energy redistribution | 🔲 | 🔲 |
+| P10-18 | Pause child access | 🔲 | 🔲 |
 ## Backlog (Phase 2+) â€” Curriculum Intelligence
 | Story | Title | Status |
 |---|---|:--:|

@@ -67,6 +67,16 @@ public static class GlobalSettingKeys
     /// <summary>Hours between dunning retry attempts. Default = 24.</summary>
     public const string DunningRetryIntervalHours = "dunning.retry_interval_hours";
 
+    // ── P10-14 Seat configuration (OQ-C / OQ-D — locked 2026-06-16) ─────────────
+    /// <summary>Number of child seats included in the Free plan tier. Default = 1.</summary>
+    public const string SeatsIncludedFree    = "seats.included_free";
+    /// <summary>Number of child seats included in the Premium plan tier. Default = 3.</summary>
+    public const string SeatsIncludedPremium = "seats.included_premium";
+    /// <summary>Hard ceiling on total seats (included + purchased) per family. Default = 5.</summary>
+    public const string SeatsMax             = "seats.max";
+    /// <summary>Monthly price in EGP for one extra seat add-on. Default = 169.</summary>
+    public const string SeatsExtraPriceEgp   = "seats.extra_price_egp";
+
     // ── Allowlist: all keys that are admin-editable (validator + update command use this) ──────
     public static readonly IReadOnlySet<string> ManagedKeys = new HashSet<string>(StringComparer.Ordinal)
     {
@@ -89,5 +99,9 @@ public static class GlobalSettingKeys
         FxUsdExchangeRateBuffer,
         DunningMaxRetries,
         DunningRetryIntervalHours,
+        SeatsIncludedFree,
+        SeatsIncludedPremium,
+        SeatsMax,
+        SeatsExtraPriceEgp,
     };
 }

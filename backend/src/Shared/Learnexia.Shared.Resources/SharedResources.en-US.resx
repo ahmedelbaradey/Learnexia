@@ -2379,4 +2379,32 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="FamilyEnergyPackCredited" xml:space="preserve">
     <value>Energy pack credited to family wallet successfully.</value>
   </data>
+  <!-- P10-14 Seats & seat-reserved add-child -->
+  <data name="NoFreeSeatAvailable" xml:space="preserve">
+    <value>No free seat is available. Please purchase an extra seat before adding a new child.</value>
+  </data>
+  <data name="SeatCheckoutSessionCreated" xml:space="preserve">
+    <value>Seat checkout session created. Please complete the payment to activate your extra seats.</value>
+  </data>
+  <data name="SeatCheckoutExceedsMaxSeats" xml:space="preserve">
+    <value>Adding these seats would exceed the maximum allowed seats per family. Please reduce the quantity.</value>
+  </data>
+  <data name="SeatCheckoutFreePlanNotAllowed" xml:space="preserve">
+    <value>Extra seat purchases are not available on the Free plan. Please upgrade to Premium first.</value>
+  </data>
+  <data name="SeatCheckoutQuantityRequired" xml:space="preserve">
+    <value>Seat quantity must be a positive integer.</value>
+  </data>
+  <data name="SeatStatusRetrievedSuccessfully" xml:space="preserve">
+    <value>Seat status retrieved successfully.</value>
+  </data>
+  <data name="SeatCancelledSuccessfully" xml:space="preserve">
+    <value>Extra seat cancelled. The change will take effect after the current grace period ends.</value>
+  </data>
+  <data name="SeatCancelInsufficientExtraSeats" xml:space="preserve">
+    <value>You do not have that many purchased extra seats to cancel.</value>
+  </data>
+  <data name="SeatPurchaseConfirmed" xml:space="preserve">
+    <value>Extra seat purchase confirmed. Your new seats are now active.</value>
+  </data>
 </root>

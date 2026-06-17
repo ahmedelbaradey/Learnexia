@@ -560,8 +560,8 @@ public sealed class P10_01_12_Billing_IntegrationTests : IAsyncLifetime
     /// Verifies AI action costs (Hint=1, WhyWrong=2, Explain=3, Practice=5),
     /// cache thresholds, credit pools, subscription pricing, and FX defaults.
     /// </summary>
-    [Fact(DisplayName = "TC-GS-04 SeedVerification: all 17 seeded keys present with correct Phase-10 economy values")]
-    public async Task TC_GS_04_SeedVerification_All17Keys_Present_WithCorrectValues()
+    [Fact(DisplayName = "TC-GS-04 SeedVerification: all 21 seeded keys present with correct Phase-10 economy values")]
+    public async Task TC_GS_04_SeedVerification_All21Keys_Present_WithCorrectValues()
     {
         var adminToken = await GetAdminTokenAsync();
         var (resp, root, body) = await SendAsync(HttpMethod.Get, GlobalSettingsUrl, null, adminToken);
@@ -572,8 +572,9 @@ public sealed class P10_01_12_Billing_IntegrationTests : IAsyncLifetime
         TryProp(root, "data", out var data).Should().BeTrue($"body: {body}");
         var settings = data.EnumerateArray().ToList();
 
-        settings.Count.Should().Be(17,
-            $"GlobalSettingsSeeder must produce exactly 17 rows; found {settings.Count}. body: {body}");
+        // 17 Phase-10 economy keys + 4 P10-14 seat keys (seats.included_free/premium, seats.max, seats.extra_price_egp).
+        settings.Count.Should().Be(21,
+            $"GlobalSettingsSeeder must produce exactly 21 rows; found {settings.Count}. body: {body}");
 
         // Build a lookup by key.
         var dict = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -673,6 +674,27 @@ public sealed class P10_01_12_Billing_IntegrationTests : IAsyncLifetime
             $"FX exchange rate buffer key must be seeded; body: {body}");
         dict["fx.usd_exchange_rate_buffer"].Should().Be("1.10",
             $"FX exchange rate buffer must default to 1.10; body: {body}");
+
+        // ── P10-14 Seat configuration (locked 2026-06-16) ──
+        dict.Should().ContainKey("seats.included_free",
+            $"seats.included_free key must be seeded; body: {body}");
+        dict["seats.included_free"].Should().Be("1",
+            $"Free plan included seats must default to 1; body: {body}");
+
+        dict.Should().ContainKey("seats.included_premium",
+            $"seats.included_premium key must be seeded; body: {body}");
+        dict["seats.included_premium"].Should().Be("3",
+            $"Premium plan included seats must default to 3; body: {body}");
+
+        dict.Should().ContainKey("seats.max",
+            $"seats.max key must be seeded; body: {body}");
+        dict["seats.max"].Should().Be("5",
+            $"max seats ceiling must default to 5; body: {body}");
+
+        dict.Should().ContainKey("seats.extra_price_egp",
+            $"seats.extra_price_egp key must be seeded; body: {body}");
+        dict["seats.extra_price_egp"].Should().Be("169.00",
+            $"extra-seat monthly price must default to 169.00 EGP; body: {body}");
     }
 
     [Fact(DisplayName = "TC-GS-05 Update+Reflect: PUT GlobalSettings/{key} as Admin → 200; subsequent GET reflects new value (proves DB + cache invalidation)")]

@@ -357,6 +357,7 @@ public sealed class P1_03_AddChild_Tests : IAsyncLifetime
     public async Task AC2_MultipleChildren_BothAppearInMyChildren()
     {
         var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        await SeatTestSupport.GrantSeatsAsync(_factory, parentToken); // P10-14 seat gate: 2 children need ≥2 seats
         var childEmail1 = UniqueEmail("child1");
         var childEmail2 = UniqueEmail("child2");
 
@@ -386,6 +387,7 @@ public sealed class P1_03_AddChild_Tests : IAsyncLifetime
     public async Task AC2_MultipleChildren_EachHasDistinctId()
     {
         var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        await SeatTestSupport.GrantSeatsAsync(_factory, parentToken); // P10-14 seat gate: 2 children need ≥2 seats
         var email1 = UniqueEmail("child1");
         var email2 = UniqueEmail("child2");
 
@@ -411,6 +413,7 @@ public sealed class P1_03_AddChild_Tests : IAsyncLifetime
     public async Task AC7_DuplicateEmail_Returns400_WithSuccessedFalse()
     {
         var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        await SeatTestSupport.GrantSeatsAsync(_factory, parentToken); // P10-14 seat gate: duplicate add reserves a 2nd seat before the dup-email check
         var childEmail = UniqueEmail("child");
 
         // First call — must succeed
@@ -1041,6 +1044,7 @@ public sealed class P1_03_AddChild_Tests : IAsyncLifetime
     public async Task BETC05_DuplicateAfterSibling_DoesNotUndoSibling()
     {
         var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        await SeatTestSupport.GrantSeatsAsync(_factory, parentToken); // P10-14 seat gate: 1 real child + duplicate add need ≥2 seats
         var email1 = UniqueEmail("child1");
         var email2 = email1; // same email — duplicate
 
@@ -1481,6 +1485,10 @@ public sealed class P1_03_AddChild_Tests : IAsyncLifetime
     {
         var parentAToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parentA"));
         var parentBToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parentB"));
+        // P10-14 seat gate: parent-A adds a real child then several duplicate attempts (each reserves
+        // a seat before the dup-email check) — provision enough seats for both parents.
+        await SeatTestSupport.GrantSeatsAsync(_factory, parentAToken);
+        await SeatTestSupport.GrantSeatsAsync(_factory, parentBToken);
         var parentAEmail = UniqueEmail("parentAEmail");
         // Register a third parent to get a "parent email" we can try to use
         await RegisterParentAndGetTokenAsync(parentAEmail);
@@ -1607,6 +1615,9 @@ public sealed class P1_03_AddChild_Tests : IAsyncLifetime
     public async Task BETC29_SuperAdmin_AddChild_ChildLinkedToSuperAdmin()
     {
         var adminToken = await SignInAndGetTokenAsync(SuperAdminUserName, SuperAdminPassword);
+        // P10-14 seat gate: the shared SuperAdmin account's 1 implicit-Free seat may already be
+        // occupied by another test in the shared DB — provision seats so the support add-child works.
+        await SeatTestSupport.GrantSeatsAsync(_factory, adminToken);
         var childEmail = UniqueEmail("child_sa");
         var body = ValidChildBody(childEmail);
 

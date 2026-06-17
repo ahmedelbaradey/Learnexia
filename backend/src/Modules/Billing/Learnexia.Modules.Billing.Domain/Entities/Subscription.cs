@@ -78,4 +78,31 @@ public class Subscription : FullAuditedEntity
     /// are exhausted (<c>Status = Dunning</c>). Null otherwise.
     /// </summary>
     public DateTime? GraceEndsAt { get; set; }
+
+    // ── P10-14: Extra seats (purchased add-on) ───────────────────────────────────
+
+    /// <summary>
+    /// Number of extra seats the parent has purchased as a monthly add-on (P10-14-BE-1).
+    /// Default = 0. Incremented by the webhook after a successful <c>PaymentKind.Seat</c> payment.
+    /// Combined with <see cref="Plan.IncludedSeats"/> and capped at <c>seats.max=5</c>
+    /// (from <c>IGlobalSettingsProvider</c>) to yield the total active paid seat count.
+    /// </summary>
+    public int PurchasedExtraSeats { get; set; }
+
+    /// <summary>
+    /// Number of purchased extra seats the parent has scheduled for removal at the NEXT renewal
+    /// boundary (P10-14-BE-8 / OQ-5, lead-approved 2026-06-17). A voluntary cancel records the intent
+    /// here and is effective at CYCLE END — it does NOT reduce <see cref="PurchasedExtraSeats"/>
+    /// mid-cycle, does NOT touch <see cref="GraceEndsAt"/> (grace = payment-failure only), and does
+    /// NOT reclaim/forfeit energy. At renewal, P10-15 applies the removal:
+    /// <c>PurchasedExtraSeats -= PendingExtraSeatRemovals</c> then resets this to 0.
+    /// </summary>
+    public int PendingExtraSeatRemovals { get; set; }
+
+    /// <summary>
+    /// When the scheduled extra-seat removal becomes effective — the next renewal boundary
+    /// (= <see cref="CurrentCycleEnd"/> at the time of cancel). Null when no cancel is pending.
+    /// This is a SCHEDULED-REMOVAL marker, NOT a grace marker.
+    /// </summary>
+    public DateTime? ExtraSeatCancelEffectiveAt { get; set; }
 }
