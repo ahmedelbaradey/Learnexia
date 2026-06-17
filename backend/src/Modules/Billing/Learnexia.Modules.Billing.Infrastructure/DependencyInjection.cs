@@ -216,6 +216,13 @@ public static class DependencyInjection
         // Used by CreditSpendService gate. Scoped: depends on scoped BillingDbContext.
         services.AddScoped<ISeatStateQuery, SeatStateQuery>();
 
+        // ── P10-16: Family allocation redistribution service (Option C) ──────────────────────────────
+        // IFamilyAllocationService — owns the transfer workflow: same-family guard, cap-at-remaining,
+        // mid-cycle-INSERT, paired ledger writes, idempotency, explicit transaction.
+        // Application handlers inject this seam and stay EF-free.
+        // Scoped: depends on scoped BillingDbContext + ISeatStateQuery + ICurrentUserService.
+        services.AddScoped<IFamilyAllocationService, FamilyAllocationService>();
+
         return services;
     }
 }
