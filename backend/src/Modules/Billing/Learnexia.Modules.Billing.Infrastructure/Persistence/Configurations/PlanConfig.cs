@@ -33,6 +33,12 @@ public class PlanConfig : IEntityTypeConfiguration<Plan>
             .IsRequired()
             .HasDefaultValue(true);
 
+        // P10-14: IncludedSeats — seeded per tier; Free=1, Premium=3 (OQ-C locked 2026-06-16).
+        // Config-seeded here so the value is queryable without hitting GlobalSettings every request.
+        builder.Property(x => x.IncludedSeats)
+            .IsRequired()
+            .HasDefaultValue(0);
+
         // Audit columns.
         builder.Property(x => x.CreatedAt).HasColumnType("timestamptz");
         builder.Property(x => x.UpdatedAt).HasColumnType("timestamptz").IsRequired(false);
@@ -53,6 +59,7 @@ public class PlanConfig : IEntityTypeConfiguration<Plan>
                 Code = PlanCode.Free,
                 Name = "Free",
                 IsActive = true,
+                IncludedSeats = 1,   // OQ-C: Free tier = 1 included seat
                 CreatedAt = seedDate,
                 CreatedBy = 0,
             },
@@ -62,6 +69,7 @@ public class PlanConfig : IEntityTypeConfiguration<Plan>
                 Code = PlanCode.Premium,
                 Name = "Premium",
                 IsActive = true,
+                IncludedSeats = 3,   // OQ-C: Premium tier = 3 included seats
                 CreatedAt = seedDate,
                 CreatedBy = 0,
             });

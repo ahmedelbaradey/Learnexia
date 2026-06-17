@@ -142,6 +142,12 @@ public sealed class EnergyPackTests
         // P10-09: IRefundService stub — not exercised by pack tests; mock routes to no-op.
         var refundServiceMock = new Mock<IRefundService>();
 
+        // P10-14: ISeatService stub — not exercised by pack tests; mock routes to no-op.
+        var seatServiceMock = new Mock<ISeatService>();
+
+        // P10-14: IGlobalSettingsProvider stub — seat-ceiling branch not exercised by pack tests.
+        var settingsMock = new Mock<Learnexia.Shared.Kernel.Settings.IGlobalSettingsProvider>();
+
         var loggerMock = new Mock<Learnexia.Shared.Kernel.Abstractions.ILoggerManager>();
         var localizerMock = new Mock<IStringLocalizer<SharedResources>>();
         localizerMock.Setup(l => l[It.IsAny<string>()]).Returns<string>(k => new LocalizedString(k, k));
@@ -150,7 +156,9 @@ public sealed class EnergyPackTests
         var webhookEventService = new WebhookEventService(
             db,
             packServiceMock.Object,
+            seatServiceMock.Object,
             refundServiceMock.Object,
+            settingsMock.Object,
             publisherMock.Object,
             loggerMock.Object);
 

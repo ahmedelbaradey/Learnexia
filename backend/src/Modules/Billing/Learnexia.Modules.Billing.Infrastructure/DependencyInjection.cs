@@ -164,10 +164,21 @@ public static class DependencyInjection
 
         // ── P10-13: Family energy wallet seams (Option C) ────────────────────────────────────────
 
-        // ISeatQuery — P10-13-BE-8 temporary in-Billing impl (CUTOVER: replaced by the real
-        // SeatReservation-backed impl in P10-14-BE-3a). Resolves active children via IParentChildQuery.
-        // Scoped: depends on IParentChildQuery (Scoped in Parent module) + ILoggerManager.
-        services.AddScoped<ISeatQuery, TemporarySeatQuery>();
+        // ISeatQuery — P10-14-BE-3a: RealSeatQuery (TemporarySeatQuery deleted — NIT-c).
+        // RealSeatQuery is backed by SeatReservation rows (SeatStatus.Active only).
+        // Scoped: depends on scoped BillingDbContext + IGlobalSettingsProvider (Singleton — safe).
+        services.AddScoped<ISeatQuery, RealSeatQuery>();
+
+        // ISeatService — P10-14-BE-3: owns all seat state-machine, reservation, checkout,
+        // and cancel logic. Application-layer handlers inject this seam and stay EF-free.
+        // Scoped: depends on scoped BillingDbContext + IPaymentProvider + ICurrentUserService.
+        services.AddScoped<ISeatService, SeatService>();
+
+        // ISubscriptionSeatContract — P10-14-BE-4: cross-module seam allowing the Parent module
+        // to reserve / release / check / activate seats without referencing any Billing types.
+        // Implemented in Billing.Infrastructure; consumed via Shared.Contracts in the Parent module.
+        // Scoped: delegates to ISeatService (scoped).
+        services.AddScoped<ISubscriptionSeatContract, SubscriptionSeatContract>();
 
         // IFamilyEnergyAllocationService — owns the equal-split grant-deposit + allocation-row
         // upsert logic in an explicit transaction. Application handlers stay EF-free.

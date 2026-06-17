@@ -1733,5 +1733,37 @@
         /// <summary>Returned when the pack-credit re-home credits the shared family purchased balance successfully (P10-13-BE-12).</summary>
         public const string FamilyEnergyPackCredited = "FamilyEnergyPackCredited";
 
+        // ── P10-14 Seats & seat-reserved add-child ────────────────────────────────────────────────
+
+        /// <summary>
+        /// Returned (HTTP 402/409) when a parent tries to add a child but has no free seat available.
+        /// The child account is NOT created. The parent must buy extra seats first.
+        /// </summary>
+        public const string NoFreeSeatAvailable = "NoFreeSeatAvailable";
+
+        /// <summary>Returned when an extra-seat checkout session is created successfully (redirect URL in Data).</summary>
+        public const string SeatCheckoutSessionCreated = "SeatCheckoutSessionCreated";
+
+        /// <summary>Returned when a seat-checkout would exceed the maximum allowed seat count (seats.max).</summary>
+        public const string SeatCheckoutExceedsMaxSeats = "SeatCheckoutExceedsMaxSeats";
+
+        /// <summary>Returned when a Free-tier parent tries to buy extra seats (Free plans cannot add extra seats).</summary>
+        public const string SeatCheckoutFreePlanNotAllowed = "SeatCheckoutFreePlanNotAllowed";
+
+        /// <summary>Validation: seat quantity must be a positive integer.</summary>
+        public const string SeatCheckoutQuantityRequired = "SeatCheckoutQuantityRequired";
+
+        /// <summary>Returned when the seat-status query is retrieved successfully.</summary>
+        public const string SeatStatusRetrievedSuccessfully = "SeatStatusRetrievedSuccessfully";
+
+        /// <summary>Returned when the seat cancel grace marker is recorded successfully.</summary>
+        public const string SeatCancelledSuccessfully = "SeatCancelledSuccessfully";
+
+        /// <summary>Returned when a seat cancel request fails because the parent has no purchased extra seats.</summary>
+        public const string SeatCancelInsufficientExtraSeats = "SeatCancelInsufficientExtraSeats";
+
+        /// <summary>Returned when the webhook confirms extra seats were purchased successfully.</summary>
+        public const string SeatPurchaseConfirmed = "SeatPurchaseConfirmed";
+
     }
 }
