@@ -3,6 +3,12 @@ using Learnexia.Shared.Kernel.Entities;
 
 namespace Learnexia.Modules.Billing.Domain.Entities;
 
+// P10-13 note: CreditTransaction is now the UNIFIED ledger for both the legacy per-child
+// CreditAccount model AND the new FamilyEnergyAccount / ChildEnergyAllocation wallet model.
+// New columns (SourceBucket, ChildEnergyAllocationId, FamilyEnergyAccountId, CorrelationId)
+// are nullable on CreditAccountId rows and populated on wallet rows. The existing
+// UX_CreditTransactions_IdempotencyKey unique constraint is preserved.
+
 /// <summary>
 /// Append-only ledger row for every credit balance change. Mirrors <c>XpAward</c> in the
 /// Gamification module — no mutation methods; idempotency enforced by a DB unique constraint
@@ -16,10 +22,28 @@ namespace Learnexia.Modules.Billing.Domain.Entities;
 /// </summary>
 public class CreditTransaction : FullAuditedEntity
 {
-    // ── FK within billing schema ─────────────────────────────────────────────────
+    // ── Legacy column — historical reference only (CreditAccount table DROPPED in DropLegacyCreditAccounts) ─
+    // CreditAccountId is retained as a plain nullable int on the CreditTransactions table so that
+    // pre-cutover ledger rows (written before the family-wallet migration) are not orphaned.
+    // No EF navigation or FK constraint exists; the CreditAccount entity and its table are gone.
 
-    public int CreditAccountId { get; set; }
-    public CreditAccount CreditAccount { get; set; } = null!;
+    /// <summary>
+    /// Legacy FK column — preserved as a plain nullable int on existing rows.
+    /// The <c>billing.CreditAccounts</c> table was dropped in migration
+    /// <c>DropLegacyCreditAccounts</c>; this column is a historical marker only.
+    /// No navigation property; no FK constraint.
+    /// </summary>
+    public int? CreditAccountId { get; set; }
+
+    // ── FK within billing schema — family wallet model (nullable for legacy rows) ──
+
+    /// <summary>FK to <see cref="FamilyEnergyAccount"/>. Populated on wallet-level rows (grant deposit, pack purchase, purchased-fallback).</summary>
+    public int? FamilyEnergyAccountId { get; set; }
+    public FamilyEnergyAccount? FamilyEnergyAccount { get; set; }
+
+    /// <summary>FK to <see cref="ChildEnergyAllocation"/>. Populated on per-child allocation rows.</summary>
+    public int? ChildEnergyAllocationId { get; set; }
+    public ChildEnergyAllocation? ChildEnergyAllocation { get; set; }
 
     // ── Ledger fields ────────────────────────────────────────────────────────────
 
@@ -74,4 +98,19 @@ public class CreditTransaction : FullAuditedEntity
 
     /// <summary>Optional correlation to a payment id (pack purchase / refund).</summary>
     public string? RelatedPaymentId { get; set; }
+
+    // ── P10-13 wallet model extensions ───────────────────────────────────────────
+
+    /// <summary>
+    /// Which non-convertible energy bucket this row belongs to.
+    /// Null on legacy <c>CreditAccount</c>-model rows; populated on all wallet-model rows.
+    /// </summary>
+    public EnergyBucket? SourceBucket { get; set; }
+
+    /// <summary>
+    /// Correlation id for paired P10-16 sibling-redistribution transfers
+    /// (<c>TransferOut</c> + <c>TransferIn</c> share the same <see cref="CorrelationId"/>).
+    /// Null on non-transfer rows.
+    /// </summary>
+    public Guid? CorrelationId { get; set; }
 }

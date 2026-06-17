@@ -23,7 +23,9 @@ public class CreditTransactionConfig : IEntityTypeConfiguration<CreditTransactio
 
         builder.HasKey(x => x.Id);
 
-        builder.Property(x => x.CreditAccountId).IsRequired();
+        // CreditAccountId: legacy plain nullable int — no FK constraint (CreditAccounts table dropped).
+        // Historical marker only; wallet rows always have null here.
+        builder.Property(x => x.CreditAccountId).IsRequired(false);
 
         builder.Property(x => x.Type)
             .IsRequired()
@@ -76,6 +78,27 @@ public class CreditTransactionConfig : IEntityTypeConfiguration<CreditTransactio
         builder.Property(x => x.RelatedPaymentId)
             .IsRequired(false)
             .HasMaxLength(128);
+
+        // ── P10-13 wallet model extensions ──────────────────────────────────────────
+        // FamilyEnergyAccountId: nullable FK to FamilyEnergyAccounts (within billing schema).
+        // Configured on FamilyEnergyAccountConfig via HasMany→WithOne.
+        builder.Property(x => x.FamilyEnergyAccountId).IsRequired(false);
+
+        // ChildEnergyAllocationId: nullable FK to ChildEnergyAllocations (within billing schema).
+        // Configured on ChildEnergyAllocationConfig via HasMany→WithOne.
+        builder.Property(x => x.ChildEnergyAllocationId).IsRequired(false);
+
+        // SourceBucket: which non-convertible energy bucket; stored as int.
+        builder.Property(x => x.SourceBucket)
+            .IsRequired(false)
+            .HasConversion<int?>();
+
+        // CorrelationId: pairs TransferOut + TransferIn rows for P10-16 redistribution.
+        builder.Property(x => x.CorrelationId).IsRequired(false);
+
+        // Index on FamilyEnergyAccountId for ledger reads.
+        builder.HasIndex(x => x.FamilyEnergyAccountId)
+            .HasDatabaseName("IX_CreditTransactions_FamilyEnergyAccountId");
 
         // Audit columns.
         builder.Property(x => x.CreatedAt).HasColumnType("timestamptz");

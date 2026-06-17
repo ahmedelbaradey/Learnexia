@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
+using Learnexia.Modules.Billing.Domain.Entities;
 using Learnexia.Modules.Billing.Domain.Enums;
 using Learnexia.Modules.Billing.Infrastructure.Persistence;
 using Learnexia.Modules.Billing.Infrastructure.Providers;
@@ -195,22 +196,45 @@ public sealed class P10_W3_SubscriptionPayment_IntegrationTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// Grants energy credits to a child so a CreditAccount row exists for the tier contract.
+    /// Provisions a FamilyEnergyAccount + ChildEnergyAllocation for a child directly in the DB.
+    /// Uses a synthetic parentId = -(childId) to avoid collisions with real parents.
+    /// P10-13 CUTOVER: replaces the retired admin Grant endpoint which required ParentId (not ChildId).
     /// </summary>
     private async Task GrantCreditsToChildAsync(string adminToken, int childId, int amount = 50)
     {
-        var (resp, _, body) = await SendAsync(HttpMethod.Post, GrantCreditsUrl,
-            new
-            {
-                ChildId        = childId,
-                Amount         = amount,
-                ExpiresAtUtc   = DateTime.UtcNow.AddDays(30),
-                IdempotencyKey = $"grant-w3:{childId}:{Guid.NewGuid():N}",
-                IsPremium      = false,
-            },
-            adminToken);
-        ((int)resp.StatusCode).Should().BeOneOf(new[] { 200, 201 },
-            $"grant for child must succeed; body: {body}");
+        // P10-13 CUTOVER: GrantCreditCommand now requires ParentId (not ChildId).
+        // This helper seeds via direct DB provisioning to avoid coupling test seeds to the grant endpoint's signature.
+        var syntheticParentId = -(childId); // negative to avoid collision with real parent user IDs
+        var cycleStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var cycleEnd   = cycleStart.AddMonths(1).AddSeconds(-1);
+        var allocKey   = $"w3-alloc:{childId}:{Guid.NewGuid():N}";
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
+
+        // Idempotent: skip if wallet already exists for this synthetic parent.
+        var existing = await db.FamilyEnergyAccounts.AsNoTracking()
+            .FirstOrDefaultAsync(w => w.ParentUserId == syntheticParentId);
+        if (existing is not null) return;
+
+        // Create the family wallet
+        var wallet = FamilyEnergyAccount.CreateEmpty(syntheticParentId);
+        wallet.SubscriptionBalance = amount;
+        db.FamilyEnergyAccounts.Add(wallet);
+        await db.SaveChangesAsync(0);
+
+        // Create the child allocation
+        var alloc = new ChildEnergyAllocation
+        {
+            FamilyEnergyAccountId = wallet.Id,
+            ChildId               = childId,
+            CycleStartUtc         = cycleStart,
+            CycleEndUtc           = cycleEnd,
+            AllocatedAmount       = amount,
+            SpentAmount           = 0,
+        };
+        db.ChildEnergyAllocations.Add(alloc);
+        await db.SaveChangesAsync(0);
     }
 
     /// <summary>

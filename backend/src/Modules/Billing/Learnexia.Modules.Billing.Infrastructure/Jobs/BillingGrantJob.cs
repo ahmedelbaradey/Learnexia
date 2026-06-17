@@ -1,12 +1,10 @@
 using Hangfire;
+using Learnexia.Modules.Billing.Application.Abstractions;
 using Learnexia.Modules.Billing.Domain.Constants;
-using Learnexia.Modules.Billing.Domain.Entities;
-using Learnexia.Modules.Billing.Domain.Enums;
-using Learnexia.Modules.Billing.Infrastructure.Persistence;
 using Learnexia.Shared.Contracts.Billing;
+using Learnexia.Shared.Contracts.Parent;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Settings;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Learnexia.Modules.Billing.Infrastructure.Jobs;
@@ -14,29 +12,30 @@ namespace Learnexia.Modules.Billing.Infrastructure.Jobs;
 /// <summary>
 /// Hangfire recurring job — runs at 01:00 UTC on the 1st of every month (<c>"0 1 1 * *"</c>).
 ///
-/// <para><strong>Purpose:</strong> for every active child, expire the prior cycle's unused granted
-/// balance and apply the new monthly energy grant. The grant amount is tier-resolved from
-/// <see cref="IGlobalSettingsProvider"/> (keys <c>credits.free_monthly</c> /
-/// <c>credits.premium_monthly</c>) at run time so an admin can change the economy without a
-/// redeployment.</para>
+/// <para><strong>P10-13 rewrite (per-family):</strong> the old per-child model is replaced.
+/// For every PARENT that has at least one active child, the job:
+/// <list type="number">
+///   <item>Resolves the active seat info via <see cref="ISeatQuery.GetActiveSeatsAsync"/>
+///         (temp impl in P10-13: all linked children = active seats).</item>
+///   <item>Reads the per-seat energy grant from <see cref="IGlobalSettingsProvider"/>:
+///         <c>credits.free_monthly</c> / <c>credits.premium_monthly</c> — now interpreted
+///         <strong>PER SEAT</strong> (OQ-L). Grant = <c>PlanEnergyPerSeat × ActivePaidSeats</c>.</item>
+///   <item>Calls <see cref="IFamilyEnergyAllocationService.AllocateSubscriptionGrantAsync"/> once
+///         per family — deposits to the wallet and equal-splits across active-seat children.</item>
+/// </list>
+/// NO per-child grant path remains. The old <c>CreditAccount.ApplyGrant/ExpireGrant</c> is not called.
+/// </para>
 ///
-/// <para><strong>Idempotency:</strong> the per-child idempotency key scheme
-/// (<c>grant:{childId}:{yyyyMM}</c> / <c>expire:{childId}:{priorYyyyMM}</c>) combined with the
-/// <c>UX_CreditTransactions_IdempotencyKey</c> unique constraint makes every run a no-op for
-/// children already processed. Re-running for the same period (e.g. after a Hangfire retry or
-/// manual re-trigger) never double-grants.</para>
+/// <para><strong>Idempotency:</strong> <see cref="IFamilyEnergyAllocationService"/> is idempotent
+/// on <c>(parentUserId, cycleStart)</c>. Re-running for the same period never double-grants.</para>
 ///
 /// <para><strong>Safety:</strong>
 /// <list type="bullet">
-///   <item><c>[DisableConcurrentExecution]</c> prevents overlapping runs if a job is delayed.</item>
-///   <item>Per-child fail-soft: an exception on one child is caught, logged, and the loop continues.</item>
+///   <item><c>[DisableConcurrentExecution]</c> prevents overlapping runs.</item>
+///   <item>Per-family fail-soft: an exception on one family is caught, logged, and the loop continues.</item>
 ///   <item>Paged 500-row batches bound memory usage.</item>
-///   <item>Expire-before-grant in one per-child explicit transaction: unused granted energy is zeroed
-///         then the new grant is added — purchased energy is never touched.</item>
 /// </list>
 /// </para>
-///
-/// <para>Mirrors <c>StreakSweepJob</c> in <c>Gamification.Infrastructure.Jobs</c>.</para>
 /// </summary>
 public sealed class BillingGrantJob
 {
@@ -54,165 +53,142 @@ public sealed class BillingGrantJob
         ILoggerManager logger)
     {
         _scopeFactory = scopeFactory;
-        _settings = settings;
-        _clock = clock;
-        _logger = logger;
+        _settings     = settings;
+        _clock        = clock;
+        _logger       = logger;
     }
 
-    /// <summary>
-    /// Executes the monthly grant sweep.
-    /// <c>[DisableConcurrentExecution]</c> prevents two instances from overlapping.
-    /// </summary>
+    /// <summary>Executes the monthly per-family grant sweep.</summary>
     [DisableConcurrentExecution(timeoutInSeconds: 300)]
     public async Task RunAsync(CancellationToken ct = default)
     {
         var nowUtc = _clock.UtcNow;
 
-        // Cycle id = yyyyMM of the month being granted.
-        var cycleId = nowUtc.ToString("yyyyMM");
-        // Prior cycle = one month back.
-        var priorCycleId = nowUtc.AddMonths(-1).ToString("yyyyMM");
-        // Cycle end = last instant of the current month in UTC.
-        var cycleEndUtc = new DateTime(nowUtc.Year, nowUtc.Month, 1, 0, 0, 0, DateTimeKind.Utc)
-            .AddMonths(1)
-            .AddSeconds(-1);
+        // Cycle boundaries.
+        var cycleStart = new DateTime(nowUtc.Year, nowUtc.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var cycleEnd   = cycleStart.AddMonths(1).AddSeconds(-1);
+        var cycleId    = nowUtc.ToString("yyyyMM");
 
-        // Amounts from GlobalSettings (read once per run to be consistent across the batch).
-        var freeAmount = _settings.GetInt(GlobalSettingKeys.FreeMonthlyCredits, 100);
-        var premiumAmount = _settings.GetInt(GlobalSettingKeys.PremiumMonthlyCredits, 5000);
+        // Read per-seat energy amounts from GlobalSettings (OQ-L: reuse existing keys, now per-seat).
+        var freePerSeat    = _settings.GetInt(GlobalSettingKeys.FreeMonthlyCredits, 100);
+        var premiumPerSeat = _settings.GetInt(GlobalSettingKeys.PremiumMonthlyCredits, 5000);
 
+        _logger.LogInfo($"BillingGrantJob (P10-13 per-family): starting cycle={cycleId}, " +
+                        $"freePerSeat={freePerSeat}, premiumPerSeat={premiumPerSeat}.");
+
+        // Build the set of unique parents by finding each child's parent.
+        // We use IBillingSubscriptionContract to list active children (existing seam),
+        // then reverse-lookup each child's parent via IParentChildQuery.
+        IReadOnlyList<ActiveChildPlanDto> allChildren;
+        await using (var scope = _scopeFactory.CreateAsyncScope())
+        {
+            var subscriptionContract = scope.ServiceProvider.GetRequiredService<IBillingSubscriptionContract>();
+            allChildren = await subscriptionContract.GetActiveChildrenWithTierAsync(ct);
+        }
+
+        if (allChildren.Count == 0)
+        {
+            _logger.LogInfo("BillingGrantJob: no active children found — nothing to do.");
+            return;
+        }
+
+        // Group children by parent (reverse-lookup via IParentChildQuery.FindParentForChildAsync).
+        var parentToChildTier = new Dictionary<int, (PlanTier Tier, int ChildCount)>();
+        await using (var scope = _scopeFactory.CreateAsyncScope())
+        {
+            var parentChildQuery = scope.ServiceProvider.GetRequiredService<IParentChildQuery>();
+            foreach (var child in allChildren)
+            {
+                var parentId = await parentChildQuery.FindParentForChildAsync(child.ChildId, ct);
+                if (parentId is null) continue;
+                if (!parentToChildTier.ContainsKey(parentId.Value))
+                    parentToChildTier[parentId.Value] = (child.PlanTier, 0);
+                var existing = parentToChildTier[parentId.Value];
+                parentToChildTier[parentId.Value] = (existing.Tier, existing.ChildCount + 1);
+            }
+        }
+
+        var parentIds  = parentToChildTier.Keys.ToList();
         int granted = 0, skipped = 0, failed = 0;
-        int pageIndex = 0;
-
-        _logger.LogInfo($"BillingGrantJob: starting cycle={cycleId}, priorCycle={priorCycleId}, " +
-                        $"freeAmount={freeAmount}, premiumAmount={premiumAmount}.");
+        var pageIndex = 0;
 
         while (true)
         {
-            IReadOnlyList<ActiveChildPlanDto> page;
+            var page = parentIds
+                .Skip(pageIndex * PageSize)
+                .Take(PageSize)
+                .ToList();
 
-            await using (var scope = _scopeFactory.CreateAsyncScope())
-            {
-                var subscription = scope.ServiceProvider.GetRequiredService<IBillingSubscriptionContract>();
-                // The stub returns all known children; when P10-05 lands this returns real tier info.
-                var all = await subscription.GetActiveChildrenWithTierAsync(ct);
+            if (page.Count == 0) break;
 
-                page = all
-                    .Skip(pageIndex * PageSize)
-                    .Take(PageSize)
-                    .ToList()
-                    .AsReadOnly();
-            }
-
-            if (page.Count == 0)
-                break;
-
-            foreach (var child in page)
+            foreach (var parentId in page)
             {
                 try
                 {
-                    var result = await ProcessChildAsync(
-                        child,
-                        cycleId,
-                        priorCycleId,
-                        cycleEndUtc,
-                        child.PlanTier == PlanTier.Premium ? premiumAmount : freeAmount,
-                        ct);
+                    var (tier, _) = parentToChildTier[parentId];
+                    var perSeat   = tier == PlanTier.Premium ? premiumPerSeat : freePerSeat;
 
+                    var result = await ProcessFamilyAsync(parentId, perSeat, cycleStart, cycleEnd, cycleId, ct);
                     if (result == 1) granted++;
                     else skipped++;
                 }
                 catch (Exception ex)
                 {
                     failed++;
-                    _logger.LogError(ex, $"BillingGrantJob: failed for childId={child.ChildId}.");
+                    _logger.LogError(ex, $"BillingGrantJob: failed for parentId={parentId}.");
                 }
             }
 
             pageIndex++;
-
-            // If the page was smaller than the page size we've read everything.
-            if (page.Count < PageSize)
-                break;
+            if (page.Count < PageSize) break;
         }
 
-        _logger.LogInfo($"BillingGrantJob: complete — granted={granted}, skipped(already processed)={skipped}, failed={failed}, cycle={cycleId}.");
+        _logger.LogInfo($"BillingGrantJob: complete — granted={granted}, skipped={skipped}, failed={failed}, cycle={cycleId}.");
     }
 
-    // ── Per-child processing ──────────────────────────────────────────────────────
+    // ── Per-family processing ─────────────────────────────────────────────────────
 
-    /// <summary>Returns 1 = granted, 0 = skipped (already done / unique-violation).</summary>
-    private async Task<int> ProcessChildAsync(
-        ActiveChildPlanDto child,
+    /// <summary>Returns 1 = granted (or no-children), 0 = skipped (already done).</summary>
+    private async Task<int> ProcessFamilyAsync(
+        int parentId,
+        int perSeatAmount,
+        DateTime cycleStart,
+        DateTime cycleEnd,
         string cycleId,
-        string priorCycleId,
-        DateTime cycleEndUtc,
-        int amount,
         CancellationToken ct)
     {
         await using var scope = _scopeFactory.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
 
-        // ── Idempotency pre-check (cheap) ─────────────────────────────────────────
-        var grantKey = $"grant:{child.ChildId}:{cycleId}";
+        var seatQuery         = scope.ServiceProvider.GetRequiredService<ISeatQuery>();
+        var allocationService = scope.ServiceProvider.GetRequiredService<IFamilyEnergyAllocationService>();
 
-        if (await db.CreditTransactions.AnyAsync(t => t.IdempotencyKey == grantKey, ct))
-            return 0; // already processed this period
-
-        await using var tx = await db.Database.BeginTransactionAsync(ct);
-
-        try
+        var seatInfo = await seatQuery.GetActiveSeatsAsync(parentId, ct);
+        if (seatInfo.ActivePaidSeats == 0)
         {
-            // Load or create the credit account.
-            var account = await db.CreditAccounts
-                .FirstOrDefaultAsync(a => a.ChildId == child.ChildId, ct);
-
-            if (account is null)
-            {
-                account = CreditAccount.CreateEmpty(child.ChildId, child.ChildTimeZoneId);
-                await db.CreditAccounts.AddAsync(account, ct);
-                // Flush so account.Id is populated before we add the transaction.
-                await db.SaveChangesAsync(0);
-            }
-
-            // ── Step 1: Expire prior cycle's granted balance (idempotent) ────────────
-            var expireKey = $"expire:{child.ChildId}:{priorCycleId}";
-            var alreadyExpired = await db.CreditTransactions.AnyAsync(t => t.IdempotencyKey == expireKey, ct);
-
-            if (!alreadyExpired && account.GrantedBalance > 0)
-            {
-                var expireTx = account.ExpireGrant(expireKey);
-                await db.CreditTransactions.AddAsync(expireTx, ct);
-            }
-
-            // ── Step 2: Apply the new grant ───────────────────────────────────────────
-            var reasonCode = child.PlanTier == PlanTier.Premium
-                ? CreditReasonCode.MonthlyGrantPremium
-                : CreditReasonCode.MonthlyGrantFree;
-
-            var grantTx = account.ApplyGrant(amount, cycleEndUtc, reasonCode, grantKey);
-            await db.CreditTransactions.AddAsync(grantTx, ct);
-
-            await db.SaveChangesAsync(0);
-            await tx.CommitAsync(ct);
-
-            return 1; // successfully granted
+            _logger.LogInfo($"BillingGrantJob: no active seats for parentId={parentId} — skipping.");
+            return 1; // not a failure
         }
-        catch (DbUpdateException dbEx) when (IsUniqueViolation(dbEx))
+
+        var grantAmount    = perSeatAmount * seatInfo.ActivePaidSeats;
+        var idempotencyKey = $"family-grant:{parentId}:{cycleId}";
+
+        var result = await allocationService.AllocateSubscriptionGrantAsync(
+            parentUserId  : parentId,
+            grantAmount   : grantAmount,
+            cycleStart    : cycleStart,
+            cycleEnd      : cycleEnd,
+            idempotencyKey: idempotencyKey,
+            ct            : ct);
+
+        if (result.WasDuplicate)
         {
-            // Racing concurrent run wrote the same idempotency key — treat as already done.
-            await tx.RollbackAsync(ct);
-            return 0; // skip / idempotent
+            _logger.LogInfo($"BillingGrantJob: already allocated for parentId={parentId}, cycle={cycleId} — skipping.");
+            return 0;
         }
-        catch
-        {
-            await tx.RollbackAsync(ct);
-            throw;
-        }
+
+        _logger.LogInfo($"BillingGrantJob: allocated grant={grantAmount} " +
+                        $"(perSeat={perSeatAmount}×seats={seatInfo.ActivePaidSeats}) " +
+                        $"to {result.ChildCount} children for parentId={parentId}, cycle={cycleId}.");
+        return 1;
     }
-
-    private static bool IsUniqueViolation(DbUpdateException ex)
-        => ex.InnerException?.Message.Contains("23505", StringComparison.Ordinal) == true
-           || ex.InnerException?.Message.Contains("UX_CreditTransactions_IdempotencyKey",
-               StringComparison.OrdinalIgnoreCase) == true;
 }

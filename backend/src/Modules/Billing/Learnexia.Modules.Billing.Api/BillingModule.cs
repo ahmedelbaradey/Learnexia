@@ -1,5 +1,6 @@
 using Hangfire;
 using Learnexia.Modules.Billing.Application;
+using Learnexia.Modules.Billing.Application.Abstractions;
 using Learnexia.Modules.Billing.Infrastructure;
 using Learnexia.Modules.Billing.Infrastructure.Jobs;
 using Learnexia.Modules.Billing.Infrastructure.Persistence;
@@ -48,6 +49,20 @@ public static class BillingModule
 
             // Seed managed GlobalSetting rows with bootstrap defaults (seed-if-absent — idempotent).
             await GlobalSettingsSeeder.SeedAsync(db, logger);
+
+            // Clean-cutover provisioning: migrate legacy CreditAccount rows → FamilyEnergyAccount
+            // wallet model. Runs AFTER MigrateAsync so schema exists. Idempotent: skips already-
+            // migrated families. Uses IParentChildQuery for correct parent resolution (SECURITY HIGH-2).
+            var migrationService = scope.ServiceProvider.GetRequiredService<ICreditAccountMigrationService>();
+            var migrationResult  = await migrationService.MigrateAsync();
+            logger.LogInfo(
+                $"BillingModule: credit-account cutover — migrated={migrationResult.Migrated}, " +
+                $"skipped={migrationResult.Skipped}, failed={migrationResult.Failed}.");
+
+            if (migrationResult.Failed > 0)
+                logger.LogWarn(
+                    $"BillingModule: {migrationResult.Failed} family wallet(s) failed cutover provisioning. " +
+                    $"Errors: {string.Join("; ", migrationResult.Errors)}");
         }
         catch (Exception ex)
         {

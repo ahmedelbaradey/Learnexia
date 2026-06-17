@@ -13,21 +13,19 @@ namespace Learnexia.Modules.Billing.Infrastructure.Services;
 /// <summary>
 /// Infrastructure implementation of <see cref="IEnergyPackService"/> (Option C).
 ///
-/// <para>Owns ALL EF Core access, transaction management, and ledger logic for energy-pack
-/// purchases. Application-layer handlers (which implement the Option C rule) inject
-/// <see cref="IEnergyPackService"/> and never reference EF or <c>BillingDbContext</c>.</para>
+/// <para><strong>P10-13-BE-12 re-home:</strong> <see cref="CreditPurchasedPackAsync"/> now credits
+/// the <strong>shared family <c>FamilyEnergyAccount.PurchasedBalance</c></strong> (not the old
+/// per-child <c>CreditAccount.PurchasedBalance</c>). Resolves the family wallet from the
+/// pack <c>Payment.ParentUserId</c> (the parent who paid). Writes a bucket-B <c>Purchase</c>
+/// ledger row with <c>SourceBucket = Purchased</c> and <c>RelatedPaymentId</c> for P10-17 FIFO
+/// refund reconciliation. The old per-child <c>CreditAccount</c> write path is removed.</para>
 ///
-/// <para><strong>Atomicity (StartPackCheckoutAsync):</strong> the Payment row is written before
-/// the provider call; a second SaveChanges persists the provider ref on return.
-/// On provider failure the Payment row stays <c>Initiated</c> — the reconcile job sweeps it.</para>
-///
-/// <para><strong>Atomicity (CreditPurchasedPackAsync):</strong> one explicit transaction:
-/// create/load CreditAccount → apply purchase mutator → insert CreditTransaction → flip
-/// Payment.Status to Succeeded → commit. The <c>CreditTransaction.IdempotencyKey</c>
-/// DB-unique constraint is the inner idempotency guard; the outer guard is the
-/// <c>WebhookEvent.ProviderEventId</c> unique constraint (enforced by the caller before this
-/// method is invoked). A unique-key violation on the credit key is treated as a duplicate
-/// success (no second credit).</para>
+/// <para><strong>Idempotency:</strong> guarded by TWO independent keys:
+/// <list type="number">
+///   <item>The <c>WebhookEvent.ProviderEventId</c> unique constraint (outer guard — caller's responsibility).</item>
+///   <item><c>CreditTransaction.IdempotencyKey = "pack-credit:{paymentId}:{providerEventId}"</c> (inner guard).</item>
+/// </list>
+/// A unique-key violation on the credit key is treated as an idempotent success.</para>
 /// </summary>
 public sealed class EnergyPackService : IEnergyPackService
 {
@@ -64,7 +62,6 @@ public sealed class EnergyPackService : IEnergyPackService
         CancellationToken ct)
     {
         // ── 1. IDOR / family-scope guard ──────────────────────────────────────────
-        // Anti-IDOR: return a generic failure (not "child not found") to avoid enumeration.
         var parentOwnsChild = await _parentChildQuery.IsParentOfChildAsync(parentId, childId, ct);
         if (!parentOwnsChild)
         {
@@ -94,7 +91,7 @@ public sealed class EnergyPackService : IEnergyPackService
         _db.Payments.Add(payment);
         await _db.SaveChangesAsync(_currentUser.UserId ?? 0);
 
-        // ── 4. Call the payment provider (outside transaction — can be slow) ───────
+        // ── 4. Call the payment provider ──────────────────────────────────────────
         CheckoutSession session;
         try
         {
@@ -104,16 +101,15 @@ public sealed class EnergyPackService : IEnergyPackService
         {
             _logger.LogError(provEx,
                 $"EnergyPackService: provider call failed for parentId={parentId}, childId={childId}.");
-            // Payment stays Initiated — the reconcile job will sweep it.
             return PackCheckoutResult.Fail(PackCheckoutFailureReason.ProviderUnavailable);
         }
 
-        // ── 5. Persist the provider ref ────────────────────────────────────────────
+        // ── 5. Persist the provider ref ───────────────────────────────────────────
         payment.ProviderPaymentRef = session.ProviderPaymentRef;
         await _db.SaveChangesAsync(_currentUser.UserId ?? 0);
 
         _logger.LogInfo(
-            $"EnergyPackService: pack checkout created paymentId={payment.Id}, parentId={parentId}, childId={childId}, packSize={packSize}, price={packPrice}.");
+            $"EnergyPackService: pack checkout created paymentId={payment.Id}, parentId={parentId}, childId={childId}.");
 
         return PackCheckoutResult.Ok(payment.Id, session.RedirectUrl, session.ProviderPaymentRef);
     }
@@ -121,19 +117,23 @@ public sealed class EnergyPackService : IEnergyPackService
     // ── CreditPurchasedPackAsync ──────────────────────────────────────────────────────────────────
 
     /// <inheritdoc />
+    /// <remarks>
+    /// P10-13-BE-12: credits the SHARED family <c>FamilyEnergyAccount.PurchasedBalance</c>.
+    /// The <paramref name="targetChildId"/> parameter is preserved for signature compatibility
+    /// but is now used only to look up the parent (family wallet owner) via the payment row.
+    /// </remarks>
     public async Task<PackCreditResult> CreditPurchasedPackAsync(
         int paymentId,
         int targetChildId,
         string providerEventId,
         CancellationToken ct)
     {
-        // Idempotency key: ensures a second call with the same providerEventId cannot double-credit.
         var creditIdempotencyKey = $"pack-credit:{paymentId}:{providerEventId}";
 
         await using var tx = await _db.Database.BeginTransactionAsync(ct);
         try
         {
-            // ── Inner idempotency pre-check (guard against race with a concurrent replay) ──
+            // Inner idempotency pre-check.
             var alreadyCredited = await _db.CreditTransactions
                 .AnyAsync(t => t.IdempotencyKey == creditIdempotencyKey, ct);
 
@@ -145,44 +145,53 @@ public sealed class EnergyPackService : IEnergyPackService
                 return PackCreditResult.Duplicate();
             }
 
-            // ── Load or create the child's CreditAccount ───────────────────────────────
-            var account = await _db.CreditAccounts
-                .FirstOrDefaultAsync(a => a.ChildId == targetChildId, ct);
-
-            if (account is null)
+            // Resolve parent from payment.
+            var payment = await _db.Payments.FindAsync(new object[] { paymentId }, ct);
+            if (payment is null)
             {
-                account = CreditAccount.CreateEmpty(targetChildId);
-                _db.CreditAccounts.Add(account);
+                await tx.RollbackAsync(ct);
+                _logger.LogInfo($"EnergyPackService: payment {paymentId} not found — skip credit.");
+                return PackCreditResult.Fail();
+            }
+
+            var parentId = payment.ParentUserId;
+
+            // Load or create the FAMILY wallet (P10-13-BE-12: credit shared PurchasedBalance).
+            var wallet = await _db.FamilyEnergyAccounts
+                .FirstOrDefaultAsync(w => w.ParentUserId == parentId, ct);
+
+            if (wallet is null)
+            {
+                wallet = FamilyEnergyAccount.CreateEmpty(parentId);
+                _db.FamilyEnergyAccounts.Add(wallet);
                 await _db.SaveChangesAsync(_currentUser.UserId ?? 0);
             }
 
-            // ── Resolve pack size from GlobalSettings (server-side — never from provider payload) ──
+            // Pack size from GlobalSettings (server-side authoritative).
             var packSize = _settings.GetInt(GlobalSettingKeys.PackSize, 1000);
 
-            // ── Apply the purchase mutator — returns the ledger row to insert ────────
-            var creditTransaction = account.ApplyPurchase(
+            // Apply the purchase to the shared family PurchasedBalance.
+            var creditTx = wallet.ApplyPurchase(
                 amount           : packSize,
                 idempotencyKey   : creditIdempotencyKey,
                 relatedPaymentId : paymentId.ToString());
 
-            _db.CreditTransactions.Add(creditTransaction);
+            // creditTx.FamilyEnergyAccountId is set by FamilyEnergyAccount.BuildTransaction via Id.
+            _db.CreditTransactions.Add(creditTx);
 
-            // ── Flip Payment → Succeeded ───────────────────────────────────────────────
-            var payment = await _db.Payments.FindAsync(new object[] { paymentId }, ct);
-            if (payment is not null)
-                payment.Status = PaymentStatus.Succeeded;
+            // Flip Payment → Succeeded.
+            payment.Status = PaymentStatus.Succeeded;
 
             await _db.SaveChangesAsync(_currentUser.UserId ?? 0);
             await tx.CommitAsync(ct);
 
             _logger.LogInfo(
-                $"EnergyPackService: pack credited {packSize} to childId={targetChildId}, paymentId={paymentId}.");
+                $"EnergyPackService: pack credited {packSize} to family wallet parentId={parentId}, paymentId={paymentId}.");
 
             return PackCreditResult.Ok(packSize);
         }
         catch (DbUpdateException dbEx) when (IsUniqueViolation(dbEx))
         {
-            // Concurrent duplicate insert — treat as idempotent success.
             await tx.RollbackAsync(ct);
             _logger.LogInfo(
                 $"EnergyPackService: concurrent credit duplicate for paymentId={paymentId} — no-op.");
@@ -198,7 +207,6 @@ public sealed class EnergyPackService : IEnergyPackService
     // ── Helpers ───────────────────────────────────────────────────────────────────────────────────
 
     private static bool IsUniqueViolation(DbUpdateException ex)
-        => ex.InnerException?.Message.Contains("23505", StringComparison.Ordinal) == true
-           || ex.InnerException?.Message.Contains("UX_CreditTransactions_IdempotencyKey",
-               StringComparison.OrdinalIgnoreCase) == true;
+        => ex.InnerException is Npgsql.PostgresException pg
+           && pg.SqlState == Npgsql.PostgresErrorCodes.UniqueViolation;
 }

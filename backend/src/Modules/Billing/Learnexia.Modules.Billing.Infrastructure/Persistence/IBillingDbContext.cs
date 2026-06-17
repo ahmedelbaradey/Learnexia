@@ -8,14 +8,14 @@ namespace Learnexia.Modules.Billing.Infrastructure.Persistence;
 /// <summary>
 /// Infrastructure-layer abstraction over <c>BillingDbContext</c>.
 /// Consumed only within Billing.Infrastructure (by <c>CreditSpendService</c>,
-/// <c>RefundService</c>, <c>ConfigDefaultSubscriptionContract</c>, and DI registration).
+/// <c>RefundService</c>, <c>CreditAccountMigrationService</c> (migration-only artifact), and DI registration).
 ///
 /// <para>Moved from <c>Billing.Application.Abstractions</c> during the Option C refactor —
 /// Application layer must be EF-free, so EF-typed interfaces cannot live there.</para>
 /// </summary>
 public interface IBillingDbContext
 {
-    DbSet<CreditAccount> CreditAccounts { get; }
+    // CreditAccounts removed — CreditAccount entity retired, table dropped in DropLegacyCreditAccounts.
     DbSet<CreditTransaction> CreditTransactions { get; }
     DbSet<GlobalSetting> GlobalSettings { get; }
 
@@ -26,6 +26,11 @@ public interface IBillingDbContext
     // P10-06 payment entities.
     DbSet<Payment> Payments { get; }
     DbSet<WebhookEvent> WebhookEvents { get; }
+
+    // P10-13 family energy wallet entities.
+    DbSet<FamilyEnergyAccount> FamilyEnergyAccounts { get; }
+    DbSet<ChildEnergyAllocation> ChildEnergyAllocations { get; }
+    DbSet<ChildDailyUsage> ChildDailyUsages { get; }
 
     DatabaseFacade Database { get; }
     ChangeTracker ChangeTracker { get; }

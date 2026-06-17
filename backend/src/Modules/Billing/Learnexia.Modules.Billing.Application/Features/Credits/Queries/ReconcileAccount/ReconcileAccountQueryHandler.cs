@@ -8,6 +8,11 @@ using Resources;
 
 namespace Learnexia.Modules.Billing.Application.Features.Credits.Queries.ReconcileAccount;
 
+/// <summary>
+/// Reconciles the family wallet balances from the immutable ledger.
+/// Family-scoped (by <see cref="ReconcileAccountQuery.ParentId"/>).
+/// Does NOT touch <c>CreditAccount</c>.
+/// </summary>
 public class ReconcileAccountQueryHandler : BaseResponseHandler, IQueryHandler<ReconcileAccountQuery, BaseResponse<ReconciliationResultDto>>
 {
     private readonly ICreditLedgerService _ledger;
@@ -24,7 +29,7 @@ public class ReconcileAccountQueryHandler : BaseResponseHandler, IQueryHandler<R
     {
         try
         {
-            var result = await _ledger.ReconcileAsync(request.ChildId, cancellationToken);
+            var result = await _ledger.ReconcileFamilyWalletAsync(request.ParentId, cancellationToken);
 
             if (result is null)
                 return NotFound<ReconciliationResultDto>(_localizer[SharedResourcesKey.CreditAccountNotFound]);
@@ -33,7 +38,7 @@ public class ReconcileAccountQueryHandler : BaseResponseHandler, IQueryHandler<R
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error in ReconcileAccountQuery for childId={request.ChildId}");
+            _logger.LogError(ex, $"Error in ReconcileAccountQuery for parentId={request.ParentId}");
             return ServerError<ReconciliationResultDto>(_localizer[SharedResourcesKey.SystemErrorRetrievingData]);
         }
     }

@@ -574,6 +574,9 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="SystemErrorDisplayingData" xml:space="preserve">
     <value>An error is occurred while displaying data</value>
   </data>
+  <data name="SystemErrorRetrievingData" xml:space="preserve">
+    <value>An error occurred while retrieving data</value>
+  </data>
   <data name="CannotCancelNonPendingResolution" xml:space="preserve">
     <value>Only pending resolutions can be cancelled</value>
   </data>
@@ -2350,5 +2353,30 @@ You should add board members to be able to perform fund activities, at least 2 i
   </data>
   <data name="ReceiptDescriptionPremiumSubscription" xml:space="preserve">
     <value>Premium Subscription</value>
+  </data>
+  <!-- P10-13 Family Energy Wallet -->
+  <data name="FamilyEnergyOverviewRetrieved" xml:space="preserve">
+    <value>Family energy overview retrieved successfully.</value>
+  </data>
+  <data name="FamilyEnergyWalletNotOwned" xml:space="preserve">
+    <value>You are not authorised to view this family energy wallet.</value>
+  </data>
+  <data name="FamilyEnergyWalletNotFound" xml:space="preserve">
+    <value>Family energy wallet not found.</value>
+  </data>
+  <data name="FamilyEnergyInsufficientBalance" xml:space="preserve">
+    <value>Insufficient energy balance to complete this action.</value>
+  </data>
+  <data name="FamilyEnergyGrantAllocated" xml:space="preserve">
+    <value>Monthly energy grant allocated successfully.</value>
+  </data>
+  <data name="FamilyEnergyGrantAlreadyAllocated" xml:space="preserve">
+    <value>Monthly energy grant already allocated for this cycle.</value>
+  </data>
+  <data name="FamilyEnergyMigrationCompleted" xml:space="preserve">
+    <value>Family energy wallet migration completed successfully.</value>
+  </data>
+  <data name="FamilyEnergyPackCredited" xml:space="preserve">
+    <value>Energy pack credited to family wallet successfully.</value>
   </data>
 </root>

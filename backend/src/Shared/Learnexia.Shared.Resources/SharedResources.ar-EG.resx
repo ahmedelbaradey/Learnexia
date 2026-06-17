@@ -574,6 +574,9 @@
   <data name="SystemErrorDisplayingData" xml:space="preserve">
     <value>حدث خطأ بالنظام , لم يتمكن من عرض البيانات</value>
   </data>
+  <data name="SystemErrorRetrievingData" xml:space="preserve">
+    <value>حدث خطأ أثناء استرداد البيانات</value>
+  </data>
   <data name="CannotCancelNonPendingResolution" xml:space="preserve">
     <value>يمكن إلغاء القرارات المعلقة فقط</value>
   </data>
@@ -2349,5 +2352,30 @@
   </data>
   <data name="ReceiptDescriptionPremiumSubscription" xml:space="preserve">
     <value>اشتراك بريميوم</value>
+  </data>
+  <!-- P10-13 Family Energy Wallet -->
+  <data name="FamilyEnergyOverviewRetrieved" xml:space="preserve">
+    <value>تم استرداد نظرة عامة على طاقة العائلة بنجاح.</value>
+  </data>
+  <data name="FamilyEnergyWalletNotOwned" xml:space="preserve">
+    <value>غير مصرح لك بعرض محفظة طاقة هذه العائلة.</value>
+  </data>
+  <data name="FamilyEnergyWalletNotFound" xml:space="preserve">
+    <value>لم يتم العثور على محفظة طاقة العائلة.</value>
+  </data>
+  <data name="FamilyEnergyInsufficientBalance" xml:space="preserve">
+    <value>رصيد الطاقة غير كافٍ لإتمام هذا الإجراء.</value>
+  </data>
+  <data name="FamilyEnergyGrantAllocated" xml:space="preserve">
+    <value>تم توزيع منحة الطاقة الشهرية بنجاح.</value>
+  </data>
+  <data name="FamilyEnergyGrantAlreadyAllocated" xml:space="preserve">
+    <value>تم توزيع منحة الطاقة الشهرية بالفعل لهذه الدورة.</value>
+  </data>
+  <data name="FamilyEnergyMigrationCompleted" xml:space="preserve">
+    <value>اكتمل نقل محفظة طاقة العائلة بنجاح.</value>
+  </data>
+  <data name="FamilyEnergyPackCredited" xml:space="preserve">
+    <value>تم إضافة حزمة الطاقة إلى محفظة العائلة بنجاح.</value>
   </data>
 </root>

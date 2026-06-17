@@ -28,8 +28,14 @@ namespace Learnexia.Modules.Billing.Infrastructure.Services;
 /// </list>
 /// </para>
 ///
-/// <para><strong>Never-negative:</strong> <see cref="CreditAccount.Refund"/> clamps the
-/// clawback to the available <see cref="CreditAccount.PurchasedBalance"/> (never drives it
+/// <para><strong>P10-13 CUTOVER (AC13-8):</strong> <see cref="ProcessPackRefundAsync"/> claws back
+/// from the SHARED family <see cref="FamilyEnergyAccount.PurchasedBalance"/> (resolved via the pack
+/// <c>Payment.ParentUserId</c>), NOT the legacy per-child <c>CreditAccount</c>. Pack credits land on
+/// the shared wallet (<c>EnergyPackService.CreditPurchasedPackAsync</c>), so the clawback targets the
+/// same wallet — no split economy. (Full FIFO reconciliation is P10-17.)</para>
+///
+/// <para><strong>Never-negative:</strong> <see cref="FamilyEnergyAccount.RefundPurchased"/> clamps the
+/// clawback to the available <see cref="FamilyEnergyAccount.PurchasedBalance"/> (never drives it
 /// negative). The domain entity enforces this invariant; the DB check constraint is defence-in-depth.</para>
 ///
 /// <para>The <c>IServiceScopeFactory</c>-scoped injection pattern (used in
@@ -100,22 +106,27 @@ public sealed class RefundService : IRefundService
                 return RefundResult.Fail(RefundFailureReason.PaymentNotRefundable);
             }
 
-            // Load the credit account for the target child.
-            var account = await _db.CreditAccounts
-                .FirstOrDefaultAsync(a => a.ChildId == payment.TargetChildId.Value, ct);
+            // P10-13 CUTOVER (AC13-8): claw back from the SHARED family FamilyEnergyAccount.PurchasedBalance,
+            // NOT the legacy per-child CreditAccount. Pack credits land on the shared wallet
+            // (EnergyPackService.CreditPurchasedPackAsync, keyed by Payment.ParentUserId), so the clawback
+            // must target the same wallet to avoid a split economy. (Full FIFO reconciliation is P10-17;
+            // here we re-home the clawback to the shared wallet with a clamp-to-available guard.)
+            var wallet = await _db.FamilyEnergyAccounts
+                .FirstOrDefaultAsync(w => w.ParentUserId == payment.ParentUserId, ct);
 
-            if (account is null)
+            if (wallet is null)
             {
                 await tx.RollbackAsync(ct);
-                _logger.LogInfo($"RefundService.ProcessPackRefund: no credit account for childId={payment.TargetChildId.Value}.");
+                _logger.LogInfo($"RefundService.ProcessPackRefund: no family wallet for parentId={payment.ParentUserId}.");
                 return RefundResult.Fail(RefundFailureReason.CreditAccountNotFound);
             }
 
-            // Claw back unspent purchased balance (domain mutator clamps to available balance).
-            // We pass the pack size but the Refund mutator clamps to actual PurchasedBalance.
+            // Claw back unspent purchased balance (domain mutator clamps to available PurchasedBalance).
+            // We pass the pack size but RefundPurchased clamps to the actual shared PurchasedBalance.
             // Default must match EnergyPackService.CreditPurchasedPackAsync (1000) — same constant source.
             var packSize = _settings.GetInt(GlobalSettingKeys.PackSize, 1000);
-            var refundTx = account.Refund(packSize, idempotencyKey, payment.Id.ToString());
+            var refundTx = wallet.RefundPurchased(packSize, idempotencyKey, payment.Id.ToString());
+            refundTx.FamilyEnergyAccountId = wallet.Id;
             await _db.CreditTransactions.AddAsync(refundTx, ct);
 
             // Mark payment as Refunded.
@@ -125,7 +136,8 @@ public sealed class RefundService : IRefundService
             await tx.CommitAsync(ct);
 
             _logger.LogInfo(
-                $"RefundService.ProcessPackRefund: paymentId={paymentId}, clawedBack={refundTx.Amount}, childId={payment.TargetChildId.Value}.");
+                $"RefundService.ProcessPackRefund: paymentId={paymentId}, clawedBack={refundTx.Amount}, " +
+                $"parentId={payment.ParentUserId}, childId={payment.TargetChildId.Value}.");
 
             return RefundResult.Ok(refundTx.Amount);
         }

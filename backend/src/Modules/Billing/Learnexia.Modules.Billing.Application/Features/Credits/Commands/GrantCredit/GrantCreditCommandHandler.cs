@@ -9,6 +9,11 @@ using Resources;
 
 namespace Learnexia.Modules.Billing.Application.Features.Credits.Commands.GrantCredit;
 
+/// <summary>
+/// Admin comp: deposits energy into the shared family wallet's <c>PurchasedBalance</c>
+/// (permanent admin compensation) + writes an immutable ledger row.
+/// Family-scoped, not per-child. Does NOT touch <c>CreditAccount</c>.
+/// </summary>
 public class GrantCreditCommandHandler : BaseResponseHandler, ICommandHandler<GrantCreditCommand, BaseResponse<DebitResultDto>>
 {
     private readonly ICreditLedgerService _ledger;
@@ -34,11 +39,9 @@ public class GrantCreditCommandHandler : BaseResponseHandler, ICommandHandler<Gr
         {
             var actorUserId = _currentUser.UserId ?? 0;
 
-            var result = await _ledger.GrantAsync(
-                childId        : request.ChildId,
+            var result = await _ledger.GrantFamilyWalletAsync(
+                parentId       : request.ParentId,
                 amount         : request.Amount,
-                expiresAtUtc   : request.ExpiresAtUtc,
-                isPremium      : request.IsPremium,
                 idempotencyKey : request.IdempotencyKey,
                 actorUserId    : actorUserId,
                 ct             : cancellationToken);
@@ -61,15 +64,15 @@ public class GrantCreditCommandHandler : BaseResponseHandler, ICommandHandler<Gr
                 Message    = _localizer[SharedResourcesKey.CreditGrantSucceeded],
                 Data       = new DebitResultDto
                 {
-                    Charged       = false,
+                    Charged        = false,
                     ResultingTotal = result.ResultingTotal,
-                    Outcome       = DebitOutcome.Charged,
+                    Outcome        = DebitOutcome.Charged,
                 },
             };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error in GrantCreditCommand for childId={request.ChildId}");
+            _logger.LogError(ex, $"Error in GrantCreditCommand for parentId={request.ParentId}");
             return ServerError<DebitResultDto>(_localizer[SharedResourcesKey.AnErrorIsOccurredWhileSavingData]);
         }
     }

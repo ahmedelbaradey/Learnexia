@@ -137,7 +137,9 @@ public static class DependencyInjection
 
         // ── Option C — new service seams (handlers stay EF-free) ─────────────────────────────────
 
-        // ICreditLedgerService — owns all ledger write/read paths for CreditAccount.
+        // ICreditLedgerService — owns all ledger write/read paths for the family wallet
+        // (GrantFamilyWalletAsync, SpendAsync, ReconcileFamilyWalletAsync, GetEnergyStatusAsync).
+        // CreditAccount is retired; migration-only artifact via CreditAccountMigrationService.
         // Scoped: depends on scoped BillingDbContext + ILoggerManager (Singleton — safe).
         services.AddScoped<ICreditLedgerService, CreditLedgerService>();
 
@@ -159,6 +161,28 @@ public static class DependencyInjection
         services.AddScoped<GlobalSettingService>();
         services.AddScoped<IGlobalSettingService>(sp => sp.GetRequiredService<GlobalSettingService>());
         services.AddScoped<IGlobalSettingValidationService>(sp => sp.GetRequiredService<GlobalSettingService>());
+
+        // ── P10-13: Family energy wallet seams (Option C) ────────────────────────────────────────
+
+        // ISeatQuery — P10-13-BE-8 temporary in-Billing impl (CUTOVER: replaced by the real
+        // SeatReservation-backed impl in P10-14-BE-3a). Resolves active children via IParentChildQuery.
+        // Scoped: depends on IParentChildQuery (Scoped in Parent module) + ILoggerManager.
+        services.AddScoped<ISeatQuery, TemporarySeatQuery>();
+
+        // IFamilyEnergyAllocationService — owns the equal-split grant-deposit + allocation-row
+        // upsert logic in an explicit transaction. Application handlers stay EF-free.
+        // Scoped: depends on scoped BillingDbContext + ISeatQuery + ICurrentUserService.
+        services.AddScoped<IFamilyEnergyAllocationService, FamilyEnergyAllocationService>();
+
+        // IFamilyEnergyQueryService — owns all EF query/projection logic for the parent read path.
+        // Application handlers stay EF-free (Option C).
+        // Scoped: depends on scoped BillingDbContext.
+        services.AddScoped<IFamilyEnergyQueryService, FamilyEnergyQueryService>();
+
+        // ICreditAccountMigrationService — idempotent clean-cutover migration (P10-13-BE-9).
+        // One-shot service (can be called from the BillingModule startup hook or an admin endpoint).
+        // Scoped: depends on scoped BillingDbContext + IParentChildQuery + ICurrentUserService.
+        services.AddScoped<ICreditAccountMigrationService, CreditAccountMigrationService>();
 
         return services;
     }

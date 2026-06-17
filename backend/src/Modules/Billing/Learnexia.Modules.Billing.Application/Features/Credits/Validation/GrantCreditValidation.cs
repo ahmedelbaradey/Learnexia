@@ -7,9 +7,8 @@ public class GrantCreditValidation : AbstractValidator<GrantCreditCommand>
 {
     public GrantCreditValidation()
     {
-        RuleFor(x => x.ChildId).GreaterThan(0);
+        RuleFor(x => x.ParentId).GreaterThan(0);
         RuleFor(x => x.Amount).GreaterThan(0);
         RuleFor(x => x.IdempotencyKey).NotEmpty();
-        RuleFor(x => x.ExpiresAtUtc).GreaterThan(DateTime.UtcNow);
     }
 }

@@ -23,7 +23,7 @@ namespace Learnexia.Modules.Billing.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Learnexia.Modules.Billing.Domain.Entities.CreditAccount", b =>
+            modelBuilder.Entity("Learnexia.Modules.Billing.Domain.Entities.ChildDailyUsage", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -62,18 +62,68 @@ namespace Learnexia.Modules.Billing.Infrastructure.Migrations
                     b.Property<int?>("DeletedBy")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime?>("GrantExpiresAtUtc")
+                    b.Property<bool?>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamptz");
 
-                    b.Property<int>("GrantedBalance")
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChildId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ChildDailyUsages_ChildId");
+
+                    b.ToTable("ChildDailyUsages", "billing", t =>
+                        {
+                            t.HasCheckConstraint("CK_ChildDailyUsages_DailyUsed_NonNegative", "\"DailyUsed\" >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("Learnexia.Modules.Billing.Domain.Entities.ChildEnergyAllocation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AllocatedAmount")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasDefaultValue(0);
 
+                    b.Property<int>("ChildId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamptz");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CycleEndUtc")
+                        .HasColumnType("timestamptz");
+
+                    b.Property<DateTime>("CycleStartUtc")
+                        .HasColumnType("timestamptz");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamptz");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("FamilyEnergyAccountId")
+                        .HasColumnType("integer");
+
                     b.Property<bool?>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<int>("PurchasedBalance")
+                    b.Property<int>("SpentAmount")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasDefaultValue(0);
@@ -93,14 +143,17 @@ namespace Learnexia.Modules.Billing.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ChildId")
+                        .HasDatabaseName("IX_ChildEnergyAllocations_ChildId");
+
+                    b.HasIndex("FamilyEnergyAccountId", "ChildId", "CycleStartUtc")
                         .IsUnique()
-                        .HasDatabaseName("IX_CreditAccounts_ChildId");
+                        .HasDatabaseName("UX_ChildEnergyAllocations_FamilyChildCycle");
 
-                    b.ToTable("CreditAccounts", "billing", t =>
+                    b.ToTable("ChildEnergyAllocations", "billing", t =>
                         {
-                            t.HasCheckConstraint("CK_CreditAccounts_GrantedBalance_NonNegative", "\"GrantedBalance\" >= 0");
+                            t.HasCheckConstraint("CK_ChildEnergyAllocations_AllocatedAmount_NonNegative", "\"AllocatedAmount\" >= 0");
 
-                            t.HasCheckConstraint("CK_CreditAccounts_PurchasedBalance_NonNegative", "\"PurchasedBalance\" >= 0");
+                            t.HasCheckConstraint("CK_ChildEnergyAllocations_SpentAmount_NonNegative", "\"SpentAmount\" >= 0");
                         });
                 });
 
@@ -115,19 +168,28 @@ namespace Learnexia.Modules.Billing.Infrastructure.Migrations
                     b.Property<int>("Amount")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("ChildEnergyAllocationId")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("CorrelationId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamptz");
 
                     b.Property<int>("CreatedBy")
                         .HasColumnType("integer");
 
-                    b.Property<int>("CreditAccountId")
+                    b.Property<int?>("CreditAccountId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamptz");
 
                     b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("FamilyEnergyAccountId")
                         .HasColumnType("integer");
 
                     b.Property<int>("FromGranted")
@@ -175,6 +237,9 @@ namespace Learnexia.Modules.Billing.Infrastructure.Migrations
                     b.Property<int>("ResultingPurchasedBalance")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("SourceBucket")
+                        .HasColumnType("integer");
+
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
@@ -185,6 +250,11 @@ namespace Learnexia.Modules.Billing.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ChildEnergyAllocationId");
+
+                    b.HasIndex("FamilyEnergyAccountId")
+                        .HasDatabaseName("IX_CreditTransactions_FamilyEnergyAccountId");
 
                     b.HasIndex("IdempotencyKey")
                         .IsUnique()
@@ -197,6 +267,71 @@ namespace Learnexia.Modules.Billing.Infrastructure.Migrations
                         .HasDatabaseName("IX_CreditTransactions_AccountId_OccurredAtUtc");
 
                     b.ToTable("CreditTransactions", "billing");
+                });
+
+            modelBuilder.Entity("Learnexia.Modules.Billing.Domain.Entities.FamilyEnergyAccount", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamptz");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamptz");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<bool?>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("ParentUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PurchasedBalance")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("SubscriptionBalance")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime?>("SubscriptionExpiresAtUtc")
+                        .HasColumnType("timestamptz");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamptz");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentUserId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_FamilyEnergyAccounts_ParentUserId");
+
+                    b.ToTable("FamilyEnergyAccounts", "billing", t =>
+                        {
+                            t.HasCheckConstraint("CK_FamilyEnergyAccounts_PurchasedBalance_NonNegative", "\"PurchasedBalance\" >= 0");
+
+                            t.HasCheckConstraint("CK_FamilyEnergyAccounts_SubscriptionBalance_NonNegative", "\"SubscriptionBalance\" >= 0");
+                        });
                 });
 
             modelBuilder.Entity("Learnexia.Modules.Billing.Domain.Entities.GlobalSetting", b =>
@@ -461,12 +596,9 @@ namespace Learnexia.Modules.Billing.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ParentUserId")
-                        .HasDatabaseName("IX_Subscriptions_ParentUserId");
-
-                    b.HasIndex("ParentUserId")
                         .IsUnique()
-                        .HasFilter("\"Status\" = 0")
-                        .HasDatabaseName("UX_Subscriptions_ParentUserId_Active");
+                        .HasDatabaseName("IX_Subscriptions_ParentUserId")
+                        .HasFilter("\"Status\" = 0");
 
                     b.HasIndex("Status")
                         .HasDatabaseName("IX_Subscriptions_Status");
@@ -543,20 +675,37 @@ namespace Learnexia.Modules.Billing.Infrastructure.Migrations
                     b.ToTable("WebhookEvents", "billing");
                 });
 
-            modelBuilder.Entity("Learnexia.Modules.Billing.Domain.Entities.CreditTransaction", b =>
+            modelBuilder.Entity("Learnexia.Modules.Billing.Domain.Entities.ChildEnergyAllocation", b =>
                 {
-                    b.HasOne("Learnexia.Modules.Billing.Domain.Entities.CreditAccount", "CreditAccount")
-                        .WithMany("Transactions")
-                        .HasForeignKey("CreditAccountId")
+                    b.HasOne("Learnexia.Modules.Billing.Domain.Entities.FamilyEnergyAccount", "FamilyEnergyAccount")
+                        .WithMany("Allocations")
+                        .HasForeignKey("FamilyEnergyAccountId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("CreditAccount");
+                    b.Navigation("FamilyEnergyAccount");
                 });
 
-            modelBuilder.Entity("Learnexia.Modules.Billing.Domain.Entities.CreditAccount", b =>
+            modelBuilder.Entity("Learnexia.Modules.Billing.Domain.Entities.CreditTransaction", b =>
                 {
-                    b.Navigation("Transactions");
+                    b.HasOne("Learnexia.Modules.Billing.Domain.Entities.ChildEnergyAllocation", "ChildEnergyAllocation")
+                        .WithMany()
+                        .HasForeignKey("ChildEnergyAllocationId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Learnexia.Modules.Billing.Domain.Entities.FamilyEnergyAccount", "FamilyEnergyAccount")
+                        .WithMany()
+                        .HasForeignKey("FamilyEnergyAccountId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("ChildEnergyAllocation");
+
+                    b.Navigation("FamilyEnergyAccount");
+                });
+
+            modelBuilder.Entity("Learnexia.Modules.Billing.Domain.Entities.FamilyEnergyAccount", b =>
+                {
+                    b.Navigation("Allocations");
                 });
 #pragma warning restore 612, 618
         }

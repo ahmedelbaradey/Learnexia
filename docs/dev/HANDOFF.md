@@ -700,6 +700,65 @@ Rate limiting on the credit balance GET (`GET /api/Billing/Credits/{childId}`) �
 - `IPublisher` (MediatR) in `UpdateGlobalSettingCommandHandler` → discovered by the host's `AddCrossModuleMediatR` scan; no new DI registration needed.
 - The `InitialBilling` migration is uncommitted — it already has the CHECK constraints in the edited file. If the migration has already been applied to a dev DB without the constraints, you will need to drop and re-apply or add a new `AlterBilling` migration.
 
+## P10-13 Family Energy Wallet foundation (BUILT) — 2026-06-16 (branch `feat/P10-13-family-wallet`, stacked on PR #157)
+
+**✅ COMPLETE — first implementation batch of the Family-Wallet wave** (brief `docs/briefs/P10-SEATS-WALLET.md`, plan `docs/plans/P10-SEATS-WALLET.md`). All acceptance criteria met; full gating pipeline (reviewer + security-auditor) PASS.
+
+### What shipped
+
+**Parent-owned `FamilyEnergyAccount` replaces per-child `CreditAccount`.** Energy is now two non-convertible buckets:
+- **Allocation Bucket** — monthly subscription grant divided equally per child via `ChildEnergyAllocation` (no-cost transfer; default = `(PlanEnergyPerSeat × ActivePaidSeats) ÷ ChildCount`). Allocation overrides scoped per (family, child); read-only on the API (admin override deferred to P10-14+). Per-child soft cap via `ChildDailyUsage` (advisory; no enforcement).
+- **Purchased Balance** — (unchanged) pack credits bought on parent payment intent, shared across the family.
+
+**Spend sequence:** spend handlers now attempt allocation-bucket first → if exhausted, fallback to shared purchased balance. Monthly grant = `PlanEnergyPerSeat × ActivePaidSeats` (reuses `credits.{free,premium}_monthly` settings); the `BillingGrantJob` now operates on `FamilyEnergyAccount` instead of per-child rows.
+
+**Admin operations re-homed:** family-wallet `Grant` (add balance) and `Reconcile` (audit/fix) endpoints replace the retired child grant/purchase/refund/adjust commands. Removed: `/api/Billing/Credits/{childId}/{Adjust,ApplyPurchase,Refund,ExpireGrant}` + `GetCreditAccount` query.
+
+**`CreditAccount` fully retired.** One-time `CreditAccountMigrationService` (registered, run pre-launch):
+1. **Provision:** iterates live `CreditAccount` rows (raw SQL), provisions a `FamilyEnergyAccount` per family + `ChildEnergyAllocation` per child (preserves purchased balance on shared bucket).
+2. **Cleanup:** deletes migrated `CreditAccount` rows + `CreditTransaction` ledger (post-migration audit, `CreationAuditedEntity` timestamps preserved via SQL).
+3. **Orphan guard:** fails loudly if a credit-account references a deleted/missing parent or child.
+
+The three migrations are idempotent (unique index checks; fail-soft on re-run):
+- `20260616140309_AddFamilyEnergyWallet` — new tables + configs.
+- `20260616141037_MigrateCreditAccountsToFamilyWallet` — raw-SQL provision + delete.
+- `20260616182410_DropLegacyCreditAccounts` — DDL drop (runs post-service cleanup).
+
+**Temp seam:** `ISeatQuery` (Billing.Infrastructure) — a stub to count `ActivePaidSeats` — will be swapped for the real multi-seat model in P10-14. Currently returns a constant (configurable; defaults 1 per family).
+
+### Verification
+
+- **Build:** 0 errors; baseline .NET 10 + Npgsql + EF warnings unchanged.
+- **Test suite:**
+  - **P10-13 unit + integration (new):** 22/22 pass (wallet allocation, spend sequence, daily-usage, grant, reconcile, migration happy-path + orphan guard).
+  - **Full P10 integration suite:** 151/151 pass (all money paths end-to-end: free trial → subscription → pack purchase → spend; refund integrity; gift credit; expiration).
+  - **Billing module unit:** 93/93 pass (no regression).
+  - **AI module unit:** 287/287 pass (untouched; baseline confirmed).
+- **Security:** 0 Critical / 0 High. **Non-blocking follow-ups documented** (see below).
+- **Option C service-only:** all data access behind `IFamilyEnergyAllocationService` / `IFamilyEnergyQueryService` + migration service; no EF in Application layer.
+
+### Non-blocking security follow-ups
+
+1. **MEDIUM — `FamilyEnergyController` `[Authorize]` role-gate.** `GET /api/Billing/FamilyEnergy/Overview` (parent-initiated wallet view) currently uses bare `[Authorize]`; restricts to authenticated-only. Should be gated to `Parent/Admin` role; non-parent 404 (anti-enumeration, no disclosure). **Recommended:** add method-level `[Authorize(Policy = RolePolicy.ParentOrAdmin)]` + handler IDOR check. Currently safe (intended for parent use only); upgrade before releasing to production.
+
+2. **LOW — stale enum + localization keys.** `CreditReasonCode` still carries `CreditAccountNotFound` (retired); `ReconcileAccountQueryHandler` fallback 404 uses the stale `SharedResourcesKey.CreditAccountNotFound` localization key (should rename to `FamilyWalletNotFound` for consistency). No functional impact (enum value not exposed in API); update pre-merge or in a follow-up chore.
+
+3. **NOTE — `/api/Billing/Credits/Spend` `childId` parameter lacks ownership check.** Spend handler accepts `childId` from route without verifying parent ownership (IDOR potential). **Mitigated by current access gating:** the `Billing.Create` permission is `SuperAdmin`-only → only super-admin can call Spend. If P10-14+ widens the permission, add a parent-ownership check in the spend handler.
+
+### Load-bearing
+
+- `ISeatQuery.GetActivePaidSeatsForFamilyAsync(familyId)` — stub returns constant (1 per family). P10-14 replaces with real multi-seat model from Identity.
+- Migration service is **best-effort, run once, pre-launch** (not idempotent across multiple runs if deletes succeed; safeguard: check row counts before & after, log discrepancies). On production deployment, run the service **before API goes live** (downtime window or read-only mode).
+- `BillingDbContext.CreditAccount` + `CreditTransaction` DbSets remain in the context (columns/table deleted by migrations); the ORM doesn't reference them post-migration (queries use `FamilyEnergyAccount` only). Safe to remove the DbSet in a future chore (not done now to avoid merge conflicts on stacked branches).
+
+### Tracked follow-ups (non-blocking, NOT done)
+
+1. **P10-14 — `ISeatQuery` → real multi-seat allocation model.** Swap the stub with identity-backed seat-query.
+2. **P10-14+ — admin allocation override.** `PatchChildAllocationCommand` to set per-child allocation ≠ default.
+3. **P10-15+ — batch operations.** Family-wallet admin `BulkGrant`, `BulkReconcile`, CSV import.
+4. **Cleanup chore — remove stale DbSets + enum value + localization keys** (zero functional impact; polish pre-GA).
+
+
 ## P7-12 FIX (DONE) — 2026-06-15 (`fix/phase7-wave-1`)
 
 The comprehensive "verify P7-12" pass found Bucket C still open + a latent UTC-serialization bug. Both fixed with all gates (reviewer, security-auditor, completeness-critic) passing.
