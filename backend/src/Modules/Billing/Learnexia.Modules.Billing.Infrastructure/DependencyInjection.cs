@@ -195,6 +195,27 @@ public static class DependencyInjection
         // Scoped: depends on scoped BillingDbContext + IParentChildQuery + ICurrentUserService.
         services.AddScoped<ICreditAccountMigrationService, CreditAccountMigrationService>();
 
+        // ── P10-15: Seat lifecycle services ─────────────────────────────────────────────────────
+
+        // ISeatGraceService — P10-15-BE-2: opens/checks payment-failure seat grace windows.
+        // Scoped: depends on scoped BillingDbContext + IGlobalSettingsProvider + ICurrentUserService.
+        services.AddScoped<ISeatGraceService, SeatGraceService>();
+
+        // ISeatSchedulingService — P10-15-BE-3: sets RemovalScheduledAt on SeatReservation rows.
+        // Scoped: depends on scoped BillingDbContext + ICurrentUserService.
+        services.AddScoped<ISeatSchedulingService, SeatSchedulingService>();
+
+        // ISeatEnforcementService — P10-15-BE-4: applies enforcement (lock over-limit seats).
+        // Scoped: depends on BillingDbContext (concrete — needs SaveChanges on enforcement scan).
+        services.AddScoped<ISeatEnforcementService, SeatEnforcementService>();
+
+        // SeatEnforcementJob — Hangfire job; Transient mirrors DunningRetryJob registration.
+        services.AddTransient<SeatEnforcementJob>();
+
+        // ISeatStateQuery (Shared.Contracts.Billing) — P10-15-BE-8: cross-module "is child seat active?" seam.
+        // Used by CreditSpendService gate. Scoped: depends on scoped BillingDbContext.
+        services.AddScoped<ISeatStateQuery, SeatStateQuery>();
+
         return services;
     }
 }

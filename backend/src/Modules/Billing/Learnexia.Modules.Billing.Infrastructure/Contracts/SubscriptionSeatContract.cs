@@ -55,8 +55,9 @@ public sealed class SubscriptionSeatContract : ISubscriptionSeatContract
         };
     }
 
-    public Task ReleaseSeatAsync(int parentUserId, int childId, CancellationToken ct = default)
-        => _seatService.ReleaseSeatAsync(parentUserId, childId, ct);
+    public Task ReleaseSeatAsync(int parentUserId, int childId, CancellationToken ct = default,
+        string? reservationKey = null)
+        => _seatService.ReleaseSeatAsync(parentUserId, childId, ct, reservationKey);
 
     public async Task<bool> HasFreeSeatAsync(int parentUserId, CancellationToken ct = default)
     {
@@ -94,6 +95,7 @@ public sealed class SubscriptionSeatContract : ISubscriptionSeatContract
         return occupied < totalSeats;
     }
 
-    public Task ActivateSeatAsync(int parentUserId, int childId, CancellationToken ct = default)
-        => _seatService.ActivateSeatAsync(parentUserId, childId, ct);
+    public Task ActivateSeatAsync(int parentUserId, int childId, CancellationToken ct = default,
+        string? reservationKey = null)
+        => _seatService.ActivateSeatAsync(parentUserId, childId, ct, reservationKey);
 }

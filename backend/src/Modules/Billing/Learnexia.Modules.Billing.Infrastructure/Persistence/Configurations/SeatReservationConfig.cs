@@ -48,6 +48,22 @@ public sealed class SeatReservationConfig : IEntityTypeConfiguration<SeatReserva
             .HasColumnType("timestamptz")
             .IsRequired(false);
 
+        // ── P10-15-BE-1: Seat lifecycle state ─────────────────────────────────────────
+        builder.Property(x => x.SeatState)
+            .IsRequired()
+            .HasConversion<int>()
+            .HasDefaultValue(SeatState.Active);
+
+        // ── P10-15-BE-1: Voluntary-removal scheduling ─────────────────────────────────
+        builder.Property(x => x.RemovalScheduledAt)
+            .HasColumnType("timestamptz")
+            .IsRequired(false);
+
+        // ── P10-15-BE-10: Idempotency key for concurrency-safe reservation ───────────
+        builder.Property(x => x.IdempotencyKey)
+            .HasMaxLength(128)
+            .IsRequired(false);
+
         // Audit columns.
         builder.Property(x => x.CreatedAt).HasColumnType("timestamptz");
         builder.Property(x => x.UpdatedAt).HasColumnType("timestamptz").IsRequired(false);
@@ -75,5 +91,13 @@ public sealed class SeatReservationConfig : IEntityTypeConfiguration<SeatReserva
             .IsUnique()
             .HasFilter("\"Status\" IN (0, 1)")
             .HasDatabaseName("UX_SeatReservations_SubscriptionId_ChildId_Active");
+
+        // ── P10-15-BE-10: Unique filtered index on IdempotencyKey ─────────────────────
+        // Prevents two concurrent reservation attempts from succeeding with the same key.
+        // Filtered to non-null keys so NULL rows don't collide.
+        builder.HasIndex(x => x.IdempotencyKey)
+            .IsUnique()
+            .HasFilter("\"IdempotencyKey\" IS NOT NULL")
+            .HasDatabaseName("UX_SeatReservations_IdempotencyKey");
     }
 }

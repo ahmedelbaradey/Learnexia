@@ -47,6 +47,9 @@ public class BillingDbContext : DbContext, IBillingDbContext
     // P10-14 seat reservation entity.
     public DbSet<SeatReservation> SeatReservations => Set<SeatReservation>();
 
+    // P10-15 seat ledger (append-only audit of all seat lifecycle events).
+    public DbSet<SeatLedgerEntry> SeatLedgerEntries => Set<SeatLedgerEntry>();
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 

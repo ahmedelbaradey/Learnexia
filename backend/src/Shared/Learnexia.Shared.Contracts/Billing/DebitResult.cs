@@ -43,4 +43,11 @@ public enum DebitOutcome
 
     /// <summary>Duplicate idempotency key — prior debit returned; no new row written.</summary>
     DuplicateIdempotent = 3,
+
+    /// <summary>
+    /// P10-15-BE-5: the child's seat is <c>NoSeatLocked</c> — spend denied before any balance is touched.
+    /// The AI handler should surface <see cref="Resources.SharedResourcesKey.ChildSeatLockedNoEnergy"/>
+    /// to the parent as a 403-level response.
+    /// </summary>
+    SeatLocked = 4,
 }

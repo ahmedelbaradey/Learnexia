@@ -560,8 +560,8 @@ public sealed class P10_01_12_Billing_IntegrationTests : IAsyncLifetime
     /// Verifies AI action costs (Hint=1, WhyWrong=2, Explain=3, Practice=5),
     /// cache thresholds, credit pools, subscription pricing, and FX defaults.
     /// </summary>
-    [Fact(DisplayName = "TC-GS-04 SeedVerification: all 21 seeded keys present with correct Phase-10 economy values")]
-    public async Task TC_GS_04_SeedVerification_All21Keys_Present_WithCorrectValues()
+    [Fact(DisplayName = "TC-GS-04 SeedVerification: all 22 seeded keys present with correct Phase-10 economy values")]
+    public async Task TC_GS_04_SeedVerification_All22Keys_Present_WithCorrectValues()
     {
         var adminToken = await GetAdminTokenAsync();
         var (resp, root, body) = await SendAsync(HttpMethod.Get, GlobalSettingsUrl, null, adminToken);
@@ -572,9 +572,10 @@ public sealed class P10_01_12_Billing_IntegrationTests : IAsyncLifetime
         TryProp(root, "data", out var data).Should().BeTrue($"body: {body}");
         var settings = data.EnumerateArray().ToList();
 
-        // 17 Phase-10 economy keys + 4 P10-14 seat keys (seats.included_free/premium, seats.max, seats.extra_price_egp).
-        settings.Count.Should().Be(21,
-            $"GlobalSettingsSeeder must produce exactly 21 rows; found {settings.Count}. body: {body}");
+        // 17 Phase-10 economy keys + 4 P10-14 seat keys (seats.included_free/premium, seats.max, seats.extra_price_egp)
+        // + 1 P10-15 key (seats.grace_days) = 22.
+        settings.Count.Should().Be(22,
+            $"GlobalSettingsSeeder must produce exactly 22 rows; found {settings.Count}. body: {body}");
 
         // Build a lookup by key.
         var dict = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -695,6 +696,12 @@ public sealed class P10_01_12_Billing_IntegrationTests : IAsyncLifetime
             $"seats.extra_price_egp key must be seeded; body: {body}");
         dict["seats.extra_price_egp"].Should().Be("169.00",
             $"extra-seat monthly price must default to 169.00 EGP; body: {body}");
+
+        // ── P10-15 Seat-lifecycle configuration ──
+        dict.Should().ContainKey("seats.grace_days",
+            $"seats.grace_days key must be seeded; body: {body}");
+        dict["seats.grace_days"].Should().Be("7",
+            $"payment-failure seat grace window must default to 7 days; body: {body}");
     }
 
     [Fact(DisplayName = "TC-GS-05 Update+Reflect: PUT GlobalSettings/{key} as Admin → 200; subsequent GET reflects new value (proves DB + cache invalidation)")]

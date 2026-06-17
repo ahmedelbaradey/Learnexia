@@ -46,15 +46,26 @@ public interface ISeatService
     /// <paramref name="childId"/> to <c>Released</c> (compensation path when add-child fails after a
     /// reservation). Idempotent: no-op if no reservation exists or already released.
     /// (Voluntary seat cancels do NOT release here — they use the cycle-end scheduled-removal marker.)
+    ///
+    /// <para><strong>P10-15-BE-10 (concurrent-reservation fix):</strong> when <paramref name="childId"/>
+    /// is the <c>0</c> placeholder, pass <paramref name="reservationKey"/> to resolve the exact row by
+    /// idempotency key rather than "most-recent childId=0" (which is ambiguous under concurrency).</para>
     /// </summary>
-    Task ReleaseSeatAsync(int parentUserId, int childId, CancellationToken ct = default);
+    Task ReleaseSeatAsync(int parentUserId, int childId, CancellationToken ct = default,
+        string? reservationKey = null);
 
     /// <summary>
     /// Transitions an existing <c>SeatReservation</c> for <paramref name="childId"/> from
     /// <c>Reserved</c> → <c>Active</c> (called after child creation + link succeeds).
     /// Idempotent: no-op if already <c>Active</c>.
+    ///
+    /// <para><strong>P10-15-BE-10 (concurrent-reservation fix):</strong> when the reservation was created
+    /// with <paramref name="childId"/>=0 as a placeholder, pass <paramref name="reservationKey"/> to resolve
+    /// the exact row by idempotency key and stamp the real child id — preventing one concurrent call from
+    /// activating another's placeholder.</para>
     /// </summary>
-    Task ActivateSeatAsync(int parentUserId, int childId, CancellationToken ct = default);
+    Task ActivateSeatAsync(int parentUserId, int childId, CancellationToken ct = default,
+        string? reservationKey = null);
 
     /// <summary>
     /// Returns the full seat-status snapshot for <paramref name="parentUserId"/>:
@@ -85,6 +96,42 @@ public interface ISeatService
         CancellationToken ct = default);
 
     /// <summary>
+    /// Applies the parent's explicit selection of which children hold active seats (P10-15-BE-6).
+    ///
+    /// <para><strong>Guard:</strong> <c>activeChildIds.Count</c> must not exceed <c>paidActiveSeats</c>.
+    /// Seats not in the list transition to <c>NoSeatLocked</c> (enforcement logic inline); seats in the
+    /// list that are currently <c>NoSeatLocked</c> MUST first be reactivated via a paid checkout (this
+    /// method returns <c>ChoiceFailureReason.LockedChildRequiresReactivation</c> for those).</para>
+    ///
+    /// <para><strong>IDOR:</strong> all child ids must belong to <paramref name="parentUserId"/>'s family.
+    /// The service validates this; any foreign child id → <c>ChoiceFailureReason.ChildNotInFamily</c>.</para>
+    ///
+    /// <para><strong>Idempotent:</strong> re-submitting the same selection is a no-op.</para>
+    ///
+    /// <para><strong>SeatLedgerEntry{ChoiceApplied}</strong> is appended for each child whose state changes.</para>
+    /// </summary>
+    Task<SeatChoiceResult> ChooseActiveChildrenAsync(
+        int parentUserId,
+        IReadOnlyList<int> activeChildIds,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Creates a <c>Payment{Kind=SeatReactivation, Status=Initiated}</c> row, calls
+    /// <c>IPaymentProvider.CreateCheckoutSessionAsync</c>, persists the provider ref, and
+    /// returns the redirect URL + internal payment id.
+    ///
+    /// <para><strong>Guard:</strong> the child's seat must be <c>NoSeatLocked</c>. Prorated pricing
+    /// (server-resolved). Mint ZERO energy on reactivation (only money, no grant).</para>
+    ///
+    /// <para><strong>IDOR:</strong> the child must belong to <paramref name="parentUserId"/>'s family.</para>
+    /// </summary>
+    Task<SeatCheckoutResult> StartSeatReactivationCheckoutAsync(
+        int parentUserId,
+        int childId,
+        string idempotencyKey,
+        CancellationToken ct = default);
+
+    /// <summary>
     /// Creates a <c>Payment{Kind=Seat, Status=Initiated}</c> row, calls
     /// <c>IPaymentProvider.CreateCheckoutSessionAsync</c>, persists the provider ref, and
     /// returns the redirect URL + internal payment id.
@@ -105,8 +152,6 @@ public interface ISeatService
         string idempotencyKey,
         CancellationToken ct = default);
 }
-
-// ── Result types ─────────────────────────────────────────────────────────────────────────────────
 
 // ── Result types ─────────────────────────────────────────────────────────────────────────────────
 
@@ -176,14 +221,64 @@ public sealed record SeatStatusSnapshot(
     int OccupiedSeats,
     int AvailableSeats,
     int MaxSeats,
-    IReadOnlyList<ChildSeatStatusDto> Children);
+    IReadOnlyList<ChildSeatStatusDto> Children)
+{
+    // ── P10-15-BE-6: grace window info ───────────────────────────────────────────
 
-/// <summary>Per-child seat status within a <see cref="SeatStatusSnapshot"/>.</summary>
+    /// <summary>UTC timestamp when the seat grace window ends. Null when no grace is active.</summary>
+    public DateTime? GraceEndsAt { get; init; }
+
+    /// <summary>True when a seat grace window is currently open.</summary>
+    public bool IsInGrace { get; init; }
+}
+
+/// <summary>Per-child seat status within a <see cref="SeatStatusSnapshot"/> (P10-15 extended).</summary>
 public sealed record ChildSeatStatusDto(
     int ChildId,
-    string Status);   // maps from SeatStatus enum name — no free-text
+    string Status)    // maps from SeatStatus enum name — no free-text
+{
+    // ── P10-15-BE-6: seat lifecycle state ────────────────────────────────────────
+
+    /// <summary>Seat lifecycle state: "Active" or "NoSeatLocked".</summary>
+    public string SeatState { get; init; } = "Active";
+
+    /// <summary>UTC timestamp when voluntary removal is scheduled (cycle-end). Null if not scheduled.</summary>
+    public DateTime? RemovalScheduledAt { get; init; }
+}
 
 /// <summary>Result returned by <see cref="ISeatService.ScheduleExtraSeatCancellationAsync"/>.</summary>
 public sealed record SeatCancelResult(
     bool Succeeded,
     string? FailureReason);
+
+/// <summary>Result returned by <see cref="ISeatService.ChooseActiveChildrenAsync"/>.</summary>
+public sealed record SeatChoiceResult
+{
+    public bool Succeeded { get; init; }
+    public SeatChoiceFailureReason? FailureReason { get; init; }
+
+    /// <summary>Number of children whose SeatState changed as a result of this choice.</summary>
+    public int ChangedCount { get; init; }
+
+    public static SeatChoiceResult Ok(int changedCount)
+        => new() { Succeeded = true, ChangedCount = changedCount };
+
+    public static SeatChoiceResult Fail(SeatChoiceFailureReason reason)
+        => new() { Succeeded = false, FailureReason = reason };
+}
+
+/// <summary>Typed failure reasons for <see cref="ISeatService.ChooseActiveChildrenAsync"/>.</summary>
+public enum SeatChoiceFailureReason
+{
+    /// <summary>The number of requested active children exceeds the paid-active-seat limit.</summary>
+    ExceedsPaidSeats = 1,
+
+    /// <summary>One or more of the supplied child ids does not belong to the authenticated parent's family.</summary>
+    ChildNotInFamily = 2,
+
+    /// <summary>One or more of the children requested as Active are currently NoSeatLocked; they need a reactivation checkout first.</summary>
+    LockedChildRequiresReactivation = 3,
+
+    /// <summary>The parent has no active subscription.</summary>
+    NoActiveSubscription = 4,
+}

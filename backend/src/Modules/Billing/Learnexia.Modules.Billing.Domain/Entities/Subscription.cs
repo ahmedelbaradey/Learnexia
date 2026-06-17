@@ -105,4 +105,23 @@ public class Subscription : FullAuditedEntity
     /// This is a SCHEDULED-REMOVAL marker, NOT a grace marker.
     /// </summary>
     public DateTime? ExtraSeatCancelEffectiveAt { get; set; }
+
+    // ── P10-15-BE-1: Seat grace audit fields ────────────────────────────────────
+
+    /// <summary>
+    /// UTC timestamp when the seat grace window was started (audit only — P10-15-BE-1).
+    ///
+    /// <para>The authoritative "when does grace end?" clock is <see cref="GraceEndsAt"/> (unified
+    /// per OQ-E, lead 2026-06-17). This field records WHEN it started for operational visibility.
+    /// Null when no seat grace window is/was active.</para>
+    /// </summary>
+    public DateTime? SeatGraceStartedAt { get; set; }
+
+    /// <summary>
+    /// The reason why the seat grace window was started (P10-15-BE-1).
+    ///
+    /// <para>Payment-failure ONLY triggers a grace window (OQ-1/OQ-3, lead 2026-06-17).
+    /// Voluntary removal → cycle-end scheduling, not grace. Null when no seat grace is/was active.</para>
+    /// </summary>
+    public SeatGraceReason? SeatGraceReason { get; set; }
 }

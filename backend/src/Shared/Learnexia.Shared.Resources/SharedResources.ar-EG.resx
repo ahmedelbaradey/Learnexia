@@ -2406,4 +2406,34 @@
   <data name="SeatPurchaseConfirmed" xml:space="preserve">
     <value>تم تأكيد شراء المقعد الإضافي. أصبحت مقاعدك الجديدة نشطة الآن.</value>
   </data>
+  <data name="ChildSeatLockedNoEnergy" xml:space="preserve">
+    <value>مقعد هذا الطفل مقيّد حالياً. يرجى إعادة تفعيل مقعده للسماح بالوصول إلى الذكاء الاصطناعي.</value>
+  </data>
+  <data name="SeatChoiceExceedsLimit" xml:space="preserve">
+    <value>عدد الأطفال النشطين المحددين يتجاوز حد المقاعد المدفوعة في اشتراكك.</value>
+  </data>
+  <data name="SeatChoiceApplied" xml:space="preserve">
+    <value>تم تطبيق اختيار الأطفال النشطين بنجاح.</value>
+  </data>
+  <data name="SeatReactivateInitiated" xml:space="preserve">
+    <value>تم بدء إجراء إعادة تفعيل المقعد. يرجى إتمام الدفع لاستعادة الوصول.</value>
+  </data>
+  <data name="SeatGraceWindowStarted" xml:space="preserve">
+    <value>تم اكتشاف مشكلة في الدفع. سيظل وصول أطفالك محفوظاً خلال فترة السماح بينما نعيد محاولة الدفع.</value>
+  </data>
+  <data name="SeatEnforcementApplied" xml:space="preserve">
+    <value>تم تطبيق قيود المقاعد. نُقل الأطفال الزائدون عن الحد إلى حالة المقعد المقيّد.</value>
+  </data>
+  <data name="SeatStatusLifecycleRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع حالة دورة حياة المقعد بنجاح.</value>
+  </data>
+  <data name="ChildNotInFamily" xml:space="preserve">
+    <value>الطفل المحدد لا ينتمي إلى حساب عائلتك.</value>
+  </data>
+  <data name="SeatReactivationConfirmed" xml:space="preserve">
+    <value>تم تأكيد إعادة تفعيل المقعد. تمت استعادة وصول الطفل.</value>
+  </data>
+  <data name="SeatAlreadyActive" xml:space="preserve">
+    <value>مقعد هذا الطفل نشط بالفعل. لا حاجة لإعادة التفعيل.</value>
+  </data>
 </root>

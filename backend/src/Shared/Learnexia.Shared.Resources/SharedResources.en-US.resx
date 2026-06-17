@@ -2407,4 +2407,34 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="SeatPurchaseConfirmed" xml:space="preserve">
     <value>Extra seat purchase confirmed. Your new seats are now active.</value>
   </data>
+  <data name="ChildSeatLockedNoEnergy" xml:space="preserve">
+    <value>This child's seat is currently locked. Please reactivate their seat to allow AI access.</value>
+  </data>
+  <data name="SeatChoiceExceedsLimit" xml:space="preserve">
+    <value>The number of selected active children exceeds your plan's paid seat limit.</value>
+  </data>
+  <data name="SeatChoiceApplied" xml:space="preserve">
+    <value>Active children selection applied successfully.</value>
+  </data>
+  <data name="SeatReactivateInitiated" xml:space="preserve">
+    <value>Seat reactivation checkout initiated. Please complete payment to restore access.</value>
+  </data>
+  <data name="SeatGraceWindowStarted" xml:space="preserve">
+    <value>A payment issue was detected. Your children's access is preserved for a grace period while we retry the charge.</value>
+  </data>
+  <data name="SeatEnforcementApplied" xml:space="preserve">
+    <value>Seat enforcement applied. Over-limit children have been moved to locked state.</value>
+  </data>
+  <data name="SeatStatusLifecycleRetrievedSuccessfully" xml:space="preserve">
+    <value>Seat lifecycle status retrieved successfully.</value>
+  </data>
+  <data name="ChildNotInFamily" xml:space="preserve">
+    <value>The specified child does not belong to your family account.</value>
+  </data>
+  <data name="SeatReactivationConfirmed" xml:space="preserve">
+    <value>Seat reactivation confirmed. The child's access has been restored.</value>
+  </data>
+  <data name="SeatAlreadyActive" xml:space="preserve">
+    <value>This child's seat is already active. No reactivation is needed.</value>
+  </data>
 </root>

@@ -76,6 +76,12 @@ public static class GlobalSettingKeys
     public const string SeatsMax             = "seats.max";
     /// <summary>Monthly price in EGP for one extra seat add-on. Default = 169.</summary>
     public const string SeatsExtraPriceEgp   = "seats.extra_price_egp";
+    /// <summary>
+    /// Number of days granted as a seat grace window after a payment failure (P10-15-BE-2).
+    /// During this window children remain Active (no enforcement). After expiry, enforcement
+    /// locks over-limit seats to <c>NoSeatLocked</c>. Default = 7.
+    /// </summary>
+    public const string SeatsGraceDays = "seats.grace_days";
 
     // ── Allowlist: all keys that are admin-editable (validator + update command use this) ──────
     public static readonly IReadOnlySet<string> ManagedKeys = new HashSet<string>(StringComparer.Ordinal)
@@ -103,5 +109,6 @@ public static class GlobalSettingKeys
         SeatsIncludedPremium,
         SeatsMax,
         SeatsExtraPriceEgp,
+        SeatsGraceDays,
     };
 }

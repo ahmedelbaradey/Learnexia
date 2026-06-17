@@ -48,7 +48,11 @@ public sealed class GetSeatStatusQueryHandler
             var snapshot = await _seatService.GetSeatStatusAsync(parentId, cancellationToken);
 
             var children = snapshot.Children
-                .Select(c => new ChildSeatItemDto(c.ChildId, c.Status))
+                .Select(c => new ChildSeatItemDto(c.ChildId, c.Status)
+                {
+                    SeatState          = c.SeatState,
+                    RemovalScheduledAt = c.RemovalScheduledAt,
+                })
                 .ToList();
 
             var dto = new SeatStatusDto(
@@ -58,7 +62,11 @@ public sealed class GetSeatStatusQueryHandler
                 OccupiedSeats      : snapshot.OccupiedSeats,
                 AvailableSeats     : snapshot.AvailableSeats,
                 MaxSeats           : snapshot.MaxSeats,
-                Children           : children);
+                Children           : children)
+            {
+                GraceEndsAt = snapshot.GraceEndsAt,
+                IsInGrace   = snapshot.IsInGrace,
+            };
 
             _logger.LogInfo(
                 $"GetSeatStatus: parentId={parentId}, total={snapshot.TotalSeats}, occupied={snapshot.OccupiedSeats}.");

@@ -1765,5 +1765,65 @@
         /// <summary>Returned when the webhook confirms extra seats were purchased successfully.</summary>
         public const string SeatPurchaseConfirmed = "SeatPurchaseConfirmed";
 
+        // ── P10-15 Seat lifecycle / enforcement / grace ───────────────────────────────────────────
+
+        /// <summary>
+        /// Returned (HTTP 403) when a child whose seat is NoSeatLocked attempts to spend AI energy.
+        /// The spend is denied before any balance is touched (P10-15-BE-5).
+        /// </summary>
+        public const string ChildSeatLockedNoEnergy = "ChildSeatLockedNoEnergy";
+
+        /// <summary>
+        /// Validation: the requested count of active children exceeds the subscription's paid-active-seat limit
+        /// (P10-15-BE-6 ChooseActiveChildren validator).
+        /// </summary>
+        public const string SeatChoiceExceedsLimit = "SeatChoiceExceedsLimit";
+
+        /// <summary>Returned when a parent's ChooseActiveChildren selection is applied successfully.</summary>
+        public const string SeatChoiceApplied = "SeatChoiceApplied";
+
+        /// <summary>
+        /// Returned when a prorated ReactivateChildSeat checkout session is created successfully.
+        /// Redirect URL is in the response Data (P10-15-BE-6).
+        /// </summary>
+        public const string SeatReactivateInitiated = "SeatReactivateInitiated";
+
+        /// <summary>
+        /// Returned (informational) when a payment-failure seat grace window is opened on a subscription
+        /// (P10-15-BE-2). The parent has a grace window to resolve the payment.
+        /// </summary>
+        public const string SeatGraceWindowStarted = "SeatGraceWindowStarted";
+
+        /// <summary>
+        /// Returned by the enforcement job / service when enforcement is applied to a subscription
+        /// (P10-15-BE-4). Logged; not surfaced to the parent unless a relevant portal notification is sent.
+        /// </summary>
+        public const string SeatEnforcementApplied = "SeatEnforcementApplied";
+
+        /// <summary>
+        /// Returned when the GetSeatStatusQuery (P10-15-BE-6 extended) retrieves the full seat-lifecycle
+        /// status snapshot successfully (complements the earlier SeatStatusRetrievedSuccessfully key which
+        /// is reused here — only add a NEW key if the response shape differs).
+        /// </summary>
+        public const string SeatStatusLifecycleRetrievedSuccessfully = "SeatStatusLifecycleRetrievedSuccessfully";
+
+        /// <summary>
+        /// Validation / authz error: the supplied child id does not belong to the authenticated parent's family
+        /// (IDOR guard used on seat endpoints that accept a childId, P10-15-BE-6/BE-9).
+        /// </summary>
+        public const string ChildNotInFamily = "ChildNotInFamily";
+
+        /// <summary>
+        /// Returned when a child seat reactivation webhook payment is confirmed and the seat is flipped
+        /// back to Active (P10-15-BE-7).
+        /// </summary>
+        public const string SeatReactivationConfirmed = "SeatReactivationConfirmed";
+
+        /// <summary>
+        /// Validation: a ReactivateChildSeat request is rejected because the child's seat is already
+        /// Active (not locked) — no reactivation needed (P10-15-BE-6).
+        /// </summary>
+        public const string SeatAlreadyActive = "SeatAlreadyActive";
+
     }
 }

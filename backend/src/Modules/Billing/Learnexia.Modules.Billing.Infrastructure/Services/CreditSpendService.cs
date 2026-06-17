@@ -47,6 +47,7 @@ public class CreditSpendService : ICreditSpendService
     private readonly IGlobalSettingsProvider _settings;
     private readonly ISystemClock _clock;
     private readonly BillingConcurrencyOptions _concurrency;
+    private readonly ISeatStateQuery _seatStateQuery;
 
     public CreditSpendService(
         BillingDbContext db,
@@ -54,14 +55,16 @@ public class CreditSpendService : ICreditSpendService
         ILoggerManager logger,
         IGlobalSettingsProvider settings,
         ISystemClock clock,
-        IOptions<BillingConcurrencyOptions> concurrencyOptions)
+        IOptions<BillingConcurrencyOptions> concurrencyOptions,
+        ISeatStateQuery seatStateQuery)
     {
-        _db          = db;
-        _currentUser = currentUser;
-        _logger      = logger;
-        _settings    = settings;
-        _clock       = clock;
-        _concurrency = concurrencyOptions.Value;
+        _db             = db;
+        _currentUser    = currentUser;
+        _logger         = logger;
+        _settings       = settings;
+        _clock          = clock;
+        _concurrency    = concurrencyOptions.Value;
+        _seatStateQuery = seatStateQuery;
     }
 
     // ── TryDebitAsync ─────────────────────────────────────────────────────────────
@@ -74,6 +77,20 @@ public class CreditSpendService : ICreditSpendService
         string idempotencyKey,
         CancellationToken ct = default)
     {
+        // ── P10-15-BE-5: Seat-state gate ─────────────────────────────────────────────
+        // Deny spend BEFORE any balance is touched when the child's seat is NoSeatLocked.
+        // Purchased (pack) energy is NEVER touched in this path.
+        if (!await _seatStateQuery.IsChildSeatActiveAsync(childId, ct))
+        {
+            _logger.LogInfo($"CreditSpendService: childId={childId} seat is NoSeatLocked — spend denied.");
+            return new DebitResult(
+                Charged       : false,
+                FromGranted   : 0,
+                FromPurchased : 0,
+                ResultingTotal: 0,
+                Outcome       : DebitOutcome.SeatLocked);
+        }
+
         if (!Enum.TryParse<CreditReasonCode>(reasonCode, ignoreCase: true, out var reasonEnum))
             reasonEnum = CreditReasonCode.Unspecified;
 

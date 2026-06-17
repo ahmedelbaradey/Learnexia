@@ -35,8 +35,14 @@ public interface ISubscriptionSeatContract
     /// <summary>
     /// Compensation path: transitions the child's <c>Reserved</c> or <c>Active</c> seat back
     /// to <c>Released</c>. Idempotent — no-op if no reservation exists or already released.
+    ///
+    /// <para><strong>P10-15-BE-10 (concurrent-reservation fix):</strong> when <paramref name="childId"/>
+    /// is the <c>0</c> placeholder (pre-creation), pass <paramref name="reservationKey"/> so the
+    /// service resolves the exact reservation row by idempotency key rather than by "most-recent
+    /// childId=0", which is ambiguous across concurrent same-parent calls.</para>
     /// </summary>
-    Task ReleaseSeatAsync(int parentUserId, int childId, CancellationToken ct = default);
+    Task ReleaseSeatAsync(int parentUserId, int childId, CancellationToken ct = default,
+        string? reservationKey = null);
 
     /// <summary>
     /// Returns <c>true</c> if <paramref name="parentUserId"/> has at least one free seat
@@ -48,6 +54,12 @@ public interface ISubscriptionSeatContract
     /// <summary>
     /// Transitions the child's seat from <c>Reserved</c> → <c>Active</c> (called after
     /// successful child creation + link). Idempotent — no-op if already <c>Active</c>.
+    ///
+    /// <para><strong>P10-15-BE-10 (concurrent-reservation fix):</strong> when <paramref name="childId"/>
+    /// was reserved with <paramref name="childId"/>=0 as a placeholder, pass <paramref name="reservationKey"/>
+    /// so the service resolves the exact row by idempotency key and then stamps the real child id — preventing
+    /// one concurrent call from activating another call's placeholder row.</para>
     /// </summary>
-    Task ActivateSeatAsync(int parentUserId, int childId, CancellationToken ct = default);
+    Task ActivateSeatAsync(int parentUserId, int childId, CancellationToken ct = default,
+        string? reservationKey = null);
 }

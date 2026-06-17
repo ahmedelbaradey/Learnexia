@@ -52,6 +52,8 @@ public static class GlobalSettingsSeeder
         (GlobalSettingKeys.SeatsIncludedPremium,         "3",      GlobalSettingType.Int),
         (GlobalSettingKeys.SeatsMax,                     "5",      GlobalSettingType.Int),
         (GlobalSettingKeys.SeatsExtraPriceEgp,           "169.00", GlobalSettingType.Decimal),
+        // P10-15-BE-2: Seat grace window (payment-failure only; default 7 days)
+        (GlobalSettingKeys.SeatsGraceDays,               "7",      GlobalSettingType.Int),
     ];
 
     public static async Task SeedAsync(BillingDbContext db, ILoggerManager logger, CancellationToken ct = default)
