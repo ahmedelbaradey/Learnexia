@@ -1,4 +1,15 @@
+import { existsSync } from 'node:fs';
+
 import { defineConfig, devices } from '@playwright/test';
+
+// WSL / no-root browser deps: this Ubuntu 24.04 box has no sudo, so chromium's
+// system libs (libnspr4 / libnss3 / libasound2t64) were fetched via `apt-get
+// download` and extracted under ~/.pw-deps (see docs/dev/HANDOFF.md). Point the
+// browser subprocess at them so Playwright can launch headless without root.
+const PW_DEPS = `${process.env.HOME}/.pw-deps/extracted/usr/lib/x86_64-linux-gnu`;
+if (existsSync(PW_DEPS)) {
+  process.env.LD_LIBRARY_PATH = [PW_DEPS, process.env.LD_LIBRARY_PATH].filter(Boolean).join(':');
+}
 
 /**
  * E2E config for the Learnexia student-app web PWA (Expo / React Native Web)
@@ -38,6 +49,8 @@ export default defineConfig({
     // to 480 s but page.goto should never wait that long).
     navigationTimeout: 60_000,
     actionTimeout: 30_000,
+    // WSL needs the chromium sandbox disabled (no user namespaces under WSL2).
+    launchOptions: { args: ['--no-sandbox'] },
   },
   projects: [
     // ── Student-app projects (Expo / React Native Web at :8081) ──────────────

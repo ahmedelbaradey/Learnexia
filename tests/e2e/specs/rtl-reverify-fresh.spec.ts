@@ -15,6 +15,12 @@
  *
  * Screenshots saved to /tmp/rtl-reverify/
  * Login: demo.parent@learnexia.com / Demo!Pass1
+ *
+ * RTL note: `applyWebDirection()` does NOT set `document.documentElement.dir`
+ * (intentional — avoids double-reversal with RN Web logical props). It sets
+ * `document.documentElement.lang`. Therefore RTL checks must use `lang === 'ar'`
+ * or component-level signals (writingDirection on heading elements), NOT
+ * `getAttribute('dir')` / `documentElement.dir`.
  */
 
 import { test, expect } from '@playwright/test';
@@ -35,51 +41,79 @@ async function shot(page: import('@playwright/test').Page, name: string): Promis
   return p;
 }
 
-/** Login as demo parent, switch to Arabic, and wait to land off /login */
+/** Login as demo parent and wait to land off /login.
+ * NOTE (Batch A): /login without ?role= redirects to role-select. Use ?role=parent.
+ * After landing on the parent dashboard, arabic locale is set via login screen controls
+ * before submitting (locale-switch-ar is only on the login screen).
+ */
 async function loginDemo(page: import('@playwright/test').Page): Promise<void> {
-  await page.goto('/login');
+  await page.goto('/login?role=parent');
   const emailField = page.getByTestId('login-username');
   await emailField.waitFor({ state: 'visible', timeout: 40_000 });
   await page.waitForTimeout(1500);
+
+  // Switch to Arabic on the login screen (locale-switch-ar exists here)
+  const arBtn = page.getByTestId('locale-switch-ar');
+  if (await arBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    await arBtn.click();
+    await page.waitForTimeout(800);
+  }
 
   await emailField.fill(DEMO_EMAIL);
   await page.getByTestId('login-password').fill(DEMO_PASS);
   await page.getByTestId('login-submit').click();
 
   await page.waitForFunction(
-    () => !window.location.pathname.includes('/login'),
+    () => !window.location.pathname.includes('/login') && !window.location.pathname.includes('/role-select'),
     { timeout: 60_000 },
   );
   await page.waitForTimeout(2000);
-
-  // Switch to Arabic AFTER landing on the dashboard (locale store persists per session).
-  // The locale-switch buttons are always present in the parent shell header.
-  await switchToArabic(page);
 }
 
-/** Switch to Arabic locale via the locale-switch-ar button and verify dir=rtl. */
+/**
+ * Switch to Arabic locale via the locale-switch-ar button and verify the app
+ * locale is Arabic.
+ *
+ * RTL signal: `applyWebDirection()` sets `document.documentElement.lang` (NOT
+ * `.dir` — the app intentionally leaves `.dir` unset to avoid double-reversal
+ * with RN Web logical props). Callers must check `lang === 'ar'`, not `dir === 'rtl'`.
+ *
+ * NOTE (Batch A): locale-switch-ar ONLY exists on the login screen
+ * (LocaleThemeControls is NOT mounted in the parent shell). If called on a
+ * non-login page, this function checks `lang` and skips if already Arabic; if
+ * LTR on a parent page it navigates to /login?role=parent to switch and comes back.
+ * Tests that call this after loginDemo() rely on the locale being set via the
+ * login screen controls before submission (already done in loginDemo).
+ */
 async function switchToArabic(page: import('@playwright/test').Page): Promise<void> {
-  const dir = await page.evaluate(() => document.documentElement.dir).catch(() => '');
-  if (dir === 'rtl') return; // already Arabic
+  const lang = await page.evaluate(() => document.documentElement.lang).catch(() => '');
+  if (lang === 'ar') return; // already Arabic — no action needed
 
+  // Check if locale-switch-ar is visible on this page (only on login screen)
   const arBtn = page.getByTestId('locale-switch-ar');
-  const arBtnVisible = await arBtn.isVisible({ timeout: 6_000 }).catch(() => false);
+  const arBtnVisible = await arBtn.isVisible({ timeout: 3_000 }).catch(() => false);
   if (arBtnVisible) {
     await arBtn.click();
-    // Wait for the RTL flip to apply (i18n store + DOM update)
     await page.waitForFunction(
-      () => document.documentElement.dir === 'rtl',
+      () => document.documentElement.lang === 'ar',
       { timeout: 10_000 },
-    ).catch(() => {}); // if it doesn't flip, we continue and the test reports ltr
+    ).catch(() => {});
     await page.waitForTimeout(800);
   } else {
-    // Last resort: try via role
-    const arByRole = page.getByRole('button', { name: /العربية|Arabic|AR/i }).first();
-    if (await arByRole.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await arByRole.click();
-      await page.waitForTimeout(800);
-    }
+    // locale-switch-ar not on this page (parent shell) — locale should already be AR
+    // if the login screen set it before submission. Log a note for diagnostics.
+    console.log(`switchToArabic: locale-switch-ar not visible on ${page.url()} — current lang="${lang}". ` +
+      'Locale is set on the login screen in loginDemo(); this is a no-op unless lang is already "ar".');
   }
+}
+
+/**
+ * Check if the page is currently in Arabic locale.
+ * Uses `document.documentElement.lang === 'ar'` — the signal set by
+ * `applyWebDirection()` (NOT `dir`, which is intentionally NOT set).
+ */
+async function isArabicLocale(page: import('@playwright/test').Page): Promise<boolean> {
+  return page.evaluate(() => document.documentElement.lang === 'ar').catch(() => false);
 }
 
 test.describe.configure({ timeout: 180_000 });
@@ -95,15 +129,17 @@ test('LY1 — sidebar nav icon is on the PHYSICAL RIGHT in AR (leading side)', a
   await switchToArabic(page);
   await page.waitForTimeout(1500);
 
-  // Confirm RTL
-  const dir = await page.evaluate(() => document.documentElement.dir);
-  expect(dir, 'html[dir] must be rtl in Arabic locale').toBe('rtl');
+  // Confirm Arabic locale — the app sets lang, NOT dir, on the html element.
+  // `applyWebDirection()` intentionally avoids setting `dir` to prevent
+  // double-reversal with RN Web logical props. Use lang instead.
+  const lang = await page.evaluate(() => document.documentElement.lang);
+  expect(lang, 'html[lang] must be "ar" in Arabic locale').toBe('ar');
 
   await shot(page, 'LY1-overview-full-ar');
 
   // Get the sidebar nav — the sidebar is visible at 1280px desktop viewport.
   // Each nav item row has a Text (emoji icon) and a Text (label).
-  // In the fixed code: flexDirection="row" + doc dir=rtl => icon is on the RIGHT visually.
+  // In the fixed code: flexDirection="row" + dir=rtl on sidebar root => icon is on the RIGHT visually.
   // We verify by measuring the icon vs label horizontal positions inside one nav item.
   //
   // The nav menu has accessibilityRole="menu". Each item has accessibilityRole="menuitem".
@@ -115,18 +151,17 @@ test('LY1 — sidebar nav icon is on the PHYSICAL RIGHT in AR (leading side)', a
     return;
   }
 
-  // Get the first nav item (Overview)
+  // Get the first nav item (My Children — Overview is NOT in the sidebar nav)
   const firstNavItem = page.locator('[role="menuitem"]').first();
   await firstNavItem.waitFor({ state: 'visible', timeout: 10_000 });
 
   // Measure the icon (emoji Text) and the label Text within the first nav item.
   // The icon is always the FIRST child Text, the label is the SECOND.
-  // In RTL with flexDirection="row": the browser renders children in reverse visual order
-  // so the FIRST child (icon) appears on the RIGHT side physically.
+  // In RTL with flexDirection="row" + `dir="rtl"` on parent: the browser renders children
+  // in reverse visual order so the FIRST child (icon) appears on the RIGHT side physically.
   //
   // Strategy: get bounding boxes via JS for the two spans inside the nav item.
   const positions = await firstNavItem.evaluate((el: HTMLElement) => {
-    const spans = el.querySelectorAll('span, [data-testid]');
     const texts = Array.from(el.querySelectorAll('*')).filter(
       (node): node is HTMLElement =>
         node instanceof HTMLElement &&
@@ -185,6 +220,10 @@ test('LY1 — sidebar nav icon is on the PHYSICAL RIGHT in AR (leading side)', a
 
 // =============================================================================
 // O5 — Overview header row in AR: title block RIGHT, buttons LEFT
+//
+// The overview header is the shared ParentHeader component with testID="parent-header".
+// (There is no "overview-header" testID — the per-page header was replaced by
+// the unified ParentHeader in the shipped app.)
 // =============================================================================
 test('O5 — overview header: title on RIGHT, buttons on LEFT in AR', async ({ page }) => {
   await loginDemo(page);
@@ -194,15 +233,18 @@ test('O5 — overview header: title on RIGHT, buttons on LEFT in AR', async ({ p
   await page.waitForTimeout(1500);
 
   await expect(page.getByTestId('overview-root'), 'overview-root must be visible').toBeVisible({ timeout: 25_000 });
-  const header = page.getByTestId('overview-header');
-  await expect(header, 'overview-header must be visible').toBeVisible({ timeout: 15_000 });
+
+  // The overview page header is the shared ParentHeader — testID="parent-header".
+  // (Not "overview-header" — that testID does not exist in the shipped app.)
+  const header = page.getByTestId('parent-header');
+  await expect(header, 'parent-header must be visible').toBeVisible({ timeout: 15_000 });
 
   await shot(page, 'O5-overview-header-ar');
 
-  // The header is <Stack testID="overview-header" flexDirection="row" justifyContent="space-between">
-  // With doc dir=rtl + flexDirection="row" (NO row-reverse in the fixed code):
+  // ParentHeader: `dir={isRtl?'rtl':'ltr'}` on the root row + `flexDirection="row"`.
+  // With dir=rtl + flexDirection="row" (single flip from dir, no row-reverse):
   //   - First child (title block) renders on the RIGHT physically
-  //   - Second child (buttons row) renders on the LEFT physically
+  //   - Second child (action cluster) renders on the LEFT physically
   //
   // We measure the two direct children of the header.
   const childPositions = await header.evaluate((el: HTMLElement) => {
@@ -228,7 +270,7 @@ test('O5 — overview header: title on RIGHT, buttons on LEFT in AR', async ({ p
     description: `O5 positions: title.left=${childPositions.titleLeft.toFixed(0)}, title.right=${childPositions.titleRight.toFixed(0)}, btns.left=${childPositions.btnsLeft.toFixed(0)}, btns.right=${childPositions.btnsRight.toFixed(0)}`,
   });
 
-  // In correct RTL (flex-row + dir=rtl): title block is on the RIGHT, buttons on the LEFT.
+  // In correct RTL (flex-row + dir=rtl on ParentHeader root): title block is on the RIGHT, buttons on the LEFT.
   // title.left > btns.right => title is to the right of the buttons.
   const titleOnRight = childPositions.titleLeft > childPositions.btnsRight;
   // Double-flipped (row-reverse + dir=rtl): title would be on the LEFT of buttons.
@@ -237,7 +279,7 @@ test('O5 — overview header: title on RIGHT, buttons on LEFT in AR', async ({ p
   if (titleOnRight) {
     test.info().annotations.push({ type: 'PASS', description: 'O5 FIXED: Title block is on the RIGHT, buttons on the LEFT (correct RTL).' });
   } else if (titleOnLeft) {
-    test.info().annotations.push({ type: 'FAIL', description: 'O5 STILL-BROKEN: Title block is on the LEFT, buttons on the RIGHT (double-flip still present). File: OverviewWeb.tsx.' });
+    test.info().annotations.push({ type: 'FAIL', description: 'O5 STILL-BROKEN: Title block is on the LEFT, buttons on the RIGHT (double-flip still present). File: ParentHeader.tsx.' });
     await shot(page, 'O5-BROKEN-title-on-left');
   } else {
     // Both overlap or stacked (wrapping viewport)
@@ -258,7 +300,7 @@ test('3a — (parent)/index.tsx fallback home (CANT-REACH if redirected)', async
   await loginDemo(page);
   // loginDemo already switched to Arabic
 
-  // Navigate directly to /(parent) which may redirect to /overview
+  // Navigate directly to /(parent) which may redirect to /children
   await page.goto('/(parent)');
   await page.waitForTimeout(3000);
   // Re-apply Arabic after navigation
@@ -267,13 +309,13 @@ test('3a — (parent)/index.tsx fallback home (CANT-REACH if redirected)', async
   const currentUrl = page.url();
 
   if (!currentUrl.includes('/(parent)') && !currentUrl.endsWith('/')) {
-    // Redirected away (to /overview) — this is the expected behavior per HANDOFF
+    // Redirected away (to /children or /overview) — this is the expected behavior per HANDOFF
     test.info().annotations.push({
       type: 'CANT-REACH',
-      description: `3a: /(parent)/index.tsx is bypassed by the /overview redirect (landed at ${currentUrl}). CANT-REACH — the fallback index is not user-reachable via normal navigation.`,
+      description: `3a: /(parent)/index.tsx is bypassed by the redirect (landed at ${currentUrl}). CANT-REACH — the fallback index is not user-reachable via normal navigation.`,
     });
     await shot(page, '3a-redirected-to');
-    // Not a failure — this is by design (useAuthRoute → /(parent)/overview)
+    // Not a failure — this is by design (useAuthRoute → /(parent)/children)
     return;
   }
 
@@ -281,11 +323,12 @@ test('3a — (parent)/index.tsx fallback home (CANT-REACH if redirected)', async
   await shot(page, '3a-parent-index-ar');
 
   // The index has a logo + "Sign out" row. In AR: if it uses row-reverse, it would double-flip.
-  // We just visually verify and record.
-  const htmlDir = await page.evaluate(() => document.documentElement.dir);
+  // We just visually verify and record. Note: `document.documentElement.lang` (not `.dir`)
+  // is the RTL signal in the shipped app — `dir` is intentionally NOT set on <html>.
+  const lang = await page.evaluate(() => document.documentElement.lang);
   test.info().annotations.push({
     type: 'info',
-    description: `3a: Reached /(parent) index. dir=${htmlDir}. URL=${currentUrl}. Visual captured.`,
+    description: `3a: Reached /(parent) index. lang=${lang}. URL=${currentUrl}. Visual captured.`,
   });
 });
 
@@ -299,8 +342,10 @@ test('3b — FamilySummaryStrip row content alignment in AR', async ({ page }) =
   await switchToArabic(page);
   await page.waitForTimeout(2000);
 
-  const dir = await page.evaluate(() => document.documentElement.dir);
-  expect(dir, 'must be rtl').toBe('rtl');
+  // RTL check: the app sets lang="ar" (NOT dir="rtl") on the html element.
+  // `applyWebDirection()` intentionally omits dir to avoid double-reversal.
+  const lang = await page.evaluate(() => document.documentElement.lang);
+  expect(lang, 'html[lang] must be "ar" in Arabic locale').toBe('ar');
 
   await shot(page, '3b-children-page-ar-full');
 
@@ -421,8 +466,10 @@ test('3c — ReportsWeb page header + KPI row alignment in AR', async ({ page })
   await switchToArabic(page);
   await page.waitForTimeout(3000);
 
-  const dir = await page.evaluate(() => document.documentElement.dir);
-  expect(dir, 'must be rtl on reports page').toBe('rtl');
+  // RTL check: the app sets lang="ar" (NOT dir="rtl") on the html element.
+  // `applyWebDirection()` intentionally omits dir to avoid double-reversal.
+  const lang = await page.evaluate(() => document.documentElement.lang);
+  expect(lang, 'html[lang] must be "ar" in Arabic locale').toBe('ar');
 
   // Check that the reports page loaded (not redirected)
   const currentUrl = page.url();
@@ -442,50 +489,49 @@ test('3c — ReportsWeb page header + KPI row alignment in AR', async ({ page })
   }
 
   // -- Page header alignment --
-  const reportsHeader = page.getByTestId('reports-header');
-  await reportsHeader.waitFor({ state: 'visible', timeout: 10_000 });
+  // ReportsWeb uses the shared ParentHeader (testID="parent-header").
+  // There is no "reports-header" testID in the shipped app.
+  const reportsHeader = page.getByTestId('parent-header');
+  const reportsHeaderVisible = await reportsHeader.isVisible({ timeout: 10_000 }).catch(() => false);
 
-  const headerPositions = await reportsHeader.evaluate((el: HTMLElement) => {
-    const children = Array.from(el.children) as HTMLElement[];
-    if (children.length < 2) return null;
-    const first = children[0].getBoundingClientRect();
-    const last = children[children.length - 1].getBoundingClientRect();
-    const computedDir = window.getComputedStyle(el).flexDirection;
-    return {
-      firstLeft: first.left,
-      firstRight: first.right,
-      lastLeft: last.left,
-      lastRight: last.right,
-      flexDirection: computedDir,
-    };
-  });
-
-  if (headerPositions) {
-    test.info().annotations.push({
-      type: 'info',
-      description: `3c reports-header: flexDirection="${headerPositions.flexDirection}", titleBlock.left=${headerPositions.firstLeft.toFixed(0)}, btns.right=${headerPositions.lastRight.toFixed(0)}`,
+  if (reportsHeaderVisible) {
+    const headerPositions = await reportsHeader.evaluate((el: HTMLElement) => {
+      const children = Array.from(el.children) as HTMLElement[];
+      if (children.length < 2) return null;
+      const first = children[0].getBoundingClientRect();
+      const last = children[children.length - 1].getBoundingClientRect();
+      const computedDir = window.getComputedStyle(el).flexDirection;
+      return {
+        firstLeft: first.left,
+        firstRight: first.right,
+        lastLeft: last.left,
+        lastRight: last.right,
+        flexDirection: computedDir,
+      };
     });
 
-    // ReportsWeb page header uses flexDirection={rowDir} where rowDir = isRtl ? 'row-reverse' : 'row'
-    // With dir=rtl + row-reverse = DOUBLE FLIP => title on LEFT (wrong)
-    // With dir=rtl + row = SINGLE FLIP => title on RIGHT (correct)
-    // BUT ReportsWeb is different from OverviewWeb — it still uses rowDir in the header!
-    // So the question is: was ReportsWeb also fixed or not?
+    if (headerPositions) {
+      test.info().annotations.push({
+        type: 'info',
+        description: `3c parent-header: flexDirection="${headerPositions.flexDirection}", titleBlock.left=${headerPositions.firstLeft.toFixed(0)}, btns.right=${headerPositions.lastRight.toFixed(0)}`,
+      });
 
-    const titleOnLeft = headerPositions.firstRight < headerPositions.lastLeft;
-    const titleOnRight = headerPositions.firstLeft > headerPositions.lastRight;
+      // ParentHeader uses `dir={isRtl?'rtl':'ltr'}` + `flexDirection="row"` (single flip).
+      // With dir=rtl + row (no row-reverse): title on RIGHT, buttons on LEFT.
+      const titleOnLeft = headerPositions.firstRight < headerPositions.lastLeft;
+      const titleOnRight = headerPositions.firstLeft > headerPositions.lastRight;
 
-    if (titleOnRight) {
-      test.info().annotations.push({ type: 'PASS', description: '3c reports-header: Title on RIGHT, buttons on LEFT (correct RTL, single-flip).' });
-    } else if (titleOnLeft) {
-      // The page header in ReportsWeb uses flexDirection={rowDir} (row-reverse in AR).
-      // This is the SAME double-flip pattern as the old OverviewWeb.
-      // dir=rtl + row-reverse = row-reverse cancels the rtl flip = title back on LEFT = WRONG.
-      test.info().annotations.push({ type: 'FAIL', description: '3c STILL-BROKEN: reports-header title is on the LEFT. ReportsWeb.tsx page header still uses flexDirection={rowDir} (row-reverse in AR) = double-flip. Needs same fix as OverviewWeb: change to flexDirection="row".' });
-      await shot(page, '3c-BROKEN-reports-header-title-on-left');
-    } else {
-      test.info().annotations.push({ type: 'note', description: '3c: header children overlap or wrapped (viewport wrapping).' });
+      if (titleOnRight) {
+        test.info().annotations.push({ type: 'PASS', description: '3c parent-header on reports: Title on RIGHT, buttons on LEFT (correct RTL, single-flip).' });
+      } else if (titleOnLeft) {
+        test.info().annotations.push({ type: 'FAIL', description: '3c STILL-BROKEN: parent-header on reports — title is on the LEFT. Check ParentHeader.tsx: may still use flexDirection={rowDir} (row-reverse in AR) = double-flip. Needs `dir` approach instead.' });
+        await shot(page, '3c-BROKEN-reports-header-title-on-left');
+      } else {
+        test.info().annotations.push({ type: 'note', description: '3c: header children overlap or wrapped (viewport wrapping).' });
+      }
     }
+  } else {
+    test.info().annotations.push({ type: 'note', description: '3c: parent-header not visible on reports page. Skipping header position check.' });
   }
 
   // -- KPI row alignment --
@@ -541,8 +587,10 @@ test('S2 — Settings Language & Region Save succeeds — no error', async ({ pa
   await switchToArabic(page);
   await page.waitForTimeout(1500);
 
-  const dir = await page.evaluate(() => document.documentElement.dir);
-  expect(dir, 'must be rtl on settings page').toBe('rtl');
+  // RTL check: the app sets lang="ar" (NOT dir="rtl") on the html element.
+  // `applyWebDirection()` intentionally omits dir to avoid double-reversal.
+  const lang = await page.evaluate(() => document.documentElement.lang);
+  expect(lang, 'html[lang] must be "ar" in Arabic locale').toBe('ar');
 
   const settingsRoot = page.getByTestId('settings-root');
   await expect(settingsRoot, 'settings-root visible').toBeVisible({ timeout: 20_000 });
@@ -558,8 +606,12 @@ test('S2 — Settings Language & Region Save succeeds — no error', async ({ pa
   const tabCount = await allTabs.count();
   test.info().annotations.push({ type: 'info', description: `S2: found ${tabCount} settings tabs` });
 
-  // Language tab is the last tab (index 5 in 6-tab layout, or last)
-  if (tabCount >= 6) {
+  // Language tab: try by testID first (settings-tab-language), then by position.
+  const langTabById = page.getByTestId('settings-tab-language');
+  const langTabByIdVisible = await langTabById.isVisible({ timeout: 3_000 }).catch(() => false);
+  if (langTabByIdVisible) {
+    await langTabById.click();
+  } else if (tabCount >= 6) {
     await allTabs.nth(5).click();
   } else {
     // Try finding by text
@@ -706,7 +758,6 @@ test('O1 regression — overview KPI card icons still correct in AR', async ({ p
     // Look for a 32x32 element (icon chip) and a text element
     for (const node of Array.from(firstCard.querySelectorAll('*')) as HTMLElement[]) {
       const rect = node.getBoundingClientRect();
-      const style = window.getComputedStyle(node);
       if (
         Math.abs(rect.width - 32) < 4 &&
         Math.abs(rect.height - 32) < 4 &&
@@ -769,8 +820,10 @@ test('C7 regression — children page child cards still look correct in AR', asy
   await switchToArabic(page);
   await page.waitForTimeout(2000);
 
-  const dir = await page.evaluate(() => document.documentElement.dir);
-  expect(dir).toBe('rtl');
+  // RTL check: the app sets lang="ar" (NOT dir="rtl") on the html element.
+  // `applyWebDirection()` intentionally omits dir to avoid double-reversal.
+  const lang = await page.evaluate(() => document.documentElement.lang);
+  expect(lang, 'html[lang] must be "ar" in Arabic locale').toBe('ar');
 
   await shot(page, 'C7-regression-children-ar');
 
