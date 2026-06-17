@@ -98,11 +98,19 @@ public sealed class PaymentWebhookTests
         // P10-09: IRefundService — stub for webhook tests (refund/dunning branches not exercised here).
         var refundServiceMock = new Mock<IRefundService>();
 
+        // P10-14: ISeatService — stub for webhook tests (seat branches not exercised here).
+        var seatServiceMock = new Mock<ISeatService>();
+
+        // P10-14: IGlobalSettingsProvider — stub (seat-ceiling branch not exercised in subscription tests).
+        var settingsMock = new Mock<Learnexia.Shared.Kernel.Settings.IGlobalSettingsProvider>();
+
         // Option C: build the real WebhookEventService (owns the EF/transaction/event logic).
         var webhookEventService = new WebhookEventService(
             db,
             energyPackServiceMock.Object,
+            seatServiceMock.Object,
             refundServiceMock.Object,
+            settingsMock.Object,
             publisher.Object,
             loggerMock.Object);
 

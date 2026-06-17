@@ -1,9 +1,11 @@
 using Learnexia.Modules.Billing.Application.Abstractions;
+using Learnexia.Modules.Billing.Domain.Constants;
 using Learnexia.Modules.Billing.Domain.Entities;
 using Learnexia.Modules.Billing.Domain.Enums;
 using Learnexia.Modules.Billing.Infrastructure.Persistence;
 using Learnexia.Shared.Contracts.Billing;
 using Learnexia.Shared.Kernel.Abstractions;
+using Learnexia.Shared.Kernel.Settings;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -30,20 +32,26 @@ public sealed class WebhookEventService : IWebhookEventService
 {
     private readonly BillingDbContext _db;
     private readonly IEnergyPackService _energyPackService;
+    private readonly ISeatService _seatService;
     private readonly IRefundService _refundService;
+    private readonly IGlobalSettingsProvider _settings;
     private readonly IPublisher _publisher;
     private readonly ILoggerManager _logger;
 
     public WebhookEventService(
         BillingDbContext db,
         IEnergyPackService energyPackService,
+        ISeatService seatService,
         IRefundService refundService,
+        IGlobalSettingsProvider settings,
         IPublisher publisher,
         ILoggerManager logger)
     {
         _db                = db;
         _energyPackService = energyPackService;
+        _seatService       = seatService;
         _refundService     = refundService;
+        _settings          = settings;
         _publisher         = publisher;
         _logger            = logger;
     }
@@ -118,6 +126,99 @@ public sealed class WebhookEventService : IWebhookEventService
                     $"WebhookEventService: Pack credited — paymentId={payment.Id}, childId={payment.TargetChildId.Value}, duplicate={creditResult.WasDuplicate}.");
 
                 return WebhookProcessResult.Ok(creditResult.WasDuplicate ? "PackDuplicate" : "PackCredited");
+            }
+
+            // ── Seat path (P10-14-BE-7) — flip Payment → Succeeded + increment purchased seats ──
+            // BLOCKER-3 FIX: the Payment flip + seat increment + WebhookEvent.Succeeded must all
+            // commit in ONE transaction. Committing the event before the seat increment (the old
+            // two-transaction pattern) was a money-atomicity hole: a crash between txn-1 and txn-2
+            // blocked replay (event already recorded as processed) but never minted the seat.
+            if (payment.Kind == PaymentKind.Seat)
+            {
+                // SECURITY #1 (per-payment idempotency): only the FIRST successful callback for a
+                // given seat payment may increment PurchasedExtraSeats. The outer
+                // WebhookEvent.ProviderEventId unique guard stops same-id replay, but a provider that
+                // emits TWO payment.succeeded events with DISTINCT event ids for the SAME payment would
+                // otherwise re-enter this branch and double-grant the seat (parent paid once). Gate on
+                // the payment not already being terminal — the flip to Succeeded is the single-shot lock.
+                if (payment.Status != PaymentStatus.Initiated)
+                {
+                    webhookRecord.ProcessedAt = DateTime.UtcNow;
+                    webhookRecord.Succeeded   = true;
+                    await _db.SaveChangesAsync(0);
+                    await tx.CommitAsync(ct);
+
+                    _logger.LogInfo(
+                        $"WebhookEventService: Seat payment {payment.Id} already in status {payment.Status} — " +
+                        $"duplicate succeeded callback ignored; PurchasedExtraSeats NOT incremented again.");
+                    return WebhookProcessResult.Ok("SeatPaymentDuplicate");
+                }
+
+                payment.Status = PaymentStatus.Succeeded;
+
+                if (!payment.SubscriptionId.HasValue)
+                {
+                    // No subscription → record event as processed (nothing else to do) and return.
+                    webhookRecord.ProcessedAt = DateTime.UtcNow;
+                    webhookRecord.Succeeded   = true;
+                    await _db.SaveChangesAsync(0);
+                    await tx.CommitAsync(ct);
+
+                    _logger.LogInfo(
+                        $"WebhookEventService: Seat payment {payment.Id} has no SubscriptionId — recorded but seats NOT incremented.");
+                    return WebhookProcessResult.Ok("SeatPaymentNoSubscription");
+                }
+
+                // Resolve the subscription and increment seats INSIDE the current transaction.
+                // NIT (b): predicate includes parentUserId for defence-in-depth IDOR guard.
+                var sub = await _db.Subscriptions
+                    .FirstOrDefaultAsync(s => s.Id == payment.SubscriptionId.Value
+                                           && s.ParentUserId == payment.ParentUserId, ct);
+
+                string seatOutcome;
+                if (sub is null)
+                {
+                    seatOutcome = "SeatSubscriptionNotFound";
+                    _logger.LogInfo(
+                        $"WebhookEventService: Seat payment {payment.Id} — subscription {payment.SubscriptionId.Value} not found for parent={payment.ParentUserId}.");
+                }
+                else
+                {
+                    // WEBHOOK-SEAT-04: enforce the seats.max ceiling. Checkout (StartSeatCheckoutAsync)
+                    // already guards this, but the webhook must defend it too — a provider replay or a
+                    // direct callback could otherwise push total seats above the cap. The guard is
+                    // INLINE here (the single source of truth) because it must run inside the blocker-3
+                    // single transaction — a separate service method would open its own tx and couldn't join.
+                    var maxSeats = _settings.GetInt(GlobalSettingKeys.SeatsMax, 5);
+                    var plan = await _db.Plans.AsNoTracking()
+                        .FirstOrDefaultAsync(p => p.Code == sub.PlanCode, ct);
+                    var includedSeats = plan?.IncludedSeats
+                        ?? _settings.GetInt(GlobalSettingKeys.SeatsIncludedFree, 1);
+
+                    if (includedSeats + sub.PurchasedExtraSeats + 1 > maxSeats)
+                    {
+                        seatOutcome = "SeatExceedsMaxSeats";
+                        _logger.LogInfo(
+                            $"WebhookEventService: Seat payment {payment.Id} — would exceed seats.max={maxSeats} " +
+                            $"(included={includedSeats}, purchasedExtra={sub.PurchasedExtraSeats}); seat NOT incremented.");
+                    }
+                    else
+                    {
+                        sub.PurchasedExtraSeats += 1;
+                        seatOutcome = "SeatPaymentConfirmed";
+                        _logger.LogInfo(
+                            $"WebhookEventService: Seat payment {payment.Id} — incremented PurchasedExtraSeats for " +
+                            $"subscriptionId={sub.Id}, parentId={payment.ParentUserId}.");
+                    }
+                }
+
+                // Mark the webhook event as succeeded and commit everything atomically.
+                webhookRecord.ProcessedAt = DateTime.UtcNow;
+                webhookRecord.Succeeded   = true;
+                await _db.SaveChangesAsync(0);
+                await tx.CommitAsync(ct);
+
+                return WebhookProcessResult.Ok(seatOutcome);
             }
 
             // ── Subscription path ─────────────────────────────────────────────────────

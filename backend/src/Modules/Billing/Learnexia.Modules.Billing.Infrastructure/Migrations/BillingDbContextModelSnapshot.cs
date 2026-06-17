@@ -475,6 +475,11 @@ namespace Learnexia.Modules.Billing.Infrastructure.Migrations
                     b.Property<int?>("DeletedBy")
                         .HasColumnType("integer");
 
+                    b.Property<int>("IncludedSeats")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -509,6 +514,7 @@ namespace Learnexia.Modules.Billing.Infrastructure.Migrations
                             Code = 0,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             CreatedBy = 0,
+                            IncludedSeats = 1,
                             IsActive = true,
                             Name = "Free"
                         },
@@ -518,9 +524,75 @@ namespace Learnexia.Modules.Billing.Infrastructure.Migrations
                             Code = 1,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             CreatedBy = 0,
+                            IncludedSeats = 3,
                             IsActive = true,
                             Name = "Premium"
                         });
+                });
+
+            modelBuilder.Entity("Learnexia.Modules.Billing.Domain.Entities.SeatReservation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ChildId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamptz");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamptz");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<bool?>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("ParentUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ReleasedAt")
+                        .HasColumnType("timestamptz");
+
+                    b.Property<DateTime>("ReservedAt")
+                        .HasColumnType("timestamptz");
+
+                    b.Property<int>("Status")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("SubscriptionId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamptz");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentUserId")
+                        .HasDatabaseName("IX_SeatReservations_ParentUserId");
+
+                    b.HasIndex("SubscriptionId")
+                        .HasDatabaseName("IX_SeatReservations_SubscriptionId");
+
+                    b.HasIndex("SubscriptionId", "ChildId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_SeatReservations_SubscriptionId_ChildId_Active")
+                        .HasFilter("\"Status\" IN (0, 1)");
+
+                    b.ToTable("SeatReservations", "billing");
                 });
 
             modelBuilder.Entity("Learnexia.Modules.Billing.Domain.Entities.Subscription", b =>
@@ -577,7 +649,20 @@ namespace Learnexia.Modules.Billing.Infrastructure.Migrations
                     b.Property<int?>("PendingPlanCode")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("ExtraSeatCancelEffectiveAt")
+                        .HasColumnType("timestamptz");
+
+                    b.Property<int>("PendingExtraSeatRemovals")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
                     b.Property<int>("PlanCode")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("PurchasedExtraSeats")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasDefaultValue(0);
@@ -701,6 +786,17 @@ namespace Learnexia.Modules.Billing.Infrastructure.Migrations
                     b.Navigation("ChildEnergyAllocation");
 
                     b.Navigation("FamilyEnergyAccount");
+                });
+
+            modelBuilder.Entity("Learnexia.Modules.Billing.Domain.Entities.SeatReservation", b =>
+                {
+                    b.HasOne("Learnexia.Modules.Billing.Domain.Entities.Subscription", "Subscription")
+                        .WithMany()
+                        .HasForeignKey("SubscriptionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Subscription");
                 });
 
             modelBuilder.Entity("Learnexia.Modules.Billing.Domain.Entities.FamilyEnergyAccount", b =>

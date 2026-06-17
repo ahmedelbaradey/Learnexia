@@ -428,6 +428,7 @@ public sealed class P10_13_FamilyEnergyWallet_Tests : IAsyncLifetime
     public async Task GRANT01_Grant_EqualsPerSeatTimesSeats_WalletSubscriptionBalance()
     {
         var (parentId, parentToken) = await RegisterParentAsync("GR01");
+        await SeatTestSupport.GrantSeatsAsync(_factory, parentId); // P10-14 seat gate: 2 children need ≥2 seats
         var (_, _) = await AddChildAndSignInAsync(parentToken, "GR01C1");
         var (_, _) = await AddChildAndSignInAsync(parentToken, "GR01C2");
 
@@ -467,6 +468,7 @@ public sealed class P10_13_FamilyEnergyWallet_Tests : IAsyncLifetime
     public async Task GRANT02_EqualSplit_AllocatedSumEqualsGrant_DeterministicRemainder()
     {
         var (parentId, parentToken) = await RegisterParentAsync("GR02");
+        await SeatTestSupport.GrantSeatsAsync(_factory, parentId); // P10-14 seat gate: 3 children need 3 seats (Premium)
         var (childId1, _) = await AddChildAndSignInAsync(parentToken, "GR02C1");
         var (childId2, _) = await AddChildAndSignInAsync(parentToken, "GR02C2");
         var (childId3, _) = await AddChildAndSignInAsync(parentToken, "GR02C3");
@@ -1152,6 +1154,7 @@ public sealed class P10_13_FamilyEnergyWallet_Tests : IAsyncLifetime
         // P10-13 CUTOVER: billing.CreditAccounts table dropped; redesigned to verify
         // that pack purchases accumulate into the shared FamilyEnergyAccount.PurchasedBalance.
         var (parentId, parentToken) = await RegisterParentAsync("CUT02");
+        await SeatTestSupport.GrantSeatsAsync(_factory, parentId); // P10-14 seat gate: 2 children need ≥2 seats
         var (child1Id, _) = await AddChildAndSignInAsync(parentToken, "CUT02C1");
         var (child2Id, _) = await AddChildAndSignInAsync(parentToken, "CUT02C2");
 

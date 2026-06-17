@@ -47,6 +47,11 @@ public static class GlobalSettingsSeeder
         // Payment / FX (placeholder defaults pending OQ-PAY-4/OQ-7/OQ-8 confirmation)
         (GlobalSettingKeys.PaymentProviderFeesPercent,   "2.75",   GlobalSettingType.Decimal),
         (GlobalSettingKeys.FxUsdExchangeRateBuffer,      "1.10",   GlobalSettingType.Decimal),
+        // P10-14 Seat configuration (OQ-C / OQ-D — locked 2026-06-16)
+        (GlobalSettingKeys.SeatsIncludedFree,            "1",      GlobalSettingType.Int),
+        (GlobalSettingKeys.SeatsIncludedPremium,         "3",      GlobalSettingType.Int),
+        (GlobalSettingKeys.SeatsMax,                     "5",      GlobalSettingType.Int),
+        (GlobalSettingKeys.SeatsExtraPriceEgp,           "169.00", GlobalSettingType.Decimal),
     ];
 
     public static async Task SeedAsync(BillingDbContext db, ILoggerManager logger, CancellationToken ct = default)

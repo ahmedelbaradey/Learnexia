@@ -338,6 +338,7 @@ public sealed class P2_12_AccountSettings_Tests : IAsyncLifetime
     public async Task AddChild_DuplicateEmail_Returns400_SuccessedFalse()
     {
         var parentToken = await RegisterParentAndGetTokenAsync(UniqueEmail("parent"));
+        await SeatTestSupport.GrantSeatsAsync(_factory, parentToken); // P10-14 seat gate: duplicate add reserves a 2nd seat before the dup-email check
         var childEmail = UniqueEmail("child");
 
         var (r1, _, b1) = await AddChildAsync(parentToken, ValidChildBody(childEmail));
