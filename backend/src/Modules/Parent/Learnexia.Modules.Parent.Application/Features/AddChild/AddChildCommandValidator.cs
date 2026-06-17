@@ -44,8 +44,10 @@ public class AddChildCommandValidator : AbstractValidator<AddChildCommand>
             .Must(lang => lang == "ar" || lang == "en")
             .WithMessage(_localizer[SharedResourcesKey.InvalidLanguageCode]);
 
+        // Country is OPTIONAL for parent-driven Add-Child: the simplified parent-app
+        // modal does not collect it, and the stored Nationality column is nullable.
+        // Only enforce the length cap when a value is actually supplied.
         RuleFor(x => x.Country)
-            .NotEmpty().WithMessage(_localizer[SharedResourcesKey.ProfileRequiredField])
             .MaximumLength(100).WithMessage(_localizer[SharedResourcesKey.ProfileCountryTooLong]);
     }
 }
