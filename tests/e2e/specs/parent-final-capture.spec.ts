@@ -51,12 +51,21 @@ test('Full parent dashboard verification — all 8 items', async ({ page }) => {
   await page.getByTestId('login-submit').click();
   console.log('[1] Submitted login');
 
-  // Wait for any parent route (Batch A: parent home is /children)
+  // Wait for the parent app route (Batch A: parent home is /children).
+  // After login, the app goes to / (splash) first, then useAuthRoute redirects to
+  // /(parent)/children (URL = /children). We must wait for the final parent route,
+  // not just for leaving /login — the splash at / is transient.
   await page.waitForFunction(() => {
     const path = window.location.pathname;
-    return !path.includes('login') && !path.includes('role-select');
+    return (
+      !path.includes('login') &&
+      !path.includes('role-select') &&
+      // Also wait past the splash screen ('/' or empty)
+      path.length > 1 &&
+      path !== '/'
+    );
   }, { timeout: 60000 });
-  await waitForApp(page, 3000);
+  await waitForApp(page, 2000);
 
   const postLoginUrl = page.url();
   console.log(`[1] Post-login URL: ${postLoginUrl}`);
@@ -216,12 +225,27 @@ test('Full parent dashboard verification — all 8 items', async ({ page }) => {
 
     const langSwitch = page.getByTestId('settings-language-switch');
     if (await langSwitch.isVisible({ timeout: 8_000 }).catch(() => false)) {
-      // settings-language-switch is a <Select> (native <select> element).
-      // Select the opposite language: if currently ar → switch to en, else → ar.
-      const currentVal = await langSwitch.inputValue().catch(() => 'ar');
-      const nextVal = currentVal === 'ar' ? 'en' : 'ar';
-      await langSwitch.selectOption(nextVal);
-      await page.waitForTimeout(300);
+      // settings-language-switch is a CUSTOM combobox (role="combobox"), NOT a native
+      // <select> element. Use click-to-open + click-option pattern, not selectOption().
+      // Current language: read from html[lang] (set by applyWebDirection).
+      const currentLang = await page.evaluate(() => document.documentElement.lang).catch(() => 'ar');
+      // Option labels: Arabic = 'العربية', English = 'English' (from resources.ts)
+      const nextOptionLabel = currentLang === 'ar' ? 'English' : 'العربية';
+
+      // Open the dropdown by clicking the trigger
+      await langSwitch.click();
+      await page.waitForTimeout(500);
+
+      // Click the target option by its aria-label (set on each option XStack in Select component)
+      const targetOption = page.locator(`[aria-label="${nextOptionLabel}"]`).first();
+      const optionVisible = await targetOption.isVisible({ timeout: 3_000 }).catch(() => false);
+      if (optionVisible) {
+        await targetOption.click();
+        await page.waitForTimeout(300);
+      } else {
+        // Fallback: close dropdown and skip
+        await page.keyboard.press('Escape');
+      }
 
       // Commit via Save button
       const saveBtn = page.getByTestId('language-save');
@@ -245,8 +269,17 @@ test('Full parent dashboard verification — all 8 items', async ({ page }) => {
     // Switch back to original language so subsequent items aren't affected
     const revertLangSwitch = page.getByTestId('settings-language-switch');
     if (await revertLangSwitch.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      const revertVal = initialHeaderDir === 'rtl' ? 'ar' : 'en';
-      await revertLangSwitch.selectOption(revertVal).catch(() => {});
+      // Re-open dropdown and pick revert option
+      await revertLangSwitch.click();
+      await page.waitForTimeout(500);
+      const revertLabel = initialHeaderDir === 'rtl' ? 'العربية' : 'English';
+      const revertOption = page.locator(`[aria-label="${revertLabel}"]`).first();
+      if (await revertOption.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        await revertOption.click();
+        await page.waitForTimeout(300);
+      } else {
+        await page.keyboard.press('Escape');
+      }
       const revertSave = page.getByTestId('language-save');
       if (await revertSave.isVisible({ timeout: 3_000 }).catch(() => false)) {
         await revertSave.click();
