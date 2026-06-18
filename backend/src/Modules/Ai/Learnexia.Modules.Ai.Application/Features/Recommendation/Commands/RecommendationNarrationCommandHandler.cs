@@ -7,6 +7,7 @@ using Learnexia.Modules.Ai.Application.Services;
 using Learnexia.Shared.Contracts.Ai;
 using Learnexia.Shared.Contracts.AiTutor;
 using Learnexia.Shared.Contracts.Billing;
+using Learnexia.Shared.Contracts.Gamification;
 using Learnexia.Shared.Contracts.Learning;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
@@ -66,6 +67,7 @@ public sealed class RecommendationNarrationCommandHandler
 
     private readonly ICurrentUserService _currentUser;
     private readonly IStudentRecommendationsQuery _recommendationsQuery;
+    private readonly IStudentXpQuery _studentXpQuery;
     private readonly IPromptBuilder _promptBuilder;
     private readonly ISafetyLayer _safetyLayer;
     private readonly IAiResponseCache _aiCache;
@@ -82,6 +84,7 @@ public sealed class RecommendationNarrationCommandHandler
     public RecommendationNarrationCommandHandler(
         ICurrentUserService currentUser,
         IStudentRecommendationsQuery recommendationsQuery,
+        IStudentXpQuery studentXpQuery,
         IPromptBuilder promptBuilder,
         ISafetyLayer safetyLayer,
         IAiResponseCache aiCache,
@@ -95,20 +98,21 @@ public sealed class RecommendationNarrationCommandHandler
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _currentUser         = currentUser;
+        _currentUser          = currentUser;
         _recommendationsQuery = recommendationsQuery;
-        _promptBuilder       = promptBuilder;
-        _safetyLayer         = safetyLayer;
-        _aiCache             = aiCache;
-        _settings            = settings;
-        _rateLimiter         = rateLimiter;
-        _creditSpend         = creditSpend;
-        _childAccessState    = childAccessState;
-        _costResolver        = costResolver;
-        _publisher           = publisher;
-        _scopeFactory        = scopeFactory;
-        _logger              = logger;
-        _localizer           = localizer;
+        _studentXpQuery       = studentXpQuery;
+        _promptBuilder        = promptBuilder;
+        _safetyLayer          = safetyLayer;
+        _aiCache              = aiCache;
+        _settings             = settings;
+        _rateLimiter          = rateLimiter;
+        _creditSpend          = creditSpend;
+        _childAccessState     = childAccessState;
+        _costResolver         = costResolver;
+        _publisher            = publisher;
+        _scopeFactory         = scopeFactory;
+        _logger               = logger;
+        _localizer            = localizer;
     }
 
     public async Task<RecommendationNarrationResult> Handle(
@@ -229,6 +233,30 @@ public sealed class RecommendationNarrationCommandHandler
             return new RecommendationNarrationResult.Declined(DeclineReasonNoData);
         }
 
+        // Step 5b (P3-14a) — resolve gamification level via the existing IStudentXpQuery seam.
+        // Default CurrentLevel=1 on null (brand-new student with no XP profile yet).
+        // Level is used for motivational framing ONLY — never to select areas or set difficulty.
+        var currentLevel = 1;
+        try
+        {
+            var xpSnapshot = await _studentXpQuery.GetByStudentIdAsync(childId, cancellationToken);
+            if (xpSnapshot is not null)
+                currentLevel = xpSnapshot.CurrentLevel;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarn($"RecommendationNarrationCommandHandler: IStudentXpQuery.GetByStudentIdAsync failed for childId={childId}. Defaulting to level 1. {ex.GetType().Name}");
+            currentLevel = 1;
+        }
+
+        // Step 5c (P3-14a) — derive coarse, anonymous encouragement-style hint from the persisted
+        // RecommendationItem.PreferredExplanationStyle (P5-09a passthrough field).
+        // The hint is anonymous: only a coarse style word (Balanced/Short/Detailed) reaches the prompt.
+        // Source: the first item with a non-null style in the recommendation list.
+        // No cross-module profile call — the style was already persisted on the item by the engine.
+        // No raw behavioral data (RecurringErrorSkillIds, per-skill errors) is ever passed to the prompt.
+        var encouragementStyle = DeriveEncouragementStyle(recommendations);
+
         // Step 6 — build prompt via IPromptBuilder.
         // The Recommendation intent builds the prompt from the persisted items (grounding section).
         // Subject defaults to Math (0) for TemplateSelector routing — the template is intent-agnostic
@@ -240,14 +268,14 @@ public sealed class RecommendationNarrationCommandHandler
         var recommendationGrounding = BuildRecommendationGrounding(recommendations, language);
 
         var promptContext = new PromptContext(
-            StudentId: childId,
-            Intent:    HelperIntent.Recommendation,
-            Subject:   subject,
-            Grade:     grade,
-            Age:       age,
-            Language:  language,
-            WeakAreas: null,
-            Context:   new LearningContext(
+            StudentId:          childId,
+            Intent:             HelperIntent.Recommendation,
+            Subject:            subject,
+            Grade:              grade,
+            Age:                age,
+            Language:           language,
+            WeakAreas:          null,
+            Context:            new LearningContext(
                 Chunks: new[] { new ChunkDto("recommendations", recommendationGrounding) },
                 QuestionText:  null,
                 WrongAnswer:   null,
@@ -255,7 +283,11 @@ public sealed class RecommendationNarrationCommandHandler
                 QuestionId:    null,
                 GradeId:       grade,
                 SubjectId:     (int)subject,
-                Language:      language));
+                Language:      language),
+            // P3-14a: motivational level framing (anonymous integer) and encouragement style
+            // (anonymous coarse hint derived from persisted profile — no raw behavioral data).
+            CurrentLevel:       currentLevel,
+            EncouragementStyle: encouragementStyle);
 
         var promptResult = _promptBuilder.Build(promptContext);
 
@@ -271,11 +303,13 @@ public sealed class RecommendationNarrationCommandHandler
 
         // ── Cache-first lookup ────────────────────────────────────────────────────────────
         // Cache key dimensions: studentId + recommendationDate + contentHash + ageBand + language
-        // + promptVersion + curriculumVersion.
-        // The content hash ensures that if the recommendation set changes mid-day, the cache key
-        // changes and a fresh narration is generated (OQ-5).
+        // + currentLevel + encouragementStyleHint + promptVersion + curriculumVersion.
+        // P3-14a (OQ-7, REQUIRED correctness): currentLevel and encouragementStyleHint are included
+        // so a level-up event or changed profile style yields a fresh narration — not a stale cached
+        // one that was built with a different motivational framing.
         var recommendationDate        = DateOnly.FromDateTime(DateTime.UtcNow);
         var recommendationContentHash = ComputeRecommendationContentHash(recommendations);
+        var encouragementStyleHint    = encouragementStyle?.ToString();
         var cacheKey = AiCacheKeyBuilder.ForRecommendation(
             studentId:                  childId,
             recommendationDate:         recommendationDate,
@@ -283,7 +317,9 @@ public sealed class RecommendationNarrationCommandHandler
             jwtGrade:                   grade,
             language:                   language,
             promptVersion:              PromptVersionV1,
-            curriculumVersion:          CurriculumVersionMvp);
+            curriculumVersion:          CurriculumVersionMvp,
+            currentLevel:               currentLevel,
+            encouragementStyleHint:     encouragementStyleHint);
 
         var cachedContent = await _aiCache.GetApprovedAsync(cacheKey, cancellationToken);
         if (cachedContent is not null)
@@ -400,6 +436,37 @@ public sealed class RecommendationNarrationCommandHandler
             CancellationToken.None);
 
         return new RecommendationNarrationResult.Streamed(safeResult.Content ?? string.Empty);
+    }
+
+    /// <summary>
+    /// P3-14a: derives a coarse, anonymous <see cref="EncouragementStyle"/> hint from the first
+    /// persisted <see cref="RecommendationItem"/> that carries a non-null
+    /// <see cref="RecommendationItem.PreferredExplanationStyle"/> (P5-09a passthrough field).
+    ///
+    /// <para><strong>PII-minimisation:</strong> this method returns only an anonymous enum value
+    /// (Balanced / Short / Detailed). It never exposes <c>StudentId</c>,
+    /// <c>RecurringErrorSkillIds</c>, per-skill error counts, or any raw behavioral data.</para>
+    ///
+    /// <para>Returns <c>null</c> when the profile is cold-start (all items have null style)
+    /// so the prompt builder omits the encouragement-style line entirely (graceful degradation).</para>
+    /// </summary>
+    private static EncouragementStyle? DeriveEncouragementStyle(IReadOnlyList<RecommendationItem> items)
+    {
+        foreach (var item in items)
+        {
+            if (item.PreferredExplanationStyle is { } style)
+            {
+                return style switch
+                {
+                    RecommendationExplanationStyle.Simplified => EncouragementStyle.Short,
+                    RecommendationExplanationStyle.StepByStep => EncouragementStyle.Detailed,
+                    // Standard and Visual both map to Balanced (the default warm-encouraging style).
+                    _                                         => EncouragementStyle.Balanced,
+                };
+            }
+        }
+        // Cold-start: no persisted style preference — omit the encouragement-style line.
+        return null;
     }
 
     /// <summary>
