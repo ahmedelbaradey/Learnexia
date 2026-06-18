@@ -53,6 +53,9 @@ public class LearningDbContext : DbContext
     // P3-13: Per-student behavioral learning profile (adaptive student modeling)
     public DbSet<StudentLearningProfile> StudentLearningProfiles => Set<StudentLearningProfile>();
 
+    // P5-09: Per-student daily recommendation set (deterministic engine output)
+    public DbSet<StudentRecommendation> StudentRecommendations => Set<StudentRecommendation>();
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 
