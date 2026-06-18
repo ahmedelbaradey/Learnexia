@@ -500,6 +500,12 @@ test.describe('A. Happy path — add child(ren) via modal', () => {
     await page.getByTestId('onboarding-continue').click();
     await page.waitForURL(/complete/, { timeout: 30_000 });
 
+    // Settle for RN Web hydration before pressing: the complete screen's button
+    // onPress is not wired until hydration completes, so a click fired immediately
+    // after the route renders is a no-op (URL stays on /complete). Same hydration
+    // race the login/register helpers guard against with a short wait.
+    await page.waitForTimeout(1500);
+
     // Press "Go to Dashboard"
     const goToBtn = page.locator('[aria-label="Go to Dashboard"], [aria-label="الذهاب إلى لوحة التحكم"]').first();
     const btnVisible = await goToBtn.isVisible({ timeout: 8_000 }).catch(() => false);
