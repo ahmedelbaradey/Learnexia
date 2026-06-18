@@ -1940,5 +1940,38 @@
         /// </summary>
         public const string ChildAccessStatusRetrieved = "ChildAccessStatusRetrieved";
 
+        // ── P5-08 / P5-02 Learning read seams + weak-area detector ──────────────────────────────
+
+        /// <summary>
+        /// Success: returned when the student's learning stats are retrieved successfully.
+        /// Used by <c>IStudentLearningStatsQuery</c> consumers (P5-08-BE-2).
+        /// </summary>
+        public const string LearningStatsRetrievedSuccessfully = "LearningStatsRetrievedSuccessfully";
+
+        /// <summary>
+        /// Success: returned when the student's subject mastery summary is retrieved successfully.
+        /// Used by <c>IStudentMasterySummaryQuery</c> consumers (P5-08-BE-3).
+        /// </summary>
+        public const string MasterySummaryRetrievedSuccessfully = "MasterySummaryRetrievedSuccessfully";
+
+        /// <summary>
+        /// Success: returned when the student's weak areas are retrieved successfully.
+        /// Includes the case of an empty list (no weak areas — not an error).
+        /// Used by <c>IStudentAllSubjectsWeakAreasQuery</c> consumers (P5-02-BE-2).
+        /// </summary>
+        public const string WeakAreasRetrievedSuccessfully = "WeakAreasRetrievedSuccessfully";
+
+        /// <summary>
+        /// Suggested next action: review the underlying concept (shown for High-severity weak areas).
+        /// Resolved by Parent handlers when building the recommended-actions display (P5-02).
+        /// </summary>
+        public const string WeakAreaActionReviewConcept = "WeakAreaActionReviewConcept";
+
+        /// <summary>
+        /// Suggested next action: practice the skill more (shown for Medium/Low-severity weak areas).
+        /// Resolved by Parent handlers when building the recommended-actions display (P5-02).
+        /// </summary>
+        public const string WeakAreaActionPracticeSkill = "WeakAreaActionPracticeSkill";
+
     }
 }

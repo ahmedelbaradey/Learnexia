@@ -2498,4 +2498,20 @@
   <data name="ChildAccessStatusRetrieved" xml:space="preserve">
     <value>تم استرداد حالة وصول الطفل بنجاح.</value>
   </data>
+  <!-- P5-08 / P5-02 Learning read seams + weak-area detector -->
+  <data name="LearningStatsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد إحصائيات التعلم بنجاح.</value>
+  </data>
+  <data name="MasterySummaryRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد ملخص الإتقان بنجاح.</value>
+  </data>
+  <data name="WeakAreasRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد المجالات الضعيفة بنجاح.</value>
+  </data>
+  <data name="WeakAreaActionReviewConcept" xml:space="preserve">
+    <value>مراجعة المفهوم</value>
+  </data>
+  <data name="WeakAreaActionPracticeSkill" xml:space="preserve">
+    <value>تدرب على هذه المهارة</value>
+  </data>
 </root>

@@ -2499,4 +2499,20 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="ChildAccessStatusRetrieved" xml:space="preserve">
     <value>Child access status retrieved successfully.</value>
   </data>
+  <!-- P5-08 / P5-02 Learning read seams + weak-area detector -->
+  <data name="LearningStatsRetrievedSuccessfully" xml:space="preserve">
+    <value>Learning statistics retrieved successfully.</value>
+  </data>
+  <data name="MasterySummaryRetrievedSuccessfully" xml:space="preserve">
+    <value>Mastery summary retrieved successfully.</value>
+  </data>
+  <data name="WeakAreasRetrievedSuccessfully" xml:space="preserve">
+    <value>Weak areas retrieved successfully.</value>
+  </data>
+  <data name="WeakAreaActionReviewConcept" xml:space="preserve">
+    <value>Review the concept</value>
+  </data>
+  <data name="WeakAreaActionPracticeSkill" xml:space="preserve">
+    <value>Practice this skill</value>
+  </data>
 </root>

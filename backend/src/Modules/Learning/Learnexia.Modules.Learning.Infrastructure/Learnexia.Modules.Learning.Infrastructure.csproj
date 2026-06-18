@@ -23,5 +23,9 @@
     <ProjectReference Include="..\Learnexia.Modules.Learning.Domain\Learnexia.Modules.Learning.Domain.csproj" />
     <ProjectReference Include="..\..\..\Shared\Learnexia.Shared.Kernel\Learnexia.Shared.Kernel.csproj" />
     <ProjectReference Include="..\..\..\Shared\Learnexia.Shared.Resources\Learnexia.Shared.Resources.csproj" />
+    <!-- P5-08-BE-2/3, P5-02-BE-2/3: cross-module read seams (IStudentLearningStatsQuery,
+         IStudentMasterySummaryQuery, IStudentAllSubjectsWeakAreasQuery) + Ai bridge
+         (IStudentWeakAreasQuery re-wire). Shared.Contracts is the only cross-module dep. -->
+    <ProjectReference Include="..\..\..\Shared\Learnexia.Shared.Contracts\Learnexia.Shared.Contracts.csproj" />
   </ItemGroup>
 </Project>
