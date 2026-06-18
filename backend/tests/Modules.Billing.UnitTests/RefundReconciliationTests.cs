@@ -85,6 +85,9 @@ public sealed class RefundReconciliationTests
         settingsMock
             .Setup(s => s.GetInt(GlobalSettingKeys.DunningRetryIntervalHours, It.IsAny<int>()))
             .Returns(24);
+        settingsMock
+            .Setup(s => s.GetInt(GlobalSettingKeys.SeatsGraceDays, It.IsAny<int>()))
+            .Returns(7);
 
         var loggerMock = new Mock<Learnexia.Shared.Kernel.Abstractions.ILoggerManager>();
         var currentUserMock = new Mock<Learnexia.Shared.Kernel.Abstractions.ICurrentUserService>();
@@ -99,10 +102,17 @@ public sealed class RefundReconciliationTests
             .Build();
         var fakeProvider = new FakePaymentProvider(config, loggerMock.Object);
 
+        // P10-15 dedup: RefundService now depends on ISeatGraceService (shares this db).
+        var seatGrace = new SeatGraceService(db, settingsMock.Object, currentUserMock.Object, loggerMock.Object);
+
         var services = new ServiceCollection();
         services.AddSingleton(db);
         services.AddSingleton<IBillingDbContext>(db);
         services.AddSingleton<IPaymentProvider>(fakeProvider);
+        services.AddSingleton(settingsMock.Object);
+        services.AddSingleton(currentUserMock.Object);
+        services.AddSingleton(loggerMock.Object);
+        services.AddSingleton<ISeatGraceService, SeatGraceService>();
         var sp = services.BuildServiceProvider();
 
         IBillingDbContext billingDb = db;
@@ -112,7 +122,8 @@ public sealed class RefundReconciliationTests
             currentUserMock.Object,
             settingsMock.Object,
             sp.GetRequiredService<IServiceScopeFactory>(),
-            loggerMock.Object);
+            loggerMock.Object,
+            seatGrace);
     }
 
     /// <summary>Seeds a Pack Payment row.</summary>

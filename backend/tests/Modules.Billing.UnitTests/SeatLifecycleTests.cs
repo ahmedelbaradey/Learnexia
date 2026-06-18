@@ -849,4 +849,51 @@ public sealed class SeatLifecycleTests
             "SL-14: second enforcement run must not write additional ledger rows; " +
             "before={0}, after={1}", ledgerCountAfterFirst, ledgerCountAfterSecond);
     }
+
+    // ══════════════════════════════════════════════════════════════════════════════════════
+    // SL-15: Stale-placeholder sweep — orphaned Reserved placeholders are released; fresh
+    //        placeholders and real (positive-ChildId) reservations are NOT touched.
+    // ══════════════════════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public async Task SL15_SweepStalePlaceholders_ReleasesOrphans_KeepsFreshAndRealReservations()
+    {
+        using var db = BuildDb();
+        var sub = await SeedSubscriptionAsync(db, purchasedExtra: 0);
+        var now = DateTime.UtcNow;
+
+        // (a) Stale placeholder: negative ChildId, Reserved, reserved long ago → must be released.
+        var stale = await SeedReservationAsync(db, sub.Id, childId: -111111,
+            status: SeatStatus.Reserved, reservedAt: now.AddHours(-2));
+
+        // (b) Fresh placeholder: negative ChildId, Reserved, reserved just now → must be kept
+        //     (an in-flight add-child still completing within the safety window).
+        var fresh = await SeedReservationAsync(db, sub.Id, childId: -222222,
+            status: SeatStatus.Reserved, reservedAt: now);
+
+        // (c) Real active reservation (positive ChildId) → must be kept regardless of age.
+        var real = await SeedReservationAsync(db, sub.Id, childId: 30,
+            status: SeatStatus.Active, reservedAt: now.AddDays(-5));
+
+        var svc = BuildEnforcementService(db);
+
+        // Cutoff = 30 min ago → only the 2-hours-old placeholder is past the cutoff.
+        var released = await svc.SweepStalePlaceholdersAsync(now.AddMinutes(-30), CancellationToken.None);
+
+        released.Should().Be(1, "only the orphaned 2-hour-old placeholder is past the cutoff");
+
+        var staleRow = await db.SeatReservations.AsNoTracking().FirstAsync(r => r.Id == stale.Id);
+        staleRow.Status.Should().Be(SeatStatus.Released, "the orphaned placeholder must be released");
+        staleRow.ReleasedAt.Should().NotBeNull();
+
+        var freshRow = await db.SeatReservations.AsNoTracking().FirstAsync(r => r.Id == fresh.Id);
+        freshRow.Status.Should().Be(SeatStatus.Reserved, "an in-flight placeholder must NOT be swept");
+
+        var realRow = await db.SeatReservations.AsNoTracking().FirstAsync(r => r.Id == real.Id);
+        realRow.Status.Should().Be(SeatStatus.Active, "a real reservation must NOT be swept");
+
+        // Idempotent: a second sweep finds nothing new (released rows are no longer Reserved).
+        var secondPass = await svc.SweepStalePlaceholdersAsync(now.AddMinutes(-30), CancellationToken.None);
+        secondPass.Should().Be(0, "re-running the sweep is a no-op once orphans are released");
+    }
 }

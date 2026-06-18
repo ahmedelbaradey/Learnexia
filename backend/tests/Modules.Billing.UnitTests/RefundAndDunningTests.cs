@@ -87,6 +87,10 @@ public sealed class RefundAndDunningTests
         settingsMock
             .Setup(s => s.GetInt(GlobalSettingKeys.PackSize, It.IsAny<int>()))
             .Returns(packSize);
+        // P10-15 dedup: SeatGraceService reads seats.grace_days when opening the payment-failure window.
+        settingsMock
+            .Setup(s => s.GetInt(GlobalSettingKeys.SeatsGraceDays, It.IsAny<int>()))
+            .Returns(7);
 
         var loggerMock = new Mock<Learnexia.Shared.Kernel.Abstractions.ILoggerManager>();
 
@@ -102,12 +106,21 @@ public sealed class RefundAndDunningTests
             .Build();
         var fakeProvider = new FakePaymentProvider(providerConfig, loggerMock.Object);
 
-        // IServiceScopeFactory: build a minimal SP that resolves BillingDbContext.
-        // Used by ProcessDunningRetriesAsync — mirrors BillingGrantJob pattern.
+        // P10-15 dedup: a real SeatGraceService sharing THIS db so ProcessChargeFailedAsync's grace
+        // write lands in the same context/transaction (site 1).
+        var seatGrace = new SeatGraceService(db, settingsMock.Object, currentUserMock.Object, loggerMock.Object);
+
+        // IServiceScopeFactory: build a minimal SP that resolves what the background helpers pull
+        // from a fresh scope. Used by ProcessDunningRetriesAsync / RetrySubscriptionAsync — the
+        // latter now also resolves ISeatGraceService (P10-15 dedup, site 2), so register it + its deps.
         var services = new ServiceCollection();
         services.AddSingleton(db);
         services.AddSingleton<IBillingDbContext>(db);
         services.AddSingleton<IPaymentProvider>(fakeProvider);
+        services.AddSingleton(settingsMock.Object);
+        services.AddSingleton(currentUserMock.Object);
+        services.AddSingleton(loggerMock.Object);
+        services.AddSingleton<ISeatGraceService, SeatGraceService>();
         var sp = services.BuildServiceProvider();
 
         // BillingDbContext implements IBillingDbContext — pass it through the interface.
@@ -119,7 +132,8 @@ public sealed class RefundAndDunningTests
             currentUserMock.Object,
             settingsMock.Object,
             sp.GetRequiredService<IServiceScopeFactory>(),
-            loggerMock.Object);
+            loggerMock.Object,
+            seatGrace);
     }
 
     private static BillingHistoryQueryService BuildHistoryService(
@@ -406,7 +420,7 @@ public sealed class RefundAndDunningTests
         result.Succeeded.Should().BeTrue();
         result.FailedAttemptCount.Should().Be(3, "incremented from 2 to 3");
         result.DowngradeScheduled.Should().BeTrue("3 >= maxRetries=3 → downgrade scheduled");
-        result.GraceEndsAt.Should().NotBeNull("grace window = CurrentCycleEnd");
+        result.GraceEndsAt.Should().NotBeNull("grace window = now + seats.grace_days (via ISeatGraceService)");
         result.NextRetryAt.Should().BeNull("no more retries");
 
         var updatedSub = await db.Subscriptions.FindAsync(sub.Id);

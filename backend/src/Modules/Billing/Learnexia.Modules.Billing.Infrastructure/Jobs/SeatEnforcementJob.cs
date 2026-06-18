@@ -39,6 +39,11 @@ public sealed class SeatEnforcementJob
     private readonly ISystemClock _clock;
     private readonly ILoggerManager _logger;
 
+    // Safety cutoff for the stale-placeholder sweep. Add-child is a synchronous request that
+    // completes in seconds; a Reserved negative-placeholder reservation still unstamped after
+    // this many minutes is orphaned double-failure residue, safe to release.
+    private const int StalePlaceholderTtlMinutes = 30;
+
     public SeatEnforcementJob(
         IServiceScopeFactory scopeFactory,
         ISystemClock clock,
@@ -64,6 +69,22 @@ public sealed class SeatEnforcementJob
             await using var scope = _scopeFactory.CreateAsyncScope();
             var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
             var enforcementService = scope.ServiceProvider.GetRequiredService<ISeatEnforcementService>();
+
+            // ── Stale add-child placeholder sweep (P10-15 follow-up) ─────────────────────
+            // Release orphaned Reserved placeholders (double-failure residue) that would otherwise
+            // permanently inflate the occupied-seat count. Fail-soft: a sweep error must not stop
+            // the enforcement pass below.
+            try
+            {
+                var placeholderCutoff = nowUtc.AddMinutes(-StalePlaceholderTtlMinutes);
+                var swept = await enforcementService.SweepStalePlaceholdersAsync(placeholderCutoff, ct);
+                if (swept > 0)
+                    _logger.LogInfo($"SeatEnforcementJob: released {swept} stale placeholder reservation(s).");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "SeatEnforcementJob: error during stale-placeholder sweep (continuing).");
+            }
 
             // Find subscription ids needing enforcement:
             // (a) GraceEndsAt expired (grace window closed — enforce over-limit seats), OR
