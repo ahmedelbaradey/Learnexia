@@ -415,26 +415,46 @@ public sealed class AiRuntimeTestFactory : WebApplicationFactory<Program>
         int childId,
         int balance = 500)
     {
+        // CreditAccount entity retired + table dropped (DropLegacyCreditAccounts migration).
+        // Seed via FamilyEnergyAccount / ChildEnergyAllocation (P10-13 wallet model).
+        // Use a synthetic negative parentUserId to avoid collisions with real Identity rows.
         using var scope = factory.Services.CreateScope();
         var db          = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
 
-        var account = await db.CreditAccounts.FirstOrDefaultAsync(a => a.ChildId == childId);
-        if (account is null)
+        var syntheticParentId = -(childId);
+        var wallet = await db.FamilyEnergyAccounts.FirstOrDefaultAsync(w => w.ParentUserId == syntheticParentId);
+        if (wallet is null)
         {
-            account = Learnexia.Modules.Billing.Domain.Entities.CreditAccount
-                .CreateEmpty(childId, "Africa/Cairo");
-            db.CreditAccounts.Add(account);
+            wallet = Learnexia.Modules.Billing.Domain.Entities.FamilyEnergyAccount.CreateEmpty(syntheticParentId);
+            db.FamilyEnergyAccounts.Add(wallet);
             await db.SaveChangesAsync(0);
         }
 
-        var grantKey  = $"ai-e2e-seed:{childId}:{Guid.NewGuid():N}";
-        var expiresAt = DateTime.UtcNow.AddMonths(6);
-        var tx        = account.ApplyGrant(
-            balance,
-            expiresAt,
-            CreditReasonCode.MonthlyGrantFree,
-            grantKey);
-        db.CreditTransactions.Add(tx);
+        var cycleStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var cycleEnd   = cycleStart.AddMonths(1).AddSeconds(-1);
+
+        var alloc = await db.ChildEnergyAllocations.FirstOrDefaultAsync(
+            a => a.FamilyEnergyAccountId == wallet.Id && a.ChildId == childId && a.CycleStartUtc == cycleStart);
+
+        if (alloc is null)
+        {
+            alloc = new Learnexia.Modules.Billing.Domain.Entities.ChildEnergyAllocation
+            {
+                FamilyEnergyAccountId = wallet.Id,
+                ChildId               = childId,
+                CycleStartUtc         = cycleStart,
+                CycleEndUtc           = cycleEnd,
+                AllocatedAmount       = balance,
+                SpentAmount           = 0,
+            };
+            db.ChildEnergyAllocations.Add(alloc);
+        }
+        else
+        {
+            alloc.AllocatedAmount += balance;
+        }
+
+        wallet.SubscriptionBalance += balance;
         await db.SaveChangesAsync(0);
     }
 
