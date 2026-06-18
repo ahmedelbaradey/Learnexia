@@ -1,4 +1,5 @@
 using Learnexia.Modules.Billing.Application.Abstractions;
+using Learnexia.Modules.Billing.Application.Features.Refunds.Dtos;
 using Learnexia.Modules.Billing.Domain.Constants;
 using Learnexia.Modules.Billing.Domain.Entities;
 using Learnexia.Modules.Billing.Domain.Enums;
@@ -20,7 +21,11 @@ namespace Learnexia.Modules.Billing.Infrastructure.Services;
 /// <para><strong>Idempotency:</strong>
 /// <list type="bullet">
 ///   <item><see cref="ProcessPackRefundAsync"/> guards via <c>CreditTransaction.IdempotencyKey</c>
-///         (DB-unique) — <c>"pack-refund:{paymentId}:{providerEventId}"</c>.</item>
+///         (DB-unique) — <c>"pack-refund:{paymentId}"</c> (PER-PAYMENT, not per-event: a 2nd
+///         refund.succeeded with a DISTINCT provider event id collides on the unique constraint,
+///         preventing an over-refund — do NOT re-add the event-id suffix), PLUS a
+///         <c>Payment.Status == Refunded</c> guard and an already-refunded subtraction in the
+///         reconcile.</item>
 ///   <item><see cref="ProcessSubscriptionRefundAsync"/> guards via a <c>Payment.Status</c> check
 ///         (already-<c>Refunded</c> rows are no-ops).</item>
 ///   <item><see cref="ProcessChargeFailedAsync"/> guards via an <c>Payment.Status</c> check
@@ -68,15 +73,67 @@ public sealed class RefundService : IRefundService
 
     // ── ProcessPackRefundAsync ────────────────────────────────────────────────────────
 
+    // SECURITY constants for the bounded concurrency retry (Finding #2 — HARDEN-01 mirror).
+    private const int PackRefundMaxRetries = 3;
+    private const int PackRefundBaseDelayMs = 20;
+    private const int PackRefundMaxDelayMs = 250;
+    private const int PackRefundJitterMs = 50;
+
     /// <inheritdoc/>
     public async Task<RefundResult> ProcessPackRefundAsync(
         int paymentId,
         string providerEventId,
         CancellationToken ct)
     {
-        // Inner idempotency guard (outer guard = WebhookEvent inserted by caller before calling us).
-        var idempotencyKey = $"pack-refund:{paymentId}:{providerEventId}";
+        // Finding #1 (CRITICAL) fix, point 3: use a per-payment idempotency key for the clawback
+        // ledger row so a second settlement with a DISTINCT provider event id still collides on the
+        // DB unique constraint and cannot produce a second Refund row for the same payment.
+        // The outer per-event WebhookEvent dedup (by providerEventId) is the caller's guard; this
+        // is the inner defence-in-depth guard that holds even when the outer guard is bypassed.
+        var idempotencyKey = $"pack-refund:{paymentId}";
 
+        for (var attempt = 0; attempt <= PackRefundMaxRetries; attempt++)
+        {
+            try
+            {
+                return await ExecutePackRefundCoreAsync(paymentId, idempotencyKey, ct);
+            }
+            catch (DbUpdateConcurrencyException) when (attempt < PackRefundMaxRetries)
+            {
+                // Finding #2 (HIGH) fix: optimistic-concurrency retry (HARDEN-01 mirror).
+                // The xmin token on FamilyEnergyAccount fired — a concurrent write beat us.
+                // Clear the stale tracker state, back off, and re-read the wallet.
+                _logger.LogWarn(
+                    $"RefundService.ProcessPackRefund: xmin conflict attempt {attempt + 1} paymentId={paymentId}. Retrying.");
+                _db.ChangeTracker.Clear();
+                await ApplyPackRefundBackoffAsync(attempt, ct);
+            }
+            catch (DbUpdateException dbEx) when (IsUniqueViolation(dbEx))
+            {
+                _db.ChangeTracker.Clear();
+                _logger.LogInfo(
+                    $"RefundService.ProcessPackRefund: concurrent duplicate key={idempotencyKey} — no-op.");
+                return RefundResult.Duplicate();
+            }
+        }
+
+        // Retries exhausted — propagate as a transient failure; caller may retry.
+        _logger.LogError(
+            new InvalidOperationException("Retries exhausted"),
+            $"RefundService.ProcessPackRefund: exceeded {PackRefundMaxRetries} xmin retries paymentId={paymentId}");
+        throw new InvalidOperationException(
+            $"RefundService.ProcessPackRefund: exceeded {PackRefundMaxRetries} retries for paymentId={paymentId}");
+    }
+
+    /// <summary>
+    /// Core transactional pack-refund body — called by <see cref="ProcessPackRefundAsync"/>
+    /// inside the retry loop so the entire DB round-trip can be retried on xmin conflict.
+    /// </summary>
+    private async Task<RefundResult> ExecutePackRefundCoreAsync(
+        int paymentId,
+        string idempotencyKey,
+        CancellationToken ct)
+    {
         await using var tx = await _db.Database.BeginTransactionAsync(ct);
         try
         {
@@ -88,7 +145,7 @@ public sealed class RefundService : IRefundService
                 return RefundResult.Duplicate();
             }
 
-            // Load the original payment.
+            // Load the original payment (with tracking so Status can be updated).
             var payment = await _db.Payments
                 .FirstOrDefaultAsync(p => p.Id == paymentId, ct);
 
@@ -99,6 +156,17 @@ public sealed class RefundService : IRefundService
                 return RefundResult.Fail(RefundFailureReason.PaymentNotFound);
             }
 
+            // Finding #1 (CRITICAL) fix, point 1: mirror the subscription path's status guard.
+            // If the payment is already Refunded (e.g. a second refund.succeeded with a DISTINCT
+            // provider event id arrives), return Duplicate immediately — no balance change occurs.
+            if (payment.Status == PaymentStatus.Refunded)
+            {
+                await tx.RollbackAsync(ct);
+                _logger.LogInfo(
+                    $"RefundService.ProcessPackRefund: paymentId={paymentId} already Refunded — no-op.");
+                return RefundResult.Duplicate();
+            }
+
             if (payment.Kind != PaymentKind.Pack || !payment.TargetChildId.HasValue)
             {
                 await tx.RollbackAsync(ct);
@@ -106,11 +174,9 @@ public sealed class RefundService : IRefundService
                 return RefundResult.Fail(RefundFailureReason.PaymentNotRefundable);
             }
 
-            // P10-13 CUTOVER (AC13-8): claw back from the SHARED family FamilyEnergyAccount.PurchasedBalance,
-            // NOT the legacy per-child CreditAccount. Pack credits land on the shared wallet
-            // (EnergyPackService.CreditPurchasedPackAsync, keyed by Payment.ParentUserId), so the clawback
-            // must target the same wallet to avoid a split economy. (Full FIFO reconciliation is P10-17;
-            // here we re-home the clawback to the shared wallet with a clamp-to-available guard.)
+            // P10-17-BE-4: claw back from the SHARED family FamilyEnergyAccount.PurchasedBalance.
+            // Load the wallet WITH tracking so the xmin concurrency token participates in
+            // SaveChangesAsync conflict detection (Finding #2 fix).
             var wallet = await _db.FamilyEnergyAccounts
                 .FirstOrDefaultAsync(w => w.ParentUserId == payment.ParentUserId, ct);
 
@@ -121,23 +187,32 @@ public sealed class RefundService : IRefundService
                 return RefundResult.Fail(RefundFailureReason.CreditAccountNotFound);
             }
 
-            // Claw back unspent purchased balance (domain mutator clamps to available PurchasedBalance).
-            // We pass the pack size but RefundPurchased clamps to the actual shared PurchasedBalance.
-            // Default must match EnergyPackService.CreditPurchasedPackAsync (1000) — same constant source.
-            var packSize = _settings.GetInt(GlobalSettingKeys.PackSize, 1000);
-            var refundTx = wallet.RefundPurchased(packSize, idempotencyKey, payment.Id.ToString());
+            // Re-reconcile FIFO refundable amount from the ledger (P10-17-BE-4 rule: re-reconcile,
+            // never trust the request-time figure). ComputeRefundableAsync runs READ-ONLY inside
+            // the open transaction — safe because all reads are AsNoTracking and non-mutating.
+            var quote = await ComputeRefundableAsync(wallet.Id, paymentId, ct);
+            int refundableUnits = quote?.Refundable ?? 0;
+
+            // Build the Refund ledger row with PurchasedRefund reason code.
+            // RefundPurchased domain mutator clamps to available PurchasedBalance (defence-in-depth).
+            var refundTx = wallet.RefundPurchased(refundableUnits, idempotencyKey, payment.Id.ToString());
             refundTx.FamilyEnergyAccountId = wallet.Id;
+            refundTx.ReasonCode = CreditReasonCode.PurchasedRefund;
             await _db.CreditTransactions.AddAsync(refundTx, ct);
 
-            // Mark payment as Refunded.
+            // Mark payment as Refunded (Finding #1, point 1 — flip status on settlement so the
+            // status guard above catches any subsequent distinct-event-id webhook).
             payment.Status = PaymentStatus.Refunded;
 
+            // SaveChangesAsync will assert the xmin token on FamilyEnergyAccount; a concurrent
+            // write throws DbUpdateConcurrencyException which is caught in the retry loop above
+            // (Finding #2 fix — HARDEN-01 mirror).
             await _db.SaveChangesAsync(_currentUser.UserId ?? 0);
             await tx.CommitAsync(ct);
 
             _logger.LogInfo(
                 $"RefundService.ProcessPackRefund: paymentId={paymentId}, clawedBack={refundTx.Amount}, " +
-                $"parentId={payment.ParentUserId}, childId={payment.TargetChildId.Value}.");
+                $"parentId={payment.ParentUserId}.");
 
             return RefundResult.Ok(refundTx.Amount);
         }
@@ -152,6 +227,15 @@ public sealed class RefundService : IRefundService
             await tx.RollbackAsync(ct);
             throw;
         }
+    }
+
+    /// <summary>HARDEN-01 mirror: exponential back-off with jitter for the pack-refund retry loop.</summary>
+    private static Task ApplyPackRefundBackoffAsync(int attempt, CancellationToken ct)
+    {
+        var shift         = Math.Min(attempt, 30);
+        var deterministic = (int)Math.Min(PackRefundMaxDelayMs, (long)PackRefundBaseDelayMs * (1L << shift));
+        var jitter        = Random.Shared.Next(0, PackRefundJitterMs + 1);
+        return Task.Delay(deterministic + jitter, ct);
     }
 
     // ── ProcessSubscriptionRefundAsync ────────────────────────────────────────────────
@@ -369,6 +453,186 @@ public sealed class RefundService : IRefundService
     }
 
     // ── ProcessDunningRetriesAsync ────────────────────────────────────────────────────
+
+    // ── ComputeRefundableAsync (P10-17-BE-2) ─────────────────────────────────────
+
+    /// <inheritdoc/>
+    public async Task<RefundableQuoteDto?> ComputeRefundableAsync(
+        int familyAccountId,
+        int purchasePaymentId,
+        CancellationToken ct)
+    {
+        // Load the payment for monetary translation.
+        var payment = await _db.Payments
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == purchasePaymentId && p.Kind == PaymentKind.Pack, ct);
+
+        if (payment is null)
+        {
+            _logger.LogInfo(
+                $"RefundService.ComputeRefundable: payment {purchasePaymentId} not found or not a Pack payment.");
+            return null;
+        }
+
+        // Load the family wallet for the live PurchasedBalance cap.
+        var wallet = await _db.FamilyEnergyAccounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(w => w.Id == familyAccountId, ct);
+
+        if (wallet is null)
+        {
+            _logger.LogInfo(
+                $"RefundService.ComputeRefundable: family account {familyAccountId} not found.");
+            return null;
+        }
+
+        // Finding #3 (Low — defence-in-depth): explicit parent-ownership assertion.
+        // Verify the payment's owning parent matches the family account so IDOR safety
+        // is enforced structurally, not emergently (a foreign payment can no longer drift
+        // through to a zero-quote result that hides the violation).
+        // NOTE: The admin path passes the payment's own familyAccountId resolved from the
+        //       payment.ParentUserId, so this check is transparent for admin calls.
+        if (payment.ParentUserId != wallet.ParentUserId)
+        {
+            _logger.LogInfo(
+                $"RefundService.ComputeRefundable: ownership mismatch — " +
+                $"payment.ParentUserId={payment.ParentUserId} vs wallet.ParentUserId={wallet.ParentUserId} " +
+                $"for paymentId={purchasePaymentId}, familyAccountId={familyAccountId}.");
+            return null;
+        }
+
+        // Load ALL bucket-B Purchase rows for this family, ordered oldest-first.
+        var allPurchaseRows = await _db.CreditTransactions
+            .AsNoTracking()
+            .Where(t => t.FamilyEnergyAccountId == familyAccountId
+                     && t.Type == CreditTransactionType.Purchase
+                     && t.SourceBucket == EnergyBucket.Purchased)
+            .OrderBy(t => t.OccurredAtUtc)
+            .ThenBy(t => t.Id)
+            .Select(t => new { t.Amount, t.RelatedPaymentId })
+            .ToListAsync(ct);
+
+        // Sum ALL bucket-B Spend rows for this family.
+        int totalBucketBSpend = await _db.CreditTransactions
+            .AsNoTracking()
+            .Where(t => t.FamilyEnergyAccountId == familyAccountId
+                     && t.Type == CreditTransactionType.Spend
+                     && t.SourceBucket == EnergyBucket.Purchased)
+            .SumAsync(t => (int?)t.Amount, ct) ?? 0;
+
+        // Finding #1 (CRITICAL) fix, point 2: sum prior Refund rows for THIS payment.
+        // Without this, a second refund.succeeded for the same payment (distinct event id, new
+        // idempotency key) would see the full FIFO-refundable amount again because the first
+        // clawback doesn't reduce the Purchase/Spend ledger — only the live PurchasedBalance.
+        // Subtracting alreadyRefundedForThisPayment from refundableUnits makes the reconcile
+        // self-correcting even after PurchasedBalance is replenished by a new pack purchase.
+        string paymentIdStr = purchasePaymentId.ToString();
+        int alreadyRefundedForThisPayment = await _db.CreditTransactions
+            .AsNoTracking()
+            .Where(t => t.FamilyEnergyAccountId == familyAccountId
+                     && t.Type == CreditTransactionType.Refund
+                     && t.SourceBucket == EnergyBucket.Purchased
+                     && t.RelatedPaymentId == paymentIdStr)
+            .SumAsync(t => (int?)t.Amount, ct) ?? 0;
+
+        // FIFO attribution: walk purchases oldest-first, consuming spend against them in order.
+        int spendRemaining = totalBucketBSpend;
+        int consumedForThisPayment = 0;
+        int purchasedTotalForThisPayment = 0;
+
+        foreach (var purchase in allPurchaseRows)
+        {
+            int attributedSpend = Math.Min(spendRemaining, purchase.Amount);
+            spendRemaining -= attributedSpend;
+
+            if (purchase.RelatedPaymentId == paymentIdStr)
+            {
+                purchasedTotalForThisPayment += purchase.Amount;
+                consumedForThisPayment += attributedSpend;
+            }
+        }
+
+        // Refundable energy units:
+        //   refundable = purchasedTotal − consumed(FIFO) − alreadyRefunded(for this payment)
+        //   clamped >= 0, never exceeds live PurchasedBalance.
+        // The alreadyRefunded subtraction is the key fix for the distinct-event-id over-refund:
+        // even if balance is replenished, the reconcile will return 0 after the first successful
+        // refund because alreadyRefundedForThisPayment == purchasedTotalForThisPayment − consumed.
+        int refundableUnits = Math.Max(
+            0,
+            purchasedTotalForThisPayment - consumedForThisPayment - alreadyRefundedForThisPayment);
+        refundableUnits = Math.Min(refundableUnits, wallet.PurchasedBalance);
+
+        // Translate to monetary value at the original unit price.
+        decimal refundableAmount = 0m;
+        if (purchasedTotalForThisPayment > 0)
+        {
+            decimal pricePerUnit = payment.Amount / purchasedTotalForThisPayment;
+            refundableAmount = Math.Round(pricePerUnit * refundableUnits, 2);
+        }
+
+        _logger.LogInfo(
+            $"RefundService.ComputeRefundable: paymentId={purchasePaymentId}, " +
+            $"purchasedTotal={purchasedTotalForThisPayment}, consumed={consumedForThisPayment}, " +
+            $"alreadyRefunded={alreadyRefundedForThisPayment}, refundableUnits={refundableUnits}, " +
+            $"refundableAmount={refundableAmount}.");
+
+        return new RefundableQuoteDto
+        {
+            PurchasedTotal    = purchasedTotalForThisPayment,
+            ConsumedPurchased = consumedForThisPayment,
+            Refundable        = refundableUnits,
+            RefundableAmount  = refundableAmount,
+            Currency          = payment.Currency,
+            PurchasePaymentId = purchasePaymentId,
+        };
+    }
+
+    // ── InitiateProviderRefundAsync (P10-17-BE-3/BE-6) ───────────────────────────
+
+    /// <inheritdoc/>
+    public async Task<InitiateRefundResult> InitiateProviderRefundAsync(
+        int purchasePaymentId,
+        decimal refundableAmount,
+        RefundReason reason,
+        int actorUserId,
+        CancellationToken ct)
+    {
+        var payment = await _db.Payments
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == purchasePaymentId, ct);
+
+        if (payment is null)
+            return InitiateRefundResult.Fail(InitiateRefundFailureReason.PaymentNotFound);
+
+        if (payment.Status != PaymentStatus.Succeeded)
+            return InitiateRefundResult.Fail(InitiateRefundFailureReason.PaymentNotSucceeded);
+
+        if (string.IsNullOrEmpty(payment.ProviderPaymentRef))
+        {
+            _logger.LogInfo(
+                $"RefundService.InitiateProviderRefund: paymentId={purchasePaymentId} has no ProviderPaymentRef.");
+            return InitiateRefundResult.Fail(InitiateRefundFailureReason.ProviderError);
+        }
+
+        var providerSuccess = await _paymentProvider.InitiateRefundAsync(
+            payment.ProviderPaymentRef,
+            refundableAmount,
+            ct);
+
+        if (!providerSuccess)
+        {
+            _logger.LogInfo(
+                $"RefundService.InitiateProviderRefund: provider declined for paymentId={purchasePaymentId}.");
+            return InitiateRefundResult.Fail(InitiateRefundFailureReason.ProviderError);
+        }
+
+        _logger.LogInfo(
+            $"RefundService.InitiateProviderRefund: actor={actorUserId}, paymentId={purchasePaymentId}, " +
+            $"amount={refundableAmount}, reason={reason} — provider accepted.");
+
+        return InitiateRefundResult.Ok();
+    }
 
     /// <inheritdoc/>
     public async Task<DunningRetryResult> ProcessDunningRetriesAsync(

@@ -2454,4 +2454,17 @@
   <data name="AllocationTransferAmountRequired" xml:space="preserve">
     <value>يجب أن يكون مبلغ النقل أكبر من الصفر.</value>
   </data>
+  <!-- P10-17 Purchased-energy refunds -->
+  <data name="RefundableQuoteRetrieved" xml:space="preserve">
+    <value>تم استرداد عرض الطاقة القابلة للاسترداد بنجاح.</value>
+  </data>
+  <data name="RefundRequestAccepted" xml:space="preserve">
+    <value>تم تقديم طلب الاسترداد. سيتم معالجة الاسترداد بعد تأكيد مزود الدفع.</value>
+  </data>
+  <data name="RefundableAmountIsZero" xml:space="preserve">
+    <value>لا توجد طاقة مشتراة غير مستخدمة للاسترداد. جميع الطاقة المشتراة تم استهلاكها.</value>
+  </data>
+  <data name="PaymentAlreadyRefunded" xml:space="preserve">
+    <value>تم استرداد هذه الدفعة بالفعل. لا يلزم اتخاذ أي إجراء استرداد آخر.</value>
+  </data>
 </root>

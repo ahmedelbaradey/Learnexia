@@ -1860,5 +1860,28 @@
         /// </summary>
         public const string AllocationTransferAmountRequired = "AllocationTransferAmountRequired";
 
+        // ── P10-17 Purchased-energy refunds ──────────────────────────────────────────────────────────
+
+        /// <summary>Returned when a refundable-energy quote is retrieved successfully (parent or admin path).</summary>
+        public const string RefundableQuoteRetrieved = "RefundableQuoteRetrieved";
+
+        /// <summary>
+        /// Returned when a purchased-energy refund request is accepted and forwarded to the provider.
+        /// The ledger change is pending the <c>refund.succeeded</c> webhook.
+        /// </summary>
+        public const string RefundRequestAccepted = "RefundRequestAccepted";
+
+        /// <summary>
+        /// Returned (HTTP 422) when the refundable amount is zero — all purchased energy has already
+        /// been consumed and there is nothing to refund.
+        /// </summary>
+        public const string RefundableAmountIsZero = "RefundableAmountIsZero";
+
+        /// <summary>
+        /// Returned (no-op / duplicate) when the pack payment has already been refunded.
+        /// Guards against distinct-event-id over-refund (Finding #1, CRITICAL).
+        /// </summary>
+        public const string PaymentAlreadyRefunded = "PaymentAlreadyRefunded";
+
     }
 }
