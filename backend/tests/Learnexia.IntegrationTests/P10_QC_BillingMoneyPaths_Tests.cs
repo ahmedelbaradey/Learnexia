@@ -531,7 +531,11 @@ public sealed class P10_QC_BillingMoneyPaths_Tests : IAsyncLifetime
                 await db.SaveChangesAsync(0);
             }
             usage.DailyUsed = 10;  // exactly at cap (free_daily_cap=10 from GlobalSettings seed)
-            usage.DailyUsedDateLocal = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            // Seed the child's LOCAL "today" via DailyCapHelper so the seeded counter doesn't look
+            // stale inside the UTC↔Cairo window (a UTC date would reset DailyUsed to 0 → flake).
+            usage.DailyUsedDateLocal = Learnexia.Modules.Billing.Application.Services.DailyCapHelper.Today(
+                usage.ChildTimeZoneId,
+                scope.ServiceProvider.GetRequiredService<Learnexia.Shared.Kernel.Abstractions.ISystemClock>());
             await db.SaveChangesAsync(0);
         }
 
