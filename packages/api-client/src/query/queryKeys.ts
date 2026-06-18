@@ -98,6 +98,73 @@ export const queryKeys = {
     activity: (userId: number) =>
       [...queryKeys.adminUsers.all, 'activity', userId] as const,
   },
+
+  /**
+   * P7-01..P7-05 admin curriculum hooks.
+   *
+   * DISTINCT from the student-facing `learning.*` namespace (different endpoints,
+   * different DTOs, admin-only access). All 5 curriculum stories use this single
+   * namespace — no per-story sub-namespaces are permitted.
+   *
+   * Coverage key note: `coverage(gradeId)` = P7-01 subject-language coverage
+   * (6-slot ar/en presence grid); `pubCoverage(gradeId)` = P7-05 publication
+   * coverage (Draft/Published status per entity). They are intentionally distinct.
+   *
+   * Invalidation convention: mutations invalidate `adminCurriculum.all` to bust
+   * all list/detail caches; fine-grained invalidation (e.g. `units(subjectId)`)
+   * is used where only one subtree needs refresh.
+   */
+  adminCurriculum: {
+    all: ['adminCurriculum'] as const,
+
+    // P7-01 — subjects & units
+    subjects: (filters?: object) =>
+      [...queryKeys.adminCurriculum.all, 'subjects', filters ?? {}] as const,
+    subject: (id: number) =>
+      [...queryKeys.adminCurriculum.all, 'subject', id] as const,
+    /** Subject-language coverage 6-slot report for a grade (P7-01). */
+    coverage: (gradeId: number) =>
+      [...queryKeys.adminCurriculum.all, 'coverage', gradeId] as const,
+    units: (subjectId: number, filters?: object) =>
+      [...queryKeys.adminCurriculum.all, 'units', subjectId, filters ?? {}] as const,
+    grades: () =>
+      [...queryKeys.adminCurriculum.all, 'grades'] as const,
+
+    // P7-02 — lessons & content blocks
+    lessons: (unitId: number, filters?: object) =>
+      [...queryKeys.adminCurriculum.all, 'lessons', unitId, filters ?? {}] as const,
+    lesson: (lessonId: number) =>
+      [...queryKeys.adminCurriculum.all, 'lesson', lessonId] as const,
+    blocks: (lessonId: number) =>
+      [...queryKeys.adminCurriculum.all, 'blocks', lessonId] as const,
+
+    // P7-04 — questions
+    questions: (lessonId: number) =>
+      [...queryKeys.adminCurriculum.all, 'questions', lessonId] as const,
+    question: (id: number) =>
+      [...queryKeys.adminCurriculum.all, 'question', id] as const,
+
+    // P7-03 — skills & graph
+    skills: (filters?: object) =>
+      [...queryKeys.adminCurriculum.all, 'skills', filters ?? {}] as const,
+    skill: (id: number) =>
+      [...queryKeys.adminCurriculum.all, 'skill', id] as const,
+    graph: (subjectId: number) =>
+      [...queryKeys.adminCurriculum.all, 'graph', subjectId] as const,
+    prerequisites: (nodeId: number) =>
+      [...queryKeys.adminCurriculum.all, 'prerequisites', nodeId] as const,
+    unlockedBy: (nodeId: number) =>
+      [...queryKeys.adminCurriculum.all, 'unlocked-by', nodeId] as const,
+
+    // P7-05 — lifecycle (entityType + entityId)
+    versions: (entityType: number, entityId: number) =>
+      [...queryKeys.adminCurriculum.all, 'versions', entityType, entityId] as const,
+    preview: (entityType: number, entityId: number) =>
+      [...queryKeys.adminCurriculum.all, 'preview', entityType, entityId] as const,
+    /** Publication coverage (Draft/Published status) for a grade (P7-05). */
+    pubCoverage: (gradeId: number) =>
+      [...queryKeys.adminCurriculum.all, 'pub-coverage', gradeId] as const,
+  },
 } as const;
 
 export type QueryKeys = typeof queryKeys;

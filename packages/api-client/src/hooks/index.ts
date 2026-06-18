@@ -153,3 +153,86 @@ export {
   type AdminChangeChildLearningLanguageInput,
   type AdminChangedLearningLanguageResponseDto,
 } from './useAdminChangeChildLearningLanguage';
+
+// --- P7-01 admin curriculum hooks (Batch 2a-A — foundation) ---
+// Subjects + Units CRUD + Reorder + SetActive + Coverage + Grades.
+// All query hooks use adminCurriculum.* keys (DISTINCT from learning.* student hooks).
+// All mutation hooks return BaseResponse<string> (message) — refetch via invalidation.
+export type {
+  SubjectDto,
+  UnitDto,
+  SubjectLanguageCoverageDto,
+  SubjectLanguageCoverageReportDto,
+  GradeDto,
+  AddSubjectDto,
+  EditSubjectDto,
+  AddUnitDto,
+  EditUnitDto,
+  LessonDto,
+  AdminContentBlockDto,
+  AdminQuestionDto,
+  SkillDto,
+  SkillGraphDto,
+} from './curriculum.types';
+
+export {
+  useSubjectList,
+  type SubjectListFilters,
+} from './useSubjectList';
+export {
+  useUnitList,
+  type UnitListFilters,
+} from './useUnitList';
+export { useSubjectCoverage } from './useSubjectCoverage';
+export { useAdminGrades } from './useAdminGrades';
+
+export { useCreateSubject } from './useCreateSubject';
+export { useUpdateSubject } from './useUpdateSubject';
+export {
+  useReorderSubjects,
+  type ReorderSubjectsInput,
+} from './useReorderSubjects';
+export {
+  useSetSubjectActive,
+  type SetSubjectActiveInput,
+} from './useSetSubjectActive';
+export {
+  useDeleteSubject,
+  type DeleteSubjectInput,
+} from './useDeleteSubject';
+
+export { useCreateUnit } from './useCreateUnit';
+export { useUpdateUnit } from './useUpdateUnit';
+export {
+  useReorderUnits,
+  type ReorderUnitsInput,
+} from './useReorderUnits';
+export {
+  useSetUnitActive,
+  type SetUnitActiveInput,
+} from './useSetUnitActive';
+export {
+  useDeleteUnit,
+  type DeleteUnitInput,
+} from './useDeleteUnit';
+
+// --- P7-05 curriculum lifecycle hooks (Batch 2a-C — lifecycle backbone) ---
+// Publish/Unpublish/Archive/Restore + Rollback + VersionHistory + Preview +
+// PublicationCoverage. All target /api/learning/ContentLifecycle/* (AdminOnly).
+// All mutation hooks return BaseResponse<string> (message) — refetch via
+// adminCurriculum.* key invalidation; no optimistic updates.
+// NOTE: useRollbackToVersion's `_feOnlyReason` is a FE-only UX guardrail;
+// the reason is NOT sent to the backend (DG-4).
+export {
+  useContentVersionHistory,
+  usePreviewContent,
+  usePublicationCoverage,
+  useTransitionLifecycle,
+  useRollbackToVersion,
+  type ContentVersionDto,
+  type PreviewDto,
+  type PublicationCoverageSlotDto,
+  type PublicationCoverageReportDto,
+  type TransitionLifecycleInput,
+  type RollbackVersionInput,
+} from './useLifecycle';
