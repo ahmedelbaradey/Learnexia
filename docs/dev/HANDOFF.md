@@ -1,3 +1,21 @@
+## Recommendation Engine + Lexi narration wave — 2026-06-18 (2 stacked PRs open)
+
+**The per-child guidance feature ("Areas to focus" → next actions, + a kid-style AI voice).** Realizes the long-planned recommendations-engine design (Learning computes deterministically/free; Ai/Lexi narrates on-demand/energy-costed). Lead-approved 2026-06-18: **engine first / Lexi fast-follow; Lexi cost = 5 (Practice tier); charge-per-delivery; the new `HelperIntent.Recommendation` is rule-#8 approved.** Two stacked PRs.
+
+**PR1 — #174 P5-09 deterministic engine** (base `feat/P5-parent-read-api`/#173):
+- Pure `RecommendationEngine` (Learning.Application, **no LLM** — deterministic/reproducible): ranks weak areas (severity→deficit), cap 3–5, attaches `IAdaptivityService` target difficulty + action type, **i18n keys only**, cold-start → Celebrate item. Three un-conflated signals (grade→scope via new `IChildGradeQuery` Identity seam; mastery/adaptivity→areas+difficulty; gamification level NOT used).
+- `StudentRecommendation` table (learning schema, jsonb, unique (StudentId, RecommendationDate), migration `20260618142549`); `RecommendationService` upsert + `RecommendationRecomputeJob` (Hangfire, daily `5 0 * * 1` after SP-Recompute, commits per child); `IStudentRecommendationsQuery` seam; parent endpoint `GET /Parent/Children/{id}/Recommendations` (IDOR-guarded).
+- Gates: build 0 / Learning 348 / Parent 28 / integration 6/6 (cross-family IDOR) / security-auditor PASS / reviewer PASS.
+
+**PR2 — #176 P3-14 Lexi narration** (base `feat/P5-09-recommendation-engine`/#174):
+- New `HelperIntent.Recommendation` AI intent reusing the Explain orchestration end-to-end; grounded ONLY on the persisted recommendations (never recomputes); SSE `POST /api/AiTutor/Recommendation/Narrate`, **`[Authorize(Roles="Student")]`** (child taps "Ask Lexi", childId from JWT — supersedes the story's tentative "parent surface"; security-auditor + reviewer endorsed it as safer).
+- Energy: `ai_cost.recommendation = 5` (seeded + ManagedKeys) + `CreditReasonCode.AiRecommendation`; **charge-per-delivery** (cache HIT + generated both debit; no-delivery paths never debit). Cache key includes recommendation date + content hash.
+- Gates: build 0 / Ai 344 / Billing 160 / integration 10/10 (energy correctness: MISS+HIT debit 5, declined/insufficient/safety-block no-debit) / security-auditor PASS / reviewer PASS.
+
+**Merge order: #173 → #174 → #176** (each stacked PR retargets to main after the prior merges). **Deferred nits (non-blocking):** localize the dead `RecommendationNarrationNoData` resx key (FE localizes the decline); `GlobalSettingsSeeder` doc says "23 managed" → now 24; a test-helper `CreateScope`/`CreateAsyncScope` stub mismatch; the P5-09 engine lives in Application (not Domain — needs Resources) + the service-vs-job double exception-swallow.
+
+---
+
 ## Phase-5 Parent-Read API wave — 2026-06-18 (PR open, awaiting user merge)
 
 **New backend wave on `feat/P5-parent-read-api` (9 commits) → PR pending — unblocks the FAKED parent app.** Lead-approved 2026-06-18: new story **P5-08** (live parent-scoped reads), **Parent** module owns the controller (no new module), **FULL slice**. The parent app's dashboard/overview/reports/activity screens were faked (`parentDashboardStubs.ts`) because the backend only had self-scoped *student* endpoints; this wave adds parent-scoped per-child reads that fan out to the existing data.
