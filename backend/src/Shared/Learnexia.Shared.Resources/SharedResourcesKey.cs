@@ -1973,5 +1973,37 @@
         /// </summary>
         public const string WeakAreaActionPracticeSkill = "WeakAreaActionPracticeSkill";
 
+        // ── P5-08-BE-5..13 Parent analytics endpoints ──────────────────────────────────────────
+
+        /// <summary>Returned when child progress (E1) is retrieved successfully.</summary>
+        public const string ChildProgressRetrievedSuccessfully = "ChildProgressRetrievedSuccessfully";
+
+        /// <summary>Returned when the family summary (E2) is retrieved successfully.</summary>
+        public const string FamilySummaryRetrievedSuccessfully = "FamilySummaryRetrievedSuccessfully";
+
+        /// <summary>Returned when the child's weekly KPIs + WoW deltas (E3) are retrieved successfully.</summary>
+        public const string WeeklyKpisRetrievedSuccessfully = "WeeklyKpisRetrievedSuccessfully";
+
+        /// <summary>Returned when the child's subject mastery (E4) is retrieved successfully.</summary>
+        public const string SubjectMasteryRetrievedSuccessfully = "SubjectMasteryRetrievedSuccessfully";
+
+        /// <summary>Returned when the child's report charts (E6) are retrieved successfully.</summary>
+        public const string ReportChartsRetrievedSuccessfully = "ReportChartsRetrievedSuccessfully";
+
+        /// <summary>Returned when the child's energy balance (E7) is retrieved successfully.</summary>
+        public const string EnergyRetrievedSuccessfully = "EnergyRetrievedSuccessfully";
+
+        /// <summary>Returned when the child's activity feed (E8) is retrieved successfully.</summary>
+        public const string ActivityFeedRetrievedSuccessfully = "ActivityFeedRetrievedSuccessfully";
+
+        /// <summary>
+        /// Generic 403 returned when the authenticated parent is NOT the parent of the requested child.
+        /// Intentionally vague — no distinction between "child not found" and "not your child" (anti-IDOR).
+        /// </summary>
+        public const string ParentChildNotAuthorized = "ParentChildNotAuthorized";
+
+        /// <summary>Returned when childId route parameter is zero or negative.</summary>
+        public const string ChildIdMustBePositive = "ChildIdMustBePositive";
+
     }
 }

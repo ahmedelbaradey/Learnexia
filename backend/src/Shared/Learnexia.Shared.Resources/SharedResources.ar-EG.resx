@@ -2514,4 +2514,32 @@
   <data name="WeakAreaActionPracticeSkill" xml:space="preserve">
     <value>تدرب على هذه المهارة</value>
   </data>
+  <!-- P5-08-BE-5..13 Parent analytics endpoints -->
+  <data name="ChildProgressRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد تقدم الطفل بنجاح.</value>
+  </data>
+  <data name="FamilySummaryRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد ملخص العائلة بنجاح.</value>
+  </data>
+  <data name="WeeklyKpisRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد مؤشرات الأداء الأسبوعية بنجاح.</value>
+  </data>
+  <data name="SubjectMasteryRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد إتقان المادة بنجاح.</value>
+  </data>
+  <data name="ReportChartsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد مخططات التقرير بنجاح.</value>
+  </data>
+  <data name="EnergyRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد رصيد الطاقة بنجاح.</value>
+  </data>
+  <data name="ActivityFeedRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد سجل النشاط بنجاح.</value>
+  </data>
+  <data name="ParentChildNotAuthorized" xml:space="preserve">
+    <value>الوصول مرفوض.</value>
+  </data>
+  <data name="ChildIdMustBePositive" xml:space="preserve">
+    <value>يجب أن يكون معرف الطفل عددًا صحيحًا موجبًا.</value>
+  </data>
 </root>
