@@ -1,3 +1,15 @@
+## P7-09 content moderation queue — 2026-06-19 (PR open)
+
+**First buildable slice of the blocked P7-09/10/11 admin trio** (re-checked after Phase-4 AI merged): P7-09 is buildable NOW because the AI safety pipeline (P3-02 `ai.SafetyEvents`) is merged and the `Moderation` module is scaffolded. P7-10 stays blocked on P5-03 (analytics event capture, not built); P7-11 eval blocked on P6-02 + needs an `AiUsageLogs` table (its safety-summary slice is buildable later). Built on `feat/P7-09-moderation-queue` (base main).
+
+- **Admin moderation queue** (`Moderation` module): `ModerationItem` entity + `ModerationStatus`/`ModerationSource` enums + migration `P7_09_AddModerationItem` (schema `moderation`, loose ids/no FK, unique `SourceEventId` idempotency index + facet indexes). Endpoints (all `[Authorize(AdminOnly)]`, `api/Admin/Moderation`): `GET Queue` (paged + status/source/subject/grade/date/search filters), `GET {id}` (detail), `POST {id}/Review` (Approved/Rejected[reason-required]/Flagged; Pending-only transition; emits `AdminActionPerformedEvent` → P7-12 audit).
+- **Cross-module ingest seam (load-bearing):** new PII-light `Shared.Contracts/Ai/AiOutputFlaggedIntegrationEvent`, published from `SafetyLayer.PersistSafetyEventAsync` **post-persist, Blocked/Flagged-only, fail-soft** (never throws into the child-facing safety path), consumed by `Moderation`'s idempotent Option-C writer (dedup on `SourceEventId`). Mirrors the existing `AdminActionPerformedEvent` relay — Ai↔Moderation via `Shared.Contracts` ONLY (rule #1). The not-yet-built BL-01 curriculum-upload source is a dormant second producer.
+- **v1 = reason-code-only review** (P3-02 stores no raw content). Raw-content **quarantine store = deferred follow-up** (significant scope + PII).
+- Gates: build 0 / Ai 344 / Learning 348 / Billing 160 / EF snapshot OK / security-auditor PASS-with-notes (fixed the double-JSON-encoded verdict) / reviewer PASS.
+- **⚠️ Integration tests written but NOT executed locally** — `P7_09_Moderation_Tests.cs` (18 facts, the first Moderation e2e, compiles clean) — **Docker Desktop's Linux engine was down this Windows shell session**; ubuntu CI / WSL runs them (source of truth). If CI reds these, that's a re-review blocker. (This is also the general state: integration tests are compile-only on this Windows shell when Docker is down — see the e2e-gaps section.)
+
+---
+
 ## Backend e2e / integration test-coverage gaps (reference) — 2026-06-19
 
 Survey of `backend/tests/Learnexia.IntegrationTests/` (~85 WebApplicationFactory + Testcontainers files; PG+pgvector, Redis, MinIO; offline fakes for IAiGateway/IEmailSender/payments — no real LLM keys needed). **Green (well-covered e2e):** Identity/auth (P1_01-13), Learning core + engines (P2_*, P3_08-11/13), AI SSE intents + cache + safety + narration (P3_04-06/14, P3_AI_*), Gamification (P4_*), Billing money-paths (P10_01-18/QC), Parent read API (P5_08-09), Admin authoring + user-mgmt + audit (P7_01-08/12-13), RAG retrieval (Curriculum.IntegrationTests).
