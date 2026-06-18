@@ -203,10 +203,12 @@ public sealed class PromptBuilder : IPromptBuilder
     /// </summary>
     private static AiTaskKind MapToTaskKind(HelperIntent intent) => intent switch
     {
-        HelperIntent.Hint           => AiTaskKind.Hint,
-        HelperIntent.WhyWrong       => AiTaskKind.Hint,
-        HelperIntent.Explain        => AiTaskKind.Explain,
-        HelperIntent.SimilarExample => AiTaskKind.Explain,
+        HelperIntent.Hint            => AiTaskKind.Hint,
+        HelperIntent.WhyWrong        => AiTaskKind.Hint,
+        HelperIntent.Explain         => AiTaskKind.Explain,
+        HelperIntent.SimilarExample  => AiTaskKind.Explain,
+        // P3-14: Recommendation narration — mid tier (Sonnet), same as Explain.
+        HelperIntent.Recommendation  => AiTaskKind.Explain,
         // Compile-time exhaustive — adding a new HelperIntent requires a new case here.
         _ => throw new InvalidOperationException($"Unhandled HelperIntent: {intent}"),
     };

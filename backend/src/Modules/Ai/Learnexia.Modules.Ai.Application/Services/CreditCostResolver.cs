@@ -38,16 +38,20 @@ public sealed class CreditCostResolver
 {
     // ── Locked ai_cost.* key strings (mirror GlobalSettingKeys in Billing.Domain — no cross-ref) ──
     // These MUST match the keys seeded in GlobalSettingsSeeder / GlobalSettingKeys.cs exactly.
-    private const string KeyHint              = "ai_cost.hint";
-    private const string KeyExplainMistake    = "ai_cost.explain_mistake";
-    private const string KeyDeepExplanation   = "ai_cost.deep_explanation";
+    private const string KeyHint               = "ai_cost.hint";
+    private const string KeyExplainMistake     = "ai_cost.explain_mistake";
+    private const string KeyDeepExplanation    = "ai_cost.deep_explanation";
     private const string KeyPracticeGeneration = "ai_cost.practice_generation";
+    // P3-14 Lexi recommendation narration (Practice tier — locked 2026-06-18).
+    private const string KeyRecommendation     = "ai_cost.recommendation";
 
     // ── Locked defaults (P10-03 locked economy model) ────────────────────────────
-    private const int DefaultHint              = 1;
-    private const int DefaultExplainMistake    = 2;
-    private const int DefaultDeepExplanation   = 3;
+    private const int DefaultHint               = 1;
+    private const int DefaultExplainMistake     = 2;
+    private const int DefaultDeepExplanation    = 3;
     private const int DefaultPracticeGeneration = 5;
+    // P3-14: Recommendation narration is Practice-tier (cost = 5).
+    private const int DefaultRecommendation     = 5;
 
     private readonly IGlobalSettingsProvider _settings;
     private readonly bool _hardStopEnabled;
@@ -68,11 +72,13 @@ public sealed class CreditCostResolver
     /// </summary>
     public int ResolveCost(HelperIntent intent) => intent switch
     {
-        HelperIntent.Hint          => _settings.GetInt(KeyHint,              DefaultHint),
-        HelperIntent.WhyWrong      => _settings.GetInt(KeyExplainMistake,    DefaultExplainMistake),
-        HelperIntent.Explain       => _settings.GetInt(KeyDeepExplanation,   DefaultDeepExplanation),
-        HelperIntent.SimilarExample => _settings.GetInt(KeyPracticeGeneration, DefaultPracticeGeneration),
-        _                          => _settings.GetInt(KeyDeepExplanation,   DefaultDeepExplanation),
+        HelperIntent.Hint            => _settings.GetInt(KeyHint,               DefaultHint),
+        HelperIntent.WhyWrong        => _settings.GetInt(KeyExplainMistake,     DefaultExplainMistake),
+        HelperIntent.Explain         => _settings.GetInt(KeyDeepExplanation,    DefaultDeepExplanation),
+        HelperIntent.SimilarExample  => _settings.GetInt(KeyPracticeGeneration, DefaultPracticeGeneration),
+        // P3-14: Recommendation narration (Practice tier).
+        HelperIntent.Recommendation  => _settings.GetInt(KeyRecommendation,     DefaultRecommendation),
+        _                            => _settings.GetInt(KeyDeepExplanation,    DefaultDeepExplanation),
     };
 
     /// <summary>
@@ -83,11 +89,13 @@ public sealed class CreditCostResolver
     /// </summary>
     public static string ResolveReasonCode(HelperIntent intent) => intent switch
     {
-        HelperIntent.Hint          => "AiHint",
-        HelperIntent.WhyWrong      => "AiWhyWrong",
-        HelperIntent.Explain       => "AiDeepExplanation",
-        HelperIntent.SimilarExample => "AiPracticeGeneration",
-        _                          => "AiDeepExplanation",
+        HelperIntent.Hint            => "AiHint",
+        HelperIntent.WhyWrong        => "AiWhyWrong",
+        HelperIntent.Explain         => "AiDeepExplanation",
+        HelperIntent.SimilarExample  => "AiPracticeGeneration",
+        // P3-14: matches CreditReasonCode.AiRecommendation = 14 enum name exactly.
+        HelperIntent.Recommendation  => "AiRecommendation",
+        _                            => "AiDeepExplanation",
     };
 
     /// <summary>

@@ -1,14 +1,18 @@
 namespace Learnexia.Shared.Contracts.Ai;
 
 /// <summary>
-/// The four allowed AI Helper intents (approved per <c>docs/briefs/ai-helper-mvp.md §1</c>).
+/// The five allowed AI Helper intents.
 ///
 /// <para>This is a closed, exhaustive set — no intent may be added without a lead approval
-/// and a corresponding subject template update. If a fifth intent is added, the compile-time
-/// exhaustive switch in <c>TemplateSelector</c> will fail, surfacing the gap immediately.</para>
+/// (rule #8) and a corresponding subject template update. If a sixth intent is added, the
+/// compile-time exhaustive switch in <c>TemplateSelector</c> will fail, surfacing the gap
+/// immediately.</para>
 ///
-/// <para>Supersedes the earlier <c>TutorTask</c> sketch — the four intents here map directly
-/// to the four helper user-facing actions.</para>
+/// <para>The fifth intent (<see cref="Recommendation"/>) was approved by the lead 2026-06-18
+/// per rule #8 (P3-14 narration intent).</para>
+///
+/// <para>Supersedes the earlier <c>TutorTask</c> sketch — the intents here map directly
+/// to the helper user-facing actions.</para>
 /// </summary>
 public enum HelperIntent
 {
@@ -36,4 +40,12 @@ public enum HelperIntent
     /// Maps to <see cref="AiTaskKind.Explain"/> (mid tier — Sonnet).
     /// </summary>
     SimilarExample = 4,
+
+    /// <summary>
+    /// "Lexi recommendation narration" — narrates the child's persisted daily recommendation
+    /// set kid-style, grade-tuned, grounded ONLY on <c>IStudentRecommendationsQuery</c> persisted
+    /// content. Cost = 5 (Practice tier). Lead-approved 2026-06-18 (P3-14, rule #8).
+    /// Maps to <see cref="AiTaskKind.Explain"/> (mid tier — Sonnet).
+    /// </summary>
+    Recommendation = 5,
 }

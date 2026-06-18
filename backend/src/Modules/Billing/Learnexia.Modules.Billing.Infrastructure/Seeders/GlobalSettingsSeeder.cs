@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Learnexia.Modules.Billing.Infrastructure.Seeders;
 
 /// <summary>
-/// Seeds the 17 managed <c>GlobalSetting</c> rows with bootstrap defaults.
+/// Seeds the 23 managed <c>GlobalSetting</c> rows with bootstrap defaults.
 ///
 /// <para><strong>Seed-if-absent:</strong> existing rows (admin-edited values) are never overwritten.
 /// Only rows missing from the table are inserted. This makes the seeder safe to run on every
@@ -37,6 +37,8 @@ public static class GlobalSettingsSeeder
         (GlobalSettingKeys.AiCostExplainMistake,         "2",      GlobalSettingType.Int),
         (GlobalSettingKeys.AiCostDeepExplanation,        "3",      GlobalSettingType.Int),
         (GlobalSettingKeys.AiCostPracticeGeneration,     "5",      GlobalSettingType.Int),
+        // P3-14 Lexi recommendation narration (Practice tier — locked 2026-06-18)
+        (GlobalSettingKeys.AiCostRecommendation,         "5",      GlobalSettingType.Int),
         // AI cache thresholds — values MUST match live Ai handler defaults exactly
         (GlobalSettingKeys.AiCacheAutoApprovalConfidence,"0.85",   GlobalSettingType.Decimal),
         (GlobalSettingKeys.AiCacheWhyWrongVariantCap,    "50",     GlobalSettingType.Int),

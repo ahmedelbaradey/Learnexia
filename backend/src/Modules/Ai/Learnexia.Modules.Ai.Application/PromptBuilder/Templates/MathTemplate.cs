@@ -13,10 +13,11 @@ internal sealed class MathTemplate : ISubjectTemplate
 {
     public string GetTemplate(HelperIntent intent, TutorLanguage language) => intent switch
     {
-        HelperIntent.Explain        => language == TutorLanguage.Ar ? ArExplain        : EnExplain,
-        HelperIntent.Hint           => language == TutorLanguage.Ar ? ArHint           : EnHint,
-        HelperIntent.WhyWrong       => language == TutorLanguage.Ar ? ArWhyWrong       : EnWhyWrong,
-        HelperIntent.SimilarExample => language == TutorLanguage.Ar ? ArSimilarExample : EnSimilarExample,
+        HelperIntent.Explain         => language == TutorLanguage.Ar ? ArExplain         : EnExplain,
+        HelperIntent.Hint            => language == TutorLanguage.Ar ? ArHint            : EnHint,
+        HelperIntent.WhyWrong        => language == TutorLanguage.Ar ? ArWhyWrong        : EnWhyWrong,
+        HelperIntent.SimilarExample  => language == TutorLanguage.Ar ? ArSimilarExample  : EnSimilarExample,
+        HelperIntent.Recommendation  => language == TutorLanguage.Ar ? ArRecommendation  : EnRecommendation,
         // Compile-time exhaustive: adding a new HelperIntent without a case here will
         // produce a compiler warning (CS8509) if warnings-as-errors is set, and the
         // TemplateSelector exhaustive-switch will fail at compile time.
@@ -73,6 +74,43 @@ internal sealed class MathTemplate : ISubjectTemplate
         • وضِّح كل خطوة في الحل.
         • اختم بتشجيع الطالب على تطبيق الأسلوب ذاته على السؤال الحالي.
         المثال يجب أن يكون ضمن نطاق المهارة الحالية فقط.
+
+        """;
+
+    // ── Recommendation variants (Arabic) ─────────────────────────────────────
+
+    private const string ArRecommendation =
+        """
+        [قالب الرياضيات — سرد توصية ليكسي]
+        أنت تُقدِّم للطالب دليلاً دراسياً ودوداً ومُشجِّعاً مبنياً حصراً على قائمة التوصيات أدناه.
+        قواعد صارمة:
+        • اسرد فقط المهارات والمجالات الواردة في قائمة التوصيات المقدَّمة — لا تَخترع مهارات أو موضوعات جديدة.
+        • اضبط نبرتك وعمق المحتوى على الصف الدراسي للطالب.
+        • استخدم لغة مشجِّعة ومُحفِّزة تناسب الأطفال — ابدأ بتشجيع الطالب قبل ذكر مجالات التحسين.
+        • اذكر كل توصية بأسلوب واضح ومحدَّد: ما المهارة؟ وما الإجراء المقترح (مراجعة / تدريب / مواصلة)؟
+        • لا تُضف نصائح عامة أو موضوعات خارج القائمة.
+        • لا تُقرِّر مستوى الطالب الكلي ولا تفتح درساً جديداً.
+        قائمة التوصيات الخاصة بهذا الطالب موجودة في القسم أدناه — استند إليها حصراً.
+
+        """;
+
+    // ── Recommendation variants (English) ────────────────────────────────────
+
+    private const string EnRecommendation =
+        """
+        [Math Template — Lexi Recommendation Narration]
+        You are presenting the student with a friendly, encouraging study guide built EXCLUSIVELY
+        on the recommendation list provided below.
+        Strict rules:
+        • Narrate ONLY the skills and areas listed in the provided recommendations — never invent
+          new skills or topics.
+        • Adjust your tone and depth to the student's grade level.
+        • Use encouraging, child-friendly language — open with praise before addressing focus areas.
+        • State each recommendation clearly: what is the skill? what is the suggested action
+          (review / practise / keep it up)?
+        • Do NOT add general advice or topics outside the list.
+        • Do NOT assess the student's overall level or unlock new lessons.
+        The student's recommendation list is in the section below — base your narration on it ONLY.
 
         """;
 
