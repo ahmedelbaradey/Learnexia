@@ -66,12 +66,19 @@ public sealed class SafetyLayerTests
         // Default settings: return caller-supplied defaults (pass-through behaviour).
         var settings = settingsMock ?? BuildDefaultSettingsMock();
 
+        // P7-09: IAiOutputFlaggedPublisher — fail-soft publisher; use a no-op mock in tests.
+        var flaggedPublisherMock = new Mock<IAiOutputFlaggedPublisher>();
+        flaggedPublisherMock
+            .Setup(p => p.PublishAsync(It.IsAny<SafetyEvent>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
         return new SafetyLayer(
             gatewayMock.Object,
             toxicityMock.Object,
             ageMock.Object,
             hallucMock.Object,
             storeMock.Object,
+            flaggedPublisherMock.Object,
             Options.Create(opts),
             settings.Object,
             localizerMock.Object,

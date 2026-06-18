@@ -61,6 +61,7 @@ public sealed class SafetyLayer : ISafetyLayer
     private readonly IAgeAppropriatenessCheck          _ageCheck;
     private readonly IHallucinationCheck               _hallucinationCheck;
     private readonly IAiSafetyEventStore               _eventStore;
+    private readonly IAiOutputFlaggedPublisher         _flaggedPublisher;
     private readonly SafetyOptions                     _options;
     private readonly IGlobalSettingsProvider           _settings;
     private readonly IStringLocalizer<SharedResources> _localizer;
@@ -72,6 +73,7 @@ public sealed class SafetyLayer : ISafetyLayer
         IAgeAppropriatenessCheck ageCheck,
         IHallucinationCheck hallucinationCheck,
         IAiSafetyEventStore eventStore,
+        IAiOutputFlaggedPublisher flaggedPublisher,
         IOptions<SafetyOptions> options,
         IGlobalSettingsProvider settings,
         IStringLocalizer<SharedResources> localizer,
@@ -82,6 +84,7 @@ public sealed class SafetyLayer : ISafetyLayer
         _ageCheck           = ageCheck;
         _hallucinationCheck = hallucinationCheck;
         _eventStore         = eventStore;
+        _flaggedPublisher   = flaggedPublisher;
         _options            = options.Value;
         _settings           = settings;
         _localizer          = localizer;
@@ -282,7 +285,8 @@ public sealed class SafetyLayer : ISafetyLayer
     }
 
     /// <summary>
-    /// Persists a <see cref="SafetyEvent"/> via <see cref="IAiSafetyEventStore"/>.
+    /// Persists a <see cref="SafetyEvent"/> via <see cref="IAiSafetyEventStore"/> and then
+    /// publishes an <c>AiOutputFlaggedIntegrationEvent</c> (fail-soft) for the Moderation module.
     /// Reason codes and check names only — never raw AI content (Q5).
     /// </summary>
     private async Task PersistSafetyEventAsync(
@@ -305,6 +309,11 @@ public sealed class SafetyLayer : ISafetyLayer
         };
 
         await _eventStore.AppendAsync(ev, ct);
+
+        // Post-persist, fail-soft: publish integration event for the Moderation module (P7-09).
+        // A publish failure MUST NOT propagate here — the child-facing fallback is already decided.
+        // Only blocked/regenerated/fallback events are published (never the Allowed path).
+        await _flaggedPublisher.PublishAsync(ev, ct);
     }
 
     private SafeAiResult BlockedResult(IReadOnlyList<CheckResult> results)

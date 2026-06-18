@@ -97,4 +97,7 @@ public static class AdminActions
 
     // ── P10-12 Billing GlobalSettings Admin ───────────────────────────────────
     public const string GlobalSettingUpdated = "GlobalSetting.Updated";
+
+    // ── P7-09 Moderation Queue ────────────────────────────────────────────────
+    public const string ModerationItemReviewed = "ModerationItem.Reviewed";
 }

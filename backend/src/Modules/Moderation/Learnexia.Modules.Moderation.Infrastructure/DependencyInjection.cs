@@ -32,6 +32,11 @@ public static class DependencyInjection
         services.AddScoped<IAuditLogQueryService, AuditLogQueryService>();
         services.AddScoped<IAuditLogWriter, AuditLogWriter>();
 
+        // P7-09 Moderation Queue — Option-C service seams.
+        services.AddScoped<IModerationQueueWriter, ModerationQueueWriter>();
+        services.AddScoped<IModerationQueryService, ModerationQueryService>();
+        services.AddScoped<IModerationItemService, ModerationItemService>();
+
         services.AddHttpContextAccessor();
         services.AddSingleton<ILoggerManager, LoggerManager>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
