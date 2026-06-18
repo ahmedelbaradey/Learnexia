@@ -1,3 +1,22 @@
+## Phase-10 Family-Wallet wave MERGED + deferred-hardening batch — 2026-06-18
+
+**The whole Phase-10 family-wallet/seats wave is now in `main`.** Merged in order: #166 (P3_AI build hotfix → main), then the stack #162 (P10-15) → #164 (P10-16) → #168 (P10-17) → #169 (P10-18). Merged main verified: build 0 errors, Billing unit 147/147. (Stacked PRs do NOT auto-retarget unless the base branch is deleted — each child PR's base was manually retargeted to `main` before merging.)
+
+**Deferred-hardening batch → branch `fix/phase10-deferred-hardening` (PR open, awaiting user merge).** Three commits, each gated (build + Billing unit + security-auditor PASS + reviewer PASS; P10-15 also integration 26/26 + 29/29):
+
+1. **Daily-cap test TZ flake fixed** (`06699db`). `ENERGY-6A/6B` + `BE-TC-15` seeded `ChildDailyUsage.DailyUsedDateLocal` with `DateTime.UtcNow` while production `DailyCapHelper.IsStale` compares the child's **Cairo-local** date → reset-to-0 flake in the UTC↔Cairo window. Now seed via `DailyCapHelper.Today(tz, ISystemClock)` (same source of truth). **This removes 3 tests from the KNOWN-RED CI baseline.**
+2. **P10-16 transfer hardening** (`1021568`). (a) HARDEN-01 xmin concurrency retry on the transfer tx + typed Npgsql unique-violation check; (b) `SendTransfer` now reduces `AllocatedAmount` not `SpentAmount` (transferred energy is not "consumed" — keeps the parent's spent report accurate); (c) idempotency **payload-binding** → reusing a key with a different (from/to/amount) returns 409 instead of silently replaying; (d) validator caps Amount ≤ int.MaxValue; (e) new `IFamilyTransferRateLimiter` (in-process 10/min/parent, mirrors `AiTutorRateLimiter`) → 429. 3 new localized keys (EN+AR).
+3. **P10-15 follow-ups** (`d8d9d3a`). (a) **Stale-placeholder sweep** — `ISeatEnforcementService.SweepStalePlaceholdersAsync` releases orphaned `Reserved` negative-ChildId placeholders (double-failure add-child residue that permanently inflates the seat count) older than a 30-min cutoff, wired fail-soft into `SeatEnforcementJob`; (b) **dunning grace dedup** — both `RefundService` payment-failure grace sites now route through `ISeatGraceService.StartPaymentFailureGraceAsync` (single source of truth). Site 2 `RetrySubscriptionAsync` **replaced the superseded `GraceEndsAt = CurrentCycleEnd` model** (resolves the grace service from its own scope to share the `db`).
+
+**Remaining deferred (NOT in this batch — need lead direction):**
+- **Phase-5 parent-read API gap** — NEW scope (new parent-scoped read endpoints). Per CLAUDE.md rule #9 this needs a story/task breakdown + go-ahead BEFORE building (proposal pending).
+- **Batch-1 security follow-ups** — separate Phase-1 backlog (G2 JWT stamp / B1 captcha / rate limits) — see the Phase-1 security note.
+- **Optional future hardening (non-blocking, flagged by gates):** wrap `RefundService.RetrySubscriptionAsync` (site 2) in an explicit transaction (pre-existing, fail-safe today); unify `SeatEnforcementService.SweepStalePlaceholdersAsync` on a single clock source (`ISystemClock`).
+
+**KNOWN-RED CI now:** ~19 AI-SSE (need local LLM keys), `BE-TC-24` (appsettings `//` comments) + `BE-TC-19b` (stale module-count assertion). The 3 daily-cap tests are **no longer red** (fixed above).
+
+---
+
 ## Admin Console Frontend Wave (P7-06/07/08) — 2026-06-18
 
 **Wave 1 of the Admin Console FRONTEND is complete** — P7-06/07/08 User & Account management (`apps/admin-dashboard`). Backend was already merged (P7-01..P7-05, P7-12, P7-13 shipped; P7-09/11 unblocked with AI phase merge; P7-10 still blocked on P5-03).
