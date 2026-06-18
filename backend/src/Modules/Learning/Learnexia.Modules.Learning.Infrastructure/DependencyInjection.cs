@@ -7,6 +7,7 @@ using Learnexia.Modules.Learning.Infrastructure.Jobs;
 using Learnexia.Modules.Learning.Infrastructure.Persistence;
 using Learnexia.Modules.Learning.Infrastructure.Repository;
 using Learnexia.Modules.Learning.Infrastructure.Service;
+using Learnexia.Shared.Contracts.Ai;
 using Learnexia.Shared.Contracts.Learning;
 using Learnexia.Shared.Kernel.Logging;
 using MediatR;
@@ -89,6 +90,28 @@ public static class DependencyInjection
         // Shared.Contracts. The Ai module depends only on IQuestionAnswerContract; no direct
         // reference to any Learning project (module isolation rule).
         services.AddScoped<IQuestionAnswerContract, QuestionAnswerContractAdapter>();
+
+        // ── P5-08 + P5-02: Cross-module read seams for the Parent analytics API ──────────────────
+
+        // P5-08-BE-2: windowed learning stats (lessons completed, time-learning, attempts).
+        services.AddScoped<IStudentLearningStatsQuery, StudentLearningStatsQueryAdapter>();
+
+        // P5-08-BE-3: per-subject mastery summary (overall + per-subject % from StudentSkillMastery).
+        services.AddScoped<IStudentMasterySummaryQuery, StudentMasterySummaryQueryAdapter>();
+
+        // P5-02-BE-1: internal detector service — all ranking logic lives here; adapters delegate to it.
+        services.AddScoped<IWeakAreaDetectorService, WeakAreaDetectorService>();
+
+        // P5-02-BE-2: all-subjects weak-area seam (Parent module E5 + P5-01 report consume this).
+        services.AddScoped<IStudentAllSubjectsWeakAreasQuery, StudentAllSubjectsWeakAreasQueryAdapter>();
+
+        // P5-02-BE-3: re-wire the Ai subject-scoped seam (IStudentWeakAreasQuery) from the
+        // EmptyWeakAreasQuery placeholder to the real bridge that delegates to the detector.
+        // The Host runs AddLearningModule BEFORE AddAiModule, so this registration lands FIRST; the
+        // Ai module registers its EmptyWeakAreasQuery stub via TryAddTransient, which is then skipped
+        // (the interface is already registered) — so this bridge wins when Learning is loaded.
+        // The Ai module itself does NOT change; it continues to inject IStudentWeakAreasQuery.
+        services.AddScoped<IStudentWeakAreasQuery, AiWeakAreasQueryBridge>();
 
         // Unit-of-Work behavior (ADR 0001 §2 + ADR 0002 §2): commit once per ICommand<>, then dispatch
         // domain events AFTER commit. Registered here in Infrastructure (not Application) because it

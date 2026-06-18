@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Modules\Gamification\Learnexia.Modules.Gamification.Application\Learnexia.Modules.Gamification.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Gamification\Learnexia.Modules.Gamification.Infrastructure\Learnexia.Modules.Gamification.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Gamification\Learnexia.Modules.Gamification.Domain\Learnexia.Modules.Gamification.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Shared\Learnexia.Shared.Contracts\Learnexia.Shared.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Shared\Learnexia.Shared.Resources\Learnexia.Shared.Resources.csproj" />
+  </ItemGroup>
+</Project>

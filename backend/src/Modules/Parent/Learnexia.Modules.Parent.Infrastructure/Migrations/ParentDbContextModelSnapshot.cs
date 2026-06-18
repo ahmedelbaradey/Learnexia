@@ -48,6 +48,85 @@ namespace Learnexia.Modules.Parent.Infrastructure.Migrations
 
                     b.ToTable("ParentStudent", "parent");
                 });
+
+            modelBuilder.Entity("Learnexia.Modules.Parent.Domain.Entities.WeeklyReport", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ChildId")
+                        .HasColumnType("integer")
+                        .HasComment("Id of the child (student) this report belongs to. Plain int — no cross-module FK.");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("GeneratedAtUtc")
+                        .HasColumnType("timestamptz")
+                        .HasComment("UTC timestamp when this report row was generated or last regenerated.");
+
+                    b.Property<bool?>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("RecommendationsJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValueSql("'[]'")
+                        .HasComment("JSON array of recommendations generated for the child based on the week's weak areas (jsonb).");
+
+                    b.Property<int>("SkillsImproved")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasComment("Count of distinct skills whose mastery improved during the report week.");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("WeakAreasJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValueSql("'[]'")
+                        .HasComment("JSON snapshot of the child's weak areas as of the end of the report week (jsonb).");
+
+                    b.Property<DateTime>("WeekStartUtc")
+                        .HasColumnType("timestamptz")
+                        .HasComment("Monday 00:00 UTC of the report week. Combined with ChildId forms the unique per-week key.");
+
+                    b.Property<int>("XpEarned")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasComment("XP earned by the child during the report week.");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChildId")
+                        .HasDatabaseName("IX_WeeklyReport_ChildId");
+
+                    b.HasIndex("ChildId", "WeekStartUtc")
+                        .IsUnique()
+                        .HasDatabaseName("IX_WeeklyReport_ChildId_WeekStartUtc");
+
+                    b.ToTable("WeeklyReport", "parent");
+                });
 #pragma warning restore 612, 618
         }
     }

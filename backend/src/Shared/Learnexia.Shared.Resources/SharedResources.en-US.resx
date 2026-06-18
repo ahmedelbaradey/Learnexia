@@ -2499,4 +2499,55 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="ChildAccessStatusRetrieved" xml:space="preserve">
     <value>Child access status retrieved successfully.</value>
   </data>
+  <!-- P5-08 / P5-02 Learning read seams + weak-area detector -->
+  <data name="LearningStatsRetrievedSuccessfully" xml:space="preserve">
+    <value>Learning statistics retrieved successfully.</value>
+  </data>
+  <data name="MasterySummaryRetrievedSuccessfully" xml:space="preserve">
+    <value>Mastery summary retrieved successfully.</value>
+  </data>
+  <data name="WeakAreasRetrievedSuccessfully" xml:space="preserve">
+    <value>Weak areas retrieved successfully.</value>
+  </data>
+  <data name="WeakAreaActionReviewConcept" xml:space="preserve">
+    <value>Review the concept</value>
+  </data>
+  <data name="WeakAreaActionPracticeSkill" xml:space="preserve">
+    <value>Practice this skill</value>
+  </data>
+  <!-- P5-08-BE-5..13 Parent analytics endpoints -->
+  <data name="ChildProgressRetrievedSuccessfully" xml:space="preserve">
+    <value>Child progress retrieved successfully.</value>
+  </data>
+  <data name="FamilySummaryRetrievedSuccessfully" xml:space="preserve">
+    <value>Family summary retrieved successfully.</value>
+  </data>
+  <data name="WeeklyKpisRetrievedSuccessfully" xml:space="preserve">
+    <value>Weekly KPIs retrieved successfully.</value>
+  </data>
+  <data name="SubjectMasteryRetrievedSuccessfully" xml:space="preserve">
+    <value>Subject mastery retrieved successfully.</value>
+  </data>
+  <data name="ReportChartsRetrievedSuccessfully" xml:space="preserve">
+    <value>Report charts retrieved successfully.</value>
+  </data>
+  <data name="EnergyRetrievedSuccessfully" xml:space="preserve">
+    <value>Energy balance retrieved successfully.</value>
+  </data>
+  <data name="ActivityFeedRetrievedSuccessfully" xml:space="preserve">
+    <value>Activity feed retrieved successfully.</value>
+  </data>
+  <data name="ParentChildNotAuthorized" xml:space="preserve">
+    <value>Access denied.</value>
+  </data>
+  <data name="ChildIdMustBePositive" xml:space="preserve">
+    <value>Child ID must be a positive integer.</value>
+  </data>
+  <!-- P5-01-BE-4 Weekly report read endpoint (E9) -->
+  <data name="WeeklyReportRetrievedSuccessfully" xml:space="preserve">
+    <value>Weekly report retrieved successfully.</value>
+  </data>
+  <data name="WeeklyReportNotYetGenerated" xml:space="preserve">
+    <value>No weekly report has been generated yet for this child.</value>
+  </data>
 </root>

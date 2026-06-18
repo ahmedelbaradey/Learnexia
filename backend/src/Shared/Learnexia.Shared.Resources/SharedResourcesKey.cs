@@ -1940,5 +1940,85 @@
         /// </summary>
         public const string ChildAccessStatusRetrieved = "ChildAccessStatusRetrieved";
 
+        // ── P5-08 / P5-02 Learning read seams + weak-area detector ──────────────────────────────
+
+        /// <summary>
+        /// Success: returned when the student's learning stats are retrieved successfully.
+        /// Used by <c>IStudentLearningStatsQuery</c> consumers (P5-08-BE-2).
+        /// </summary>
+        public const string LearningStatsRetrievedSuccessfully = "LearningStatsRetrievedSuccessfully";
+
+        /// <summary>
+        /// Success: returned when the student's subject mastery summary is retrieved successfully.
+        /// Used by <c>IStudentMasterySummaryQuery</c> consumers (P5-08-BE-3).
+        /// </summary>
+        public const string MasterySummaryRetrievedSuccessfully = "MasterySummaryRetrievedSuccessfully";
+
+        /// <summary>
+        /// Success: returned when the student's weak areas are retrieved successfully.
+        /// Includes the case of an empty list (no weak areas — not an error).
+        /// Used by <c>IStudentAllSubjectsWeakAreasQuery</c> consumers (P5-02-BE-2).
+        /// </summary>
+        public const string WeakAreasRetrievedSuccessfully = "WeakAreasRetrievedSuccessfully";
+
+        /// <summary>
+        /// Suggested next action: review the underlying concept (shown for High-severity weak areas).
+        /// Resolved by Parent handlers when building the recommended-actions display (P5-02).
+        /// </summary>
+        public const string WeakAreaActionReviewConcept = "WeakAreaActionReviewConcept";
+
+        /// <summary>
+        /// Suggested next action: practice the skill more (shown for Medium/Low-severity weak areas).
+        /// Resolved by Parent handlers when building the recommended-actions display (P5-02).
+        /// </summary>
+        public const string WeakAreaActionPracticeSkill = "WeakAreaActionPracticeSkill";
+
+        // ── P5-08-BE-5..13 Parent analytics endpoints ──────────────────────────────────────────
+
+        /// <summary>Returned when child progress (E1) is retrieved successfully.</summary>
+        public const string ChildProgressRetrievedSuccessfully = "ChildProgressRetrievedSuccessfully";
+
+        /// <summary>Returned when the family summary (E2) is retrieved successfully.</summary>
+        public const string FamilySummaryRetrievedSuccessfully = "FamilySummaryRetrievedSuccessfully";
+
+        /// <summary>Returned when the child's weekly KPIs + WoW deltas (E3) are retrieved successfully.</summary>
+        public const string WeeklyKpisRetrievedSuccessfully = "WeeklyKpisRetrievedSuccessfully";
+
+        /// <summary>Returned when the child's subject mastery (E4) is retrieved successfully.</summary>
+        public const string SubjectMasteryRetrievedSuccessfully = "SubjectMasteryRetrievedSuccessfully";
+
+        /// <summary>Returned when the child's report charts (E6) are retrieved successfully.</summary>
+        public const string ReportChartsRetrievedSuccessfully = "ReportChartsRetrievedSuccessfully";
+
+        /// <summary>Returned when the child's energy balance (E7) is retrieved successfully.</summary>
+        public const string EnergyRetrievedSuccessfully = "EnergyRetrievedSuccessfully";
+
+        /// <summary>Returned when the child's activity feed (E8) is retrieved successfully.</summary>
+        public const string ActivityFeedRetrievedSuccessfully = "ActivityFeedRetrievedSuccessfully";
+
+        /// <summary>
+        /// Generic 403 returned when the authenticated parent is NOT the parent of the requested child.
+        /// Intentionally vague — no distinction between "child not found" and "not your child" (anti-IDOR).
+        /// </summary>
+        public const string ParentChildNotAuthorized = "ParentChildNotAuthorized";
+
+        /// <summary>Returned when childId route parameter is zero or negative.</summary>
+        public const string ChildIdMustBePositive = "ChildIdMustBePositive";
+
+        // ── P5-01-BE-4 Weekly report read endpoint (E9) ──────────────────────────────────────
+
+        /// <summary>
+        /// Returned when the child's stored weekly report (E9) is retrieved successfully.
+        /// Also covers the "no report yet" case where the DTO has zeroed fields.
+        /// </summary>
+        public const string WeeklyReportRetrievedSuccessfully = "WeeklyReportRetrievedSuccessfully";
+
+        /// <summary>
+        /// Returned as the message field when no weekly report has been generated yet for
+        /// the child (first-week / no-activity-week state). The response is 200 OK with a
+        /// zeroed DTO — not a 404.
+        /// </summary>
+        public const string WeeklyReportNotYetGenerated = "WeeklyReportNotYetGenerated";
+
     }
 }

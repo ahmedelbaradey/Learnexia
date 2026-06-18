@@ -2498,4 +2498,55 @@
   <data name="ChildAccessStatusRetrieved" xml:space="preserve">
     <value>تم استرداد حالة وصول الطفل بنجاح.</value>
   </data>
+  <!-- P5-08 / P5-02 Learning read seams + weak-area detector -->
+  <data name="LearningStatsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد إحصائيات التعلم بنجاح.</value>
+  </data>
+  <data name="MasterySummaryRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد ملخص الإتقان بنجاح.</value>
+  </data>
+  <data name="WeakAreasRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد المجالات الضعيفة بنجاح.</value>
+  </data>
+  <data name="WeakAreaActionReviewConcept" xml:space="preserve">
+    <value>مراجعة المفهوم</value>
+  </data>
+  <data name="WeakAreaActionPracticeSkill" xml:space="preserve">
+    <value>تدرب على هذه المهارة</value>
+  </data>
+  <!-- P5-08-BE-5..13 Parent analytics endpoints -->
+  <data name="ChildProgressRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد تقدم الطفل بنجاح.</value>
+  </data>
+  <data name="FamilySummaryRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد ملخص العائلة بنجاح.</value>
+  </data>
+  <data name="WeeklyKpisRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد مؤشرات الأداء الأسبوعية بنجاح.</value>
+  </data>
+  <data name="SubjectMasteryRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد إتقان المادة بنجاح.</value>
+  </data>
+  <data name="ReportChartsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد مخططات التقرير بنجاح.</value>
+  </data>
+  <data name="EnergyRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد رصيد الطاقة بنجاح.</value>
+  </data>
+  <data name="ActivityFeedRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد سجل النشاط بنجاح.</value>
+  </data>
+  <data name="ParentChildNotAuthorized" xml:space="preserve">
+    <value>الوصول مرفوض.</value>
+  </data>
+  <data name="ChildIdMustBePositive" xml:space="preserve">
+    <value>يجب أن يكون معرف الطفل عددًا صحيحًا موجبًا.</value>
+  </data>
+  <!-- P5-01-BE-4 Weekly report read endpoint (E9) -->
+  <data name="WeeklyReportRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد التقرير الأسبوعي بنجاح.</value>
+  </data>
+  <data name="WeeklyReportNotYetGenerated" xml:space="preserve">
+    <value>لم يتم إنشاء تقرير أسبوعي لهذا الطفل بعد.</value>
+  </data>
 </root>
