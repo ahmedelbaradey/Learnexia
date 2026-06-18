@@ -28,6 +28,7 @@ if (existsSync(PW_DEPS)) {
  */
 const WEB_URL = process.env.WEB_URL ?? 'http://localhost:8081';
 const MARKETING_URL = process.env.MARKETING_URL ?? 'http://localhost:3002';
+const ADMIN_URL = process.env.ADMIN_URL ?? 'http://localhost:3001';
 
 export default defineConfig({
   testDir: './specs',
@@ -86,6 +87,16 @@ export default defineConfig({
       },
       testMatch: '**/specs/marketing-*.spec.ts',
     },
+
+    // ── Admin-dashboard projects (Next.js 15 at :3001) ────────────────────────
+    {
+      name: 'admin',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: ADMIN_URL,
+      },
+      testMatch: '**/specs/P7-admin-*.spec.ts',
+    },
   ],
   webServer: [
     // Student-app (Expo web on :8081)
@@ -109,6 +120,20 @@ export default defineConfig({
       timeout: 120_000,
       stdout: 'pipe',
       stderr: 'pipe',
+    },
+    // Admin dashboard (Next.js 15 on :3001)
+    // Requires NEXT_PUBLIC_API_URL at dev-server startup time.
+    {
+      command: 'NEXT_PUBLIC_API_URL=http://localhost:5080 pnpm --filter @learnexia/admin-dashboard dev',
+      cwd: '../../',
+      url: ADMIN_URL,
+      reuseExistingServer: !process.env.CI,
+      timeout: 180_000,
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: {
+        NEXT_PUBLIC_API_URL: 'http://localhost:5080',
+      },
     },
   ],
 });

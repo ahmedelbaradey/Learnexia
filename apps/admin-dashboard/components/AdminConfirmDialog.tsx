@@ -67,6 +67,12 @@ export interface AdminConfirmDialogProps {
    * fully-styled button element here.
    */
   confirmButton: ReactNode;
+  /**
+   * Optional per-dialog `data-testid` override for the dialog card element.
+   * When provided it is used instead of the default "admin-dialog".
+   * E.g. "suspend-dialog", "delete-dialog", etc.
+   */
+  dialogTestId?: string;
 }
 
 // ── Icon SVGs (Lucide-compatible, 20px, 2px stroke, rounded caps) ─────────────
@@ -177,6 +183,7 @@ export function AdminConfirmDialog({
   children,
   cancelLabel,
   confirmButton,
+  dialogTestId = 'admin-dialog',
 }: AdminConfirmDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const titleId = useRef(`dialog-title-${Math.random().toString(36).slice(2)}`).current;
@@ -264,6 +271,7 @@ export function AdminConfirmDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        data-testid={dialogTestId}
         onKeyDown={handleKeyDown}
         style={{
           backgroundColor: 'var(--lx-card)',
@@ -339,6 +347,7 @@ export function AdminConfirmDialog({
         >
           <button
             type="button"
+            data-testid="dialog-cancel-btn"
             onClick={onClose}
             style={{
               height: 36,

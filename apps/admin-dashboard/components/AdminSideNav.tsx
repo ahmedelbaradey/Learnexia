@@ -149,6 +149,7 @@ export function AdminSideNav({ isOpen = false, onClose }: AdminSideNavProps) {
                   <Link
                     href={item.href}
                     aria-current={isActive ? 'page' : undefined}
+                    data-testid={`nav-${item.key}`}
                     style={{ textDecoration: 'none', display: 'block' }}
                   >
                     <Stack
