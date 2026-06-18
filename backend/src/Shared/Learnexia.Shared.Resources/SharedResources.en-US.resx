@@ -2455,4 +2455,17 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="AllocationTransferAmountRequired" xml:space="preserve">
     <value>Transfer amount must be greater than zero.</value>
   </data>
+  <!-- P10-17 Purchased-energy refunds -->
+  <data name="RefundableQuoteRetrieved" xml:space="preserve">
+    <value>Refundable energy quote retrieved successfully.</value>
+  </data>
+  <data name="RefundRequestAccepted" xml:space="preserve">
+    <value>Your refund request has been submitted. The refund will be processed after provider confirmation.</value>
+  </data>
+  <data name="RefundableAmountIsZero" xml:space="preserve">
+    <value>There is no unused purchased energy to refund. All purchased energy has been consumed.</value>
+  </data>
+  <data name="PaymentAlreadyRefunded" xml:space="preserve">
+    <value>This payment has already been refunded. No further refund action is required.</value>
+  </data>
 </root>

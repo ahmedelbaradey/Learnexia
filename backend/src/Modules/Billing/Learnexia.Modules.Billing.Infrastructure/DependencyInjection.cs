@@ -223,6 +223,12 @@ public static class DependencyInjection
         // Scoped: depends on scoped BillingDbContext + ISeatStateQuery + ICurrentUserService.
         services.AddScoped<IFamilyAllocationService, FamilyAllocationService>();
 
+        // ── P10-17: Purchased-energy refund services (Option C) ────────────────────────────────────
+        // IAdminRefundQueryService — admin-privileged read: resolves family account from any payment
+        // (not family-scoped). Application-layer admin handler stays EF-free.
+        // Scoped: depends on scoped BillingDbContext.
+        services.AddScoped<IAdminRefundQueryService, AdminRefundQueryService>();
+
         return services;
     }
 }

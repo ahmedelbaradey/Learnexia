@@ -6,6 +6,9 @@ namespace Learnexia.Modules.Billing.Application.Features.FamilyEnergy.Dtos;
 /// </summary>
 public sealed class FamilyEnergyOverviewDto
 {
+    /// <summary>The <c>FamilyEnergyAccount.Id</c> for this family. Used internally for service calls (P10-17).</summary>
+    public int FamilyAccountId { get; init; }
+
     /// <summary>Temporary subscription balance (monthly, resets each cycle).</summary>
     public int SubscriptionBalance { get; init; }
 

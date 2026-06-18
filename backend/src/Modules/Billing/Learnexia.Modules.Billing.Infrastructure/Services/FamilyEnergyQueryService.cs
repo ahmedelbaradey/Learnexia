@@ -53,10 +53,11 @@ public sealed class FamilyEnergyQueryService : IFamilyEnergyQueryService
 
         return new FamilyEnergyOverviewDto
         {
-            SubscriptionBalance     = wallet.SubscriptionBalance,
-            PurchasedBalance        = wallet.PurchasedBalance,
+            FamilyAccountId          = wallet.Id,
+            SubscriptionBalance      = wallet.SubscriptionBalance,
+            PurchasedBalance         = wallet.PurchasedBalance,
             SubscriptionExpiresAtUtc = wallet.SubscriptionExpiresAtUtc,
-            Children                = children,
+            Children                 = children,
         };
     }
 }

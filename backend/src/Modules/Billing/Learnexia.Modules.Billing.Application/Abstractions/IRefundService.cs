@@ -1,3 +1,6 @@
+using Learnexia.Modules.Billing.Application.Features.Refunds.Dtos;
+using Learnexia.Modules.Billing.Domain.Enums;
+
 namespace Learnexia.Modules.Billing.Application.Abstractions;
 
 /// <summary>
@@ -10,8 +13,9 @@ namespace Learnexia.Modules.Billing.Application.Abstractions;
 /// <para><strong>Idempotency:</strong>
 /// <list type="bullet">
 ///   <item><see cref="ProcessPackRefundAsync"/> is guarded by the <c>WebhookEvent.ProviderEventId</c>
-///         unique index (outer guard) AND by a <c>CreditTransaction.IdempotencyKey</c>
-///         (<c>"pack-refund:{paymentId}:{providerEventId}"</c>, DB-unique inner guard).</item>
+///         unique index (outer, per-event) AND by a PER-PAYMENT <c>CreditTransaction.IdempotencyKey</c>
+///         (<c>"pack-refund:{paymentId}"</c>, DB-unique) + a <c>Payment.Status == Refunded</c> guard —
+///         so a 2nd refund.succeeded with a DISTINCT event id cannot over-refund the same payment.</item>
 ///   <item><see cref="ProcessSubscriptionRefundAsync"/> is guarded by <c>WebhookEvent.ProviderEventId</c>
 ///         (webhook idempotency) and a status check (already-<c>Refunded</c> rows are no-ops).</item>
 ///   <item><see cref="ProcessChargeFailedAsync"/> is idempotent per (subscriptionId, providerEventId)
@@ -101,6 +105,55 @@ public interface IRefundService
         int paymentId,
         string reason,
         int adminUserId,
+        CancellationToken ct);
+
+    // ── P10-17 purchased-energy refund ───────────────────────────────────────────
+
+    /// <summary>
+    /// Computes the refundable purchased-energy balance for a specific pack payment
+    /// (P10-17-BE-1 / BE-2).
+    ///
+    /// <para><strong>Reconciliation (FIFO per-payment):</strong>
+    /// Reads the immutable family ledger to determine how much of the pack identified by
+    /// <paramref name="purchasePaymentId"/> has been consumed (bucket-B spends, FIFO-attributed).
+    /// Refundable = <c>purchasedTotal − consumedPurchased</c>, clamped ≥ 0 and never exceeding
+    /// the current shared <c>FamilyEnergyAccount.PurchasedBalance</c>.
+    /// <strong>Bucket A (subscription/entitlement) rows are NEVER included.</strong></para>
+    ///
+    /// <para><strong>Read-only, idempotent.</strong> No mutation occurs here.</para>
+    /// </summary>
+    /// <param name="familyAccountId">The <c>FamilyEnergyAccount.Id</c> to reconcile against.</param>
+    /// <param name="purchasePaymentId">The <c>Payment.Id</c> of the pack purchase being quoted.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A <see cref="RefundableQuoteDto"/> with the reconciled figures, or <c>null</c> if the
+    /// payment or family account is not found.</returns>
+    Task<RefundableQuoteDto?> ComputeRefundableAsync(
+        int familyAccountId,
+        int purchasePaymentId,
+        CancellationToken ct);
+
+    /// <summary>
+    /// Initiates a purchased-energy refund by calling <c>IPaymentProvider.InitiateRefundAsync</c>
+    /// (P10-17-BE-3 / BE-6).
+    ///
+    /// <para><strong>Initiate-only:</strong> this call does NOT modify the ledger or balance.
+    /// The actual state change (ledger <c>Refund</c> row + balance decrement) is driven by
+    /// the subsequent <c>refund.succeeded</c> webhook handled by
+    /// <see cref="ProcessPackRefundAsync"/> (BE-4). Consistent with P10-09 semantics.</para>
+    ///
+    /// <para><strong>Actor id:</strong> <paramref name="actorUserId"/> is ledgered on the audit
+    /// trail so admin-initiated refunds are distinguishable from parent-initiated ones.</para>
+    /// </summary>
+    /// <param name="purchasePaymentId">The <c>Payment.Id</c> of the pack payment to refund.</param>
+    /// <param name="refundableAmount">The monetary amount to refund (from <see cref="ComputeRefundableAsync"/>).</param>
+    /// <param name="reason">Enum reason for the refund request (no free-text).</param>
+    /// <param name="actorUserId">The user id of the requesting parent or admin (from JWT).</param>
+    /// <param name="ct">Cancellation token.</param>
+    Task<InitiateRefundResult> InitiateProviderRefundAsync(
+        int purchasePaymentId,
+        decimal refundableAmount,
+        RefundReason reason,
+        int actorUserId,
         CancellationToken ct);
 
     /// <summary>
