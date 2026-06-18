@@ -2543,4 +2543,11 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="ChildIdMustBePositive" xml:space="preserve">
     <value>Child ID must be a positive integer.</value>
   </data>
+  <!-- P5-01-BE-4 Weekly report read endpoint (E9) -->
+  <data name="WeeklyReportRetrievedSuccessfully" xml:space="preserve">
+    <value>Weekly report retrieved successfully.</value>
+  </data>
+  <data name="WeeklyReportNotYetGenerated" xml:space="preserve">
+    <value>No weekly report has been generated yet for this child.</value>
+  </data>
 </root>

@@ -2542,4 +2542,11 @@
   <data name="ChildIdMustBePositive" xml:space="preserve">
     <value>يجب أن يكون معرف الطفل عددًا صحيحًا موجبًا.</value>
   </data>
+  <!-- P5-01-BE-4 Weekly report read endpoint (E9) -->
+  <data name="WeeklyReportRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد التقرير الأسبوعي بنجاح.</value>
+  </data>
+  <data name="WeeklyReportNotYetGenerated" xml:space="preserve">
+    <value>لم يتم إنشاء تقرير أسبوعي لهذا الطفل بعد.</value>
+  </data>
 </root>

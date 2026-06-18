@@ -2005,5 +2005,20 @@
         /// <summary>Returned when childId route parameter is zero or negative.</summary>
         public const string ChildIdMustBePositive = "ChildIdMustBePositive";
 
+        // ── P5-01-BE-4 Weekly report read endpoint (E9) ──────────────────────────────────────
+
+        /// <summary>
+        /// Returned when the child's stored weekly report (E9) is retrieved successfully.
+        /// Also covers the "no report yet" case where the DTO has zeroed fields.
+        /// </summary>
+        public const string WeeklyReportRetrievedSuccessfully = "WeeklyReportRetrievedSuccessfully";
+
+        /// <summary>
+        /// Returned as the message field when no weekly report has been generated yet for
+        /// the child (first-week / no-activity-week state). The response is 200 OK with a
+        /// zeroed DTO — not a 404.
+        /// </summary>
+        public const string WeeklyReportNotYetGenerated = "WeeklyReportNotYetGenerated";
+
     }
 }
