@@ -2549,6 +2549,19 @@
   <data name="WeeklyReportNotYetGenerated" xml:space="preserve">
     <value>لم يتم إنشاء تقرير أسبوعي لهذا الطفل بعد.</value>
   </data>
+  <!-- P3-14 Lexi recommendation narration -->
+  <data name="RecommendationNarrationMissingProfile" xml:space="preserve">
+    <value>تعذَّر التحقق من ملفك الدراسي. يرجى تسجيل الدخول مجدداً.</value>
+  </data>
+  <data name="RecommendationNarrationRateLimitExceeded" xml:space="preserve">
+    <value>سألتَ ليكسي كثيراً في وقت قصير. انتظر لحظة وحاول مجدداً.</value>
+  </data>
+  <data name="RecommendationNarrationNoData" xml:space="preserve">
+    <value>لم تُنشئ ليكسي توصياتك بعد. عُد بعد الدرس القادم!</value>
+  </data>
+  <data name="RecommendationNarrationSafetyBlocked" xml:space="preserve">
+    <value>لم تستطع ليكسي سرد توصياتك الآن. يرجى المحاولة مجدداً بعد قليل.</value>
+  </data>
   <!-- P5-09 Recommendation engine endpoint -->
   <data name="RecommendationsRetrievedSuccessfully" xml:space="preserve">
     <value>تم استرداد التوصيات بنجاح.</value>

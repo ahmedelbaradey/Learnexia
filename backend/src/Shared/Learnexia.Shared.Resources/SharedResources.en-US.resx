@@ -2550,6 +2550,19 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="WeeklyReportNotYetGenerated" xml:space="preserve">
     <value>No weekly report has been generated yet for this child.</value>
   </data>
+  <!-- P3-14 Lexi recommendation narration -->
+  <data name="RecommendationNarrationMissingProfile" xml:space="preserve">
+    <value>We could not verify your student profile. Please sign in again.</value>
+  </data>
+  <data name="RecommendationNarrationRateLimitExceeded" xml:space="preserve">
+    <value>You've asked Lexi too many times recently. Please wait a moment and try again.</value>
+  </data>
+  <data name="RecommendationNarrationNoData" xml:space="preserve">
+    <value>Lexi hasn't generated your recommendations yet. Check back after your next lesson!</value>
+  </data>
+  <data name="RecommendationNarrationSafetyBlocked" xml:space="preserve">
+    <value>Lexi couldn't narrate your recommendations right now. Please try again shortly.</value>
+  </data>
   <!-- P5-09 Recommendation engine endpoint -->
   <data name="RecommendationsRetrievedSuccessfully" xml:space="preserve">
     <value>Recommendations retrieved successfully.</value>

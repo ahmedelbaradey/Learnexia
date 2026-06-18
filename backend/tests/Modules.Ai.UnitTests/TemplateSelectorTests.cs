@@ -101,19 +101,21 @@ public sealed class TemplateSelectorTests
         result.Should().BeOfType<TemplateLookupResult.UnsupportedResult>();
     }
 
-    // ── TS-06: All 4 HelperIntent values are handled (no throw in selector itself) ─
+    // ── TS-06: All 5 HelperIntent values are handled (no throw in selector itself) ─
+    // P3-14: 5th intent (Recommendation) approved by lead 2026-06-18 (rule #8).
 
-    [Fact(DisplayName = "P303-TS-06 All HelperIntent enum members have exactly 4 entries")]
-    public void HelperIntent_EnumHasExactlyFourMembers()
+    [Fact(DisplayName = "P303-TS-06 All HelperIntent enum members have exactly 5 entries (P3-14 Recommendation added)")]
+    public void HelperIntent_EnumHasExactlyFiveMembers()
     {
         var members = Enum.GetValues<HelperIntent>();
 
-        members.Length.Should().Be(4,
-            "exactly 4 helper intents are allowed: Explain, Hint, WhyWrong, SimilarExample");
+        members.Length.Should().Be(5,
+            "5 helper intents are allowed: Explain, Hint, WhyWrong, SimilarExample, Recommendation (P3-14 lead-approved 2026-06-18)");
 
-        members.Should().Contain(HelperIntent.Explain,        "Explain must be a HelperIntent member");
-        members.Should().Contain(HelperIntent.Hint,           "Hint must be a HelperIntent member");
-        members.Should().Contain(HelperIntent.WhyWrong,       "WhyWrong must be a HelperIntent member");
-        members.Should().Contain(HelperIntent.SimilarExample, "SimilarExample must be a HelperIntent member");
+        members.Should().Contain(HelperIntent.Explain,         "Explain must be a HelperIntent member");
+        members.Should().Contain(HelperIntent.Hint,            "Hint must be a HelperIntent member");
+        members.Should().Contain(HelperIntent.WhyWrong,        "WhyWrong must be a HelperIntent member");
+        members.Should().Contain(HelperIntent.SimilarExample,  "SimilarExample must be a HelperIntent member");
+        members.Should().Contain(HelperIntent.Recommendation,  "Recommendation must be a HelperIntent member (P3-14)");
     }
 }

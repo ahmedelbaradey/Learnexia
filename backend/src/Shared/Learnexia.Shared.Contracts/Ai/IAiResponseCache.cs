@@ -75,10 +75,12 @@ public sealed record AiCacheWriteEntry(
 /// <summary>Entry type discriminator (mirrors <c>AiCacheEntryType</c> in Ai.Domain).</summary>
 public enum AiCacheEntryTypeDto
 {
-    Explain  = 1,
-    Hint     = 2,
-    WhyWrong = 3,
-    Practice = 4,
+    Explain        = 1,
+    Hint           = 2,
+    WhyWrong       = 3,
+    Practice       = 4,
+    // P3-14 Lexi recommendation narration (lead-approved 2026-06-18).
+    Recommendation = 5,
 }
 
 /// <summary>Review status (mirrors <c>AiCacheReviewStatus</c> in Ai.Domain).</summary>

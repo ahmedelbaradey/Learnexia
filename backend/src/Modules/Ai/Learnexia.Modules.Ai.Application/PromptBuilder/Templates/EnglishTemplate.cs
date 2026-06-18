@@ -12,10 +12,11 @@ internal sealed class EnglishTemplate : ISubjectTemplate
 {
     public string GetTemplate(HelperIntent intent, TutorLanguage language) => intent switch
     {
-        HelperIntent.Explain        => language == TutorLanguage.Ar ? ArExplain        : EnExplain,
-        HelperIntent.Hint           => language == TutorLanguage.Ar ? ArHint           : EnHint,
-        HelperIntent.WhyWrong       => language == TutorLanguage.Ar ? ArWhyWrong       : EnWhyWrong,
-        HelperIntent.SimilarExample => language == TutorLanguage.Ar ? ArSimilarExample : EnSimilarExample,
+        HelperIntent.Explain         => language == TutorLanguage.Ar ? ArExplain         : EnExplain,
+        HelperIntent.Hint            => language == TutorLanguage.Ar ? ArHint            : EnHint,
+        HelperIntent.WhyWrong        => language == TutorLanguage.Ar ? ArWhyWrong        : EnWhyWrong,
+        HelperIntent.SimilarExample  => language == TutorLanguage.Ar ? ArSimilarExample  : EnSimilarExample,
+        HelperIntent.Recommendation  => language == TutorLanguage.Ar ? ArRecommendation  : EnRecommendation,
         _ => throw new InvalidOperationException($"Unhandled HelperIntent: {intent}"),
     };
 
@@ -114,6 +115,40 @@ internal sealed class EnglishTemplate : ISubjectTemplate
         • Do NOT solve the original question.
         • Encourage the student to apply the same approach.
         The example must stay within the active skill context only.
+
+        """;
+
+    // ── Recommendation variants ───────────────────────────────────────────────
+
+    private const string ArRecommendation =
+        """
+        [قالب اللغة الإنجليزية — سرد توصية ليكسي]
+        أنت تُقدِّم للطالب الناطق بالعربية دليلاً دراسياً ودوداً ومُشجِّعاً مبنياً حصراً على قائمة التوصيات أدناه.
+        قواعد صارمة:
+        • اسرد فقط المفردات والقواعد الإنجليزية والمهارات الواردة في قائمة التوصيات — لا تَخترع موضوعات جديدة.
+        • اضبط نبرتك وعمق المحتوى على الصف الدراسي للطالب.
+        • استخدم لغة محفِّزة — يمكن الاستعانة بالمقابل العربي لتيسير الفهم.
+        • اذكر كل توصية بوضوح: ما المفردة أو القاعدة؟ وما الإجراء المقترح؟
+        • لا تُضف موضوعات خارج القائمة.
+        • لا تُقرِّر مستوى الطالب الكلي ولا تفتح درساً جديداً.
+        قائمة التوصيات الخاصة بهذا الطالب موجودة في القسم أدناه — استند إليها حصراً.
+
+        """;
+
+    private const string EnRecommendation =
+        """
+        [English Language Template — Lexi Recommendation Narration]
+        You are presenting an Arabic-speaking student with a friendly, encouraging English-language study
+        guide built EXCLUSIVELY on the recommendation list provided below.
+        Strict rules:
+        • Narrate ONLY the vocabulary items, grammar rules, and skills listed in the recommendations —
+          never invent new English topics.
+        • Adjust your tone and depth to the student's grade level; include Arabic equivalents where helpful.
+        • Use warm, motivating language — open with encouragement before addressing areas to improve.
+        • State each recommendation clearly: what is the word/rule? what is the suggested action?
+        • Do NOT add vocabulary or grammar rules outside the list.
+        • Do NOT assess the student's overall level or unlock new lessons.
+        The student's recommendation list is in the section below — base your narration on it ONLY.
 
         """;
 }

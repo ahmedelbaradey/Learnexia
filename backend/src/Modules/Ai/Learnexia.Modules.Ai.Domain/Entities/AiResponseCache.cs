@@ -105,10 +105,12 @@ public class AiResponseCache
 /// </summary>
 public enum AiCacheEntryType : short
 {
-    Explain  = 1,
-    Hint     = 2,
-    WhyWrong = 3,
-    Practice = 4,
+    Explain        = 1,
+    Hint           = 2,
+    WhyWrong       = 3,
+    Practice       = 4,
+    // P3-14 Lexi recommendation narration (lead-approved 2026-06-18).
+    Recommendation = 5,
 }
 
 /// <summary>

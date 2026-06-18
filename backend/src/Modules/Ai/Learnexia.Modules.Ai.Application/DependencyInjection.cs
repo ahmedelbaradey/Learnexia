@@ -1,6 +1,7 @@
 using FluentValidation;
 using Learnexia.Modules.Ai.Application.Features.Explain.Commands;
 using Learnexia.Modules.Ai.Application.Features.Hint.Commands;
+using Learnexia.Modules.Ai.Application.Features.Recommendation.Commands;
 using Learnexia.Modules.Ai.Application.Features.Simplify.Commands;
 using Learnexia.Modules.Ai.Application.Options;
 using Learnexia.Modules.Ai.Application.PromptBuilder;
@@ -81,6 +82,11 @@ public static class DependencyInjection
         // AddValidatorsFromAssemblyContaining is idempotent — scanning the same assembly twice is safe.
         services.AddValidatorsFromAssemblyContaining<GetHintCommandValidator>(ServiceLifetime.Transient);
         services.AddValidatorsFromAssemblyContaining<SimplifyExplanationCommandValidator>(ServiceLifetime.Transient);
+
+        // ── P3-14 Recommendation narration ───────────────────────────────────────────────
+        // FluentValidation for RecommendationNarrationCommand (empty-body command; validator required
+        // for ValidationBehavior discovery and future extension).
+        services.AddValidatorsFromAssemblyContaining<RecommendationNarrationCommandValidator>(ServiceLifetime.Transient);
 
         return services;
     }
