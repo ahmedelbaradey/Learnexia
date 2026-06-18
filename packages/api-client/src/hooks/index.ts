@@ -86,3 +86,70 @@ export type { AbandonAttemptInput } from './useAbandonAttempt';
 export { useMyBadges } from './useMyBadges';
 export { useMyMissions } from './useMyMissions';
 export { useMyLeague } from './useMyLeague';
+
+// --- P7-06 admin user-management read hooks (Batch A foundation) ---
+// These hooks target GET /api/Admin/Users/* — a DISTINCT namespace from the
+// legacy `useUserList`/`useUserProfile` hooks (which target /api/Users/…).
+// P7-07/08 mutation hooks MUST invalidate `adminUsers.*` keys, never `users.*`.
+export {
+  useSearchUsers,
+  type SearchUsersFilters,
+  type AdminUserListItemDto,
+} from './useSearchUsers';
+export {
+  useAdminUserProfile,
+  type AdminUserProfileDto,
+} from './useAdminUserProfile';
+export {
+  useUserFamily,
+  type AdminFamilyDto,
+  type AdminFamilyMemberDto,
+} from './useUserFamily';
+export {
+  useUserActivity,
+  type AdminActivitySummaryDto,
+  type AdminXpSummary,
+  type AdminStreakSummary,
+  type AdminBadgesSummary,
+  type AdminMissionsSummary,
+  type AdminLeagueSummary,
+} from './useUserActivity';
+
+// --- P7-07 admin lifecycle mutation hooks (Batch C) ---
+// Suspend / Reactivate / Delete — target POST|DELETE /api/Admin/Users/* (raw path).
+// All three invalidate queryKeys.adminUsers.profile(id) + queryKeys.adminUsers.all.
+// Output is string (the success message from BaseResponse<string>) — NOT a profile DTO.
+// Refetch via invalidation; no optimistic updates.
+export {
+  useSuspendUser,
+  type SuspendUserInput,
+} from './useSuspendUser';
+export {
+  useReactivateUser,
+  type ReactivateUserInput,
+} from './useReactivateUser';
+export {
+  useDeleteUser,
+  type DeleteUserInput,
+} from './useDeleteUser';
+
+// --- P7-08 admin child-edit mutation hooks (Batch D) ---
+// Profile PATCH + Grade override POST + Learning-language POST (DESTRUCTIVE).
+// All invalidate queryKeys.adminUsers.profile(childId) + queryKeys.adminUsers.all.
+// Learning-language additionally invalidates queryKeys.adminUsers.activity(childId).
+// NOTE: useAdminChangeChildLearningLanguage is DISTINCT from useChangeLearningLanguage
+// (the parent-app P8-04 hook targeting a different endpoint with different field names).
+export {
+  useUpdateChildProfile,
+  type UpdateChildProfileInput,
+} from './useUpdateChildProfile';
+export {
+  useOverrideChildGrade,
+  type OverrideChildGradeInput,
+  type ChildGradeOverrideResponseDto,
+} from './useOverrideChildGrade';
+export {
+  useAdminChangeChildLearningLanguage,
+  type AdminChangeChildLearningLanguageInput,
+  type AdminChangedLearningLanguageResponseDto,
+} from './useAdminChangeChildLearningLanguage';

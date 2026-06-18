@@ -113,3 +113,30 @@ export const COUNTRIES = [
 ] as const;
 
 export type CountryCode = (typeof COUNTRIES)[number]['code'];
+
+/* ------------------------------------------------------------------ */
+/* AccountStatus — governance lifecycle state (P7-06/07/08)           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Governance lifecycle status for a user account. Mirrors the backend
+ * `AccountStatus` enum (Identity module, Domain/Enums) which is stored as int
+ * and serialised to the wire as the numeric value (0, 1, 2).
+ *
+ * Defined ONCE here so P7-06 read hooks, P7-07 mutation hooks, and the
+ * admin-dashboard UI all import from a single source instead of hardcoding
+ * the raw integers in multiple files (decision D2 in `docs/plans/P7-admin-users-wave.md`).
+ *
+ * Wire values match the C# enum exactly:
+ *   Active    = 0  — account in good standing; sign-in permitted.
+ *   Suspended = 1  — admin-suspended; sign-in blocked, terminal refresh revoked.
+ *   Deleted   = 2  — soft-deleted; terminal state, history retained, PII not yet erased.
+ */
+export const ACCOUNT_STATUS = {
+  Active: 0,
+  Suspended: 1,
+  Deleted: 2,
+} as const;
+
+export type AccountStatusValue =
+  (typeof ACCOUNT_STATUS)[keyof typeof ACCOUNT_STATUS];

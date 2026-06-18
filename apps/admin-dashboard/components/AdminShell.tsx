@@ -25,7 +25,21 @@ import { AdminTopBar } from './AdminTopBar';
 
 const strings = getStrings(ADMIN_LOCALE);
 
-export function AdminShell({ children }: { children: ReactNode }) {
+export interface AdminShellProps {
+  children: ReactNode;
+  /**
+   * Per-page title displayed in the AdminTopBar.
+   *
+   * Defaults to `strings.pageTitleDashboard` when omitted (the existing
+   * top-level group layout does not pass a title). Nested route layouts (e.g.
+   * `app/(admin)/users/layout.tsx`) can pass their own title string sourced from
+   * `strings.pageTitleUsers` etc. — the `title` prop seam on `AdminTopBar`
+   * already supports this (P7-06-FE-5, Batch A).
+   */
+  title?: string;
+}
+
+export function AdminShell({ children, title }: AdminShellProps) {
   const guard = useAdminGuard();
   const [navOpen, setNavOpen] = useState(false);
 
@@ -42,7 +56,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
     <Stack flexDirection="row" backgroundColor="$bg" style={{ minHeight: '100vh' }}>
       <AdminSideNav isOpen={navOpen} onClose={() => setNavOpen(false)} />
       <Stack flex={1} minWidth={0} flexDirection="column">
-        <AdminTopBar onToggleNav={() => setNavOpen((v) => !v)} />
+        <AdminTopBar title={title} onToggleNav={() => setNavOpen((v) => !v)} />
         <Stack
           tag="main"
           flex={1}
