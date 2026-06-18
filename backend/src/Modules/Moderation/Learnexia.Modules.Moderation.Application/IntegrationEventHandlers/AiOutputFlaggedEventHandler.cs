@@ -3,6 +3,7 @@ using Learnexia.Modules.Moderation.Domain.Enums;
 using Learnexia.Shared.Contracts.Ai;
 using Learnexia.Shared.Kernel.Abstractions;
 using MediatR;
+using System.Text.Json.Nodes;
 
 namespace Learnexia.Modules.Moderation.Application.IntegrationEventHandlers;
 
@@ -49,13 +50,15 @@ public sealed class AiOutputFlaggedEventHandler : INotificationHandler<AiOutputF
 
         // Build the jsonb SafetyVerdict payload from the event fields.
         // PII-light: failed checks + reason codes + action taken — no raw content.
-        var safetyVerdictJson = System.Text.Json.JsonSerializer.Serialize(new
+        // FailedChecks/ReasonCodes arrive as JSON-array STRINGS (e.g. "[\"ToxicityCheck\"]"), so
+        // embed them as parsed JSON nodes — NOT re-serialized — to avoid double-escaping the jsonb.
+        var safetyVerdictJson = new JsonObject
         {
-            failedChecks = notification.FailedChecks,
-            reasonCodes  = notification.ReasonCodes,
-            actionTaken  = notification.ActionTaken,
-            modelId      = notification.ModelId,
-        });
+            ["failedChecks"] = ParseJsonOrLiteral(notification.FailedChecks),
+            ["reasonCodes"]  = ParseJsonOrLiteral(notification.ReasonCodes),
+            ["actionTaken"]  = notification.ActionTaken,
+            ["modelId"]      = notification.ModelId,
+        }.ToJsonString();
 
         // Delegate all persistence + idempotency + fail-soft to the writer.
         // The writer's own try/catch ensures no exception escapes to the publisher.
@@ -70,5 +73,18 @@ public sealed class AiOutputFlaggedEventHandler : INotificationHandler<AiOutputF
             grade:            notification.Grade,
             detectedAt:       notification.DetectedAt,
             cancellationToken: cancellationToken);
+    }
+
+    /// <summary>
+    /// Parses a JSON-array string (e.g. <c>"[\"ToxicityCheck\"]"</c>) into a <see cref="JsonNode"/>
+    /// so it embeds as a real array in the jsonb verdict. Falls back to the literal string if the
+    /// value isn't valid JSON, and to an empty array when null/blank — never throws.
+    /// </summary>
+    private static JsonNode? ParseJsonOrLiteral(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return new JsonArray();
+        try { return JsonNode.Parse(raw); }
+        catch { return JsonValue.Create(raw); }
     }
 }
