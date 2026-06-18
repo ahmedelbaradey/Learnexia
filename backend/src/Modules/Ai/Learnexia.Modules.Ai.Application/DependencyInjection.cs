@@ -29,9 +29,12 @@ public static class DependencyInjection
         // IPromptBuilder: Transient — pure/stateless assembly; no shared state.
         services.AddTransient<IPromptBuilder, PromptBuilder.PromptBuilder>();
 
-        // IStudentWeakAreasQuery: default stub returns empty list.
-        // P3-09 overrides this registration with the real implementation.
-        services.AddTransient<IStudentWeakAreasQuery, EmptyWeakAreasQuery>();
+        // IStudentWeakAreasQuery: EmptyWeakAreasQuery is the FALLBACK (returns empty).
+        // TryAdd so the real implementation wins when the Learning module is loaded — Learning's
+        // AiWeakAreasQueryBridge (registered earlier, in AddLearningInfrastructure, which the Host
+        // runs before the Ai module) stays in place; this only registers the stub when nothing
+        // else has (e.g. Ai-isolated tests).
+        services.TryAddTransient<IStudentWeakAreasQuery, EmptyWeakAreasQuery>();
 
         // ICurriculumContextQuery: default stub returns empty list.
         // P3-07 overrides this registration with the real RAG-backed implementation.

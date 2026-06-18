@@ -14,11 +14,10 @@ namespace Learnexia.Modules.Learning.Infrastructure.Contracts;
 /// the result to the requested <c>Subject</c> — so Ai prompt-builder consumers continue to receive
 /// only the subject-relevant weak areas as before, but now backed by real mastery data.</para>
 ///
-/// <para>Registered in <c>AddLearningInfrastructure</c> as <c>IStudentWeakAreasQuery</c>.
-/// The Ai module's own DI registers <c>EmptyWeakAreasQuery</c> as the default; this registration
-/// (added AFTER the Ai DI runs, in <c>AddLearningInfrastructure</c>) overrides it because
-/// .NET DI resolves the <strong>last</strong> Scoped registration for an interface.
-/// See <c>AddLearningInfrastructure</c> for the ordering note.</para>
+/// <para>Registered in <c>AddLearningInfrastructure</c> as <c>IStudentWeakAreasQuery</c>, which the
+/// Host runs BEFORE the Ai module. The Ai module registers <c>EmptyWeakAreasQuery</c> via
+/// <c>TryAddTransient</c>, so when Learning is loaded this bridge (registered first) is the one that
+/// resolves; the Ai stub remains only as the fallback for Ai-isolated scenarios.</para>
 ///
 /// <para>Module isolation: this class lives in <c>Learning.Infrastructure</c> and references both
 /// <c>Shared.Contracts.Ai</c> (for <see cref="IStudentWeakAreasQuery"/> + <see cref="WeakArea"/>)

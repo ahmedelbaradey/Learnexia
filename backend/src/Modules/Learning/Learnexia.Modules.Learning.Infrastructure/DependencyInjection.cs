@@ -107,8 +107,9 @@ public static class DependencyInjection
 
         // P5-02-BE-3: re-wire the Ai subject-scoped seam (IStudentWeakAreasQuery) from the
         // EmptyWeakAreasQuery placeholder to the real bridge that delegates to the detector.
-        // .NET DI resolves the LAST Scoped registration — this runs AFTER AddAiApplication()
-        // (which registers EmptyWeakAreasQuery) so this registration wins.
+        // The Host runs AddLearningModule BEFORE AddAiModule, so this registration lands FIRST; the
+        // Ai module registers its EmptyWeakAreasQuery stub via TryAddTransient, which is then skipped
+        // (the interface is already registered) — so this bridge wins when Learning is loaded.
         // The Ai module itself does NOT change; it continues to inject IStudentWeakAreasQuery.
         services.AddScoped<IStudentWeakAreasQuery, AiWeakAreasQueryBridge>();
 
