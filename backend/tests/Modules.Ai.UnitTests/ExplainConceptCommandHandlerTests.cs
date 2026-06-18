@@ -68,6 +68,7 @@ public sealed class ExplainConceptCommandHandlerTests
         Mock<IGlobalSettingsProvider>? settingsMock = null,
         Mock<IServiceScopeFactory>? scopeFactoryMock = null,
         Mock<ICreditSpendService>? creditSpendMock = null,
+        Mock<IChildAccessStateQuery>? childAccessStateMock = null,
         bool hardStopEnabled = false)
     {
         var currentUser = currentUserMock ?? BuildDefaultCurrentUserMock();
@@ -81,6 +82,7 @@ public sealed class ExplainConceptCommandHandlerTests
         var settings = settingsMock ?? BuildDefaultSettingsMock();
         var scopeFactory = scopeFactoryMock ?? BuildNoOpScopeFactoryMock();
         var creditSpend = creditSpendMock ?? BuildDefaultCreditSpendMock();
+        var childAccess = childAccessStateMock ?? BuildDefaultChildAccessStateMock();
         var costResolver = BuildCreditCostResolver(settings, hardStopEnabled);
 
         return new ExplainConceptCommandHandler(
@@ -94,11 +96,23 @@ public sealed class ExplainConceptCommandHandlerTests
             redirectBuilder,
             rl,
             creditSpend.Object,
+            childAccess.Object,
             costResolver,
             publisher.Object,
             scopeFactory.Object,
             logger.Object,
             localizer.Object);
+    }
+
+    /// <summary>Default access state: Allowed — existing tests are unaffected by the new gate.</summary>
+    private static Mock<IChildAccessStateQuery> BuildDefaultChildAccessStateMock()
+    {
+        var mock = new Mock<IChildAccessStateQuery>();
+        mock.Setup(q => q.GetAccessDecisionAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ChildAccessDecision.Allowed);
+        mock.Setup(q => q.IsChildAccessAllowedAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        return mock;
     }
 
     /// <summary>Default credit-spend stub: balance=100 (always sufficient), debit returns Charged.</summary>

@@ -57,6 +57,7 @@ public sealed class SimilarExampleCommandHandlerTests
         Mock<IAiResponseCache>? aiCacheMock = null,
         Mock<IGlobalSettingsProvider>? settingsMock = null,
         Mock<ICreditSpendService>? creditSpendMock = null,
+        Mock<IChildAccessStateQuery>? childAccessStateMock = null,
         bool hardStopEnabled = false)
     {
         var currentUser = currentUserMock ?? BuildDefaultCurrentUserMock();
@@ -67,6 +68,7 @@ public sealed class SimilarExampleCommandHandlerTests
         var cache = aiCacheMock ?? BuildDefaultAiCacheMock();
         var settings = settingsMock ?? BuildDefaultSettingsMock();
         var creditSpend = creditSpendMock ?? BuildDefaultCreditSpendMock();
+        var childAccess = childAccessStateMock ?? BuildDefaultChildAccessStateMock();
         var costResolver = BuildCreditCostResolver(settings, hardStopEnabled);
 
         // IServiceScopeFactory: no-op stub — fire-and-forget events are not asserted in unit tests.
@@ -83,10 +85,22 @@ public sealed class SimilarExampleCommandHandlerTests
             redirectBuilder,
             rl,
             creditSpend.Object,
+            childAccess.Object,
             costResolver,
             scopeFactory.Object,
             logger.Object,
             localizer.Object);
+    }
+
+    /// <summary>Default access state: Allowed — existing tests are unaffected by the new gate.</summary>
+    private static Mock<IChildAccessStateQuery> BuildDefaultChildAccessStateMock()
+    {
+        var mock = new Mock<IChildAccessStateQuery>();
+        mock.Setup(q => q.GetAccessDecisionAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ChildAccessDecision.Allowed);
+        mock.Setup(q => q.IsChildAccessAllowedAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        return mock;
     }
 
     /// <summary>Default credit-spend stub: balance=100 (always sufficient), debit returns Charged.</summary>

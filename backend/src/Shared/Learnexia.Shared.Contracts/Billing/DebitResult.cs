@@ -50,4 +50,11 @@ public enum DebitOutcome
     /// to the parent as a 403-level response.
     /// </summary>
     SeatLocked = 4,
+
+    /// <summary>
+    /// P10-18-BE-4: the child has been paused by their parent — spend denied before any balance is touched.
+    /// The AI handler should surface <see cref="Resources.SharedResourcesKey.ChildAccessPausedByParent"/>
+    /// to the child as a graceful localized decline (no raw error). No energy is charged.
+    /// </summary>
+    ParentPaused = 5,
 }

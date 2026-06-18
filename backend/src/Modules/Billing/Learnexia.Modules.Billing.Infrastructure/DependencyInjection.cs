@@ -229,6 +229,20 @@ public static class DependencyInjection
         // Scoped: depends on scoped BillingDbContext.
         services.AddScoped<IAdminRefundQueryService, AdminRefundQueryService>();
 
+        // ── P10-18: Parent-pause / child access control (Option C) ─────────────────────────────────
+
+        // IPauseChildService — owns pause/unpause workflow: family-scope guard, idempotency,
+        // state flip + ledger append in an explicit transaction. Zero energy/seat side-effects.
+        // Application handlers inject this seam and stay EF-free.
+        // Scoped: depends on scoped BillingDbContext + ICurrentUserService.
+        services.AddScoped<IPauseChildService, PauseChildService>();
+
+        // IChildAccessStateQuery (Shared.Contracts.Billing) — P10-18-BE-5: cross-module combined
+        // access seam. Returns true ONLY when SeatState==Active AND ParentPauseState==Active.
+        // Used by the Ai module and any other module that needs the unified access gate.
+        // Scoped: depends on scoped BillingDbContext.
+        services.AddScoped<IChildAccessStateQuery, ChildAccessStateQuery>();
+
         return services;
     }
 }

@@ -2468,4 +2468,26 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="PaymentAlreadyRefunded" xml:space="preserve">
     <value>This payment has already been refunded. No further refund action is required.</value>
   </data>
+  <!-- P10-18 Parent-pause / child access control -->
+  <data name="ChildAccessPausedByParent" xml:space="preserve">
+    <value>Your parent has paused your AI access. Ask your parent to resume it.</value>
+  </data>
+  <data name="ChildNotOwnedByParent" xml:space="preserve">
+    <value>You can only manage your own children's access. This child does not belong to your family.</value>
+  </data>
+  <data name="ChildAlreadyPaused" xml:space="preserve">
+    <value>This child's AI access is already paused. No change was made.</value>
+  </data>
+  <data name="ChildAlreadyActive" xml:space="preserve">
+    <value>This child's AI access is already active. No change was made.</value>
+  </data>
+  <data name="ChildAccessPausedSuccessfully" xml:space="preserve">
+    <value>Your child's AI access has been paused. You can resume it at any time.</value>
+  </data>
+  <data name="ChildAccessUnpausedSuccessfully" xml:space="preserve">
+    <value>Your child's AI access has been resumed. They can now use AI features again.</value>
+  </data>
+  <data name="ChildAccessStatusRetrieved" xml:space="preserve">
+    <value>Child access status retrieved successfully.</value>
+  </data>
 </root>

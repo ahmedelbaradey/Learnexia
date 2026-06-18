@@ -99,5 +99,15 @@ public sealed class SeatReservationConfig : IEntityTypeConfiguration<SeatReserva
             .IsUnique()
             .HasFilter("\"IdempotencyKey\" IS NOT NULL")
             .HasDatabaseName("UX_SeatReservations_IdempotencyKey");
+
+        // ── P10-18-BE-1: Parent-pause state fields ─────────────────────────────────────
+        builder.Property(x => x.ParentPauseState)
+            .IsRequired()
+            .HasConversion<int>()
+            .HasDefaultValue(ParentPauseState.Active);
+
+        builder.Property(x => x.ParentPauseStateChangedAt)
+            .HasColumnType("timestamptz")
+            .IsRequired(false);
     }
 }

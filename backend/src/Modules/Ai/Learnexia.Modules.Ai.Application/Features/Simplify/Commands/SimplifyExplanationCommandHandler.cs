@@ -53,6 +53,7 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
     private readonly RedirectResponseBuilder _redirectBuilder;
     private readonly IAiTutorRateLimiter _rateLimiter;
     private readonly ICreditSpendService _creditSpend;
+    private readonly IChildAccessStateQuery _childAccessState;
     private readonly CreditCostResolver _costResolver;
     private readonly IPublisher _publisher;
     private readonly IServiceScopeFactory _scopeFactory;
@@ -70,27 +71,29 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
         RedirectResponseBuilder redirectBuilder,
         IAiTutorRateLimiter rateLimiter,
         ICreditSpendService creditSpend,
+        IChildAccessStateQuery childAccessState,
         CreditCostResolver costResolver,
         IPublisher publisher,
         IServiceScopeFactory scopeFactory,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _currentUser     = currentUser;
-        _lessonContext   = lessonContext;
-        _learningContext = learningContext;
-        _promptBuilder   = promptBuilder;
-        _safetyLayer     = safetyLayer;
-        _aiCache         = aiCache;
-        _settings        = settings;
-        _redirectBuilder = redirectBuilder;
-        _rateLimiter     = rateLimiter;
-        _creditSpend     = creditSpend;
-        _costResolver    = costResolver;
-        _publisher       = publisher;
-        _scopeFactory    = scopeFactory;
-        _logger          = logger;
-        _localizer       = localizer;
+        _currentUser      = currentUser;
+        _lessonContext    = lessonContext;
+        _learningContext  = learningContext;
+        _promptBuilder    = promptBuilder;
+        _safetyLayer      = safetyLayer;
+        _aiCache          = aiCache;
+        _settings         = settings;
+        _redirectBuilder  = redirectBuilder;
+        _rateLimiter      = rateLimiter;
+        _creditSpend      = creditSpend;
+        _childAccessState = childAccessState;
+        _costResolver     = costResolver;
+        _publisher        = publisher;
+        _scopeFactory     = scopeFactory;
+        _logger           = logger;
+        _localizer        = localizer;
     }
 
     public async Task<SimplifyResult> Handle(SimplifyExplanationCommand request, CancellationToken cancellationToken)
@@ -122,6 +125,33 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
         var cost = _costResolver.ResolveCost(HelperIntent.Explain);
         var idempotencyKey = Guid.NewGuid().ToString("N");
         var reasonCode = CreditCostResolver.ResolveReasonCode(HelperIntent.Explain);
+
+        // ── P10-18/P10-15 ACCESS GATE: check pause + seat state BEFORE cache or LLM ─
+        // Must run before BOTH the cache-HIT early-return and the cache-MISS LLM path.
+        // Fail-soft: a billing-service outage must never hard-block learning — proceed on exception.
+        try
+        {
+            var accessDecision = await _childAccessState.GetAccessDecisionAsync(childId, cancellationToken);
+            if (accessDecision == ChildAccessDecision.Paused)
+            {
+                _logger.LogInfo($"SimplifyExplanationCommandHandler: child {childId} is paused by parent — declining (no charge, no content).");
+                return new SimplifyResult.Error(
+                    nameof(SharedResourcesKey.ChildAccessPausedByParent),
+                    _localizer[SharedResourcesKey.ChildAccessPausedByParent]);
+            }
+            if (accessDecision == ChildAccessDecision.SeatLocked)
+            {
+                _logger.LogInfo($"SimplifyExplanationCommandHandler: child {childId} seat is locked — declining (no charge, no content).");
+                return new SimplifyResult.Error(
+                    nameof(SharedResourcesKey.ChildSeatLockedNoEnergy),
+                    _localizer[SharedResourcesKey.ChildSeatLockedNoEnergy]);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarn($"SimplifyExplanationCommandHandler: GetAccessDecisionAsync failed for childId={childId}. Proceeding (fail-soft). {ex.GetType().Name}");
+        }
+        // ─────────────────────────────────────────────────────────────────────────────
 
         // ── P10-03-BE-2: pre-authorize (monthly hard-limit + optional daily hard-stop) ──
         EnergyBalance balance;
@@ -346,6 +376,21 @@ public sealed class SimplifyExplanationCommandHandler : ICommandHandler<Simplify
             return new SimplifyResult.Error(
                 nameof(SharedResourcesKey.AiInsufficientEnergy),
                 _localizer[SharedResourcesKey.AiInsufficientEnergy]);
+        }
+        // Defense-in-depth: access state changed between the pre-flight check and debit.
+        if (debitResult is { Charged: false, Outcome: DebitOutcome.ParentPaused })
+        {
+            _logger.LogInfo($"SimplifyExplanationCommandHandler: ParentPaused at debit for childId={childId} — graceful decline post-safety.");
+            return new SimplifyResult.Error(
+                nameof(SharedResourcesKey.ChildAccessPausedByParent),
+                _localizer[SharedResourcesKey.ChildAccessPausedByParent]);
+        }
+        if (debitResult is { Charged: false, Outcome: DebitOutcome.SeatLocked })
+        {
+            _logger.LogInfo($"SimplifyExplanationCommandHandler: SeatLocked at debit for childId={childId} — graceful decline post-safety.");
+            return new SimplifyResult.Error(
+                nameof(SharedResourcesKey.ChildSeatLockedNoEnergy),
+                _localizer[SharedResourcesKey.ChildSeatLockedNoEnergy]);
         }
         // ─────────────────────────────────────────────────────────────────────────────
 
