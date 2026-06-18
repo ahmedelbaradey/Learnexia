@@ -2454,6 +2454,15 @@
   <data name="AllocationTransferAmountRequired" xml:space="preserve">
     <value>يجب أن يكون مبلغ النقل أكبر من الصفر.</value>
   </data>
+  <data name="AllocationTransferAmountTooLarge" xml:space="preserve">
+    <value>مبلغ النقل كبير جداً.</value>
+  </data>
+  <data name="AllocationTransferKeyConflict" xml:space="preserve">
+    <value>تم استخدام مفتاح هذا الطلب من قبل لعملية نقل مختلفة. استخدم مفتاحاً جديداً لكل عملية نقل جديدة.</value>
+  </data>
+  <data name="AllocationTransferRateLimited" xml:space="preserve">
+    <value>عدد كبير جداً من طلبات النقل. يرجى الانتظار قليلاً ثم المحاولة مرة أخرى.</value>
+  </data>
   <!-- P10-17 Purchased-energy refunds -->
   <data name="RefundableQuoteRetrieved" xml:space="preserve">
     <value>تم استرداد عرض الطاقة القابلة للاسترداد بنجاح.</value>

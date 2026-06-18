@@ -149,4 +149,10 @@ public enum TransferAllocationFailureReason
 
     /// <summary>The parent has no <c>FamilyEnergyAccount</c> (wallet not yet initialized).</summary>
     WalletNotFound = 6,
+
+    /// <summary>
+    /// The supplied idempotency key was already used for a transfer with a DIFFERENT payload
+    /// (from/to child or amount). Reusing a key with a changed payload is a client error (409).
+    /// </summary>
+    IdempotencyKeyConflict = 7,
 }

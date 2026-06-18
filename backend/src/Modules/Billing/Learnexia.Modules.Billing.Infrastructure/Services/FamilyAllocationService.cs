@@ -1,10 +1,12 @@
 using Learnexia.Modules.Billing.Application.Abstractions;
 using Learnexia.Modules.Billing.Domain.Entities;
 using Learnexia.Modules.Billing.Domain.Enums;
+using Learnexia.Modules.Billing.Infrastructure.Options;
 using Learnexia.Modules.Billing.Infrastructure.Persistence;
 using Learnexia.Shared.Contracts.Billing;
 using Learnexia.Shared.Kernel.Abstractions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Learnexia.Modules.Billing.Infrastructure.Services;
 
@@ -38,17 +40,20 @@ public sealed class FamilyAllocationService : IFamilyAllocationService
     private readonly ISeatStateQuery _seatStateQuery;
     private readonly ICurrentUserService _currentUser;
     private readonly ILoggerManager _logger;
+    private readonly BillingConcurrencyOptions _concurrency;
 
     public FamilyAllocationService(
         BillingDbContext db,
         ISeatStateQuery seatStateQuery,
         ICurrentUserService currentUser,
-        ILoggerManager logger)
+        ILoggerManager logger,
+        IOptions<BillingConcurrencyOptions> concurrencyOptions)
     {
         _db             = db;
         _seatStateQuery = seatStateQuery;
         _currentUser    = currentUser;
         _logger         = logger;
+        _concurrency    = concurrencyOptions.Value;
     }
 
     // ── GetFamilyAllocationAsync ─────────────────────────────────────────────────────────────
@@ -126,7 +131,41 @@ public sealed class FamilyAllocationService : IFamilyAllocationService
         string idempotencyKey,
         CancellationToken ct = default)
     {
-        // ── Step 1: Idempotency pre-check ──────────────────────────────────────────────────
+        // HARDEN-01: bounded xmin optimistic-concurrency retry around the transfer transaction.
+        // Concurrent transfers touching the same allocation row throw DbUpdateConcurrencyException
+        // on SaveChanges; clear the tracker, back off, and re-read fresh state on the next attempt.
+        // Mirrors CreditSpendService / RefundService.
+        var maxRetries = _concurrency.MaxRetries;
+        for (var attempt = 0; attempt <= maxRetries; attempt++)
+        {
+            try
+            {
+                return await ExecuteTransferCoreAsync(parentId, fromChildId, toChildId, amount, idempotencyKey, ct);
+            }
+            catch (DbUpdateConcurrencyException) when (attempt < maxRetries)
+            {
+                _logger.LogWarn(
+                    $"FamilyAllocationService.Transfer: concurrency conflict attempt {attempt + 1} parent={parentId}. Retrying.");
+                _db.ChangeTracker.Clear();
+                await ApplyBackoffDelayAsync(attempt, ct);
+            }
+        }
+
+        _logger.LogError(new Exception("Retries exhausted"),
+            $"FamilyAllocationService.Transfer: exceeded {_concurrency.MaxRetries} retries parent={parentId}");
+        throw new InvalidOperationException(
+            $"FamilyAllocationService.Transfer: exceeded {_concurrency.MaxRetries} retries for parent={parentId}");
+    }
+
+    private async Task<TransferAllocationResult> ExecuteTransferCoreAsync(
+        int parentId,
+        int fromChildId,
+        int toChildId,
+        long amount,
+        string idempotencyKey,
+        CancellationToken ct)
+    {
+        // ── Step 1: Idempotency pre-check (+ payload-binding) ───────────────────────────────
         var outKey = TransferOutKey(idempotencyKey);
         var existing = await _db.CreditTransactions
             .AsNoTracking()
@@ -135,6 +174,17 @@ public sealed class FamilyAllocationService : IFamilyAllocationService
 
         if (existing is not null)
         {
+            // Payload-binding: the SAME key must describe the SAME (from, to, amount). A reused key
+            // with a CHANGED payload is a client error — reject it (409) rather than silently
+            // returning the prior, unrelated result.
+            if (!await IdempotentPayloadMatchesAsync(existing, fromChildId, toChildId, amount, ct))
+            {
+                _logger.LogWarn(
+                    $"FamilyAllocationService.Transfer: idempotency key={idempotencyKey} reused with a " +
+                    $"DIFFERENT payload for parent={parentId} — rejecting (conflict).");
+                return TransferAllocationResult.Fail(TransferAllocationFailureReason.IdempotencyKeyConflict);
+            }
+
             _logger.LogInfo(
                 $"FamilyAllocationService.Transfer: idempotent replay for key={idempotencyKey}, " +
                 $"parent={parentId}.");
@@ -413,12 +463,69 @@ public sealed class FamilyAllocationService : IFamilyAllocationService
         });
     }
 
+    /// <summary>
+    /// Idempotency payload-binding: returns true when a prior transfer recorded under the same
+    /// client key describes the SAME (fromChildId, toChildId, amount) as the current request.
+    /// A mismatch means the key was reused for a different operation → caller rejects with conflict.
+    /// </summary>
+    private async Task<bool> IdempotentPayloadMatchesAsync(
+        CreditTransaction existingOut,
+        int fromChildId,
+        int toChildId,
+        long amount,
+        CancellationToken ct)
+    {
+        // Amount must match.
+        if (existingOut.Amount != amount)
+            return false;
+
+        // Source child = the out-tx's allocation row.
+        var sourceChildId = await _db.ChildEnergyAllocations
+            .AsNoTracking()
+            .Where(a => a.Id == existingOut.ChildEnergyAllocationId)
+            .Select(a => (int?)a.ChildId)
+            .FirstOrDefaultAsync(ct);
+        if (sourceChildId != fromChildId)
+            return false;
+
+        // Destination child = the paired TransferIn tx (same CorrelationId) → its allocation row.
+        if (existingOut.CorrelationId is null)
+            return false; // malformed prior row — treat as conflict to be safe.
+
+        var inAllocId = await _db.CreditTransactions
+            .AsNoTracking()
+            .Where(t => t.CorrelationId == existingOut.CorrelationId
+                     && t.ReasonCode == CreditReasonCode.TransferIn)
+            .Select(t => t.ChildEnergyAllocationId)
+            .FirstOrDefaultAsync(ct);
+        if (inAllocId is null)
+            return false;
+
+        var destChildId = await _db.ChildEnergyAllocations
+            .AsNoTracking()
+            .Where(a => a.Id == inAllocId.Value)
+            .Select(a => (int?)a.ChildId)
+            .FirstOrDefaultAsync(ct);
+
+        return destChildId == toChildId;
+    }
+
+    /// <summary>HARDEN-01: exponential back-off with jitter; clamped exponent; long arithmetic.</summary>
+    private Task ApplyBackoffDelayAsync(int attempt, CancellationToken ct)
+    {
+        var shift         = Math.Min(attempt, 30);
+        var deterministic = (int)Math.Min(_concurrency.MaxDelayMs, (long)_concurrency.BaseDelayMs * (1L << shift));
+        var jitter        = Random.Shared.Next(0, _concurrency.JitterMs + 1);
+        return Task.Delay(deterministic + jitter, ct);
+    }
+
     // Deterministic idempotency key derivation — paired out/in keys from a single client key.
     private static string TransferOutKey(string key) => $"transfer-out:{key}";
     private static string TransferInKey(string key)  => $"transfer-in:{key}";
 
+    // Typed SQLSTATE check (mirrors CreditSpendService / RefundService) — robust against
+    // Npgsql message-format changes, unlike string-matching on the exception message.
     private static bool IsUniqueViolation(DbUpdateException ex)
-        => ex.InnerException?.Message.Contains("23505", StringComparison.Ordinal) == true
-           || ex.InnerException?.Message.Contains("UX_CreditTransactions_IdempotencyKey",
-               StringComparison.OrdinalIgnoreCase) == true;
+        => ex.InnerException is Npgsql.PostgresException pg
+           && pg.SqlState == Npgsql.PostgresErrorCodes.UniqueViolation;
 }

@@ -6,12 +6,14 @@ using FluentAssertions;
 using Learnexia.Modules.Billing.Application.Abstractions;
 using Learnexia.Modules.Billing.Domain.Entities;
 using Learnexia.Modules.Billing.Domain.Enums;
+using Learnexia.Modules.Billing.Infrastructure.Options;
 using Learnexia.Modules.Billing.Infrastructure.Persistence;
 using Learnexia.Modules.Billing.Infrastructure.Services;
 using Learnexia.Shared.Contracts.Billing;
 using Learnexia.Shared.Kernel.Abstractions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 #pragma warning disable CA1707
@@ -116,7 +118,9 @@ public sealed class FamilyAllocationTransferTests : IDisposable
         var loggerMock = new Mock<ILoggerManager>();
         loggerMock.Setup(x => x.LogInfo(It.IsAny<string>()));
         loggerMock.Setup(x => x.LogError(It.IsAny<Exception>(), It.IsAny<string>()));
-        return new FamilyAllocationService(_db, _seatStateQueryMock.Object, _currentUserMock.Object, loggerMock.Object);
+        var concurrencyOptions = Options.Create(new BillingConcurrencyOptions());
+        return new FamilyAllocationService(
+            _db, _seatStateQueryMock.Object, _currentUserMock.Object, loggerMock.Object, concurrencyOptions);
     }
 
     // ── Seed helpers ──────────────────────────────────────────────────────────────────────────
@@ -328,10 +332,19 @@ public sealed class FamilyAllocationTransferTests : IDisposable
         ok.Succeeded.Should().BeTrue();
         ok.Data.Should().NotBeNull();
 
-        // source: Allocated=100, Spent was 60, SendTransfer adds 40 → SpentAmount=100 → Remaining=0.
+        // source: Allocated=100, Spent=60 → transfer 40 reduces ALLOCATED (not Spent):
+        // AllocatedAmount=60, SpentAmount=60 (unchanged) → Remaining=0.
         ok.Data!.FromChild.Remaining.Should().Be(0);
         // dest: Allocated was 50, ReceiveTransfer adds 40 → AllocatedAmount=90 → Remaining=90.
         ok.Data.ToChild.Remaining.Should().Be(90);
+
+        // Reporting-semantics guard (P10-16 hardening): sent energy leaves AllocatedAmount and must
+        // NOT inflate SpentAmount — the parent's "spent" report reflects only real consumption.
+        var srcRow = await _db.ChildEnergyAllocations.AsNoTracking()
+            .FirstAsync(a => a.FamilyEnergyAccountId == walletId && a.ChildId == 10);
+        srcRow.AllocatedAmount.Should().Be(60, "transfer-out reduces the source child's allocation");
+        srcRow.SpentAmount.Should().Be(60, "transfer-out must NOT increase SpentAmount (energy was sent, not consumed)");
+        srcRow.Remaining.Should().Be(0);
     }
 
     // ── AT-06: mid-cycle child INSERT-then-transfer ───────────────────────────────────────────
@@ -517,5 +530,41 @@ public sealed class FamilyAllocationTransferTests : IDisposable
             "only child 10 has a grant row");
         dto.Children.Where(c => c.IsMidCycleNoGrant).Should().HaveCount(2,
             "children 20 and 30 have no allocation row → IsMidCycleNoGrant=true");
+    }
+
+    // ── AT-11: idempotency payload-binding — same key, different payload → conflict ───────────
+
+    [Fact]
+    public async Task AT11_Idempotency_SameKey_DifferentAmount_ReturnsConflict()
+    {
+        var sub      = await SeedSubscriptionAsync(parentId: 1);
+        var walletId = await SeedWalletAsync(parentId: 1);
+        await SeedActiveSeatAsync(sub.Id, childId: 10);
+        await SeedActiveSeatAsync(sub.Id, childId: 20);
+        await SeedAllocationAsync(walletId, childId: 10, allocated: 200, spent: 0);
+        await SeedAllocationAsync(walletId, childId: 20, allocated: 0, spent: 0);
+
+        _seatStateQueryMock.Setup(x => x.IsChildSeatActiveAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var svc = BuildService();
+
+        // First call: key "key-011" moves 50.
+        var first = await svc.TransferAllocationAsync(1, 10, 20, 50, "key-011");
+        first.Succeeded.Should().BeTrue();
+
+        // Re-use the SAME key with a DIFFERENT amount → conflict (payload-binding).
+        var conflict = await svc.TransferAllocationAsync(1, 10, 20, 75, "key-011");
+        conflict.Succeeded.Should().BeFalse("reusing a key with a changed payload must be rejected");
+        conflict.FailureReason.Should().Be(TransferAllocationFailureReason.IdempotencyKeyConflict);
+
+        // The conflicting call must NOT have moved anything: source still reflects only the first 50.
+        var srcAlloc = await _db.ChildEnergyAllocations.AsNoTracking()
+            .FirstAsync(a => a.FamilyEnergyAccountId == walletId && a.ChildId == 10);
+        srcAlloc.Remaining.Should().Be(150, "the conflicting transfer must be a no-op");
+
+        // Same key + SAME payload is still a valid idempotent replay (not a conflict).
+        var replay = await svc.TransferAllocationAsync(1, 10, 20, 50, "key-011");
+        replay.Succeeded.Should().BeTrue("same key + same payload is a valid idempotent replay");
     }
 }

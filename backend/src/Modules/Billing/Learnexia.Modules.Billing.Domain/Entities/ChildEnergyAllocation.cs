@@ -96,7 +96,12 @@ public class ChildEnergyAllocation : FullAuditedEntity
     {
         if (amount <= 0 || amount > Remaining)
             throw new InvalidOperationException("Transfer amount must be positive and <= Remaining.");
-        SpentAmount += amount; // reduces Remaining; effectively "sent"
+        // Sent energy LEAVES this child's allocation — it was never consumed, so we reduce
+        // AllocatedAmount (NOT SpentAmount). Reducing Spent would inflate the parent's "spent"
+        // report with energy the child merely handed to a sibling. Symmetric with ReceiveTransfer,
+        // which increases AllocatedAmount. amount <= Remaining <= AllocatedAmount, so the result
+        // stays >= SpentAmount and Remaining stays >= 0.
+        AllocatedAmount -= amount;
         var tx = Build(CreditTransactionType.Spend, CreditReasonCode.TransferOut, amount, idempotencyKey);
         tx.CorrelationId = correlationId;
         return tx;
