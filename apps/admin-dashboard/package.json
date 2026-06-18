@@ -23,7 +23,9 @@
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.54.2",
     "tamagui": "^1.116.0",
-    "zod": "^3.24.1"
+    "zod": "^3.24.1",
+    "marked": "^15.0.12",
+    "dompurify": "^3.2.3"
   },
   "devDependencies": {
     "@learnexia/eslint-config": "workspace:*",
