@@ -1,3 +1,52 @@
+## P7 Curriculum Admin FE — Sub-wave 2a (P7-01 + P7-05) — 2026-06-18 (PR open)
+
+**Sub-wave 2a of the Curriculum admin FE shipped on `feat/P7-curriculum-fe`.** Builds the single `adminCurriculum.*` query-key namespace + reusable foundation for 2b/2c. Backend Curriculum module already merged (P7-01..P7-05 backend, Learning module).
+
+**What shipped (FE-only, P7-01 + P7-05):**
+- **P7-01 Subjects/Units (subjects list + filters + CRUD + soft-delete + keyboard reorder):**
+  - Routes: `app/(admin)/curriculum/` landing (coverage overview), `/subjects` list (search, language/grade filter, pagination), `/subjects/{id}` detail + units sub-panel, `/units/{id}` detail
+  - Features: SubjectForm/UnitForm modals (create/edit/delete with IsActive toggle + soft-delete gates), keyboard-reorder (↑↓ arrows in-list, no drag lib), "single-tree-scoped" architecture (units only exist under a subject), language-code + grade badges, admin-side Nav link added
+  - API hooks: `useSubjectList`, `useUnitList`, `useCreateSubject/Unit`, `useUpdateSubject/Unit`, `useDeleteSubject/Unit`, `useSetSubjectActive/SetUnitActive`, `useReorderSubjects/Units` (reorder via `{subjectIds}` or `{unitIds}`, mutates via `POST /Reorder`)
+  - Components: `SubjectForm`, `UnitForm`, `ActiveBadge`, `SubjectCodeBadge`, `LanguageBadge`, `SubjectLanguageFilter`
+  - Strings: 40+ EN+AR keys for list/form/validation/column-headers (curriculum*, subject*, unit* namespaces)
+- **P7-05 Lifecycle Backbone (publish/unpublish/archive/restore/rollback + version history + structured preview + publication coverage):**
+  - Features: LifecycleBadge (renders Draft/Published/Archived state) + CurriculumLifecycleControl (Publish/Unpublish/Archive/Restore buttons + reason modals + /Transition endpoint)
+  - Dialog components: `PublishCurriculumDialog`, `UnpublishCurriculumDialog`, `ArchiveCurriculumDialog`, `RestoreCurriculumDialog`, `RollbackVersionDialog` — all wired to `useLifecycle` mutations
+  - `VersionHistory` component (sortable table of versions + publish dates + rollback action)
+  - `CurriculumPreview` component (renders structured JSON field as readable format — needed because Expo player unavailable in Next.js)
+  - `PublicationCoverage` component (shows which languages/grades are published for each entity type)
+  - `data-slot="lifecycle"` slot convention (2b/2c reuse the same components with `{entityType, entityId}` params — VersionedEntityType Lesson=3/QuizQuestion=4)
+  - API hook: `useLifecycle` (wraps /Transition, /Rollback, /Preview, /PublicationCoverage endpoints, reuses single `adminCurriculum.*` namespace)
+  - Strings: 25+ EN+AR keys for lifecycle operations
+- **Admin foundation (reusable for 2b/2c):**
+  - Unified `adminCurriculum.*` query-key namespace (seeded for WHOLE cluster — subjects/units/lessons/contentBlocks/skills/graph/questions/versions/preview/pubCoverage)
+  - Hand-written admin hooks pattern (mirror `useSuspendUser` shape: raw paths, NOT NSwag-regenerated, return `BaseResponse<string>` mutations → invalidate)
+  - Shared enum consts in `@learnexia/shared`: `SUBJECT_CODE` (1–4: Math/Science/Arabic/English), `CONTENT_LANGUAGE` (1–2: Ar/En), `LIFECYCLE_STATE` (1–3: Draft/Published/Archived), `VERSIONED_ENTITY_TYPE` (1–4: Subject/Unit/Lesson/QuizQuestion)
+  - Per-page `AdminShell` self-wrap + pass-through section layout
+  - `AdminConfirmDialog` extended (added reason field, generic dialogs pattern)
+
+**Gates:** reviewer **PASS** (after 2 security fixes); security-auditor **PASS-with-notes (0 Critical/High, 4 Info notes — DG-2 backend follow-up noted)**. Accepted lifecycle state gap: **DTOs lack lifecycleState** → FE fetches via `GET /ContentLifecycle/Preview` per row (O(N), acceptable for ≤50-row admin lists); proper fix = add `lifecycleState` to curriculum read DTOs (backend task).
+
+**Decisions locked (no design-pattern-ask needed):**
+- P7-03 graph editor = accessible list/adjacency editor (no graph-viz library)
+- Keyboard-first reorder (no drag-drop library)
+- P7-05 preview = structured JSON field render (Expo player unusable in Next.js)
+- P7-04 has NO standalone Quiz aggregate (implicit per-lesson questions, story/task files wrongly describe one)
+
+**Known gaps & follow-ups:**
+- **DG-2 (backend follow-up, non-blocking):** `SubjectDto`/`UnitDto` + likely Lesson/Question DTOs do NOT carry `lifecycleState`, so the FE must fetch per row. Proper fix = add `lifecycleState` to the read DTOs.
+- **Rollback reason (FE-only, non-blocking):** backend `/Rollback` has no reason field — rollback reason is captured FE-only in the dialog. Acceptable for MVP.
+
+**Contract note:** Every curriculum FE task file is STALE — the live `docs/briefs/P7-0X-FE.md` sections are authoritative (int IDs, `BaseResponse<string>` mutations, `/Transition` single endpoint, reorder `{subjectIds}`/`{unitIds}`, delete via `?id=`).
+
+**Remaining sub-waves (not in this PR):**
+- **2b:** P7-02 lessons/content blocks + P7-04 questions/quiz (security-auditor mandatory for P7-02 Markdown sanitization)
+- **2c:** P7-03 skill graph (accessible list/adjacency editor)
+- **QC + E2E:** Separate user-invoked step (as in Wave 1; not part of this PR)
+
+---
+
+
 ## Phase-5 Parent-Read API wave — 2026-06-18 (PR open, awaiting user merge)
 
 **New backend wave on `feat/P5-parent-read-api` (9 commits) → PR pending — unblocks the FAKED parent app.** Lead-approved 2026-06-18: new story **P5-08** (live parent-scoped reads), **Parent** module owns the controller (no new module), **FULL slice**. The parent app's dashboard/overview/reports/activity screens were faked (`parentDashboardStubs.ts`) because the backend only had self-scoped *student* endpoints; this wave adds parent-scoped per-child reads that fan out to the existing data.

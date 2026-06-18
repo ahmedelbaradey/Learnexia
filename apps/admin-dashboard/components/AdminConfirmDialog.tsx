@@ -41,7 +41,12 @@ export type DialogVariant =
   | 'reactivate'
   | 'delete'
   | 'grade'
-  | 'destructive';
+  | 'destructive'
+  // P7-05 curriculum lifecycle variants (additive — no structural change)
+  | 'publish'
+  | 'unpublish'
+  | 'archive'
+  | 'restore';
 
 export interface AdminConfirmDialogProps {
   /** Whether the dialog is visible. */
@@ -127,6 +132,47 @@ function AlertTriangleIcon() {
   );
 }
 
+// ── P7-05 lifecycle icon SVGs (Lucide-compatible, 20px, 2px stroke) ───────────
+
+function UploadCloudIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <polyline points="16 16 12 12 8 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <line x1="12" y1="12" x2="12" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function DownloadCloudIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <polyline points="8 17 12 21 16 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <line x1="12" y1="12" x2="12" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ArchiveIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <polyline points="21 8 21 21 3 21 3 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="1" y="3" width="22" height="5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <line x1="10" y1="12" x2="14" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function RotateCcwIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <polyline points="1 4 1 10 7 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3.51 15a9 9 0 1 0 .49-4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 interface VariantStyle {
   iconBg: string;
   iconColor: string;
@@ -158,6 +204,27 @@ const VARIANT_STYLES: Record<DialogVariant, VariantStyle> = {
     iconBg: 'rgba(239,68,68,0.15)',
     iconColor: '#EF4444',
     icon: <AlertTriangleIcon />,
+  },
+  // P7-05 curriculum lifecycle variants
+  publish: {
+    iconBg: 'rgba(79,70,229,0.15)',
+    iconColor: '#4F46E5',
+    icon: <UploadCloudIcon />,
+  },
+  unpublish: {
+    iconBg: 'rgba(148,163,184,0.12)',
+    iconColor: '#94A3B8',
+    icon: <DownloadCloudIcon />,
+  },
+  archive: {
+    iconBg: 'rgba(245,158,11,0.15)',
+    iconColor: '#F59E0B',
+    icon: <ArchiveIcon />,
+  },
+  restore: {
+    iconBg: 'rgba(34,197,94,0.15)',
+    iconColor: '#22C55E',
+    icon: <RotateCcwIcon />,
   },
 };
 

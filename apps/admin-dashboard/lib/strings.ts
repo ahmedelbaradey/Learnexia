@@ -298,6 +298,163 @@ export interface AdminStrings {
   /** Validation error shown when PATCH /profile returns 422 (unsupported language/country). */
   childProfileError422: string;
 
+  // ── P7-01 Curriculum surface (curriculum* / subject* / unit* namespace) ──────
+
+  // Page titles
+  curriculumPageTitle: string;
+  curriculumDetailTitle: string;
+
+  // Subjects list page
+  subjectsListHeading: string;
+  subjectsResultCount: string;
+  subjectsListSearchPlaceholder: string;
+  subjectsFilterAllGrades: string;
+  subjectsFilterAllLanguages: string;
+  subjectsFilterLangAr: string;
+  subjectsFilterLangEn: string;
+  subjectsClearFilters: string;
+  subjectsListLoadingLabel: string;
+  subjectsListError: string;
+  subjectsTableCaption: string;
+  subjectsNoResults: string;
+  subjectsNoResultsHint: string;
+  subjectsViewDetail: string;
+  subjectsPrevPage: string;
+  subjectsNextPage: string;
+  subjectsNewSubject: string;
+
+  // Subjects table columns
+  subjectsColSubject: string;
+  subjectsColLanguage: string;
+  subjectsColGrade: string;
+  subjectsColOrder: string;
+  subjectsColActive: string;
+
+  // Subject code badge labels
+  subjectCodeMath: string;
+  subjectCodeScience: string;
+  subjectCodeArabic: string;
+  subjectCodeEnglish: string;
+
+  // Language badge labels
+  contentLangAr: string;
+  contentLangEn: string;
+
+  // Active badge labels
+  subjectActiveBadge: string;
+  subjectInactiveBadge: string;
+
+  // Coverage panel
+  coveragePanelHeading: string;
+  coverageGapBadge: string;
+  coverageCreateShortcut: string;
+  coverageMissingSlot: string;
+
+  // Subject detail
+  subjectsDetailBreadcrumb: string;
+  subjectsDetailGradePrefix: string;
+  subjectsDetailOrderPrefix: string;
+  subjectsDetailEditBtn: string;
+  subjectsDetailToggleActiveBtn: string;
+  subjectsDetailDeactivateBtn: string;
+  subjectsDetailDeleteBtn: string;
+  subjectsDetailNotFound: string;
+  subjectsDetailNotFoundBody: string;
+  subjectsDetailBackBtn: string;
+
+  // Subject form
+  subjectFormCreateTitle: string;
+  subjectFormCreateSubtitle: string;
+  subjectFormEditTitle: string;
+  subjectFormEditSubtitle: string;
+  subjectFormNameLabel: string;
+  subjectFormNamePlaceholder: string;
+  subjectFormGradeLabel: string;
+  subjectFormGradePlaceholder: string;
+  subjectFormCodeLabel: string;
+  subjectFormCodePlaceholder: string;
+  subjectFormLangLabel: string;
+  subjectFormLangPlaceholder: string;
+  subjectFormPinnedLangHint: string;
+  subjectFormOrderLabel: string;
+  subjectFormOrderHint: string;
+  subjectFormActiveLabel: string;
+  subjectFormActiveLabelOn: string;
+  subjectFormActiveLabelOff: string;
+  subjectFormCancelBtn: string;
+  subjectFormCreateBtn: string;
+  subjectFormSaveBtn: string;
+  subjectFormErrNameRequired: string;
+  subjectFormErrGradeRequired: string;
+  subjectFormErrCodeRequired: string;
+  subjectFormErrLangRequired: string;
+  subjectFormErrOrderInvalid: string;
+
+  // Units section
+  unitsHeading: string;
+  unitsResultCount: string;
+  unitsNewUnit: string;
+  unitsNoResults: string;
+  unitsNoResultsHint: string;
+  unitsTableCaption: string;
+  unitsColOrder: string;
+  unitsColName: string;
+  unitsColActive: string;
+  unitsLoadingLabel: string;
+  unitsListError: string;
+
+  // Unit form
+  unitFormCreateTitle: string;
+  unitFormCreateSubtitle: string;
+  unitFormEditTitle: string;
+  unitFormEditSubtitle: string;
+  unitFormInheritedLangNotice: string;
+  unitFormNameLabel: string;
+  unitFormNamePlaceholder: string;
+  unitFormOrderLabel: string;
+  unitFormOrderHint: string;
+  unitFormActiveLabel: string;
+  unitFormActiveLabelOn: string;
+  unitFormActiveLabelOff: string;
+  unitFormCancelBtn: string;
+  unitFormCreateBtn: string;
+  unitFormSaveBtn: string;
+  unitFormErrNameRequired: string;
+
+  // Reorder
+  reorderSaveBtn: string;
+  reorderMoveUp: string;
+  reorderMoveDown: string;
+  reorderDisabledHint: string;
+  reorderPosition: string;
+  reorderSavedMsg: string;
+  reorderErrorMsg: string;
+
+  // Delete dialog
+  curriculumDeleteSubjectTitle: string;
+  curriculumDeleteUnitTitle: string;
+  curriculumDeleteSubjectBody: string;
+  curriculumDeleteUnitBody: string;
+  curriculumDeleteConfirmSubject: string;
+  curriculumDeleteConfirmUnit: string;
+  curriculumDeleteSuccessSubject: string;
+  curriculumDeleteSuccessUnit: string;
+  curriculumDeleteCancel: string;
+
+  // Toggle active
+  subjectActivateBtn: string;
+  subjectDeactivateBtn: string;
+  unitActivateBtn: string;
+  unitDeactivateBtn: string;
+  subjectToggleSuccess: string;
+  unitToggleSuccess: string;
+  subjectToggleError: string;
+  unitToggleError: string;
+
+  // Shared error
+  curriculumNotEmptyError: string;
+  curriculumNetworkError: string;
+
   // Change learning language dialog (ChangeLearningLanguageDialog — DESTRUCTIVE)
   langDialogTitle: string;
   langDialogSubtitle: string;
@@ -317,6 +474,120 @@ export interface AdminStrings {
   langError422: string;
   langErrorNoOp: string;
   langErrorNetwork: string;
+
+  // ── P7-05 Curriculum lifecycle copy (clLifecycle* namespace — DISJOINT from P7-07 lifecycle*) ──
+
+  // Entity type labels (used in LifecycleBadge + CurriculumPreview headers)
+  clEntityTypeSubject: string;
+  clEntityTypeUnit: string;
+  clEntityTypeLesson: string;
+  clEntityTypeQuestion: string;
+
+  // Lifecycle state badge labels
+  clLifecycleDraft: string;
+  clLifecyclePublished: string;
+  clLifecycleArchived: string;
+
+  // Lifecycle state aria-labels (screen reader)
+  clLifecycleDraftAriaLabel: string;
+  clLifecyclePublishedAriaLabel: string;
+  clLifecycleArchivedAriaLabel: string;
+
+  // CurriculumLifecycleControl — status row
+  clLifecycleStatusLabel: string;
+  clLifecycleViewPreview: string;
+  clLifecycleSuccessBannerTransitioned: string;
+
+  // Publish dialog
+  clPublishTitle: string;
+  clPublishSubtitle: string;
+  clPublishNoticeBody: string;
+  clPublishConfirm: string;
+
+  // Unpublish dialog
+  clUnpublishTitle: string;
+  clUnpublishSubtitle: string;
+  clUnpublishNoticeBody: string;
+  clUnpublishConfirm: string;
+
+  // Archive dialog
+  clArchiveTitle: string;
+  clArchiveSubtitle: string;
+  clArchiveNoticeHeading: string;
+  clArchiveNoticeBody: string;
+  clArchiveConfirm: string;
+
+  // Restore dialog
+  clRestoreTitle: string;
+  clRestoreSubtitle: string;
+  clRestoreNotice: string;
+  clRestoreConfirm: string;
+
+  // Rollback dialog
+  clRollbackTitle: string;     // includes {N} version number placeholder
+  clRollbackSubtitle: string;  // includes {formattedDate} placeholder
+  clRollbackVersionDetails: string;
+  clRollbackWarningBody: string;
+  clRollbackReasonLabel: string;
+  clRollbackReasonPlaceholder: string;
+  clRollbackGuardrailNotice: string;
+  clRollbackConfirm: string;   // includes {N} version number placeholder
+
+  // Version history panel
+  clVersionHistoryHeading: string;
+  clVersionHistoryCount: string;   // "versions" — appended to count integer
+  clVersionHistoryEmpty: string;
+  clVersionHistoryError: string;
+  clVersionPublishedBy: string;    // "Published by ID {N}" — {N} replaced at runtime
+  clVersionRollbackBtn: string;
+  clVersionRollbackAriaLabel: string; // "Roll back to v{N}" — {N} replaced at runtime
+
+  // CurriculumPreview — page/route strings
+  clLifecyclePreviewTitle: string;  // "Preview (snapshot)"
+  clPreviewBack: string;
+  clPreviewDraftBanner: string;
+  clPreviewError: string;
+  clPreviewInvalidJson: string;
+  clPreviewImageAlt: string;
+
+  // CurriculumPreview — field labels
+  clPreviewFieldName: string;
+  clPreviewFieldCountry: string;
+  clPreviewFieldSubject: string;
+  clPreviewFieldLanguage: string;
+  clPreviewFieldOrder: string;
+  clPreviewFieldActive: string;
+  clPreviewFieldDifficulty: string;
+  clPreviewFieldLocked: string;
+  clPreviewFieldDuration: string;
+  clPreviewFieldExplanation: string;
+  clPreviewFieldVisual: string;
+  clPreviewFieldBoss: string;
+  clPreviewFieldQuestion: string;
+  clPreviewFieldType: string;
+  clPreviewFieldOptions: string;
+  clPreviewFieldCorrectAnswer: string;
+  clPreviewFieldGeneratedBy: string;
+  clPreviewYes: string;
+  clPreviewNo: string;
+
+  // PublicationCoverage — landing page
+  clCoverageHeading: string;
+  clCoverageSubheading: string;
+  clCoverageGradeLabel: string;
+  clCoverageGradePlaceholder: string;
+  clCoverageGradeHint: string;
+  clCoverageTableCaption: string;
+  clCoverageColSubject: string;
+  clCoverageColStatus: string;
+  clCoverageSlotNotCreated: string;
+  clCoverageSlotDraft: string;
+  clCoverageSlotPublished: string;
+  clCoverageSlotArchived: string;
+  clCoverageWarningMissingChip: string;       // aria-label for one-sided warning chip
+  clCoverageSuccess: string;
+  clCoverageError: string;
+  clCoverageGoToSubjects: string;
 }
 
 const en: AdminStrings = {
@@ -588,6 +859,248 @@ const en: AdminStrings = {
   langError422: 'Language must be "ar" or "en".',
   langErrorNoOp: 'No change made — the selected language is already in use.',
   langErrorNetwork: 'Something went wrong. Please try again.',
+
+  // ── P7-01 curriculum (EN) ─────────────────────────────────────────────────────
+  curriculumPageTitle: 'Curriculum',
+  curriculumDetailTitle: 'Subject',
+
+  subjectsListHeading: 'Subjects',
+  subjectsResultCount: 'subjects',
+  subjectsListSearchPlaceholder: 'Search subjects…',
+  subjectsFilterAllGrades: 'All Grades',
+  subjectsFilterAllLanguages: 'All',
+  subjectsFilterLangAr: 'Arabic (Ar)',
+  subjectsFilterLangEn: 'English (En)',
+  subjectsClearFilters: 'Clear filters',
+  subjectsListLoadingLabel: 'Loading subjects…',
+  subjectsListError: 'Unable to load subjects. Please try again.',
+  subjectsTableCaption: 'Curriculum subjects list',
+  subjectsNoResults: 'No subjects found',
+  subjectsNoResultsHint: 'Try adjusting the grade or language filter.',
+  subjectsViewDetail: 'View subject',
+  subjectsPrevPage: 'Previous page',
+  subjectsNextPage: 'Next page',
+  subjectsNewSubject: 'New Subject',
+
+  subjectsColSubject: 'Subject',
+  subjectsColLanguage: 'Language',
+  subjectsColGrade: 'Grade',
+  subjectsColOrder: 'Order',
+  subjectsColActive: 'Active',
+
+  subjectCodeMath: 'MATH',
+  subjectCodeScience: 'SCI',
+  subjectCodeArabic: 'AR',
+  subjectCodeEnglish: 'EN',
+
+  contentLangAr: 'AR',
+  contentLangEn: 'EN',
+
+  subjectActiveBadge: 'Active',
+  subjectInactiveBadge: 'Inactive',
+
+  coveragePanelHeading: 'Language Coverage — Grade',
+  coverageGapBadge: 'gap',
+  coverageCreateShortcut: 'Create',
+  coverageMissingSlot: 'Missing',
+
+  subjectsDetailBreadcrumb: 'Curriculum',
+  subjectsDetailGradePrefix: 'Grade',
+  subjectsDetailOrderPrefix: 'Order:',
+  subjectsDetailEditBtn: 'Edit',
+  subjectsDetailToggleActiveBtn: 'Activate',
+  subjectsDetailDeactivateBtn: 'Deactivate',
+  subjectsDetailDeleteBtn: 'Remove',
+  subjectsDetailNotFound: 'Subject not found',
+  subjectsDetailNotFoundBody: 'This subject does not exist or was removed.',
+  subjectsDetailBackBtn: 'Back to Curriculum',
+
+  subjectFormCreateTitle: 'New Subject',
+  subjectFormCreateSubtitle: 'Add a new subject to the curriculum.',
+  subjectFormEditTitle: 'Edit Subject',
+  subjectFormEditSubtitle: 'Update subject details.',
+  subjectFormNameLabel: 'Name',
+  subjectFormNamePlaceholder: 'e.g. Mathematics',
+  subjectFormGradeLabel: 'Grade',
+  subjectFormGradePlaceholder: 'Select grade',
+  subjectFormCodeLabel: 'Subject Code',
+  subjectFormCodePlaceholder: 'Select code',
+  subjectFormLangLabel: 'Content Language',
+  subjectFormLangPlaceholder: 'Select language',
+  subjectFormPinnedLangHint: 'Language is pinned for this subject.',
+  subjectFormOrderLabel: 'Order',
+  subjectFormOrderHint: 'Sets display order within the same language tree.',
+  subjectFormActiveLabel: 'Active',
+  subjectFormActiveLabelOn: 'Subject visible to students',
+  subjectFormActiveLabelOff: 'Subject hidden from students',
+  subjectFormCancelBtn: 'Cancel',
+  subjectFormCreateBtn: 'Create Subject',
+  subjectFormSaveBtn: 'Save Changes',
+  subjectFormErrNameRequired: 'Name is required.',
+  subjectFormErrGradeRequired: 'Grade is required.',
+  subjectFormErrCodeRequired: 'Subject code is required.',
+  subjectFormErrLangRequired: 'Language is required.',
+  subjectFormErrOrderInvalid: 'Order must be a number ≥ 0.',
+
+  unitsHeading: 'Units',
+  unitsResultCount: 'units',
+  unitsNewUnit: 'New Unit',
+  unitsNoResults: 'No units yet',
+  unitsNoResultsHint: 'Add the first unit to this subject.',
+  unitsTableCaption: 'Subject units list',
+  unitsColOrder: 'Order',
+  unitsColName: 'Name',
+  unitsColActive: 'Active',
+  unitsLoadingLabel: 'Loading units…',
+  unitsListError: 'Unable to load units. Please try again.',
+
+  unitFormCreateTitle: 'New Unit',
+  unitFormCreateSubtitle: 'Units inherit language from the owning subject.',
+  unitFormEditTitle: 'Edit Unit',
+  unitFormEditSubtitle: 'Update unit details.',
+  unitFormInheritedLangNotice: 'Language: {lang} — inherited from parent subject',
+  unitFormNameLabel: 'Unit Name',
+  unitFormNamePlaceholder: 'e.g. Introduction to Algebra',
+  unitFormOrderLabel: 'Order',
+  unitFormOrderHint: 'Display order within this subject.',
+  unitFormActiveLabel: 'Active',
+  unitFormActiveLabelOn: 'Unit visible to students',
+  unitFormActiveLabelOff: 'Unit hidden from students',
+  unitFormCancelBtn: 'Cancel',
+  unitFormCreateBtn: 'Create Unit',
+  unitFormSaveBtn: 'Save Changes',
+  unitFormErrNameRequired: 'Unit name is required.',
+
+  reorderSaveBtn: 'Save Order',
+  reorderMoveUp: 'Move up',
+  reorderMoveDown: 'Move down',
+  reorderDisabledHint: 'Select a single language to enable reorder',
+  reorderPosition: 'moved to position',
+  reorderSavedMsg: 'Order saved.',
+  reorderErrorMsg: 'Unable to save order. Please try again.',
+
+  curriculumDeleteSubjectTitle: 'Remove Subject',
+  curriculumDeleteUnitTitle: 'Remove Unit',
+  curriculumDeleteSubjectBody: 'This subject will be hidden from the curriculum. It can be reactivated if needed. Note: subjects with units cannot be removed — all units must be deleted first.',
+  curriculumDeleteUnitBody: 'This unit will be hidden from the curriculum. It can be reactivated if needed. Note: units with lessons cannot be removed — all lessons must be deleted first.',
+  curriculumDeleteConfirmSubject: 'Remove Subject',
+  curriculumDeleteConfirmUnit: 'Remove Unit',
+  curriculumDeleteSuccessSubject: 'Subject removed from curriculum.',
+  curriculumDeleteSuccessUnit: 'Unit removed from curriculum.',
+  curriculumDeleteCancel: 'Cancel',
+
+  subjectActivateBtn: 'Activate',
+  subjectDeactivateBtn: 'Deactivate',
+  unitActivateBtn: 'Activate',
+  unitDeactivateBtn: 'Deactivate',
+  subjectToggleSuccess: 'Subject status updated.',
+  unitToggleSuccess: 'Unit status updated.',
+  subjectToggleError: 'Unable to update subject status. Please try again.',
+  unitToggleError: 'Unable to update unit status. Please try again.',
+
+  curriculumNotEmptyError: 'This item has children and cannot be removed. Delete all children first.',
+  curriculumNetworkError: 'Something went wrong. Please try again.',
+
+  // ── P7-05 curriculum lifecycle copy (EN) — clLifecycle* namespace ─────────────
+
+  clEntityTypeSubject: 'Subject',
+  clEntityTypeUnit: 'Unit',
+  clEntityTypeLesson: 'Lesson',
+  clEntityTypeQuestion: 'Question',
+
+  clLifecycleDraft: 'Draft',
+  clLifecyclePublished: 'Published',
+  clLifecycleArchived: 'Archived',
+
+  clLifecycleDraftAriaLabel: 'Lifecycle state: Draft',
+  clLifecyclePublishedAriaLabel: 'Lifecycle state: Published',
+  clLifecycleArchivedAriaLabel: 'Lifecycle state: Archived',
+
+  clLifecycleStatusLabel: 'Lifecycle status',
+  clLifecycleViewPreview: 'View Preview',
+  clLifecycleSuccessBannerTransitioned: 'Lifecycle state updated successfully.',
+
+  clPublishTitle: 'Publish this content?',
+  clPublishSubtitle: 'Once published, students will be able to see this content.',
+  clPublishNoticeBody: 'Publishing makes this content visible to enrolled students. You can unpublish or archive it later.',
+  clPublishConfirm: 'Publish',
+
+  clUnpublishTitle: 'Unpublish this content?',
+  clUnpublishSubtitle: 'The content will return to Draft and will no longer be visible to students.',
+  clUnpublishNoticeBody: 'Students will immediately lose access. You can re-publish it at any time.',
+  clUnpublishConfirm: 'Unpublish',
+
+  clArchiveTitle: 'Archive this content?',
+  clArchiveSubtitle: 'Archived content is hidden from students and cannot be published directly.',
+  clArchiveNoticeHeading: 'Archive is a terminal state for the current version.',
+  clArchiveNoticeBody: 'Students will immediately lose access. You can restore it to Draft at any time, then review and re-publish from there.',
+  clArchiveConfirm: 'Archive',
+
+  clRestoreTitle: 'Restore to Draft?',
+  clRestoreSubtitle: 'The content will be moved back to Draft for review.',
+  clRestoreNotice: 'Restoring returns this content to Draft. Review it, then re-publish when ready.',
+  clRestoreConfirm: 'Restore to Draft',
+
+  clRollbackTitle: 'Roll back to version {N}?',
+  clRollbackSubtitle: 'Published on {formattedDate}',
+  clRollbackVersionDetails: 'Version details',
+  clRollbackWarningBody: 'Rolling back replaces the current published content with this older snapshot. The current version will be saved in version history.',
+  clRollbackReasonLabel: 'Reason for rollback',
+  clRollbackReasonPlaceholder: 'Explain why you are rolling back to this version…',
+  clRollbackGuardrailNotice: 'Reason is a front-end-only audit field and is not sent to the server. It is recorded here for team accountability only.',
+  clRollbackConfirm: 'Roll back to v{N}',
+
+  clVersionHistoryHeading: 'Published Versions',
+  clVersionHistoryCount: 'versions',
+  clVersionHistoryEmpty: 'No published versions yet.',
+  clVersionHistoryError: 'Unable to load version history. Please try again.',
+  clVersionPublishedBy: 'Published by ID {N}',
+  clVersionRollbackBtn: 'Roll back',
+  clVersionRollbackAriaLabel: 'Roll back to version {N}',
+
+  clLifecyclePreviewTitle: 'Preview (snapshot)',
+  clPreviewBack: 'Back',
+  clPreviewDraftBanner: 'This content is in Draft — it is not yet visible to students.',
+  clPreviewError: 'Unable to load preview. Please try again.',
+  clPreviewInvalidJson: 'Preview snapshot could not be parsed as JSON. Showing raw data.',
+  clPreviewImageAlt: 'Content visual',
+
+  clPreviewFieldName: 'Name',
+  clPreviewFieldCountry: 'Country',
+  clPreviewFieldSubject: 'Subject Code',
+  clPreviewFieldLanguage: 'Content Language',
+  clPreviewFieldOrder: 'Sequence Order',
+  clPreviewFieldActive: 'Active',
+  clPreviewFieldDifficulty: 'Difficulty',
+  clPreviewFieldLocked: 'Locked',
+  clPreviewFieldDuration: 'Est. Duration',
+  clPreviewFieldExplanation: 'Explanation',
+  clPreviewFieldVisual: 'Visual',
+  clPreviewFieldBoss: 'Boss Lesson',
+  clPreviewFieldQuestion: 'Question Text',
+  clPreviewFieldType: 'Question Type',
+  clPreviewFieldOptions: 'Options (JSON)',
+  clPreviewFieldCorrectAnswer: 'Correct Answer',
+  clPreviewFieldGeneratedBy: 'Generated By',
+  clPreviewYes: 'Yes',
+  clPreviewNo: 'No',
+
+  clCoverageHeading: 'Publication Coverage',
+  clCoverageSubheading: 'See which subjects are published for each grade and language.',
+  clCoverageGradeLabel: 'Grade',
+  clCoverageGradePlaceholder: 'Select a grade',
+  clCoverageGradeHint: 'Select a grade to view its publication status across all subjects.',
+  clCoverageTableCaption: 'Publication coverage by subject and language',
+  clCoverageColSubject: 'Subject',
+  clCoverageColStatus: 'Status',
+  clCoverageSlotNotCreated: 'Not Created',
+  clCoverageSlotDraft: 'Draft',
+  clCoverageSlotPublished: 'Published',
+  clCoverageSlotArchived: 'Archived',
+  clCoverageWarningMissingChip: 'Warning: this subject is not yet published for this grade',
+  clCoverageSuccess: 'All subjects are published for this grade.',
+  clCoverageError: 'Unable to load coverage data. Please try again.',
+  clCoverageGoToSubjects: 'Manage Subjects',
 };
 
 const ar: AdminStrings = {
@@ -858,6 +1371,248 @@ const ar: AdminStrings = {
   langError422: 'اللغة غير مدعومة. يجب أن تكون "ar" أو "en".',
   langErrorNoOp: 'لم يُجرَ أي تغيير — اللغة المختارة مستخدمة بالفعل.',
   langErrorNetwork: 'حدث خطأ ما. يُرجى المحاولة مرة أخرى.',
+
+  // ── P7-01 curriculum (AR) ─────────────────────────────────────────────────────
+  curriculumPageTitle: 'المناهج',
+  curriculumDetailTitle: 'المادة',
+
+  subjectsListHeading: 'المواد الدراسية',
+  subjectsResultCount: 'مادة',
+  subjectsListSearchPlaceholder: 'ابحث عن المواد…',
+  subjectsFilterAllGrades: 'كل الصفوف',
+  subjectsFilterAllLanguages: 'الكل',
+  subjectsFilterLangAr: 'عربي',
+  subjectsFilterLangEn: 'إنجليزي',
+  subjectsClearFilters: 'مسح التصفية',
+  subjectsListLoadingLabel: 'جارٍ تحميل المواد…',
+  subjectsListError: 'تعذَّر تحميل المواد. يرجى المحاولة مرة أخرى.',
+  subjectsTableCaption: 'قائمة المواد الدراسية',
+  subjectsNoResults: 'لم يُعثر على مواد',
+  subjectsNoResultsHint: 'جرِّب تعديل تصفية الصف أو اللغة.',
+  subjectsViewDetail: 'عرض المادة',
+  subjectsPrevPage: 'الصفحة السابقة',
+  subjectsNextPage: 'الصفحة التالية',
+  subjectsNewSubject: 'مادة جديدة',
+
+  subjectsColSubject: 'المادة',
+  subjectsColLanguage: 'اللغة',
+  subjectsColGrade: 'الصف',
+  subjectsColOrder: 'الترتيب',
+  subjectsColActive: 'الحالة',
+
+  subjectCodeMath: 'رياضيات',
+  subjectCodeScience: 'علوم',
+  subjectCodeArabic: 'عربية',
+  subjectCodeEnglish: 'إنجليزية',
+
+  contentLangAr: 'عر',
+  contentLangEn: 'إن',
+
+  subjectActiveBadge: 'نشط',
+  subjectInactiveBadge: 'غير نشط',
+
+  coveragePanelHeading: 'تغطية اللغة — الصف',
+  coverageGapBadge: 'ثغرة',
+  coverageCreateShortcut: 'إنشاء',
+  coverageMissingSlot: 'مفقود',
+
+  subjectsDetailBreadcrumb: 'المناهج',
+  subjectsDetailGradePrefix: 'الصف',
+  subjectsDetailOrderPrefix: 'الترتيب:',
+  subjectsDetailEditBtn: 'تعديل',
+  subjectsDetailToggleActiveBtn: 'تفعيل',
+  subjectsDetailDeactivateBtn: 'إلغاء التفعيل',
+  subjectsDetailDeleteBtn: 'إزالة',
+  subjectsDetailNotFound: 'المادة غير موجودة',
+  subjectsDetailNotFoundBody: 'هذه المادة غير موجودة أو تمت إزالتها.',
+  subjectsDetailBackBtn: 'العودة للمناهج',
+
+  subjectFormCreateTitle: 'مادة جديدة',
+  subjectFormCreateSubtitle: 'أضف مادة جديدة إلى المناهج.',
+  subjectFormEditTitle: 'تعديل المادة',
+  subjectFormEditSubtitle: 'تحديث تفاصيل المادة.',
+  subjectFormNameLabel: 'الاسم',
+  subjectFormNamePlaceholder: 'مثال: الرياضيات',
+  subjectFormGradeLabel: 'الصف',
+  subjectFormGradePlaceholder: 'اختر الصف',
+  subjectFormCodeLabel: 'رمز المادة',
+  subjectFormCodePlaceholder: 'اختر الرمز',
+  subjectFormLangLabel: 'لغة المحتوى',
+  subjectFormLangPlaceholder: 'اختر اللغة',
+  subjectFormPinnedLangHint: 'اللغة محددة مسبقًا لهذه المادة.',
+  subjectFormOrderLabel: 'الترتيب',
+  subjectFormOrderHint: 'يحدد ترتيب العرض ضمن شجرة اللغة ذاتها.',
+  subjectFormActiveLabel: 'نشط',
+  subjectFormActiveLabelOn: 'المادة مرئية للطلاب',
+  subjectFormActiveLabelOff: 'المادة مخفية عن الطلاب',
+  subjectFormCancelBtn: 'إلغاء',
+  subjectFormCreateBtn: 'إنشاء المادة',
+  subjectFormSaveBtn: 'حفظ التغييرات',
+  subjectFormErrNameRequired: 'الاسم مطلوب.',
+  subjectFormErrGradeRequired: 'الصف مطلوب.',
+  subjectFormErrCodeRequired: 'رمز المادة مطلوب.',
+  subjectFormErrLangRequired: 'اللغة مطلوبة.',
+  subjectFormErrOrderInvalid: 'يجب أن يكون الترتيب رقمًا أكبر من أو يساوي ٠.',
+
+  unitsHeading: 'الوحدات',
+  unitsResultCount: 'وحدة',
+  unitsNewUnit: 'وحدة جديدة',
+  unitsNoResults: 'لا توجد وحدات بعد',
+  unitsNoResultsHint: 'أضف الوحدة الأولى لهذه المادة.',
+  unitsTableCaption: 'قائمة وحدات المادة',
+  unitsColOrder: 'الترتيب',
+  unitsColName: 'الاسم',
+  unitsColActive: 'الحالة',
+  unitsLoadingLabel: 'جارٍ تحميل الوحدات…',
+  unitsListError: 'تعذَّر تحميل الوحدات. يرجى المحاولة مرة أخرى.',
+
+  unitFormCreateTitle: 'وحدة جديدة',
+  unitFormCreateSubtitle: 'الوحدات ترث اللغة من المادة الأم.',
+  unitFormEditTitle: 'تعديل الوحدة',
+  unitFormEditSubtitle: 'تحديث تفاصيل الوحدة.',
+  unitFormInheritedLangNotice: 'اللغة: {lang} — موروثة من المادة الأم',
+  unitFormNameLabel: 'اسم الوحدة',
+  unitFormNamePlaceholder: 'مثال: مقدمة في الجبر',
+  unitFormOrderLabel: 'الترتيب',
+  unitFormOrderHint: 'ترتيب العرض ضمن هذه المادة.',
+  unitFormActiveLabel: 'نشط',
+  unitFormActiveLabelOn: 'الوحدة مرئية للطلاب',
+  unitFormActiveLabelOff: 'الوحدة مخفية عن الطلاب',
+  unitFormCancelBtn: 'إلغاء',
+  unitFormCreateBtn: 'إنشاء الوحدة',
+  unitFormSaveBtn: 'حفظ التغييرات',
+  unitFormErrNameRequired: 'اسم الوحدة مطلوب.',
+
+  reorderSaveBtn: 'حفظ الترتيب',
+  reorderMoveUp: 'تحريك للأعلى',
+  reorderMoveDown: 'تحريك للأسفل',
+  reorderDisabledHint: 'اختر لغة واحدة لتمكين إعادة الترتيب',
+  reorderPosition: 'نُقل إلى الموضع',
+  reorderSavedMsg: 'تم حفظ الترتيب.',
+  reorderErrorMsg: 'تعذَّر حفظ الترتيب. يرجى المحاولة مرة أخرى.',
+
+  curriculumDeleteSubjectTitle: 'إزالة المادة',
+  curriculumDeleteUnitTitle: 'إزالة الوحدة',
+  curriculumDeleteSubjectBody: 'ستُخفى هذه المادة من المناهج. يمكن إعادة تفعيلها عند الحاجة. ملاحظة: لا يمكن إزالة المواد التي تحتوي على وحدات — يجب حذف جميع الوحدات أولاً.',
+  curriculumDeleteUnitBody: 'ستُخفى هذه الوحدة من المناهج. يمكن إعادة تفعيلها عند الحاجة. ملاحظة: لا يمكن إزالة الوحدات التي تحتوي على دروس — يجب حذف جميع الدروس أولاً.',
+  curriculumDeleteConfirmSubject: 'إزالة المادة',
+  curriculumDeleteConfirmUnit: 'إزالة الوحدة',
+  curriculumDeleteSuccessSubject: 'تمت إزالة المادة من المناهج.',
+  curriculumDeleteSuccessUnit: 'تمت إزالة الوحدة من المناهج.',
+  curriculumDeleteCancel: 'إلغاء',
+
+  subjectActivateBtn: 'تفعيل',
+  subjectDeactivateBtn: 'إلغاء التفعيل',
+  unitActivateBtn: 'تفعيل',
+  unitDeactivateBtn: 'إلغاء التفعيل',
+  subjectToggleSuccess: 'تم تحديث حالة المادة.',
+  unitToggleSuccess: 'تم تحديث حالة الوحدة.',
+  subjectToggleError: 'تعذَّر تحديث حالة المادة. يرجى المحاولة مرة أخرى.',
+  unitToggleError: 'تعذَّر تحديث حالة الوحدة. يرجى المحاولة مرة أخرى.',
+
+  curriculumNotEmptyError: 'هذا العنصر يحتوي على عناصر فرعية ولا يمكن إزالته. احذف جميع العناصر الفرعية أولاً.',
+  curriculumNetworkError: 'حدث خطأ ما. يُرجى المحاولة مرة أخرى.',
+
+  // ── P7-05 curriculum lifecycle copy (AR) — clLifecycle* namespace ─────────────
+
+  clEntityTypeSubject: 'مادة',
+  clEntityTypeUnit: 'وحدة',
+  clEntityTypeLesson: 'درس',
+  clEntityTypeQuestion: 'سؤال',
+
+  clLifecycleDraft: 'مسودة',
+  clLifecyclePublished: 'منشور',
+  clLifecycleArchived: 'مؤرشف',
+
+  clLifecycleDraftAriaLabel: 'حالة الدورة: مسودة',
+  clLifecyclePublishedAriaLabel: 'حالة الدورة: منشور',
+  clLifecycleArchivedAriaLabel: 'حالة الدورة: مؤرشف',
+
+  clLifecycleStatusLabel: 'حالة الدورة',
+  clLifecycleViewPreview: 'معاينة',
+  clLifecycleSuccessBannerTransitioned: 'تم تحديث حالة الدورة بنجاح.',
+
+  clPublishTitle: 'نشر هذا المحتوى؟',
+  clPublishSubtitle: 'سيتمكن الطلاب من رؤية هذا المحتوى بعد النشر.',
+  clPublishNoticeBody: 'يجعل النشرُ هذا المحتوىَ مرئيًا للطلاب المسجلين. يمكنك إلغاء نشره أو أرشفته لاحقًا.',
+  clPublishConfirm: 'نشر',
+
+  clUnpublishTitle: 'إلغاء نشر هذا المحتوى؟',
+  clUnpublishSubtitle: 'سيعود المحتوى إلى حالة المسودة ولن يكون مرئيًا للطلاب.',
+  clUnpublishNoticeBody: 'سيفقد الطلاب الوصول فورًا. يمكنك إعادة نشره في أي وقت.',
+  clUnpublishConfirm: 'إلغاء النشر',
+
+  clArchiveTitle: 'أرشفة هذا المحتوى؟',
+  clArchiveSubtitle: 'المحتوى المؤرشف مخفي عن الطلاب ولا يمكن نشره مباشرةً.',
+  clArchiveNoticeHeading: 'الأرشفة حالة نهائية للإصدار الحالي.',
+  clArchiveNoticeBody: 'سيفقد الطلاب الوصول فورًا. يمكنك استعادته إلى المسودة في أي وقت، ثم مراجعته وإعادة نشره.',
+  clArchiveConfirm: 'أرشفة',
+
+  clRestoreTitle: 'استعادة إلى المسودة؟',
+  clRestoreSubtitle: 'سيُنقل المحتوى إلى المسودة للمراجعة.',
+  clRestoreNotice: 'تُعيد الاستعادةُ هذا المحتوى إلى المسودة. راجعه ثم أعد نشره عند الاستعداد.',
+  clRestoreConfirm: 'استعادة إلى المسودة',
+
+  clRollbackTitle: 'التراجع إلى الإصدار {N}؟',
+  clRollbackSubtitle: 'نُشر في {formattedDate}',
+  clRollbackVersionDetails: 'تفاصيل الإصدار',
+  clRollbackWarningBody: 'يستبدل التراجعُ المحتوى المنشور الحالي بهذه النسخة القديمة. سيُحفظ الإصدار الحالي في سجل الإصدارات.',
+  clRollbackReasonLabel: 'سبب التراجع',
+  clRollbackReasonPlaceholder: 'اشرح سبب التراجع إلى هذا الإصدار…',
+  clRollbackGuardrailNotice: 'السبب حقل مراجعة على مستوى الواجهة الأمامية فقط ولا يُرسل إلى الخادم. يُسجَّل هنا لأغراض المساءلة.',
+  clRollbackConfirm: 'التراجع إلى الإصدار {N}',
+
+  clVersionHistoryHeading: 'الإصدارات المنشورة',
+  clVersionHistoryCount: 'إصدارات',
+  clVersionHistoryEmpty: 'لا توجد إصدارات منشورة بعد.',
+  clVersionHistoryError: 'تعذَّر تحميل سجل الإصدارات. يرجى المحاولة مرة أخرى.',
+  clVersionPublishedBy: 'نشر بواسطة المعرِّف {N}',
+  clVersionRollbackBtn: 'تراجع',
+  clVersionRollbackAriaLabel: 'التراجع إلى الإصدار {N}',
+
+  clLifecyclePreviewTitle: 'معاينة (لقطة)',
+  clPreviewBack: 'رجوع',
+  clPreviewDraftBanner: 'هذا المحتوى في حالة مسودة — غير مرئي للطلاب بعد.',
+  clPreviewError: 'تعذَّر تحميل المعاينة. يرجى المحاولة مرة أخرى.',
+  clPreviewInvalidJson: 'تعذَّر تحليل لقطة المعاينة كـ JSON. عرض البيانات الخام.',
+  clPreviewImageAlt: 'صورة المحتوى',
+
+  clPreviewFieldName: 'الاسم',
+  clPreviewFieldCountry: 'الدولة',
+  clPreviewFieldSubject: 'رمز المادة',
+  clPreviewFieldLanguage: 'لغة المحتوى',
+  clPreviewFieldOrder: 'الترتيب',
+  clPreviewFieldActive: 'نشط',
+  clPreviewFieldDifficulty: 'الصعوبة',
+  clPreviewFieldLocked: 'مقفل',
+  clPreviewFieldDuration: 'المدة التقديرية',
+  clPreviewFieldExplanation: 'الشرح',
+  clPreviewFieldVisual: 'الصورة',
+  clPreviewFieldBoss: 'درس المدير',
+  clPreviewFieldQuestion: 'نص السؤال',
+  clPreviewFieldType: 'نوع السؤال',
+  clPreviewFieldOptions: 'الخيارات (JSON)',
+  clPreviewFieldCorrectAnswer: 'الإجابة الصحيحة',
+  clPreviewFieldGeneratedBy: 'أنشأه',
+  clPreviewYes: 'نعم',
+  clPreviewNo: 'لا',
+
+  clCoverageHeading: 'تغطية النشر',
+  clCoverageSubheading: 'اعرض حالة النشر لكل مادة في كل صف وكل لغة.',
+  clCoverageGradeLabel: 'الصف',
+  clCoverageGradePlaceholder: 'اختر صفًا',
+  clCoverageGradeHint: 'اختر صفًا لعرض حالة النشر عبر جميع المواد.',
+  clCoverageTableCaption: 'تغطية النشر حسب المادة واللغة',
+  clCoverageColSubject: 'المادة',
+  clCoverageColStatus: 'الحالة',
+  clCoverageSlotNotCreated: 'لم يُنشأ',
+  clCoverageSlotDraft: 'مسودة',
+  clCoverageSlotPublished: 'منشور',
+  clCoverageSlotArchived: 'مؤرشف',
+  clCoverageWarningMissingChip: 'تحذير: هذه المادة لم تُنشر لهذا الصف بعد',
+  clCoverageSuccess: 'جميع المواد منشورة لهذا الصف.',
+  clCoverageError: 'تعذَّر تحميل بيانات التغطية. يرجى المحاولة مرة أخرى.',
+  clCoverageGoToSubjects: 'إدارة المواد',
 };
 
 const STRINGS: Record<Locale, AdminStrings> = { en, ar };
