@@ -2437,4 +2437,22 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="SeatAlreadyActive" xml:space="preserve">
     <value>This child's seat is already active. No reactivation is needed.</value>
   </data>
+  <data name="AllocationTransferSucceeded" xml:space="preserve">
+    <value>Energy transferred successfully. Both children's allowances have been updated.</value>
+  </data>
+  <data name="AllocationTransferCrossFamily" xml:space="preserve">
+    <value>You can only transfer energy between your own children. Cross-family transfers are not allowed.</value>
+  </data>
+  <data name="AllocationTransferExceedsRemaining" xml:space="preserve">
+    <value>The transfer amount exceeds the available unspent allowance for the source child. Already-spent energy cannot be reclaimed.</value>
+  </data>
+  <data name="AllocationTransferSameChild" xml:space="preserve">
+    <value>Source and destination children must be different. You cannot transfer energy from a child to themselves.</value>
+  </data>
+  <data name="AllocationTransferDestinationNoSeat" xml:space="preserve">
+    <value>The specified child does not hold an active seat and cannot receive energy. Only active-seat children are valid transfer targets.</value>
+  </data>
+  <data name="AllocationTransferAmountRequired" xml:space="preserve">
+    <value>Transfer amount must be greater than zero.</value>
+  </data>
 </root>

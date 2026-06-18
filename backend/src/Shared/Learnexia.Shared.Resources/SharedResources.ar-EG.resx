@@ -2436,4 +2436,22 @@
   <data name="SeatAlreadyActive" xml:space="preserve">
     <value>مقعد هذا الطفل نشط بالفعل. لا حاجة لإعادة التفعيل.</value>
   </data>
+  <data name="AllocationTransferSucceeded" xml:space="preserve">
+    <value>تم نقل الطاقة بنجاح. تم تحديث مخصصات كلا الطفلين.</value>
+  </data>
+  <data name="AllocationTransferCrossFamily" xml:space="preserve">
+    <value>يمكنك فقط نقل الطاقة بين أطفالك الخاصين. لا يُسمح بعمليات النقل بين العائلات.</value>
+  </data>
+  <data name="AllocationTransferExceedsRemaining" xml:space="preserve">
+    <value>مبلغ النقل يتجاوز المخصص غير المستنفد المتاح للطفل المصدر. لا يمكن استرداد الطاقة المستهلكة.</value>
+  </data>
+  <data name="AllocationTransferSameChild" xml:space="preserve">
+    <value>يجب أن يكون الطفل المصدر والطفل الوجهة مختلفَين. لا يمكنك نقل الطاقة من طفل إلى نفسه.</value>
+  </data>
+  <data name="AllocationTransferDestinationNoSeat" xml:space="preserve">
+    <value>الطفل المحدد لا يمتلك مقعداً نشطاً ولا يمكنه استقبال الطاقة. الأطفال النشطون ذوو المقاعد فقط هم أهداف نقل صالحة.</value>
+  </data>
+  <data name="AllocationTransferAmountRequired" xml:space="preserve">
+    <value>يجب أن يكون مبلغ النقل أكبر من الصفر.</value>
+  </data>
 </root>

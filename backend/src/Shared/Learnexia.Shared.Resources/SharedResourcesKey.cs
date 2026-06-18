@@ -1825,5 +1825,40 @@
         /// </summary>
         public const string SeatAlreadyActive = "SeatAlreadyActive";
 
+        // ── P10-16 Family allocation redistribution ───────────────────────────────────────────────
+
+        /// <summary>
+        /// Success: allocation transfer completed. Source and destination remaining balances updated.
+        /// </summary>
+        public const string AllocationTransferSucceeded = "AllocationTransferSucceeded";
+
+        /// <summary>
+        /// Rejection: one or both of the specified children do not belong to the authenticated parent's
+        /// family (cross-family transfer rejected — anti-abuse, anti-resale, by construction).
+        /// </summary>
+        public const string AllocationTransferCrossFamily = "AllocationTransferCrossFamily";
+
+        /// <summary>
+        /// Rejection: the requested transfer amount exceeds the source child's unspent remaining
+        /// allowance. Already-spent energy can never be reclaimed or transferred.
+        /// </summary>
+        public const string AllocationTransferExceedsRemaining = "AllocationTransferExceedsRemaining";
+
+        /// <summary>
+        /// Rejection: source child and destination child are the same (self-transfer not allowed).
+        /// </summary>
+        public const string AllocationTransferSameChild = "AllocationTransferSameChild";
+
+        /// <summary>
+        /// Rejection: the destination (or source) child does not hold an active seat
+        /// (NoSeatLocked or no seat reservation). Only active-seat children can be transfer targets.
+        /// </summary>
+        public const string AllocationTransferDestinationNoSeat = "AllocationTransferDestinationNoSeat";
+
+        /// <summary>
+        /// Validation: transfer amount must be a positive integer greater than zero.
+        /// </summary>
+        public const string AllocationTransferAmountRequired = "AllocationTransferAmountRequired";
+
     }
 }
