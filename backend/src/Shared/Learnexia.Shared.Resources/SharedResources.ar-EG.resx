@@ -2467,4 +2467,26 @@
   <data name="PaymentAlreadyRefunded" xml:space="preserve">
     <value>تم استرداد هذه الدفعة بالفعل. لا يلزم اتخاذ أي إجراء استرداد آخر.</value>
   </data>
+  <!-- P10-18 Parent-pause / child access control -->
+  <data name="ChildAccessPausedByParent" xml:space="preserve">
+    <value>قام ولي أمرك بإيقاف وصولك إلى ميزات الذكاء الاصطناعي. اطلب من ولي أمرك إعادة تفعيله.</value>
+  </data>
+  <data name="ChildNotOwnedByParent" xml:space="preserve">
+    <value>يمكنك فقط إدارة وصول أطفالك الخاصين. هذا الطفل لا ينتمي إلى عائلتك.</value>
+  </data>
+  <data name="ChildAlreadyPaused" xml:space="preserve">
+    <value>وصول هذا الطفل إلى الذكاء الاصطناعي متوقف بالفعل. لم يتم إجراء أي تغيير.</value>
+  </data>
+  <data name="ChildAlreadyActive" xml:space="preserve">
+    <value>وصول هذا الطفل إلى الذكاء الاصطناعي مفعّل بالفعل. لم يتم إجراء أي تغيير.</value>
+  </data>
+  <data name="ChildAccessPausedSuccessfully" xml:space="preserve">
+    <value>تم إيقاف وصول طفلك إلى الذكاء الاصطناعي. يمكنك إعادة تفعيله في أي وقت.</value>
+  </data>
+  <data name="ChildAccessUnpausedSuccessfully" xml:space="preserve">
+    <value>تم استئناف وصول طفلك إلى الذكاء الاصطناعي. يمكنه الآن استخدام ميزات الذكاء الاصطناعي مرة أخرى.</value>
+  </data>
+  <data name="ChildAccessStatusRetrieved" xml:space="preserve">
+    <value>تم استرداد حالة وصول الطفل بنجاح.</value>
+  </data>
 </root>

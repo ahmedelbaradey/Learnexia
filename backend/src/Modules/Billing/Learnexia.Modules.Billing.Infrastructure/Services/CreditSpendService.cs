@@ -77,7 +77,7 @@ public class CreditSpendService : ICreditSpendService
         string idempotencyKey,
         CancellationToken ct = default)
     {
-        // ── P10-15-BE-5: Seat-state gate ─────────────────────────────────────────────
+        // ── P10-15-BE-5: Seat-state gate (INDEPENDENT check 1 of 2) ─────────────────
         // Deny spend BEFORE any balance is touched when the child's seat is NoSeatLocked.
         // Purchased (pack) energy is NEVER touched in this path.
         if (!await _seatStateQuery.IsChildSeatActiveAsync(childId, ct))
@@ -89,6 +89,21 @@ public class CreditSpendService : ICreditSpendService
                 FromPurchased : 0,
                 ResultingTotal: 0,
                 Outcome       : DebitOutcome.SeatLocked);
+        }
+
+        // ── P10-18-BE-4: Parent-pause gate (INDEPENDENT check 2 of 2) ────────────────
+        // Deny spend BEFORE any balance is touched when the parent has paused the child.
+        // This check is INDEPENDENT of the seat-state check above — passing check 1 does
+        // NOT skip check 2. No energy is charged for a blocked-paused request.
+        if (!await IsChildNotPausedAsync(childId, ct))
+        {
+            _logger.LogInfo($"CreditSpendService: childId={childId} is parent-paused — spend denied.");
+            return new DebitResult(
+                Charged       : false,
+                FromGranted   : 0,
+                FromPurchased : 0,
+                ResultingTotal: 0,
+                Outcome       : DebitOutcome.ParentPaused);
         }
 
         if (!Enum.TryParse<CreditReasonCode>(reasonCode, ignoreCase: true, out var reasonEnum))
@@ -363,4 +378,26 @@ public class CreditSpendService : ICreditSpendService
     private static bool IsUniqueViolation(DbUpdateException ex)
         => ex.InnerException is Npgsql.PostgresException pg
            && pg.SqlState == Npgsql.PostgresErrorCodes.UniqueViolation;
+
+    /// <summary>
+    /// Returns <see langword="true"/> when the child has NOT been paused by their parent
+    /// (<c>ParentPauseState == Active</c> on the seat row). Direct DB query — independent
+    /// of the seat-state check and of <see cref="_seatStateQuery"/>.
+    /// </summary>
+    private async Task<bool> IsChildNotPausedAsync(int childId, CancellationToken ct)
+    {
+        // A child with no seat reservation at all has no ParentPauseState row, so they
+        // cannot be paused — return true (not paused). The seat gate has already caught
+        // the no-seat case via check 1.
+        var pauseState = await _db.SeatReservations
+            .AsNoTracking()
+            .Where(r => r.ChildId == childId
+                     && (r.Status == Domain.Enums.SeatStatus.Active || r.Status == Domain.Enums.SeatStatus.Reserved))
+            .OrderByDescending(r => r.ReservedAt)
+            .Select(r => (Domain.Enums.ParentPauseState?)r.ParentPauseState)
+            .FirstOrDefaultAsync(ct);
+
+        // null = no row (seat gate would have caught this); default Active = not paused.
+        return pauseState != Domain.Enums.ParentPauseState.Paused;
+    }
 }

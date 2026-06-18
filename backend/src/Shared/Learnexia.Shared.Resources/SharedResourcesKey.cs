@@ -1883,5 +1883,46 @@
         /// </summary>
         public const string PaymentAlreadyRefunded = "PaymentAlreadyRefunded";
 
+        // ── P10-18 Parent-pause / child access control ─────────────────────────────────────────────
+
+        /// <summary>
+        /// Child-facing: returned when a paused child tries to use an AI feature.
+        /// Graceful localized decline — no raw error. "Your parent has paused your AI access."
+        /// </summary>
+        public const string ChildAccessPausedByParent = "ChildAccessPausedByParent";
+
+        /// <summary>
+        /// Parent-facing: returned (HTTP 403) when the parent attempts to pause/unpause/query
+        /// a child that does not belong to their family (IDOR rejection).
+        /// </summary>
+        public const string ChildNotOwnedByParent = "ChildNotOwnedByParent";
+
+        /// <summary>
+        /// Informational: returned when the parent tries to pause a child whose
+        /// <c>ParentPauseState</c> is already <c>Paused</c> (idempotency no-op success).
+        /// </summary>
+        public const string ChildAlreadyPaused = "ChildAlreadyPaused";
+
+        /// <summary>
+        /// Informational: returned when the parent tries to unpause a child whose
+        /// <c>ParentPauseState</c> is already <c>Active</c> (idempotency no-op success).
+        /// </summary>
+        public const string ChildAlreadyActive = "ChildAlreadyActive";
+
+        /// <summary>
+        /// Success: returned when a child's access is successfully paused by the parent.
+        /// </summary>
+        public const string ChildAccessPausedSuccessfully = "ChildAccessPausedSuccessfully";
+
+        /// <summary>
+        /// Success: returned when a child's access is successfully unpaused by the parent.
+        /// </summary>
+        public const string ChildAccessUnpausedSuccessfully = "ChildAccessUnpausedSuccessfully";
+
+        /// <summary>
+        /// Success: returned when the child's access status is retrieved successfully.
+        /// </summary>
+        public const string ChildAccessStatusRetrieved = "ChildAccessStatusRetrieved";
+
     }
 }

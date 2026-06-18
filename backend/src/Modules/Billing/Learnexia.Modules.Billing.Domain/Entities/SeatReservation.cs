@@ -94,6 +94,23 @@ public class SeatReservation : FullAuditedEntity
     /// </summary>
     public string? IdempotencyKey { get; set; }
 
+    // ── P10-18-BE-1: Parent-pause state ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Parent-initiated pause state for this child's AI access (P10-18-BE-1).
+    /// Stored as <c>int</c>. Default = <see cref="ParentPauseState.Active"/> (not paused).
+    ///
+    /// <para>Entirely independent of <see cref="SeatState"/>. Both are checked by the AI
+    /// spend gate as independent conditions; either alone blocks AI spend.</para>
+    /// </summary>
+    public ParentPauseState ParentPauseState { get; set; } = ParentPauseState.Active;
+
+    /// <summary>
+    /// UTC timestamp when <see cref="ParentPauseState"/> was last changed (P10-18-BE-1).
+    /// Null when the parent has never paused this child.
+    /// </summary>
+    public DateTime? ParentPauseStateChangedAt { get; set; }
+
     // ── Timestamps ──────────────────────────────────────────────────────────────
 
     /// <summary>UTC timestamp when the reservation was first written (i.e. when <see cref="SeatStatus.Reserved"/> was set).</summary>

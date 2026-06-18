@@ -50,6 +50,7 @@ public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampl
     private readonly RedirectResponseBuilder _redirectBuilder;
     private readonly IAiTutorRateLimiter _rateLimiter;
     private readonly ICreditSpendService _creditSpend;
+    private readonly IChildAccessStateQuery _childAccessState;
     private readonly CreditCostResolver _costResolver;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILoggerManager _logger;
@@ -65,24 +66,26 @@ public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampl
         RedirectResponseBuilder redirectBuilder,
         IAiTutorRateLimiter rateLimiter,
         ICreditSpendService creditSpend,
+        IChildAccessStateQuery childAccessState,
         CreditCostResolver costResolver,
         IServiceScopeFactory scopeFactory,
         ILoggerManager logger,
         IStringLocalizer<SharedResources> localizer)
     {
-        _currentUser     = currentUser;
-        _learningContext = learningContext;
-        _promptBuilder   = promptBuilder;
-        _safetyLayer     = safetyLayer;
-        _aiCache         = aiCache;
-        _settings        = settings;
-        _redirectBuilder = redirectBuilder;
-        _rateLimiter     = rateLimiter;
-        _creditSpend     = creditSpend;
-        _costResolver    = costResolver;
-        _scopeFactory    = scopeFactory;
-        _logger          = logger;
-        _localizer       = localizer;
+        _currentUser      = currentUser;
+        _learningContext  = learningContext;
+        _promptBuilder    = promptBuilder;
+        _safetyLayer      = safetyLayer;
+        _aiCache          = aiCache;
+        _settings         = settings;
+        _redirectBuilder  = redirectBuilder;
+        _rateLimiter      = rateLimiter;
+        _creditSpend      = creditSpend;
+        _childAccessState = childAccessState;
+        _costResolver     = costResolver;
+        _scopeFactory     = scopeFactory;
+        _logger           = logger;
+        _localizer        = localizer;
     }
 
     public async Task<SimilarExampleResult> Handle(
@@ -114,6 +117,33 @@ public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampl
         var cost = _costResolver.ResolveCost(HelperIntent.SimilarExample);
         var idempotencyKey = Guid.NewGuid().ToString("N");
         var reasonCode = CreditCostResolver.ResolveReasonCode(HelperIntent.SimilarExample);
+
+        // ── P10-18/P10-15 ACCESS GATE: check pause + seat state BEFORE cache or LLM ─
+        // Must run before BOTH the cache-HIT early-return and the cache-MISS LLM path.
+        // Fail-soft: a billing-service outage must never hard-block learning — proceed on exception.
+        try
+        {
+            var accessDecision = await _childAccessState.GetAccessDecisionAsync(childId, cancellationToken);
+            if (accessDecision == ChildAccessDecision.Paused)
+            {
+                _logger.LogInfo($"SimilarExampleCommandHandler: child {childId} is paused by parent — declining (no charge, no content).");
+                return new SimilarExampleResult.Error(
+                    nameof(SharedResourcesKey.ChildAccessPausedByParent),
+                    _localizer[SharedResourcesKey.ChildAccessPausedByParent]);
+            }
+            if (accessDecision == ChildAccessDecision.SeatLocked)
+            {
+                _logger.LogInfo($"SimilarExampleCommandHandler: child {childId} seat is locked — declining (no charge, no content).");
+                return new SimilarExampleResult.Error(
+                    nameof(SharedResourcesKey.ChildSeatLockedNoEnergy),
+                    _localizer[SharedResourcesKey.ChildSeatLockedNoEnergy]);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarn($"SimilarExampleCommandHandler: GetAccessDecisionAsync failed for childId={childId}. Proceeding (fail-soft). {ex.GetType().Name}");
+        }
+        // ─────────────────────────────────────────────────────────────────────────────
 
         // ── P10-03-BE-2: pre-authorize (monthly hard-limit + optional daily hard-stop) ──
         EnergyBalance balance;
@@ -360,6 +390,21 @@ public sealed class SimilarExampleCommandHandler : ICommandHandler<SimilarExampl
             return new SimilarExampleResult.Error(
                 nameof(SharedResourcesKey.AiInsufficientEnergy),
                 _localizer[SharedResourcesKey.AiInsufficientEnergy]);
+        }
+        // Defense-in-depth: access state changed between the pre-flight check and debit.
+        if (debitResult is { Charged: false, Outcome: DebitOutcome.ParentPaused })
+        {
+            _logger.LogInfo($"SimilarExampleCommandHandler: ParentPaused at debit for childId={childId} — graceful decline post-safety.");
+            return new SimilarExampleResult.Error(
+                nameof(SharedResourcesKey.ChildAccessPausedByParent),
+                _localizer[SharedResourcesKey.ChildAccessPausedByParent]);
+        }
+        if (debitResult is { Charged: false, Outcome: DebitOutcome.SeatLocked })
+        {
+            _logger.LogInfo($"SimilarExampleCommandHandler: SeatLocked at debit for childId={childId} — graceful decline post-safety.");
+            return new SimilarExampleResult.Error(
+                nameof(SharedResourcesKey.ChildSeatLockedNoEnergy),
+                _localizer[SharedResourcesKey.ChildSeatLockedNoEnergy]);
         }
         // ─────────────────────────────────────────────────────────────────────────────
 

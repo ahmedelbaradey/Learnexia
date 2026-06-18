@@ -26,4 +26,12 @@ public enum SeatLedgerEventType
 
     /// <summary>A parent applied a choose-active-children selection (P10-15-BE-6).</summary>
     ChoiceApplied = 5,
+
+    // ── P10-18: Parent-pause audit entries ──────────────────────────────────────────
+
+    /// <summary>A parent paused a child's AI access (P10-18-BE-3). No energy or seat writes.</summary>
+    ParentPause = 6,
+
+    /// <summary>A parent unpaused a child's AI access (P10-18-BE-3). No energy or seat writes.</summary>
+    ParentUnpause = 7,
 }

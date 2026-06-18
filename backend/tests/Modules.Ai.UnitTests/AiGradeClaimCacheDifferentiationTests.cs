@@ -151,6 +151,13 @@ public sealed class AiGradeClaimCacheDifferentiationTests
                 It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new DebitResult(true, 3, 0, 97, DebitOutcome.Charged));
 
+        // P10-18/P10-15: access gate — default Allowed so existing tests are unaffected.
+        var childAccess = new Mock<IChildAccessStateQuery>();
+        childAccess.Setup(q => q.GetAccessDecisionAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ChildAccessDecision.Allowed);
+        childAccess.Setup(q => q.IsChildAccessAllowedAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
         var configMock = new Mock<IConfiguration>();
         configMock.Setup(c => c["Billing:HardStopEnabled"]).Returns("false");
         var costResolver = new CreditCostResolver(settings.Object, configMock.Object);
@@ -166,6 +173,7 @@ public sealed class AiGradeClaimCacheDifferentiationTests
             redirectBuilder,
             new AiTutorRateLimiter(),
             creditSpend.Object,
+            childAccess.Object,
             costResolver,
             publisher.Object,
             scopeFactory.Object,
