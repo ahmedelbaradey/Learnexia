@@ -26,6 +26,7 @@ tasks/
     ├── Phase-2-Learning-Core/ P2-xx-BE.md
     ├── Phase-3-Gamification/ P4-xx-BE.md
     ├── Phase-4-AI-Tutor/     P3-xx-BE.md   (AI gateway/safety/prompt, RAG retrieval, explain/hints, adaptivity/mastery/SR/profile)
+    ├── Phase-5-Parent-Analytics/ P5-xx-BE.md  (parent-scoped read API P5-08, weak-area detection P5-02, weekly report P5-01)
     ├── Phase-6-Stabilization/ P6-06-BE.md
     ├── Phase-7-Admin-Console/ P7-xx-BE.md
     ├── Phase-8-Localization/  P8-xx-BE.md

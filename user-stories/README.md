@@ -113,6 +113,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P5-05 View the parent dashboard
 - P5-06 Transition a child to a new grade
 - P5-07 Feed learning data back into the system (calibration loop) *(barrier-to-entry: BE7)*
+- P5-08 Parent-scoped per-child read API *(unblocks the faked parent dashboard; backend fan-out over Gamification/Learning/Billing/Ai behind parent-owns-child authz — added 2026-06-18)*
 
 ### Phase 6 — Stabilization
 - P6-01 Meet API & AI performance targets
