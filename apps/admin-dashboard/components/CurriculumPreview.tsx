@@ -60,6 +60,11 @@ function isSecureImageUrl(url: string): boolean {
   }
   // Must be https (TLS required; block http, javascript, data, blob, etc.)
   if (parsed.protocol !== 'https:') return false;
+  // Block private/loopback/link-local hosts
+  const host = parsed.hostname;
+  if (/^(localhost|127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|0\.0\.0\.0)/.test(host)) return false;
+  // IPv6 loopback [::1], link-local [fe80::…], and ULA [fc00:: / fd00::]
+  if (/^\[?(::1|fe[89ab][0-9a-f]:|fc[0-9a-f]{2}:|fd[0-9a-f]{2}:)/i.test(host)) return false;
   // Extension must appear at the END of the pathname (not query/fragment)
   const pathname = parsed.pathname.toLowerCase();
   const hasSafeExt = /\.(jpe?g|png|webp|gif|svg)$/.test(pathname);

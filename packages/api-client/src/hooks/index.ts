@@ -216,6 +216,79 @@ export {
   type DeleteUnitInput,
 } from './useDeleteUnit';
 
+// --- P7-02 admin curriculum lesson + content-block hooks (Batch 2b-A) ---
+// Lessons CRUD + Reorder + SetActive; ContentBlocks Add/Edit/Delete/Reorder.
+// All target /api/learning/Lessons/* and /api/learning/ContentBlocks/* (AdminOnly).
+// All mutation hooks return BaseResponse<string> — refetch via adminCurriculum.*
+// invalidation; no optimistic update except reorder (local-state-first then save).
+export type {
+  AdminSingleLessonResponse,
+  AdminLessonDetailDto,
+  AddLessonDto,
+  EditLessonDto,
+  AddContentBlockDto,
+  EditContentBlockDto,
+  TextPayload,
+  ImagePayload,
+  VideoPayload,
+  CalloutPayload,
+  ParsedPayload,
+} from './curriculum.types';
+
+export {
+  useLessonsByUnit,
+  type LessonListFilters,
+} from './useLessonsByUnit';
+export { useAdminLesson } from './useAdminLesson';
+export { useCreateLesson } from './useCreateLesson';
+export { useEditLesson } from './useEditLesson';
+export {
+  useDeleteLesson,
+  type DeleteLessonInput,
+} from './useDeleteLesson';
+export {
+  useSetLessonActive,
+  type SetLessonActiveInput,
+} from './useSetLessonActive';
+export {
+  useReorderLessons,
+  type ReorderLessonsInput,
+} from './useReorderLessons';
+
+export { useAddContentBlock } from './useAddContentBlock';
+export {
+  useEditContentBlock,
+  type EditContentBlockInput,
+} from './useEditContentBlock';
+export {
+  useDeleteContentBlock,
+  type DeleteContentBlockInput,
+} from './useDeleteContentBlock';
+export {
+  useReorderContentBlocks,
+  type ReorderContentBlocksInput,
+} from './useReorderContentBlocks';
+
+// --- P7-04 admin curriculum question hooks (Batch 2b-E) ---
+// Questions CRUD + Reorder + SetActive for per-lesson question manager.
+// All target /api/Learning/Questions/* (AdminOnly).
+// All mutation hooks return BaseResponse<string> (message) — refetch via
+// adminCurriculum.questions(lessonId) invalidation; no optimistic updates.
+// CorrectAnswer contract: non-Matching = raw scalar on wire (no JSON.parse/stringify);
+// Matching = JSON object strings (FE is the authoritative serializer).
+export type {
+  AddQuestionPayload,
+  EditQuestionPayload,
+} from './curriculum.types';
+
+export { useAdminQuestionsByLesson } from './useAdminQuestionsByLesson';
+export { useAdminQuestion } from './useAdminQuestion';
+export { useAddQuestion } from './useAddQuestion';
+export { useEditQuestion, type EditQuestionInput } from './useEditQuestion';
+export { useDeleteQuestion, type DeleteQuestionInput } from './useDeleteQuestion';
+export { useReorderQuestions, type ReorderQuestionsInput } from './useReorderQuestions';
+export { useSetQuestionActive, type SetQuestionActiveInput } from './useSetQuestionActive';
+
 // --- P7-05 curriculum lifecycle hooks (Batch 2a-C — lifecycle backbone) ---
 // Publish/Unpublish/Archive/Restore + Rollback + VersionHistory + Preview +
 // PublicationCoverage. All target /api/learning/ContentLifecycle/* (AdminOnly).
