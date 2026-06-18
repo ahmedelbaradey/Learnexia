@@ -2,13 +2,15 @@ using System.Text.Json;
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Application.Services;
 using Learnexia.Modules.Learning.Domain.Entities;
+using Learnexia.Modules.Learning.Domain.Services;
 using Learnexia.Shared.Contracts.Identity;
 using Learnexia.Shared.Kernel.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace Learnexia.Modules.Learning.Infrastructure.Service;
 
 /// <summary>
-/// In-process implementation of <see cref="IRecommendationService"/> (P5-09-BE-3).
+/// In-process implementation of <see cref="IRecommendationService"/> (P5-09-BE-3 / P5-09a).
 ///
 /// Orchestrates the three in-module inputs + the Identity grade seam, calls the pure
 /// <see cref="RecommendationEngine"/>, serialises the result, and upserts the daily row.
@@ -27,6 +29,8 @@ namespace Learnexia.Modules.Learning.Infrastructure.Service;
 ///
 /// JSON serialization: ItemsJson holds System.Text.Json-serialized <c>RecommendationItem[]</c>,
 /// same pattern as <c>StudentLearningProfile.QuestionTypeAffinity</c> and ContentBlock.Payload.
+/// The optional <c>RecommendationItem.PreferredExplanationStyle</c> field is additive — no migration
+/// required; the daily job rewrites every active child's row (P5-09a-BE-3 additive-jsonb contract).
 /// </summary>
 public sealed class RecommendationService : IRecommendationService
 {
@@ -36,6 +40,7 @@ public sealed class RecommendationService : IRecommendationService
     private readonly IStudentProfileService  _profileService;
     private readonly IChildGradeQuery        _gradeQuery;
     private readonly ILoggerManager          _logger;
+    private readonly RecommendationOptions   _options;
 
     // Web defaults: camelCase + case-insensitive for consistency with other jsonb columns.
     private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web);
@@ -46,14 +51,16 @@ public sealed class RecommendationService : IRecommendationService
         IAdaptivityService adaptivityService,
         IStudentProfileService profileService,
         IChildGradeQuery gradeQuery,
-        ILoggerManager logger)
+        ILoggerManager logger,
+        IOptions<RecommendationOptions> options)
     {
-        _repository       = repository;
-        _weakAreaDetector = weakAreaDetector;
+        _repository        = repository;
+        _weakAreaDetector  = weakAreaDetector;
         _adaptivityService = adaptivityService;
-        _profileService   = profileService;
-        _gradeQuery       = gradeQuery;
-        _logger           = logger;
+        _profileService    = profileService;
+        _gradeQuery        = gradeQuery;
+        _logger            = logger;
+        _options           = options.Value;
     }
 
     /// <inheritdoc/>
@@ -81,8 +88,8 @@ public sealed class RecommendationService : IRecommendationService
             // ── 4. Behavioral profile (cold-start safe) ───────────────────────────────────────────
             var profile = await _profileService.GetProfile(studentId, ct);
 
-            // ── 5. Run the pure engine (no I/O, deterministic) ───────────────────────────────────
-            var items = RecommendationEngine.Compute(weakAreas, adaptivityDecisions, profile, grade);
+            // ── 5. Run the pure engine (no I/O, deterministic), passing RecommendationOptions ──────
+            var items = RecommendationEngine.Compute(weakAreas, adaptivityDecisions, profile, grade, _options);
 
             // ── 6. Serialise → upsert ─────────────────────────────────────────────────────────────
             var itemsJson = JsonSerializer.Serialize(items, JsonOpts);
@@ -98,14 +105,14 @@ public sealed class RecommendationService : IRecommendationService
             await _repository.UpsertStudentRecommendationAsync(recommendation, ct);
 
             _logger.LogInfo(
-                $"P5-09: RecommendationService.ComputeAndUpsertAsync — studentId={studentId}, date={date}, itemCount={items.Length}.");
+                $"P5-09a: RecommendationService.ComputeAndUpsertAsync — studentId={studentId}, date={date}, itemCount={items.Length}.");
         }
         catch (Exception ex)
         {
             // Log but do NOT rethrow — a single-student failure must not abort the sweep.
             // Mirrors StudentProfileService.RecomputeProfile and AdaptivityService defensive coding.
             _logger.LogError(ex,
-                $"P5-09: RecommendationService.ComputeAndUpsertAsync failed for studentId={studentId}, date={date}.");
+                $"P5-09a: RecommendationService.ComputeAndUpsertAsync failed for studentId={studentId}, date={date}.");
         }
     }
 }

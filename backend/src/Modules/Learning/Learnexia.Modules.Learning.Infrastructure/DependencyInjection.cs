@@ -55,6 +55,11 @@ public static class DependencyInjection
         // so it does not participate in any caller's scope. Mirrors SpacedRepetitionSweepJob registration.
         services.AddTransient<StudentProfileRecomputeJob>();
 
+        // P5-09a-BE-1: Recommendation Engine options (Domain, same pattern as AdaptivityOptions).
+        // Placed before service registration so the options are available when the service is resolved.
+        services.Configure<RecommendationOptions>(
+            configuration.GetSection(RecommendationOptions.SectionName));
+
         // P5-09-BE-3: Recommendation computation + persistence service (Option C — EF only here).
         services.AddScoped<IRecommendationService, RecommendationService>();
 
