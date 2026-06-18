@@ -42,7 +42,9 @@ const isRtl = directionForLocale(ADMIN_LOCALE) === 'rtl';
 
 /**
  * A real nav entry that renders an anchor via Next.js `<Link>`.
- * `href` is the route prefix; active = pathname starts with href.
+ * `href` is the destination route. `activePrefix` (optional) widens the
+ * active-detection range — e.g. curriculum links to `/curriculum/subjects` but
+ * must highlight for any `/curriculum/*` sub-route.
  */
 interface RealNavItem {
   kind: 'real';
@@ -50,6 +52,8 @@ interface RealNavItem {
   label: string;
   icon: string;
   href: string;
+  /** Optional broader prefix for active detection (falls back to `href`). */
+  activePrefix?: string;
 }
 
 /**
@@ -74,10 +78,12 @@ const NAV_ITEMS: readonly NavItem[] = [
     href: '/users',
   },
   {
-    kind: 'placeholder',
+    kind: 'real',
     key: 'curriculum',
     label: strings.navCurriculum,
     icon: '📚',
+    href: '/curriculum/subjects',
+    activePrefix: '/curriculum',
   },
   {
     kind: 'placeholder',
@@ -140,15 +146,18 @@ export function AdminSideNav({ isOpen = false, onClose }: AdminSideNavProps) {
         <Stack tag="ul" flex={1} flexDirection="column" gap={4} padding="$4" margin={0}>
           {NAV_ITEMS.map((item) => {
             if (item.kind === 'real') {
+              const prefix = item.activePrefix ?? item.href;
               const isActive =
                 pathname === item.href ||
-                pathname.startsWith(`${item.href}/`);
+                pathname.startsWith(`${prefix}/`) ||
+                pathname === prefix;
 
               return (
                 <Stack tag="li" key={item.key}>
                   <Link
                     href={item.href}
                     aria-current={isActive ? 'page' : undefined}
+                    data-testid={`nav-${item.key}`}
                     style={{ textDecoration: 'none', display: 'block' }}
                   >
                     <Stack

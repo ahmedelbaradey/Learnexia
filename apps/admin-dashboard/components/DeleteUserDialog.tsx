@@ -137,6 +137,7 @@ export function DeleteUserDialog({
   const confirmButton = (
     <button
       type="button"
+      data-testid="dialog-confirm-btn"
       onClick={handleConfirm}
       disabled={isPending}
       aria-disabled={!canSubmit || isPending}
@@ -192,6 +193,7 @@ export function DeleteUserDialog({
       subtitle={strings.lifecycleDeleteSubtitle}
       cancelLabel={cancelLabel}
       confirmButton={confirmButton}
+      dialogTestId="delete-dialog"
     >
       {/* Soft-delete warning notice */}
       <Stack
@@ -232,6 +234,7 @@ export function DeleteUserDialog({
           >
             <input
               type="checkbox"
+              data-testid="delete-cascade-checkbox"
               checked={cascadeChildren}
               onChange={(e) => setCascadeChildren(e.target.checked)}
               style={{

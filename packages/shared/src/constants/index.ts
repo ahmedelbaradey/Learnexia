@@ -140,3 +140,87 @@ export const ACCOUNT_STATUS = {
 
 export type AccountStatusValue =
   (typeof ACCOUNT_STATUS)[keyof typeof ACCOUNT_STATUS];
+
+// ── P7-01 Curriculum enum const maps ─────────────────────────────────────────
+//
+// Wire values mirror the backend Learning domain enums (stored + serialised as int
+// via HasConversion<int>). Never compare raw ints inline — use these constants.
+
+/**
+ * SubjectCode — the 4 permitted content domains (no Social Studies).
+ * Mirrors `Domain/Enums/SubjectCode.cs` in the Learning module.
+ *
+ * Wire value: int. Backend rejects any value outside {0,1,2,3}.
+ * Pinned language rules:
+ *   ARABIC  → ContentLanguage.Ar (0) only
+ *   ENGLISH → ContentLanguage.En (1) only
+ *   MATH / SCIENCE → both languages permitted
+ */
+export const SUBJECT_CODE = {
+  MATH:    0,
+  SCIENCE: 1,
+  ARABIC:  2,
+  ENGLISH: 3,
+} as const;
+
+export type SubjectCodeValue = (typeof SUBJECT_CODE)[keyof typeof SUBJECT_CODE];
+
+/**
+ * ContentLanguage — the two content/learning languages.
+ * Mirrors `Domain/Enums/ContentLanguage.cs` in the Learning module.
+ *
+ * This is the CONTENT language (curriculum medium), distinct from the admin/
+ * student UI locale (`Locale` = 'ar' | 'en').
+ *
+ * Wire value: int. Units inherit language from their owning Subject — no
+ * `language` column below the Subject level.
+ */
+export const CONTENT_LANGUAGE = {
+  Ar: 0,
+  En: 1,
+} as const;
+
+export type ContentLanguageValue = (typeof CONTENT_LANGUAGE)[keyof typeof CONTENT_LANGUAGE];
+
+// ── P7-05 Lifecycle enum const maps ──────────────────────────────────────────
+//
+// Appended after P7-01's SUBJECT_CODE/CONTENT_LANGUAGE block (disjoint region).
+// Wire values mirror the backend Learning domain enums. NOT 0-based.
+
+/**
+ * LifecycleState — curriculum publish lifecycle axis (P7-05).
+ * Mirrors `Learning.Domain.Enums.LifecycleState`. NOT 0-based.
+ *
+ * This is the Draft/Published/Archived axis, entirely separate from the
+ * IsActive boolean axis owned by P7-01..04. Never conflate the two.
+ *
+ * Wire values:
+ *   Draft     = 1  — content not yet ready for students.
+ *   Published = 2  — content live and visible to students.
+ *   Archived  = 3  — content removed from active curriculum; reversible.
+ */
+export const LIFECYCLE_STATE = {
+  Draft:     1,
+  Published: 2,
+  Archived:  3,
+} as const;
+
+export type LifecycleStateValue =
+  (typeof LIFECYCLE_STATE)[keyof typeof LIFECYCLE_STATE];
+
+/**
+ * VersionedEntityType — curriculum entity type discriminator (P7-05).
+ * Mirrors `Learning.Domain.Enums.VersionedEntityType`. NOT 0-based.
+ *
+ * Used in every ContentLifecycle endpoint as `entityType: number`.
+ * Route slug mapping: subject=1, unit=2, lesson=3, quiz=4.
+ */
+export const VERSIONED_ENTITY_TYPE = {
+  Subject:      1,
+  Unit:         2,
+  Lesson:       3,
+  QuizQuestion: 4,
+} as const;
+
+export type VersionedEntityTypeValue =
+  (typeof VERSIONED_ENTITY_TYPE)[keyof typeof VERSIONED_ENTITY_TYPE];

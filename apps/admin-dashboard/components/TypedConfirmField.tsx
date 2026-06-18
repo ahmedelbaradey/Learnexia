@@ -77,6 +77,7 @@ export function TypedConfirmField({
       {/* Target display box — always LTR (ASCII/Latin technical string) */}
       <div
         dir="ltr"
+        data-testid="typed-confirm-target"
         style={{
           fontFamily: 'var(--lx-font-mono, monospace)',
           fontSize: 13,
@@ -104,6 +105,7 @@ export function TypedConfirmField({
           id={id}
           type="text"
           dir="ltr"
+          data-testid="typed-confirm-input"
           value={value}
           onChange={handleChange}
           placeholder={placeholder}
@@ -142,7 +144,7 @@ export function TypedConfirmField({
       </div>
 
       {/* Match indicator — only when there is a match */}
-      <div id={`${id}-match`} aria-live="polite">
+      <div id={`${id}-match`} aria-live="polite" data-testid="typed-confirm-match">
         {isMatch && (
           <Text
             fontFamily="$body"

@@ -33,6 +33,8 @@ export interface ReasonFieldProps {
   error?: string;
   disabled?: boolean;
   placeholder?: string;
+  /** Optional stable test hook applied to the outermost Stack. */
+  testId?: string;
 }
 
 export function ReasonField({
@@ -45,6 +47,7 @@ export function ReasonField({
   error,
   disabled = false,
   placeholder,
+  testId,
 }: ReasonFieldProps) {
   const charCount = value.length;
   const isNearLimit = charCount >= NEAR_LIMIT_THRESHOLD;
@@ -72,7 +75,7 @@ export function ReasonField({
   );
 
   return (
-    <Stack flexDirection="column" gap="$1">
+    <Stack flexDirection="column" gap="$1" data-testid={testId ?? 'reason-field'}>
       {/* Label row */}
       <Stack flexDirection="row" justifyContent="space-between" alignItems="baseline">
         <label
@@ -162,6 +165,7 @@ export function ReasonField({
             role="alert"
             fontFamily="$body"
             fontSize={12}
+            data-testid="reason-field-error"
             style={{ color: 'var(--lx-danger)' }}
           >
             {error}
@@ -175,6 +179,7 @@ export function ReasonField({
           fontSize={12}
           aria-live="polite"
           aria-label={`${charCount} of ${maxLength} characters`}
+          data-testid="reason-field-counter"
           style={{ color: counterColor, fontVariantNumeric: 'tabular-nums' }}
         >
           {charCount} / {maxLength}

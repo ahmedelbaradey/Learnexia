@@ -128,7 +128,7 @@ function getLangDisplay(code: string | null | undefined): string {
 
 function mapProfilePatchError(err: unknown): string {
   if (isApiError(err)) {
-    if (err.status === 422) return strings.gradeError422; // unsupported language/country
+    if (err.status === 422) return strings.childProfileError422; // unsupported language/country
     if (err.status === 404) return strings.gradeError404;
   }
   return strings.langErrorNetwork;
@@ -199,7 +199,7 @@ export default function ChildEditPage({ params }: PageProps) {
           setLangTouched(false);
           setCountry('');
           setPreferredLanguage('');
-          setBanner({ message: strings.childEditSaveChanges + ' — ' + strings.gradeDialogSuccess, variant: 'success' });
+          setBanner({ message: strings.childProfileSaveSuccess, variant: 'success' });
           setTimeout(() => setBanner(null), 5000);
         },
         onError: (err) => {
@@ -265,7 +265,9 @@ export default function ChildEditPage({ params }: PageProps) {
     return (
       <AdminShell title={strings.childEditPageTitle}>
         <Stack flexDirection="column" gap="$4">
-          <AdminErrorBanner variant="warning" message={strings.childEditNotStudent} />
+          <div data-testid="child-edit-not-student-warning">
+            <AdminErrorBanner variant="warning" message={strings.childEditNotStudent} />
+          </div>
           <button
             type="button"
             onClick={() => router.push(`/users/${userId}`)}
@@ -391,7 +393,9 @@ export default function ChildEditPage({ params }: PageProps) {
 
         {/* Banner — success or error above the form */}
         {banner && (
-          <AdminErrorBanner variant={banner.variant} message={banner.message} />
+          <div data-testid="child-edit-banner">
+            <AdminErrorBanner variant={banner.variant} message={banner.message} />
+          </div>
         )}
 
         {/* Page heading row */}
@@ -460,6 +464,7 @@ export default function ChildEditPage({ params }: PageProps) {
             <input
               id="edit-country"
               type="text"
+              data-testid="child-edit-country"
               value={displayCountry}
               onChange={(e) => {
                 setCountry(e.target.value);
@@ -509,6 +514,7 @@ export default function ChildEditPage({ params }: PageProps) {
             </label>
             <select
               id="edit-display-lang"
+              data-testid="child-edit-display-lang"
               value={displayLang}
               onChange={(e) => {
                 setPreferredLanguage(e.target.value);
@@ -610,6 +616,7 @@ export default function ChildEditPage({ params }: PageProps) {
             <div>
               <button
                 type="button"
+                data-testid="child-edit-change-lang-btn"
                 onClick={() => setLangDialogOpen(true)}
                 disabled={!currentLearningLang}
                 style={{
@@ -689,6 +696,7 @@ export default function ChildEditPage({ params }: PageProps) {
             <div>
               <button
                 type="button"
+                data-testid="child-edit-override-grade-btn"
                 onClick={() => setGradeDialogOpen(true)}
                 style={{
                   height: 36,
@@ -763,6 +771,7 @@ export default function ChildEditPage({ params }: PageProps) {
             {/* Save Changes — disabled when no changes, or when saving */}
             <button
               type="button"
+              data-testid="child-edit-save-btn"
               onClick={handleSave}
               disabled={!hasChanges || isSaving}
               aria-disabled={!hasChanges || isSaving}

@@ -192,6 +192,7 @@ export function ChangeLearningLanguageDialog({
   const confirmButton = (
     <button
       type="button"
+      data-testid="dialog-confirm-btn"
       onClick={handleConfirm}
       disabled={isPending}
       aria-disabled={!canSubmit || isPending}
@@ -245,6 +246,7 @@ export function ChangeLearningLanguageDialog({
       subtitle={strings.langDialogSubtitle}
       cancelLabel={ADMIN_LOCALE === 'ar' ? strings.childEditCancel : 'Cancel'}
       confirmButton={confirmButton}
+      dialogTestId="change-language-dialog"
     >
       {/* Destructive warning block */}
       <Stack
@@ -252,6 +254,7 @@ export function ChangeLearningLanguageDialog({
         gap="$3"
         padding="$4"
         borderRadius="$sm"
+        data-testid="lang-loss-block"
         style={{
           backgroundColor: 'rgba(239,68,68,0.08)',
           border: '1px solid rgba(239,68,68,0.25)',
@@ -275,7 +278,7 @@ export function ChangeLearningLanguageDialog({
         </Stack>
 
         {/* Kept list */}
-        <Stack flexDirection="row" gap="$2" alignItems="flex-start">
+        <Stack flexDirection="row" gap="$2" alignItems="flex-start" data-testid="lang-kept-line">
           <span
             aria-hidden="true"
             style={{ color: '#22C55E', flexShrink: 0, marginTop: 2, display: 'inline-flex' }}
@@ -341,6 +344,7 @@ export function ChangeLearningLanguageDialog({
         </label>
         <select
           id="lang-select"
+          data-testid="lang-select"
           value={selectedLanguage ?? ''}
           onChange={(e) => setSelectedLanguage((e.target.value || null) as 'ar' | 'en' | null)}
           style={{

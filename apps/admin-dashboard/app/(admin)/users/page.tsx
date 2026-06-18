@@ -169,6 +169,7 @@ function Pagination({ currentPage, totalPages, onPrev, onNext }: PaginationProps
       <button
         type="button"
         aria-label={strings.usersPrevPage}
+        data-testid="users-pagination-prev"
         disabled={isFirst}
         onClick={onPrev}
         style={btnStyle(isFirst)}
@@ -181,6 +182,7 @@ function Pagination({ currentPage, totalPages, onPrev, onNext }: PaginationProps
         fontSize={14}
         color="$fg2"
         dir="ltr"
+        data-testid="users-page-indicator"
         style={{ fontVariantNumeric: 'tabular-nums' }}
       >
         {pageText}
@@ -189,6 +191,7 @@ function Pagination({ currentPage, totalPages, onPrev, onNext }: PaginationProps
       <button
         type="button"
         aria-label={strings.usersNextPage}
+        data-testid="users-pagination-next"
         disabled={isLast}
         onClick={onNext}
         style={btnStyle(isLast)}
@@ -300,6 +303,7 @@ export default function UsersPage() {
             paddingHorizontal={10}
             paddingVertical={4}
             borderRadius="$pill"
+            data-testid="users-result-count"
             style={{ backgroundColor: 'var(--lx-card-soft)' }}
           >
             <Text fontFamily="$body" fontSize={12} color="$fg3">
@@ -342,6 +346,7 @@ export default function UsersPage() {
           <input
             id="users-search"
             type="search"
+            data-testid="users-search-input"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={strings.usersListSearchPlaceholder}
@@ -377,6 +382,7 @@ export default function UsersPage() {
           </label>
           <select
             id="users-role-filter"
+            data-testid="users-role-filter"
             value={role}
             onChange={(e) => setRole(e.target.value)}
             style={selectStyle}
@@ -400,6 +406,7 @@ export default function UsersPage() {
           </label>
           <select
             id="users-status-filter"
+            data-testid="users-status-filter"
             value={status}
             onChange={(e) => setStatus(e.target.value)}
             style={selectStyle}
@@ -420,6 +427,7 @@ export default function UsersPage() {
         {hasActiveFilters && (
           <button
             type="button"
+            data-testid="users-clear-filters"
             onClick={clearFilters}
             style={{
               height: 36,
@@ -446,6 +454,7 @@ export default function UsersPage() {
           <div
             role="status"
             aria-label={strings.usersListLoadingLabel}
+            data-testid="users-loading"
             style={{
               backgroundColor: 'var(--lx-card)',
               borderRadius: 'var(--lx-radius-card)',
@@ -490,7 +499,7 @@ export default function UsersPage() {
         )}
 
         {showError && (
-          <Stack flexDirection="column" gap="$4">
+          <Stack flexDirection="column" gap="$4" data-testid="users-error-banner">
             <AdminErrorBanner
               variant="error"
               message={strings.usersListError}
@@ -522,6 +531,7 @@ export default function UsersPage() {
             justifyContent="center"
             padding="$10"
             gap="$4"
+            data-testid="users-empty-state"
             style={{
               backgroundColor: 'var(--lx-card)',
               borderRadius: 'var(--lx-radius-card)',
@@ -586,7 +596,7 @@ export default function UsersPage() {
                 transition: 'opacity var(--lx-dur-fast) var(--lx-ease-out)',
               }}
             >
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table data-testid="users-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <caption className="sr-only">{strings.usersTableCaption}</caption>
                 <thead>
                   <tr style={{ backgroundColor: 'var(--lx-card-soft)' }}>
@@ -671,6 +681,7 @@ function UserRow({ user, onClick }: UserRowProps) {
       tabIndex={0}
       role="button"
       aria-label={`${user.fullName} — ${strings.usersViewProfile}`}
+      data-testid={`users-row-${user.id}`}
       onClick={onClick}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {

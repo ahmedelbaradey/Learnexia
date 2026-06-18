@@ -327,7 +327,9 @@ export default function UserDetailPage({ params }: PageProps) {
       <Stack flexDirection="column" gap="$6">
         {/* P7-07 success banner — shown after lifecycle actions */}
         {successBanner && (
-          <AdminErrorBanner variant={successBanner.variant} message={successBanner.message} />
+          <div data-testid="user-detail-success-banner">
+            <AdminErrorBanner variant={successBanner.variant} message={successBanner.message} />
+          </div>
         )}
 
         {/* Loading state */}
@@ -376,6 +378,7 @@ export default function UserDetailPage({ params }: PageProps) {
               gap="$6"
               padding="$6"
               borderRadius="$card"
+              data-testid="user-detail-header"
               style={{
                 backgroundColor: 'var(--lx-card)',
                 border: '1px solid var(--lx-border)',
@@ -433,8 +436,12 @@ export default function UserDetailPage({ params }: PageProps) {
 
                 {/* Badges row */}
                 <Stack flexDirection="row" gap="$2" flexWrap="wrap" marginTop="$1">
-                  <StatusBadge variant="role" value={profile.role} strings={strings} />
-                  <StatusBadge variant="status" value={profile.accountStatus} strings={strings} />
+                  <span data-testid="user-detail-role-badge">
+                    <StatusBadge variant="role" value={profile.role} strings={strings} />
+                  </span>
+                  <span data-testid="user-detail-status-badge">
+                    <StatusBadge variant="status" value={profile.accountStatus} strings={strings} />
+                  </span>
                 </Stack>
 
                 {/* Status reason — only when present */}
@@ -465,6 +472,7 @@ export default function UserDetailPage({ params }: PageProps) {
                     padding="$2"
                     paddingHorizontal="$3"
                     borderRadius="$sm"
+                    data-testid="lifecycle-terminal-notice"
                     style={{
                       backgroundColor: 'rgba(239,68,68,0.08)',
                       border: '1px solid rgba(239,68,68,0.15)',
@@ -483,6 +491,7 @@ export default function UserDetailPage({ params }: PageProps) {
                     {profile.accountStatus === ACCOUNT_STATUS.Active && (
                       <button
                         type="button"
+                        data-testid="lifecycle-suspend-btn"
                         onClick={() => setSuspendOpen(true)}
                         aria-label={`${strings.lifecycleSuspendButton} — ${profile.fullName}`}
                         style={{
@@ -523,6 +532,7 @@ export default function UserDetailPage({ params }: PageProps) {
                     {profile.accountStatus === ACCOUNT_STATUS.Suspended && (
                       <button
                         type="button"
+                        data-testid="lifecycle-reactivate-btn"
                         onClick={() => setReactivateOpen(true)}
                         aria-label={`${strings.lifecycleReactivateButton} — ${profile.fullName}`}
                         style={{
@@ -562,6 +572,7 @@ export default function UserDetailPage({ params }: PageProps) {
                     {/* Delete button — Active and Suspended (danger styling) */}
                     <button
                       type="button"
+                      data-testid="lifecycle-delete-btn"
                       onClick={() => setDeleteOpen(true)}
                       aria-label={`${strings.lifecycleDeleteButton} — ${profile.fullName}`}
                       style={{
@@ -750,6 +761,7 @@ export default function UserDetailPage({ params }: PageProps) {
                         gap="$1"
                         padding="$3"
                         borderRadius="$sm"
+                        data-testid="user-detail-lang-preferred"
                         style={{
                           backgroundColor: 'rgba(79,70,229,0.08)',
                           border: '1px solid rgba(79,70,229,0.15)',
@@ -785,6 +797,7 @@ export default function UserDetailPage({ params }: PageProps) {
                         gap="$1"
                         padding="$3"
                         borderRadius="$sm"
+                        data-testid="user-detail-lang-learning"
                         style={{
                           backgroundColor: 'rgba(168,85,247,0.08)',
                           border: '1px solid rgba(168,85,247,0.15)',
@@ -816,6 +829,7 @@ export default function UserDetailPage({ params }: PageProps) {
                       <Stack flexDirection="row" marginTop="$2">
                         <Link
                           href={`/users/${userId}/edit`}
+                          data-testid="child-edit-entry-btn"
                           style={{
                             height: 36,
                             paddingInline: 14,
@@ -851,10 +865,14 @@ export default function UserDetailPage({ params }: PageProps) {
                 </Stack>
 
                 {/* Family panel — loads independently */}
-                <UserFamilyPanel userId={userId} />
+                <div data-testid="user-family-panel">
+                  <UserFamilyPanel userId={userId} />
+                </div>
 
                 {/* Activity panel — loads independently */}
-                <UserActivityPanel userId={userId} />
+                <div data-testid="user-activity-panel">
+                  <UserActivityPanel userId={userId} />
+                </div>
               </Stack>
 
               {/* Secondary column — Actions card */}
