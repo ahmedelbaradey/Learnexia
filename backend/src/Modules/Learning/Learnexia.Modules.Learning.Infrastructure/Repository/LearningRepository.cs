@@ -770,4 +770,54 @@ public class LearningRepository : ILearningRepository
             .AsNoTracking()
             .Where(p => p.LastRecomputedAt == null || p.LastRecomputedAt < cutoffUtc)
             .ToListAsync(ct);
+
+    // ── Student Recommendations (P5-09) ───────────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public async Task<List<int>> GetStudentIdsWithProfileAsync(CancellationToken ct = default)
+        => await RepositoryContext.StudentLearningProfiles
+            .AsNoTracking()
+            .Select(p => p.StudentId)
+            .Distinct()
+            .ToListAsync(ct);
+
+    /// <inheritdoc/>
+    public async Task<StudentRecommendation?> GetLatestRecommendationAsync(
+        int studentId, CancellationToken ct = default)
+        => await RepositoryContext.StudentRecommendations
+            .AsNoTracking()
+            .Where(r => r.StudentId == studentId)
+            .OrderByDescending(r => r.RecommendationDate)
+            .FirstOrDefaultAsync(ct);
+
+    /// <inheritdoc/>
+    public async Task<StudentRecommendation?> GetRecommendationForDateAsync(
+        int studentId, DateOnly date, CancellationToken ct = default)
+        => await RepositoryContext.StudentRecommendations
+            .FirstOrDefaultAsync(r => r.StudentId == studentId && r.RecommendationDate == date, ct);
+
+    /// <inheritdoc/>
+    public async Task UpsertStudentRecommendationAsync(
+        StudentRecommendation recommendation, CancellationToken ct = default)
+    {
+        var existing = await RepositoryContext.StudentRecommendations
+            .FirstOrDefaultAsync(
+                r => r.StudentId == recommendation.StudentId &&
+                     r.RecommendationDate == recommendation.RecommendationDate,
+                ct);
+
+        if (existing is null)
+        {
+            // Insert path — stage the new row; caller commits.
+            await RepositoryContext.StudentRecommendations.AddAsync(recommendation, ct);
+        }
+        else
+        {
+            // Update path — mutate the tracked entity in-place (idempotent upsert).
+            existing.ItemsJson      = recommendation.ItemsJson;
+            existing.GeneratedAtUtc = recommendation.GeneratedAtUtc;
+
+            RepositoryContext.StudentRecommendations.Update(existing);
+        }
+    }
 }

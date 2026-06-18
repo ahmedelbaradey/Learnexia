@@ -329,4 +329,40 @@ public interface ILearningRepository : IGenericRepository
     /// AsNoTracking; grade-agnostic (no grade filter — grade transitions must not reset the profile).
     /// </summary>
     Task<List<StudentLearningProfile>> GetStaleProfilesAsync(DateTime cutoffUtc, CancellationToken ct = default);
+
+    // ── Student Recommendations (P5-09) ───────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns all distinct active student IDs that have at least one
+    /// <see cref="StudentLearningProfile"/> row (proxy for "has data, worth computing").
+    /// Used by <c>RecommendationRecomputeJob</c> to sweep all students that have a profile.
+    /// Returns an empty list when no profiles exist.
+    /// AsNoTracking.
+    /// </summary>
+    Task<List<int>> GetStudentIdsWithProfileAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the most recently persisted <see cref="StudentRecommendation"/> row for the given
+    /// student (ordered by <c>RecommendationDate</c> descending), or null when no row exists.
+    /// Used by <c>IStudentRecommendationsQuery</c> to read the latest daily set.
+    /// AsNoTracking.
+    /// </summary>
+    Task<StudentRecommendation?> GetLatestRecommendationAsync(int studentId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the <see cref="StudentRecommendation"/> row for the given
+    /// <c>(studentId, date)</c> pair, or null when none exists.
+    /// Used by <c>RecommendationService</c> to check whether an upsert is an insert or update.
+    /// Tracking — the caller may mutate the returned row and rely on EF change tracking.
+    /// </summary>
+    Task<StudentRecommendation?> GetRecommendationForDateAsync(int studentId, DateOnly date, CancellationToken ct = default);
+
+    /// <summary>
+    /// Stages an upsert of a <see cref="StudentRecommendation"/> row.
+    /// If an existing tracked row is supplied, it is mutated in-place (EF tracks the change).
+    /// If no existing row is found (insert path), a new row is added to the DbSet.
+    /// Stages the change only — the caller (background job) commits explicitly via
+    /// <c>LearningDbContext.SaveChangesAsync(userId:0)</c>.
+    /// </summary>
+    Task UpsertStudentRecommendationAsync(StudentRecommendation recommendation, CancellationToken ct = default);
 }

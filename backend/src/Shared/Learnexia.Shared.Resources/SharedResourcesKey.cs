@@ -2020,5 +2020,46 @@
         /// </summary>
         public const string WeeklyReportNotYetGenerated = "WeeklyReportNotYetGenerated";
 
+        // ── P5-09 Recommendation engine — endpoint + i18n keys ─────────────────────────────────
+
+        /// <summary>Returned when the child's daily recommendations are retrieved successfully.</summary>
+        public const string RecommendationsRetrievedSuccessfully = "RecommendationsRetrievedSuccessfully";
+
+        // ── P5-09 Recommendation item i18n keys (persisted as keys; resolved at display time) ──
+
+        /// <summary>
+        /// Title key for a "Review the concept" recommendation (High-severity weak area).
+        /// Resolver maps this to a localised string: EN "Time to review" / AR equivalent.
+        /// </summary>
+        public const string RecReviewTitle = "RecReviewTitle";
+
+        /// <summary>Body key for the Review recommendation.</summary>
+        public const string RecReviewBody = "RecReviewBody";
+
+        /// <summary>Call-to-action key for the Review recommendation.</summary>
+        public const string RecReviewCta = "RecReviewCta";
+
+        /// <summary>
+        /// Title key for a "Practice the skill" recommendation (Medium/Low-severity weak area).
+        /// </summary>
+        public const string RecPracticeTitle = "RecPracticeTitle";
+
+        /// <summary>Body key for the Practice recommendation.</summary>
+        public const string RecPracticeBody = "RecPracticeBody";
+
+        /// <summary>Call-to-action key for the Practice recommendation.</summary>
+        public const string RecPracticeCta = "RecPracticeCta";
+
+        /// <summary>
+        /// Title key for the cold-start / encouraging recommendation (no weak areas yet).
+        /// </summary>
+        public const string RecColdStartTitle = "RecColdStartTitle";
+
+        /// <summary>Body key for the cold-start recommendation.</summary>
+        public const string RecColdStartBody = "RecColdStartBody";
+
+        /// <summary>Call-to-action key for the cold-start recommendation.</summary>
+        public const string RecColdStartCta = "RecColdStartCta";
+
     }
 }

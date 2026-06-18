@@ -2550,4 +2550,36 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="WeeklyReportNotYetGenerated" xml:space="preserve">
     <value>No weekly report has been generated yet for this child.</value>
   </data>
+  <!-- P5-09 Recommendation engine endpoint -->
+  <data name="RecommendationsRetrievedSuccessfully" xml:space="preserve">
+    <value>Recommendations retrieved successfully.</value>
+  </data>
+  <!-- P5-09 Recommendation item i18n keys (stored as keys; resolved at display time) -->
+  <data name="RecReviewTitle" xml:space="preserve">
+    <value>Time to review</value>
+  </data>
+  <data name="RecReviewBody" xml:space="preserve">
+    <value>You have a weak area that needs concept review before practice.</value>
+  </data>
+  <data name="RecReviewCta" xml:space="preserve">
+    <value>Review concept</value>
+  </data>
+  <data name="RecPracticeTitle" xml:space="preserve">
+    <value>Keep practising</value>
+  </data>
+  <data name="RecPracticeBody" xml:space="preserve">
+    <value>Practise this skill to strengthen your understanding.</value>
+  </data>
+  <data name="RecPracticeCta" xml:space="preserve">
+    <value>Start practice</value>
+  </data>
+  <data name="RecColdStartTitle" xml:space="preserve">
+    <value>Great start!</value>
+  </data>
+  <data name="RecColdStartBody" xml:space="preserve">
+    <value>You have no weak areas yet. Keep up the great work!</value>
+  </data>
+  <data name="RecColdStartCta" xml:space="preserve">
+    <value>Continue learning</value>
+  </data>
 </root>

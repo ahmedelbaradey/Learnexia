@@ -76,5 +76,15 @@ public static class LearningModule
             job => job.Execute(CancellationToken.None),
             Cron.Daily(),
             new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+        // Register the daily recommendation recompute job (P5-09-BE-4).
+        // Fixed ID "Rec-Recompute" — Hangfire dedupes by ID (idempotency requirement).
+        // Runs at 00:05 UTC — 5 minutes AFTER SP-Recompute so the behavioral profile is fresh
+        // when the recommendation engine reads it. Cron "5 0 * * *" = 00:05 UTC daily.
+        recurringJobs.AddOrUpdate<RecommendationRecomputeJob>(
+            "Rec-Recompute",
+            job => job.Execute(CancellationToken.None),
+            "5 0 * * *",
+            new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
     }
 }
