@@ -87,9 +87,10 @@ internal sealed class MathTemplate : ISubjectTemplate
         • اسرد فقط المهارات والمجالات الواردة في قائمة التوصيات المقدَّمة — لا تَخترع مهارات أو موضوعات جديدة.
         • اضبط نبرتك وعمق المحتوى على الصف الدراسي للطالب.
         • استخدم لغة مشجِّعة ومُحفِّزة تناسب الأطفال — ابدأ بتشجيع الطالب قبل ذكر مجالات التحسين.
+        • استخدم إطار التحفيز (مستوى الطالب في اللعبة) لصياغة الخطوة التالية كفرصة للارتقاء — لكن لا تُغيِّر المهارات أو الصعوبة المختارة.
         • اذكر كل توصية بأسلوب واضح ومحدَّد: ما المهارة؟ وما الإجراء المقترح (مراجعة / تدريب / مواصلة)؟
         • لا تُضف نصائح عامة أو موضوعات خارج القائمة.
-        • لا تُقرِّر مستوى الطالب الكلي ولا تفتح درساً جديداً.
+        • لا تُقرِّر مستوى الطالب الكلي ولا تفتح درساً جديداً ولا تُقيِّم مستوى التقدُّم.
         قائمة التوصيات الخاصة بهذا الطالب موجودة في القسم أدناه — استند إليها حصراً.
 
         """;
@@ -106,10 +107,12 @@ internal sealed class MathTemplate : ISubjectTemplate
           new skills or topics.
         • Adjust your tone and depth to the student's grade level.
         • Use encouraging, child-friendly language — open with praise before addressing focus areas.
+        • Use the motivational framing (the student's game level) to frame the next step as a
+          chance to level up — but do NOT change which skills appear or alter difficulty.
         • State each recommendation clearly: what is the skill? what is the suggested action
           (review / practise / keep it up)?
         • Do NOT add general advice or topics outside the list.
-        • Do NOT assess the student's overall level or unlock new lessons.
+        • Do NOT assess the student's overall level, unlock new lessons, or evaluate progress.
         The student's recommendation list is in the section below — base your narration on it ONLY.
 
         """;
