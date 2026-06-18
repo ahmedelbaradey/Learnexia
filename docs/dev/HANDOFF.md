@@ -1,3 +1,20 @@
+## Backend e2e / integration test-coverage gaps (reference) — 2026-06-19
+
+Survey of `backend/tests/Learnexia.IntegrationTests/` (~85 WebApplicationFactory + Testcontainers files; PG+pgvector, Redis, MinIO; offline fakes for IAiGateway/IEmailSender/payments — no real LLM keys needed). **Green (well-covered e2e):** Identity/auth (P1_01-13), Learning core + engines (P2_*, P3_08-11/13), AI SSE intents + cache + safety + narration (P3_04-06/14, P3_AI_*), Gamification (P4_*), Billing money-paths (P10_01-18/QC), Parent read API (P5_08-09), Admin authoring + user-mgmt + audit (P7_01-08/12-13), RAG retrieval (Curriculum.IntegrationTests).
+
+**RED — modules/features with NO backend integration e2e (the real gaps):**
+- **Curriculum admin MUTATIONS** — add/edit/delete units, lessons, questions: endpoints exist, only READ paths (P7_02/04) are tested. No create/update/delete coverage.
+- **Prerequisite skill-graph edge mutations** (add/remove edges) — endpoints not built (plan Q2); only validator unit tests.
+- **Moderation** — no dedicated tests; only AuditLog read via P7_12. (P7-09 moderation queue is being built now → will add its own.)
+- **Notifications failure paths** — `LogEmailSender` always succeeds; no send-failure isolation or idempotent-redelivery coverage (BE-TC-17/18/23 blocked on a throwing-sender seam).
+- **Curriculum + Moderation modules have ZERO unit tests** (integration-only).
+
+**Blocked/skipped integration tests (~15, fixture/seam debt — non-blocking):** admin deactivate (no IsActive=false endpoint, BE-TC-09); admin-seed idempotency across reboots (BE-TC-19) + Production-env seed (BE-TC-34) — need a second-boot / `UseEnvironment("Production")` host; SignIn 500 paths (BE-TC-20/21) — need throwing SignInManager/IEmailSender doubles; empty GoogleAuth ClientId (BE-TC-30) + empty webhook secret (BE-TC-43) — need per-test config-override factory variants; several P2 dashboard/skill-tree edge cases (BE-TC-07/11/13/14/17) — expensive seed fixtures (league cohort, all-lessons-completed, empty-subject); retry-exhaustion (BE-TC-25) non-deterministic.
+
+**Test-infra to build to unblock the above:** a throwing `IEmailSender`/`SignInManager` double; a `Production`-env + custom-config WebApplicationFactory variant; cheap seed fixtures (league cohort w/ GroupSize>0, empty-subject, all-completed); a re-boot/re-seed fixture. The grade-resolution helper in P7 admin suites also pages only page 1 of `grades/List` (>200 grades → flake).
+
+---
+
 ## Recommendation Engine + Lexi narration wave — 2026-06-18 (2 stacked PRs open)
 
 **The per-child guidance feature ("Areas to focus" → next actions, + a kid-style AI voice).** Realizes the long-planned recommendations-engine design (Learning computes deterministically/free; Ai/Lexi narrates on-demand/energy-costed). Lead-approved 2026-06-18: **engine first / Lexi fast-follow; Lexi cost = 5 (Practice tier); charge-per-delivery; the new `HelperIntent.Recommendation` is rule-#8 approved.** Two stacked PRs.
