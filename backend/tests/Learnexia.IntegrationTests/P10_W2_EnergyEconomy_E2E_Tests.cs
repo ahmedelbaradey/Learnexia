@@ -1089,7 +1089,12 @@ public sealed class P10_W2_EnergyEconomy_E2E_Tests : IAsyncLifetime
                 await db.SaveChangesAsync(0);
             }
             usage.DailyUsed = DefaultDailyCap;  // exactly at cap
-            usage.DailyUsedDateLocal = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            // Seed the child's LOCAL "today" via the SAME helper the cap check uses, so the seed
+            // never looks stale: a UTC date string differs from the Cairo date inside the UTC↔Cairo
+            // window, which would reset DailyUsed to 0 and flake this test near the day boundary.
+            usage.DailyUsedDateLocal = Learnexia.Modules.Billing.Application.Services.DailyCapHelper.Today(
+                usage.ChildTimeZoneId,
+                scope.ServiceProvider.GetRequiredService<Learnexia.Shared.Kernel.Abstractions.ISystemClock>());
             await db.SaveChangesAsync(0);
         }
 
@@ -1156,7 +1161,11 @@ public sealed class P10_W2_EnergyEconomy_E2E_Tests : IAsyncLifetime
                 await db.SaveChangesAsync(0);
             }
             usage.DailyUsed = DefaultDailyCap;
-            usage.DailyUsedDateLocal = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            // Seed the child's LOCAL "today" (see ENERGY-6A) so the seeded counter never looks
+            // stale inside the UTC↔Cairo window.
+            usage.DailyUsedDateLocal = Learnexia.Modules.Billing.Application.Services.DailyCapHelper.Today(
+                usage.ChildTimeZoneId,
+                scope.ServiceProvider.GetRequiredService<Learnexia.Shared.Kernel.Abstractions.ISystemClock>());
             await db.SaveChangesAsync(0);
         }
 

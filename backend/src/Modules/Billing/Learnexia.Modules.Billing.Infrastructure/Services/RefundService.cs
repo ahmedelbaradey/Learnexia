@@ -54,6 +54,7 @@ public sealed class RefundService : IRefundService
     private readonly IGlobalSettingsProvider _settings;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILoggerManager _logger;
+    private readonly ISeatGraceService _seatGrace;
 
     public RefundService(
         IBillingDbContext db,
@@ -61,7 +62,8 @@ public sealed class RefundService : IRefundService
         ICurrentUserService currentUser,
         IGlobalSettingsProvider settings,
         IServiceScopeFactory scopeFactory,
-        ILoggerManager logger)
+        ILoggerManager logger,
+        ISeatGraceService seatGrace)
     {
         _db              = db;
         _paymentProvider = paymentProvider;
@@ -69,6 +71,7 @@ public sealed class RefundService : IRefundService
         _settings        = settings;
         _scopeFactory    = scopeFactory;
         _logger          = logger;
+        _seatGrace       = seatGrace;
     }
 
     // ── ProcessPackRefundAsync ────────────────────────────────────────────────────────
@@ -358,19 +361,15 @@ public sealed class RefundService : IRefundService
             if (subscription.FailedAttemptCount >= maxRetries)
             {
                 // Retries exhausted — enter final grace window.
-                // P10-15-BE-2: seat grace window = now + seats.grace_days (7 days by default).
-                // Idempotency: if GraceEndsAt is already set and > nowUtc, do NOT extend/shorten.
                 subscription.Status    = SubscriptionStatus.Dunning;
                 subscription.NextRetryAt = null;
                 downgradeScheduled = true;
                 nextRetryAt = null;
-                if (subscription.GraceEndsAt == null || subscription.GraceEndsAt <= nowUtc)
-                {
-                    var graceDays = _settings.GetInt(GlobalSettingKeys.SeatsGraceDays, 7);
-                    subscription.GraceEndsAt = nowUtc.AddDays(graceDays);
-                    subscription.SeatGraceStartedAt = nowUtc;
-                    subscription.SeatGraceReason = SeatGraceReason.PaymentFailure;
-                }
+                // P10-15 dedup: the payment-failure grace window (now + seats.grace_days, with the
+                // open-window idempotency guard + SeatGraceReason/SeatGraceStartedAt) has a SINGLE
+                // source of truth — ISeatGraceService. It writes through the same scoped DbContext
+                // (_db) so the grace fields land in THIS transaction (committed below).
+                await _seatGrace.StartPaymentFailureGraceAsync(subscription.Id, ct);
                 graceEndsAt = subscription.GraceEndsAt;
             }
             else
@@ -821,8 +820,13 @@ public sealed class RefundService : IRefundService
         if (subscription.FailedAttemptCount >= maxRetries)
         {
             subscription.Status      = SubscriptionStatus.Dunning;
-            subscription.GraceEndsAt = subscription.CurrentCycleEnd;
             subscription.NextRetryAt = null;
+            // P10-15 dedup: route the payment-failure grace window through the single source of
+            // truth (now + seats.grace_days + SeatGraceReason + open-window idempotency), REPLACING
+            // the superseded GraceEndsAt=CurrentCycleEnd model that lingered here. Resolve the grace
+            // service from THIS scope so it shares `db` (the same scoped BillingDbContext).
+            var seatGrace = scope.ServiceProvider.GetRequiredService<ISeatGraceService>();
+            await seatGrace.StartPaymentFailureGraceAsync(subscriptionId, ct);
         }
         else
         {

@@ -1860,6 +1860,22 @@
         /// </summary>
         public const string AllocationTransferAmountRequired = "AllocationTransferAmountRequired";
 
+        /// <summary>
+        /// Validation: transfer amount exceeds the maximum supported value (int range).
+        /// </summary>
+        public const string AllocationTransferAmountTooLarge = "AllocationTransferAmountTooLarge";
+
+        /// <summary>
+        /// Conflict: the supplied idempotency key was already used for a transfer with a
+        /// DIFFERENT payload (from/to child or amount). Reusing a key with a changed payload is rejected.
+        /// </summary>
+        public const string AllocationTransferKeyConflict = "AllocationTransferKeyConflict";
+
+        /// <summary>
+        /// Rate limit: too many transfer requests from this parent in a short window.
+        /// </summary>
+        public const string AllocationTransferRateLimited = "AllocationTransferRateLimited";
+
         // ── P10-17 Purchased-energy refunds ──────────────────────────────────────────────────────────
 
         /// <summary>Returned when a refundable-energy quote is retrieved successfully (parent or admin path).</summary>

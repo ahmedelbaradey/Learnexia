@@ -2455,6 +2455,15 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="AllocationTransferAmountRequired" xml:space="preserve">
     <value>Transfer amount must be greater than zero.</value>
   </data>
+  <data name="AllocationTransferAmountTooLarge" xml:space="preserve">
+    <value>Transfer amount is too large.</value>
+  </data>
+  <data name="AllocationTransferKeyConflict" xml:space="preserve">
+    <value>This request key was already used for a different transfer. Use a new key for a new transfer.</value>
+  </data>
+  <data name="AllocationTransferRateLimited" xml:space="preserve">
+    <value>Too many transfer requests. Please wait a moment and try again.</value>
+  </data>
   <!-- P10-17 Purchased-energy refunds -->
   <data name="RefundableQuoteRetrieved" xml:space="preserve">
     <value>Refundable energy quote retrieved successfully.</value>

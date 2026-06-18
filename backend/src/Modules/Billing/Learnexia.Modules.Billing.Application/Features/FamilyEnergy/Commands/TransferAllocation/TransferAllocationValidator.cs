@@ -36,7 +36,12 @@ public sealed class TransferAllocationValidator : AbstractValidator<TransferAllo
 
         RuleFor(x => x.Amount)
             .GreaterThan(0)
-            .WithMessage(SharedResourcesKey.AllocationTransferAmountRequired);
+            .WithMessage(SharedResourcesKey.AllocationTransferAmountRequired)
+            // Allocations are stored as int; the service casts amount to int. Reject anything
+            // above int.MaxValue at the shape layer so the cast is provably safe (a long amount
+            // beyond int range would otherwise overflow before the Remaining guard runs).
+            .LessThanOrEqualTo(int.MaxValue)
+            .WithMessage(SharedResourcesKey.AllocationTransferAmountTooLarge);
 
         RuleFor(x => x.IdempotencyKey)
             .NotEmpty()

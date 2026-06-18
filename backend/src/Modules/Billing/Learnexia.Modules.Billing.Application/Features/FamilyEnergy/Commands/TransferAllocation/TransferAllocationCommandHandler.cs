@@ -1,4 +1,5 @@
 using Learnexia.Modules.Billing.Application.Abstractions;
+using Learnexia.Modules.Billing.Application.Services;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
@@ -29,17 +30,20 @@ public sealed class TransferAllocationCommandHandler
     private readonly ICurrentUserService _currentUser;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
+    private readonly IFamilyTransferRateLimiter _rateLimiter;
 
     public TransferAllocationCommandHandler(
         IFamilyAllocationService allocationService,
         ICurrentUserService currentUser,
         ILoggerManager logger,
-        IStringLocalizer<SharedResources> localizer)
+        IStringLocalizer<SharedResources> localizer,
+        IFamilyTransferRateLimiter rateLimiter)
     {
         _allocationService = allocationService;
         _currentUser       = currentUser;
         _logger            = logger;
         _localizer         = localizer;
+        _rateLimiter       = rateLimiter;
     }
 
     public async Task<BaseResponse<TransferResultDto>> Handle(
@@ -53,6 +57,18 @@ public sealed class TransferAllocationCommandHandler
             if (parentUserId is null)
                 return Unauthorized<TransferResultDto>(
                     _localizer[SharedResourcesKey.UnauthorizedAccess]);
+
+            // P10-16 hardening: per-parent rate cap on the transfer endpoint (mirrors AiTutorRateLimiter).
+            if (!_rateLimiter.TryAllow(parentUserId.Value))
+            {
+                _logger.LogWarn($"TransferAllocationCommand: rate-limited parentId={parentUserId}.");
+                return new BaseResponse<TransferResultDto>
+                {
+                    Successed  = false,
+                    StatusCode = System.Net.HttpStatusCode.TooManyRequests,
+                    Message    = _localizer[SharedResourcesKey.AllocationTransferRateLimited],
+                };
+            }
 
             var result = await _allocationService.TransferAllocationAsync(
                 parentUserId  : parentUserId.Value,
@@ -106,6 +122,13 @@ public sealed class TransferAllocationCommandHandler
                         },
                     TransferAllocationFailureReason.WalletNotFound =>
                         NotFound<TransferResultDto>(_localizer[SharedResourcesKey.FamilyEnergyWalletNotFound]),
+                    TransferAllocationFailureReason.IdempotencyKeyConflict =>
+                        new BaseResponse<TransferResultDto>
+                        {
+                            Successed  = false,
+                            StatusCode = System.Net.HttpStatusCode.Conflict,
+                            Message    = _localizer[SharedResourcesKey.AllocationTransferKeyConflict],
+                        },
                     _ => ServerError<TransferResultDto>(_localizer[SharedResourcesKey.AnErrorIsOccurredWhileSavingData]),
                 };
             }

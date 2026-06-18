@@ -230,6 +230,39 @@ public sealed class SeatEnforcementService : ISeatEnforcementService
         }
     }
 
+    /// <inheritdoc />
+    public async Task<int> SweepStalePlaceholdersAsync(DateTime olderThanUtc, CancellationToken ct = default)
+    {
+        // Orphaned placeholders: still Reserved, never stamped with a real child (ChildId <= 0),
+        // reserved before the safety cutoff. ActivateSeatAsync flips them to Active and stamps a
+        // positive ChildId; ReleaseSeatAsync flips them to Released — so a row that is STILL a
+        // Reserved negative placeholder past the cutoff is double-failure residue.
+        var stale = await _db.SeatReservations
+            .Where(r => r.ChildId <= 0
+                     && r.Status == SeatStatus.Reserved
+                     && r.ReservedAt <= olderThanUtc)
+            .ToListAsync(ct);
+
+        if (stale.Count == 0)
+            return 0;
+
+        var nowUtc = DateTime.UtcNow;
+        foreach (var reservation in stale)
+        {
+            reservation.Status     = SeatStatus.Released;
+            reservation.ReleasedAt = nowUtc;
+        }
+
+        // Single batched SaveChanges — inherently atomic (one command), no explicit tx needed
+        // (ADR-0001: explicit transactions only for atomic MULTI-write paths).
+        await _db.SaveChangesAsync(_currentUser.UserId ?? 0);
+
+        _logger.LogInfo(
+            $"SeatEnforcementService.SweepStalePlaceholders: released {stale.Count} orphaned " +
+            $"placeholder reservation(s) reserved on/before {olderThanUtc:O}.");
+        return stale.Count;
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────────────────────
 
     /// <param name="cycleKey">

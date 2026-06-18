@@ -1,8 +1,10 @@
 using System.Reflection;
 using FluentValidation;
+using Learnexia.Modules.Billing.Application.Services;
 using Learnexia.Shared.Kernel.Behaviors;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Learnexia.Modules.Billing.Application;
 
@@ -24,6 +26,10 @@ public static class DependencyInjection
 
         // ValidationBehavior — commands only (ICommand<>).
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+
+        // Per-parent in-process rate limiter for the family-energy Transfer endpoint (P10-16 hardening).
+        // Singleton so the fixed-window counter survives across requests. Mirrors AiTutorRateLimiter.
+        services.TryAddSingleton<IFamilyTransferRateLimiter, FamilyTransferRateLimiter>();
 
         return services;
     }
