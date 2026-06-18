@@ -154,6 +154,46 @@ public static class AiCacheKeyBuilder
         return Hash(tuple);
     }
 
+    /// <summary>
+    /// Cache key for <see cref="AiCacheEntryTypeDto.Recommendation"/> entries (P3-14).
+    /// Tuple: (StudentId, RecommendationDate, AgeBand(jwtGrade), Language, PromptVersion, CurriculumVersion).
+    ///
+    /// <para><strong>Date dimension is MANDATORY (P3-14 OQ-5):</strong> including
+    /// <paramref name="recommendationDate"/> ensures that a new day's recommendation set always
+    /// yields a fresh narration rather than serving yesterday's cached narration.
+    /// The date is formatted as <c>yyyy-MM-dd</c> (UTC) for determinism.</para>
+    ///
+    /// <para><strong>Content hash dimension:</strong> a SHA-256 of the serialized
+    /// <paramref name="recommendationContentHash"/> is included so that if the recommendation content
+    /// changes mid-day (re-run job), the cache key changes automatically — no stale narration served.</para>
+    ///
+    /// <para><c>jwtGrade</c> must come from the authenticated student's JWT claim — server-trusted.</para>
+    /// </summary>
+    public static string ForRecommendation(
+        int studentId,
+        DateOnly recommendationDate,
+        string recommendationContentHash,
+        int jwtGrade,
+        TutorLanguage language,
+        string promptVersion,
+        string curriculumVersion)
+    {
+        var tuple = new
+        {
+            t    = "Recommendation",
+            sid  = studentId,
+            // yyyy-MM-dd UTC date: a new day forces a new narration (OQ-5).
+            rd   = recommendationDate.ToString("yyyy-MM-dd"),
+            // Content hash: changes when the persisted recommendation set changes (mid-day safety).
+            ch   = recommendationContentHash,
+            ab   = GradeToAgeBand(jwtGrade),
+            lang = (int)language,
+            pv   = promptVersion,
+            cv   = curriculumVersion,
+        };
+        return Hash(tuple);
+    }
+
     // ── Private helpers ────────────────────────────────────────────────────────
 
     private static string Hash(object tuple)

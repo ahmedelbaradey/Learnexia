@@ -37,6 +37,8 @@ public static class GlobalSettingKeys
     public const string AiCostDeepExplanation = "ai_cost.deep_explanation";
     /// <summary>Cost for the SimilarExample intent (<c>practice_generation</c>). Default = 5.</summary>
     public const string AiCostPracticeGeneration = "ai_cost.practice_generation";
+    /// <summary>Cost for the Lexi Recommendation narration intent (P3-14). Default = 5.</summary>
+    public const string AiCostRecommendation = "ai_cost.recommendation";
 
     // ── AI cache thresholds — MUST match the string literals used by the 4 live Ai handlers ──
     /// <summary>
@@ -96,6 +98,7 @@ public static class GlobalSettingKeys
         AiCostExplainMistake,
         AiCostDeepExplanation,
         AiCostPracticeGeneration,
+        AiCostRecommendation,
         AiCacheAutoApprovalConfidence,
         AiCacheWhyWrongVariantCap,
         AiCachePracticePoolSize,

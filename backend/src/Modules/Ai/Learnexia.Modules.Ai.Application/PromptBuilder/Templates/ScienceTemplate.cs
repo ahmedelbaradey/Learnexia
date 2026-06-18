@@ -12,10 +12,11 @@ internal sealed class ScienceTemplate : ISubjectTemplate
 {
     public string GetTemplate(HelperIntent intent, TutorLanguage language) => intent switch
     {
-        HelperIntent.Explain        => language == TutorLanguage.Ar ? ArExplain        : EnExplain,
-        HelperIntent.Hint           => language == TutorLanguage.Ar ? ArHint           : EnHint,
-        HelperIntent.WhyWrong       => language == TutorLanguage.Ar ? ArWhyWrong       : EnWhyWrong,
-        HelperIntent.SimilarExample => language == TutorLanguage.Ar ? ArSimilarExample : EnSimilarExample,
+        HelperIntent.Explain         => language == TutorLanguage.Ar ? ArExplain         : EnExplain,
+        HelperIntent.Hint            => language == TutorLanguage.Ar ? ArHint            : EnHint,
+        HelperIntent.WhyWrong        => language == TutorLanguage.Ar ? ArWhyWrong        : EnWhyWrong,
+        HelperIntent.SimilarExample  => language == TutorLanguage.Ar ? ArSimilarExample  : EnSimilarExample,
+        HelperIntent.Recommendation  => language == TutorLanguage.Ar ? ArRecommendation  : EnRecommendation,
         _ => throw new InvalidOperationException($"Unhandled HelperIntent: {intent}"),
     };
 
@@ -114,6 +115,40 @@ internal sealed class ScienceTemplate : ISubjectTemplate
         • Choose an example at the same level and appropriate for the student's age.
         • Encourage the student to apply the same idea to the current question.
         The example must stay within the active skill context only.
+
+        """;
+
+    // ── Recommendation variants ───────────────────────────────────────────────
+
+    private const string ArRecommendation =
+        """
+        [قالب العلوم — سرد توصية ليكسي]
+        أنت تُقدِّم للطالب دليلاً دراسياً ودوداً ومُشجِّعاً مبنياً حصراً على قائمة التوصيات أدناه.
+        قواعد صارمة:
+        • اسرد فقط المهارات والمجالات الواردة في قائمة التوصيات المقدَّمة — لا تَخترع مهارات أو ظواهر جديدة.
+        • اضبط نبرتك وعمق المحتوى على الصف الدراسي للطالب.
+        • استخدم لغة تثير الفضول وتُشجِّع الاستكشاف — ابدأ بتحفيز الطالب قبل ذكر مجالات التحسين.
+        • اذكر كل توصية بأسلوب واضح: ما الظاهرة أو المهارة؟ وما الإجراء المقترح؟
+        • لا تُضف موضوعات أو نصائح خارج القائمة.
+        • لا تُقرِّر مستوى الطالب الكلي ولا تفتح درساً جديداً.
+        قائمة التوصيات الخاصة بهذا الطالب موجودة في القسم أدناه — استند إليها حصراً.
+
+        """;
+
+    private const string EnRecommendation =
+        """
+        [Science Template — Lexi Recommendation Narration]
+        You are presenting the student with a friendly, curiosity-driven study guide built EXCLUSIVELY
+        on the recommendation list provided below.
+        Strict rules:
+        • Narrate ONLY the skills and areas listed in the provided recommendations — never invent
+          new phenomena or topics.
+        • Adjust your tone and depth to the student's grade level.
+        • Use curious, exploratory language — open with encouragement before addressing focus areas.
+        • State each recommendation clearly: what is the skill/phenomenon? what is the suggested action?
+        • Do NOT add general advice or topics outside the list.
+        • Do NOT assess the student's overall level or unlock new lessons.
+        The student's recommendation list is in the section below — base your narration on it ONLY.
 
         """;
 }

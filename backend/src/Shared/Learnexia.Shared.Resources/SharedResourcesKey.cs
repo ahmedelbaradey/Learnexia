@@ -2020,6 +2020,26 @@
         /// </summary>
         public const string WeeklyReportNotYetGenerated = "WeeklyReportNotYetGenerated";
 
+        // ── P3-14 Lexi recommendation narration ───────────────────────────────────────────────────
+
+        /// <summary>
+        /// Returned when the student's account has no student id in the JWT
+        /// (mirrors ExplainConceptMissingProfile — separate key for per-handler tracking).
+        /// </summary>
+        public const string RecommendationNarrationMissingProfile = "RecommendationNarrationMissingProfile";
+
+        /// <summary>Rate-limit exceeded for the Recommendation narration intent.</summary>
+        public const string RecommendationNarrationRateLimitExceeded = "RecommendationNarrationRateLimitExceeded";
+
+        /// <summary>
+        /// Returned when the child has no persisted recommendations yet and the narration cannot be grounded.
+        /// Friendly decline — no debit, no LLM call.
+        /// </summary>
+        public const string RecommendationNarrationNoData = "RecommendationNarrationNoData";
+
+        /// <summary>Safety layer blocked the recommendation narration.</summary>
+        public const string RecommendationNarrationSafetyBlocked = "RecommendationNarrationSafetyBlocked";
+
         // ── P5-09 Recommendation engine — endpoint + i18n keys ─────────────────────────────────
 
         /// <summary>Returned when the child's daily recommendations are retrieved successfully.</summary>

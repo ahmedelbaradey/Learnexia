@@ -75,4 +75,9 @@ public enum CreditReasonCode
 
     /// <summary>Refund of unused purchased energy (bucket B only). Settlement via verified refund webhook.</summary>
     PurchasedRefund = 90,
+
+    // ── P3-14 Lexi recommendation narration ──────────────────────────────────────
+
+    /// <summary>AI Lexi recommendation narration response delivered (P3-14). Cost = 5 (Practice tier).</summary>
+    AiRecommendation = 14,
 }
