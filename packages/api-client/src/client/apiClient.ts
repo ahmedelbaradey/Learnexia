@@ -77,6 +77,9 @@ export class ApiClient {
   delete<T>(path: string, opts?: RequestOptions): Promise<T> {
     return this.request<T>('DELETE', path, opts);
   }
+  patch<T>(path: string, opts?: RequestOptions): Promise<T> {
+    return this.request<T>('PATCH', path, opts);
+  }
 
   /**
    * GET a paginated endpoint. Unlike `get`, this returns the FULL envelope

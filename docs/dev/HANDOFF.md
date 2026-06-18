@@ -1,3 +1,55 @@
+## Admin Console Frontend Wave (P7-06/07/08) — 2026-06-18
+
+**Wave 1 of the Admin Console FRONTEND is complete** — P7-06/07/08 User & Account management (`apps/admin-dashboard`). Backend was already merged (P7-01..P7-05, P7-12, P7-13 shipped; P7-09/11 unblocked with AI phase merge; P7-10 still blocked on P5-03).
+
+### Admin FE Foundation patterns established
+
+1. **Hand-written admin hooks** (not NSwag-regenerated) in `packages/api-client/src/hooks/` following the `useUserList` pattern:
+   - Query hooks (useSearchUsers, useUserActivity, useUserFamily, useAdminUserProfile)
+   - Mutation hooks (useSuspendUser, useReactivateUser, useDeleteUser, useOverrideChildGrade, useAdminChangeChildLearningLanguage, useUpdateChildProfile)
+   - All mutations return `BaseResponse<string>` → refetch via TanStack Query invalidation (no optimistic updates)
+   - Query keys: `adminUsers.*` in `packages/api-client/src/query/queryKeys.ts`
+
+2. **ACCOUNT_STATUS constant** lives once in `@learnexia/shared/constants` (int 0/1/2 — backend serializes enum as INT, no JsonStringEnumConverter)
+
+3. **Reusable dialog/form primitives** in `apps/admin-dashboard/components/` for future admin stories:
+   - `AdminConfirmDialog` — base confirm wrapper
+   - `ReasonField`, `TypedConfirmField` — form inputs for typed destructive actions
+   - `StatusBadge` — read-only status display
+   - `SuspendUserDialog`, `ReactivateUserDialog`, `DeleteUserDialog`, `GradeOverrideDialog`, `ChangeLearningLanguageDialog` — story-specific wrapped dialogs
+
+4. **Per-route layout pattern:** Each `/users/*` page self-wraps `AdminShell` (which runs `useAdminGuard`); section `layout.tsx` is a pass-through. AdminShell also wraps `AdminErrorBanner`.
+
+5. **Destructive action gates:**
+   - Delete user typed-email confirmation + cascadeChildren bool → 200/400/409
+   - Grade override confirm bool → 200/400
+   - Learning language change confirmFreshStart bool → 200/424 DESTRUCTIVE (wipes Math/Science attempts)
+
+### Stories delivered
+
+- **P7-06 (User List, Detail, Family, Activity):** List page with search, action buttons; detail page with family/activity panels; shared primitives and API hooks foundation.
+- **P7-07 (Suspend/Reactivate/Delete):** Suspend/reactivate dialogs (ACCOUNT_STATUS 0↔1); delete typed-email + cascade dialog; all mutations with proper error handling.
+- **P7-08 (Child Profile/Grade/Learning Language):** Child profile edit (name, birthdate, grade, learning language); grade override with confirm; learning language change with fresh-start confirm; all with proper destructive gates and error codes (400/424).
+
+### Gates passed
+
+- **Reviewer:** PASS (all 4 batches approved)
+- **Security Auditor:** PASS (0 Critical/High findings)
+
+### Deferred / follow-ups (non-blocking)
+
+1. **Admin frontend-e2e not run.** No admin e2e harness exists yet (tests/e2e covers student-app + marketing only). Building it (admin app on :3001, seeded admin account, NEXT_PUBLIC_API_URL pointing to live backend) is a follow-up. Once seeded, admin test cases can be designed + run separately.
+
+2. **TanStack cache sign-out fix is ADMIN-only.** The shared `packages/api-client/src/hooks/onSignOut` callback should also clear the entire cache (currently only the admin app's `useSignOut` does this locally). This prevents student-app PII from lingering in memory after an admin's session ends. Separate follow-up.
+
+3. **Real server-side route protection.** The `middleware.ts` pass-through is known P1-10 debt (HttpOnly-cookie auth + secure session handling). Admin routes are guarded client-side via `useAdminGuard` (calls `/Admin/Me` → 403 if not admin). Server-side enforcement via middleware is a security hardening task.
+
+4. **Pre-existing `/login` prerender needs NEXT_PUBLIC_API_URL.** If running `next build` with no .env.local, the build fails at prerender time. Flag in repo — admin/marketing build requires `NEXT_PUBLIC_API_URL` at build time (can be mocked for CI/CD).
+
+5. **Remaining admin phase (non-blocking):** P7-01..05 curriculum FE (lesson plans, topics, questions), P7-13 gamification FE (badges, leaderboards), P7-12 audit FE (action log). Backend P7-09/11 now unblockable (AI phase merged); P7-10 still blocked on P5-03 (parent analytics parent-scoped endpoints).
+
+---
+
 # Handoff — Phase 1 web frontend + dev environment
 
 > Living handoff for leads/agents picking up the web frontend + backend work. Last updated 2026-06-06 (**FE state reconciliation — see the ⭐ block directly below; Phase-1 + Phase-2 student FE confirmed merged, P8-04 FE corrected to not-started.** Earlier: **Phase 8 — Localization backend COMPLETE + merged to main (P8-01/02/03 PR #90; P8-04 PR #91) — see the Phase 8 section directly below.** Earlier status: **P4-11 BE — Streak freeze + timed events + weekly challenges + XP boost — commit/PR ready. P4-10 BE merged. P4-09 merged via PR #80. P4-08 FE WIP on `feat/P4-08-gamification-screens-motion` (Batches 2–6 still open for FE lead). Earlier P4-* per below.**).

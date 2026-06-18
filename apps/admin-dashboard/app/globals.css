@@ -115,6 +115,42 @@ body {
 
 /* ---- Admin keyframes (CSS-only, no Moti/Reanimated) ---- */
 
+/* Dialog overlay fade-in (Design Spec Part A §A.2). */
+@keyframes lx-dialog-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Dialog card slide+fade-in (Design Spec Part A §A.2). */
+@keyframes lx-dialog-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dialog action row RTL flip. */
+[dir='rtl'] .lx-dialog-actions {
+  flex-direction: row-reverse;
+}
+
+/* Screen-reader-only utility (used in ReasonField & TypedConfirmField). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Error-banner entrance: fade + slide up (Design Spec §3e). */
 @keyframes lx-banner-in {
   from {
@@ -135,6 +171,13 @@ body {
   100% {
     background-position: calc(200px + 100%) 0;
   }
+}
+
+/* Spinner rotation — used on mutation pending states in all dialogs and the
+   edit page (SuspendUserDialog, ReactivateUserDialog, DeleteUserDialog,
+   GradeOverrideDialog, ChangeLearningLanguageDialog, users/[id]/edit/page.tsx). */
+@keyframes lx-spin {
+  to { transform: rotate(360deg); }
 }
 
 /* ---- Side-nav responsive drawer (Design Spec §4a + Gap 2) ----

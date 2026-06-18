@@ -65,6 +65,39 @@ export const queryKeys = {
     /** GET /api/Gamification/Leagues/Me — cohort standings + tier + week boundaries. */
     league: () => [...queryKeys.gamification.all, 'league'] as const,
   },
+
+  /**
+   * P7-06/07/08 admin user-management hooks.
+   *
+   * DISTINCT from the legacy `users.*` namespace (which targets the old
+   * `/api/Users/UserManagement/…` endpoints and is NOT used by these stories).
+   * P7-07/08 mutation hooks MUST invalidate the keys in this namespace — never
+   * the legacy `users.*` keys.
+   *
+   * PascalCase filter params mirror the backend's `SearchUsersQuery` binding
+   * (`Role`, `Status`, `Q`, `PageNumber`, `PageSize`, `OrderBy`) — this is
+   * intentional, not a typo. The query params sent over the wire are lowercase-
+   * mapped by `ApiClient.buildUrl`; the key object just carries the raw params.
+   */
+  adminUsers: {
+    all: ['adminUsers'] as const,
+    /**
+     * List key — includes all paginated/filter params so distinct filter
+     * combinations are cached separately and the list is invalidated cleanly on
+     * any mutation (by passing only `queryKeys.adminUsers.all`).
+     */
+    list: (filters?: object) =>
+      [...queryKeys.adminUsers.all, 'list', filters ?? {}] as const,
+    /** Single-profile key — used by detail page + invalidated by lifecycle mutations. */
+    profile: (userId: number) =>
+      [...queryKeys.adminUsers.all, 'profile', userId] as const,
+    /** Family linkage key for a single user. */
+    family: (userId: number) =>
+      [...queryKeys.adminUsers.all, 'family', userId] as const,
+    /** Activity summary key for a single user. */
+    activity: (userId: number) =>
+      [...queryKeys.adminUsers.all, 'activity', userId] as const,
+  },
 } as const;
 
 export type QueryKeys = typeof queryKeys;

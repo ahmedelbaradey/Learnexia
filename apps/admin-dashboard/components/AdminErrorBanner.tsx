@@ -12,7 +12,12 @@
 
 import { Stack, Text } from '@tamagui/core';
 
-export type AdminBannerVariant = 'error' | 'forbidden' | 'warning';
+/**
+ * 'success' variant added for P7-07/P7-08 positive-outcome banners
+ * (Reactivate, Grade Override, Learning Language change).
+ * Design Spec Part A §A — Gap 2.
+ */
+export type AdminBannerVariant = 'error' | 'forbidden' | 'warning' | 'success';
 
 export interface AdminErrorBannerProps {
   variant?: AdminBannerVariant;
@@ -42,6 +47,12 @@ const VARIANTS: Record<AdminBannerVariant, VariantTokens> = {
     borderColor: 'rgba(245, 158, 11, 0.3)',
     iconColor: 'var(--lx-accent)',
   },
+  /** P7-07 Gap 2 — success variant for positive-outcome banners. */
+  success: {
+    background: 'rgba(34, 197, 94, 0.15)',
+    borderColor: 'rgba(34, 197, 94, 0.3)',
+    iconColor: '#22C55E',
+  },
 };
 
 export function AdminErrorBanner({ variant = 'error', message }: AdminErrorBannerProps) {
@@ -68,7 +79,13 @@ export function AdminErrorBanner({ variant = 'error', message }: AdminErrorBanne
         aria-hidden="true"
         style={{ flexShrink: 0, marginTop: 1, display: 'inline-flex', color: tokens.iconColor }}
       >
-        {variant === 'forbidden' ? <LockIcon /> : <WarningIcon />}
+        {variant === 'forbidden' ? (
+        <LockIcon />
+      ) : variant === 'success' ? (
+        <CheckCircleIcon />
+      ) : (
+        <WarningIcon />
+      )}
       </span>
       <Text fontFamily="$body" fontSize={14} lineHeight={21} color="$fg1">
         {message}
@@ -88,6 +105,15 @@ function WarningIcon() {
       />
       <path d="M12 9v5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
       <circle cx="12" cy="17" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+function CheckCircleIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.6" />
+      <polyline points="9,12 11,14 15,10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

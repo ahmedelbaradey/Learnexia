@@ -4,10 +4,16 @@
  * AdminSideNav — persistent side navigation (Design Spec §4b).
  *
  * Built with Tamagui (`@tamagui/core` Stack/Text) + design-system tokens — no
- * CSS module. Placeholder, NON-FUNCTIONAL nav items (Curriculum, Content) per
- * the story: they render in the inactive state and do nothing on click (no
- * `/curriculum` or `/content` routes are created). Icons are emoji placeholders
- * (Design Spec Gap 1 — no admin icon set yet).
+ * CSS module. Icons are emoji placeholders (Design Spec Gap 1 — no admin icon
+ * set yet).
+ *
+ * Nav items:
+ *   - "Users"      → /users  — REAL link, active-aware (P7-06-FE-5, Batch A).
+ *   - "Curriculum" → placeholder (no route yet), aria-disabled.
+ *   - "Content"    → placeholder (no route yet), aria-disabled.
+ *
+ * Active detection: `usePathname()` → `aria-current="page"` on the active item
+ * + visual highlight via `$active` pseudo token styles.
  *
  * Responsive (Design Spec §4a + Gap 2), mobile-first:
  *   - base (< laptop): fixed drawer, slid off-screen via `transform`, revealed
@@ -18,6 +24,8 @@
 
 import { Stack, Text } from '@tamagui/core';
 import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 import { getStrings, ADMIN_LOCALE } from '../lib/strings';
 import { directionForLocale } from '@learnexia/shared/i18n';
@@ -32,12 +40,56 @@ export interface AdminSideNavProps {
 const strings = getStrings(ADMIN_LOCALE);
 const isRtl = directionForLocale(ADMIN_LOCALE) === 'rtl';
 
-const NAV_ITEMS = [
-  { key: 'curriculum', label: strings.navCurriculum, icon: '📚' },
-  { key: 'content', label: strings.navContent, icon: '📄' },
+/**
+ * A real nav entry that renders an anchor via Next.js `<Link>`.
+ * `href` is the route prefix; active = pathname starts with href.
+ */
+interface RealNavItem {
+  kind: 'real';
+  key: string;
+  label: string;
+  icon: string;
+  href: string;
+}
+
+/**
+ * A placeholder nav entry: renders a non-interactive button with aria-disabled.
+ * No route exists for this feature yet.
+ */
+interface PlaceholderNavItem {
+  kind: 'placeholder';
+  key: string;
+  label: string;
+  icon: string;
+}
+
+type NavItem = RealNavItem | PlaceholderNavItem;
+
+const NAV_ITEMS: readonly NavItem[] = [
+  {
+    kind: 'real',
+    key: 'users',
+    label: strings.navUsers,
+    icon: '👤',
+    href: '/users',
+  },
+  {
+    kind: 'placeholder',
+    key: 'curriculum',
+    label: strings.navCurriculum,
+    icon: '📚',
+  },
+  {
+    kind: 'placeholder',
+    key: 'content',
+    label: strings.navContent,
+    icon: '📄',
+  },
 ] as const;
 
 export function AdminSideNav({ isOpen = false, onClose }: AdminSideNavProps) {
+  const pathname = usePathname();
+
   return (
     <>
       {/* Backdrop (drawer only, below laptop) — `lx-nav-backdrop` shows the
@@ -86,38 +138,97 @@ export function AdminSideNav({ isOpen = false, onClose }: AdminSideNavProps) {
         </Stack>
 
         <Stack tag="ul" flex={1} flexDirection="column" gap={4} padding="$4" margin={0}>
-          {NAV_ITEMS.map((item) => (
-            <Stack tag="li" key={item.key}>
-              {/* Non-functional placeholder: inactive state, no-op press, disabled
-                  semantics for screen readers (feature not yet available). */}
-              <Stack
-                tag="button"
-                aria-disabled
-                flexDirection="row"
-                alignItems="center"
-                gap="$3"
-                width="100%"
-                height={44}
-                paddingHorizontal="$3"
-                borderWidth={0}
-                borderRadius="$button"
-                backgroundColor="transparent"
-                cursor="pointer"
-                hoverStyle={{ backgroundColor: '$card' }}
-                style={{ transition: 'background-color var(--lx-dur-fast) var(--lx-ease-out)' }}
-                onPress={() => {
-                  /* no-op placeholder */
-                }}
-              >
-                <Text fontSize={18} width={20} textAlign="center" aria-hidden>
-                  {item.icon}
-                </Text>
-                <Text fontFamily="$body" fontSize={14} fontWeight="400" color="$fg3">
-                  {item.label}
-                </Text>
+          {NAV_ITEMS.map((item) => {
+            if (item.kind === 'real') {
+              const isActive =
+                pathname === item.href ||
+                pathname.startsWith(`${item.href}/`);
+
+              return (
+                <Stack tag="li" key={item.key}>
+                  <Link
+                    href={item.href}
+                    aria-current={isActive ? 'page' : undefined}
+                    style={{ textDecoration: 'none', display: 'block' }}
+                  >
+                    <Stack
+                      flexDirection="row"
+                      alignItems="center"
+                      gap="$3"
+                      width="100%"
+                      height={44}
+                      paddingHorizontal="$3"
+                      borderRadius="$button"
+                      backgroundColor={isActive ? '$primarySoft' : 'transparent'}
+                      cursor="pointer"
+                      hoverStyle={{ backgroundColor: isActive ? '$primarySoft' : '$card' }}
+                      style={{
+                        transition:
+                          'background-color var(--lx-dur-fast) var(--lx-ease-out)',
+                      }}
+                    >
+                      <Text
+                        fontSize={18}
+                        width={20}
+                        textAlign="center"
+                        aria-hidden
+                      >
+                        {item.icon}
+                      </Text>
+                      <Text
+                        fontFamily="$body"
+                        fontSize={14}
+                        fontWeight={isActive ? '600' : '400'}
+                        color={isActive ? '$primary' : '$fg2'}
+                      >
+                        {item.label}
+                      </Text>
+                    </Stack>
+                  </Link>
+                </Stack>
+              );
+            }
+
+            // Placeholder: non-functional, aria-disabled
+            return (
+              <Stack tag="li" key={item.key}>
+                <Stack
+                  tag="button"
+                  aria-disabled
+                  flexDirection="row"
+                  alignItems="center"
+                  gap="$3"
+                  width="100%"
+                  height={44}
+                  paddingHorizontal="$3"
+                  borderWidth={0}
+                  borderRadius="$button"
+                  backgroundColor="transparent"
+                  cursor="pointer"
+                  hoverStyle={{ backgroundColor: '$card' }}
+                  style={{
+                    transition:
+                      'background-color var(--lx-dur-fast) var(--lx-ease-out)',
+                  }}
+                  onPress={() => {
+                    /* no-op placeholder */
+                  }}
+                >
+                  <Text fontSize={18} width={20} textAlign="center" aria-hidden>
+                    {item.icon}
+                  </Text>
+                  <Text
+                    fontFamily="$body"
+                    fontSize={14}
+                    fontWeight="400"
+                    color="$fg3"
+                  >
+                    {item.label}
+                  </Text>
+                </Stack>
               </Stack>
-            </Stack>
-          ))}
+            );
+          })}
         </Stack>
       </Stack>
     </>

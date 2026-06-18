@@ -1,15 +1,16 @@
 import type { ReactNode } from 'react';
 
-import { AdminShell } from '../../components/AdminShell';
-
 /**
  * Authenticated route group layout (FE-3 + FE-4).
  *
- * Server component that wraps the client `AdminShell`. The shell applies the
- * client-side admin guard (`useAdminGuard`): unauthenticated or non-admin
- * visitors are redirected to `/login`; only signed-in admins see the chrome +
- * children.
+ * This is now a pass-through: each section layout (dashboard, users, …) renders
+ * its own `AdminShell` so it can pass the correct per-section title to
+ * `AdminTopBar`.  The admin guard (`useAdminGuard`) lives inside `AdminShell`
+ * so every section is still fully protected.
+ *
+ * P7-06 change: moved `AdminShell` down into section layouts so nested layouts
+ * can supply distinct page titles without double-wrapping the shell.
  */
 export default function AdminGroupLayout({ children }: { children: ReactNode }) {
-  return <AdminShell>{children}</AdminShell>;
+  return <>{children}</>;
 }
