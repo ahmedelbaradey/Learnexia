@@ -105,6 +105,8 @@ These intentional decisions diverge from the source docs; each affected story re
 - P3-12 Interact with the AI tutor UI
 - P3-13 Build the adaptive student profile (behavioral modeling) *(barrier-to-entry: BE2)*
 - P3-14 Lexi recommendation narration *(kid-style AI voice over P5-09 recommendations; new HelperIntent, energy-costed — added 2026-06-18)*
+- P3-14a Level- and profile-aware Lexi framing *(enrichment: gamification level → motivational framing + profile encouragement style — added 2026-06-18)*
+- P3-13a Behavioral profile depth (grit/time-of-day derivations) *(**BACKLOG** — deferred; extends P3-13 — added 2026-06-18)*
 
 ### Phase 5 — Parent + Analytics
 - P5-01 Generate a weekly student report
@@ -116,6 +118,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P5-07 Feed learning data back into the system (calibration loop) *(barrier-to-entry: BE7)*
 - P5-08 Parent-scoped per-child read API *(unblocks the faked parent dashboard; backend fan-out over Gamification/Learning/Billing/Ai behind parent-owns-child authz — added 2026-06-18)*
 - P5-09 Per-child recommendation engine *(deterministic "Areas to focus" → next actions, free, daily job; narrated by P3-14 Lexi — added 2026-06-18)*
+- P5-09a Profile-aware recommendation selection *(enrichment: P3-13 profile dims → action-type/quantity/difficulty-nudge/ordering — added 2026-06-18)*
 
 ### Phase 6 — Stabilization
 - P6-01 Meet API & AI performance targets
