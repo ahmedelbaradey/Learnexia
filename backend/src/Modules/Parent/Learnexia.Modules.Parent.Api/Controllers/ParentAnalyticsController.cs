@@ -2,6 +2,7 @@ using Learnexia.Modules.Parent.Api.Bases;
 using Learnexia.Modules.Parent.Application.Features.Analytics.GetChildActivity;
 using Learnexia.Modules.Parent.Application.Features.Analytics.GetChildEnergy;
 using Learnexia.Modules.Parent.Application.Features.Analytics.GetChildProgress;
+using Learnexia.Modules.Parent.Application.Features.Analytics.GetChildRecommendations;
 using Learnexia.Modules.Parent.Application.Features.Analytics.GetChildReports;
 using Learnexia.Modules.Parent.Application.Features.Analytics.GetChildSubjectMastery;
 using Learnexia.Modules.Parent.Application.Features.Analytics.GetChildWeakAreas;
@@ -103,4 +104,14 @@ public class ParentAnalyticsController : AppControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetChildWeeklyReport(int id, [FromQuery] DateTime? week = null)
         => NewResult(await Mediator.Send(new GetWeeklyReportQuery(id, week)));
+
+    // E10 — Daily recommendation set (deterministic engine output; persisted by Hangfire job)
+    // Cold-start / no-data state → 200 OK with empty Items list; never 404.
+    [HttpGet("Children/{id:int}/Recommendations")]
+    [ProducesResponseType(typeof(BaseResponse<RecommendationsDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetChildRecommendations(int id)
+        => NewResult(await Mediator.Send(new GetChildRecommendationsQuery(id)));
 }

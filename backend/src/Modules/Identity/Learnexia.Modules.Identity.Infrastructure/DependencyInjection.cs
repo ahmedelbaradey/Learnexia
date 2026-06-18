@@ -100,6 +100,11 @@ public static class DependencyInjection
         // scoped. Mirrors the IUserLookup registration pattern.
         services.AddScoped<Learnexia.Shared.Contracts.Identity.IChildAccountService, Services.IdentityChildAccountService>();
 
+        // P5-09-BE-3a: IChildGradeQuery seam — lets the Learning recommendation job read a student's
+        // grade without an HTTP context (the job runs as Hangfire; no JWT/HttpContext available).
+        // Scoped — UserManager is scoped. Mirrors the IUserLookup and IChildAccountService pattern.
+        services.AddScoped<Learnexia.Shared.Contracts.Identity.IChildGradeQuery, Services.ChildGradeQueryService>();
+
         return services;
     }
 

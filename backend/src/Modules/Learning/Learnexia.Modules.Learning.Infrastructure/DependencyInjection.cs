@@ -55,6 +55,14 @@ public static class DependencyInjection
         // so it does not participate in any caller's scope. Mirrors SpacedRepetitionSweepJob registration.
         services.AddTransient<StudentProfileRecomputeJob>();
 
+        // P5-09-BE-3: Recommendation computation + persistence service (Option C — EF only here).
+        services.AddScoped<IRecommendationService, RecommendationService>();
+
+        // P5-09-BE-4: Daily recommendation recompute job.
+        // Transient — the job creates its own inner scope via IServiceScopeFactory.CreateAsyncScope().
+        // Mirrors StudentProfileRecomputeJob registration.
+        services.AddTransient<RecommendationRecomputeJob>();
+
         // P3-08 Adaptivity Engine options + service.
         // AdaptivityOptions lives in Domain so the pure engine can reference it without violating
         // the Application → Domain dependency direction.
@@ -112,6 +120,10 @@ public static class DependencyInjection
         // (the interface is already registered) — so this bridge wins when Learning is loaded.
         // The Ai module itself does NOT change; it continues to inject IStudentWeakAreasQuery.
         services.AddScoped<IStudentWeakAreasQuery, AiWeakAreasQueryBridge>();
+
+        // P5-09-BE-5: Cross-module read seam — returns the latest persisted recommendation set for
+        // a student. Consumed by the Parent analytics endpoint (BE-6) and P3-14 Lexi narration.
+        services.AddScoped<IStudentRecommendationsQuery, StudentRecommendationsQueryAdapter>();
 
         // Unit-of-Work behavior (ADR 0001 §2 + ADR 0002 §2): commit once per ICommand<>, then dispatch
         // domain events AFTER commit. Registered here in Infrastructure (not Application) because it

@@ -2549,4 +2549,36 @@
   <data name="WeeklyReportNotYetGenerated" xml:space="preserve">
     <value>لم يتم إنشاء تقرير أسبوعي لهذا الطفل بعد.</value>
   </data>
+  <!-- P5-09 Recommendation engine endpoint -->
+  <data name="RecommendationsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد التوصيات بنجاح.</value>
+  </data>
+  <!-- P5-09 Recommendation item i18n keys (stored as keys; resolved at display time) -->
+  <data name="RecReviewTitle" xml:space="preserve">
+    <value>حان وقت المراجعة</value>
+  </data>
+  <data name="RecReviewBody" xml:space="preserve">
+    <value>لديك منطقة ضعف تحتاج إلى مراجعة المفهوم قبل التدريب.</value>
+  </data>
+  <data name="RecReviewCta" xml:space="preserve">
+    <value>مراجعة المفهوم</value>
+  </data>
+  <data name="RecPracticeTitle" xml:space="preserve">
+    <value>واصل التدريب</value>
+  </data>
+  <data name="RecPracticeBody" xml:space="preserve">
+    <value>تدرّب على هذه المهارة لتعزيز فهمك.</value>
+  </data>
+  <data name="RecPracticeCta" xml:space="preserve">
+    <value>ابدأ التدريب</value>
+  </data>
+  <data name="RecColdStartTitle" xml:space="preserve">
+    <value>بداية رائعة!</value>
+  </data>
+  <data name="RecColdStartBody" xml:space="preserve">
+    <value>ليس لديك مناطق ضعف حتى الآن. أحسنت!</value>
+  </data>
+  <data name="RecColdStartCta" xml:space="preserve">
+    <value>تابع التعلم</value>
+  </data>
 </root>
