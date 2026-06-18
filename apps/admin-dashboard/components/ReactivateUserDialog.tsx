@@ -120,6 +120,7 @@ export function ReactivateUserDialog({
   const confirmButton = (
     <button
       type="button"
+      data-testid="dialog-confirm-btn"
       onClick={handleConfirm}
       disabled={isPending}
       aria-label={`${strings.lifecycleReactivateConfirm} ${userName}`}
@@ -173,6 +174,7 @@ export function ReactivateUserDialog({
       subtitle={strings.lifecycleReactivateSubtitle}
       cancelLabel={cancelLabel}
       confirmButton={confirmButton}
+      dialogTestId="reactivate-dialog"
     >
       {/* Prior suspension reason — shows only when present */}
       {lastStatusReason ? (

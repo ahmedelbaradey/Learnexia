@@ -293,6 +293,11 @@ export interface AdminStrings {
   gradeError404: string;
   gradeErrorNetwork: string;
 
+  /** Success message after a harmless profile PATCH (country / preferredLanguage). */
+  childProfileSaveSuccess: string;
+  /** Validation error shown when PATCH /profile returns 422 (unsupported language/country). */
+  childProfileError422: string;
+
   // Change learning language dialog (ChangeLearningLanguageDialog — DESTRUCTIVE)
   langDialogTitle: string;
   langDialogSubtitle: string;
@@ -557,6 +562,10 @@ const en: AdminStrings = {
   gradeError400Confirm: 'Please confirm the grade override.',
   gradeError404: 'This account is not a student account.',
   gradeErrorNetwork: 'Something went wrong. Please try again.',
+
+  // Profile PATCH copy (Bug fixes for edit/page.tsx — Job 2)
+  childProfileSaveSuccess: 'Profile has been updated successfully.',
+  childProfileError422: 'The country or display language value is not supported.',
 
   // Change learning language dialog
   langDialogTitle: 'Change Learning Language',
@@ -823,6 +832,10 @@ const ar: AdminStrings = {
   gradeError400Confirm: 'يرجى تأكيد تجاوز الصف.',
   gradeError404: 'هذا الحساب ليس حساب طالب.',
   gradeErrorNetwork: 'حدث خطأ ما. يُرجى المحاولة مرة أخرى.',
+
+  // Profile PATCH copy (Bug fixes for edit/page.tsx — Job 2)
+  childProfileSaveSuccess: 'تم تحديث الملف الشخصي بنجاح.',
+  childProfileError422: 'قيمة البلد أو لغة الواجهة غير مدعومة.',
 
   // Change learning language dialog
   langDialogTitle: 'تغيير لغة الدراسة',

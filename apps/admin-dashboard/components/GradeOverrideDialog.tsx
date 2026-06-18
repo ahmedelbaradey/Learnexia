@@ -184,6 +184,7 @@ export function GradeOverrideDialog({
   const confirmButton = (
     <button
       type="button"
+      data-testid="dialog-confirm-btn"
       onClick={handleConfirm}
       disabled={isPending}
       aria-disabled={!canSubmit || isPending}
@@ -237,6 +238,7 @@ export function GradeOverrideDialog({
       subtitle={strings.gradeDialogSubtitle}
       cancelLabel={ADMIN_LOCALE === 'ar' ? strings.childEditCancel : 'Cancel'}
       confirmButton={confirmButton}
+      dialogTestId="grade-dialog"
     >
       {/* Current grade display */}
       <Stack
@@ -282,6 +284,7 @@ export function GradeOverrideDialog({
         </label>
         <select
           id="grade-select"
+          data-testid="grade-select"
           value={selectedGrade === 0 ? '' : String(selectedGrade)}
           onChange={(e) => {
             setSelectedGrade(e.target.value ? parseInt(e.target.value, 10) : 0);
@@ -330,6 +333,7 @@ export function GradeOverrideDialog({
           alignItems="flex-start"
           padding="$3"
           borderRadius="$sm"
+          data-testid="grade-preserve-notice"
           style={{
             backgroundColor: 'rgba(34,197,94,0.08)',
             border: '1px solid rgba(34,197,94,0.15)',

@@ -120,6 +120,7 @@ export function SuspendUserDialog({ open, userId, userName, onClose, onSuccess }
   const confirmButton = (
     <button
       type="button"
+      data-testid="dialog-confirm-btn"
       onClick={handleConfirm}
       disabled={isPending}
       aria-disabled={!canSubmit || isPending}
@@ -175,6 +176,7 @@ export function SuspendUserDialog({ open, userId, userName, onClose, onSuccess }
       subtitle={strings.lifecycleSuspendSubtitle}
       cancelLabel={ADMIN_LOCALE === 'ar' ? 'إلغاء' : 'Cancel'}
       confirmButton={confirmButton}
+      dialogTestId="suspend-dialog"
     >
       {/* Governance notice */}
       <Stack
