@@ -10,7 +10,7 @@
  * comparisons — never use raw int literals.
  */
 
-import type { SubjectCodeValue, ContentLanguageValue } from '@learnexia/shared/constants';
+import type { SubjectCodeValue, ContentLanguageValue, DifficultyLevelValue, ContentBlockTypeValue, QuestionTypeValue, GeneratedByValue } from '@learnexia/shared/constants';
 
 // ── P7-01 Subject DTOs ────────────────────────────────────────────────────────
 
@@ -118,9 +118,107 @@ export interface GradeDto {
   name?: string | null;
 }
 
-// ── P7-02 Lesson / ContentBlock DTOs (stubs — P7-02 batch fills these) ───────
+// ── P7-02 Lesson / ContentBlock DTOs ─────────────────────────────────────────
 
-/** Lesson list item — stub for P7-02. */
+/**
+ * Wire shape from GET /api/learning/Lessons/List?UnitId={id} (paginated, AdminOnly).
+ * Admin list includes inactive lessons.
+ *
+ * Named AdminSingleLessonResponse to avoid collision with the NSwag-generated
+ * student-facing SingleLessonResponse in schemas.ts.
+ */
+export interface AdminSingleLessonResponse {
+  id: number;
+  name: string;
+  /** DifficultyLevel enum as int: Easy=1, Medium=2, Hard=3 */
+  difficulty: DifficultyLevelValue;
+  sequenceOrder: number;
+  isLocked: boolean;
+  unitId: number;
+  skillId: number | null;
+  estimatedMinutes: number;
+  isActive: boolean;
+}
+
+/**
+ * Wire shape from GET /api/learning/Lessons/{id}/Admin.
+ * Returns lesson metadata + all non-deleted blocks ordered by sequenceOrder.
+ */
+export interface AdminLessonDetailDto {
+  id: number;
+  name: string;
+  difficulty: DifficultyLevelValue;
+  sequenceOrder: number;
+  isLocked: boolean;
+  unitId: number;
+  skillId: number | null;
+  estimatedMinutes: number;
+  isActive: boolean;
+  contentBlocks: AdminContentBlockDto[];
+}
+
+/**
+ * Wire shape for a single content block (from AdminLessonDetailDto or ByLesson).
+ * isActive is display-only — no toggle endpoint (brief Q4).
+ */
+export interface AdminContentBlockDto {
+  id: number;
+  /** ContentBlockType enum as int: Text=1, Image=2, Video=3, Callout=4 */
+  blockType: ContentBlockTypeValue;
+  /** JSON string — parse per type using ParsedPayload union */
+  payload: string;
+  sequenceOrder: number;
+  isActive: boolean;
+}
+
+/** Body for POST /api/learning/Lessons/Create (AddLessonCommand). */
+export interface AddLessonDto {
+  name: string;
+  difficulty: DifficultyLevelValue;
+  sequenceOrder: number;
+  isLocked: boolean;
+  unitId: number;
+  skillId?: number | null;
+  estimatedMinutes: number;
+}
+
+/** Body for PUT /api/learning/Lessons/Update (EditLessonCommand). */
+export interface EditLessonDto {
+  id: number;
+  name: string;
+  difficulty: DifficultyLevelValue;
+  sequenceOrder: number;
+  isLocked: boolean;
+  unitId: number;
+  skillId?: number | null;
+  estimatedMinutes: number;
+}
+
+// ── Parsed payload shapes (FE-only; never sent raw — always re-serialize to JSON) ──
+
+export interface TextPayload    { markdown: string; }
+export interface ImagePayload   { url: string; altText?: string; }
+export interface VideoPayload   { url: string; caption?: string; }
+export interface CalloutPayload { variant: 'info' | 'warning' | 'tip'; markdown: string; }
+
+export type ParsedPayload = TextPayload | ImagePayload | VideoPayload | CalloutPayload;
+
+/** Body for POST /api/learning/ContentBlocks (add block). */
+export interface AddContentBlockDto {
+  lessonId: number;
+  blockType: ContentBlockTypeValue;
+  /** JSON-serialized payload string (exact per-type shape) */
+  payload: string;
+}
+
+/** Body for PUT /api/learning/ContentBlocks (edit block). */
+export interface EditContentBlockDto {
+  id: number;
+  blockType: ContentBlockTypeValue;
+  payload: string;
+}
+
+/** Alias retained for compatibility */
 export interface LessonDto {
   id: number;
   name: string;
@@ -129,27 +227,62 @@ export interface LessonDto {
   isActive: boolean;
 }
 
-/** Content block — stub for P7-02. */
-export interface AdminContentBlockDto {
-  id: number;
-  lessonId: number;
-  blockType: number;
-  content: string;
-  sequenceOrder: number;
-}
+// ── P7-04 Question DTOs ────────────────────────────────────────────────────────
 
-// ── P7-04 Question DTO (stub — P7-04 batch fills this) ───────────────────────
-
-/** Question list item — stub for P7-04. */
+/**
+ * Wire shape returned from:
+ *   GET /api/Learning/Questions/ByLesson/{lessonId}  (list, AdminOnly)
+ *   GET /api/Learning/Questions/{id}                  (single, AdminOnly)
+ *
+ * LOAD-BEARING contract for options/correctAnswer:
+ *  - Non-Matching: correctAnswer is a RAW SCALAR (e.g. "Paris", "true").
+ *    DO NOT JSON.parse it on read; DO NOT JSON.stringify it on write.
+ *  - Matching: options and correctAnswer are both JSON object strings.
+ *    Parse with try/catch on read; JSON.stringify on write.
+ */
 export interface AdminQuestionDto {
   id: number;
   lessonId: number;
-  questionType: number;
+  skillId: number | null;
+  /** QuestionType enum as int: MCQ=1, TrueFalse=2, Matching=3, FillInBlank=4 */
+  questionType: QuestionTypeValue;
   questionText: string;
+  /** JSON string — parse per type (see LOAD-BEARING section in P7-04 brief/spec) */
+  options: string;
+  /** Raw scalar or JSON object string — see per-type rules in P7-04 brief/spec */
+  correctAnswer: string;
+  /** DifficultyLevel enum as int: Easy=1, Medium=2, Hard=3 */
+  difficulty: DifficultyLevelValue;
+  /** GeneratedBy enum as int: Curated=1, AI=2 */
+  generatedBy: GeneratedByValue;
   sequenceOrder: number;
   isActive: boolean;
+}
+
+/** POST body for AddQuestionCommand. */
+export interface AddQuestionPayload {
+  lessonId: number;
+  skillId?: number | null;
+  questionType: QuestionTypeValue;
+  questionText: string;
+  /** JSON-serialized options string — per-type rules in P7-04 spec */
+  options: string;
+  /** Per-type correctAnswer — raw scalar for non-Matching; JSON string for Matching */
   correctAnswer: string;
-  options?: string | null;
+  difficulty: DifficultyLevelValue;
+  /** Always GENERATED_BY.Curated (=1) for admin-authored questions */
+  generatedBy: GeneratedByValue;
+}
+
+/** PUT body for EditQuestionCommand. */
+export interface EditQuestionPayload {
+  id: number;
+  questionType: QuestionTypeValue;
+  questionText: string;
+  options: string;
+  correctAnswer: string;
+  difficulty: DifficultyLevelValue;
+  // NOTE: lessonId/skillId/sequenceOrder/isActive intentionally absent
 }
 
 // ── P7-03 Skill / Graph DTOs (stubs — P7-03 batch fills these) ───────────────
