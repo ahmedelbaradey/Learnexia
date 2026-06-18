@@ -98,6 +98,8 @@ Purchased (pack) energy is family-owned, never expires, is not prorated, and is 
 - NoSeat/Locked child state in the Billing model + the **seat-based spend gate** so a locked child's AI spend is denied (graceful, localized).
 - Parent commands/queries: view seat state per child, choose which children keep active seats (validated against the paid-active-seat limit, family-scoped), reactivate a child.
 - `Shared.Contracts` seam so the AI/spend path and the Parent module can check seat state without crossing module boundaries.
+- **Reservation idempotency / concurrency correctness (folds in P10-14 security finding #3):** the add-child seat reservation must honour its idempotency key and be safe under concurrent same-parent calls (no two children sharing one seat row); enforcement reconciles `Active`/`Reserved` reservations against the active-seat count so any drift self-heals.
+- **Dedicated seat-event audit ledger:** every seat event — purchase, cycle-end cancel-scheduled, removal-at-renewal, lock, reactivation, and parent choice-applied — is written to a new append-only `SeatLedgerEntry` (Billing). This is **separate from the energy ledger** (`CreditTransaction`, unchanged): energy and seat events keep distinct ledgers. Includes back-filling the P10-14 purchase + cancel paths to ledger into `SeatLedgerEntry`.
 - Option C service-only (Application EF-free); no free-text string literals (localized keys + enums).
 
 **Frontend (P10-15-FE) — parent area only, other (frontend) lead:**

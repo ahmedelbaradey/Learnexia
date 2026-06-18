@@ -21,6 +21,14 @@ namespace Learnexia.Modules.Billing.Domain.Entities;
 ///   <item><see cref="SeatStatus.NoSeat"/>   — P10-15 enforcement; child has no current entitlement.</item>
 /// </list>
 /// </para>
+///
+/// <para><strong>P10-15 extensions:</strong>
+/// <list type="bullet">
+///   <item><see cref="SeatState"/> — child seat lifecycle state (Active / NoSeatLocked).</item>
+///   <item><see cref="RemovalScheduledAt"/> — set when parent voluntarily removes the seat (cycle-end effective).</item>
+///   <item><see cref="IdempotencyKey"/> — unique per-attempt key for concurrency-safe reservation (P10-15-BE-10).</item>
+/// </list>
+/// </para>
 /// </summary>
 public class SeatReservation : FullAuditedEntity
 {
@@ -52,6 +60,39 @@ public class SeatReservation : FullAuditedEntity
 
     /// <summary>Current seat lifecycle status.</summary>
     public SeatStatus Status { get; set; } = SeatStatus.Reserved;
+
+    // ── P10-15-BE-1: Seat lifecycle state (Active / NoSeatLocked) ───────────────
+
+    /// <summary>
+    /// Child seat lifecycle state (P10-15-BE-1). Stored as <c>int</c>.
+    /// <see cref="SeatState.Active"/> by default; transitions to
+    /// <see cref="SeatState.NoSeatLocked"/> on enforcement (never reverted inline — requires
+    /// a reactivation payment).
+    /// </summary>
+    public SeatState SeatState { get; set; } = SeatState.Active;
+
+    // ── P10-15-BE-1: Voluntary-removal scheduling ────────────────────────────────
+
+    /// <summary>
+    /// UTC timestamp when this seat is scheduled for removal at the next renewal boundary
+    /// (P10-15-BE-1 / BE-3). Set when a parent voluntarily cancels the seat.
+    ///
+    /// <para>The seat remains <see cref="SeatStatus.Active"/> until this date passes.
+    /// Child keeps allocation + AI access for the remainder of the cycle. No grace period is
+    /// started (grace = payment-failure only). No energy is reclaimed.</para>
+    /// </summary>
+    public DateTime? RemovalScheduledAt { get; set; }
+
+    // ── P10-15-BE-10: Idempotency key for concurrency-safe reservation ───────────
+
+    /// <summary>
+    /// Unique idempotency key for this reservation attempt (P10-15-BE-10).
+    ///
+    /// <para>Stored on the row so concurrent same-parent add-child calls never share a single
+    /// placeholder row. Two simultaneous reservations with distinct keys create two distinct rows
+    /// and are resolved against the unique filtered index independently. Max 128 chars.</para>
+    /// </summary>
+    public string? IdempotencyKey { get; set; }
 
     // ── Timestamps ──────────────────────────────────────────────────────────────
 

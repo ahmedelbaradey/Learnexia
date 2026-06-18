@@ -61,9 +61,15 @@ public class AddChildCommandHandler : BaseResponseHandler, ICommandHandler<AddCh
             // ── P10-14-BE-5: Reserve a seat BEFORE creating the child ──────────────────────
             // NIT (a) child-privacy: hash the plaintext email before persisting to IdempotencyKey.
             // SHA256 hex, first 16 chars — collision risk is negligible for this use-case.
+            // P10-15-BE-10: the reservation key must be UNIQUE PER ATTEMPT, not purely email-derived.
+            // A duplicate-email add is a NEW attempt that must be rejected with 400 — NOT treated as an
+            // idempotent retry of the original (which, under the key-based reserve/release, would
+            // mis-resolve and release the EXISTING sibling's active seat). The per-attempt nonce keeps
+            // each attempt's reservation independent; concurrency safety comes from the SELECT…FOR UPDATE
+            // serialization in ReserveSeatAsync, and child-email uniqueness is enforced at creation.
             var emailHashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(request.Email.ToLowerInvariant()));
             var emailHash      = Convert.ToHexStringLower(emailHashBytes)[..16];
-            var reservationKey = $"add-child-seat:{parentId.Value}:{emailHash}";
+            var reservationKey = $"add-child-seat:{parentId.Value}:{emailHash}:{Guid.NewGuid():N}";
             var seatResult = await _seatContract.ReserveSeatAsync(
                 parentId.Value,
                 0,              // childId not yet known — 0 placeholder; updated to Active after creation
@@ -99,7 +105,10 @@ public class AddChildCommandHandler : BaseResponseHandler, ICommandHandler<AddCh
             if (!createResult.Succeeded || createResult.Profile is null)
             {
                 // ── COMPENSATION: release the reserved seat so the ceiling is not wasted ──
-                await _seatContract.ReleaseSeatAsync(parentId.Value, 0, cancellationToken);
+                // P10-15-BE-10: thread reservationKey so the service resolves the EXACT row
+                // by idempotency key — not by "most-recent childId=0" (ambiguous under concurrency).
+                await _seatContract.ReleaseSeatAsync(parentId.Value, 0, cancellationToken,
+                    reservationKey: reservationKey);
 
                 _logger.LogError(null,
                     $"AddChildCommand: child creation failed for parent={parentId.Value}, " +
@@ -119,7 +128,9 @@ public class AddChildCommandHandler : BaseResponseHandler, ICommandHandler<AddCh
             catch (Exception linkEx)
             {
                 // Link failed after child creation — compensate the seat reservation.
-                await _seatContract.ReleaseSeatAsync(parentId.Value, 0, cancellationToken);
+                // P10-15-BE-10: key-based release so we release the exact row for this call.
+                await _seatContract.ReleaseSeatAsync(parentId.Value, 0, cancellationToken,
+                    reservationKey: reservationKey);
                 _logger.LogError(linkEx,
                     $"AddChildCommand: link failed for parent={parentId.Value}, child={createResult.ChildUserId}. Seat released.");
                 return ServerError<AddedChildResponse>(_localizer[SharedResourcesKey.SystemErrorSavingData]);
@@ -128,7 +139,11 @@ public class AddChildCommandHandler : BaseResponseHandler, ICommandHandler<AddCh
             // ── Activate the seat (Reserved → Active) ─────────────────────────────────────
             // Best-effort: if activation fails the seat remains Reserved until the next
             // reconciliation cycle (P10-15 enforcement handles stale Reserved seats).
-            await _seatContract.ActivateSeatAsync(parentId.Value, createResult.ChildUserId, cancellationToken);
+            // P10-15-BE-10: thread reservationKey so ActivateSeatAsync finds the EXACT row
+            // for this call's placeholder and stamps the real childId — not another concurrent
+            // call's childId=0 row.
+            await _seatContract.ActivateSeatAsync(parentId.Value, createResult.ChildUserId, cancellationToken,
+                reservationKey: reservationKey);
 
             _logger.LogInfo(
                 $"AddChildCommand: added child {createResult.Profile.Id} for parent={parentId.Value}. Seat activated.");

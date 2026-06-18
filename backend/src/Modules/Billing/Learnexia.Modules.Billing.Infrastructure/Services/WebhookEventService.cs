@@ -206,6 +206,22 @@ public sealed class WebhookEventService : IWebhookEventService
                     {
                         sub.PurchasedExtraSeats += 1;
                         seatOutcome = "SeatPaymentConfirmed";
+
+                        // BE-11: append SeatLedgerEntry{Purchased} for the new seat.
+                        var ledgerEntry = new SeatLedgerEntry
+                        {
+                            SubscriptionId = sub.Id,
+                            ParentUserId   = payment.ParentUserId,
+                            EventType      = SeatLedgerEventType.Purchased,
+                            Quantity       = 1,
+                            Amount         = payment.Amount,
+                            IdempotencyKey = $"seat-purchase:{payment.Id}:{parsed.ProviderEventId}",
+                            OccurredAt     = DateTime.UtcNow,
+                            CreatedAt      = DateTime.UtcNow,
+                            CreatedBy      = 0,
+                        };
+                        await _db.SeatLedgerEntries.AddAsync(ledgerEntry, ct);
+
                         _logger.LogInfo(
                             $"WebhookEventService: Seat payment {payment.Id} — incremented PurchasedExtraSeats for " +
                             $"subscriptionId={sub.Id}, parentId={payment.ParentUserId}.");
@@ -219,6 +235,100 @@ public sealed class WebhookEventService : IWebhookEventService
                 await tx.CommitAsync(ct);
 
                 return WebhookProcessResult.Ok(seatOutcome);
+            }
+
+            // ── SeatReactivation path (P10-15-BE-7) ──────────────────────────────────────
+            // flip NoSeatLocked → Active, re-join allocation row, append SeatLedgerEntry{Reactivated}.
+            if (payment.Kind == PaymentKind.SeatReactivation)
+            {
+                // Idempotency: payment must still be Initiated (single-shot lock like Seat branch).
+                if (payment.Status != PaymentStatus.Initiated)
+                {
+                    webhookRecord.ProcessedAt = DateTime.UtcNow;
+                    webhookRecord.Succeeded   = true;
+                    await _db.SaveChangesAsync(0);
+                    await tx.CommitAsync(ct);
+
+                    _logger.LogInfo(
+                        $"WebhookEventService: SeatReactivation payment {payment.Id} already in status {payment.Status} — duplicate ignored.");
+                    return WebhookProcessResult.Ok("SeatReactivationDuplicate");
+                }
+
+                payment.Status = PaymentStatus.Succeeded;
+
+                if (!payment.SubscriptionId.HasValue || !payment.TargetChildId.HasValue)
+                {
+                    webhookRecord.ProcessedAt = DateTime.UtcNow;
+                    webhookRecord.Succeeded   = true;
+                    await _db.SaveChangesAsync(0);
+                    await tx.CommitAsync(ct);
+
+                    _logger.LogInfo(
+                        $"WebhookEventService: SeatReactivation payment {payment.Id} missing SubscriptionId/TargetChildId — recorded.");
+                    return WebhookProcessResult.Ok("SeatReactivationMissingContext");
+                }
+
+                var reactivationSub = await _db.Subscriptions
+                    .FirstOrDefaultAsync(s => s.Id == payment.SubscriptionId.Value
+                                           && s.ParentUserId == payment.ParentUserId, ct);
+
+                if (reactivationSub is null)
+                {
+                    webhookRecord.ProcessedAt = DateTime.UtcNow;
+                    webhookRecord.Succeeded   = true;
+                    await _db.SaveChangesAsync(0);
+                    await tx.CommitAsync(ct);
+
+                    _logger.LogInfo(
+                        $"WebhookEventService: SeatReactivation payment {payment.Id} — subscription not found.");
+                    return WebhookProcessResult.Ok("SeatReactivationNoSubscription");
+                }
+
+                // Flip the child's seat from NoSeatLocked to Active.
+                var lockedReservation = await _db.SeatReservations
+                    .FirstOrDefaultAsync(r => r.SubscriptionId == payment.SubscriptionId.Value
+                                           && r.ChildId        == payment.TargetChildId.Value
+                                           && (r.Status == SeatStatus.Active || r.Status == SeatStatus.Reserved)
+                                           && r.SeatState == SeatState.NoSeatLocked, ct);
+
+                string reactivationOutcome;
+                if (lockedReservation is null)
+                {
+                    reactivationOutcome = "SeatReactivationNotLocked";
+                    _logger.LogInfo(
+                        $"WebhookEventService: SeatReactivation payment {payment.Id} — child {payment.TargetChildId.Value} not in NoSeatLocked state; no-op.");
+                }
+                else
+                {
+                    lockedReservation.SeatState = SeatState.Active;
+
+                    // Append SeatLedgerEntry{Reactivated}.
+                    var reactivationLedger = new SeatLedgerEntry
+                    {
+                        SubscriptionId = payment.SubscriptionId.Value,
+                        ParentUserId   = payment.ParentUserId,
+                        ChildId        = payment.TargetChildId.Value,
+                        EventType      = SeatLedgerEventType.Reactivated,
+                        Amount         = payment.Amount,
+                        IdempotencyKey = $"seat-reactivation:{payment.Id}:{parsed.ProviderEventId}",
+                        OccurredAt     = DateTime.UtcNow,
+                        CreatedAt      = DateTime.UtcNow,
+                        CreatedBy      = 0,
+                    };
+                    await _db.SeatLedgerEntries.AddAsync(reactivationLedger, ct);
+                    reactivationOutcome = "SeatReactivationConfirmed";
+
+                    _logger.LogInfo(
+                        $"WebhookEventService: SeatReactivation — child {payment.TargetChildId.Value} reactivated " +
+                        $"under subscriptionId={payment.SubscriptionId.Value}.");
+                }
+
+                webhookRecord.ProcessedAt = DateTime.UtcNow;
+                webhookRecord.Succeeded   = true;
+                await _db.SaveChangesAsync(0);
+                await tx.CommitAsync(ct);
+
+                return WebhookProcessResult.Ok(reactivationOutcome);
             }
 
             // ── Subscription path ─────────────────────────────────────────────────────

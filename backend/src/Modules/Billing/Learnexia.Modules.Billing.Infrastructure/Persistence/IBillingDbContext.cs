@@ -32,6 +32,12 @@ public interface IBillingDbContext
     DbSet<ChildEnergyAllocation> ChildEnergyAllocations { get; }
     DbSet<ChildDailyUsage> ChildDailyUsages { get; }
 
+    // P10-14 seat reservation entity.
+    DbSet<SeatReservation> SeatReservations { get; }
+
+    // P10-15 seat ledger (append-only audit of all seat lifecycle events).
+    DbSet<SeatLedgerEntry> SeatLedgerEntries { get; }
+
     DatabaseFacade Database { get; }
     ChangeTracker ChangeTracker { get; }
 

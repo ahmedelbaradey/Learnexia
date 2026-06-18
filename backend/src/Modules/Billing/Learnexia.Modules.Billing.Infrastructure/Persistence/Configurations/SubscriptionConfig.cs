@@ -85,6 +85,15 @@ public class SubscriptionConfig : IEntityTypeConfiguration<Subscription>
             .HasColumnType("timestamptz")
             .IsRequired(false);
 
+        // ── P10-15-BE-1: Seat grace audit fields ─────────────────────────────────────
+        builder.Property(x => x.SeatGraceStartedAt)
+            .HasColumnType("timestamptz")
+            .IsRequired(false);
+
+        builder.Property(x => x.SeatGraceReason)
+            .HasConversion<int?>()
+            .IsRequired(false);
+
         // Index to support DunningRetryJob's query: WHERE Status IN (PastDue, Dunning) AND NextRetryAt <= now
         builder.HasIndex(x => new { x.Status, x.NextRetryAt })
             .HasDatabaseName("IX_Subscriptions_Status_NextRetryAt");

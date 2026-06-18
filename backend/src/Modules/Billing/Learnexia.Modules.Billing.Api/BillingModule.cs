@@ -98,6 +98,14 @@ public static class BillingModule
             "0 * * * *",   // every hour on the hour
             new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
-        logger.LogInfo("BillingModule: Hangfire jobs registered (billing:monthly-grant, billing:reconcile-payments, billing:dunning-retry).");
+        // P10-15-BE-4: Seat enforcement sweep — runs daily at 02:00 UTC.
+        // Locks over-limit children after grace expiry and applies RemovalScheduledAt markers.
+        recurringJobs.AddOrUpdate<SeatEnforcementJob>(
+            "billing:seat-enforcement",
+            job => job.RunAsync(CancellationToken.None),
+            "0 2 * * *",   // 02:00 UTC daily
+            new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+        logger.LogInfo("BillingModule: Hangfire jobs registered (billing:monthly-grant, billing:reconcile-payments, billing:dunning-retry, billing:seat-enforcement).");
     }
 }

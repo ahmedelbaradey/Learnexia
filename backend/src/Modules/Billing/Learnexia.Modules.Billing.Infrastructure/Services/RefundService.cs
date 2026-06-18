@@ -274,12 +274,20 @@ public sealed class RefundService : IRefundService
             if (subscription.FailedAttemptCount >= maxRetries)
             {
                 // Retries exhausted — enter final grace window.
+                // P10-15-BE-2: seat grace window = now + seats.grace_days (7 days by default).
+                // Idempotency: if GraceEndsAt is already set and > nowUtc, do NOT extend/shorten.
                 subscription.Status    = SubscriptionStatus.Dunning;
-                subscription.GraceEndsAt = subscription.CurrentCycleEnd;
                 subscription.NextRetryAt = null;
                 downgradeScheduled = true;
-                graceEndsAt = subscription.GraceEndsAt;
                 nextRetryAt = null;
+                if (subscription.GraceEndsAt == null || subscription.GraceEndsAt <= nowUtc)
+                {
+                    var graceDays = _settings.GetInt(GlobalSettingKeys.SeatsGraceDays, 7);
+                    subscription.GraceEndsAt = nowUtc.AddDays(graceDays);
+                    subscription.SeatGraceStartedAt = nowUtc;
+                    subscription.SeatGraceReason = SeatGraceReason.PaymentFailure;
+                }
+                graceEndsAt = subscription.GraceEndsAt;
             }
             else
             {

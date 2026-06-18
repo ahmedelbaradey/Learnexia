@@ -1,5 +1,7 @@
 using Learnexia.Modules.Billing.Api.Bases;
 using Learnexia.Modules.Billing.Application.Features.Seats.Commands.CancelExtraSeat;
+using Learnexia.Modules.Billing.Application.Features.Seats.Commands.ChooseActiveChildren;
+using Learnexia.Modules.Billing.Application.Features.Seats.Commands.ReactivateChildSeat;
 using Learnexia.Modules.Billing.Application.Features.Seats.Commands.StartSeatCheckout;
 using Learnexia.Modules.Billing.Application.Features.Seats.Queries.GetSeatStatus;
 using Microsoft.AspNetCore.Authorization;
@@ -69,4 +71,40 @@ public sealed class SeatController : AppControllerBase
         [FromBody] int seatQuantity,
         CancellationToken cancellationToken)
         => NewResult(await Mediator.Send(new CancelExtraSeatCommand(seatQuantity), cancellationToken));
+
+    /// <summary>
+    /// Explicitly selects which children hold active seats (P10-15-BE-6 / BE-9).
+    ///
+    /// <para>Locks children NOT in the supplied list (<c>NoSeatLocked</c>). Children already
+    /// <c>NoSeatLocked</c> cannot be moved back to Active via this endpoint — they require a
+    /// paid reactivation checkout first.</para>
+    ///
+    /// <para>The paid-active-seat limit guard is enforced server-side. <c>ParentUserId</c> and
+    /// family-ownership of all child ids are JWT-resolved — no IDOR.</para>
+    /// </summary>
+    /// <param name="command">The list of child ids that should hold active seats.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    [HttpPost("ChooseActive")]
+    public async Task<IActionResult> ChooseActiveChildren(
+        [FromBody] ChooseActiveChildrenCommand command,
+        CancellationToken cancellationToken)
+        => NewResult(await Mediator.Send(command, cancellationToken));
+
+    /// <summary>
+    /// Initiates a prorated reactivation checkout for a child whose seat is <c>NoSeatLocked</c>
+    /// (P10-15-BE-6 / BE-9).
+    ///
+    /// <para>On webhook confirmation, the child's seat transitions back to <c>Active</c>.
+    /// ZERO energy is minted (money-only). The price is prorated by the remaining cycle fraction
+    /// and is resolved SERVER-SIDE — never client-supplied.</para>
+    ///
+    /// <para><c>ParentUserId</c> is JWT-resolved; the child must belong to the parent's family.</para>
+    /// </summary>
+    /// <param name="command">The child id + idempotency key for the reactivation checkout.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    [HttpPost("Reactivate")]
+    public async Task<IActionResult> ReactivateChildSeat(
+        [FromBody] ReactivateChildSeatCommand command,
+        CancellationToken cancellationToken)
+        => NewResult(await Mediator.Send(command, cancellationToken));
 }
