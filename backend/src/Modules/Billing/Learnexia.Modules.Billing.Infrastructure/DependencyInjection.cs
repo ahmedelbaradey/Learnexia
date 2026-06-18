@@ -4,6 +4,7 @@ using Learnexia.Modules.Billing.Infrastructure.Jobs;
 using Learnexia.Modules.Billing.Infrastructure.Options;
 using Learnexia.Modules.Billing.Infrastructure.Persistence;
 using Learnexia.Modules.Billing.Infrastructure.Providers;
+using Learnexia.Modules.Billing.Infrastructure.Queries;
 using Learnexia.Modules.Billing.Infrastructure.Service;
 using Learnexia.Modules.Billing.Infrastructure.Services;
 using RefundService = Learnexia.Modules.Billing.Infrastructure.Services.RefundService;
@@ -242,6 +243,13 @@ public static class DependencyInjection
         // Used by the Ai module and any other module that needs the unified access gate.
         // Scoped: depends on scoped BillingDbContext.
         services.AddScoped<IChildAccessStateQuery, ChildAccessStateQuery>();
+
+        // ── P5-08-BE-4: Child energy usage read seam (Parent dashboard read) ─────────────────────
+        // IChildEnergyUsageQuery — PURE READ. Reads ChildEnergyAllocation + FamilyEnergyAccount
+        // + CreditTransaction with AsNoTracking(). Does NOT call GetBalanceAsync (which bootstraps
+        // a ChildDailyUsage row — write-on-read). A child with no wallet/allocation → zeroed result.
+        // Scoped: depends on scoped BillingDbContext.
+        services.AddScoped<IChildEnergyUsageQuery, PostgresChildEnergyUsageQuery>();
 
         return services;
     }

@@ -134,6 +134,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Learnexia.Modules.Billing.A
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Modules.Billing.UnitTests", "tests\Modules.Billing.UnitTests\Modules.Billing.UnitTests.csproj", "{C0000007-0000-0000-0000-000000000007}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Modules.Gamification.UnitTests", "tests\Modules.Gamification.UnitTests\Modules.Gamification.UnitTests.csproj", "{C0000008-0000-0000-0000-000000000008}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -708,6 +710,18 @@ Global
 		{C0000007-0000-0000-0000-000000000007}.Release|x64.Build.0 = Release|Any CPU
 		{C0000007-0000-0000-0000-000000000007}.Release|x86.ActiveCfg = Release|Any CPU
 		{C0000007-0000-0000-0000-000000000007}.Release|x86.Build.0 = Release|Any CPU
+		{C0000008-0000-0000-0000-000000000008}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0000008-0000-0000-0000-000000000008}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0000008-0000-0000-0000-000000000008}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C0000008-0000-0000-0000-000000000008}.Debug|x64.Build.0 = Debug|Any CPU
+		{C0000008-0000-0000-0000-000000000008}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C0000008-0000-0000-0000-000000000008}.Debug|x86.Build.0 = Debug|Any CPU
+		{C0000008-0000-0000-0000-000000000008}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0000008-0000-0000-0000-000000000008}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0000008-0000-0000-0000-000000000008}.Release|x64.ActiveCfg = Release|Any CPU
+		{C0000008-0000-0000-0000-000000000008}.Release|x64.Build.0 = Release|Any CPU
+		{C0000008-0000-0000-0000-000000000008}.Release|x86.ActiveCfg = Release|Any CPU
+		{C0000008-0000-0000-0000-000000000008}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -772,5 +786,6 @@ Global
 		{B0000093-0000-0000-0000-000000000093} = {A0000090-0000-0000-0000-000000000090}
 		{B0000094-0000-0000-0000-000000000094} = {A0000090-0000-0000-0000-000000000090}
 		{C0000007-0000-0000-0000-000000000007} = {A0000005-0000-0000-0000-000000000005}
+		{C0000008-0000-0000-0000-000000000008} = {A0000005-0000-0000-0000-000000000005}
 	EndGlobalSection
 EndGlobal

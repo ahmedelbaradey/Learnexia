@@ -147,6 +147,12 @@ public static class DependencyInjection
         // is always resolved in a fresh scope. Runs daily at 03:00 UTC.
         services.AddTransient<GamificationCacheRebuildJob>();
 
+        // ── P5-08-BE-1: XP time-series seam (Parent dashboard read) ─────────────────
+        // IStudentXpTimeSeriesQuery — pure read from XpAward ledger + StudentXpProfile.
+        // Scoped: depends on scoped GamificationDbContext. No cache decorator needed here
+        // (time-series reads are caller-window-specific; caching is the handler's concern if needed).
+        services.AddScoped<IStudentXpTimeSeriesQuery, PostgresStudentXpTimeSeriesQuery>();
+
         // Unit-of-Work behavior (ADR 0001 §2 + ADR 0002 §2): commit once per ICommand<>, then dispatch
         // domain events AFTER commit. Registered here in Infrastructure (not Application) because it
         // injects the concrete GamificationDbContext. Registered AFTER ValidationBehavior (added in
