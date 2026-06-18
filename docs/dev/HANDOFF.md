@@ -1,3 +1,22 @@
+## Phase-5 Parent-Read API wave — 2026-06-18 (PR open, awaiting user merge)
+
+**New backend wave on `feat/P5-parent-read-api` (9 commits) → PR pending — unblocks the FAKED parent app.** Lead-approved 2026-06-18: new story **P5-08** (live parent-scoped reads), **Parent** module owns the controller (no new module), **FULL slice**. The parent app's dashboard/overview/reports/activity screens were faked (`parentDashboardStubs.ts`) because the backend only had self-scoped *student* endpoints; this wave adds parent-scoped per-child reads that fan out to the existing data.
+
+**What shipped (all backend; FE = the other lead's `P5-05-FE`, swaps stubs 1:1):**
+- **Cross-module read seams** (`Shared.Contracts`, loose int ids, no FK): Gamification `IStudentXpTimeSeriesQuery`; Learning `IStudentLearningStatsQuery` + `IStudentMasterySummaryQuery` + `IStudentAllSubjectsWeakAreasQuery`; Billing `IChildEnergyUsageQuery` (**pure-read** — derives from the wallet, never `GetBalanceAsync`, no write-on-read).
+- **P5-02 weak-area detector** (`WeakAreaDetectorService`, Learning) — ranks weak skills from `StudentSkillMastery` (<50%/NeedsReview) + recent `Attempt` error rate → severity + suggested action. Re-wires `Ai.IStudentWeakAreasQuery` off the `EmptyWeakAreasQuery` placeholder via `AiWeakAreasQueryBridge` (Ai stub now `TryAddTransient` → the bridge wins when Learning is loaded).
+- **9 parent endpoints** (`ParentAnalyticsController`, `api/Parent/*`, `[Authorize(Roles="Parent,Admin,SuperAdmin")]` mirroring `ParentController`): E1 Progress, E2 Family/Summary, E3 WeeklyKpis(+WoW), E4 SubjectMastery, E5 WeakAreas, E6 Reports, E7 Energy, E8 Activity, E9 WeeklyReport. **IDOR**: parentId from JWT + `IParentChildQuery.IsParentOfChildAsync` before every fan-out → generic 403 (no oracle). EF-free handlers (Option C); per-seam try/catch graceful degradation.
+- **P5-01 weekly report**: `WeeklyReport` table (Parent schema, jsonb, unique (ChildId, WeekStartUtc), migration `20260618070103_AddWeeklyReport`) + generator (idempotent per-week upsert) + Hangfire `WeeklyReportJob` (`parent:weekly-report`, cron `0 3 * * 1`) + E9 read.
+
+**Gates:** build 0 errors; unit **826** (Learning 335, Gamification 12, Billing 160, Parent 22, Ai 297); integration **28/28** (`P5_08_ParentReadApi_IntegrationTests` — cross-family IDOR proven E1+E3-E9, auth 401/403, zero-states, E9 idempotency); **security-auditor PASS** (0 findings); **reviewer PASS**.
+
+**Deferred follow-ups (reviewer should-fix / nits — non-blocking):**
+- **Localize the persisted weekly-report recommendations.** `WeeklyReportGeneratorService` stores English literals (`"Review concept for {skill}"`) instead of the EN+AR keys (`WeakAreaActionReviewConcept`/`WeakAreaActionPracticeSkill`) — partial AC5 miss on persisted text. Fix = store a localization key + skill-name param and localize at the E9 read (the Hangfire job has no request culture). Acceptable to defer because the FE renders recommendations from the structured weak-area data. (The detector's `SuggestedNextAction` likely has the same English-literal issue — check it in the same pass.)
+- `WeeklyReportGeneratorService.SkillsImproved` is an MVP proxy (count of subjects with mastery>0), not a true WoW skill-improvement delta — documented, fine for MVP.
+- Cosmetic: `PostgresChildEnergyUsageQuery`/`PostgresStudentXpTimeSeriesQuery` class names vs their `*Query.cs` file names.
+
+---
+
 ## Phase-10 Family-Wallet wave MERGED + deferred-hardening batch — 2026-06-18
 
 **The whole Phase-10 family-wallet/seats wave is now in `main`.** Merged in order: #166 (P3_AI build hotfix → main), then the stack #162 (P10-15) → #164 (P10-16) → #168 (P10-17) → #169 (P10-18). Merged main verified: build 0 errors, Billing unit 147/147. (Stacked PRs do NOT auto-retarget unless the base branch is deleted — each child PR's base was manually retargeted to `main` before merging.)
