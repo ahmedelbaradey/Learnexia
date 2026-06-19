@@ -637,6 +637,110 @@ public sealed class P9_07_NudgeArbitration_Tests : IAsyncLifetime
     }
 
     // =========================================================================
+    // TC-15 — LEGACY handler (StreakAtRiskIntegrationEvent) gated by per-child budget
+    //
+    // The whole point of the fix: the dispatcher resolves the per-child budget from
+    // the prefs service for EVERY nudge, including legacy handlers that never set
+    // GlobalDailyPushBudget on the message (the field no longer exists on NudgeMessage).
+    //
+    // Scenario:
+    //   - Parent sets GlobalDailyPushBudget = 1 for the child (via prefs PUT endpoint)
+    //   - One prior push row is seeded for today (exhausts the budget)
+    //   - A StreakAtRiskIntegrationEvent is published (legacy handler path)
+    //   - Assert: inbox row IS written (in-app is never rationed)
+    //             push bit (DeliveredChannels & 2) is NOT set (per-child budget exhausted)
+    // =========================================================================
+
+    [Fact(DisplayName = "P907-TC15 LEGACY handler (StreakAtRisk): per-child budget=1 exhausted → inbox row written, push bit NOT set")]
+    public async Task TC15_LegacyHandler_StreakAtRisk_PerChildBudgetExhausted_InboxWrittenNoPushBit()
+    {
+        var (parentToken, _, _, childId) = await CreateParentChildPairAsync("tc15");
+
+        // 1. Set StreakAtRisk Push=true + GlobalDailyPushBudget=1 via the prefs endpoint.
+        //    This persists ChildReengagementPreference.GlobalDailyPushBudget = 1 in the DB,
+        //    which the dispatcher will read via IChildReengagementPreferenceService.GetGlobalDailyPushBudgetAsync.
+        await SetPushEnabledWithBudgetAsync(parentToken, childId, dailyCap: 10, globalPushBudget: 1);
+
+        // 2. Register a device token so the push path is actually entered (no token → push skipped trivially).
+        await RegisterDeviceTokenDirectlyAsync(childId, $"ExponentPushToken[TC15_{childId}]");
+
+        // 3. Seed one prior push row for today to exhaust budget=1.
+        //    DeliveredChannels=2 (push bit) + SentAtUtc=now → CountPushesSentTodayAsync returns 1.
+        await SeedPushNotificationAsync(childId, "PRIOR_PUSH_TC15");
+
+        _factory.PushSender.Reset();
+
+        // 4. Publish a StreakAtRiskIntegrationEvent — a "legacy" handler that previously
+        //    did NOT pre-compute the budget; the dispatcher must resolve it from the prefs service.
+        await PublishAsync(new StreakAtRiskIntegrationEvent(
+            EventId:              Guid.NewGuid(),
+            OccurredOnUtc:        DateTime.UtcNow,
+            StudentId:            childId,
+            CurrentStreak:        5,
+            LastActivityDateUtc:  DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1))));
+
+        await Task.Delay(400);
+
+        // 5a. Inbox row must be written (inbox is never rationed by budget).
+        var notifs = await GetNotificationsAsync(childId, code: "STREAK_AT_RISK");
+        notifs.Should().NotBeEmpty(
+            "StreakAtRiskIntegrationEventHandler must always write an inbox row even when " +
+            "the per-child global push budget is exhausted");
+
+        // 5b. Push bit must NOT be set: the dispatcher resolved budget=1 from the prefs service,
+        //     saw 1 push already sent today (the seeded prior row), and suppressed push.
+        //     This proves legacy handlers are gated by the parent's actual per-child budget,
+        //     NOT the config default (which would be 4 and would NOT suppress the push here).
+        var pushBit = notifs.First().DeliveredChannels & 2;
+        pushBit.Should().Be(0,
+            "push bit must be 0: per-child GlobalDailyPushBudget=1 is exhausted (1 prior push today). " +
+            "The dispatcher reads this budget from IChildReengagementPreferenceService — " +
+            "NOT from a field on NudgeMessage — so the legacy StreakAtRisk handler is gated identically " +
+            "to the newer handlers (this is the core regression assertion for the budget-resolution fix)");
+    }
+
+    // =========================================================================
+    // TC-16 — LEGACY handler (StreakAtRiskIntegrationEvent) under budget → push bit SET
+    //
+    // Converse of TC-15: when no explicit per-child budget is set (null → config default=4)
+    // and 0 pushes have been sent today, the arbiter grants and the push bit IS set.
+    // This proves the dispatcher correctly falls back to the config default for legacy handlers
+    // when no per-child budget is configured.
+    // =========================================================================
+
+    [Fact(DisplayName = "P907-TC16 LEGACY handler (StreakAtRisk): no per-child budget (falls back to default=4) → push bit set")]
+    public async Task TC16_LegacyHandler_StreakAtRisk_NoBudgetConfigured_FallsBackToDefault_PushBitSet()
+    {
+        var (parentToken, _, _, childId) = await CreateParentChildPairAsync("tc16");
+
+        // Set StreakAtRisk Push=true but leave GlobalDailyPushBudget = null (use platform default=4).
+        await SetPushEnabledWithBudgetAsync(parentToken, childId, dailyCap: 10, globalPushBudget: null);
+
+        // Register a device token.
+        await RegisterDeviceTokenDirectlyAsync(childId, $"ExponentPushToken[TC16_{childId}]");
+
+        _factory.PushSender.Reset();
+
+        // No prior pushes today → budget=4 (default) is not exhausted.
+        await PublishAsync(new StreakAtRiskIntegrationEvent(
+            EventId:              Guid.NewGuid(),
+            OccurredOnUtc:        DateTime.UtcNow,
+            StudentId:            childId,
+            CurrentStreak:        3,
+            LastActivityDateUtc:  DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1))));
+
+        await Task.Delay(400);
+
+        var notifs = await GetNotificationsAsync(childId, code: "STREAK_AT_RISK");
+        notifs.Should().NotBeEmpty("StreakAtRisk event must produce a notification row");
+
+        var pushBit = notifs.First().DeliveredChannels & 2;
+        pushBit.Should().Be(2,
+            "push bit must be set when budget is available (no per-child budget → default=4, 0 prior pushes today) " +
+            "and Push=true and device token is registered — this confirms the converse of TC-15");
+    }
+
+    // =========================================================================
     // Seed helpers — mirrors P4_09 pattern + P9-specific additions
     // =========================================================================
 
