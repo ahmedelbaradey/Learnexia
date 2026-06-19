@@ -6,6 +6,7 @@ using Learnexia.Modules.Ai.Application.Features.Simplify.Commands;
 using Learnexia.Modules.Ai.Application.Options;
 using Learnexia.Modules.Ai.Application.PromptBuilder;
 using Learnexia.Modules.Ai.Application.PromptBuilder.Stubs;
+using Learnexia.Modules.Ai.Application.Safety;
 using Learnexia.Modules.Ai.Application.Services;
 using Learnexia.Shared.Contracts.Ai;
 using Learnexia.Shared.Contracts.AiTutor;
@@ -95,6 +96,11 @@ public static class DependencyInjection
         // FluentValidation for RecommendationNarrationCommand (empty-body command; validator required
         // for ValidationBehavior discovery and future extension).
         services.AddValidatorsFromAssemblyContaining<RecommendationNarrationCommandValidator>(ServiceLifetime.Transient);
+
+        // ── P7-09 Moderation Queue ingest — AI-side publish seam ─────────────────────────
+        // Registered Transient (scoped to the request that calls SafetyLayer.GenerateSafeAsync).
+        // Wraps MediatR IPublisher; fail-soft (never throws into the safety path).
+        services.AddTransient<IAiOutputFlaggedPublisher, AiOutputFlaggedPublisher>();
 
         return services;
     }

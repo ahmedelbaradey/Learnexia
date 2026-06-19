@@ -2595,4 +2595,34 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="RecColdStartCta" xml:space="preserve">
     <value>Continue learning</value>
   </data>
+  <data name="ModerationQueueRetrievedSuccessfully" xml:space="preserve">
+    <value>Moderation queue retrieved successfully.</value>
+  </data>
+  <data name="ModerationItemRetrievedSuccessfully" xml:space="preserve">
+    <value>Moderation item retrieved successfully.</value>
+  </data>
+  <data name="ModerationItemNotFound" xml:space="preserve">
+    <value>Moderation item not found.</value>
+  </data>
+  <data name="ModerationItemReviewedSuccessfully" xml:space="preserve">
+    <value>Moderation item reviewed successfully.</value>
+  </data>
+  <data name="ModerationItemIdRequired" xml:space="preserve">
+    <value>A valid moderation item ID is required.</value>
+  </data>
+  <data name="ModerationReviewDecisionInvalid" xml:space="preserve">
+    <value>The review decision must be Approved, Rejected, or Flagged.</value>
+  </data>
+  <data name="ModerationReviewReasonRequired" xml:space="preserve">
+    <value>A reason is required when rejecting a moderation item.</value>
+  </data>
+  <data name="ModerationReviewReasonTooLong" xml:space="preserve">
+    <value>The review reason must not exceed 2000 characters.</value>
+  </data>
+  <data name="ModerationItemAlreadyTerminal" xml:space="preserve">
+    <value>This moderation item has already been reviewed and cannot be changed.</value>
+  </data>
+  <data name="ModerationItemAlreadyFlagged" xml:space="preserve">
+    <value>This moderation item is already flagged.</value>
+  </data>
 </root>
