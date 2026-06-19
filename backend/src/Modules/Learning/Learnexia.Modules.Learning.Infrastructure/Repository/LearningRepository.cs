@@ -37,13 +37,11 @@ public class LearningRepository : ILearningRepository
     public IQueryable<T> GetByCondition<T>(Expression<Func<T, bool>> condition, bool trackChanges = false) where T : class
         => !trackChanges ? RepositoryContext.Set<T>().Where(condition).AsNoTracking() : RepositoryContext.Set<T>().Where(condition);
 
-    public async Task<T> GetByIdAsync<T>(int id, bool trackChanges) where T : class
-    {
-        var entity = await RepositoryContext.Set<T>().FindAsync(id).ConfigureAwait(false);
-        if (entity is null)
-            throw new InvalidOperationException($"Entity of type {typeof(T).Name} with ID {id} was not found.");
-        return entity;
-    }
+    // Returns null when the id is absent (do NOT throw): callers map a null to a graceful
+    // NotFound (404). Delegates to the include-aware overload so trackChanges is honored
+    // (the previous FindAsync path silently ignored trackChanges and threw on miss → 500).
+    public Task<T> GetByIdAsync<T>(int id, bool trackChanges) where T : class
+        => GetByIdAsync<T>(id, trackChanges, include: null);
 
     public async Task<T> GetByIdAsync<T>(int id, bool trackChanges, Func<IQueryable<T>, IQueryable<T>>? include = null) where T : class
     {
