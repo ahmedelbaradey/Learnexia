@@ -171,8 +171,7 @@ export type {
   LessonDto,
   AdminContentBlockDto,
   AdminQuestionDto,
-  SkillDto,
-  SkillGraphDto,
+  // SkillDto and SkillGraphDto are exported from the P7-03 block below
 } from './curriculum.types';
 
 export {
@@ -288,6 +287,53 @@ export { useEditQuestion, type EditQuestionInput } from './useEditQuestion';
 export { useDeleteQuestion, type DeleteQuestionInput } from './useDeleteQuestion';
 export { useReorderQuestions, type ReorderQuestionsInput } from './useReorderQuestions';
 export { useSetQuestionActive, type SetQuestionActiveInput } from './useSetQuestionActive';
+
+// --- P7-03 admin curriculum skill + graph hooks (Batch 2c-A) ---
+// Skills CRUD (AdminOnly) + knowledge graph read/edge mutations (node-id space).
+// All skill mutations return BaseResponse<string> — refetch via adminCurriculum.*
+// invalidation; no optimistic updates (plan D8).
+// Edge mutations (Add/Remove) also invalidate prerequisites/unlockedBy keys.
+// Concept list uses standalone ['concepts','list'] key (anonymous endpoint).
+// Gap 1 RESOLVED: ConceptListItemDto.subjectId IS present on the wire.
+// Gap 2 RESOLVED: SingleSkillResponse.isActive IS present (AdminOnly endpoint).
+export type {
+  SingleSkillResponse,
+  AddSkillDto,
+  EditSkillDto,
+  KnowledgeNodeDto,
+  KnowledgeEdgeDto,
+  SkillGraphDto,
+  StudentKnowledgeNodeDto,
+  AddKnowledgeEdgeDto,
+  ConceptListItemDto,
+} from './curriculum.types';
+
+export {
+  useSkillList,
+  type SkillListFilters,
+} from './useSkillList';
+export {
+  useCreateSkill,
+  type CreateSkillInput,
+} from './useCreateSkill';
+export {
+  useUpdateSkill,
+  type UpdateSkillInput,
+} from './useUpdateSkill';
+export {
+  useDeleteSkill,
+  type DeleteSkillInput,
+} from './useDeleteSkill';
+export { useSkillGraph } from './useSkillGraph';
+export {
+  useAddKnowledgeEdge,
+  type AddKnowledgeEdgeInput,
+} from './useAddKnowledgeEdge';
+export {
+  useRemoveKnowledgeEdge,
+  type RemoveKnowledgeEdgeInput,
+} from './useRemoveKnowledgeEdge';
+export { useConceptList } from './useConceptList';
 
 // --- P7-05 curriculum lifecycle hooks (Batch 2a-C — lifecycle backbone) ---
 // Publish/Unpublish/Archive/Restore + Rollback + VersionHistory + Preview +

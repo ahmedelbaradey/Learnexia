@@ -896,6 +896,155 @@ export interface AdminStrings {
   questionActivateBody: string;
   questionActivateConfirm: string;
   questionActivateSuccess: string;
+
+  // ── P7-03 Skills & Graph (skill* / skillGraph* namespace — disjoint) ──────────
+  // Disjoint from: curriculum*/subject*/unit* (P7-01), lesson*/block* (P7-02),
+  // question* (P7-04), clLifecycle* (P7-05), lifecycle* (P7-07 account).
+
+  // Page
+  skillPageTitle: string;
+  skillListHeading: string;
+  skillResultCount: string;
+  skillListError: string;
+  skillTableCaption: string;
+  skillViewGraph: string;
+  skillNoResults: string;
+  skillNoResultsHint: string;
+  skillNoResultsSelectSubject: string;
+  skillNoSubjectSelected: string;
+
+  // Subject picker (graph scope)
+  skillSubjectPickerLabel: string;
+  skillSubjectPickerPlaceholder: string;
+  skillSubjectPickerLoading: string;
+  skillSubjectPickerError: string;
+
+  // Concept filter
+  skillConceptFilterPlaceholder: string;
+
+  // Search
+  skillSearchPlaceholder: string;
+
+  // "New Skill" button
+  skillNewBtn: string;
+  skillNewBtnAriaLabel: string;
+
+  // Table columns
+  skillColName: string;
+  skillColThreshold: string;
+  skillColTime: string;
+  skillColActive: string;
+
+  // Skill form
+  skillFormCreateTitle: string;
+  skillFormEditTitle: string;
+  skillFormCreateSubtitle: string;
+  skillFormEditSubtitle: string;
+  skillFormNameLabel: string;
+  skillFormNamePlaceholder: string;
+  skillFormNameRequired: string;
+  skillFormThresholdLabel: string;
+  skillFormThresholdHint: string;
+  skillFormThresholdRequired: string;
+  skillFormThresholdRange: string;
+  skillFormTimeLabel: string;
+  skillFormTimeHint: string;
+  skillFormTimeRequired: string;
+  skillFormTimeRange: string;
+  skillFormConceptLabel: string;
+  skillFormConceptPlaceholder: string;
+  skillFormConceptRequired: string;
+  skillFormConceptLoading: string;
+  skillFormConceptError: string;
+  skillFormCreateBtn: string;
+  skillFormSaveBtn: string;
+  skillFormCancel: string;
+
+  // Delete dialog
+  skillDeleteTitle: string;
+  skillDeleteBody: string;
+  skillDeleteConfirm: string;
+  skillDeleteCancel: string;
+
+  // Graph editor
+  skillGraphTitle: string;
+  skillGraphNoSubject: string;
+  skillGraphNoSubjectBody: string;
+  skillGraphLoading: string;
+  skillGraphError: string;
+  skillGraphNodeCount: string;
+  skillGraphEdgeCount: string;
+  skillGraphNodesEmpty: string;
+  skillGraphRetry: string;
+
+  // Node list
+  skillGraphNodeListLabel: string;
+
+  // Prerequisites section
+  skillGraphPrerequisitesHeading: string;
+  skillGraphPrerequisitesEmpty: string;
+
+  // Unlocks section
+  skillGraphUnlocksHeading: string;
+  skillGraphUnlocksEmpty: string;
+
+  // Add prerequisite control
+  skillGraphAddPrerequisiteHeading: string;
+  skillGraphPickerPlaceholder: string;
+  skillGraphPickerAllAdded: string;
+  skillGraphAddBtn: string;
+  skillGraphDeselectNode: string;
+  skillGraphRemovePrerequisite: string;
+
+  // Edge errors
+  skillGraphErrCycle: string;
+  skillGraphErrCrossLanguage: string;
+  skillGraphErrDuplicate: string;
+  skillGraphErrNodeNotFound: string;
+  skillGraphErrSubjectUnresolvable: string;
+  skillGraphErrStrengthOutOfRange: string;
+  skillGraphErrGeneric: string;
+  skillGraphErrNetwork: string;
+
+  // Edge success announcements (aria-live)
+  skillGraphEdgeAdded: string;
+  skillGraphEdgeRemoved: string;
+
+  // Skill detail panel
+  skillDetailSection: string;
+  skillDetailMastery: string;
+  skillDetailTime: string;
+  skillDetailEditLink: string;
+
+  // Skills page — additional a11y / i18n (Nits #2/#3)
+  /** "Clear filters" button label (skills page). */
+  skillClearFilters: string;
+  /** aria-label for the concept filter <select>. */
+  skillConceptFilterAriaLabel: string;
+  /** SR-only label for the "Actions" column header. */
+  skillColActionsLabel: string;
+  /** aria-label for the per-row Edit button: "Edit {name}". */
+  skillEditAriaLabel: string;
+  /** aria-label for the per-row Delete button: "Delete {name}". */
+  skillDeleteAriaLabel: string;
+  /** SR-only label for the "Previous page" pagination button. */
+  skillPrevPage: string;
+  /** SR-only label for the "Next page" pagination button. */
+  skillNextPage: string;
+
+  // SkillGraph — node-type words (aria-label fragments, Nit #3)
+  /** Node-type word: "Skill". */
+  skillGraphNodeTypeSkill: string;
+  /** Node-type word: "Concept". */
+  skillGraphNodeTypeConcept: string;
+  /** Node-type word: "Review". */
+  skillGraphNodeTypeReview: string;
+  /** aria-label for the prerequisites list: "Prerequisites of {name}". */
+  skillGraphPrerequisitesAriaLabel: string;
+  /** aria-label for the unlocks list: "Skills unlocked by {name}". */
+  skillGraphUnlocksAriaLabel: string;
+  /** Accessible name for the remove-edge button (suffix after ": "): "Remove prerequisite: {name}". */
+  skillGraphRemoveEdgeAriaLabel: string;
 }
 
 const en: AdminStrings = {
@@ -1696,6 +1845,140 @@ const en: AdminStrings = {
   questionActivateBody: 'Students will be able to see and answer this question once it is shown.',
   questionActivateConfirm: 'Show to Students',
   questionActivateSuccess: 'Question shown to students.',
+
+  // ── P7-03 Skills & Graph (EN) ─────────────────────────────────────────────────
+
+  // Page
+  skillPageTitle: 'Skills',
+  skillListHeading: 'Skills',
+  skillResultCount: 'skills',
+  skillListError: 'Failed to load skills. Please try again.',
+  skillTableCaption: 'Skills list',
+  skillViewGraph: 'View graph',
+  skillNoResults: 'No skills found',
+  skillNoResultsHint: 'Try adjusting the concept filter or search term.',
+  skillNoResultsSelectSubject: 'Select a subject tree to view and author its skills.',
+  skillNoSubjectSelected: 'No subject selected',
+
+  // Subject picker
+  skillSubjectPickerLabel: 'Subject Tree',
+  skillSubjectPickerPlaceholder: '-- Select a subject --',
+  skillSubjectPickerLoading: 'Loading subjects…',
+  skillSubjectPickerError: 'Failed to load subjects.',
+
+  // Concept filter
+  skillConceptFilterPlaceholder: 'All Concepts',
+
+  // Search
+  skillSearchPlaceholder: 'Search skills…',
+
+  // "New Skill" button
+  skillNewBtn: 'New Skill',
+  skillNewBtnAriaLabel: 'Create a new skill',
+
+  // Table columns
+  skillColName: 'Name',
+  skillColThreshold: 'Mastery %',
+  skillColTime: 'Time (min)',
+  skillColActive: 'Active',
+
+  // Skill form
+  skillFormCreateTitle: 'New Skill',
+  skillFormEditTitle: 'Edit Skill',
+  skillFormCreateSubtitle: 'Add a new skill to the curriculum.',
+  skillFormEditSubtitle: 'Update skill details.',
+  skillFormNameLabel: 'Name',
+  skillFormNamePlaceholder: 'e.g. Multiply Fractions',
+  skillFormNameRequired: 'Name is required.',
+  skillFormThresholdLabel: 'Mastery Threshold (%)',
+  skillFormThresholdHint: 'Score percentage (0–100) required to mark this skill as mastered.',
+  skillFormThresholdRequired: 'Mastery threshold is required.',
+  skillFormThresholdRange: 'Must be a number between 0 and 100.',
+  skillFormTimeLabel: 'Estimated Time (minutes)',
+  skillFormTimeHint: 'Expected minutes to practice this skill.',
+  skillFormTimeRequired: 'Estimated time is required.',
+  skillFormTimeRange: 'Must be 0 or more.',
+  skillFormConceptLabel: 'Concept',
+  skillFormConceptPlaceholder: 'Select a concept…',
+  skillFormConceptRequired: 'Concept is required.',
+  skillFormConceptLoading: 'Loading concepts…',
+  skillFormConceptError: 'Failed to load concepts.',
+  skillFormCreateBtn: 'Create Skill',
+  skillFormSaveBtn: 'Save Changes',
+  skillFormCancel: 'Cancel',
+
+  // Delete dialog
+  skillDeleteTitle: 'Delete Skill',
+  skillDeleteBody: 'This will permanently delete this skill. This action cannot be undone.',
+  skillDeleteConfirm: 'Delete',
+  skillDeleteCancel: 'Cancel',
+
+  // Graph editor
+  skillGraphTitle: 'Prerequisite Graph',
+  skillGraphNoSubject: 'No subject selected',
+  skillGraphNoSubjectBody: 'Select a subject tree above to view and edit the skill prerequisite graph.',
+  skillGraphLoading: 'Loading skill graph…',
+  skillGraphError: 'Failed to load the skill graph. Please try again.',
+  skillGraphNodeCount: 'nodes',
+  skillGraphEdgeCount: 'edges',
+  skillGraphNodesEmpty: 'No nodes in this subject tree.',
+  skillGraphRetry: 'Try again',
+
+  // Node list
+  skillGraphNodeListLabel: 'Nodes in subject tree',
+
+  // Prerequisites
+  skillGraphPrerequisitesHeading: 'Prerequisites',
+  skillGraphPrerequisitesEmpty: 'No prerequisites — this skill is immediately accessible.',
+
+  // Unlocks
+  skillGraphUnlocksHeading: 'Unlocks',
+  skillGraphUnlocksEmpty: 'This skill is not a prerequisite for any other skill.',
+
+  // Add prerequisite
+  skillGraphAddPrerequisiteHeading: 'Add Prerequisite',
+  skillGraphPickerPlaceholder: 'Choose a prerequisite…',
+  skillGraphPickerAllAdded: 'All nodes are already prerequisites.',
+  skillGraphAddBtn: 'Add',
+  skillGraphDeselectNode: 'Deselect node',
+  skillGraphRemovePrerequisite: 'Remove as prerequisite',
+
+  // Edge errors
+  skillGraphErrCycle: 'This would create a cycle in the prerequisite graph. Choose a different node.',
+  skillGraphErrCrossLanguage: 'Cannot connect nodes from different language trees.',
+  skillGraphErrDuplicate: 'This prerequisite edge already exists.',
+  skillGraphErrNodeNotFound: 'One of the nodes was not found. Refresh and try again.',
+  skillGraphErrSubjectUnresolvable: 'Could not resolve the subject for this node.',
+  skillGraphErrStrengthOutOfRange: 'Edge strength must be between 0.0 and 1.0.',
+  skillGraphErrGeneric: 'Could not update the graph. Please try again.',
+  skillGraphErrNetwork: 'Network error. Check your connection and try again.',
+
+  // Edge aria-live announcements
+  skillGraphEdgeAdded: '{name} added as a prerequisite.',
+  skillGraphEdgeRemoved: '{name} removed from prerequisites.',
+
+  // Skill detail panel
+  skillDetailSection: 'Skill Details',
+  skillDetailMastery: 'Mastery',
+  skillDetailTime: 'Time',
+  skillDetailEditLink: 'Edit this skill',
+
+  // Skills page — additional a11y / i18n (Nits #2/#3)
+  skillClearFilters: 'Clear filters',
+  skillConceptFilterAriaLabel: 'Filter by concept',
+  skillColActionsLabel: 'Actions',
+  skillEditAriaLabel: 'Edit {name}',
+  skillDeleteAriaLabel: 'Delete {name}',
+  skillPrevPage: 'Previous page',
+  skillNextPage: 'Next page',
+
+  // SkillGraph — node-type words
+  skillGraphNodeTypeSkill: 'Skill',
+  skillGraphNodeTypeConcept: 'Concept',
+  skillGraphNodeTypeReview: 'Review',
+  skillGraphPrerequisitesAriaLabel: 'Prerequisites of {name}',
+  skillGraphUnlocksAriaLabel: 'Skills unlocked by {name}',
+  skillGraphRemoveEdgeAriaLabel: 'Remove prerequisite: {name}',
 };
 
 const ar: AdminStrings = {
@@ -2495,6 +2778,140 @@ const ar: AdminStrings = {
   questionActivateBody: 'سيتمكن الطلاب من رؤية هذا السؤال والإجابة عليه بعد إظهاره.',
   questionActivateConfirm: 'إظهار للطلاب',
   questionActivateSuccess: 'تم إظهار السؤال للطلاب.',
+
+  // ── P7-03 Skills & Graph (AR) ─────────────────────────────────────────────────
+
+  // Page
+  skillPageTitle: 'المهارات',
+  skillListHeading: 'المهارات',
+  skillResultCount: 'مهارة',
+  skillListError: 'فشل تحميل المهارات. حاول مرة أخرى.',
+  skillTableCaption: 'قائمة المهارات',
+  skillViewGraph: 'عرض الشجرة',
+  skillNoResults: 'لم يُعثر على مهارات',
+  skillNoResultsHint: 'جرِّب تعديل تصفية المفهوم أو مصطلح البحث.',
+  skillNoResultsSelectSubject: 'اختر شجرة مادة لعرض مهاراتها وتأليفها.',
+  skillNoSubjectSelected: 'لم يُختَر موضوع',
+
+  // Subject picker
+  skillSubjectPickerLabel: 'شجرة المادة',
+  skillSubjectPickerPlaceholder: '-- اختر مادة --',
+  skillSubjectPickerLoading: 'جارٍ تحميل المواد…',
+  skillSubjectPickerError: 'فشل تحميل المواد.',
+
+  // Concept filter
+  skillConceptFilterPlaceholder: 'كل المفاهيم',
+
+  // Search
+  skillSearchPlaceholder: 'ابحث عن المهارات…',
+
+  // "New Skill" button
+  skillNewBtn: 'مهارة جديدة',
+  skillNewBtnAriaLabel: 'إنشاء مهارة جديدة',
+
+  // Table columns
+  skillColName: 'الاسم',
+  skillColThreshold: 'نسبة الإتقان',
+  skillColTime: 'الوقت (دق)',
+  skillColActive: 'الحالة',
+
+  // Skill form
+  skillFormCreateTitle: 'مهارة جديدة',
+  skillFormEditTitle: 'تعديل المهارة',
+  skillFormCreateSubtitle: 'أضف مهارة جديدة إلى المناهج.',
+  skillFormEditSubtitle: 'تحديث تفاصيل المهارة.',
+  skillFormNameLabel: 'اسم المهارة',
+  skillFormNamePlaceholder: 'مثال: ضرب الكسور',
+  skillFormNameRequired: 'الاسم مطلوب.',
+  skillFormThresholdLabel: 'نسبة الإتقان (%)',
+  skillFormThresholdHint: 'نسبة الدرجة (٠–١٠٠) المطلوبة لاعتبار المهارة متقنة.',
+  skillFormThresholdRequired: 'نسبة الإتقان مطلوبة.',
+  skillFormThresholdRange: 'يجب أن يكون رقمًا بين ٠ و١٠٠.',
+  skillFormTimeLabel: 'الوقت التقديري (دقائق)',
+  skillFormTimeHint: 'الدقائق المتوقعة للتدرب على هذه المهارة.',
+  skillFormTimeRequired: 'الوقت التقديري مطلوب.',
+  skillFormTimeRange: 'يجب أن يكون ٠ أو أكثر.',
+  skillFormConceptLabel: 'المفهوم',
+  skillFormConceptPlaceholder: 'اختر مفهومًا…',
+  skillFormConceptRequired: 'المفهوم مطلوب.',
+  skillFormConceptLoading: 'جارٍ تحميل المفاهيم…',
+  skillFormConceptError: 'فشل تحميل المفاهيم.',
+  skillFormCreateBtn: 'إنشاء المهارة',
+  skillFormSaveBtn: 'حفظ التغييرات',
+  skillFormCancel: 'إلغاء',
+
+  // Delete dialog
+  skillDeleteTitle: 'حذف المهارة',
+  skillDeleteBody: 'سيؤدي هذا إلى حذف هذه المهارة بشكل دائم. لا يمكن التراجع عن هذا الإجراء.',
+  skillDeleteConfirm: 'حذف',
+  skillDeleteCancel: 'إلغاء',
+
+  // Graph editor
+  skillGraphTitle: 'شجرة المتطلبات السابقة',
+  skillGraphNoSubject: 'لم يُختَر موضوع',
+  skillGraphNoSubjectBody: 'اختر شجرة مادة أعلاه لعرض المتطلبات السابقة وتعديلها.',
+  skillGraphLoading: 'جارٍ تحميل شجرة المهارات…',
+  skillGraphError: 'فشل تحميل شجرة المهارات. حاول مرة أخرى.',
+  skillGraphNodeCount: 'عقدة',
+  skillGraphEdgeCount: 'حافة',
+  skillGraphNodesEmpty: 'لا توجد عقد في هذه الشجرة.',
+  skillGraphRetry: 'حاول مرة أخرى',
+
+  // Node list
+  skillGraphNodeListLabel: 'عقد الشجرة',
+
+  // Prerequisites
+  skillGraphPrerequisitesHeading: 'المتطلبات السابقة',
+  skillGraphPrerequisitesEmpty: 'لا توجد متطلبات سابقة — هذه المهارة متاحة مباشرةً.',
+
+  // Unlocks
+  skillGraphUnlocksHeading: 'تفتح',
+  skillGraphUnlocksEmpty: 'هذه المهارة ليست متطلبًا سابقًا لأي مهارة أخرى.',
+
+  // Add prerequisite
+  skillGraphAddPrerequisiteHeading: 'إضافة متطلب سابق',
+  skillGraphPickerPlaceholder: 'اختر متطلبًا سابقًا…',
+  skillGraphPickerAllAdded: 'جميع العقد متطلبات سابقة بالفعل.',
+  skillGraphAddBtn: 'إضافة',
+  skillGraphDeselectNode: 'إلغاء تحديد العقدة',
+  skillGraphRemovePrerequisite: 'إزالة من المتطلبات السابقة',
+
+  // Edge errors
+  skillGraphErrCycle: 'سيؤدي هذا إلى إنشاء حلقة في شجرة المتطلبات. اختر عقدة مختلفة.',
+  skillGraphErrCrossLanguage: 'لا يمكن ربط عقد من أشجار لغات مختلفة.',
+  skillGraphErrDuplicate: 'هذا المتطلب السابق موجود بالفعل.',
+  skillGraphErrNodeNotFound: 'لم يُعثر على إحدى العقد. حدِّث الصفحة وحاول مجددًا.',
+  skillGraphErrSubjectUnresolvable: 'تعذَّر تحديد المادة لهذه العقدة.',
+  skillGraphErrStrengthOutOfRange: 'يجب أن تكون قوة الحافة بين ٠٫٠ و١٫٠.',
+  skillGraphErrGeneric: 'تعذَّر تحديث الشجرة. حاول مرة أخرى.',
+  skillGraphErrNetwork: 'خطأ في الشبكة. تحقق من الاتصال وحاول مجددًا.',
+
+  // Edge aria-live announcements
+  skillGraphEdgeAdded: 'تمت إضافة {name} متطلبًا سابقًا.',
+  skillGraphEdgeRemoved: 'تمت إزالة {name} من المتطلبات السابقة.',
+
+  // Skill detail panel
+  skillDetailSection: 'تفاصيل المهارة',
+  skillDetailMastery: 'الإتقان',
+  skillDetailTime: 'الوقت',
+  skillDetailEditLink: 'تعديل هذه المهارة',
+
+  // Skills page — additional a11y / i18n (Nits #2/#3)
+  skillClearFilters: 'مسح التصفية',
+  skillConceptFilterAriaLabel: 'تصفية حسب المفهوم',
+  skillColActionsLabel: 'الإجراءات',
+  skillEditAriaLabel: 'تعديل {name}',
+  skillDeleteAriaLabel: 'حذف {name}',
+  skillPrevPage: 'الصفحة السابقة',
+  skillNextPage: 'الصفحة التالية',
+
+  // SkillGraph — node-type words
+  skillGraphNodeTypeSkill: 'مهارة',
+  skillGraphNodeTypeConcept: 'مفهوم',
+  skillGraphNodeTypeReview: 'مراجعة',
+  skillGraphPrerequisitesAriaLabel: 'المتطلبات السابقة لـ {name}',
+  skillGraphUnlocksAriaLabel: 'المهارات التي تفتحها {name}',
+  skillGraphRemoveEdgeAriaLabel: 'إزالة المتطلب السابق: {name}',
 };
 
 const STRINGS: Record<Locale, AdminStrings> = { en, ar };
