@@ -2649,6 +2649,9 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="AiSafetyInvalidDateRange" xml:space="preserve">
     <value>The 'from' date must be earlier than the 'to' date.</value>
   </data>
+  <data name="AiSafetyDateRangeTooLarge" xml:space="preserve">
+    <value>The requested date range exceeds the maximum allowed window of 366 days.</value>
+  </data>
   <data name="AiTutorUsageRetrievedSuccessfully" xml:space="preserve">
     <value>AI tutor usage summary retrieved successfully.</value>
   </data>

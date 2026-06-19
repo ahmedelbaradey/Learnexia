@@ -122,6 +122,7 @@ public sealed class GetPlatformKpisQueryHandler
                 TotalAiSafetyEvents       = aiSafety.TotalSafetyEvents,
                 AiBlockedCount            = aiSafety.BlockedCount,
                 AiFlaggedCount            = aiSafety.FlaggedCount,
+                AiRequestVolume           = aiSafety.AiRequestVolume,
                 AiRequestVolumeNaReason   = aiSafety.AiRequestVolumeNaReason,
                 // QuizzesCompleted, Retention, SessionDuration N/A reasons use DTO defaults
             };

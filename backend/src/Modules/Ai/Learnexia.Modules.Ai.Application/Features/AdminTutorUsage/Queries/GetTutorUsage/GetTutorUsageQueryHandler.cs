@@ -18,6 +18,9 @@ namespace Learnexia.Modules.Ai.Application.Features.AdminTutorUsage.Queries.GetT
 public sealed class GetTutorUsageQueryHandler
     : BaseResponseHandler, IQueryHandler<GetTutorUsageQuery, BaseResponse<TutorUsageDto>>
 {
+    // Caps in-memory aggregation as the table grows (mirrors the P7-10 analytics window cap).
+    private static readonly TimeSpan MaxWindow = TimeSpan.FromDays(366);
+
     private readonly IAiTutorUsageService _tutorUsageService;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
@@ -44,6 +47,10 @@ public sealed class GetTutorUsageQueryHandler
             if (from >= to)
                 return BadRequest<TutorUsageDto>(
                     _localizer[SharedResourcesKey.AiSafetyInvalidDateRange].Value);
+
+            if ((to - from) > MaxWindow)
+                return BadRequest<TutorUsageDto>(
+                    _localizer[SharedResourcesKey.AiSafetyDateRangeTooLarge].Value);
 
             var summary = await _tutorUsageService.GetUsageSummaryAsync(from, to, cancellationToken);
 

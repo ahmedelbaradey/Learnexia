@@ -85,8 +85,14 @@ public sealed record PlatformKpiSummaryDto
     public int AiFlaggedCount      { get; init; }
 
     /// <summary>
-    /// Explicit N/A marker for AI request volume. Set when request volume is unavailable.
-    /// Null = request-volume data available (reserved for when P7-11 AiUsageLogs lands).
+    /// Total AI tutor requests in the window — real data from <c>ai.AiUsageLogs</c> (P7-11 tutor-cost).
+    /// Counts non-streaming completions (streamed responses are a documented v1 capture gap).
+    /// </summary>
+    public int AiRequestVolume { get; init; }
+
+    /// <summary>
+    /// Explicit N/A marker for AI request volume. Now <c>null</c> (the <c>ai.AiUsageLogs</c> table exists,
+    /// so the volume is real); retained so the FE can distinguish "0 requests" from "data unavailable".
     /// </summary>
     public string? AiRequestVolumeNaReason { get; init; }
 

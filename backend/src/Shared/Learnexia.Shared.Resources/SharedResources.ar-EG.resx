@@ -2648,6 +2648,9 @@
   <data name="AiSafetyInvalidDateRange" xml:space="preserve">
     <value>يجب أن يكون تاريخ البداية أقدم من تاريخ النهاية.</value>
   </data>
+  <data name="AiSafetyDateRangeTooLarge" xml:space="preserve">
+    <value>النطاق الزمني المطلوب يتجاوز الحد الأقصى المسموح به البالغ 366 يوماً.</value>
+  </data>
   <data name="AiTutorUsageRetrievedSuccessfully" xml:space="preserve">
     <value>تم استرداد ملخص استخدام المدرس الذكي بنجاح.</value>
   </data>

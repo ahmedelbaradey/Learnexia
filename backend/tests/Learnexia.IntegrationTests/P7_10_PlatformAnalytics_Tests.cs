@@ -208,8 +208,8 @@ public sealed class P7_10_PlatformAnalytics_Tests : IAsyncLifetime
             .Should().BeTrue("data must have aiBlockedCount; body: {0}", body);
         TryProp(data, "aiFlaggedCount", out _)
             .Should().BeTrue("data must have aiFlaggedCount; body: {0}", body);
-        TryProp(data, "aiRequestVolumeNaReason", out _)
-            .Should().BeTrue("data must have aiRequestVolumeNaReason; body: {0}", body);
+        TryProp(data, "aiRequestVolume", out _)
+            .Should().BeTrue("data must have aiRequestVolume (real, from ai.AiUsageLogs); body: {0}", body);
 
         // P5-03-deferred N/A markers
         TryProp(data, "retentionNaReason", out _)
@@ -274,21 +274,23 @@ public sealed class P7_10_PlatformAnalytics_Tests : IAsyncLifetime
             "revenueNaReason must carry an explanatory message, not an empty string; body: {0}", body);
     }
 
-    [Fact(DisplayName = "BE-TC-NA-MARKERS-4: aiRequestVolumeNaReason is a non-empty string (P7-11 not yet built)")]
-    public async Task NaMarkers_AiRequestVolumeNaReason_IsString()
+    [Fact(DisplayName = "BE-TC-NA-MARKERS-4: aiRequestVolume is real (ai.AiUsageLogs built) and the N/A reason is null")]
+    public async Task AiRequestVolume_IsRealNumber_AndNaReasonIsNull()
     {
         var (_, root, body) = await SendAsync(HttpMethod.Get, KpisUrl, bearer: _adminToken);
 
         TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);
-        TryProp(data, "aiRequestVolumeNaReason", out var aiVolume)
-            .Should().BeTrue("body: {0}", body);
 
-        // Per the DTO contract: null = request-volume available (not yet built), non-null = N/A.
-        aiVolume.ValueKind.Should().Be(JsonValueKind.String,
-            "aiRequestVolumeNaReason must be a non-null string (AiUsageLogs not yet built — P7-11); " +
-            "if null, the handler is incorrectly reporting AI request volume as available; body: {0}", body);
-        aiVolume.GetString().Should().NotBeNullOrWhiteSpace(
-            "aiRequestVolumeNaReason must carry an explanatory message; body: {0}", body);
+        // Request volume is now REAL (sourced from ai.AiUsageLogs, built in the P7-11 tutor-cost slice).
+        TryProp(data, "aiRequestVolume", out var aiVolume).Should().BeTrue("body: {0}", body);
+        aiVolume.ValueKind.Should().Be(JsonValueKind.Number,
+            "aiRequestVolume must be a real number now that ai.AiUsageLogs exists; body: {0}", body);
+        aiVolume.GetInt32().Should().BeGreaterThanOrEqualTo(0, "body: {0}", body);
+
+        // The N/A marker must now be null (data available) — distinguishes "0 requests" from "unavailable".
+        if (TryProp(data, "aiRequestVolumeNaReason", out var naReason))
+            naReason.ValueKind.Should().Be(JsonValueKind.Null,
+                "aiRequestVolumeNaReason must be null now that request volume is real; body: {0}", body);
     }
 
     [Fact(DisplayName = "BE-TC-NA-MARKERS-5: quizzesCompletedNaReason is a non-empty string (same entity as LessonsCompleted)")]
