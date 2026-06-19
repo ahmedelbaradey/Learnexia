@@ -43,6 +43,8 @@ public class LearningBaseService<TEntity> : BaseResponseHandler, IBaseService<TE
     public virtual async Task<BaseResponse<string>> UpdateAsync<TDto>(TDto entity) where TDto : BaseDto
     {
         var original = await _repository.GetByIdAsync<TEntity>(entity.Id, true);
+        if (original is null)
+            return NotFound<string>(_localizer[SharedResourcesKey.NoRecords]);
         _mapper.Map(entity, original);
         await _repository.UpdateAsync(original);
         return Success<string>(_localizer[SharedResourcesKey.OperationCompletedSuccessfully]);
@@ -51,6 +53,8 @@ public class LearningBaseService<TEntity> : BaseResponseHandler, IBaseService<TE
     public virtual async Task<BaseResponse<string>> DeleteAsync(int id)
     {
         var entity = await _repository.GetByIdAsync<TEntity>(id, false);
+        if (entity is null)
+            return NotFound<string>(_localizer[SharedResourcesKey.NoRecords]);
         await _repository.DeleteAsync(entity);
         return Success<string>(_localizer[SharedResourcesKey.ItemDeletedSuccessfully]);
     }

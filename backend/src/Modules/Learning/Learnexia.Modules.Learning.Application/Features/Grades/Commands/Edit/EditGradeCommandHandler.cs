@@ -27,12 +27,18 @@ public class EditGradeCommandHandler : BaseResponseHandler, ICommandHandler<Edit
             if (request is null)
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
+            // Pre-fetch: return 404 rather than letting the base UpdateAsync throw InvalidOperationException
+            // when the id does not exist (mirrors EditSubjectCommandHandler pattern).
+            var existing = await _service.GradeService.GetGradeTrackedAsync(request.Id, cancellationToken);
+            if (existing is null)
+                return NotFound<string>(_localizer[SharedResourcesKey.GradeNotFound]);
+
             return await _service.GradeService.UpdateAsync(request);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error: in EditGradeCommand");
-            return ServerError<string>(ex.Message);
+            return ServerError<string>();
         }
     }
 }
