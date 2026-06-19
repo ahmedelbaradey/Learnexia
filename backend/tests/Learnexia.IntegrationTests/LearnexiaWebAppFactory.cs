@@ -1,4 +1,5 @@
 using Learnexia.Modules.Ai.Infrastructure.Persistence;
+using Learnexia.Modules.Analytics.Infrastructure.Persistence;
 using Learnexia.Modules.Billing.Infrastructure.Persistence;
 using Learnexia.Modules.Billing.Infrastructure.Seeders;
 using Learnexia.Modules.Gamification.Infrastructure.Persistence;
@@ -67,6 +68,9 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
             ReplaceDbContext<AiDbContext>(services, connectionString, AiDbContext.Schema);
             // P10-01/P10-12: BillingDbContext (billing + platform schemas — two migrations).
             ReplaceDbContext<BillingDbContext>(services, connectionString, "billing");
+
+            // P5-03: AnalyticsDbContext — analytics schema + ActivityEvents table.
+            ReplaceDbContext<AnalyticsDbContext>(services, connectionString, AnalyticsDbContext.Schema);
 
             // Testing-host only: neutralise the IP rate limiter so the combined integration suite
             // (~250+ requests in well under a minute) never trips the production 200 req/min cap and
@@ -154,6 +158,10 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
         // Seed the 17 default GlobalSetting rows (seed-if-absent — idempotent).
         var billingLogger = sp.GetRequiredService<Learnexia.Shared.Kernel.Abstractions.ILoggerManager>();
         await GlobalSettingsSeeder.SeedAsync(billingDb, billingLogger);
+
+        // Analytics: P5_03_AddActivityEvent creates the analytics schema + ActivityEvents table.
+        var analyticsDb = sp.GetRequiredService<AnalyticsDbContext>();
+        await analyticsDb.Database.MigrateAsync();
 
         // Seed roles + superadmin (idempotent).
         await IdentityModule.SeedAsync(sp);
