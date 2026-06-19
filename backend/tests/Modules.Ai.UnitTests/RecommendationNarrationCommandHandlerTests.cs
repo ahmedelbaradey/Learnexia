@@ -5,6 +5,7 @@ using Learnexia.Modules.Ai.Application.Services;
 using Learnexia.Shared.Contracts.Ai;
 using Learnexia.Shared.Contracts.AiTutor;
 using Learnexia.Shared.Contracts.Billing;
+using Learnexia.Shared.Contracts.Gamification;
 using Learnexia.Shared.Contracts.Learning;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Settings;
@@ -19,7 +20,7 @@ using Xunit;
 namespace Modules.Ai.UnitTests;
 
 /// <summary>
-/// Unit tests for <see cref="RecommendationNarrationCommandHandler"/> branch logic (P3-14).
+/// Unit tests for <see cref="RecommendationNarrationCommandHandler"/> branch logic (P3-14 / P3-14a).
 ///
 /// Coverage:
 ///   RN-01  Rate limit exceeded → Error; ISafetyLayer never called; IStudentRecommendationsQuery never called.
@@ -34,6 +35,9 @@ namespace Modules.Ai.UnitTests;
 ///   RN-10  Cache MISS → ISafetyLayer called exactly once (contrast test).
 ///   RN-11  IAiGateway NOT injected in constructor (arch invariant P302-ARCH-04).
 ///   RN-12  Grounding confirmed — IStudentRecommendationsQuery.GetLatestAsync called (not recomputed).
+///   RN-13  (P3-14a) Level framing — PromptContext receives the level from IStudentXpQuery; null XP → level 1.
+///   RN-14  (P3-14a) Economy unchanged — cost still 5, charge-per-delivery holds at level 7.
+///   RN-15  (P3-14a) No raw behavioral data — PromptContext never carries StudentId in the prompt fragments.
 /// </summary>
 public sealed class RecommendationNarrationCommandHandlerTests
 {
@@ -50,6 +54,7 @@ public sealed class RecommendationNarrationCommandHandlerTests
         Mock<IServiceScopeFactory>? scopeFactoryMock = null,
         Mock<ICreditSpendService>? creditSpendMock = null,
         Mock<IChildAccessStateQuery>? childAccessStateMock = null,
+        Mock<IStudentXpQuery>? studentXpQueryMock = null,
         bool hardStopEnabled = false)
     {
         var currentUser   = currentUserMock  ?? BuildDefaultCurrentUserMock();
@@ -62,11 +67,13 @@ public sealed class RecommendationNarrationCommandHandlerTests
         var scopeFactory  = scopeFactoryMock ?? BuildNoOpScopeFactoryMock();
         var creditSpend   = creditSpendMock ?? BuildDefaultCreditSpendMock();
         var childAccess   = childAccessStateMock ?? BuildDefaultChildAccessStateMock();
+        var xpQuery       = studentXpQueryMock ?? BuildDefaultStudentXpQueryMock();
         var costResolver  = BuildCreditCostResolver(settings, hardStopEnabled);
 
         return new RecommendationNarrationCommandHandler(
             currentUser.Object,
             recommendationsMock.Object,
+            xpQuery.Object,
             promptBuilderMock.Object,
             safetyMock.Object,
             cache.Object,
@@ -79,6 +86,15 @@ public sealed class RecommendationNarrationCommandHandlerTests
             scopeFactory.Object,
             logger.Object,
             localizer.Object);
+    }
+
+    private static Mock<IStudentXpQuery> BuildDefaultStudentXpQueryMock()
+    {
+        var mock = new Mock<IStudentXpQuery>();
+        // Default: level 5 (non-trivial value so tests can assert the level is propagated).
+        mock.Setup(q => q.GetByStudentIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new StudentXpSnapshot(StudentId: 42, TotalXp: 1000, CurrentLevel: 5));
+        return mock;
     }
 
     private static Mock<ICurrentUserService> BuildDefaultCurrentUserMock()
@@ -657,5 +673,202 @@ public sealed class RecommendationNarrationCommandHandlerTests
             Times.Once,
             "IStudentRecommendationsQuery.GetLatestAsync must be called exactly once with the JWT childId " +
             "(grounding invariant — no recompute, no invented skills)");
+    }
+
+    // ── RN-13 (P3-14a): Level framing — PromptContext receives level from IStudentXpQuery ─
+
+    [Fact(DisplayName = "P314a-RN-13 Level framing — PromptContext.CurrentLevel is populated from IStudentXpQuery; null XP → level 1")]
+    public async Task Handle_LevelFromXpQuery_PopulatesPromptContextCurrentLevel()
+    {
+        // Arrange — XP query returns level 7.
+        var xpQueryMock = new Mock<IStudentXpQuery>();
+        xpQueryMock
+            .Setup(q => q.GetByStudentIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new StudentXpSnapshot(StudentId: 42, TotalXp: 3500, CurrentLevel: 7));
+
+        var recommendationsMock = new Mock<IStudentRecommendationsQuery>();
+        recommendationsMock
+            .Setup(q => q.GetLatestAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(MakeRecommendations());
+
+        // Capture the PromptContext passed to IPromptBuilder.Build.
+        PromptContext? capturedContext = null;
+        var promptMock = new Mock<IPromptBuilder>();
+        promptMock
+            .Setup(p => p.Build(It.IsAny<PromptContext>()))
+            .Callback<PromptContext>(ctx => capturedContext = ctx)
+            .Returns(new PromptBuilderResult.Success(
+                new AiRequest { Prompt = "Level framing test", Task = AiTaskKind.Explain }));
+
+        var safetyMock = new Mock<ISafetyLayer>();
+        safetyMock
+            .Setup(s => s.GenerateSafeAsync(It.IsAny<AiRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SafeAiResult(
+                Allowed: true, Content: "ok", Verdict: SafetyVerdict.Allowed, Results: Array.Empty<CheckResult>()));
+
+        var sut = CreateSut(recommendationsMock, safetyMock, promptMock, studentXpQueryMock: xpQueryMock);
+
+        // Act
+        await sut.Handle(new RecommendationNarrationCommand(), CancellationToken.None);
+
+        // Assert — PromptContext carries level 7 (from XP snapshot).
+        capturedContext.Should().NotBeNull("IPromptBuilder.Build must have been called");
+        capturedContext!.CurrentLevel.Should().Be(7,
+            "P3-14a: PromptContext.CurrentLevel must be populated from IStudentXpQuery.CurrentLevel");
+
+        // Assert — StudentId must NOT appear as a level value (PII-minimisation).
+        capturedContext.CurrentLevel.Should().NotBe(capturedContext.StudentId,
+            "CurrentLevel must reflect the gamification level, never the StudentId (PII-minimisation)");
+    }
+
+    [Fact(DisplayName = "P314a-RN-13b Null XP snapshot → CurrentLevel defaults to 1 (cold-start)")]
+    public async Task Handle_NullXpSnapshot_DefaultsToLevel1()
+    {
+        // Arrange — XP query returns null (brand-new student).
+        var xpQueryMock = new Mock<IStudentXpQuery>();
+        xpQueryMock
+            .Setup(q => q.GetByStudentIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((StudentXpSnapshot?)null);
+
+        var recommendationsMock = new Mock<IStudentRecommendationsQuery>();
+        recommendationsMock
+            .Setup(q => q.GetLatestAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(MakeRecommendations());
+
+        PromptContext? capturedContext = null;
+        var promptMock = new Mock<IPromptBuilder>();
+        promptMock
+            .Setup(p => p.Build(It.IsAny<PromptContext>()))
+            .Callback<PromptContext>(ctx => capturedContext = ctx)
+            .Returns(new PromptBuilderResult.Success(
+                new AiRequest { Prompt = "Cold-start level test", Task = AiTaskKind.Explain }));
+
+        var safetyMock = new Mock<ISafetyLayer>();
+        safetyMock
+            .Setup(s => s.GenerateSafeAsync(It.IsAny<AiRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SafeAiResult(
+                Allowed: true, Content: "ok", Verdict: SafetyVerdict.Allowed, Results: Array.Empty<CheckResult>()));
+
+        var sut = CreateSut(recommendationsMock, safetyMock, promptMock, studentXpQueryMock: xpQueryMock);
+
+        // Act
+        await sut.Handle(new RecommendationNarrationCommand(), CancellationToken.None);
+
+        // Assert — null XP snapshot → CurrentLevel = 1 (seam contract default).
+        capturedContext.Should().NotBeNull();
+        capturedContext!.CurrentLevel.Should().Be(1,
+            "P3-14a: null XP snapshot (brand-new student) must default to CurrentLevel=1");
+    }
+
+    // ── RN-14 (P3-14a): Economy unchanged — cost still 5, charge-per-delivery at level 7 ─
+
+    [Fact(DisplayName = "P314a-RN-14 Economy unchanged — cost still 5, charge-per-delivery holds regardless of level")]
+    public async Task Handle_HighLevel_EconomyUnchanged_CostStillFiveAndDebitOnce()
+    {
+        // Arrange — XP query returns level 7 (enriched framing path).
+        var xpQueryMock = new Mock<IStudentXpQuery>();
+        xpQueryMock
+            .Setup(q => q.GetByStudentIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new StudentXpSnapshot(StudentId: 42, TotalXp: 3500, CurrentLevel: 7));
+
+        var creditSpendMock = new Mock<ICreditSpendService>();
+        creditSpendMock
+            .Setup(c => c.GetBalanceAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new EnergyBalance(100, 0, 100, null));
+        creditSpendMock
+            .Setup(c => c.TryDebitAsync(
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DebitResult(true, 5, 0, 95, DebitOutcome.Charged));
+
+        var recommendationsMock = new Mock<IStudentRecommendationsQuery>();
+        recommendationsMock
+            .Setup(q => q.GetLatestAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(MakeRecommendations());
+
+        var promptMock = BuildDefaultPromptBuilderMock();
+
+        var safetyMock = new Mock<ISafetyLayer>();
+        safetyMock
+            .Setup(s => s.GenerateSafeAsync(It.IsAny<AiRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SafeAiResult(
+                Allowed: true, Content: "ok level 7", Verdict: SafetyVerdict.Allowed, Results: Array.Empty<CheckResult>()));
+
+        var sut = CreateSut(recommendationsMock, safetyMock, promptMock,
+            creditSpendMock: creditSpendMock, studentXpQueryMock: xpQueryMock);
+
+        // Act
+        var result = await sut.Handle(new RecommendationNarrationCommand(), CancellationToken.None);
+
+        // Assert — result is Streamed (success path).
+        result.Should().BeOfType<RecommendationNarrationResult.Streamed>(
+            "level 7 must not change the result type — still Streamed on success");
+
+        // Assert — TryDebitAsync called exactly once with cost=5 (economy unchanged — P10-03).
+        creditSpendMock.Verify(
+            c => c.TryDebitAsync(
+                It.IsAny<int>(),
+                It.Is<int>(cost => cost == 5),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()),
+            Times.Once,
+            "P3-14a: the level-enriched path must still debit cost=5 exactly once (no economy change)");
+    }
+
+    // ── RN-15 (P3-14a): PII-minimisation — no raw behavioral data in PromptContext ─
+
+    [Fact(DisplayName = "P314a-RN-15 PII-minimisation — PromptContext carries only anonymous level + coarse style, never StudentId in level/style fields")]
+    public async Task Handle_PromptContext_NeverCarriesStudentIdInLevelOrStyleFields()
+    {
+        // Arrange — use childId=42 and level=5 so we can assert they are different values.
+        var xpQueryMock = new Mock<IStudentXpQuery>();
+        xpQueryMock
+            .Setup(q => q.GetByStudentIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new StudentXpSnapshot(StudentId: 42, TotalXp: 1000, CurrentLevel: 5));
+
+        var recommendationsMock = new Mock<IStudentRecommendationsQuery>();
+        recommendationsMock
+            .Setup(q => q.GetLatestAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(MakeRecommendations());
+
+        PromptContext? capturedContext = null;
+        var promptMock = new Mock<IPromptBuilder>();
+        promptMock
+            .Setup(p => p.Build(It.IsAny<PromptContext>()))
+            .Callback<PromptContext>(ctx => capturedContext = ctx)
+            .Returns(new PromptBuilderResult.Success(
+                new AiRequest { Prompt = "PII-minimisation test", Task = AiTaskKind.Explain }));
+
+        var safetyMock = new Mock<ISafetyLayer>();
+        safetyMock
+            .Setup(s => s.GenerateSafeAsync(It.IsAny<AiRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SafeAiResult(
+                Allowed: true, Content: "ok", Verdict: SafetyVerdict.Allowed, Results: Array.Empty<CheckResult>()));
+
+        var sut = CreateSut(recommendationsMock, safetyMock, promptMock, studentXpQueryMock: xpQueryMock);
+
+        // Act
+        await sut.Handle(new RecommendationNarrationCommand(), CancellationToken.None);
+
+        // Assert — CurrentLevel is the gamification level (5), not the StudentId (42).
+        capturedContext.Should().NotBeNull();
+        capturedContext!.CurrentLevel.Should().Be(5,
+            "P3-14a: CurrentLevel must be the gamification level integer (5), not the StudentId (42)");
+        capturedContext.CurrentLevel.Should().NotBe(42,
+            "PII-minimisation: CurrentLevel must NEVER equal the StudentId — anonymous gamification level only");
+
+        // The EncouragementStyle (if set) must be an anonymous coarse hint, not a numeric student ID.
+        // We can assert the field is either null (cold-start) or one of the three anonymous values.
+        if (capturedContext.EncouragementStyle is { } style)
+        {
+            var validStyles = new[]
+            {
+                Learnexia.Modules.Ai.Application.PromptBuilder.EncouragementStyle.Balanced,
+                Learnexia.Modules.Ai.Application.PromptBuilder.EncouragementStyle.Short,
+                Learnexia.Modules.Ai.Application.PromptBuilder.EncouragementStyle.Detailed,
+            };
+            validStyles.Should().Contain(style,
+                "EncouragementStyle must be one of the three anonymous coarse hint values (not a raw behavioral signal)");
+        }
     }
 }

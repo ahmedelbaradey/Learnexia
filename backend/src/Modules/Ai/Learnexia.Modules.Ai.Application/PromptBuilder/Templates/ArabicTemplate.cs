@@ -130,9 +130,10 @@ internal sealed class ArabicTemplate : ISubjectTemplate
         • اسرد فقط القواعد النحوية والمفردات والمهارات الواردة في قائمة التوصيات — لا تَخترع موضوعات لغوية جديدة.
         • اضبط نبرتك وعمق المحتوى على الصف الدراسي للطالب، واستخدم الفصحى السهلة.
         • استخدم لغة محفِّزة ومُشجِّعة — ابدأ بالثناء على جهود الطالب قبل ذكر مجالات التطوير.
+        • استخدم إطار التحفيز (مستوى الطالب في اللعبة) لصياغة الخطوة التالية كفرصة للارتقاء — لكن لا تُغيِّر القواعد أو المفردات المختارة.
         • اذكر كل توصية بوضوح: ما القاعدة أو المفردة؟ وما الإجراء المقترح (مراجعة / تدريب / مواصلة)؟
         • لا تُضف قواعد أو مفردات خارج القائمة.
-        • لا تُقرِّر مستوى الطالب الكلي ولا تفتح درساً جديداً.
+        • لا تُقرِّر مستوى الطالب الكلي ولا تفتح درساً جديداً ولا تُقيِّم مستوى التقدُّم.
         قائمة التوصيات الخاصة بهذا الطالب موجودة في القسم أدناه — استند إليها حصراً.
 
         """;
@@ -148,9 +149,11 @@ internal sealed class ArabicTemplate : ISubjectTemplate
         • Adjust your tone and depth to the student's grade level; use clear Modern Standard Arabic (Fusha)
           with English clarifications where helpful.
         • Use warm, encouraging language — open with praise before addressing areas to improve.
+        • Use the motivational framing (the student's game level) to frame the next step as a
+          chance to level up — but do NOT change which rules or vocabulary items appear.
         • State each recommendation clearly: what is the rule/vocabulary? what is the suggested action?
         • Do NOT add grammar rules or vocabulary outside the list.
-        • Do NOT assess the student's overall level or unlock new lessons.
+        • Do NOT assess the student's overall level, unlock new lessons, or evaluate progress.
         The student's recommendation list is in the section below — base your narration on it ONLY.
 
         """;

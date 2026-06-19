@@ -453,4 +453,79 @@ public sealed class AiCacheKeyBuilderSecurityTests
             "the 't' discriminator in the key tuple must prevent Explain and Hint from sharing a cache slot " +
             "even when the numeric ids coincide");
     }
+
+    // ─── P3-14a: Recommendation cache key varies with level + style ──────────────
+
+    /// <summary>
+    /// CK-19 (P3-14a): ForRecommendation — changing currentLevel → different key.
+    /// Required correctness: a level-up event must yield a fresh narration, not a stale cached one.
+    /// </summary>
+    [Fact(DisplayName = "CK-19 (P3-14a) ForRecommendation: changing currentLevel → different cache key (level-up must invalidate cache)")]
+    public void ForRecommendation_DifferentCurrentLevel_ProducesDifferentKey()
+    {
+        var baseDate    = DateOnly.FromDateTime(DateTime.UtcNow);
+        const string contentHash = "abc123";
+
+        var keyLevel5 = AiCacheKeyBuilder.ForRecommendation(
+            studentId: 42, recommendationDate: baseDate, recommendationContentHash: contentHash,
+            jwtGrade: GradeJwt, language: LangAr, promptVersion: PromptV1, curriculumVersion: CurriculumMvp,
+            currentLevel: 5);
+
+        var keyLevel6 = AiCacheKeyBuilder.ForRecommendation(
+            studentId: 42, recommendationDate: baseDate, recommendationContentHash: contentHash,
+            jwtGrade: GradeJwt, language: LangAr, promptVersion: PromptV1, curriculumVersion: CurriculumMvp,
+            currentLevel: 6);
+
+        keyLevel5.Should().NotBe(keyLevel6,
+            "P3-14a (OQ-7): a level-up (5→6) must produce a different cache key so the student receives " +
+            "a fresh motivational narration rather than a stale cached one");
+    }
+
+    /// <summary>
+    /// CK-20 (P3-14a): ForRecommendation — same inputs including currentLevel → same key (determinism).
+    /// </summary>
+    [Fact(DisplayName = "CK-20 (P3-14a) ForRecommendation: same inputs + same level → same key (determinism)")]
+    public void ForRecommendation_SameLevel_ProducesSameKey()
+    {
+        var baseDate    = DateOnly.FromDateTime(DateTime.UtcNow);
+        const string contentHash = "abc123";
+
+        var key1 = AiCacheKeyBuilder.ForRecommendation(
+            studentId: 42, recommendationDate: baseDate, recommendationContentHash: contentHash,
+            jwtGrade: GradeJwt, language: LangAr, promptVersion: PromptV1, curriculumVersion: CurriculumMvp,
+            currentLevel: 5);
+
+        var key2 = AiCacheKeyBuilder.ForRecommendation(
+            studentId: 42, recommendationDate: baseDate, recommendationContentHash: contentHash,
+            jwtGrade: GradeJwt, language: LangAr, promptVersion: PromptV1, curriculumVersion: CurriculumMvp,
+            currentLevel: 5);
+
+        key1.Should().Be(key2,
+            "ForRecommendation must be deterministic — identical inputs (including same level) produce the same key");
+    }
+
+    /// <summary>
+    /// CK-21 (P3-14a): ForRecommendation — changing encouragementStyleHint → different key.
+    /// Required correctness: a changed profile style must yield a fresh narration.
+    /// </summary>
+    [Fact(DisplayName = "CK-21 (P3-14a) ForRecommendation: changing encouragementStyleHint → different cache key (profile change must invalidate)")]
+    public void ForRecommendation_DifferentEncouragementStyle_ProducesDifferentKey()
+    {
+        var baseDate    = DateOnly.FromDateTime(DateTime.UtcNow);
+        const string contentHash = "abc123";
+
+        var keyBalanced = AiCacheKeyBuilder.ForRecommendation(
+            studentId: 42, recommendationDate: baseDate, recommendationContentHash: contentHash,
+            jwtGrade: GradeJwt, language: LangAr, promptVersion: PromptV1, curriculumVersion: CurriculumMvp,
+            currentLevel: 5, encouragementStyleHint: "Balanced");
+
+        var keyShort = AiCacheKeyBuilder.ForRecommendation(
+            studentId: 42, recommendationDate: baseDate, recommendationContentHash: contentHash,
+            jwtGrade: GradeJwt, language: LangAr, promptVersion: PromptV1, curriculumVersion: CurriculumMvp,
+            currentLevel: 5, encouragementStyleHint: "Short");
+
+        keyBalanced.Should().NotBe(keyShort,
+            "P3-14a (OQ-7): a changed encouragement style must produce a different cache key " +
+            "so the student receives a fresh narration tailored to their updated profile");
+    }
 }
