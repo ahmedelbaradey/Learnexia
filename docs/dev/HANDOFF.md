@@ -1,3 +1,26 @@
+## Phase-7 admin QC + E2E pass (backend) — 2026-06-19 (`test/P7-admin-qc` = PR #188)
+
+Ran the deliberate QC + E2E pass across **all** Phase-7 admin stories (P7-01..13): qc-test-designer designed per-story backend+frontend test cases (`docs/qc/P7-01..13/`, gap-marked vs the existing suite), then triaged the findings.
+
+**Real issues found AND fixed (the value of the pass):**
+- **Defect — curriculum-admin GetById/Update/Delete of a missing id returned 500, not 404.** Root cause: `LearningRepository.GetByIdAsync(id, trackChanges)` threw on a not-found id (caught → ServerError) so the base service's `null → NotFound` guard was dead code. Bit all five aggregates (Subject/Unit/Grade/Concept/Skill); was the root cause of the `P7_03 Skill_CrudRoundTrip` failure. **Fixed → PR #187** (repo overload delegates to the null-returning include-aware overload + base Update/Delete null-guards; 15 regression facts; Learning unit 374/374; reviewer PASS). #183 had only patched Unit/Grade Update/Delete — this is the shared root-cause fix.
+- **AC gap — P7-10 was missing the story-required language (ar/en) breakdown.** Added `ByLanguage` (adapter already resolved per-attempt language, so purely additive). **Fixed → PR #186** (23/23).
+- **Two Phase-7 suite-isolation flakes** (AC5_SubjectDeactivate, PublishedSubject_VisibleToStudentForGrade) — passed alone, failed in the full suite due to shared-container subject accumulation. Isolated the data setup. **Fixed → PR #188.** Full `--filter P7_` suite now green except Skill_CrudRoundTrip (fixed by #187).
+
+**Verified NOT defects (no action):**
+- **Audit emission works** — every admin-action handler (moderation review, account suspend/reactivate/delete, grade/profile/learning-language change, all curriculum commands) raises `AdminActionPerformedEvent`; the QC concern was test coverage only, not a missing feature.
+- **`ForGrade` 4-subject cap is intentional/correct** — one active subject per code per grade; cannot hide a legitimately published subject.
+
+**QC gap BACKLOG (lead decision 2026-06-19: "stop here, backlog all" — do NOT auto-implement):** the ~199 designed GAP cases are documented per story in `docs/qc/P7-*/coverage-report.md`. P0 clusters for a future coverage wave: (1) **audit-trail end-to-end** coverage for each producer (only the curriculum-create producer is currently tested); (2) **P7-09 Flag and happy-Reject** review paths + reviewer recording (untested); (3) **P7-08 destructive learning-language fresh-start** (confirmed change must hard-delete Math/Science attempts, retain Arabic/English + gamification); (4) **P7-13 earned StudentBadges must survive badge deactivation** (data-safety invariant, untested); (5) **auth-matrix holes** (reactivate/delete/grade-override only test anonymous, not non-admin 403). Features are verified working — these are regression-coverage additions, on demand.
+
+**Pre-existing nit logged:** `ConceptsController` GetById has no `[Authorize]` (open read of curriculum metadata) — track separately, out of scope for the GetById fix.
+
+**Open PRs awaiting the lead's merge:** #183 (close-RED-e2e-gaps), #184 (P7-11 safety dashboard), #186 (P7-10 analytics + ByLanguage), #187 (GetById 404 fix), #188 (QC docs + flake fixes).
+
+**Decision 1 RESOLVED (P7-11 tutor-cost write pattern, was rule-#8-held):** lead chose **fire-and-forget background write** (lowest hot-path latency, fail-soft, mirrors the gateway's existing try/catch). The tutor-cost sub-batch (`AiUsageLog` entity + `ai.AiUsageLogs` migration + gateway fire-and-forget persist + `GetTutorUsageQuery` + `GET /api/Admin/AiSafety/usage`) is now buildable; it stacks on #184 (the `AdminAiSafetyController` lives there). Deferred follow-up: wire P7-10's AI request-volume KPI (currently the honest N/A marker) to `AiUsageLogs` once #186 + the cost sub-batch are in main.
+
+---
+
 ## P7 Admin Wave 3 — Moderation + Audit + Gamification (P7-09/12/13 Frontend) — 2026-06-19 (committed on `feat/P7-admin-wave3`)
 
 **Wave 3 of the Admin Dashboard shipped — completes the moderation, audit, and gamification admin surfaces.** All three stories are FE-only; their backends were merged in earlier waves (P7-09 #180, P7-12/13 in earlier curriculum waves).
