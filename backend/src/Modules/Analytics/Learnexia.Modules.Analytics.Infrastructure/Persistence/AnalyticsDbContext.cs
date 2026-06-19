@@ -1,3 +1,4 @@
+using Learnexia.Modules.Analytics.Domain.Entities;
 using Learnexia.Shared.Kernel.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -22,6 +23,15 @@ namespace Learnexia.Modules.Analytics.Infrastructure.Persistence;
 public class AnalyticsDbContext : DbContext
 {
     public const string Schema = "analytics";
+
+    // ── DbSets ────────────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Append-only product-analytics events. Written by fail-soft integration-event consumers;
+    /// never updated or deleted. Feeds P5-03 DAU/session/retention derivations and the P7-10
+    /// admin KPI dashboard.
+    /// </summary>
+    public DbSet<ActivityEvent> ActivityEvents => Set<ActivityEvent>();
 
     public AnalyticsDbContext(DbContextOptions<AnalyticsDbContext> options) : base(options)
     {
