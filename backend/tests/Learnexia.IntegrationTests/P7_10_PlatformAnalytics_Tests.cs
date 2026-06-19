@@ -5,6 +5,9 @@ using System.Text.Json;
 using FluentAssertions;
 using Learnexia.Modules.Ai.Domain.Entities;
 using Learnexia.Modules.Ai.Infrastructure.Persistence;
+using Learnexia.Modules.Learning.Domain.Entities;
+using Learnexia.Modules.Learning.Domain.Enums;
+using Learnexia.Modules.Learning.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -181,6 +184,8 @@ public sealed class P7_10_PlatformAnalytics_Tests : IAsyncLifetime
             .Should().BeTrue("data must have bySubject; body: {0}", body);
         TryProp(data, "byGrade", out _)
             .Should().BeTrue("data must have byGrade; body: {0}", body);
+        TryProp(data, "byLanguage", out _)
+            .Should().BeTrue("data must have byLanguage (P7-10 ByLanguage facet); body: {0}", body);
 
         // Engagement KPIs
         TryProp(data, "missionsCompleted", out _)
@@ -572,6 +577,13 @@ public sealed class P7_10_PlatformAnalytics_Tests : IAsyncLifetime
         TryProp(data, "byGrade", out var byGrade).Should().BeTrue("body: {0}", body);
         byGrade.ValueKind.Should().Be(JsonValueKind.Array, "byGrade must be an array; body: {0}", body);
         byGrade.GetArrayLength().Should().Be(0, "byGrade must be empty for an empty window; body: {0}", body);
+
+        // BE-TC-BYLANGUAGE-EMPTY: byLanguage must be an empty array (not null) when no attempts are in the window.
+        TryProp(data, "byLanguage", out var byLanguageEmpty).Should().BeTrue("body: {0}", body);
+        byLanguageEmpty.ValueKind.Should().Be(JsonValueKind.Array,
+            "byLanguage must be a JSON array (not null) even when the window is empty; body: {0}", body);
+        byLanguageEmpty.GetArrayLength().Should().Be(0,
+            "byLanguage must be empty for an empty window — sentinel-safe; body: {0}", body);
     }
 
     // =========================================================================
@@ -607,6 +619,254 @@ public sealed class P7_10_PlatformAnalytics_Tests : IAsyncLifetime
             "fromUtc in response must match the supplied from parameter; body: {0}", body);
         Math.Abs((respTo - to).TotalSeconds).Should().BeLessThan(2,
             "toUtc in response must match the supplied to parameter; body: {0}", body);
+    }
+
+    // =========================================================================
+    // BE-TC-BYLANGUAGE: ByLanguage facet returns per-language breakdown
+    // =========================================================================
+
+    [Fact(DisplayName = "BE-TC-BYLANGUAGE-1: seeded Ar + En attempts → byLanguage has both Language=0 and Language=1 entries with correct counts")]
+    public async Task ByLanguage_SeedsArAndEnAttempts_BothLanguagesPresent()
+    {
+        // Use unique ID bases to avoid collision with other parallel tests in the collection.
+        // We pick high IDs (starting at 97_000) unlikely to clash with any seeded curriculum data.
+        var idBase = 97_000 + (int)(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() % 1000);
+
+        var gradeId       = idBase;
+        var arSubjectId   = idBase * 10 + 1;
+        var enSubjectId   = idBase * 10 + 2;
+        var arUnitId      = idBase * 10 + 3;
+        var enUnitId      = idBase * 10 + 4;
+        var arLessonId    = idBase * 10 + 5;
+        var enLessonId    = idBase * 10 + 6;
+        var attempt1Id    = idBase * 10 + 7;
+        var attempt2Id    = idBase * 10 + 8;
+        var attempt3Id    = idBase * 10 + 9;
+
+        var windowFrom = DateTime.UtcNow.AddSeconds(-10);
+
+        // Seed: one Ar subject tree + one En subject tree, each with a unit and lesson,
+        // then three completed attempts: 2 on the Ar lesson (different students), 1 on the En lesson.
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<LearningDbContext>();
+
+            // Grade (shared by both trees — avoids duplicate PK conflicts)
+            var existingGrade = await db.Grades.FindAsync(gradeId);
+            if (existingGrade is null)
+            {
+                db.Grades.Add(new Grade { Id = gradeId, Number = gradeId, DisplayName = $"Grade {gradeId}" });
+            }
+
+            // Arabic subject tree
+            db.Subjects.Add(new Subject
+            {
+                Id             = arSubjectId,
+                Name           = "Ar-Math-Lang-Test",
+                SubjectCode    = SubjectCode.MATH,
+                Language       = ContentLanguage.Ar,
+                GradeId        = gradeId,
+                LifecycleState = LifecycleState.Published,
+            });
+            db.Units.Add(new Unit
+            {
+                Id             = arUnitId,
+                Name           = "Ar Unit",
+                SubjectId      = arSubjectId,
+                SequenceOrder  = 1,
+                LifecycleState = LifecycleState.Published,
+            });
+            db.Lessons.Add(new Lesson
+            {
+                Id             = arLessonId,
+                Name           = "Ar Lesson",
+                UnitId         = arUnitId,
+                SequenceOrder  = 1,
+                Difficulty     = DifficultyLevel.Medium,
+                LifecycleState = LifecycleState.Published,
+            });
+
+            // English subject tree
+            db.Subjects.Add(new Subject
+            {
+                Id             = enSubjectId,
+                Name           = "En-Math-Lang-Test",
+                SubjectCode    = SubjectCode.MATH,
+                Language       = ContentLanguage.En,
+                GradeId        = gradeId,
+                LifecycleState = LifecycleState.Published,
+            });
+            db.Units.Add(new Unit
+            {
+                Id             = enUnitId,
+                Name           = "En Unit",
+                SubjectId      = enSubjectId,
+                SequenceOrder  = 1,
+                LifecycleState = LifecycleState.Published,
+            });
+            db.Lessons.Add(new Lesson
+            {
+                Id             = enLessonId,
+                Name           = "En Lesson",
+                UnitId         = enUnitId,
+                SequenceOrder  = 1,
+                Difficulty     = DifficultyLevel.Medium,
+                LifecycleState = LifecycleState.Published,
+            });
+
+            // Completed attempts: 2 on Ar lesson (students 8801 + 8802), 1 on En lesson (student 8803).
+            var completedAt = DateTime.UtcNow;
+            db.Attempts.Add(new Attempt
+            {
+                Id         = attempt1Id,
+                StudentId  = 8801,
+                LessonId   = arLessonId,
+                Status     = AttemptStatus.Completed,
+                CompletedAt = completedAt,
+                StartedAt   = completedAt.AddSeconds(-30),
+            });
+            db.Attempts.Add(new Attempt
+            {
+                Id         = attempt2Id,
+                StudentId  = 8802,
+                LessonId   = arLessonId,
+                Status     = AttemptStatus.Completed,
+                CompletedAt = completedAt,
+                StartedAt   = completedAt.AddSeconds(-20),
+            });
+            db.Attempts.Add(new Attempt
+            {
+                Id         = attempt3Id,
+                StudentId  = 8803,
+                LessonId   = enLessonId,
+                Status     = AttemptStatus.Completed,
+                CompletedAt = completedAt,
+                StartedAt   = completedAt.AddSeconds(-15),
+            });
+
+            await db.SaveChangesAsync();
+        }
+
+        // Query with an explicit window that covers the seeded attempts.
+        var to  = DateTime.UtcNow.AddSeconds(5);
+        var url = $"{KpisUrl}?from={windowFrom:O}&to={to:O}";
+
+        var (resp, root, body) = await SendAsync(HttpMethod.Get, url, bearer: _adminToken);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "KPI request with seeded Ar+En attempts must return 200; body: {0}", body);
+        TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);
+
+        // byLanguage must be present and be an array.
+        TryProp(data, "byLanguage", out var byLanguage).Should().BeTrue(
+            "data must have byLanguage; body: {0}", body);
+        byLanguage.ValueKind.Should().Be(JsonValueKind.Array,
+            "byLanguage must be a JSON array; body: {0}", body);
+
+        // Must contain at least two entries (Ar=0 and En=1) from the seeded data.
+        // (Other tests may add attempts too, so we use ≥ 2 rather than == 2.)
+        byLanguage.GetArrayLength().Should().BeGreaterThanOrEqualTo(2,
+            "byLanguage must have entries for both Ar (0) and En (1) after seeding; body: {0}", body);
+
+        // Find the Ar=0 entry and assert counts.
+        JsonElement? arEntry = null;
+        JsonElement? enEntry = null;
+        foreach (var elem in byLanguage.EnumerateArray())
+        {
+            if (TryProp(elem, "language", out var langEl) && langEl.ValueKind == JsonValueKind.Number)
+            {
+                if (langEl.GetInt32() == 0) arEntry = elem;
+                if (langEl.GetInt32() == 1) enEntry = elem;
+            }
+        }
+
+        arEntry.Should().NotBeNull(
+            "byLanguage must contain an entry for Language=0 (Ar) after seeding two Ar attempts; body: {0}", body);
+        enEntry.Should().NotBeNull(
+            "byLanguage must contain an entry for Language=1 (En) after seeding one En attempt; body: {0}", body);
+
+        // Ar entry: totalAttempts ≥ 2, lessonsCompleted ≥ 1, distinctActiveStudents ≥ 2.
+        TryProp(arEntry!.Value, "totalAttempts", out var arTotalAttempts).Should().BeTrue(
+            "Ar byLanguage entry must have totalAttempts; body: {0}", body);
+        arTotalAttempts.GetInt32().Should().BeGreaterThanOrEqualTo(2,
+            "Ar byLanguage totalAttempts must be ≥ 2 (seeded 2 Ar attempts); body: {0}", body);
+
+        TryProp(arEntry!.Value, "lessonsCompleted", out var arLessonsCompleted).Should().BeTrue(
+            "Ar byLanguage entry must have lessonsCompleted; body: {0}", body);
+        arLessonsCompleted.GetInt32().Should().BeGreaterThanOrEqualTo(1,
+            "Ar byLanguage lessonsCompleted must be ≥ 1 (seeded 1 distinct Ar lesson); body: {0}", body);
+
+        TryProp(arEntry!.Value, "distinctActiveStudents", out var arDistinctStudents).Should().BeTrue(
+            "Ar byLanguage entry must have distinctActiveStudents; body: {0}", body);
+        arDistinctStudents.GetInt32().Should().BeGreaterThanOrEqualTo(2,
+            "Ar byLanguage distinctActiveStudents must be ≥ 2 (seeded 2 different Ar students); body: {0}", body);
+
+        // En entry: totalAttempts ≥ 1, lessonsCompleted ≥ 1, distinctActiveStudents ≥ 1.
+        TryProp(enEntry!.Value, "totalAttempts", out var enTotalAttempts).Should().BeTrue(
+            "En byLanguage entry must have totalAttempts; body: {0}", body);
+        enTotalAttempts.GetInt32().Should().BeGreaterThanOrEqualTo(1,
+            "En byLanguage totalAttempts must be ≥ 1 (seeded 1 En attempt); body: {0}", body);
+
+        TryProp(enEntry!.Value, "lessonsCompleted", out var enLessonsCompleted).Should().BeTrue(
+            "En byLanguage entry must have lessonsCompleted; body: {0}", body);
+        enLessonsCompleted.GetInt32().Should().BeGreaterThanOrEqualTo(1,
+            "En byLanguage lessonsCompleted must be ≥ 1 (seeded 1 distinct En lesson); body: {0}", body);
+
+        TryProp(enEntry!.Value, "distinctActiveStudents", out var enDistinctStudents).Should().BeTrue(
+            "En byLanguage entry must have distinctActiveStudents; body: {0}", body);
+        enDistinctStudents.GetInt32().Should().BeGreaterThanOrEqualTo(1,
+            "En byLanguage distinctActiveStudents must be ≥ 1 (seeded 1 En student); body: {0}", body);
+
+        // Internal consistency: sum of byLanguage totalAttempts must be ≤ top-level totalAttempts
+        // (the top-level counts ALL completed attempts in the window, byLanguage only counts
+        // attempts whose lesson could be resolved to a subject/language — unresolvable ones are excluded).
+        TryProp(data, "totalAttempts", out var topLevelTotal).Should().BeTrue("body: {0}", body);
+        var byLangSum = byLanguage.EnumerateArray()
+            .Sum(e => TryProp(e, "totalAttempts", out var ta) ? ta.GetInt32() : 0);
+        byLangSum.Should().BeLessThanOrEqualTo(topLevelTotal.GetInt32(),
+            "sum of byLanguage totalAttempts must be ≤ top-level totalAttempts " +
+            "(unresolvable-lesson attempts are excluded from breakdowns but counted in the top-level total); body: {0}", body);
+    }
+
+    [Fact(DisplayName = "BE-TC-BYLANGUAGE-2: DTO shape — byLanguage is present in data and is an array (sentinel-safe, field always serialised)")]
+    public async Task ByLanguage_FieldAlwaysPresent_IsArray()
+    {
+        // Default window (no params) — just verify shape; content may be empty or populated by other tests.
+        var (resp, root, body) = await SendAsync(HttpMethod.Get, KpisUrl, bearer: _adminToken);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK, "body: {0}", body);
+        TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);
+
+        TryProp(data, "byLanguage", out var byLanguage).Should().BeTrue(
+            "data must always have a byLanguage field (even when empty — sentinel-safe serialisation); body: {0}", body);
+        byLanguage.ValueKind.Should().Be(JsonValueKind.Array,
+            "byLanguage must serialise as a JSON array (never null — initialised to [] in DTO); body: {0}", body);
+
+        // Every element in the array must have the four required fields.
+        foreach (var elem in byLanguage.EnumerateArray())
+        {
+            TryProp(elem, "language", out var langEl).Should().BeTrue(
+                "each byLanguage entry must have a 'language' field; body: {0}", body);
+            langEl.ValueKind.Should().Be(JsonValueKind.Number,
+                "'language' in byLanguage entry must be a number (0=Ar, 1=En); body: {0}", body);
+            new[] { 0, 1 }.Should().Contain(langEl.GetInt32(),
+                "'language' must be 0 (Ar) or 1 (En) — only two curriculum languages exist; body: {0}", body);
+
+            TryProp(elem, "lessonsCompleted", out var lc).Should().BeTrue(
+                "each byLanguage entry must have 'lessonsCompleted'; body: {0}", body);
+            lc.ValueKind.Should().Be(JsonValueKind.Number, "body: {0}", body);
+            lc.GetInt32().Should().BeGreaterThanOrEqualTo(0, "body: {0}", body);
+
+            TryProp(elem, "totalAttempts", out var ta).Should().BeTrue(
+                "each byLanguage entry must have 'totalAttempts'; body: {0}", body);
+            ta.ValueKind.Should().Be(JsonValueKind.Number, "body: {0}", body);
+            ta.GetInt32().Should().BeGreaterThanOrEqualTo(0, "body: {0}", body);
+
+            TryProp(elem, "distinctActiveStudents", out var das).Should().BeTrue(
+                "each byLanguage entry must have 'distinctActiveStudents'; body: {0}", body);
+            das.ValueKind.Should().Be(JsonValueKind.Number, "body: {0}", body);
+            das.GetInt32().Should().BeGreaterThanOrEqualTo(0, "body: {0}", body);
+        }
     }
 
     // =========================================================================
