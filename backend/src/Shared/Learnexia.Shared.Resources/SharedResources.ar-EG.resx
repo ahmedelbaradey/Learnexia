@@ -1602,6 +1602,9 @@
   <data name="GradeNotFound" xml:space="preserve">
     <value>الصف الدراسي المطلوب غير موجود.</value>
   </data>
+  <data name="GradeNotEmpty" xml:space="preserve">
+    <value>لا يمكن حذف هذا الصف الدراسي لأنه يحتوي على مواد نشطة. قم بإزالة جميع المواد أو تعطيلها أولاً.</value>
+  </data>
   <data name="SubjectNotFound" xml:space="preserve">
     <value>المادة الدراسية المطلوبة غير موجودة.</value>
   </data>

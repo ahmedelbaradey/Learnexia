@@ -746,6 +746,12 @@
 
         // Browse subjects/lessons — student-facing queries (P2-02).
         public const string GradeNotFound = "GradeNotFound";
+
+        /// <summary>
+        /// Returned when an admin tries to soft-delete a Grade that still has non-deleted Subjects.
+        /// </summary>
+        public const string GradeNotEmpty = "GradeNotEmpty";
+
         public const string SubjectNotFound = "SubjectNotFound";
 
         // Quiz/Assessment — start-attempt (P2-06 BE-3/BE-4).
