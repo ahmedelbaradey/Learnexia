@@ -31,5 +31,6 @@
     <ProjectReference Include="..\..\Modules\Ai\Learnexia.Modules.Ai.Api\Learnexia.Modules.Ai.Api.csproj" />
     <ProjectReference Include="..\..\Modules\Curriculum\Learnexia.Modules.Curriculum.Api\Learnexia.Modules.Curriculum.Api.csproj" />
     <ProjectReference Include="..\..\Modules\Billing\Learnexia.Modules.Billing.Api\Learnexia.Modules.Billing.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Analytics\Learnexia.Modules.Analytics.Api\Learnexia.Modules.Analytics.Api.csproj" />
   </ItemGroup>
 </Project>

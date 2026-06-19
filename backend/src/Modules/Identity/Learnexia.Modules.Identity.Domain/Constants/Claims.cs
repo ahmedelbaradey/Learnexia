@@ -9,6 +9,7 @@ public static partial class Claims
         "Moderation",
         "Curriculum",
         "Billing",
+        "Analytics",
     };
 
 

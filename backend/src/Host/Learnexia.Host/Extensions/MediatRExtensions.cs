@@ -55,6 +55,11 @@ public static class MediatRExtensions
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Learning.Infrastructure.AssemblyReference>();
             // P3-04: Ai.Application handlers (ExplainConceptCommandHandler + future Hint/WhyWrong).
             cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Ai.Application.AssemblyReference>();
+            // CRITICAL: Analytics Application assembly MUST be registered here so that
+            // INotificationHandler<T> capture consumers (BE-3) are discovered. Without this line,
+            // integration-event notifications publish into a void and the ActivityEvent sink stays
+            // silently empty with no error — the same trap documented for Moderation above.
+            cfg.RegisterServicesFromAssemblyContaining<Learnexia.Modules.Analytics.Application.AssemblyReference>();
 
             // Independent fan-out: every handler runs, per-handler failures are caught + logged
             // (ADR 0002 §4). Replaces MediatR's default throw-on-first-failure publisher.
