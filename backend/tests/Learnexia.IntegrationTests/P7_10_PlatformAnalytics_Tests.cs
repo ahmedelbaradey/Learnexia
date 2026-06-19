@@ -222,38 +222,34 @@ public sealed class P7_10_PlatformAnalytics_Tests : IAsyncLifetime
     // BE-TC-NA-MARKERS: deferred/unavailable facets carry string N/A markers
     // =========================================================================
 
-    [Fact(DisplayName = "BE-TC-NA-MARKERS-1: retentionNaReason is a non-empty string, NOT null or a number")]
-    public async Task NaMarkers_RetentionNaReason_IsString()
+    [Fact(DisplayName = "BE-TC-NA-MARKERS-1: retentionNaReason is null (P5-03 Analytics backbone is now built)")]
+    public async Task NaMarkers_RetentionNaReason_IsNullAfterP5_03()
     {
         var (_, root, body) = await SendAsync(HttpMethod.Get, KpisUrl, bearer: _adminToken);
 
         TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);
         TryProp(data, "retentionNaReason", out var retention)
-            .Should().BeTrue("body: {0}", body);
+            .Should().BeTrue("data must still carry the retentionNaReason property (additive contract); body: {0}", body);
 
-        retention.ValueKind.Should().Be(JsonValueKind.String,
-            "retentionNaReason must be a string N/A marker (requires P5-03), NOT null or a number; body: {0}", body);
-        retention.GetString().Should().NotBeNullOrWhiteSpace(
-            "retentionNaReason must be a non-empty N/A message; body: {0}", body);
-        retention.GetString().Should().Contain("P5-03",
-            "retentionNaReason should reference P5-03 as the dependency; body: {0}", body);
+        // P5-03 (analytics event backbone) is now built — retention data is real going-forward.
+        // retentionNaReason is nullable-now-null to signal "data available" without a contract break.
+        retention.ValueKind.Should().Be(JsonValueKind.Null,
+            "retentionNaReason must be null now that P5-03 is built (real data available); body: {0}", body);
     }
 
-    [Fact(DisplayName = "BE-TC-NA-MARKERS-2: sessionDurationNaReason is a non-empty string, NOT null or a number")]
-    public async Task NaMarkers_SessionDurationNaReason_IsString()
+    [Fact(DisplayName = "BE-TC-NA-MARKERS-2: sessionDurationNaReason is null (P5-03 Analytics backbone is now built)")]
+    public async Task NaMarkers_SessionDurationNaReason_IsNullAfterP5_03()
     {
         var (_, root, body) = await SendAsync(HttpMethod.Get, KpisUrl, bearer: _adminToken);
 
         TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);
         TryProp(data, "sessionDurationNaReason", out var sessionDuration)
-            .Should().BeTrue("body: {0}", body);
+            .Should().BeTrue("data must still carry the sessionDurationNaReason property (additive contract); body: {0}", body);
 
-        sessionDuration.ValueKind.Should().Be(JsonValueKind.String,
-            "sessionDurationNaReason must be a string N/A marker (requires P5-03), NOT null or a number; body: {0}", body);
-        sessionDuration.GetString().Should().NotBeNullOrWhiteSpace(
-            "sessionDurationNaReason must be a non-empty N/A message; body: {0}", body);
-        sessionDuration.GetString().Should().Contain("P5-03",
-            "sessionDurationNaReason should reference P5-03 as the dependency; body: {0}", body);
+        // P5-03 (analytics event backbone) is now built — session duration is real going-forward.
+        // sessionDurationNaReason is nullable-now-null to signal "data available" without a contract break.
+        sessionDuration.ValueKind.Should().Be(JsonValueKind.Null,
+            "sessionDurationNaReason must be null now that P5-03 is built (real data available); body: {0}", body);
     }
 
     [Fact(DisplayName = "BE-TC-NA-MARKERS-3: revenueNaReason is a non-empty string (Fake payment provider)")]

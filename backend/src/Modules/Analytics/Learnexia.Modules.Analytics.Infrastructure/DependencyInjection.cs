@@ -1,6 +1,10 @@
 using Learnexia.Modules.Analytics.Application.Abstractions;
+using Learnexia.Modules.Analytics.Application.Options;
 using Learnexia.Modules.Analytics.Infrastructure.Behaviors;
+using Learnexia.Modules.Analytics.Infrastructure.Contracts;
 using Learnexia.Modules.Analytics.Infrastructure.Persistence;
+using Learnexia.Modules.Analytics.Infrastructure.Services;
+using Learnexia.Shared.Contracts.Analytics;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Logging;
 using MediatR;
@@ -30,6 +34,19 @@ public static class DependencyInjection
         // Scoped: shares the AnalyticsDbContext scope (one DbContext per request / consumer invocation).
         // Mirrors AiUsageLogStore registration in Ai.Infrastructure.
         services.AddScoped<IActivityEventStore, ActivityEventStore>();
+
+        // BE-4: session/retention derivation service. Scoped: shares the AnalyticsDbContext scope.
+        // Reads analytics.ActivityEvents AsNoTracking, derives sessions and retention in-memory.
+        services.AddScoped<IActivitySessionService, ActivitySessionService>();
+
+        // BE-5: platform read seam adapter. Scoped: delegates to IActivitySessionService.
+        // Registered as IPlatformAnalyticsQuery (Shared.Contracts) so Identity façade can inject it
+        // without any direct reference to the Analytics module projects (module isolation rule #1).
+        services.AddScoped<IPlatformAnalyticsQuery, PlatformAnalyticsQueryAdapter>();
+
+        // BE-4: options — SessionGapMinutes (default 30) bound from "Analytics" section.
+        services.Configure<AnalyticsOptions>(
+            configuration.GetSection(AnalyticsOptions.SectionName));
 
         services.AddHttpContextAccessor();
         services.AddSingleton<ILoggerManager, LoggerManager>();

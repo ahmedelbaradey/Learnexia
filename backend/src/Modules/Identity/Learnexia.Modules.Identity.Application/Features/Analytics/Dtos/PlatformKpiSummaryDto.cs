@@ -10,18 +10,23 @@ namespace Learnexia.Modules.Identity.Application.Features.Analytics.Dtos;
 /// P7-10 analytics dashboard — honest v1 over existing data.
 ///
 /// <para>Facets that carry real data: learning completions, active-student proxy, engagement (XP + missions),
-/// subscription counts by tier, AI safety events.</para>
+/// subscription counts by tier, AI safety events, session/retention (P5-03 — real going-forward).</para>
 ///
 /// <para>Facets that are explicitly N/A or deferred:</para>
 /// <list type="bullet">
-///   <item><see cref="RetentionNaReason"/> — retention cohorts require P5-03 (analytics event backbone).</item>
-///   <item><see cref="SessionDurationNaReason"/> — true session duration requires P5-03.</item>
-///   <item><see cref="Subscription"/>.<see cref="PlatformSubscriptionStats.RevenueNaReason"/> — revenue is synthetic (Fake payment provider).</item>
-///   <item><see cref="AiSafety"/>.<see cref="PlatformAiSafetyStats.AiRequestVolumeNaReason"/> — AI request volume requires P7-11 AiUsageLogs.</item>
+///   <item><see cref="RetentionNaReason"/> — now <c>null</c>: P5-03 Analytics backbone is built;
+///   retention facets (<see cref="AvgActiveDaysPerStudent"/>, <see cref="ReturningStudentRate"/>)
+///   are real going-forward from <c>analytics.ActivityEvents</c>.</item>
+///   <item><see cref="SessionDurationNaReason"/> — now <c>null</c>: P5-03 is built;
+///   <see cref="AvgSessionDurationSeconds"/> is real going-forward.</item>
+///   <item><see cref="PlatformSubscriptionStats.RevenueNaReason"/> — revenue is synthetic (Fake payment provider).</item>
+///   <item><see cref="PlatformAiSafetyStats.AiRequestVolumeNaReason"/> — AI request volume is real from <c>ai.AiUsageLogs</c>.</item>
 /// </list>
 ///
-/// <para>DAU/WAU/MAU: these are labelled as <b>activity proxies</b> (distinct students with a completed
-/// attempt in the window) NOT true session metrics. True sessions require P5-03.</para>
+/// <para>DAU/WAU/MAU: <see cref="DistinctActiveStudents"/> is the Learning-sourced activity proxy
+/// (distinct students with a completed attempt); it retains its historical data.
+/// <see cref="AnalyticsActiveStudents"/> is the Analytics-sourced true activity count (going-forward
+/// from <c>analytics.ActivityEvents</c>).</para>
 /// </summary>
 public sealed record PlatformKpiSummaryDto
 {
@@ -40,8 +45,9 @@ public sealed record PlatformKpiSummaryDto
 
     /// <summary>
     /// Distinct students with at least one completed attempt in the window.
-    /// <b>Activity proxy for DAU/WAU/MAU — NOT a true session metric.</b>
-    /// Label: "Active Learners (activity proxy)" until P5-03 delivers true sessions.
+    /// <b>Activity proxy for DAU/WAU/MAU — sourced from Learning (attempt completions).</b>
+    /// Retained with its historical data. See <see cref="AnalyticsActiveStudents"/> for the
+    /// Analytics-derived true activity count (going-forward from P5-03 events).
     /// </summary>
     public int DistinctActiveStudents { get; init; }
 
@@ -96,20 +102,58 @@ public sealed record PlatformKpiSummaryDto
     /// </summary>
     public string? AiRequestVolumeNaReason { get; init; }
 
-    // ── P5-03-deferred facets (explicit "available after P5-03" state) ───────────────────────────
+    // ── P5-03 Analytics — session/retention facets (real data, going-forward) ─────────────────────
 
     /// <summary>
-    /// Retention cohort data is not available in v1.
-    /// Requires the P5-03 analytics events backbone (session/cohort capture) — not yet built.
+    /// Distinct active students in the window, sourced from <c>analytics.ActivityEvents</c>
+    /// (P5-03 Analytics module — true activity-based count, going-forward).
+    /// Distinct from <see cref="DistinctActiveStudents"/> which is the Learning attempt-completion proxy
+    /// with historical data. Zero until activity events accrue.
     /// </summary>
-    public string RetentionNaReason { get; init; } =
-        "Available after P5-03 (analytics events backbone)";
+    public int AnalyticsActiveStudents { get; init; }
 
     /// <summary>
-    /// Session duration data is not available in v1.
-    /// <c>Attempt.DurationSeconds</c> is per-attempt, not per-session boundary.
-    /// Requires the P5-03 analytics events backbone (session boundary events) — not yet built.
+    /// Total session count across all active students in the window.
+    /// Derived read-time from <c>analytics.ActivityEvents</c> using an inactivity-window gap-split
+    /// (default 30 min gap = session boundary). Real data going-forward from P5-03.
+    /// Zero when no events exist in the window.
     /// </summary>
-    public string SessionDurationNaReason { get; init; } =
-        "Available after P5-03 (analytics events backbone — session boundary events)";
+    public int TotalSessions { get; init; }
+
+    /// <summary>
+    /// Mean session duration in seconds across all sessions in the window.
+    /// Derived read-time from <c>analytics.ActivityEvents</c> (gap-split wall-clock span).
+    /// Real data going-forward from P5-03. Zero when no sessions exist.
+    /// </summary>
+    public double AvgSessionDurationSeconds { get; init; }
+
+    /// <summary>
+    /// Average number of distinct UTC calendar days on which each active student had at least
+    /// one activity event. Foundation for D1/D7/D30 cohort retention curves (further analytics
+    /// layers build on this). Real data going-forward from P5-03.
+    /// Zero when no active students exist.
+    /// </summary>
+    public double AvgActiveDaysPerStudent { get; init; }
+
+    /// <summary>
+    /// Fraction of distinct active students who were active on ≥ 2 distinct UTC calendar days
+    /// in the window. Range [0.0, 1.0]. Real data going-forward from P5-03.
+    /// Zero when no active students exist.
+    /// </summary>
+    public double ReturningStudentRate { get; init; }
+
+    /// <summary>
+    /// Explicit N/A marker for retention facets.
+    /// Now <c>null</c> — P5-03 (analytics events backbone) is built; retention data is real
+    /// going-forward. Retained as nullable so the FE contract stays additive
+    /// (existing clients that check for non-null continue to work correctly).
+    /// </summary>
+    public string? RetentionNaReason { get; init; } = null;
+
+    /// <summary>
+    /// Explicit N/A marker for session duration.
+    /// Now <c>null</c> — P5-03 (analytics events backbone) is built; session duration is real
+    /// going-forward. Retained as nullable so the FE contract stays additive.
+    /// </summary>
+    public string? SessionDurationNaReason { get; init; } = null;
 }

@@ -21,5 +21,6 @@
     <ProjectReference Include="..\Learnexia.Modules.Analytics.Domain\Learnexia.Modules.Analytics.Domain.csproj" />
     <ProjectReference Include="..\..\..\Shared\Learnexia.Shared.Kernel\Learnexia.Shared.Kernel.csproj" />
     <ProjectReference Include="..\..\..\Shared\Learnexia.Shared.Resources\Learnexia.Shared.Resources.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Learnexia.Shared.Contracts\Learnexia.Shared.Contracts.csproj" />
   </ItemGroup>
 </Project>
