@@ -1,3 +1,19 @@
+## Close-RED-e2e-gaps wave — 2026-06-19 (PR open)
+
+Closed the backend integration-coverage RED gaps from the e2e-gaps inventory (Docker was up → suites RUN locally). Branch `test/close-red-e2e-gaps` (base main). All gated (build 0; new suites 25/25; Learning unit 374; P7_01+P7_02 118/118 no-regression; security-auditor PASS; reviewer PASS).
+
+- **Moderation gap → CLOSED:** ran the P7-09 suite → **`P7_09_Moderation_Tests` 23/23** (the earlier "deferred to CI" caveat is resolved).
+- **Curriculum admin mutations → CLOSED + 4 real defects fixed:** the earlier survey overstated this gap (mutations were already 27/32 covered, skill-graph edges 100%). New `P7_01b_CurriculumMutationGaps_Tests` (20/20) covered the 4 untested endpoints (Subjects/Units/Grades `Update`, Grades `Delete`) and **exposed real bugs** in 3 handlers: unknown-id returned **500 not 404** + `ServerError(ex.Message)` **leaked entity type+id**, and grade-with-subjects delete **500'd on an FK violation**. Fixed by mirroring `EditSubject` (pre-fetch→NotFound) + Subject/Unit delete (children guard→BadRequest); new `GradeService.GradeHasSubjectsAsync`/`GetGradeTrackedAsync`; `GradeNotEmpty` key (EN+AR).
+- **Notifications failure paths → CLOSED:** new reusable `FailingEmailSender` + `FailingEmailSenderFactory` (own test collection — doesn't contaminate the default `LogEmailSender` suites) + `P1_13b_NotificationsFailurePaths_Tests` (5/5). Confirmed send-failure is contained (POST → 400 not 500; welcome-email failure leaves the notification row + registration still succeeds).
+
+**Follow-ups surfaced (recorded, NOT in this PR):**
+1. **Systemic `ServerError(ex.Message)` info-leak** in sibling Learning handlers (`AddGrade`/`GetGrade`/`ListGrade`) + likely other modules — needs a dedicated cross-module sweep (replace with `ServerError()` + internal log). Low severity.
+2. **Notification email reliability is a MISSING FEATURE** — a failed welcome-email send is silently dropped permanently (row-exists → never retried; no email-audit table, no retry/outbox). Needs story(s): (A) transient-failure retry w/ back-off, (B) outbox/at-least-once for the welcome-email integration-event path.
+3. **Pre-existing `P1_13a` `BE-TC-19` failure** — reads a hard-coded WSL file path that doesn't exist on Windows; unrelated to this wave (a test-portability bug to fix).
+4. Reviewer nits (cosmetic): stale "UoW" XML doc on `IGradeService.GetGradeTrackedAsync`; `Grade` has no `IsDeleted` query filter (pre-existing); `SubjectUpdate_UnknownId` test asserts loosely (could tighten to 404).
+
+---
+
 ## P7-09 content moderation queue — 2026-06-19 (PR open)
 
 **First buildable slice of the blocked P7-09/10/11 admin trio** (re-checked after Phase-4 AI merged): P7-09 is buildable NOW because the AI safety pipeline (P3-02 `ai.SafetyEvents`) is merged and the `Moderation` module is scaffolded. P7-10 stays blocked on P5-03 (analytics event capture, not built); P7-11 eval blocked on P6-02 + needs an `AiUsageLogs` table (its safety-summary slice is buildable later). Built on `feat/P7-09-moderation-queue` (base main).
