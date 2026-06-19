@@ -21,7 +21,6 @@ import { useCallback } from 'react';
 import { Stack, Text } from '@tamagui/core';
 
 const DEFAULT_MAX_LENGTH = 500;
-const NEAR_LIMIT_THRESHOLD = 450;
 
 export interface ReasonFieldProps {
   id: string;
@@ -50,7 +49,10 @@ export function ReasonField({
   testId,
 }: ReasonFieldProps) {
   const charCount = value.length;
-  const isNearLimit = charCount >= NEAR_LIMIT_THRESHOLD;
+  // Near-limit threshold is 90% of maxLength so it scales correctly for any
+  // maxLength (e.g. 450 for 500-char fields, 1800 for 2000-char fields).
+  const nearLimitThreshold = Math.floor(maxLength * 0.9);
+  const isNearLimit = charCount >= nearLimitThreshold;
   const isOverLimit = charCount > maxLength;
   const hasError = Boolean(error) || isOverLimit;
 
