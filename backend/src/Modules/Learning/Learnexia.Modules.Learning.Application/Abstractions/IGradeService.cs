@@ -17,4 +17,15 @@ public interface IGradeService : IBaseService<Grade>
         int pageSize,
         string? orderBy,
         CancellationToken cancellationToken = default);
+
+    // ── Delete / Edit path ────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns the tracked Grade for the given id (EF change-tracking ON), or null when not found.
+    /// The caller mutates the entity and the UoW behavior commits the change.
+    /// </summary>
+    Task<Grade?> GetGradeTrackedAsync(int id, CancellationToken ct = default);
+
+    /// <summary>Returns true when the Grade has at least one non-deleted Subject.</summary>
+    Task<bool> GradeHasSubjectsAsync(int gradeId, CancellationToken ct = default);
 }

@@ -5,6 +5,7 @@ using Learnexia.Modules.Learning.Application.Features.Grades.Dtos;
 using Learnexia.Modules.Learning.Domain.Entities;
 using Learnexia.Shared.Kernel.Pagination;
 using Learnexia.Shared.Kernel.Responses;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -33,4 +34,16 @@ public class GradeService : LearningBaseService<Grade>, IGradeService
             .ProjectTo<SingleGradeResponse>(query)
             .ToPaginatedListAsync(pageNumber, pageSize, orderBy);
     }
+
+    // ── Delete / Edit path ────────────────────────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public async Task<Grade?> GetGradeTrackedAsync(int id, CancellationToken ct = default)
+        => await _repository.GetByCondition<Grade>(g => g.Id == id, trackChanges: true)
+                            .FirstOrDefaultAsync(ct);
+
+    /// <inheritdoc/>
+    public async Task<bool> GradeHasSubjectsAsync(int gradeId, CancellationToken ct = default)
+        => await _repository.GetAll<Subject>(trackChanges: false)
+                            .AnyAsync(s => s.GradeId == gradeId, ct);
 }

@@ -1603,6 +1603,9 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="GradeNotFound" xml:space="preserve">
     <value>The requested grade was not found.</value>
   </data>
+  <data name="GradeNotEmpty" xml:space="preserve">
+    <value>Cannot delete this grade because it still has active subjects. Remove or deactivate all subjects first.</value>
+  </data>
   <data name="SubjectNotFound" xml:space="preserve">
     <value>The requested subject was not found.</value>
   </data>
