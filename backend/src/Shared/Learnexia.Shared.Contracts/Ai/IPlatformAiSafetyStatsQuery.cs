@@ -8,9 +8,10 @@ namespace Learnexia.Shared.Contracts.Ai;
 ///
 /// <para>P7-10 analytics dashboard (option a — honest v1).
 /// Safety event aggregates (<c>SafetyEvent</c> table) are REAL data available now.
-/// AI request volume is NOT available — the <c>AiUsageLogs</c> table does not yet exist
-/// (it belongs to the P7-11 cost sub-batch). See <see cref="PlatformAiSafetyStats.AiRequestVolumeNaReason"/>
-/// for the explicit N/A marker.</para>
+/// AI request volume is now ALSO real — sourced from the <c>ai.AiUsageLogs</c> table (built in
+/// the P7-11 tutor-cost sub-batch). See <see cref="PlatformAiSafetyStats.AiRequestVolume"/>.
+/// (Note: streamed AI responses are not yet captured in <c>AiUsageLogs</c> — a documented v1 gap —
+/// so the volume counts non-streaming completions.)</para>
 ///
 /// <para>All results are sentinel-safe: an empty window returns zeroed stats — never null, never throws.</para>
 /// </summary>
@@ -46,13 +47,19 @@ public interface IPlatformAiSafetyStatsQuery
 /// Count of <c>SafetyEvent</c> rows where <c>ActionTaken</c> is not "Blocked"
 /// (i.e. "Regenerated" or "FallbackReturned" — flagged but not hard-blocked).
 /// </param>
+/// <param name="AiRequestVolume">
+/// Total AI tutor requests in the window — count of <c>ai.AiUsageLogs</c> rows. Real data
+/// (the AiUsageLogs table is built). Counts non-streaming completions; streamed responses are
+/// a documented v1 capture gap. Zero when no calls occurred (a real answer, not N/A).
+/// </param>
 /// <param name="AiRequestVolumeNaReason">
-/// Explicit N/A marker for AI request volume — set to a non-null string when request volume
-/// cannot be derived (e.g. "N/A (AiUsageLogs not yet built — held P7-11 cost sub-batch)").
-/// Null means request-volume data is available (reserved for when P7-11 AiUsageLogs lands).
+/// Explicit N/A marker for AI request volume — non-null only if the volume cannot be derived.
+/// Now that <c>ai.AiUsageLogs</c> exists this is <c>null</c> (data available); kept on the contract
+/// so consumers can still distinguish "0 requests" from "data unavailable".
 /// </param>
 public record PlatformAiSafetyStats(
     int TotalSafetyEvents,
     int BlockedCount,
     int FlaggedCount,
+    int AiRequestVolume,
     string? AiRequestVolumeNaReason);

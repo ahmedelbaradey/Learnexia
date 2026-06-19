@@ -18,6 +18,9 @@ namespace Learnexia.Modules.Ai.Application.Features.AdminSafety.Queries.GetSafet
 public sealed class GetSafetyTrendQueryHandler
     : BaseResponseHandler, IQueryHandler<GetSafetyTrendQuery, BaseResponse<IReadOnlyList<SafetyTrendBucketDto>>>
 {
+    // Caps in-memory aggregation as the table grows (mirrors the P7-10 analytics window cap).
+    private static readonly TimeSpan MaxWindow = TimeSpan.FromDays(366);
+
     private readonly IAiSafetyDashboardService _dashboardService;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
@@ -44,6 +47,10 @@ public sealed class GetSafetyTrendQueryHandler
             if (from >= to)
                 return BadRequest<IReadOnlyList<SafetyTrendBucketDto>>(
                     _localizer[SharedResourcesKey.AiSafetyInvalidDateRange].Value);
+
+            if ((to - from) > MaxWindow)
+                return BadRequest<IReadOnlyList<SafetyTrendBucketDto>>(
+                    _localizer[SharedResourcesKey.AiSafetyDateRangeTooLarge].Value);
 
             var buckets = await _dashboardService.GetTrendAsync(from, to, cancellationToken);
 

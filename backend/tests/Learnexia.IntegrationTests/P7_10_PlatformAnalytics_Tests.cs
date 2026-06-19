@@ -208,8 +208,8 @@ public sealed class P7_10_PlatformAnalytics_Tests : IAsyncLifetime
             .Should().BeTrue("data must have aiBlockedCount; body: {0}", body);
         TryProp(data, "aiFlaggedCount", out _)
             .Should().BeTrue("data must have aiFlaggedCount; body: {0}", body);
-        TryProp(data, "aiRequestVolumeNaReason", out _)
-            .Should().BeTrue("data must have aiRequestVolumeNaReason; body: {0}", body);
+        TryProp(data, "aiRequestVolume", out _)
+            .Should().BeTrue("data must have aiRequestVolume (real, from ai.AiUsageLogs); body: {0}", body);
 
         // P5-03-deferred N/A markers
         TryProp(data, "retentionNaReason", out _)
@@ -274,21 +274,23 @@ public sealed class P7_10_PlatformAnalytics_Tests : IAsyncLifetime
             "revenueNaReason must carry an explanatory message, not an empty string; body: {0}", body);
     }
 
-    [Fact(DisplayName = "BE-TC-NA-MARKERS-4: aiRequestVolumeNaReason is a non-empty string (P7-11 not yet built)")]
-    public async Task NaMarkers_AiRequestVolumeNaReason_IsString()
+    [Fact(DisplayName = "BE-TC-NA-MARKERS-4: aiRequestVolume is real (ai.AiUsageLogs built) and the N/A reason is null")]
+    public async Task AiRequestVolume_IsRealNumber_AndNaReasonIsNull()
     {
         var (_, root, body) = await SendAsync(HttpMethod.Get, KpisUrl, bearer: _adminToken);
 
         TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);
-        TryProp(data, "aiRequestVolumeNaReason", out var aiVolume)
-            .Should().BeTrue("body: {0}", body);
 
-        // Per the DTO contract: null = request-volume available (not yet built), non-null = N/A.
-        aiVolume.ValueKind.Should().Be(JsonValueKind.String,
-            "aiRequestVolumeNaReason must be a non-null string (AiUsageLogs not yet built — P7-11); " +
-            "if null, the handler is incorrectly reporting AI request volume as available; body: {0}", body);
-        aiVolume.GetString().Should().NotBeNullOrWhiteSpace(
-            "aiRequestVolumeNaReason must carry an explanatory message; body: {0}", body);
+        // Request volume is now REAL (sourced from ai.AiUsageLogs, built in the P7-11 tutor-cost slice).
+        TryProp(data, "aiRequestVolume", out var aiVolume).Should().BeTrue("body: {0}", body);
+        aiVolume.ValueKind.Should().Be(JsonValueKind.Number,
+            "aiRequestVolume must be a real number now that ai.AiUsageLogs exists; body: {0}", body);
+        aiVolume.GetInt32().Should().BeGreaterThanOrEqualTo(0, "body: {0}", body);
+
+        // The N/A marker must now be null (data available) — distinguishes "0 requests" from "unavailable".
+        if (TryProp(data, "aiRequestVolumeNaReason", out var naReason))
+            naReason.ValueKind.Should().Be(JsonValueKind.Null,
+                "aiRequestVolumeNaReason must be null now that request volume is real; body: {0}", body);
     }
 
     [Fact(DisplayName = "BE-TC-NA-MARKERS-5: quizzesCompletedNaReason is a non-empty string (same entity as LessonsCompleted)")]
@@ -502,6 +504,80 @@ public sealed class P7_10_PlatformAnalytics_Tests : IAsyncLifetime
 
         TryProp(root, "successed", out var succ).Should().BeTrue("body: {0}", body);
         succ.GetBoolean().Should().BeFalse("successed must be false when window is too large; body: {0}", body);
+    }
+
+    // =========================================================================
+    // BE-TC-AI-REQUEST-VOLUME-SEEDED: seeded AiUsageLogs → aiRequestVolume reflects in-window count
+    // =========================================================================
+
+    [Fact(DisplayName = "BE-TC-AI-REQUEST-VOLUME-SEEDED: N in-window + 1 out-of-window AiUsageLogs → aiRequestVolume == N")]
+    public async Task AiRequestVolume_SeededLogsInWindow_ReflectedInKpiCount()
+    {
+        // Use a deterministic narrow window in the distant past (2023-01) to avoid bleed
+        // from other test methods that may also seed AiUsageLogs in or near "now".
+        var windowFrom = new DateTime(2023, 1, 10, 0, 0, 0, DateTimeKind.Utc);
+        var windowTo   = new DateTime(2023, 1, 15, 0, 0, 0, DateTimeKind.Utc);
+
+        const int inWindowCount = 4; // rows we seed inside [windowFrom, windowTo)
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var aiDb = scope.ServiceProvider.GetRequiredService<AiDbContext>();
+
+            // Seed inWindowCount rows inside the window.
+            for (int i = 0; i < inWindowCount; i++)
+            {
+                aiDb.AiUsageLogs.Add(new AiUsageLog
+                {
+                    Provider         = "TestProvider",
+                    ModelId          = "vol-test-model",
+                    TaskKind         = "Explain",
+                    PromptTokens     = 10 + i,
+                    CompletionTokens = 20 + i,
+                    EstimatedCostUsd = 0.001m * (i + 1),
+                    LatencyMs        = 100 + i,
+                    WasCacheHit      = false,
+                    OccurredAtUtc    = windowFrom.AddHours(i + 1), // 1h…4h into the window
+                });
+            }
+
+            // Seed 1 row OUTSIDE the window — must NOT be counted.
+            aiDb.AiUsageLogs.Add(new AiUsageLog
+            {
+                Provider         = "TestProvider",
+                ModelId          = "vol-test-model-outside",
+                TaskKind         = "Explain",
+                PromptTokens     = 999,
+                CompletionTokens = 999,
+                EstimatedCostUsd = 9.99m,
+                LatencyMs        = 9999,
+                WasCacheHit      = false,
+                OccurredAtUtc    = windowFrom.AddDays(-5), // well before the window
+            });
+
+            await aiDb.SaveChangesAsync(userId: 0);
+        }
+
+        var url = $"{KpisUrl}?from={windowFrom:O}&to={windowTo:O}";
+        var (resp, root, body) = await SendAsync(HttpMethod.Get, url, bearer: _adminToken);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "seeded AiUsageLogs KPI request must return 200; body: {0}", body);
+
+        TryProp(root, "data", out var data).Should().BeTrue("body: {0}", body);
+
+        TryProp(data, "aiRequestVolume", out var aiVolume).Should().BeTrue(
+            "data must have aiRequestVolume; body: {0}", body);
+        aiVolume.ValueKind.Should().Be(JsonValueKind.Number,
+            "aiRequestVolume must be a number (sourced from ai.AiUsageLogs); body: {0}", body);
+        aiVolume.GetInt32().Should().Be(inWindowCount,
+            "aiRequestVolume must equal exactly the {0} in-window rows (out-of-window row must be excluded); body: {1}",
+            inWindowCount, body);
+
+        // N/A reason must still be null (data is real).
+        if (TryProp(data, "aiRequestVolumeNaReason", out var naReason))
+            naReason.ValueKind.Should().Be(JsonValueKind.Null,
+                "aiRequestVolumeNaReason must be null when request volume is real; body: {0}", body);
     }
 
     // =========================================================================

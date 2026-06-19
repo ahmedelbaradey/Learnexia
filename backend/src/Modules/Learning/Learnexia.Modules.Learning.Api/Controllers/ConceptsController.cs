@@ -12,6 +12,7 @@ namespace Learnexia.Modules.Learning.Api.Controllers;
 
 [Route("api/learning/[controller]")]
 [ApiController]
+[Authorize] // reads require an authenticated user (close anonymous-access hole); writes are AdminOnly below.
 public class ConceptsController : AppControllerBase
 {
     [HttpGet("List")]

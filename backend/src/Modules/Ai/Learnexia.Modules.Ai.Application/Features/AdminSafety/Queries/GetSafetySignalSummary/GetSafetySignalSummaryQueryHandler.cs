@@ -18,6 +18,9 @@ namespace Learnexia.Modules.Ai.Application.Features.AdminSafety.Queries.GetSafet
 public sealed class GetSafetySignalSummaryQueryHandler
     : BaseResponseHandler, IQueryHandler<GetSafetySignalSummaryQuery, BaseResponse<SafetySignalSummaryDto>>
 {
+    // Caps in-memory aggregation as the table grows (mirrors the P7-10 analytics window cap).
+    private static readonly TimeSpan MaxWindow = TimeSpan.FromDays(366);
+
     private readonly IAiSafetyDashboardService _dashboardService;
     private readonly ILoggerManager _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
@@ -44,6 +47,10 @@ public sealed class GetSafetySignalSummaryQueryHandler
             if (from >= to)
                 return BadRequest<SafetySignalSummaryDto>(
                     _localizer[SharedResourcesKey.AiSafetyInvalidDateRange].Value);
+
+            if ((to - from) > MaxWindow)
+                return BadRequest<SafetySignalSummaryDto>(
+                    _localizer[SharedResourcesKey.AiSafetyDateRangeTooLarge].Value);
 
             var summary = await _dashboardService.GetSummaryAsync(from, to, cancellationToken);
 

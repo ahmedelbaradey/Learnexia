@@ -18,8 +18,9 @@ namespace Modules.Ai.UnitTests;
 ///   AS-03  OtherActions_CountedAsFlagged
 ///   AS-04  OutsideWindow_Excluded
 ///   AS-05  MixedActions_BlockedAndFlaggedCorrect
-///   AS-06  AiRequestVolumeNaReason_IsNotNull
+///   AS-06  AiRequestVolume_CountsUsageLogsInWindow_ReasonNull
 ///   AS-07  TotalSafetyEvents_IsBlockedPlusFlagged
+///   AS-08  NoUsageLogs_VolumeZero_ReasonStillNull
 /// </summary>
 public sealed class PlatformAiSafetyStatsQueryAdapterTests
 {
@@ -51,6 +52,22 @@ public sealed class PlatformAiSafetyStatsQueryAdapterTests
             ActionTaken  = actionTaken,
             ModelId      = "test-model",
             OccurredAtUtc = occurredAtUtc,
+        };
+
+    private static AiUsageLog MakeUsage(int id, DateTime occurredAtUtc)
+        => new AiUsageLog
+        {
+            Id               = id,
+            Provider         = "Claude",
+            ModelId          = "test-model",
+            TaskKind         = "Explain",
+            PromptTokens     = 100,
+            CompletionTokens = 50,
+            EstimatedCostUsd = 0.001m,
+            LatencyMs        = 200,
+            WasCacheHit      = false,
+            StudentId        = null,
+            OccurredAtUtc    = occurredAtUtc,
         };
 
     // ── AS-01: empty database → all zeroes ────────────────────────────────────
@@ -150,18 +167,41 @@ public sealed class PlatformAiSafetyStatsQueryAdapterTests
         result.TotalSafetyEvents.Should().Be(4);
     }
 
-    // ── AS-06: AI request volume N/A reason is set ────────────────────────────
+    // ── AS-06: AI request volume is real (from ai.AiUsageLogs); N/A reason is null ──
 
     [Fact]
-    public async Task AS_06_AiRequestVolumeNaReason_IsNotNull()
+    public async Task AS_06_AiRequestVolume_CountsUsageLogsInWindow_ReasonNull()
+    {
+        await using var db = BuildDb();
+
+        // 2 in-window + 1 before From + 1 after To (exclusive) → only 2 counted.
+        db.AiUsageLogs.AddRange(
+            MakeUsage(1, Base.AddDays(2)),
+            MakeUsage(2, Base.AddDays(7)),
+            MakeUsage(3, From.AddDays(-1)),
+            MakeUsage(4, To.AddDays(1)));
+        await db.SaveChangesAsync();
+
+        var sut    = BuildSut(db);
+        var result = await sut.GetPlatformAsync(From, To);
+
+        result.AiRequestVolume.Should().Be(2);
+        // Data is available now (ai.AiUsageLogs exists) → no N/A marker.
+        result.AiRequestVolumeNaReason.Should().BeNull();
+    }
+
+    // ── AS-08: empty AiUsageLogs → volume 0, still not N/A (0 is a real answer) ──
+
+    [Fact]
+    public async Task AS_08_NoUsageLogs_VolumeZero_ReasonStillNull()
     {
         await using var db = BuildDb();
         var sut = BuildSut(db);
 
         var result = await sut.GetPlatformAsync(From, To);
 
-        result.AiRequestVolumeNaReason.Should().NotBeNullOrWhiteSpace()
-            .And.Contain("N/A");
+        result.AiRequestVolume.Should().Be(0);
+        result.AiRequestVolumeNaReason.Should().BeNull();
     }
 
     // ── AS-07: TotalSafetyEvents = BlockedCount + FlaggedCount ───────────────

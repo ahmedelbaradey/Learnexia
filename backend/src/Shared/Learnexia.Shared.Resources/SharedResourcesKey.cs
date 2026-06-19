@@ -2170,6 +2170,12 @@
         public const string AiSafetyInvalidDateRange = "AiSafetyInvalidDateRange";
 
         /// <summary>
+        /// Returned (400) when the requested AI-safety/usage dashboard window exceeds the maximum
+        /// allowed span (caps in-memory aggregation as the tables grow). Queries validate in-handler.
+        /// </summary>
+        public const string AiSafetyDateRangeTooLarge = "AiSafetyDateRangeTooLarge";
+
+        /// <summary>
         /// Returned when the AI tutor usage/cost summary is retrieved successfully (P7-11 usage endpoint).
         /// Used by <c>GetTutorUsageQueryHandler</c>.
         /// </summary>

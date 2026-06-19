@@ -17,9 +17,9 @@ namespace Learnexia.Modules.Ai.Infrastructure.Safety;
 /// (<c>"Blocked"</c>, <c>"Regenerated"</c>, <c>"FallbackReturned"</c>). We treat "Blocked"
 /// as the hard-block category and everything else as "flagged but delivered".</para>
 ///
-/// <para>AI request volume is NOT available in v1 — the <c>AiUsageLogs</c> table belongs to the
-/// held P7-11 cost sub-batch. <see cref="PlatformAiSafetyStats.AiRequestVolumeNaReason"/> carries
-/// the explicit N/A marker.</para>
+/// <para>AI request volume is now REAL — counted from the <c>ai.AiUsageLogs</c> table (built in the
+/// P7-11 tutor-cost sub-batch). Counts non-streaming completions (streamed responses are a documented
+/// capture gap). <see cref="PlatformAiSafetyStats.AiRequestVolumeNaReason"/> is therefore null.</para>
 ///
 /// <para>All results are sentinel-safe: an empty window returns zeroed stats — never null, never throws.</para>
 /// </summary>
@@ -53,14 +53,17 @@ public sealed class PlatformAiSafetyStatsQueryAdapter : IPlatformAiSafetyStatsQu
         int blocked = events.Count(a => a == BlockedAction);
         int flagged = total - blocked;
 
-        // AI request volume — explicit N/A; the AiUsageLogs table does not yet exist.
-        const string AiRequestVolumeNa =
-            "N/A (AiUsageLogs not yet built — held P7-11 cost sub-batch)";
+        // AI request volume — real data from ai.AiUsageLogs (P7-11 tutor-cost). OccurredAtUtc is
+        // indexed. Counts non-streaming completions (streamed responses are a documented capture gap).
+        int requestVolume = await _db.AiUsageLogs
+            .AsNoTracking()
+            .CountAsync(u => u.OccurredAtUtc >= fromUtc && u.OccurredAtUtc < toUtc, ct);
 
         return new PlatformAiSafetyStats(
             TotalSafetyEvents:        total,
             BlockedCount:             blocked,
             FlaggedCount:             flagged,
-            AiRequestVolumeNaReason:  AiRequestVolumeNa);
+            AiRequestVolume:          requestVolume,
+            AiRequestVolumeNaReason:  null);
     }
 }
