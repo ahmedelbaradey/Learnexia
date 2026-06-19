@@ -1,3 +1,27 @@
+## P5-03 analytics backbone (NEW Analytics module) + P7-11b streaming usage — 2026-06-19 (`feat/P5-03-analytics-backbone`)
+
+**A NEW backend module exists: `Analytics`** (4 projects, schema `analytics`) — the product-analytics event sink. Plus P7-11b closed the streaming AI-usage gap. Full pipeline (analyzer→planner→db-migration→backend-feature→api-tester→security-auditor→reviewer) ran; all gates PASS.
+
+**Lead decisions (load-bearing):**
+- **NEW `Analytics` module** (ask-before-modules cleared) — mirrors the Moderation scaffold. Consumes only `Shared.Contracts` integration events; exposes only `Shared.Contracts/Analytics` read seams. **It has NO controller of its own** — the only read surface is the existing P7-10 `GET /api/Admin/Analytics/kpis`.
+- **DAU = active STUDENTS by activity** (parent-driven onboarding ⇒ children don't sign in, so a sign-in event would measure parents). **No Identity sign-in producer, no Identity change.** The `ActivityEvent` stream IS the DAU source.
+- **Inactivity-window sessions**, read-time derived (gap default **30 min** = `Analytics:SessionGapMinutes`); **retention = distinct active UTC days** (returning = ≥2 days). No persisted Session table in v1.
+
+**What shipped:**
+- `analytics.ActivityEvents` (append-only, PII-light: StudentId/EventType/SubjectCode?/DurationSeconds?/OccurredAtUtc/SourceEventId[unique]). Migration `P5_03_AddActivityEvent`.
+- **6 fail-soft idempotent consumers** of the EXISTING backbone (Lesson/Mission/StudentLeveledUp/AI-help) → `ActivityEvent` via append-only `IActivityEventStore` (dedup on `SourceEventId`; ADR-0001 direct SaveChanges; never throws into the producer). Consumers **drop all free-text/PII facets** from source events.
+- `IActivitySessionService` (DAU, inactivity-window sessions+duration, retention) → `Shared.Contracts/Analytics.IPlatformAnalyticsQuery` (`PlatformAnalyticsStats`) + adapter + Scoped DI.
+- **P7-10 lit up:** `retentionNaReason`/`sessionDurationNaReason` now **null** (data real, going-forward); added `totalSessions`/`avgSessionDurationSeconds`/`avgActiveDaysPerStudent`/`returningStudentRate`/`analyticsActiveStudents`. **`distinctActiveStudents` (Learning attempt proxy) intentionally KEPT** (has history; Analytics table starts empty — switching would show 0 = looks like a regression). Façade now fans out over **5** seams.
+- **P7-11b:** `AiGateway.StreamAsync` records usage via the existing fire-and-forget recorder on **clean completion only** (records once; no double-count vs `CompleteAsync`; providers surface usage on the terminal `AiChunk`). Removed the "non-streaming only" caveat from the docs.
+
+**Gates:** build 0; Ai unit 385/1-skip; migration snapshot in sync; **api-tester 96/96** (P5-03 14 + P7-10 24 + P7-11 58 — ingest/idempotency/fail-soft/DAU/session-gap-split/retention/sentinel/P7-10-lightup/streaming-recorder); **security-auditor PASS** (PII-light, fail-soft 2-layer, idempotent, module-isolated, no endpoint/IDOR, no injection, deps clean); **reviewer PASS**.
+
+**Load-bearing config:** `AnalyticsDbContext` migrations must be applied (`analytics` schema). `Analytics:SessionGapMinutes` (default 30) is configurable. `LearnexiaWebAppFactory` now migrates `AnalyticsDbContext` for all integration tests. **`AddCrossModuleMediatR` includes `Analytics.Application`** (miss it → consumers silently never fire).
+
+**Follow-ups (non-blocking):** in-memory read-time derivation → materialize daily rollups if event volume grows (security-auditor Low #11); cohort retention CURVES (D1/D7/D30) layer on the same table (active-days is the foundation now); ghost-event-on-rollback accepted per ADR-0002 (outbox is a future story). P5-03's other story-listed KPIs (quiz accuracy, subject engagement) come from the existing Learning seam, not new events.
+
+---
+
 ## Phase-7 loose ends (backend) — 2026-06-19 (`fix/p7-loose-ends`)
 
 Three lead-selected follow-ups now that the tutor-cost slice is merged:
