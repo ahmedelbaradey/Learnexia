@@ -932,8 +932,18 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
         // Use the FIRST existing grade with Number=1 so GetSubjectsForGradeQuery (which uses
         // FirstOrDefaultAsync by Number) will return subjects from THIS grade. Tests that create a
         // fresh Number=1 grade find that ForGrade returns the FIRST grade (not theirs), so their
-        // subject is invisible. Use SCIENCE/En (code=1,lang=1) to avoid conflict with
-        // AC5_SubjectDeactivate_HidesFromStudentForGrade (MATH/Ar) and AC6_SubjectReactivate (SCIENCE/Ar).
+        // subject is invisible.
+        //
+        // Isolation — use SCIENCE/En (SubjectCode=1, Language=1) with an English-speaking student.
+        // SubjectLanguageResolver resolves SCIENCE for an En-speaker → ContentLanguage.En → SCIENCE/En.
+        // SCIENCE/En is not written to grade-1 by any other ForGrade-visibility test in the full suite:
+        //   MATH/Ar (0,0)   — occupied by P2_01 helper tests
+        //   SCIENCE/Ar (1,0) — occupied by P7_01 AC6
+        //   ARABIC/Ar (2,0)  — occupied by P7_01 AC5 (after its isolation fix)
+        //   ENGLISH/En (3,1) — occupied by this file's LEAK-8
+        // An English-speaking student (LearningLanguage="en") is served SCIENCE/En directly, so the
+        // ForGrade response will contain exactly this subject's id regardless of what other tests have
+        // previously put into the shared grade.
         int gradeNum = 1;
         var gradeId   = await GetFirstGradeIdByNumberAsync(gradeNum);
         var subjectId = await CreateSubjectGetIdAsync(gradeId,
@@ -945,7 +955,8 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
         // Publish → now visible to students.
         await TransitionAsync(VetSubject, subjectId, LsPublished);
 
-        var studentToken = await CreateStudentTokenAsync();
+        // Use an English-speaking student so the ForGrade handler resolves SCIENCE → En → SCIENCE/En.
+        var studentToken = await CreateStudentTokenWithLanguageAsync("en");
         var subjects = await GetStudentSubjectsForGradeAsync(gradeNum, studentToken);
 
         subjects.Any(s => TryProp(s, "id", out var id) && id.GetInt32() == subjectId)
@@ -1404,6 +1415,42 @@ public sealed class P7_05_ContentLifecycle_Tests : IAsyncLifetime
                 Language         = "ar",
                 Country          = "EG",
                 LearningLanguage = "ar",
+            },
+            parentToken);
+        ((int)addResp.StatusCode).Should().BeOneOf(new[] { 200, 201 },
+            "Add-Child must succeed; body: {0}", addBody);
+
+        return await SignInGetTokenAsync(childEmail, ValidChildPassword);
+    }
+
+    /// <summary>
+    /// Creates a Student-role account with the specified <paramref name="learningLanguage"/> ("ar" or "en")
+    /// via the parent-driven flow and returns the Student JWT.
+    /// Use this overload in ForGrade-visibility tests that need a specific language to drive
+    /// SubjectLanguageResolver so the correct content-language tree is served via ForGrade.
+    /// </summary>
+    private async Task<string> CreateStudentTokenWithLanguageAsync(string learningLanguage)
+    {
+        var parentEmail = $"p705p_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}_{Guid.NewGuid():N}@test.local";
+        var (parentResp, parentRoot, parentBody) = await SendAsync(HttpMethod.Post, RegisterParentUrl,
+            new { Email = parentEmail, Password = "Str0ng@Pass", AcceptedTerms = true });
+        parentResp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "parent registration must succeed; body: {0}", parentBody);
+        TryProp(parentRoot, "data", out var parentData).Should().BeTrue("body: {0}", parentBody);
+        TryProp(parentData, "accessToken", out var parentTokenProp).Should().BeTrue("body: {0}", parentBody);
+        var parentToken = parentTokenProp.GetString()!;
+
+        var childEmail = $"p705c_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}_{Guid.NewGuid():N}@test.local";
+        var (addResp, _, addBody) = await SendAsync(HttpMethod.Post, AddChildUrl,
+            new
+            {
+                FullName         = "P705 Test Student",
+                Email            = childEmail,
+                Password         = ValidChildPassword,
+                Grade            = 3,
+                Language         = learningLanguage,
+                Country          = "EG",
+                LearningLanguage = learningLanguage,
             },
             parentToken);
         ((int)addResp.StatusCode).Should().BeOneOf(new[] { 200, 201 },
