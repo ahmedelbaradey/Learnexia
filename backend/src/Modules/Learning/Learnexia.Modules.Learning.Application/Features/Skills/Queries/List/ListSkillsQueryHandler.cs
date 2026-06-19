@@ -31,6 +31,7 @@ public class ListSkillsQueryHandler : BaseResponseHandler, IQueryHandler<ListSki
                 request.PageSize,
                 request.OrderBy,
                 request.ConceptId,
+                request.Search,
                 cancellationToken);
 
             if (result.TotalCount == 0)

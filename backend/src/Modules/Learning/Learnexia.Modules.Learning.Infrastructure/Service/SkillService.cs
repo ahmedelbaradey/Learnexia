@@ -86,12 +86,18 @@ public class SkillService : LearningBaseService<Skill>, ISkillService
         int pageSize,
         string? orderBy,
         int? conceptId,
+        string? search,
         CancellationToken ct = default)
     {
         // IQueryable composition stays entirely inside Infrastructure — no EF type crosses the boundary.
         var query = conceptId.HasValue
             ? _repository.GetByCondition<Skill>(s => s.ConceptId == conceptId.Value, trackChanges: false)
             : _repository.GetAll<Skill>(trackChanges: false);
+
+        // CUR-TC-66: apply the Search filter (case-insensitive name contains) — was previously dropped.
+        // EF.Functions.ILike → Postgres ILIKE (parameterized; case-insensitive).
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(s => EF.Functions.ILike(s.Name, $"%{search}%"));
 
         if (!query.Any())
             return PaginatedResult<SingleSkillResponse>.EmptyCollection();

@@ -1283,6 +1283,200 @@ public sealed class P7_03_SkillsGraph_Tests : IAsyncLifetime
     }
 
     // =========================================================================
+    // CUR-TC-66 — Skills/List Search filter (ILIKE, case-insensitive)
+    // =========================================================================
+
+    [Fact(DisplayName = "CUR-TC-66-1: Search filters by name — matching skill included, non-matching excluded")]
+    public async Task Search_FiltersByName_IncludesMatchExcludesNonMatch()
+    {
+        var (_, conceptId) = await CreateSubjectWithConceptAsync();
+        var suffix = Guid.NewGuid().ToString("N");
+
+        // Two skills with distinct, unique names so other tests' data cannot pollute assertions.
+        var photoName = $"Photosynthesis {suffix}";
+        var mitosisName = $"Mitosis {suffix}";
+
+        var photoId   = await CreateSkillGetIdAsync(conceptId, photoName);
+        var mitosisId = await CreateSkillGetIdAsync(conceptId, mitosisName);
+
+        // Search on a substring of the first skill only (case-preserving).
+        var (resp, root, body) = await SendAsync(HttpMethod.Get,
+            $"/api/learning/Skills/List?PageNumber=1&PageSize=200&ConceptId={conceptId}&Search=Photosyn",
+            bearer: _adminToken);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "Search must return 200; body: {0}", body);
+        TryProp(root, "successed", out var s).Should().BeTrue("body: {0}", body);
+        s.GetBoolean().Should().BeTrue("successed must be true; body: {0}", body);
+
+        var items = ExtractPageItems(root, body);
+
+        // The Photosynthesis skill MUST appear.
+        items.Any(i => TryProp(i, "id", out var id) && id.GetInt32() == photoId)
+            .Should().BeTrue(
+                "Photosynthesis skill (id={0}) must appear in Search=Photosyn results; body: {1}",
+                photoId, body);
+
+        // The Mitosis skill must NOT appear.
+        items.Any(i => TryProp(i, "id", out var id) && id.GetInt32() == mitosisId)
+            .Should().BeFalse(
+                "Mitosis skill (id={0}) must NOT appear in Search=Photosyn results; body: {1}",
+                mitosisId, body);
+
+        // Every returned item's name must contain the search term (case-insensitive).
+        foreach (var item in items)
+        {
+            TryProp(item, "name", out var nameProp).Should().BeTrue(
+                "every item must have a name field; body: {0}", body);
+            nameProp.GetString()!.Should().ContainEquivalentOf("photosyn",
+                "every returned skill name must contain the search term case-insensitively; body: {0}", body);
+        }
+    }
+
+    [Fact(DisplayName = "CUR-TC-66-2: Search is case-insensitive — lowercase term matches PascalCase name")]
+    public async Task Search_CaseInsensitive_LowercaseTermMatchesPascalCaseName()
+    {
+        var (_, conceptId) = await CreateSubjectWithConceptAsync();
+        var suffix = Guid.NewGuid().ToString("N");
+        var photoName = $"Photosynthesis {suffix}";
+        var mitosisName = $"Mitosis {suffix}";
+        var photoId = await CreateSkillGetIdAsync(conceptId, photoName);
+        await CreateSkillGetIdAsync(conceptId, mitosisName);
+
+        // Lowercase search term must still match the PascalCase stored name.
+        var (resp, root, body) = await SendAsync(HttpMethod.Get,
+            $"/api/learning/Skills/List?PageNumber=1&PageSize=200&ConceptId={conceptId}&Search=photosyn",
+            bearer: _adminToken);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "Case-insensitive Search must return 200; body: {0}", body);
+
+        var items = ExtractPageItems(root, body);
+
+        items.Any(i => TryProp(i, "id", out var id) && id.GetInt32() == photoId)
+            .Should().BeTrue(
+                "lowercase 'photosyn' must match 'Photosynthesis {0}' via ILIKE; body: {1}",
+                suffix, body);
+    }
+
+    [Fact(DisplayName = "CUR-TC-66-3: Search with no match → 200 with empty result (TotalCount=0, not 500)")]
+    public async Task Search_NoMatch_ReturnsEmptyPageNotServerError()
+    {
+        var (_, conceptId) = await CreateSubjectWithConceptAsync();
+        // Seed at least one skill so the concept is not empty.
+        await CreateSkillGetIdAsync(conceptId, $"SomeSkill {Guid.NewGuid():N}");
+
+        // A search term that is unique enough to guarantee no match.
+        var noMatchTerm = $"zzz{Guid.NewGuid():N}";
+
+        var (resp, root, body) = await SendAsync(HttpMethod.Get,
+            $"/api/learning/Skills/List?PageNumber=1&PageSize=200&ConceptId={conceptId}&Search={noMatchTerm}",
+            bearer: _adminToken);
+
+        // Must not 500 — that would mean the fix is incomplete or broke the empty-path.
+        resp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "No-match search must return 200 not 500; body: {0}", body);
+
+        TryProp(root, "successed", out var s).Should().BeTrue("body: {0}", body);
+        s.GetBoolean().Should().BeTrue(
+            "successed must be true even for an empty result; body: {0}", body);
+
+        // TotalCount should be 0 and items list should be empty.
+        // The response wraps a PaginatedResult — look inside data for totalCount.
+        TryProp(root, "data", out var outer).Should().BeTrue("envelope must have data; body: {0}", body);
+
+        // data may itself be a PaginatedResult (nested data.data) or the paginated envelope directly.
+        // Both ExtractPageItems and the direct outer check are valid paths.
+        var items = ExtractPageItems(root, body);
+        items.Should().BeEmpty(
+            "Search='{0}' must return zero items; body: {1}", noMatchTerm, body);
+
+        // Check totalCount if present in the data object.
+        if (TryProp(outer, "totalCount", out var tc))
+            tc.GetInt32().Should().Be(0,
+                "TotalCount must be 0 for no-match search; body: {0}", body);
+    }
+
+    [Fact(DisplayName = "CUR-TC-66-4: Absent Search param → unfiltered — created skills are present")]
+    public async Task Search_Absent_ReturnsUnfiltered_CreatedSkillsPresent()
+    {
+        var (_, conceptId) = await CreateSubjectWithConceptAsync();
+        var suffix = Guid.NewGuid().ToString("N");
+        var photoName   = $"Photosynthesis {suffix}";
+        var mitosisName = $"Mitosis {suffix}";
+        var photoId   = await CreateSkillGetIdAsync(conceptId, photoName);
+        var mitosisId = await CreateSkillGetIdAsync(conceptId, mitosisName);
+
+        // No Search param — must return all skills (unfiltered).
+        var (resp, root, body) = await SendAsync(HttpMethod.Get,
+            $"/api/learning/Skills/List?PageNumber=1&PageSize=200&ConceptId={conceptId}",
+            bearer: _adminToken);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "Unfiltered list must return 200; body: {0}", body);
+
+        var items = ExtractPageItems(root, body);
+
+        items.Any(i => TryProp(i, "id", out var id) && id.GetInt32() == photoId)
+            .Should().BeTrue(
+                "Photosynthesis skill (id={0}) must appear in unfiltered list; body: {1}",
+                photoId, body);
+
+        items.Any(i => TryProp(i, "id", out var id) && id.GetInt32() == mitosisId)
+            .Should().BeTrue(
+                "Mitosis skill (id={0}) must appear in unfiltered list; body: {1}",
+                mitosisId, body);
+    }
+
+    [Fact(DisplayName = "CUR-TC-66-5: Search composes with ConceptId — only matching skills within concept returned")]
+    public async Task Search_ComposesWithConceptId_ReturnsOnlyMatchingSkillsInConcept()
+    {
+        // Two separate concepts with skills that share similar names.
+        var (_, conceptId1) = await CreateSubjectWithConceptAsync();
+        var (_, conceptId2) = await CreateSubjectWithConceptAsync();
+
+        var suffix = Guid.NewGuid().ToString("N");
+        var targetName   = $"Photosynthesis {suffix}";
+        var otherName    = $"Photosynthesis other {suffix}";
+        var unrelatedName = $"Mitosis {suffix}";
+
+        // Target skill in concept1 — should match.
+        var targetId = await CreateSkillGetIdAsync(conceptId1, targetName);
+        // Unrelated skill in concept1 — name does not contain "Photosyn".
+        var unrelatedId = await CreateSkillGetIdAsync(conceptId1, unrelatedName);
+        // Same-named skill in concept2 — should NOT appear (different concept).
+        var otherId = await CreateSkillGetIdAsync(conceptId2, otherName);
+
+        // Query: ConceptId=concept1 + Search=Photosyn.
+        var (resp, root, body) = await SendAsync(HttpMethod.Get,
+            $"/api/learning/Skills/List?PageNumber=1&PageSize=200&ConceptId={conceptId1}&Search=Photosyn",
+            bearer: _adminToken);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "Composed ConceptId+Search must return 200; body: {0}", body);
+
+        var items = ExtractPageItems(root, body);
+
+        // The matching skill in concept1 must appear.
+        items.Any(i => TryProp(i, "id", out var id) && id.GetInt32() == targetId)
+            .Should().BeTrue(
+                "Photosynthesis skill in concept1 (id={0}) must appear; body: {1}",
+                targetId, body);
+
+        // The unrelated skill in concept1 must NOT appear (name does not match).
+        items.Any(i => TryProp(i, "id", out var id) && id.GetInt32() == unrelatedId)
+            .Should().BeFalse(
+                "Mitosis skill in concept1 (id={0}) must NOT appear in Search=Photosyn; body: {1}",
+                unrelatedId, body);
+
+        // The other-concept skill must NOT appear (filtered out by ConceptId).
+        items.Any(i => TryProp(i, "id", out var id) && id.GetInt32() == otherId)
+            .Should().BeFalse(
+                "Photosynthesis skill in concept2 (id={0}) must NOT appear (wrong concept); body: {1}",
+                otherId, body);
+    }
+
+    // =========================================================================
     // Skill CRUD round-trip smoke test
     // =========================================================================
 

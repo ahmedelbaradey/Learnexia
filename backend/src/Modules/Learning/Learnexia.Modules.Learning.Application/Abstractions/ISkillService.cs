@@ -90,6 +90,7 @@ public interface ISkillService : IBaseService<Skill>
     /// <summary>
     /// Returns a paginated, materialized list of Skills projected to <see cref="SingleSkillResponse"/>.
     /// When <paramref name="conceptId"/> is provided only skills for that concept are returned.
+    /// When <paramref name="search"/> is provided only skills whose name contains it are returned (CUR-TC-66).
     /// All EF + ProjectTo + pagination composition stays inside Infrastructure (Option C).
     /// </summary>
     Task<PaginatedResult<SingleSkillResponse>> GetPagedAsync(
@@ -97,5 +98,6 @@ public interface ISkillService : IBaseService<Skill>
         int pageSize,
         string? orderBy,
         int? conceptId,
+        string? search,
         CancellationToken ct = default);
 }
