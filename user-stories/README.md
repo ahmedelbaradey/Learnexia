@@ -141,6 +141,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P7-09 Content moderation queue & review actions
 - P7-10 Platform analytics & KPI dashboard
 - P7-11 AI-safety & quality monitoring dashboard
+- P7-11b Capture AI tutor usage for streamed (SSE) responses *(follow-up to the P7-11 tutor-cost slice; closes the StreamAsync usage-capture gap)*
 - P7-12 Admin action audit log
 - P7-13 Gamification admin overrides — league tier override, badge/mission catalog editors, timed-event write endpoints, streak-freeze grants *(new; the Phase-3 gamification admin overrides deferred to P7)*
 
