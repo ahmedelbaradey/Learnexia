@@ -129,15 +129,10 @@ public sealed class LapseWinBackIntegrationEventHandler
                 return;
             }
 
-            // Pass the effective global push budget so the dispatcher's arbiter gate uses the
-            // per-child value (or config default if null). The dispatcher owns the arbitration.
-            var globalBudget = ReengagementHandlerHelper.GetGlobalBudget(prefs, _settings);
-
             var locale  = await ReengagementHandlerHelper.GetLocaleAsync(_userLookup, ev.StudentId, ct);
             var message = ReengagementHandlerHelper.BuildMessage(
                 ev.StudentId, parentId.Value, category, tierCode, prefs, locale,
-                ("daysIdle", ev.DaysSinceLastActivity.ToString()))
-                with { GlobalDailyPushBudget = globalBudget };
+                ("daysIdle", ev.DaysSinceLastActivity.ToString()));
 
             await _dispatcher.DispatchAsync(message, ct);
             _logger.LogInfo($"analytics.reengagement.sent category={category} childId={ev.StudentId} code={tierCode} daysIdle={ev.DaysSinceLastActivity}");

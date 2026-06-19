@@ -5,7 +5,6 @@ using Learnexia.Shared.Contracts.Gamification;
 using Learnexia.Shared.Contracts.Identity;
 using Learnexia.Shared.Contracts.Parent;
 using Learnexia.Shared.Kernel.Abstractions;
-using Learnexia.Shared.Kernel.Settings;
 using MediatR;
 
 namespace Learnexia.Modules.Notifications.Application.IntegrationEventHandlers.Reengagement;
@@ -27,7 +26,6 @@ public sealed class StudentLeveledUpIntegrationEventHandler
     private readonly IReengagementDedupeStore _dedupeStore;
     private readonly IParentChildQuery _parentChildQuery;
     private readonly INudgeDispatcher _dispatcher;
-    private readonly IGlobalSettingsProvider _settings;
     private readonly IUserLookup? _userLookup;
     private readonly ISystemClock _clock;
     private readonly ILoggerManager _logger;
@@ -38,7 +36,6 @@ public sealed class StudentLeveledUpIntegrationEventHandler
         IReengagementDedupeStore dedupeStore,
         IParentChildQuery parentChildQuery,
         INudgeDispatcher dispatcher,
-        IGlobalSettingsProvider settings,
         ISystemClock clock,
         ILoggerManager logger,
         IUserLookup? userLookup = null)
@@ -48,7 +45,6 @@ public sealed class StudentLeveledUpIntegrationEventHandler
         _dedupeStore       = dedupeStore;
         _parentChildQuery  = parentChildQuery;
         _dispatcher        = dispatcher;
-        _settings          = settings;
         _clock             = clock;
         _logger            = logger;
         _userLookup        = userLookup;
@@ -85,14 +81,9 @@ public sealed class StudentLeveledUpIntegrationEventHandler
                 return;
             }
 
-            // Pass the effective global push budget so the dispatcher's arbiter gate uses the
-            // per-child value (or config default if null). The dispatcher owns the arbitration.
-            var globalBudget = ReengagementHandlerHelper.GetGlobalBudget(prefs, _settings);
-
             var locale  = await ReengagementHandlerHelper.GetLocaleAsync(_userLookup, ev.StudentId, ct);
             var message = ReengagementHandlerHelper.BuildMessage(
-                ev.StudentId, parentId.Value, category, code, prefs, locale)
-                with { GlobalDailyPushBudget = globalBudget };
+                ev.StudentId, parentId.Value, category, code, prefs, locale);
 
             await _dispatcher.DispatchAsync(message, ct);
             _logger.LogInfo($"analytics.reengagement.sent category={category} childId={ev.StudentId} code={code}");

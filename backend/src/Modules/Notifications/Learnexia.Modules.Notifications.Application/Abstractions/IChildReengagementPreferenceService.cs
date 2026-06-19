@@ -47,4 +47,20 @@ public interface IChildReengagementPreferenceService
         int childId,
         NotificationCategory category,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the parent-configured global daily push budget for (<paramref name="parentId"/>, <paramref name="childId"/>),
+    /// or <c>null</c> if no explicit budget has been set (caller should fall back to the platform config default).
+    ///
+    /// <para>Since <see cref="UpsertAsync"/> syncs <c>GlobalDailyPushBudget</c> across all 3 category rows for a
+    /// child, any non-null row value is authoritative. The implementation returns the first non-null value found
+    /// across the child's rows.</para>
+    ///
+    /// Used by <see cref="INudgeDispatcher"/> to resolve the effective budget for EVERY nudge uniformly,
+    /// so that legacy handlers (which don't pre-compute the budget) are gated by the parent's actual setting.
+    /// </summary>
+    Task<int?> GetGlobalDailyPushBudgetAsync(
+        int parentId,
+        int childId,
+        CancellationToken ct = default);
 }

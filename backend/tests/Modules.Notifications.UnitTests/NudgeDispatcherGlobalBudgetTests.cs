@@ -13,31 +13,45 @@ using Xunit;
 namespace Modules.Notifications.UnitTests;
 
 /// <summary>
-/// Dispatcher-level integration tests verifying that the P9-07 global daily push budget gate
-/// is enforced inside <see cref="NudgeDispatcher"/> — the single choke point for all 11 handler paths.
+/// Dispatcher-level unit tests verifying that the P9-07 global daily push budget gate
+/// is enforced inside <see cref="NudgeDispatcher"/> — the single choke point for all handler paths.
 ///
-/// These tests verify:
+/// Budget resolution was previously split: 4 handlers computed it and passed it via
+/// <c>NudgeMessage.GlobalDailyPushBudget</c>; 7 legacy handlers passed null and fell back to
+/// the config default (ignoring the parent's actual per-child budget). The fix moves resolution
+/// entirely into the dispatcher via
+/// <see cref="IChildReengagementPreferenceService.GetGlobalDailyPushBudgetAsync"/>, so the
+/// parent's configured budget is honoured uniformly for EVERY nudge.
+///
+/// Coverage:
 ///   D1  Budget exhausted → push suppressed, in-app inbox row still written.
 ///   D2  Budget under limit → push sent (arbiter grants).
 ///   D3  Arbiter throws (Redis outage) → fail-open: push still attempted, inbox still written.
 ///   D4  ShouldPush=false → arbiter not consulted (parent pref already suppresses push), inbox written.
+///   D5  Dispatcher reads per-child budget from prefs service and passes it to the arbiter.
+///   D6  Service returns null budget → dispatcher falls back to config default (4).
+///   D7  Legacy-handler nudge (no pre-computed budget) is gated by per-child budget:
+///       child budget=1, one prior push today → arbiter suppresses; inbox written, push skipped.
+///   D8  Dispatcher skips prefs service lookup when ShouldPush=false (no unnecessary DB read).
 ///
 /// Each test uses an EF InMemory DbContext (no Postgres required) + Moq for all interfaces.
 /// The <see cref="INudgeArbiter"/> is mocked to return a predetermined grant/suppress result,
-/// keeping these tests pure unit tests of the dispatcher's gate logic rather than full-stack.
-///
-/// Coverage confirms ALL handler paths (legacy + new) are now gated because they all flow
-/// through <see cref="NudgeDispatcher.DispatchAsync"/>.
+/// keeping these tests pure unit tests of the dispatcher's gate logic.
 /// </summary>
 public sealed class NudgeDispatcherGlobalBudgetTests : IDisposable
 {
     private readonly NotificationsDbContext _db;
-    private readonly Mock<IDeviceTokenService>     _deviceTokenService = new();
-    private readonly Mock<IPushSender>             _pushSender         = new();
-    private readonly Mock<INudgeArbiter>           _arbiter            = new();
-    private readonly Mock<IGlobalSettingsProvider> _settings           = new();
-    private readonly Mock<ISystemClock>            _clock              = new();
-    private readonly Mock<ILoggerManager>          _logger             = new();
+    private readonly Mock<IChildReengagementPreferenceService> _preferenceService = new();
+    private readonly Mock<IDeviceTokenService>                 _deviceTokenService = new();
+    private readonly Mock<IPushSender>                         _pushSender         = new();
+    private readonly Mock<INudgeArbiter>                       _arbiter            = new();
+    private readonly Mock<IGlobalSettingsProvider>             _settings           = new();
+    private readonly Mock<ISystemClock>                        _clock              = new();
+    private readonly Mock<ILoggerManager>                      _logger             = new();
+
+    private const int ChildId   = 42;
+    private const int ParentId  = 1;
+    private const int ConfigDefault = 4;
 
     private static readonly DateTime UtcNow = new(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
 
@@ -59,6 +73,11 @@ public sealed class NudgeDispatcherGlobalBudgetTests : IDisposable
         _deviceTokenService
             .Setup(d => d.GetActiveTokensAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
+
+        // Default: prefs service returns null budget (no per-child setting stored).
+        _preferenceService
+            .Setup(p => p.GetGlobalDailyPushBudgetAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((int?)null);
     }
 
     public void Dispose() => _db.Dispose();
@@ -78,7 +97,7 @@ public sealed class NudgeDispatcherGlobalBudgetTests : IDisposable
             .ReturnsAsync(new ReengagementEvaluator.ArbiterResult(false, ReengagementEvaluator.NotEligibleReason.GlobalBudgetExhausted));
 
         var dispatcher = BuildDispatcher();
-        var message = BuildMessage(shouldPush: true, shouldInApp: true, globalBudget: 4);
+        var message = BuildMessage(shouldPush: true, shouldInApp: true);
 
         // Act
         await dispatcher.DispatchAsync(message);
@@ -127,7 +146,7 @@ public sealed class NudgeDispatcherGlobalBudgetTests : IDisposable
             .ReturnsAsync(new PushSendResult(Sent: 1, Failed: 0, InvalidTokens: []));
 
         var dispatcher = BuildDispatcher();
-        var message = BuildMessage(shouldPush: true, shouldInApp: true, globalBudget: 4);
+        var message = BuildMessage(shouldPush: true, shouldInApp: true);
 
         // Act
         await dispatcher.DispatchAsync(message);
@@ -173,7 +192,7 @@ public sealed class NudgeDispatcherGlobalBudgetTests : IDisposable
             .ReturnsAsync(new PushSendResult(Sent: 1, Failed: 0, InvalidTokens: []));
 
         var dispatcher = BuildDispatcher();
-        var message = BuildMessage(shouldPush: true, shouldInApp: true, globalBudget: 4);
+        var message = BuildMessage(shouldPush: true, shouldInApp: true);
 
         // Act
         await dispatcher.DispatchAsync(message);
@@ -198,7 +217,7 @@ public sealed class NudgeDispatcherGlobalBudgetTests : IDisposable
     public async Task ShouldPushFalse_ArbiterNotCalled_InboxWritten()
     {
         var dispatcher = BuildDispatcher();
-        var message = BuildMessage(shouldPush: false, shouldInApp: true, globalBudget: 4);
+        var message = BuildMessage(shouldPush: false, shouldInApp: true);
 
         // Act
         await dispatcher.DispatchAsync(message);
@@ -219,13 +238,18 @@ public sealed class NudgeDispatcherGlobalBudgetTests : IDisposable
     }
 
     // =========================================================================
-    // D5 — Budget carried from message (per-child column) → arbiter receives it
+    // D5 — Dispatcher reads per-child budget from prefs service → arbiter receives it
     // =========================================================================
 
-    [Fact(DisplayName = "D5 Message carries per-child budget → arbiter receives that budget, not config default")]
-    public async Task PerChildBudget_InMessage_PassedToArbiter()
+    [Fact(DisplayName = "D5 Prefs service returns per-child budget → arbiter receives that budget, not config default")]
+    public async Task PrefsService_ReturnsPerChildBudget_ArbiterReceivesIt()
     {
         const int perChildBudget = 2; // tighter than config default of 4
+
+        // Service returns per-child budget for this child.
+        _preferenceService
+            .Setup(p => p.GetGlobalDailyPushBudgetAsync(ParentId, ChildId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((int?)perChildBudget);
 
         int capturedBudget = -1;
         _arbiter
@@ -236,33 +260,35 @@ public sealed class NudgeDispatcherGlobalBudgetTests : IDisposable
                 (_, _, _, budget, _, _) => capturedBudget = budget)
             .ReturnsAsync(new ReengagementEvaluator.ArbiterResult(true, ReengagementEvaluator.NotEligibleReason.None));
 
-        // No active tokens — push will be attempted but find nothing (still proves arbiter was called with right budget).
         _deviceTokenService
             .Setup(d => d.GetActiveTokensAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         var dispatcher = BuildDispatcher();
-        var message = BuildMessage(shouldPush: true, shouldInApp: true, globalBudget: perChildBudget);
+        var message = BuildMessage(shouldPush: true, shouldInApp: true);
 
         await dispatcher.DispatchAsync(message);
 
         capturedBudget.Should().Be(perChildBudget,
-            "dispatcher must pass the per-child budget carried in the message to the arbiter");
+            "dispatcher must pass the per-child budget from the prefs service to the arbiter");
     }
 
     // =========================================================================
-    // D6 — Null budget in message → dispatcher falls back to config default
+    // D6 — Prefs service returns null budget → dispatcher falls back to config default
     // =========================================================================
 
-    [Fact(DisplayName = "D6 Null GlobalDailyPushBudget in message → dispatcher uses config default (4)")]
-    public async Task NullBudgetInMessage_FallsBackToConfigDefault()
+    [Fact(DisplayName = "D6 Prefs service returns null (no per-child setting) → dispatcher falls back to config default (4)")]
+    public async Task PrefsServiceReturnsNull_FallsBackToConfigDefault()
     {
-        const int configDefault = 4;
+        // Service returns null (no per-child budget stored).
+        _preferenceService
+            .Setup(p => p.GetGlobalDailyPushBudgetAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((int?)null);
 
         // Settings returns 4 for the budget key.
         _settings
             .Setup(s => s.GetInt("Notifications:GlobalDailyPushBudget", It.IsAny<int>()))
-            .Returns(configDefault);
+            .Returns(ConfigDefault);
 
         int capturedBudget = -1;
         _arbiter
@@ -278,13 +304,97 @@ public sealed class NudgeDispatcherGlobalBudgetTests : IDisposable
             .ReturnsAsync([]);
 
         var dispatcher = BuildDispatcher();
-        // Message carries null budget (legacy handler path).
-        var message = BuildMessage(shouldPush: true, shouldInApp: true, globalBudget: null);
+        var message = BuildMessage(shouldPush: true, shouldInApp: true);
 
         await dispatcher.DispatchAsync(message);
 
-        capturedBudget.Should().Be(configDefault,
-            "null GlobalDailyPushBudget in message must fall back to config default");
+        capturedBudget.Should().Be(ConfigDefault,
+            "null prefs-service result must fall back to config default");
+    }
+
+    // =========================================================================
+    // D7 — Legacy handler push gated by per-child budget (the core regression test)
+    //
+    // Scenario: parent sets child budget = 1, one push already sent today.
+    // A legacy handler dispatches a nudge with ShouldPush=true (but no budget in message —
+    // it never set one, because budget used to be a handler concern).
+    // The dispatcher must look up the budget from the prefs service → arbiter receives 1,
+    // sees 1 push already sent → suppresses push. Inbox row must still be written.
+    // =========================================================================
+
+    [Fact(DisplayName = "D7 Legacy handler path: per-child budget=1, 1 prior push today → arbiter suppresses; inbox written")]
+    public async Task LegacyHandler_PerChildBudgetOne_OnePriorPush_PushSuppressed_InboxWritten()
+    {
+        const int perChildBudget = 1;
+
+        // Parent configured budget = 1 for this child.
+        _preferenceService
+            .Setup(p => p.GetGlobalDailyPushBudgetAsync(ParentId, ChildId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((int?)perChildBudget);
+
+        // Arbiter returns suppress: budget exhausted (1 push already sent, budget = 1).
+        _arbiter
+            .Setup(a => a.ArbitrateAsync(
+                ChildId,
+                It.IsAny<NotificationCategory>(),
+                It.IsAny<string>(),
+                perChildBudget,         // dispatcher must pass the per-child budget, not config default
+                It.IsAny<DateTime>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ReengagementEvaluator.ArbiterResult(
+                false,
+                ReengagementEvaluator.NotEligibleReason.GlobalBudgetExhausted));
+
+        var dispatcher = BuildDispatcher();
+
+        // Simulate a legacy handler: dispatch NudgeMessage with ShouldPush=true.
+        // A legacy handler never pre-computed the budget — the dispatcher must own resolution.
+        var message = BuildMessage(shouldPush: true, shouldInApp: true);
+
+        await dispatcher.DispatchAsync(message);
+
+        // Inbox row must be written (in-app is always durable).
+        var rows = await _db.Notifications.ToListAsync();
+        rows.Should().HaveCount(1, "inbox row must always be written");
+
+        // Push bit must NOT be set: budget exhausted with per-child budget=1.
+        (rows[0].DeliveredChannels & 2).Should().Be(0,
+            "push suppressed by per-child budget=1 (1 prior push already sent today)");
+
+        // InApp bit must be set.
+        (rows[0].DeliveredChannels & 4).Should().Be(4, "in-app inbox is always written");
+
+        // Push sender must NOT have been called.
+        _pushSender.Verify(
+            p => p.SendAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<string>(), It.IsAny<string>(),
+                             It.IsAny<string?>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "push sender must not be called when per-child budget is exhausted");
+
+        // Verify the prefs service was called with the correct parentId + childId (not any defaults).
+        _preferenceService.Verify(
+            p => p.GetGlobalDailyPushBudgetAsync(ParentId, ChildId, It.IsAny<CancellationToken>()),
+            Times.Once,
+            "dispatcher must look up the per-child budget from the prefs service");
+    }
+
+    // =========================================================================
+    // D8 — ShouldPush=false → prefs service NOT called (no unnecessary DB read)
+    // =========================================================================
+
+    [Fact(DisplayName = "D8 ShouldPush=false → prefs service not called (budget resolution skipped)")]
+    public async Task ShouldPushFalse_PrefsServiceNotCalled()
+    {
+        var dispatcher = BuildDispatcher();
+        var message = BuildMessage(shouldPush: false, shouldInApp: true);
+
+        await dispatcher.DispatchAsync(message);
+
+        // Prefs service must NOT have been called — no point reading budget when push is off.
+        _preferenceService.Verify(
+            p => p.GetGlobalDailyPushBudgetAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "budget should not be resolved when ShouldPush=false");
     }
 
     // =========================================================================
@@ -294,6 +404,7 @@ public sealed class NudgeDispatcherGlobalBudgetTests : IDisposable
     private NudgeDispatcher BuildDispatcher()
         => new(
             _db,
+            _preferenceService.Object,
             _deviceTokenService.Object,
             _pushSender.Object,
             _arbiter.Object,
@@ -303,18 +414,15 @@ public sealed class NudgeDispatcherGlobalBudgetTests : IDisposable
 
     private static NudgeMessage BuildMessage(
         bool shouldPush,
-        bool shouldInApp,
-        int? globalBudget)
+        bool shouldInApp)
         => new(
-            RecipientChildUserId:  42,
-            ParentId:              1,
+            RecipientChildUserId:  ChildId,
+            ParentId:              ParentId,
             Category:              NotificationCategory.StreakAtRisk,
             Code:                  "STREAK_AT_RISK",
             Title:                 "Test title",
             Body:                  "Test body",
             DataJson:              null,
             ShouldPush:            shouldPush,
-            ShouldInApp:           shouldInApp,
-            GlobalDailyPushBudget: globalBudget);
+            ShouldInApp:           shouldInApp);
 }
-

@@ -5,7 +5,6 @@ using Learnexia.Modules.Notifications.Domain.Services;
 using Learnexia.Modules.Notifications.Domain.Templates;
 using Learnexia.Shared.Contracts.Identity;
 using Learnexia.Shared.Kernel.Abstractions;
-using Learnexia.Shared.Kernel.Settings;
 
 namespace Learnexia.Modules.Notifications.Application.IntegrationEventHandlers.Reengagement;
 
@@ -105,9 +104,8 @@ internal static class ReengagementHandlerHelper
     /// Builds a <see cref="NudgeMessage"/> from the resolved prefs + rendered copy.
     /// <c>ShouldPush</c> is set to <c>prefs.Push</c> (parent pref only). The dispatcher applies
     /// the global daily budget + per-type cooldown gate via <see cref="INudgeArbiter"/>.
-    /// <c>GlobalDailyPushBudget</c> defaults to <c>null</c> — the dispatcher falls back to the
-    /// platform config default. Handlers that have already computed the budget should set it
-    /// via a record <c>with</c> expression: <c>BuildMessage(...) with { GlobalDailyPushBudget = budget }</c>.
+    /// Budget resolution is owned entirely by <see cref="INudgeDispatcher"/> — handlers must NOT
+    /// pre-compute or pass a budget value; the dispatcher looks it up uniformly for every nudge.
     /// </summary>
     public static NudgeMessage BuildMessage(
         int childId,
@@ -130,23 +128,4 @@ internal static class ReengagementHandlerHelper
             ShouldPush:            prefs.Push,
             ShouldInApp:           prefs.InApp);
     }
-
-    // -------------------------------------------------------------------------
-    // P9-07 budget helper
-    // -------------------------------------------------------------------------
-
-    private const string GlobalDailyPushBudgetKey     = "Notifications:GlobalDailyPushBudget";
-    private const int    DefaultGlobalDailyPushBudget = 4;
-
-    /// <summary>
-    /// Resolves the effective global daily push budget for a child.
-    /// Priority: per-child column (<c>prefs.GlobalDailyPushBudget</c>) → config default (4).
-    /// Pass the resolved value as <c>NudgeMessage.GlobalDailyPushBudget</c> so the dispatcher
-    /// can apply the arbiter gate without re-loading prefs.
-    /// </summary>
-    public static int GetGlobalBudget(
-        ChildReengagementPreference prefs,
-        IGlobalSettingsProvider settings)
-        => prefs.GlobalDailyPushBudget
-           ?? settings.GetInt(GlobalDailyPushBudgetKey, DefaultGlobalDailyPushBudget);
 }

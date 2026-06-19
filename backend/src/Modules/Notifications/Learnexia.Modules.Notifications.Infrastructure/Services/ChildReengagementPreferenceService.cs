@@ -130,6 +130,21 @@ internal sealed class ChildReengagementPreferenceService : IChildReengagementPre
         return row ?? ChildReengagementPreference.CreateDefault(parentId, childId, category);
     }
 
+    public async Task<int?> GetGlobalDailyPushBudgetAsync(
+        int parentId,
+        int childId,
+        CancellationToken ct = default)
+    {
+        // UpsertAsync syncs GlobalDailyPushBudget across all 3 category rows for a child,
+        // so any non-null row value is authoritative. Return the first non-null found.
+        return await _db.ChildReengagementPreferences
+            .AsNoTracking()
+            .Where(p => p.ParentId == parentId && p.ChildId == childId
+                        && p.GlobalDailyPushBudget != null)
+            .Select(p => p.GlobalDailyPushBudget)
+            .FirstOrDefaultAsync(ct);
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------

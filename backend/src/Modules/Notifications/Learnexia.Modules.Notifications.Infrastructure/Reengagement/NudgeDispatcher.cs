@@ -16,12 +16,17 @@ namespace Learnexia.Modules.Notifications.Infrastructure.Reengagement;
 ///    depends on it even when push is suppressed or fails).
 /// 2. If <see cref="NudgeMessage.ShouldPush"/> is true and the recipient has active device tokens,
 ///    the P9-07 <see cref="INudgeArbiter"/> gate is consulted BEFORE sending:
-///    - Global daily push budget (DB-authoritative via <c>INotificationInboxService.CountPushesSentTodayAsync</c>).
+///    - Global daily push budget: resolved HERE in the dispatcher from the child's reengagement
+///      prefs via <see cref="IChildReengagementPreferenceService.GetGlobalDailyPushBudgetAsync"/>,
+///      with fallback to the platform config default (<c>Notifications:GlobalDailyPushBudget</c>, 4).
+///      Budget is resolved ONCE per push-eligible nudge (only when ShouldPush=true) and is
+///      authoritative for ALL handler paths — legacy and new handlers are gated identically.
 ///    - Per-type cooldown (Redis SETNX, fail-open).
 ///    Only if the arbiter grants does <c>IPushSender.SendAsync</c> fire.
 /// 3. This is the SINGLE choke point for all 11 handler paths (legacy + new). All re-engagement
-///    integration-event handlers pass <c>ShouldPush = prefs.Push</c>; the dispatcher applies the
-///    global budget + cooldown gate uniformly, so none of the legacy nudges bypass the fire-hose rein.
+///    integration-event handlers pass <c>ShouldPush = prefs.Push</c>; the dispatcher resolves
+///    the effective budget and applies the global budget + cooldown gate uniformly, so none of
+///    the legacy nudges bypass the fire-hose rein.
 /// 4. Fail-soft throughout: arbiter failure → fail-open (push proceeds; logged). Push delivery
 ///    failure → inbox row is NOT rolled back; failure is logged. A dispatcher crash does NOT
 ///    propagate to the integration-event handler caller (ADR 0002 §3).
@@ -38,16 +43,18 @@ public sealed class NudgeDispatcher : INudgeDispatcher
     private const string GlobalDailyPushBudgetKey     = "Notifications:GlobalDailyPushBudget";
     private const int    DefaultGlobalDailyPushBudget = 4;
 
-    private readonly NotificationsDbContext  _db;
-    private readonly IDeviceTokenService     _deviceTokenService;
-    private readonly IPushSender             _pushSender;
-    private readonly INudgeArbiter           _arbiter;
-    private readonly IGlobalSettingsProvider _settings;
-    private readonly ISystemClock            _clock;
-    private readonly ILoggerManager          _logger;
+    private readonly NotificationsDbContext                 _db;
+    private readonly IChildReengagementPreferenceService    _preferenceService;
+    private readonly IDeviceTokenService                    _deviceTokenService;
+    private readonly IPushSender                            _pushSender;
+    private readonly INudgeArbiter                          _arbiter;
+    private readonly IGlobalSettingsProvider                _settings;
+    private readonly ISystemClock                           _clock;
+    private readonly ILoggerManager                         _logger;
 
     public NudgeDispatcher(
         NotificationsDbContext db,
+        IChildReengagementPreferenceService preferenceService,
         IDeviceTokenService deviceTokenService,
         IPushSender pushSender,
         INudgeArbiter arbiter,
@@ -56,6 +63,7 @@ public sealed class NudgeDispatcher : INudgeDispatcher
         ILoggerManager logger)
     {
         _db                 = db;
+        _preferenceService  = preferenceService;
         _deviceTokenService = deviceTokenService;
         _pushSender         = pushSender;
         _arbiter            = arbiter;
@@ -127,11 +135,19 @@ public sealed class NudgeDispatcher : INudgeDispatcher
     // -------------------------------------------------------------------------
 
     /// <summary>
-    /// Consults the P9-07 <see cref="INudgeArbiter"/> for the global daily push budget and
-    /// per-type cooldown. Returns <c>true</c> if the push is granted; <c>false</c> if suppressed
-    /// or the arbiter fails (fail-open: on exception, logs + returns <c>true</c> so a transient
-    /// Redis outage does not silently drop pushes — the DB budget count remains authoritative
-    /// for the budget side; only the cooldown is skipped on failure).
+    /// Resolves the effective per-child global daily push budget and consults the P9-07
+    /// <see cref="INudgeArbiter"/> for the budget + per-type cooldown gate.
+    ///
+    /// <para>Budget resolution: the dispatcher looks up the child's stored
+    /// <c>GlobalDailyPushBudget</c> via <see cref="IChildReengagementPreferenceService.GetGlobalDailyPushBudgetAsync"/>
+    /// and falls back to the platform config default (<c>Notifications:GlobalDailyPushBudget</c>, 4)
+    /// only when no per-child value is stored. This ensures the parent's actual setting governs
+    /// every nudge — legacy handlers that don't pre-compute the budget are gated identically to
+    /// the newer handlers.</para>
+    ///
+    /// Returns <c>true</c> if the push is granted; <c>false</c> if suppressed.
+    /// On exception, fails-open (logs + returns <c>true</c>) so a transient Redis outage does
+    /// not silently drop pushes — the DB budget count remains authoritative.
     /// </summary>
     private async Task<bool> TryArbiterGrantAsync(
         NudgeMessage message,
@@ -140,10 +156,13 @@ public sealed class NudgeDispatcher : INudgeDispatcher
     {
         try
         {
-            // Resolve the effective global budget:
-            //   - handlers that loaded prefs pass it in the message (per-child or config default).
-            //   - legacy handlers pass null → dispatcher falls back to config default.
-            var globalBudget = message.GlobalDailyPushBudget
+            // Resolve the effective per-child global push budget (dispatcher is the single owner):
+            //   1. Look up the child's stored budget from reengagement prefs.
+            //   2. Fall back to config default only when no per-child value has been set.
+            var perChildBudget = await _preferenceService.GetGlobalDailyPushBudgetAsync(
+                message.ParentId, message.RecipientChildUserId, ct);
+
+            var globalBudget = perChildBudget
                 ?? _settings.GetInt(GlobalDailyPushBudgetKey, DefaultGlobalDailyPushBudget);
 
             var result = await _arbiter.ArbitrateAsync(
