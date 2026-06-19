@@ -1,5 +1,6 @@
 using Learnexia.Modules.Identity.Application.Features.Analytics.Dtos;
 using Learnexia.Shared.Contracts.Ai;
+using Learnexia.Shared.Contracts.Analytics;
 using Learnexia.Shared.Contracts.Billing;
 using Learnexia.Shared.Contracts.Gamification;
 using Learnexia.Shared.Contracts.Learning;
@@ -14,15 +15,15 @@ namespace Learnexia.Modules.Identity.Application.Features.Analytics.Queries.GetP
 
 /// <summary>
 /// Façade handler for <see cref="GetPlatformKpisQuery"/>.
-/// Fans out to four platform-aggregate <c>Shared.Contracts</c> seams and assembles
+/// Fans out to five platform-aggregate <c>Shared.Contracts</c> seams and assembles
 /// the <see cref="PlatformKpiSummaryDto"/>.
 ///
 /// <para>Module isolation: the handler injects ONLY <c>Shared.Contracts</c> seam interfaces —
-/// never any concrete Learning/Gamification/Billing/Ai types. Cross-module coupling is
+/// never any concrete Learning/Gamification/Billing/Ai/Analytics types. Cross-module coupling is
 /// exclusively through the interfaces declared in <c>Shared.Contracts</c>.</para>
 ///
 /// <para>Persistence architecture: this is a query handler (no write). It coordinates multiple
-/// service calls (the four seam interfaces) — permissible per CONVENTIONS §7 ("Handlers MAY
+/// service calls (the five seam interfaces) — permissible per CONVENTIONS §7 ("Handlers MAY
 /// orchestrate — not required to be one-line shells"). No repo, no DbContext, no EF here.</para>
 ///
 /// <para>Caching: v1 does NOT add Redis caching — the fan-out is already over <c>AsNoTracking</c>
@@ -31,33 +32,44 @@ namespace Learnexia.Modules.Identity.Application.Features.Analytics.Queries.GetP
 ///
 /// <para>Input defaults: a null <c>FromUtc</c> defaults to 30 days ago; a null <c>ToUtc</c> defaults
 /// to now (UTC). Max window = 365 days (reasonable guard; prevents accidentally querying all time).</para>
+///
+/// <para>P5-03 Analytics seam (<see cref="IPlatformAnalyticsQuery"/>): session/retention fields
+/// are now real — sourced from <c>analytics.ActivityEvents</c> going-forward. Values will be zero
+/// on a fresh deployment until activity events accrue. The DAU proxy from Learning
+/// (<see cref="PlatformKpiSummaryDto.DistinctActiveStudents"/>) is NOT replaced — it has
+/// historical data (completed attempts) and switching would show 0 for new deployments, which looks
+/// like a regression. The Analytics-derived active-student count is available separately as
+/// <see cref="PlatformKpiSummaryDto.AnalyticsActiveStudents"/>.</para>
 /// </summary>
 public sealed class GetPlatformKpisQueryHandler
     : BaseResponseHandler,
       IQueryHandler<GetPlatformKpisQuery, BaseResponse<PlatformKpiSummaryDto>>
 {
-    private readonly IPlatformLearningStatsQuery  _learningStats;
-    private readonly IPlatformEngagementQuery     _engagement;
-    private readonly IPlatformSubscriptionStatsQuery _subscriptionStats;
-    private readonly IPlatformAiSafetyStatsQuery  _aiSafetyStats;
-    private readonly ILoggerManager               _logger;
+    private readonly IPlatformLearningStatsQuery      _learningStats;
+    private readonly IPlatformEngagementQuery         _engagement;
+    private readonly IPlatformSubscriptionStatsQuery  _subscriptionStats;
+    private readonly IPlatformAiSafetyStatsQuery      _aiSafetyStats;
+    private readonly IPlatformAnalyticsQuery          _analyticsStats;
+    private readonly ILoggerManager                   _logger;
     private readonly IStringLocalizer<SharedResources> _localizer;
 
     private static readonly TimeSpan DefaultWindowDays = TimeSpan.FromDays(30);
     private static readonly TimeSpan MaxWindow         = TimeSpan.FromDays(365);
 
     public GetPlatformKpisQueryHandler(
-        IPlatformLearningStatsQuery      learningStats,
-        IPlatformEngagementQuery         engagement,
-        IPlatformSubscriptionStatsQuery  subscriptionStats,
-        IPlatformAiSafetyStatsQuery      aiSafetyStats,
-        ILoggerManager                   logger,
+        IPlatformLearningStatsQuery       learningStats,
+        IPlatformEngagementQuery          engagement,
+        IPlatformSubscriptionStatsQuery   subscriptionStats,
+        IPlatformAiSafetyStatsQuery       aiSafetyStats,
+        IPlatformAnalyticsQuery           analyticsStats,
+        ILoggerManager                    logger,
         IStringLocalizer<SharedResources> localizer)
     {
         _learningStats     = learningStats;
         _engagement        = engagement;
         _subscriptionStats = subscriptionStats;
         _aiSafetyStats     = aiSafetyStats;
+        _analyticsStats    = analyticsStats;
         _logger            = logger;
         _localizer         = localizer;
     }
@@ -81,19 +93,22 @@ public sealed class GetPlatformKpisQueryHandler
                 return BadRequest<PlatformKpiSummaryDto>(
                     _localizer[SharedResourcesKey.PlatformKpisWindowTooLarge]);
 
-            // ── Fan-out to four module seams ──────────────────────────────────────────────────────
-            // All four queries are independent — run in parallel for minimal latency.
+            // ── Fan-out to five module seams ──────────────────────────────────────────────────────
+            // All five queries are independent — run in parallel for minimal latency.
+            // analyticsStats is the P5-03 seam for session/retention facets (previously N/A).
             var learningTask      = _learningStats.GetPlatformAsync(fromUtc, toUtc, cancellationToken);
             var engagementTask    = _engagement.GetPlatformAsync(fromUtc, toUtc, cancellationToken);
             var subscriptionTask  = _subscriptionStats.GetPlatformAsync(cancellationToken);
             var aiSafetyTask      = _aiSafetyStats.GetPlatformAsync(fromUtc, toUtc, cancellationToken);
+            var analyticsTask     = _analyticsStats.GetPlatformAsync(fromUtc, toUtc, cancellationToken);
 
-            await Task.WhenAll(learningTask, engagementTask, subscriptionTask, aiSafetyTask);
+            await Task.WhenAll(learningTask, engagementTask, subscriptionTask, aiSafetyTask, analyticsTask);
 
-            var learning     = await learningTask;
-            var engagement   = await engagementTask;
-            var subscription = await subscriptionTask;
-            var aiSafety     = await aiSafetyTask;
+            var learning      = await learningTask;
+            var engagement    = await engagementTask;
+            var subscription  = await subscriptionTask;
+            var aiSafety      = await aiSafetyTask;
+            var analytics     = await analyticsTask;
 
             // ── Assemble KPI DTO ──────────────────────────────────────────────────────────────────
             var dto = new PlatformKpiSummaryDto
@@ -101,7 +116,7 @@ public sealed class GetPlatformKpisQueryHandler
                 FromUtc                   = fromUtc,
                 ToUtc                     = toUtc,
 
-                // Learning
+                // Learning (activity proxy — keeps historical data; NOT replaced by Analytics DAU)
                 LessonsCompleted          = learning.LessonsCompleted,
                 TotalAttempts             = learning.TotalAttempts,
                 DistinctActiveStudents    = learning.DistinctActiveStudents,
@@ -124,14 +139,25 @@ public sealed class GetPlatformKpisQueryHandler
                 AiFlaggedCount            = aiSafety.FlaggedCount,
                 AiRequestVolume           = aiSafety.AiRequestVolume,
                 AiRequestVolumeNaReason   = aiSafety.AiRequestVolumeNaReason,
-                // QuizzesCompleted, Retention, SessionDuration N/A reasons use DTO defaults
+
+                // Analytics — P5-03 session/retention facets (real data going-forward).
+                // N/A reasons are now null (data available). Both reason strings are retained
+                // on the contract as nullable-now-null so the FE contract stays additive.
+                AnalyticsActiveStudents        = analytics.DistinctActiveStudents,
+                TotalSessions                  = analytics.TotalSessions,
+                AvgSessionDurationSeconds      = analytics.AvgSessionDurationSeconds,
+                AvgActiveDaysPerStudent        = analytics.AvgActiveDaysPerStudent,
+                ReturningStudentRate           = analytics.ReturningStudentRate,
+                RetentionNaReason              = null,
+                SessionDurationNaReason        = null,
             };
 
             _logger.LogInfo(
                 $"GetPlatformKpisQuery: assembled KPIs for [{fromUtc:u}, {toUtc:u}) — " +
                 $"lessons={dto.LessonsCompleted}, activeStudents={dto.DistinctActiveStudents}, " +
                 $"missions={dto.MissionsCompleted}, subs={dto.TotalActiveSubscriptions}, " +
-                $"aiEvents={dto.TotalAiSafetyEvents}");
+                $"aiEvents={dto.TotalAiSafetyEvents}, " +
+                $"sessions={dto.TotalSessions}, returningRate={dto.ReturningStudentRate:P0}");
 
             var response = Success(dto);
             response.Message = _localizer[SharedResourcesKey.PlatformKpisRetrievedSuccessfully];

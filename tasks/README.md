@@ -26,7 +26,7 @@ tasks/
     ├── Phase-2-Learning-Core/ P2-xx-BE.md
     ├── Phase-3-Gamification/ P4-xx-BE.md
     ├── Phase-4-AI-Tutor/     P3-xx-BE.md   (AI gateway/safety/prompt, RAG retrieval, explain/hints, adaptivity/mastery/SR/profile, Lexi recommendation narration P3-14 + P3-14a framing; P3-13a profile-depth = BACKLOG)
-    ├── Phase-5-Parent-Analytics/ P5-xx-BE.md  (parent-scoped read API P5-08, weak-area detection P5-02, weekly report P5-01, recommendation engine P5-09 + P5-09a profile-aware selection)
+    ├── Phase-5-Parent-Analytics/ P5-xx-BE.md  (parent-scoped read API P5-08, weak-area detection P5-02, weekly report P5-01, recommendation engine P5-09 + P5-09a profile-aware selection, analytics event-capture backbone P5-03 [NEW Analytics module])
     ├── Phase-6-Stabilization/ P6-06-BE.md
     ├── Phase-7-Admin-Console/ P7-xx-BE.md
     ├── Phase-8-Localization/  P8-xx-BE.md
@@ -162,6 +162,7 @@ Admin feature breakdown behind the P1-10 shell. **All FE work lands in `apps/adm
 | P7-09 | Content moderation queue & review actions | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-09-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-09-BE.md) |
 | P7-10 | Platform analytics & KPI dashboard | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-10-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-10-BE.md) |
 | P7-11 | AI-safety & quality monitoring dashboard | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-11-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-11-BE.md) |
+| P7-11b | Streaming (SSE) AI usage capture *(backend-only; closes the P7-11 StreamAsync gap)* | — | [BE](Backend/Phase-7-Admin-Console/P7-11b-BE.md) |
 | P7-12 | Admin action audit log | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-12-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-12-BE.md) |
 | P7-13 | Gamification admin overrides *(tier / badge & mission catalog / timed-event write / streak-freeze)* | [FE](Frontend/admin-dashboard/Phase-7-Admin-Console/P7-13-FE.md) | [BE](Backend/Phase-7-Admin-Console/P7-13-BE.md) |
 
