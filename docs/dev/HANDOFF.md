@@ -1,3 +1,16 @@
+## Phase-7 loose ends (backend) — 2026-06-19 (`fix/p7-loose-ends`)
+
+Three lead-selected follow-ups now that the tutor-cost slice is merged:
+1. **P7-10 AI request-volume is now REAL** (was an honest N/A marker). `PlatformAiSafetyStats` gained `AiRequestVolume`, counted from `ai.AiUsageLogs` (`AsNoTracking().CountAsync` on the indexed `OccurredAtUtc`); `AiRequestVolumeNaReason` is now `null` (kept on the contract so the FE distinguishes "0 requests" from "unavailable"). Threaded through the façade DTO + handler. **Counts non-streaming completions only** — streaming capture is still the documented v1 gap.
+2. **Max date-range cap (366d)** on the 3 AI aggregate endpoints (`/AiSafety/usage`, `/signals`, `/trend`) → 400 with new localized key `AiSafetyDateRangeTooLarge` (EN+AR). Bounds in-memory aggregation as the tables grow (closes security-auditor Low #8). The paged `/flagged` endpoint intentionally has no cap. (P7-10 `/Analytics/kpis` already had its own 365d cap.)
+3. **`ConceptsController`**: class-level `[Authorize]` closes the anonymous-read hole on List/GetById (writes already AdminOnly). Pre-existing nit from the QC pass — now fixed.
+
+**Gates:** build 0; Ai unit 385 pass / 1 skip; api-tester 101/101 across the affected suites (incl. a seeded-volume test asserting `aiRequestVolume` matches in-window `AiUsageLogs`, the 366d→400 caps, and Concepts anonymous→401); reviewer PASS. (api-tester also fixed a `P7_01c` Concept-not-found call-site that was anonymous and would now 401.)
+
+**Still-open follow-ups (unchanged):** streaming AI usage capture; P5-03 backbone for P7-10's retention/session/true-DAU; P6-02 eval for the last P7-11 facet.
+
+---
+
 ## P7-11 tutor usage/cost sub-batch (backend) — 2026-06-19 (`feat/P7-11-tutor-cost`)
 
 **Closes the rule-#8-held P7-11 cost slice** (Decision 1 resolved: lead chose **fire-and-forget background write**). Captures per-AI-call usage/cost and exposes an admin usage endpoint. Stacked on the P7-11 safety dashboard (now merged in main).
