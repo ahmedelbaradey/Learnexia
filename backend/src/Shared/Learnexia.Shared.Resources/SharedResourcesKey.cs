@@ -2127,5 +2127,31 @@
         /// <summary>Call-to-action key for the cold-start recommendation.</summary>
         public const string RecColdStartCta = "RecColdStartCta";
 
+        // ── P7-11 AI-safety admin dashboard ────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Returned when the AI-safety signal summary is retrieved successfully.
+        /// Used by <c>GetSafetySignalSummaryQueryHandler</c>.
+        /// </summary>
+        public const string AiSafetySignalSummaryRetrievedSuccessfully = "AiSafetySignalSummaryRetrievedSuccessfully";
+
+        /// <summary>
+        /// Returned when the paged flagged-outputs drill-in list is retrieved successfully.
+        /// Used by <c>GetFlaggedOutputsQueryHandler</c>.
+        /// </summary>
+        public const string AiSafetyFlaggedOutputsRetrievedSuccessfully = "AiSafetyFlaggedOutputsRetrievedSuccessfully";
+
+        /// <summary>
+        /// Returned when the per-day safety trend buckets are retrieved successfully.
+        /// Used by <c>GetSafetyTrendQueryHandler</c>.
+        /// </summary>
+        public const string AiSafetyTrendRetrievedSuccessfully = "AiSafetyTrendRetrievedSuccessfully";
+
+        /// <summary>
+        /// Returned (400) when the <c>from</c> date is >= the <c>to</c> date for any AI-safety
+        /// dashboard endpoint. Queries validate ranges in-handler (ValidationBehavior is command-only).
+        /// </summary>
+        public const string AiSafetyInvalidDateRange = "AiSafetyInvalidDateRange";
+
     }
 }

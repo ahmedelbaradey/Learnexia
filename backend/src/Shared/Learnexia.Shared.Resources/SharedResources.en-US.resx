@@ -2628,4 +2628,16 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="ModerationItemAlreadyFlagged" xml:space="preserve">
     <value>This moderation item is already flagged.</value>
   </data>
+  <data name="AiSafetySignalSummaryRetrievedSuccessfully" xml:space="preserve">
+    <value>AI safety signal summary retrieved successfully.</value>
+  </data>
+  <data name="AiSafetyFlaggedOutputsRetrievedSuccessfully" xml:space="preserve">
+    <value>Flagged AI outputs retrieved successfully.</value>
+  </data>
+  <data name="AiSafetyTrendRetrievedSuccessfully" xml:space="preserve">
+    <value>AI safety trend data retrieved successfully.</value>
+  </data>
+  <data name="AiSafetyInvalidDateRange" xml:space="preserve">
+    <value>The 'from' date must be earlier than the 'to' date.</value>
+  </data>
 </root>

@@ -2627,4 +2627,16 @@
   <data name="ModerationItemAlreadyFlagged" xml:space="preserve">
     <value>هذا العنصر في حالة إحالة بالفعل.</value>
   </data>
+  <data name="AiSafetySignalSummaryRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد ملخص إشارات سلامة الذكاء الاصطناعي بنجاح.</value>
+  </data>
+  <data name="AiSafetyFlaggedOutputsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد مخرجات الذكاء الاصطناعي المُعلَّمة بنجاح.</value>
+  </data>
+  <data name="AiSafetyTrendRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد بيانات اتجاه سلامة الذكاء الاصطناعي بنجاح.</value>
+  </data>
+  <data name="AiSafetyInvalidDateRange" xml:space="preserve">
+    <value>يجب أن يكون تاريخ البداية أقدم من تاريخ النهاية.</value>
+  </data>
 </root>
