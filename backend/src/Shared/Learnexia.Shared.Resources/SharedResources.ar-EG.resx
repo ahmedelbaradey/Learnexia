@@ -1731,6 +1731,9 @@
   <data name="NotificationIdRequired" xml:space="preserve">
     <value>معرّف الإشعار مطلوب.</value>
   </data>
+  <data name="InvalidGlobalDailyPushBudgetRange" xml:space="preserve">
+    <value>يجب أن يكون الحد الأقصى اليومي للإشعارات الفورية بين 1 و20.</value>
+  </data>
   <data name="LessonLanguageMismatch" xml:space="preserve">
     <value>هذا الدرس غير متاح بلغة التعلم الحالية.</value>
   </data>

@@ -1,7 +1,9 @@
 using Learnexia.Modules.Notifications.Application.Abstractions;
 using Learnexia.Modules.Notifications.Domain.Entities;
+using Learnexia.Modules.Notifications.Domain.Services;
 using Learnexia.Modules.Notifications.Infrastructure.Persistence;
 using Learnexia.Shared.Kernel.Abstractions;
+using Learnexia.Shared.Kernel.Settings;
 using Microsoft.EntityFrameworkCore;
 
 namespace Learnexia.Modules.Notifications.Infrastructure.Reengagement;
@@ -13,11 +15,17 @@ namespace Learnexia.Modules.Notifications.Infrastructure.Reengagement;
 /// 1. The in-app <c>Notification</c> row is ALWAYS written (the durable receipt — the bell icon
 ///    depends on it even when push is suppressed or fails).
 /// 2. If <see cref="NudgeMessage.ShouldPush"/> is true and the recipient has active device tokens,
-///    <c>IPushSender.SendAsync</c> is called. Push failure is fail-soft: the inbox row is not rolled
-///    back; the failure is logged. Invalid tokens are deactivated via <see cref="IDeviceTokenService"/>.
-/// 3. <c>DeliveredChannels</c> bitmask is stamped on the row after dispatch: InApp=4, Push=2.
-/// 4. The entire method is wrapped in a try/catch — a dispatcher crash does NOT propagate to the
-///    integration-event handler caller (ADR 0002 §3).
+///    the P9-07 <see cref="INudgeArbiter"/> gate is consulted BEFORE sending:
+///    - Global daily push budget (DB-authoritative via <c>INotificationInboxService.CountPushesSentTodayAsync</c>).
+///    - Per-type cooldown (Redis SETNX, fail-open).
+///    Only if the arbiter grants does <c>IPushSender.SendAsync</c> fire.
+/// 3. This is the SINGLE choke point for all 11 handler paths (legacy + new). All re-engagement
+///    integration-event handlers pass <c>ShouldPush = prefs.Push</c>; the dispatcher applies the
+///    global budget + cooldown gate uniformly, so none of the legacy nudges bypass the fire-hose rein.
+/// 4. Fail-soft throughout: arbiter failure → fail-open (push proceeds; logged). Push delivery
+///    failure → inbox row is NOT rolled back; failure is logged. A dispatcher crash does NOT
+///    propagate to the integration-event handler caller (ADR 0002 §3).
+/// 5. <c>DeliveredChannels</c> bitmask is stamped on the row after dispatch: InApp=4, Push=2.
 ///
 /// Scoped lifetime — one instance per request/handler invocation, owns the scoped DbContext.
 /// Uses <see cref="IDeviceTokenService"/> for token lookup/deactivation (no direct DbContext for those).
@@ -27,22 +35,31 @@ public sealed class NudgeDispatcher : INudgeDispatcher
     private const int ChannelInApp = 4;
     private const int ChannelPush  = 2;
 
-    private readonly NotificationsDbContext _db;
-    private readonly IDeviceTokenService _deviceTokenService;
-    private readonly IPushSender _pushSender;
-    private readonly ISystemClock _clock;
-    private readonly ILoggerManager _logger;
+    private const string GlobalDailyPushBudgetKey     = "Notifications:GlobalDailyPushBudget";
+    private const int    DefaultGlobalDailyPushBudget = 4;
+
+    private readonly NotificationsDbContext  _db;
+    private readonly IDeviceTokenService     _deviceTokenService;
+    private readonly IPushSender             _pushSender;
+    private readonly INudgeArbiter           _arbiter;
+    private readonly IGlobalSettingsProvider _settings;
+    private readonly ISystemClock            _clock;
+    private readonly ILoggerManager          _logger;
 
     public NudgeDispatcher(
         NotificationsDbContext db,
         IDeviceTokenService deviceTokenService,
         IPushSender pushSender,
+        INudgeArbiter arbiter,
+        IGlobalSettingsProvider settings,
         ISystemClock clock,
         ILoggerManager logger)
     {
         _db                 = db;
         _deviceTokenService = deviceTokenService;
         _pushSender         = pushSender;
+        _arbiter            = arbiter;
+        _settings           = settings;
         _clock              = clock;
         _logger             = logger;
     }
@@ -57,6 +74,11 @@ public sealed class NudgeDispatcher : INudgeDispatcher
             // ── Step 1: In-app inbox row (always, even when ShouldInApp=false — provides a
             //   durable audit record the admin endpoint and analytics can read).
             //   The Channel bit is set only when ShouldInApp is true (parent pref respected).
+            //   IMPORTANT: the row is written BEFORE the budget check so the inbox receipt is
+            //   durable regardless of push outcome. The budget counter (CountPushesSentTodayAsync)
+            //   uses DeliveredChannels & 2 — the push bit is only stamped in Step 3 AFTER the
+            //   arbiter grants, so this row does NOT count against the budget until it is
+            //   confirmed sent (no double-counting).
             var notification = Notification.CreateReengagement(
                 recipientExternalUserId: message.RecipientChildUserId,
                 category: message.Category,
@@ -70,10 +92,15 @@ public sealed class NudgeDispatcher : INudgeDispatcher
             if (message.ShouldInApp)
                 deliveredChannels |= ChannelInApp;
 
-            // ── Step 2: Push (best-effort; failure does NOT roll back the inbox row).
+            // ── Step 2: Push gate — arbiter (global budget + per-type cooldown) + send.
+            //   The arbiter is the SINGLE choke point for all 11 handler paths. Handlers set
+            //   ShouldPush = prefs.Push only; they do NOT pre-arbitrate. This ensures legacy
+            //   nudges (streak-at-risk, hearts-depleted, badge-earned, etc.) are gated equally.
             if (message.ShouldPush)
             {
-                deliveredChannels |= await TrySendPushAsync(message, notification, ct);
+                var pushGranted = await TryArbiterGrantAsync(message, nowUtc, ct);
+                if (pushGranted)
+                    deliveredChannels |= await TrySendPushAsync(message, notification, ct);
             }
 
             // ── Step 3: Stamp the bitmask + SentAtUtc on the row.
@@ -98,6 +125,57 @@ public sealed class NudgeDispatcher : INudgeDispatcher
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Consults the P9-07 <see cref="INudgeArbiter"/> for the global daily push budget and
+    /// per-type cooldown. Returns <c>true</c> if the push is granted; <c>false</c> if suppressed
+    /// or the arbiter fails (fail-open: on exception, logs + returns <c>true</c> so a transient
+    /// Redis outage does not silently drop pushes — the DB budget count remains authoritative
+    /// for the budget side; only the cooldown is skipped on failure).
+    /// </summary>
+    private async Task<bool> TryArbiterGrantAsync(
+        NudgeMessage message,
+        DateTime nowUtc,
+        CancellationToken ct)
+    {
+        try
+        {
+            // Resolve the effective global budget:
+            //   - handlers that loaded prefs pass it in the message (per-child or config default).
+            //   - legacy handlers pass null → dispatcher falls back to config default.
+            var globalBudget = message.GlobalDailyPushBudget
+                ?? _settings.GetInt(GlobalDailyPushBudgetKey, DefaultGlobalDailyPushBudget);
+
+            var result = await _arbiter.ArbitrateAsync(
+                message.RecipientChildUserId,
+                message.Category,
+                message.Code,
+                globalBudget,
+                nowUtc,
+                ct);
+
+            if (!result.ShouldPush)
+            {
+                _logger.LogInfo(
+                    $"analytics.reengagement.push_suppressed reason={result.SuppressReason} " +
+                    $"category={message.Category} code={message.Code} " +
+                    $"childId={message.RecipientChildUserId}");
+            }
+
+            return result.ShouldPush;
+        }
+        catch (Exception ex)
+        {
+            // Fail-open: arbiter/Redis failure must NOT break dispatch. Log and allow push
+            // through so a transient outage doesn't silently drop nudges. DB budget count
+            // remains authoritative — the push bitmask is stamped on commit, so budget
+            // is re-enforced on the next event.
+            _logger.LogError(ex,
+                $"P9-07: NudgeDispatcher — arbiter threw for childId={message.RecipientChildUserId} " +
+                $"category={message.Category} code={message.Code} — fail-open, push proceeds.");
+            return true;
+        }
+    }
 
     /// <summary>
     /// Loads active device tokens for the recipient via <see cref="IDeviceTokenService"/>, calls

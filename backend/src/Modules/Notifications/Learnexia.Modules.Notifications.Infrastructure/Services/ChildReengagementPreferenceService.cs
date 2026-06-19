@@ -59,6 +59,7 @@ internal sealed class ChildReengagementPreferenceService : IChildReengagementPre
         TimeOnly? quietHoursEndLocal,
         string? timeZoneId,
         int? dailyCap,
+        int? globalDailyPushBudget = null,
         CancellationToken ct = default)
     {
         var existing = await _db.ChildReengagementPreferences
@@ -83,6 +84,10 @@ internal sealed class ChildReengagementPreferenceService : IChildReengagementPre
 
                 if (dailyCap.HasValue)
                     row.UpdateDailyCap(dailyCap.Value);
+
+                // P9-07: parent-configurable global push budget (applied to all rows for this child).
+                if (globalDailyPushBudget.HasValue)
+                    row.UpdateGlobalDailyPushBudget(globalDailyPushBudget.Value);
             }
             else
             {
@@ -97,6 +102,10 @@ internal sealed class ChildReengagementPreferenceService : IChildReengagementPre
 
                 if (dailyCap.HasValue)
                     newRow.UpdateDailyCap(dailyCap.Value);
+
+                // P9-07: parent-configurable global push budget.
+                if (globalDailyPushBudget.HasValue)
+                    newRow.UpdateGlobalDailyPushBudget(globalDailyPushBudget.Value);
 
                 await _db.ChildReengagementPreferences.AddAsync(newRow, ct);
             }

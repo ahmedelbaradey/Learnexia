@@ -34,6 +34,7 @@ public interface IChildReengagementPreferenceService
         TimeOnly? quietHoursEndLocal,
         string? timeZoneId,
         int? dailyCap,
+        int? globalDailyPushBudget = null,
         CancellationToken ct = default);
 
     /// <summary>

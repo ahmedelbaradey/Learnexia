@@ -67,4 +67,14 @@ public sealed class ChildReengagementPreference : FullAuditedEntity
     {
         DailyCap = dailyCap;
     }
+
+    /// <summary>
+    /// Sets the parent-configurable global cross-category daily PUSH budget for this child (P9-07).
+    /// Passing <c>null</c> resets it to the platform default (sourced from config at runtime).
+    /// Valid range: [1, 20] (enforced at the command layer; domain accepts any non-negative int or null).
+    /// </summary>
+    public void UpdateGlobalDailyPushBudget(int? globalDailyPushBudget)
+    {
+        GlobalDailyPushBudget = globalDailyPushBudget;
+    }
 }

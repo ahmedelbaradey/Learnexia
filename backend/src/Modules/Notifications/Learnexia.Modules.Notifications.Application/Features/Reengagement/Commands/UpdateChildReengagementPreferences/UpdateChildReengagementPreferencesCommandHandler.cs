@@ -62,6 +62,7 @@ public sealed class UpdateChildReengagementPreferencesCommandHandler
                 request.QuietHoursEndLocal,
                 request.TimeZoneId,
                 request.DailyCap,
+                request.GlobalDailyPushBudget,
                 cancellationToken);
 
             return Success<string>(_localizer[SharedResourcesKey.ChildPreferencesUpdatedSuccessfully]);

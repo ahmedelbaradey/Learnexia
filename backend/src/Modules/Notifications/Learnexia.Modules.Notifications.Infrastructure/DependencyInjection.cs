@@ -4,6 +4,7 @@ using Learnexia.Modules.Notifications.Infrastructure.Persistence;
 using Learnexia.Modules.Notifications.Infrastructure.Push;
 using Learnexia.Modules.Notifications.Infrastructure.Reengagement;
 using Learnexia.Modules.Notifications.Infrastructure.Services;
+using Learnexia.Shared.Kernel.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
@@ -33,6 +34,9 @@ public static class DependencyInjection
         services.AddScoped<IChildReengagementPreferenceService, ChildReengagementPreferenceService>();
         services.AddScoped<IDeviceTokenService, DeviceTokenService>();
         services.AddScoped<IReengagementDedupeStore, ReengagementDedupeStore>();
+
+        // P9-07: cross-category push-budget arbiter (Scoped — same lifetime as NudgeDispatcher).
+        services.AddScoped<INudgeArbiter, NudgeArbiter>();
 
         return services;
     }
