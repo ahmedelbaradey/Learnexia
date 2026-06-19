@@ -2,6 +2,7 @@ using Learnexia.Modules.Ai.Api.Bases;
 using Learnexia.Modules.Ai.Application.Features.AdminSafety.Queries.GetFlaggedOutputs;
 using Learnexia.Modules.Ai.Application.Features.AdminSafety.Queries.GetSafetySignalSummary;
 using Learnexia.Modules.Ai.Application.Features.AdminSafety.Queries.GetSafetyTrend;
+using Learnexia.Modules.Ai.Application.Features.AdminTutorUsage.Queries.GetTutorUsage;
 using Learnexia.Shared.Kernel.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -17,7 +18,6 @@ namespace Learnexia.Modules.Ai.Api.Controllers;
 /// - No full-table loads: paged queries only for flagged outputs; aggregate queries are date-windowed.
 /// - No raw prompt/response text exposed — PII-light by design (P3-02 Q5/Q6).
 /// - Eval results endpoint is omitted (deferred — blocked on P6-02).
-/// - Tutor usage/cost endpoint is omitted (deferred — blocked on AiUsageLogs table decision OQ-2).
 /// </summary>
 [Route("api/Admin/AiSafety")]
 [ApiController]
@@ -59,5 +59,20 @@ public class AdminAiSafetyController : AppControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetTrend([FromQuery] GetSafetyTrendQuery query)
+        => NewResult(await Mediator.Send(query));
+
+    /// <summary>
+    /// Returns aggregated AI tutor usage/cost metrics over a date range (P7-11 usage/cost dashboard).
+    /// Totals: calls, prompt tokens, completion tokens, estimated cost, avg latency, cache-hit rate.
+    /// Breakdowns: by model, by task kind. Trend: per-day buckets.
+    /// PII-light: token counts and cost only — no prompt/response text, no student identifiers.
+    /// Empty windows return zeroed totals (HTTP 200, never 404).
+    /// </summary>
+    [HttpGet("usage")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetTutorUsage([FromQuery] GetTutorUsageQuery query)
         => NewResult(await Mediator.Send(query));
 }

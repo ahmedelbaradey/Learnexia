@@ -1,3 +1,22 @@
+## P7-11 tutor usage/cost sub-batch (backend) — 2026-06-19 (`feat/P7-11-tutor-cost`)
+
+**Closes the rule-#8-held P7-11 cost slice** (Decision 1 resolved: lead chose **fire-and-forget background write**). Captures per-AI-call usage/cost and exposes an admin usage endpoint. Stacked on the P7-11 safety dashboard (now merged in main).
+
+**What shipped (Ai module only):**
+- **`ai.AiUsageLogs`** (entity `AiUsageLog`, migration `P7_11_AddAiUsageLog`) — append-only, mirrors `SafetyEvent`. PII-light: no prompt/response text; `StudentId` is **nullable and NOT populated in v1** (the gateway's `AiRequest` is provider-neutral, carries no StudentId; the usage dashboard aggregates by model/taskKind/day, not student). Indexes on OccurredAtUtc/ModelId/TaskKind.
+- **Fire-and-forget capture:** `IAiUsageRecorder`/`AiUsageRecorder` (Singleton) — `Record(usage, task)` returns immediately, spawns a `Task` with its **own** `IServiceScopeFactory` scope (never reuses the request DbContext), persists via `IAiUsageLogStore`/`AiUsageLogStore` (append-only `SaveChangesAsync(0)`, mirrors `AiSafetyEventStore`), **fail-soft** (double try/catch, never throws into the child-facing path, never blocks). `AiGateway.CompleteAsync` calls it after `LogUsage` on the success branch only.
+- **Read:** `GetTutorUsageQuery` + `IAiTutorUsageService` (Option-C: EF stays in Infrastructure) + `TutorUsageDto` — `AsNoTracking` aggregates (totals, ByModel, ByTaskKind, per-day Trend) over a validated date window. `GET /api/Admin/AiSafety/usage?from=&to=` on `AdminAiSafetyController` (AdminOnly). New i18n key `AiTutorUsageRetrievedSuccessfully` (EN+AR); reuses `AiSafetyInvalidDateRange`.
+
+**Gates:** build 0 errors; Ai unit suite **384 pass / 1 skip** (skip = pre-existing PG-only jsonb test); **api-tester 18/18** (auth, aggregation, window filter, validation, empty-range, envelope, + recorder-persists); **security-auditor PASS** (no Critical/High — PII-light confirmed, fire-and-forget fail-soft + scope-safe, AdminOnly, no info leak); **reviewer PASS**.
+
+**Documented v1 gaps / follow-ups (non-blocking):**
+- **Streaming not captured:** `AiGateway.StreamAsync` doesn't call `EnrichWithCost`/`Record`, so SSE responses (Hint/Explain/SimilarExample) are not in `AiUsageLogs` v1. Documented in code. Instrumenting streaming usage is a follow-up.
+- **No max date-range cap** on the usage query (and the sibling safety endpoints) — admin-only, low risk; address slice-wide as a follow-up (security-auditor Low #8).
+- **Wire P7-10 AI request-volume KPI** (currently the honest N/A marker) to `AiUsageLogs` — now possible since both are in main; small follow-up extending `IPlatformAiSafetyStatsQuery`.
+- **StudentId enrichment:** if ever populated, re-trigger the security audit and keep child identifiers out of any response (the endpoint stays aggregate-only).
+
+---
+
 ## P7-10 Platform analytics & KPI dashboard (backend) — 2026-06-19 (`feat/P7-10-platform-analytics`)
 
 **The last buildable admin story is built.** P7-10 was previously called "blocked on P5-03" — that was over-broad. Buildability brief (`docs/briefs/P7-10-analytics-buildability.md`) re-assessed it KPI-by-KPI: ~8 of ~13 facets are derivable **now** over existing module tables; only true retention-cohorts + session-duration genuinely need P5-03. Built as an **honest v1**.

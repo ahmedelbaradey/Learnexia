@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using Learnexia.Modules.Ai.Application.Abstractions;
 using Learnexia.Modules.Ai.Application.Options;
 using Learnexia.Modules.Ai.Application.Services;
 using Learnexia.Modules.Ai.Infrastructure.Providers;
@@ -17,7 +18,14 @@ namespace Learnexia.Modules.Ai.Infrastructure.Gateway;
 /// - Bounded exponential-backoff retry on transient failures (429, 5xx, timeout).
 /// - Translates ALL provider exceptions to typed <see cref="AiError"/>; NEVER throws to caller.
 /// - Captures <see cref="AiUsage"/> (with estimated cost) and logs at Debug via <see cref="ILoggerManager"/>.
+/// - Fires a background write to <c>ai.AiUsageLogs</c> via <see cref="IAiUsageRecorder"/> (fire-and-forget,
+///   fail-soft, never blocks the hot path).
 /// - Never logs prompt/response text or API keys.
+///
+/// <para><strong>Known limitation (v1):</strong> the <see cref="StreamAsync"/> path does NOT call
+/// <c>EnrichWithCost</c> / <c>LogUsage</c>, so streamed responses are not captured in
+/// <c>ai.AiUsageLogs</c> in v1. Do not try to instrument streaming here until the gateway
+/// accumulates streaming usage internally.</para>
 /// </summary>
 public sealed class AiGateway : IAiGateway
 {
@@ -25,17 +33,20 @@ public sealed class AiGateway : IAiGateway
     private readonly IReadOnlyDictionary<string, IAiProvider> _providers;
     private readonly AiGatewayOptions           _options;
     private readonly ILoggerManager             _logger;
+    private readonly IAiUsageRecorder           _usageRecorder;
 
     public AiGateway(
         IAiModelRouter router,
         IEnumerable<IAiProvider> providers,
         IOptions<AiGatewayOptions> options,
-        ILoggerManager logger)
+        ILoggerManager logger,
+        IAiUsageRecorder usageRecorder)
     {
-        _router    = router;
-        _providers = providers.ToDictionary(p => p.ProviderName, StringComparer.OrdinalIgnoreCase);
-        _options   = options.Value;
-        _logger    = logger;
+        _router        = router;
+        _providers     = providers.ToDictionary(p => p.ProviderName, StringComparer.OrdinalIgnoreCase);
+        _options       = options.Value;
+        _logger        = logger;
+        _usageRecorder = usageRecorder;
     }
 
     // -------------------------------------------------------------------------
@@ -74,6 +85,10 @@ public sealed class AiGateway : IAiGateway
                 {
                     var enriched = EnrichWithCost(result, route.ProviderName, route.ModelId);
                     LogUsage(enriched.Usage, attempt);
+                    // Fire-and-forget: persist usage telemetry to ai.AiUsageLogs without blocking the hot path.
+                    // AiUsageRecorder creates its own DI scope internally — fail-soft if the write fails.
+                    if (enriched.Usage is not null)
+                        _usageRecorder.Record(enriched.Usage, request.Task);
                     return enriched;
                 }
 

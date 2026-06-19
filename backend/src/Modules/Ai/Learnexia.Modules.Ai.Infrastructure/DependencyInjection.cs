@@ -86,13 +86,26 @@ public static class DependencyInjection
         services.AddScoped<IAiSafetyEventStore, AiSafetyEventStore>();
 
         // P7-10-BE: Platform-aggregate read seam — platform-wide AI safety stats for the admin KPI dashboard.
-        // Reads SafetyEvent table (OccurredAtUtc window). AI request volume N/A (P7-11 AiUsageLogs not yet built).
+        // Reads SafetyEvent table (OccurredAtUtc window). AI request volume is from AiUsageLogs (P7-11).
         // Scoped: depends on scoped AiDbContext.
         services.AddScoped<IPlatformAiSafetyStatsQuery, PlatformAiSafetyStatsQueryAdapter>();
 
         // ── P7-11 AI-safety admin dashboard (read model) ─────────────────────────────
         // Scoped — depends on scoped AiDbContext; owns all EF read queries for the dashboard.
         services.AddScoped<IAiSafetyDashboardService, AiSafetyDashboardService>();
+
+        // ── P7-11 AI usage/cost write path + admin read model ────────────────────────
+        // AiUsageLogStore — append-only write to ai.AiUsageLogs.
+        // Scoped: depends on scoped AiDbContext (resolved per-scope inside AiUsageRecorder's Task.Run).
+        services.AddScoped<IAiUsageLogStore, AiUsageLogStore>();
+
+        // AiUsageRecorder — fire-and-forget singleton. Holds only IServiceScopeFactory + ILoggerManager;
+        // creates its own DI scope per background write so the caller's request scope is never touched.
+        services.AddSingleton<IAiUsageRecorder, AiUsageRecorder>();
+
+        // AiTutorUsageService — admin read model for the usage/cost dashboard.
+        // Scoped: depends on scoped AiDbContext; owns all EF aggregation for the usage endpoint.
+        services.AddScoped<IAiTutorUsageService, AiTutorUsageService>();
 
         // Safety Layer facade — the ONLY type that produces SafeAiResult for feature handlers.
         // AC1 (P3-02): no feature handler may call IAiGateway directly; only ISafetyLayer.
