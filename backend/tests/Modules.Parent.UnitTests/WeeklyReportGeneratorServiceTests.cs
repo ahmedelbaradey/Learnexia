@@ -3,7 +3,9 @@ using Learnexia.Modules.Parent.Infrastructure.Persistence;
 using Learnexia.Modules.Parent.Infrastructure.Service;
 using Learnexia.Shared.Contracts.Gamification;
 using Learnexia.Shared.Contracts.Learning;
+using Learnexia.Shared.Contracts.Parent;
 using Learnexia.Shared.Kernel.Abstractions;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using Xunit;
@@ -83,8 +85,10 @@ public sealed class WeeklyReportGeneratorServiceTests : IDisposable
     private WeeklyReportGeneratorService BuildSut(
         Mock<IStudentXpTimeSeriesQuery> xp,
         Mock<IStudentMasterySummaryQuery> mastery,
-        Mock<IStudentAllSubjectsWeakAreasQuery> weakAreas)
+        Mock<IStudentAllSubjectsWeakAreasQuery> weakAreas,
+        Mock<IPublisher>? publisher = null)
         => new(_db, xp.Object, mastery.Object, weakAreas.Object,
+               (publisher ?? new Mock<IPublisher>()).Object,
                new Mock<ILoggerManager>().Object);
 
     /// <summary>GEN-01 — First run for a child+week → new row created.</summary>
