@@ -1,3 +1,4 @@
+using Learnexia.Modules.Analytics.Application.Abstractions;
 using Learnexia.Modules.Analytics.Infrastructure.Behaviors;
 using Learnexia.Modules.Analytics.Infrastructure.Persistence;
 using Learnexia.Shared.Kernel.Abstractions;
@@ -25,8 +26,10 @@ public static class DependencyInjection
                            .MigrationsHistoryTable("__EFMigrationsHistory", AnalyticsDbContext.Schema)
                            .MigrationsAssembly(typeof(AnalyticsDbContext).Assembly.FullName)));
 
-        // Option-C service seams registered here as they are added in later batches (BE-3, BE-4, BE-5).
-        // Placeholder: no services registered yet — entities and store arrive in BE-1/BE-3.
+        // BE-3: append-only activity-event store (Option C — EF only in Infrastructure).
+        // Scoped: shares the AnalyticsDbContext scope (one DbContext per request / consumer invocation).
+        // Mirrors AiUsageLogStore registration in Ai.Infrastructure.
+        services.AddScoped<IActivityEventStore, ActivityEventStore>();
 
         services.AddHttpContextAccessor();
         services.AddSingleton<ILoggerManager, LoggerManager>();
