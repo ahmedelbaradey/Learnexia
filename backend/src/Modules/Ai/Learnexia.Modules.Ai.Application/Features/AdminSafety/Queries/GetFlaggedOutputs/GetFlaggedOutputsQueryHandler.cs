@@ -63,7 +63,7 @@ public sealed class GetFlaggedOutputsQueryHandler
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error: in GetFlaggedOutputsQuery");
-            return ServerError<PaginatedResult<FlaggedOutputDto>>(ex.Message);
+            return ServerError<PaginatedResult<FlaggedOutputDto>>();
         }
     }
 }

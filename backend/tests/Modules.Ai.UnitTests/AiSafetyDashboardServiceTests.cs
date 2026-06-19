@@ -167,8 +167,12 @@ public sealed class AiSafetyDashboardServiceTests : IDisposable
     }
 
     // ── DS-06 ────────────────────────────────────────────────────────────────────
-
-    [Fact]
+    // NOTE: EF.Functions.JsonContains is a DB-native Npgsql jsonb operator (@>) that the
+    // InMemory EF provider cannot translate. The reasonCode filter is therefore tested
+    // against a real PostgreSQL instance by the integration test FLAGGED-6
+    // (P7_11_AiSafetyDashboard_Tests.Flagged6_Filter_ReasonCode_ReturnsOnlyMatchingRows).
+    // This unit test is intentionally skipped to avoid a provider-not-supported exception.
+    [Fact(Skip = "EF.Functions.JsonContains requires a real PostgreSQL provider; covered by integration test FLAGGED-6")]
     public async Task GetFlaggedOutputsPagedAsync_FilterByReasonCode_ReturnsMatchingRowsOnly()
     {
         _db.SafetyEvents.AddRange(

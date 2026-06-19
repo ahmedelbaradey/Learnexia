@@ -54,7 +54,7 @@ public sealed class GetSafetySignalSummaryQueryHandler
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error: in GetSafetySignalSummaryQuery");
-            return ServerError<SafetySignalSummaryDto>(ex.Message);
+            return ServerError<SafetySignalSummaryDto>();
         }
     }
 }

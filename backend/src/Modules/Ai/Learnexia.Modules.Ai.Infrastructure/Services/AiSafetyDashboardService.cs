@@ -148,12 +148,13 @@ public sealed class AiSafetyDashboardService : IAiSafetyDashboardService
         if (to.HasValue)
             query = query.Where(e => e.OccurredAtUtc <= to.Value);
 
-        // ReasonCode filter: jsonb LIKE-contains. Using EF Core string.Contains on the raw json column
-        // (the raw column value is a JSON array string — this catches any substring match on the code).
-        // For stricter JSON containment use raw SQL; for v1 the substring approach is sufficient since
-        // reason codes are stable, distinct, short strings (no false positives expected).
+        // ReasonCode filter: jsonb array-containment (@>).
+        // EF.Functions.JsonContains translates to `"ReasonCodes" @> '["<code>"]'::jsonb`, which is a
+        // DB-native exact-element match and avoids the LIKE / ~~ operator that 42883s on jsonb columns.
+        // Also fixes the substring over-match where a short code (e.g. "TOX") would have matched longer
+        // codes ("TOXICITY_HIGH") via a LIKE predicate.
         if (!string.IsNullOrWhiteSpace(reasonCode))
-            query = query.Where(e => e.ReasonCodes.Contains(reasonCode));
+            query = query.Where(e => EF.Functions.JsonContains(e.ReasonCodes, "[\"" + reasonCode + "\"]"));
 
         // Newest-first (indexed column).
         query = query.OrderByDescending(e => e.OccurredAtUtc);

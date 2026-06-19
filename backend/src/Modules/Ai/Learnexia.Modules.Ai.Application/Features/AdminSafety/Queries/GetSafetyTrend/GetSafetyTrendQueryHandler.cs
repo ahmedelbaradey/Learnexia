@@ -58,7 +58,7 @@ public sealed class GetSafetyTrendQueryHandler
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error: in GetSafetyTrendQuery");
-            return ServerError<IReadOnlyList<SafetyTrendBucketDto>>(ex.Message);
+            return ServerError<IReadOnlyList<SafetyTrendBucketDto>>();
         }
     }
 }
