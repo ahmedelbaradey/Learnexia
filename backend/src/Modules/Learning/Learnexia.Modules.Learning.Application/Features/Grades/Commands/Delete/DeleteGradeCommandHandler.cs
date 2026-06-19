@@ -27,12 +27,24 @@ public class DeleteGradeCommandHandler : BaseResponseHandler, ICommandHandler<De
             if (request is null)
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
+            // Pre-fetch: return 404 rather than letting the base DeleteAsync throw InvalidOperationException
+            // when the id does not exist (mirrors DeleteSubjectCommandHandler / DeleteUnitCommandHandler pattern).
+            var grade = await _service.GradeService.GetGradeTrackedAsync(request.Id, cancellationToken);
+            if (grade is null)
+                return NotFound<string>(_localizer[SharedResourcesKey.GradeNotFound]);
+
+            // "Grade not empty" guard: block delete when non-deleted Subjects still reference this grade.
+            // Mirrors SubjectHasUnitsAsync / UnitHasLessonsAsync pattern.
+            var hasSubjects = await _service.GradeService.GradeHasSubjectsAsync(request.Id, cancellationToken);
+            if (hasSubjects)
+                return BadRequest<string>(_localizer[SharedResourcesKey.GradeNotEmpty]);
+
             return await _service.GradeService.DeleteAsync(request.Id);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error: in DeleteGradeCommand");
-            return ServerError<string>(ex.Message);
+            return ServerError<string>();
         }
     }
 }

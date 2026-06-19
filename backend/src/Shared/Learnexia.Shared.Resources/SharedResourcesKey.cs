@@ -746,6 +746,12 @@
 
         // Browse subjects/lessons — student-facing queries (P2-02).
         public const string GradeNotFound = "GradeNotFound";
+
+        /// <summary>
+        /// Returned when an admin tries to soft-delete a Grade that still has non-deleted Subjects.
+        /// </summary>
+        public const string GradeNotEmpty = "GradeNotEmpty";
+
         public const string SubjectNotFound = "SubjectNotFound";
 
         // Quiz/Assessment — start-attempt (P2-06 BE-3/BE-4).
@@ -2136,6 +2142,32 @@
         /// Returned when the KPI query window exceeds the maximum allowed span (365 days).
         /// </summary>
         public const string PlatformKpisWindowTooLarge = "PlatformKpisWindowTooLarge";
+
+        // ── P7-11 AI-safety admin dashboard ────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Returned when the AI-safety signal summary is retrieved successfully.
+        /// Used by <c>GetSafetySignalSummaryQueryHandler</c>.
+        /// </summary>
+        public const string AiSafetySignalSummaryRetrievedSuccessfully = "AiSafetySignalSummaryRetrievedSuccessfully";
+
+        /// <summary>
+        /// Returned when the paged flagged-outputs drill-in list is retrieved successfully.
+        /// Used by <c>GetFlaggedOutputsQueryHandler</c>.
+        /// </summary>
+        public const string AiSafetyFlaggedOutputsRetrievedSuccessfully = "AiSafetyFlaggedOutputsRetrievedSuccessfully";
+
+        /// <summary>
+        /// Returned when the per-day safety trend buckets are retrieved successfully.
+        /// Used by <c>GetSafetyTrendQueryHandler</c>.
+        /// </summary>
+        public const string AiSafetyTrendRetrievedSuccessfully = "AiSafetyTrendRetrievedSuccessfully";
+
+        /// <summary>
+        /// Returned (400) when the <c>from</c> date is >= the <c>to</c> date for any AI-safety
+        /// dashboard endpoint. Queries validate ranges in-handler (ValidationBehavior is command-only).
+        /// </summary>
+        public const string AiSafetyInvalidDateRange = "AiSafetyInvalidDateRange";
 
     }
 }

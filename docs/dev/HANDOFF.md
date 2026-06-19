@@ -24,6 +24,118 @@
 
 ---
 
+## P7-11 AI-safety dashboard (buildable slice) — 2026-06-19 (PR open)
+
+Second of the remaining admin trio. Built the slice buildable NOW from the existing `ai.SafetyEvents` (no new table, no seam) on `feat/P7-11-ai-safety-dashboard` (base main).
+
+- **`AdminAiSafetyController`** (`api/Admin/AiSafety`, `[Authorize(AdminOnly)]`, read-only): `GET signals` (counts by action/reasonCode/modelId/taskKind over a window), `GET flagged` (paged PII-light drill-in), `GET trend` (per-day buckets). Ai-module read-model (`IAiSafetyDashboardService`, Option C) mirroring `ModerationController`.
+- jsonb `ReasonCodes`/`FailedChecks`: signals/trend aggregate in-memory over the indexed `OccurredAtUtc` window (fail-soft); the `flagged?reasonCode=` filter uses **`EF.Functions.JsonContains` (Postgres `@>` exact array-element match)** — the initial `string.Contains`→`LIKE` 500'd on jsonb (caught by api-tester FLAGGED-6).
+- Gates: build 0 / Ai unit 363 (+1 skip: InMemory can't translate JsonContains, covered by FLAGGED-6) / **P7_11 integration 37/37** / security-auditor PASS-with-notes (its Medium `ex.Message` leak FIXED → generic `ServerError()`) / reviewer PASS.
+- Shared `LearnexiaWebAppFactory` now registers+migrates `AiDbContext` (verified safe; `AC5_SubjectDeactivate` passes in isolation — its suite-level fail is the known grade-pagination data-accumulation flake, not a regression).
+
+**DEFERRED (not in this slice):** tutor usage/cost (`ai.AiUsageLogs` table + wiring the gateway to persist usage — needs a **rule-#8 sign-off** on the write pattern: fire-and-forget vs event/outbox); eval-results (blocked on **P6-02**); subject/language breakdown (no such column on `SafetyEvent`). **Remaining admin: P7-10 analytics** — buildable over existing data (~8 KPIs real, 2 need P5-03) per `docs/briefs/P7-10-analytics-buildability.md`; awaiting lead go-ahead.
+
+---
+
+## Close-RED-e2e-gaps wave — 2026-06-19 (PR open)
+
+Closed the backend integration-coverage RED gaps from the e2e-gaps inventory (Docker was up → suites RUN locally). Branch `test/close-red-e2e-gaps` (base main). All gated (build 0; new suites 25/25; Learning unit 374; P7_01+P7_02 118/118 no-regression; security-auditor PASS; reviewer PASS).
+
+- **Moderation gap → CLOSED:** ran the P7-09 suite → **`P7_09_Moderation_Tests` 23/23** (the earlier "deferred to CI" caveat is resolved).
+- **Curriculum admin mutations → CLOSED + 4 real defects fixed:** the earlier survey overstated this gap (mutations were already 27/32 covered, skill-graph edges 100%). New `P7_01b_CurriculumMutationGaps_Tests` (20/20) covered the 4 untested endpoints (Subjects/Units/Grades `Update`, Grades `Delete`) and **exposed real bugs** in 3 handlers: unknown-id returned **500 not 404** + `ServerError(ex.Message)` **leaked entity type+id**, and grade-with-subjects delete **500'd on an FK violation**. Fixed by mirroring `EditSubject` (pre-fetch→NotFound) + Subject/Unit delete (children guard→BadRequest); new `GradeService.GradeHasSubjectsAsync`/`GetGradeTrackedAsync`; `GradeNotEmpty` key (EN+AR).
+- **Notifications failure paths → CLOSED:** new reusable `FailingEmailSender` + `FailingEmailSenderFactory` (own test collection — doesn't contaminate the default `LogEmailSender` suites) + `P1_13b_NotificationsFailurePaths_Tests` (5/5). Confirmed send-failure is contained (POST → 400 not 500; welcome-email failure leaves the notification row + registration still succeeds).
+
+**Follow-ups surfaced (recorded, NOT in this PR):**
+1. **Systemic `ServerError(ex.Message)` info-leak** in sibling Learning handlers (`AddGrade`/`GetGrade`/`ListGrade`) + likely other modules — needs a dedicated cross-module sweep (replace with `ServerError()` + internal log). Low severity.
+2. **Notification email reliability is a MISSING FEATURE** — a failed welcome-email send is silently dropped permanently (row-exists → never retried; no email-audit table, no retry/outbox). Needs story(s): (A) transient-failure retry w/ back-off, (B) outbox/at-least-once for the welcome-email integration-event path.
+3. **Pre-existing `P1_13a` `BE-TC-19` failure** — reads a hard-coded WSL file path that doesn't exist on Windows; unrelated to this wave (a test-portability bug to fix).
+4. Reviewer nits (cosmetic): stale "UoW" XML doc on `IGradeService.GetGradeTrackedAsync`; `Grade` has no `IsDeleted` query filter (pre-existing); `SubjectUpdate_UnknownId` test asserts loosely (could tighten to 404).
+## Phase-7 admin QC + E2E pass (backend) — 2026-06-19 (`test/P7-admin-qc` = PR #188)
+
+Ran the deliberate QC + E2E pass across **all** Phase-7 admin stories (P7-01..13): qc-test-designer designed per-story backend+frontend test cases (`docs/qc/P7-01..13/`, gap-marked vs the existing suite), then triaged the findings.
+
+**Real issues found AND fixed (the value of the pass):**
+- **Defect — curriculum-admin GetById/Update/Delete of a missing id returned 500, not 404.** Root cause: `LearningRepository.GetByIdAsync(id, trackChanges)` threw on a not-found id (caught → ServerError) so the base service's `null → NotFound` guard was dead code. Bit all five aggregates (Subject/Unit/Grade/Concept/Skill); was the root cause of the `P7_03 Skill_CrudRoundTrip` failure. **Fixed → PR #187** (repo overload delegates to the null-returning include-aware overload + base Update/Delete null-guards; 15 regression facts; Learning unit 374/374; reviewer PASS). #183 had only patched Unit/Grade Update/Delete — this is the shared root-cause fix.
+- **AC gap — P7-10 was missing the story-required language (ar/en) breakdown.** Added `ByLanguage` (adapter already resolved per-attempt language, so purely additive). **Fixed → PR #186** (23/23).
+- **Two Phase-7 suite-isolation flakes** (AC5_SubjectDeactivate, PublishedSubject_VisibleToStudentForGrade) — passed alone, failed in the full suite due to shared-container subject accumulation. Isolated the data setup. **Fixed → PR #188.** Full `--filter P7_` suite now green except Skill_CrudRoundTrip (fixed by #187).
+
+**Verified NOT defects (no action):**
+- **Audit emission works** — every admin-action handler (moderation review, account suspend/reactivate/delete, grade/profile/learning-language change, all curriculum commands) raises `AdminActionPerformedEvent`; the QC concern was test coverage only, not a missing feature.
+- **`ForGrade` 4-subject cap is intentional/correct** — one active subject per code per grade; cannot hide a legitimately published subject.
+
+**QC gap BACKLOG (lead decision 2026-06-19: "stop here, backlog all" — do NOT auto-implement):** the ~199 designed GAP cases are documented per story in `docs/qc/P7-*/coverage-report.md`. P0 clusters for a future coverage wave: (1) **audit-trail end-to-end** coverage for each producer (only the curriculum-create producer is currently tested); (2) **P7-09 Flag and happy-Reject** review paths + reviewer recording (untested); (3) **P7-08 destructive learning-language fresh-start** (confirmed change must hard-delete Math/Science attempts, retain Arabic/English + gamification); (4) **P7-13 earned StudentBadges must survive badge deactivation** (data-safety invariant, untested); (5) **auth-matrix holes** (reactivate/delete/grade-override only test anonymous, not non-admin 403). Features are verified working — these are regression-coverage additions, on demand.
+
+**Pre-existing nit logged:** `ConceptsController` GetById has no `[Authorize]` (open read of curriculum metadata) — track separately, out of scope for the GetById fix.
+
+**Open PRs awaiting the lead's merge:** #183 (close-RED-e2e-gaps), #184 (P7-11 safety dashboard), #186 (P7-10 analytics + ByLanguage), #187 (GetById 404 fix), #188 (QC docs + flake fixes).
+
+**Decision 1 RESOLVED (P7-11 tutor-cost write pattern, was rule-#8-held):** lead chose **fire-and-forget background write** (lowest hot-path latency, fail-soft, mirrors the gateway's existing try/catch). The tutor-cost sub-batch (`AiUsageLog` entity + `ai.AiUsageLogs` migration + gateway fire-and-forget persist + `GetTutorUsageQuery` + `GET /api/Admin/AiSafety/usage`) is now buildable; it stacks on #184 (the `AdminAiSafetyController` lives there). Deferred follow-up: wire P7-10's AI request-volume KPI (currently the honest N/A marker) to `AiUsageLogs` once #186 + the cost sub-batch are in main.
+
+---
+
+## P7 Admin Wave 3 — Moderation + Audit + Gamification (P7-09/12/13 Frontend) — 2026-06-19 (committed on `feat/P7-admin-wave3`)
+
+**Wave 3 of the Admin Dashboard shipped — completes the moderation, audit, and gamification admin surfaces.** All three stories are FE-only; their backends were merged in earlier waves (P7-09 #180, P7-12/13 in earlier curriculum waves).
+
+**What shipped (FE-only, P7-09 + P7-12 + P7-13):**
+
+### P7-09: Content Moderation Queue
+- **Routes:** `app/(admin)/moderation/queue` (list), `/queue/[id]` (detail)
+- **Features:**
+  - Moderation queue list: status filter (Pending/Flagged only), source/subject/grade/date/search filters, paginated
+  - Detail view: read-only metadata (source, status, flagged reason-codes + failed checks), nested `ReviewItemDialog` (approve/reject with reason ≤2000 char / flag actions)
+  - Review transitions: Pending → Approved/Rejected/Flagged (terminal-gated by hidden buttons; reason required on Reject)
+  - `SafetyVerdictView` renders reason-codes + failed checks **ONLY**, never raw flagged content (PII-safe)
+  - Verdict enums transmitted as INT on wire
+- **Components:** `ReviewItemDialog`, `SourceBadge`, shared `ReasonField`, `AdminConfirmDialog` (mod-approve/reject/flag variants)
+- **API hooks:** `useModerationQueue`, `useModerationItem`, `useReviewModerationItem` (via `@learnexia/api-client/src/admin/moderation.ts`)
+
+### P7-12: Audit Log Viewer
+- **Routes:** `app/(admin)/audit/logs` (list)
+- **Features:**
+  - Read-only audit-log viewer: action type + actor/target-type filters, date range, pagination
+  - Inline-expand detail: `details` rendered as escaped JSON/text (no export endpoint — backend has none, deferred follow-up)
+  - Action types use badge-style labels with per-type colors
+- **Components:** `AuditEntryDetail`, `ActionTypeBadge`, `auditActionLabels.ts` mapping (EN+AR labels + badge colors)
+- **API hooks:** `useAuditLog` (via `@learnexia/api-client/src/admin/audit.ts`)
+
+### P7-13: Gamification Overrides
+- **Routes:** `app/(admin)/gamification` (badge/mission/timed-event catalog CRUD) + student league-tier/streak-freeze override launch from `users/[id]` (student-only)
+- **Features:**
+  - Badge/Mission/TimedEvent catalogs: read-only list + PATCH activate (activate/retire) + NO delete (soft-retire via IsActive=false)
+  - MissionType constrained to Daily/Weekly only
+  - Multiplier range 1–5, freeze count 1–2
+  - League-tier + streak-freeze grant dialogs (launched from user-detail page), form validation per ranges
+  - Override success toast notifications
+- **Components:** `gamification/BadgeCatalog`, `BAdgeForm`, `MissionCatalog`, `MissionForm`, `TimedEventCatalog`, `TimedEventForm`, `OverrideSuccessToast`
+- **API hooks:** `useBadgeCatalog`, `useCreateBadge`, `useUpdateBadge`, `useActivateBadge`, `useMissionCatalog`, `useCreateMission`, `useUpdateMission`, `useActivateMission`, `useTimedEventCatalog`, `useCreateTimedEvent`, `useUpdateTimedEvent`, `useActivateTimedEvent`, `useGrantLeagueTier`, `useGrantStreakFreeze` (via `@learnexia/api-client/src/admin/gamification.ts`)
+
+### Shared Edits (Wave 3 + existing components)
+- **`ReasonField.tsx`:** near-limit threshold now scales (`floor(maxLength*0.9)`)
+- **`StatusBadge.tsx`:** gained `moderation` variant
+- **`AdminConfirmDialog.tsx`:** gained mod-approve/reject/flag + retire/expire/gamification-override action variants
+- **`AdminSideNav.tsx`:** 3 new nav items (Audit / Gamification / Moderation), active-aware styling
+- **`lib/strings.ts`:** 180+ new EN+AR keys across moderation, audit, and gamification namespaces
+- **Query keys:** `adminAudit`, `adminGamification`, `adminModeration` namespaces added to `queryKeys.ts`
+
+**Gates:** reviewer **PASS** (should-fixes applied) / security-auditor **PASS** (0 Critical/High — verdicts not exposed, enums int-only, no raw content quarantine in v1).
+
+**Known gaps & backend follow-ups (non-blocking):**
+- **Audit export endpoint:** backend has no export endpoint, deferred follow-up.
+- **Student tier + freeze-balance read:** single-student current-tier + freeze-balance endpoint missing (league/freeze dialogs show tier best-effort, "balance not available" fallback).
+- **Timed-event edit prefill:** list DTO omits description + no GET-by-id endpoint → can't prefill in edit mode.
+- **Curriculum lifecycle-state on DTOs (DG-2 follow-up):** still open — list DTOs may omit `lifecycleState` field.
+
+**Test status:** no backend integration e2e added (FE-only); admin Playwright E2E suite needs coverage for Wave 2 (curriculum) + Wave 3 (moderation/audit/gamification) — deferred, next FE step.
+
+**Pre-existing Wave-2 lint nits (non-blocking):** `@learnexia/api-client` warnings in `useAddKnowledgeEdge`, `useCreateSkill`, `useEditQuestion`, `useUpdateSkill` (`no-unused-vars`) — flagged for cleanup ticket (not introduced by Wave 3).
+
+**Remaining admin phase:**
+- **P7-11 (FE):** AI-safety dashboard (blocked — backend lead building the real slice)
+- **P7-10 (FE):** analytics KPI dashboard (blocked on P5-03 data decision)
+- **Next QC + E2E:** admin Playwright specs for Wave 2 (curriculum) + Wave 3 (all admin surfaces) on the existing `admin` project (Wave 1 user/account already covered).
+
+---
 ## P7 Curriculum Admin FE — Sub-wave 2c (P7-03) — 2026-06-19 (committed on `feat/P7-curriculum-2c`)
 
 **Sub-wave 2c of the Curriculum admin FE shipped.** Completes Wave 2 — the entire Curriculum admin FE surface (P7-01..05).

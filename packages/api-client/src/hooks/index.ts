@@ -335,6 +335,83 @@ export {
 } from './useRemoveKnowledgeEdge';
 export { useConceptList } from './useConceptList';
 
+// --- P7-13 admin gamification hooks (Wave 3 — Badge/Mission/TimedEvent catalogs + student overrides) ---
+// Badge catalog: GET/POST/PUT/PATCH api/Admin/Gamification/Badges
+// Mission catalog: GET/POST/PUT/PATCH api/Admin/Gamification/Missions
+// Timed events list: GET api/admin/timed-events (separate TimedEventsController, lowercase route)
+// Timed events write: POST/PUT api/Admin/Gamification/TimedEvents + PATCH .../activate|expire
+// Student overrides: POST .../children/{childId}/league-tier|streak-freeze
+// All mutations invalidate adminGamification.* or adminUsers.activity(childId) — NO optimistic.
+export {
+  useAdminBadges,
+  useCreateBadge,
+  useUpdateBadge,
+  useSetBadgeActive,
+  useAdminMissions,
+  useCreateMission,
+  useUpdateMission,
+  useSetMissionActive,
+  useTimedEvents,
+  useCreateTimedEvent,
+  useUpdateTimedEvent,
+  useActivateTimedEvent,
+  useExpireTimedEvent,
+  useOverrideLeagueTier,
+  useGrantStreakFreeze,
+  type BadgeDefinitionDto,
+  type MissionDefinitionDto,
+  type TimedEventListItemDto,
+  type CreateBadgeBody,
+  type UpdateBadgeBody,
+  type CreateMissionBody,
+  type UpdateMissionBody,
+  type CreateTimedEventBody,
+  type UpdateTimedEventBody,
+  type OverrideLeagueTierInput,
+  type GrantStreakFreezeInput,
+  type LeagueTier,
+  // BadgeTriggerType, MissionType, MissionTargetType, TimedEventScope are safe to re-export
+  // (not in generated/schemas.ts). BadgeRarity is intentionally omitted — it conflicts with the
+  // generated BadgeRarity enum re-exported in schemas.ts. Use the generated BadgeRarity from
+  // @learnexia/api-client (numeric enum _1=1.._4=4) or import AdminBadgeRarity directly.
+  type BadgeTriggerType,
+  type MissionType,
+  type MissionTargetType,
+  type TimedEventScope,
+} from '../admin/gamification';
+
+// --- P7-12 admin audit-log read hook (Wave 3 — read-only, no mutations) ---
+// Targets GET /api/Admin/Audit/Log (AdminOnly). Uses adminAudit.* query-key
+// namespace. ZERO mutation hooks on this surface — the audit log is immutable.
+// Export is deferred (no backend export endpoint in v1 — see brief OQ1).
+export {
+  useAuditLog,
+  type AuditLogDto,
+  type AuditLogFilters,
+} from './useAuditLog';
+
+// --- P7-09 admin moderation hooks (Wave 3 — queue + item + review) ---
+// Queue: GET /api/Admin/Moderation/Queue (paginated, filterable)
+// Item:  GET /api/Admin/Moderation/{id} (detail + review history)
+// Review: POST /api/Admin/Moderation/{id}/Review (Approve/Reject/Flag)
+// All use adminModeration.* query-key namespace. No optimistic update.
+// Enum wire form: INTEGERS (no JsonStringEnumConverter on this backend).
+// Review actor is taken from the JWT — FE sends only { decision, reason }.
+export {
+  useModerationQueue,
+  type ModerationQueueFilters,
+  type ModerationItemDto,
+  type ModerationItemDetailDto,
+  type ModerationStatus,
+  type ModerationSource,
+  type SafetyVerdict,
+} from './useModerationQueue';
+export { useModerationItem } from './useModerationItem';
+export {
+  useReviewModerationItem,
+  type ReviewModerationItemInput,
+} from './useReviewModerationItem';
+
 // --- P7-05 curriculum lifecycle hooks (Batch 2a-C — lifecycle backbone) ---
 // Publish/Unpublish/Archive/Restore + Rollback + VersionHistory + Preview +
 // PublicationCoverage. All target /api/learning/ContentLifecycle/* (AdminOnly).

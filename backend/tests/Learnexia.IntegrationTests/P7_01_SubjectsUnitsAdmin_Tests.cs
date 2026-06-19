@@ -424,15 +424,23 @@ public sealed class P7_01_SubjectsUnitsAdmin_Tests : IAsyncLifetime
     [Fact(DisplayName = "AC-5: Deactivating a subject hides it from student ForGrade read")]
     public async Task AC5_SubjectDeactivate_HidesFromStudentForGrade()
     {
-        // Use the FIRST existing grade with Number=1 (the seeded grade).
-        // ForGrade uses FirstOrDefaultAsync on grades by Number; creating a new grade-1
-        // would make our subject unreachable via ForGrade due to grade-id mismatch.
+        // Use the FIRST existing grade with Number=1 so ForGrade (which resolves grades via
+        // FirstOrDefaultAsync by Number) will serve subjects from THIS grade.
+        // Creating a fresh grade would make our subject invisible to the ForGrade query.
+        //
+        // Isolation: use ARABIC/Ar (SubjectCode=2, Language=0) — a slot that is:
+        //   (a) not seeded by the LearningSeeder (which does not run in the test environment), and
+        //   (b) not claimed by any other ForGrade-visibility test in the full suite
+        //       (MATH/Ar (0,0) is written by P2_01 tests that also target grade Number=1;
+        //        SCIENCE/Ar (1,0) is used by AC6; ENGLISH/En (3,1) is used by P7_05 LEAK-8).
+        // SubjectLanguageResolver pins ARABIC → ContentLanguage.Ar regardless of student language,
+        // so the admin token (no learning_language claim → Ar fallback) is served ARABIC/Ar via ForGrade.
         int gradeNumber = 1;
         int gradeId = await GetFirstGradeIdByNumberAsync(gradeNumber);
 
-        // Create a MATH/Ar subject (SubjectCode=0, Language=0)
+        // Create an ARABIC/Ar subject (SubjectCode=2, Language=0)
         int subjectId = await CreateSubjectGetIdAsync(gradeId,
-            name: $"Math Ar {Guid.NewGuid():N}", subjectCode: 0, language: 0);
+            name: $"Arabic Ar {Guid.NewGuid():N}", subjectCode: 2, language: 0);
 
         // P7-05: publish so the subject is visible to student ForGrade reads.
         // (Admin-created entities default to Draft; ForGrade filters by LifecycleState == Published.)
@@ -495,8 +503,8 @@ public sealed class P7_01_SubjectsUnitsAdmin_Tests : IAsyncLifetime
     {
         // Use the FIRST existing grade with Number=1 (the seeded grade).
         // See AC5_SubjectDeactivate_HidesFromStudentForGrade for the reason.
-        // Use SCIENCE/Ar (SubjectCode=1, Language=0) here to avoid the unique-key conflict with
-        // AC5_SubjectDeactivate_HidesFromStudentForGrade which already occupies MATH/Ar (0,0) in grade 1.
+        // Use SCIENCE/Ar (SubjectCode=1, Language=0) — distinct from AC5's ARABIC/Ar (2,0),
+        // P2_01's MATH/Ar (0,0), and P7_05 LEAK-8's ENGLISH/En (3,1) — no collision in grade 1.
         int gradeNumber = 1;
         int gradeId = await GetFirstGradeIdByNumberAsync(gradeNumber);
 

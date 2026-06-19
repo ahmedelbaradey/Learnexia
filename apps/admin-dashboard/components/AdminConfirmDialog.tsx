@@ -46,7 +46,15 @@ export type DialogVariant =
   | 'publish'
   | 'unpublish'
   | 'archive'
-  | 'restore';
+  | 'restore'
+  // P7-13 gamification variants (additive — no structural change)
+  | 'retire'               // deactivate catalog items — amber archive icon
+  | 'expire'               // expire timed events — amber clock icon
+  | 'gamification-override' // league-tier / freeze grant — indigo shield icon
+  // P7-09 moderation review variants (additive — no structural change)
+  | 'mod-approve'          // approve content item — green check-circle
+  | 'mod-reject'           // reject content item — red x-circle
+  | 'mod-flag';            // flag for escalation — purple flag
 
 export interface AdminConfirmDialogProps {
   /** Whether the dialog is visible. */
@@ -173,6 +181,63 @@ function RotateCcwIcon() {
   );
 }
 
+// ── P7-13 gamification icon SVGs (Lucide-compatible, 20px, 2px stroke) ─────────
+
+/** Clock icon — used for 'expire' variant */
+function ClockIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <polyline points="12 6 12 12 16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Shield icon (plain outline, no check) — used for 'gamification-override' variant */
+function ShieldIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+// ── P7-09 moderation icon SVGs (Lucide-compatible, 20px, 2px stroke) ───────────
+
+function CheckCircleIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <polyline points="9,12 11,14 15,10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function XCircleIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function FlagIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <line x1="4" y1="22" x2="4" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 interface VariantStyle {
   iconBg: string;
   iconColor: string;
@@ -225,6 +290,38 @@ const VARIANT_STYLES: Record<DialogVariant, VariantStyle> = {
     iconBg: 'rgba(34,197,94,0.15)',
     iconColor: '#22C55E',
     icon: <RotateCcwIcon />,
+  },
+  // P7-13 gamification variants
+  retire: {
+    iconBg: 'rgba(245,158,11,0.15)',
+    iconColor: '#F59E0B',
+    icon: <ArchiveIcon />,
+  },
+  expire: {
+    iconBg: 'rgba(245,158,11,0.15)',
+    iconColor: '#F59E0B',
+    icon: <ClockIcon />,
+  },
+  'gamification-override': {
+    iconBg: 'rgba(79,70,229,0.15)',
+    iconColor: '#4F46E5',
+    icon: <ShieldIcon />,
+  },
+  // P7-09 moderation review variants (additive)
+  'mod-approve': {
+    iconBg: 'rgba(34,197,94,0.15)',
+    iconColor: '#22C55E',
+    icon: <CheckCircleIcon />,
+  },
+  'mod-reject': {
+    iconBg: 'rgba(239,68,68,0.15)',
+    iconColor: '#EF4444',
+    icon: <XCircleIcon />,
+  },
+  'mod-flag': {
+    iconBg: 'rgba(168,85,247,0.15)',
+    iconColor: '#A855F7',
+    icon: <FlagIcon />,
   },
 };
 

@@ -1,3 +1,4 @@
+using Learnexia.Modules.Ai.Infrastructure.Persistence;
 using Learnexia.Modules.Billing.Infrastructure.Persistence;
 using Learnexia.Modules.Billing.Infrastructure.Seeders;
 using Learnexia.Modules.Gamification.Infrastructure.Persistence;
@@ -62,6 +63,8 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
             ReplaceDbContext<GamificationDbContext>(services, connectionString, "gamification");
             // P7-12 Moderation module: AuditLog lives in the "moderation" schema.
             ReplaceDbContext<ModerationDbContext>(services, connectionString, "moderation");
+            // Ai module: SafetyEvents + AiResponseCaches live in the "ai" schema (P3-02/P7-11).
+            ReplaceDbContext<AiDbContext>(services, connectionString, AiDbContext.Schema);
             // P10-01/P10-12: BillingDbContext (billing + platform schemas — two migrations).
             ReplaceDbContext<BillingDbContext>(services, connectionString, "billing");
 
@@ -140,6 +143,10 @@ public sealed class LearnexiaWebAppFactory : WebApplicationFactory<Program>, IAs
         // Moderation: P7_12_InitialModeration creates moderation schema + AuditLogs table (P7-12).
         var moderationDb = sp.GetRequiredService<ModerationDbContext>();
         await moderationDb.Database.MigrateAsync();
+
+        // Ai: AddSafetyEventsTable creates ai schema + SafetyEvents + AiResponseCaches tables (P3-02/P7-11).
+        var aiDb = sp.GetRequiredService<AiDbContext>();
+        await aiDb.Database.MigrateAsync();
 
         // Billing: InitialBilling + AddGlobalSettings create billing + platform schemas (P10-01/P10-12).
         var billingDb = sp.GetRequiredService<BillingDbContext>();

@@ -39,6 +39,12 @@ public class EditUnitCommandHandler : BaseResponseHandler, ICommandHandler<EditU
             if (request is null)
                 return BadRequest<string>(_localizer[SharedResourcesKey.EmptyRequestValidation]);
 
+            // Pre-fetch: return 404 rather than letting the base UpdateAsync throw InvalidOperationException
+            // when the id does not exist (mirrors EditSubjectCommandHandler pattern).
+            var existing = await _service.UnitService.GetUnitTrackedAsync(request.Id, cancellationToken);
+            if (existing is null)
+                return NotFound<string>(_localizer[SharedResourcesKey.UnitNotFound]);
+
             var result = await _service.UnitService.UpdateAsync(request);
 
             if (result.Successed)

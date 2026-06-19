@@ -1602,6 +1602,9 @@
   <data name="GradeNotFound" xml:space="preserve">
     <value>الصف الدراسي المطلوب غير موجود.</value>
   </data>
+  <data name="GradeNotEmpty" xml:space="preserve">
+    <value>لا يمكن حذف هذا الصف الدراسي لأنه يحتوي على مواد نشطة. قم بإزالة جميع المواد أو تعطيلها أولاً.</value>
+  </data>
   <data name="SubjectNotFound" xml:space="preserve">
     <value>المادة الدراسية المطلوبة غير موجودة.</value>
   </data>
@@ -2632,5 +2635,17 @@
   </data>
   <data name="PlatformKpisWindowTooLarge" xml:space="preserve">
     <value>النطاق الزمني المطلوب يتجاوز الحد الأقصى المسموح به البالغ 365 يوماً.</value>
+  </data>
+  <data name="AiSafetySignalSummaryRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد ملخص إشارات سلامة الذكاء الاصطناعي بنجاح.</value>
+  </data>
+  <data name="AiSafetyFlaggedOutputsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد مخرجات الذكاء الاصطناعي المُعلَّمة بنجاح.</value>
+  </data>
+  <data name="AiSafetyTrendRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد بيانات اتجاه سلامة الذكاء الاصطناعي بنجاح.</value>
+  </data>
+  <data name="AiSafetyInvalidDateRange" xml:space="preserve">
+    <value>يجب أن يكون تاريخ البداية أقدم من تاريخ النهاية.</value>
   </data>
 </root>

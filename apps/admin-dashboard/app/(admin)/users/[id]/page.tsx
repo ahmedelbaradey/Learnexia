@@ -42,6 +42,8 @@ import { UserActivityPanel } from '../../../../components/UserActivityPanel';
 import { SuspendUserDialog } from '../../../../components/SuspendUserDialog';
 import { ReactivateUserDialog } from '../../../../components/ReactivateUserDialog';
 import { DeleteUserDialog } from '../../../../components/DeleteUserDialog';
+import { LeagueTierOverrideDialog } from '../../../../components/gamification/LeagueTierOverrideDialog';
+import { GrantStreakFreezeDialog } from '../../../../components/gamification/GrantStreakFreezeDialog';
 import { getStrings, ADMIN_LOCALE } from '../../../../lib/strings';
 
 const strings = getStrings(ADMIN_LOCALE);
@@ -309,6 +311,10 @@ export default function UserDetailPage({ params }: PageProps) {
   const [suspendOpen, setSuspendOpen] = useState(false);
   const [reactivateOpen, setReactivateOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  // ── P7-13 gamification override dialog state ───────────────────────────────
+  const [leagueTierOpen, setLeagueTierOpen] = useState(false);
+  const [freezeOpen, setFreezeOpen] = useState(false);
 
   // Success banner shown above detail header after a successful lifecycle action
   const [successBanner, setSuccessBanner] = useState<{
@@ -991,6 +997,104 @@ export default function UserDetailPage({ params }: PageProps) {
 
                   {/* P7-08 child-edit slot — DO NOT TOUCH (Batch D owns this region) */}
                 </Stack>
+
+                {/* P7-13 Gamification Overrides card — student-only */}
+                {isStudent && (
+                  <Stack
+                    flexDirection="column"
+                    gap="$3"
+                    padding="$4"
+                    borderRadius="$card"
+                    style={{
+                      backgroundColor: 'var(--lx-card)',
+                      border: '1px solid var(--lx-border)',
+                    }}
+                    data-testid="gamification-overrides-card"
+                  >
+                    <Text
+                      fontFamily="$body"
+                      fontSize={12}
+                      fontWeight="600"
+                      color="$fg3"
+                      style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}
+                    >
+                      {strings.gamOverridesHeading}
+                    </Text>
+
+                    <Stack flexDirection="column" gap="$2">
+                      {/* League tier override */}
+                      <button
+                        type="button"
+                        data-testid="league-tier-override-btn"
+                        onClick={() => setLeagueTierOpen(true)}
+                        style={{
+                          height: 36,
+                          width: '100%',
+                          borderRadius: 'var(--lx-radius-button)',
+                          border: '1px solid rgba(79,70,229,0.25)',
+                          backgroundColor: 'transparent',
+                          color: '#6366F1',
+                          fontSize: 13,
+                          cursor: 'pointer',
+                          fontFamily: 'inherit',
+                          textAlign: 'start',
+                          paddingInline: 12,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 8,
+                        }}
+                        onMouseEnter={(e) => {
+                          (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'rgba(79,70,229,0.08)';
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
+                        }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+                          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
+                        {strings.gamLeagueTierBtn}
+                      </button>
+
+                      {/* Grant streak freeze */}
+                      <button
+                        type="button"
+                        data-testid="grant-streak-freeze-btn"
+                        onClick={() => setFreezeOpen(true)}
+                        style={{
+                          height: 36,
+                          width: '100%',
+                          borderRadius: 'var(--lx-radius-button)',
+                          border: '1px solid rgba(79,70,229,0.25)',
+                          backgroundColor: 'transparent',
+                          color: '#6366F1',
+                          fontSize: 13,
+                          cursor: 'pointer',
+                          fontFamily: 'inherit',
+                          textAlign: 'start',
+                          paddingInline: 12,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 8,
+                        }}
+                        onMouseEnter={(e) => {
+                          (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'rgba(79,70,229,0.08)';
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
+                        }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+                          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                          <polyline points="9 12 11 14 15 10" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        {strings.gamFreezeFreezeBtn}
+                      </button>
+                    </Stack>
+                  </Stack>
+                )}
               </Stack>
             </Stack>
             {/* ── P7-07 Lifecycle dialogs ────────────────────────────── */}
@@ -1047,6 +1151,36 @@ export default function UserDetailPage({ params }: PageProps) {
                 // No auto-dismiss for deletion — it's a terminal state
               }}
             />
+
+            {/* P7-13 Gamification override dialogs — student-only */}
+            {isStudent && (
+              <>
+                <LeagueTierOverrideDialog
+                  open={leagueTierOpen}
+                  childId={userId}
+                  childName={profile.fullName}
+                  currentTier={null}
+                  onClose={() => setLeagueTierOpen(false)}
+                  onSuccess={(message) => {
+                    setLeagueTierOpen(false);
+                    setSuccessBanner({ message, variant: 'success' });
+                    setTimeout(() => setSuccessBanner(null), 5000);
+                  }}
+                />
+
+                <GrantStreakFreezeDialog
+                  open={freezeOpen}
+                  childId={userId}
+                  childName={profile.fullName}
+                  onClose={() => setFreezeOpen(false)}
+                  onSuccess={(message) => {
+                    setFreezeOpen(false);
+                    setSuccessBanner({ message, variant: 'success' });
+                    setTimeout(() => setSuccessBanner(null), 5000);
+                  }}
+                />
+              </>
+            )}
           </>
         )}
       </Stack>
