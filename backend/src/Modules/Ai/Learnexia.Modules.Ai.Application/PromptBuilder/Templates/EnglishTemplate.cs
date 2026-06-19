@@ -128,9 +128,10 @@ internal sealed class EnglishTemplate : ISubjectTemplate
         • اسرد فقط المفردات والقواعد الإنجليزية والمهارات الواردة في قائمة التوصيات — لا تَخترع موضوعات جديدة.
         • اضبط نبرتك وعمق المحتوى على الصف الدراسي للطالب.
         • استخدم لغة محفِّزة — يمكن الاستعانة بالمقابل العربي لتيسير الفهم.
+        • استخدم إطار التحفيز (مستوى الطالب في اللعبة) لصياغة الخطوة التالية كفرصة للارتقاء — لكن لا تُغيِّر المفردات أو القواعد المختارة.
         • اذكر كل توصية بوضوح: ما المفردة أو القاعدة؟ وما الإجراء المقترح؟
         • لا تُضف موضوعات خارج القائمة.
-        • لا تُقرِّر مستوى الطالب الكلي ولا تفتح درساً جديداً.
+        • لا تُقرِّر مستوى الطالب الكلي ولا تفتح درساً جديداً ولا تُقيِّم مستوى التقدُّم.
         قائمة التوصيات الخاصة بهذا الطالب موجودة في القسم أدناه — استند إليها حصراً.
 
         """;
@@ -145,9 +146,11 @@ internal sealed class EnglishTemplate : ISubjectTemplate
           never invent new English topics.
         • Adjust your tone and depth to the student's grade level; include Arabic equivalents where helpful.
         • Use warm, motivating language — open with encouragement before addressing areas to improve.
+        • Use the motivational framing (the student's game level) to frame the next step as a
+          chance to level up — but do NOT change which vocabulary items or grammar rules appear.
         • State each recommendation clearly: what is the word/rule? what is the suggested action?
         • Do NOT add vocabulary or grammar rules outside the list.
-        • Do NOT assess the student's overall level or unlock new lessons.
+        • Do NOT assess the student's overall level, unlock new lessons, or evaluate progress.
         The student's recommendation list is in the section below — base your narration on it ONLY.
 
         """;

@@ -2594,4 +2594,34 @@
   <data name="RecColdStartCta" xml:space="preserve">
     <value>تابع التعلم</value>
   </data>
+  <data name="ModerationQueueRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع قائمة الإشراف بنجاح.</value>
+  </data>
+  <data name="ModerationItemRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع عنصر الإشراف بنجاح.</value>
+  </data>
+  <data name="ModerationItemNotFound" xml:space="preserve">
+    <value>عنصر الإشراف غير موجود.</value>
+  </data>
+  <data name="ModerationItemReviewedSuccessfully" xml:space="preserve">
+    <value>تمت مراجعة عنصر الإشراف بنجاح.</value>
+  </data>
+  <data name="ModerationItemIdRequired" xml:space="preserve">
+    <value>معرّف عنصر الإشراف مطلوب ويجب أن يكون رقماً صحيحاً موجباً.</value>
+  </data>
+  <data name="ModerationReviewDecisionInvalid" xml:space="preserve">
+    <value>يجب أن يكون قرار المراجعة: موافقة أو رفض أو إحالة.</value>
+  </data>
+  <data name="ModerationReviewReasonRequired" xml:space="preserve">
+    <value>سبب الرفض مطلوب عند رفض عنصر الإشراف.</value>
+  </data>
+  <data name="ModerationReviewReasonTooLong" xml:space="preserve">
+    <value>يجب ألا يتجاوز سبب المراجعة 2000 حرف.</value>
+  </data>
+  <data name="ModerationItemAlreadyTerminal" xml:space="preserve">
+    <value>تمت مراجعة هذا العنصر مسبقاً ولا يمكن تغيير حالته.</value>
+  </data>
+  <data name="ModerationItemAlreadyFlagged" xml:space="preserve">
+    <value>هذا العنصر في حالة إحالة بالفعل.</value>
+  </data>
 </root>

@@ -87,12 +87,19 @@ public sealed class AiCacheActivationTests
 
         var loggerMock = new Mock<ILoggerManager>();
 
+        // P7-09: IAiOutputFlaggedPublisher — fail-soft publisher; use a no-op mock in tests.
+        var flaggedPublisherMock = new Mock<IAiOutputFlaggedPublisher>();
+        flaggedPublisherMock
+            .Setup(p => p.PublishAsync(It.IsAny<SafetyEvent>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
         return new SafetyLayer(
             gatewayMock.Object,
             toxicityMock.Object,
             ageMock.Object,
             hallucMock.Object,
             storeMock.Object,
+            flaggedPublisherMock.Object,
             Options.Create(opts),
             settingsMock.Object,
             localizerMock.Object,

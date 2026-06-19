@@ -78,6 +78,13 @@ public sealed class PromptBuilder : IPromptBuilder
         // Step 7: WhyWrong wrong-answer slot — injected only for WhyWrong intent (BE-6).
         AppendWrongAnswer(sb, context.Intent, context.Context, context.Language);
 
+        // Step 8 (P3-14a): Motivational level + encouragement-style framing — injected only for
+        // Recommendation intent. Un-conflation rule: level = motivational framing ONLY (never
+        // selects areas or changes difficulty). Encouragement style = anonymous coarse hint only
+        // (derived from persisted RecommendationItem.PreferredExplanationStyle — no raw behavioral
+        // data or StudentId ever reaches the prompt).
+        AppendRecommendationFraming(sb, context.Intent, context.CurrentLevel, context.EncouragementStyle, context.Language);
+
         var assembledPrompt = sb.ToString();
 
         // 8. Map HelperIntent → AiTaskKind for gateway model-tier routing (BE-7).
@@ -194,6 +201,66 @@ public sealed class PromptBuilder : IPromptBuilder
             sb.AppendLine($"\nإجابة الطالب الخاطئة: {wrongAnswer}");
         else
             sb.AppendLine($"\nStudent's wrong answer: {wrongAnswer}");
+    }
+
+    /// <summary>
+    /// P3-14a: motivational level line + encouragement-style line for Recommendation intent.
+    /// Injected ONLY for <see cref="HelperIntent.Recommendation"/>; no-op for all other intents.
+    ///
+    /// <para><strong>Un-conflation guarantee:</strong> this method only emits a motivational
+    /// framing hint (the level number) and a coarse encouragement-style hint. It NEVER changes
+    /// which areas are narrated, NEVER sets difficulty, and NEVER includes StudentId or raw
+    /// behavioral data (no skill error lists, no RecurringErrorSkillIds).</para>
+    ///
+    /// <para><strong>PII minimisation:</strong> only the integer <paramref name="currentLevel"/>
+    /// and the enum <paramref name="style"/> (a coarse, anonymous derived hint) reach the prompt.</para>
+    /// </summary>
+    private static void AppendRecommendationFraming(
+        StringBuilder sb,
+        HelperIntent intent,
+        int currentLevel,
+        EncouragementStyle? style,
+        TutorLanguage language)
+    {
+        if (intent != HelperIntent.Recommendation)
+            return;
+
+        if (language == TutorLanguage.Ar)
+        {
+            // Motivational level line (anonymous — only the level number).
+            sb.AppendLine($"\n## إطار التحفيز (معلومات مساعدة فقط — ليست تعليمات لاختيار المجالات أو الصعوبة):");
+            sb.AppendLine($"الطالب في المستوى {currentLevel} — احتفل بتقدُّمه وقدِّم الخطوة التالية كفرصة للارتقاء إلى مستوى أعلى.");
+
+            // Encouragement-style line (coarse anonymous hint from persisted profile).
+            if (style is not null)
+            {
+                var styleHintAr = style switch
+                {
+                    EncouragementStyle.Short    => "اجعل رسالتك التشجيعية قصيرة ودافئة جداً — الطالب يستجيب لأسلوب مُشجِّع ومُركَّز.",
+                    EncouragementStyle.Detailed => "قدِّم تشجيعاً تفصيلياً خطوة بخطوة — الطالب يستجيب لأسلوب واضح ومُفصَّل.",
+                    _                           => "استخدم أسلوباً تشجيعياً متوازناً.",
+                };
+                sb.AppendLine(styleHintAr);
+            }
+        }
+        else
+        {
+            // Motivational level line (anonymous — only the level number).
+            sb.AppendLine($"\n## Motivational Framing (helper context only — NOT instructions to select areas or change difficulty):");
+            sb.AppendLine($"The student is at Level {currentLevel} — celebrate their progress and frame each next step as a chance to level up.");
+
+            // Encouragement-style line (coarse anonymous hint from persisted profile).
+            if (style is not null)
+            {
+                var styleHintEn = style switch
+                {
+                    EncouragementStyle.Short    => "Keep your encouragement short and very warm — this student responds best to brief, uplifting messages.",
+                    EncouragementStyle.Detailed => "Use detailed, step-by-step encouragement — this student responds best to clear, thorough guidance.",
+                    _                           => "Use a balanced, encouraging tone.",
+                };
+                sb.AppendLine(styleHintEn);
+            }
+        }
     }
 
     /// <summary>

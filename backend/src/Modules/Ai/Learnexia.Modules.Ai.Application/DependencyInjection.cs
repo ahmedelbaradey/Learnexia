@@ -6,9 +6,11 @@ using Learnexia.Modules.Ai.Application.Features.Simplify.Commands;
 using Learnexia.Modules.Ai.Application.Options;
 using Learnexia.Modules.Ai.Application.PromptBuilder;
 using Learnexia.Modules.Ai.Application.PromptBuilder.Stubs;
+using Learnexia.Modules.Ai.Application.Safety;
 using Learnexia.Modules.Ai.Application.Services;
 using Learnexia.Shared.Contracts.Ai;
 using Learnexia.Shared.Contracts.AiTutor;
+using Learnexia.Shared.Contracts.Gamification;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -51,6 +53,13 @@ public static class DependencyInjection
         // Uses TryAdd so a real implementation registered first is not overridden.
         services.TryAddTransient<IChildLearningProfileQuery, DefaultChildLearningProfileQuery>();
 
+        // IStudentXpQuery: default stub returns null (no XP profile / level 1 cold-start fallback).
+        // P3-14a: the Gamification module registers the real CachedStudentXpQuery via
+        // AddGamificationInfrastructure. TryAddScoped so the real implementation wins in the full host.
+        // The Ai module uses this seam to fetch CurrentLevel for motivational framing only —
+        // the handler defaults to CurrentLevel=1 on null (seam contract).
+        services.TryAddScoped<IStudentXpQuery, DefaultStudentXpQuery>();
+
         // ── P3-04 Explain Feature ─────────────────────────────────────────────────────
 
         // FluentValidation for ExplainConceptCommand — discovered by ValidationBehavior.
@@ -87,6 +96,11 @@ public static class DependencyInjection
         // FluentValidation for RecommendationNarrationCommand (empty-body command; validator required
         // for ValidationBehavior discovery and future extension).
         services.AddValidatorsFromAssemblyContaining<RecommendationNarrationCommandValidator>(ServiceLifetime.Transient);
+
+        // ── P7-09 Moderation Queue ingest — AI-side publish seam ─────────────────────────
+        // Registered Transient (scoped to the request that calls SafetyLayer.GenerateSafeAsync).
+        // Wraps MediatR IPublisher; fail-soft (never throws into the safety path).
+        services.AddTransient<IAiOutputFlaggedPublisher, AiOutputFlaggedPublisher>();
 
         return services;
     }

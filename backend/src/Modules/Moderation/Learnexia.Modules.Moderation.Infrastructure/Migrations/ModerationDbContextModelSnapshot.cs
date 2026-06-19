@@ -83,6 +83,109 @@ namespace Learnexia.Modules.Moderation.Infrastructure.Migrations
 
                     b.ToTable("AuditLogs", "moderation");
                 });
+
+            modelBuilder.Entity("Learnexia.Modules.Moderation.Domain.Entities.ModerationItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContentReference")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("DetectedAt")
+                        .HasColumnType("timestamptz");
+
+                    b.Property<int?>("Grade")
+                        .HasColumnType("integer");
+
+                    b.Property<bool?>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ReviewDecisionReason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime?>("ReviewedAtUtc")
+                        .HasColumnType("timestamptz");
+
+                    b.Property<int?>("ReviewedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SafetyVerdict")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValueSql("'{}'");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("SourceEventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("Pending");
+
+                    b.Property<int?>("StudentId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SubjectCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("TaskKind")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DetectedAt")
+                        .HasDatabaseName("IX_ModerationItems_DetectedAt");
+
+                    b.HasIndex("Source")
+                        .HasDatabaseName("IX_ModerationItems_Source");
+
+                    b.HasIndex("SourceEventId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_ModerationItems_SourceEventId_Unique");
+
+                    b.HasIndex("Status", "DetectedAt")
+                        .HasDatabaseName("IX_ModerationItems_Status_DetectedAt");
+
+                    b.HasIndex("SubjectCode", "Grade")
+                        .HasDatabaseName("IX_ModerationItems_SubjectCode_Grade");
+
+                    b.ToTable("ModerationItems", "moderation");
+                });
 #pragma warning restore 612, 618
         }
     }

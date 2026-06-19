@@ -1248,6 +1248,46 @@
         /// <summary>Returned when an audit log entry is not found.</summary>
         public const string AuditLogNotFound = "AuditLogNotFound";
 
+        // ── P7-09 Moderation Queue ────────────────────────────────────────────────
+
+        /// <summary>Returned when the moderation queue list is retrieved successfully.</summary>
+        public const string ModerationQueueRetrievedSuccessfully = "ModerationQueueRetrievedSuccessfully";
+
+        /// <summary>Returned when a single moderation item is retrieved successfully.</summary>
+        public const string ModerationItemRetrievedSuccessfully = "ModerationItemRetrievedSuccessfully";
+
+        /// <summary>Returned when a moderation item is not found by id.</summary>
+        public const string ModerationItemNotFound = "ModerationItemNotFound";
+
+        /// <summary>Returned when a review action is completed successfully.</summary>
+        public const string ModerationItemReviewedSuccessfully = "ModerationItemReviewedSuccessfully";
+
+        /// <summary>Validation: the moderation item id must be a positive integer.</summary>
+        public const string ModerationItemIdRequired = "ModerationItemIdRequired";
+
+        /// <summary>
+        /// Validation: the review decision must be Approved, Rejected, or Flagged
+        /// (Pending is not a valid decision value).
+        /// </summary>
+        public const string ModerationReviewDecisionInvalid = "ModerationReviewDecisionInvalid";
+
+        /// <summary>Validation: a reason is required when the review decision is Rejected.</summary>
+        public const string ModerationReviewReasonRequired = "ModerationReviewReasonRequired";
+
+        /// <summary>Validation: the review reason must not exceed 2000 characters.</summary>
+        public const string ModerationReviewReasonTooLong = "ModerationReviewReasonTooLong";
+
+        /// <summary>
+        /// Returned (400) when a review is attempted on an item that is already in a
+        /// terminal status (Approved or Rejected — cannot be re-reviewed).
+        /// </summary>
+        public const string ModerationItemAlreadyTerminal = "ModerationItemAlreadyTerminal";
+
+        /// <summary>
+        /// Returned (400) when a review attempts to Flag an item that is already Flagged.
+        /// </summary>
+        public const string ModerationItemAlreadyFlagged = "ModerationItemAlreadyFlagged";
+
         // ── P7-13 Gamification Admin Overrides ──────────────────────────────────────
 
         /// <summary>
