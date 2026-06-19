@@ -10,7 +10,7 @@
  * comparisons — never use raw int literals.
  */
 
-import type { SubjectCodeValue, ContentLanguageValue, DifficultyLevelValue, ContentBlockTypeValue, QuestionTypeValue, GeneratedByValue } from '@learnexia/shared/constants';
+import type { SubjectCodeValue, ContentLanguageValue, DifficultyLevelValue, ContentBlockTypeValue, QuestionTypeValue, GeneratedByValue, NodeTypeValue, RelationshipTypeValue } from '@learnexia/shared/constants';
 
 // ── P7-01 Subject DTOs ────────────────────────────────────────────────────────
 
@@ -285,21 +285,135 @@ export interface EditQuestionPayload {
   // NOTE: lessonId/skillId/sequenceOrder/isActive intentionally absent
 }
 
-// ── P7-03 Skill / Graph DTOs (stubs — P7-03 batch fills these) ───────────────
+// ── P7-03 Skill / Graph DTOs ─────────────────────────────────────────────────
+//
+// Replaces the stubs from the 2a-A batch with the real DTOs derived from
+// the merged backend Learning module contracts (verified against the controllers
+// in docs/briefs/P7-03-FE.md §Exact endpoints).
 
-/** Skill node — stub for P7-03. */
+/**
+ * Wire shape from GET /api/learning/Skills/List (PaginatedResult<SingleSkillResponse>)
+ * and GET /api/learning/Skills?id={id}.
+ *
+ * Backend: SingleSkillResponse extends SkillDto, adds IsActive.
+ * All fields are from the admin-only endpoints — IsActive is ALWAYS present
+ * (verified: SingleSkillResponse.cs explicitly sets it).
+ *
+ * Gap 2 RESOLVED: isActive IS present on the wire (admin-only endpoint).
+ * The Active column and toggle are therefore always rendered.
+ */
+export interface SingleSkillResponse {
+  id: number;
+  name: string;
+  masteryThreshold: number;       // int 0–100
+  estimatedTimeMinutes: number;   // int ≥ 0
+  conceptId: number;              // owning concept node id
+  isActive: boolean;              // always present (AdminOnly endpoint)
+}
+
+/** POST body for POST /api/learning/Skills/Create (AddSkillCommand). */
+export interface AddSkillDto {
+  name: string;
+  masteryThreshold: number;   // 0–100
+  estimatedTimeMinutes: number;
+  conceptId: number;          // must be > 0
+}
+
+/** PUT body for PUT /api/learning/Skills/Update (EditSkillCommand). */
+export interface EditSkillDto {
+  id: number;
+  name: string;
+  masteryThreshold: number;
+  estimatedTimeMinutes: number;
+  conceptId: number;
+}
+
+/**
+ * Node in the full graph (from SkillGraphDto).
+ * Returned by GET /api/Learning/KnowledgeGraph/Graph?subjectId=.
+ * The `id` field is the KnowledgeNode.Id — use for all edge endpoints.
+ */
+export interface KnowledgeNodeDto {
+  id: number;                           // KnowledgeNode.Id — use for edges
+  name: string;
+  nodeType: NodeTypeValue;              // 0 Skill | 1 Concept | 2 Review
+  subjectId: number;
+  gradeId: number;
+  difficulty: number;
+  skillId?: number | null;              // non-null only when nodeType===Skill
+  isSkillActive?: boolean | null;       // admin-only field; null for non-skill nodes
+}
+
+/**
+ * Edge in the full graph.
+ * Returned by GET /api/Learning/KnowledgeGraph/Graph?subjectId=.
+ * `id` is the KnowledgeEdge.Id — pass to DELETE /api/Learning/KnowledgeGraph/Edges/{edgeId}.
+ */
+export interface KnowledgeEdgeDto {
+  id: number;
+  sourceNodeId: number;
+  targetNodeId: number;
+  relationshipType: RelationshipTypeValue;  // 0 Prerequisite | 1 Related
+  strength: number;                          // decimal 0.0–1.0
+}
+
+/**
+ * Full graph DTO returned by GET /api/Learning/KnowledgeGraph/Graph?subjectId=.
+ * One call returns all nodes + all edges for the chosen subject tree.
+ */
+export interface SkillGraphDto {
+  subjectId: number;
+  nodes: KnowledgeNodeDto[];
+  edges: KnowledgeEdgeDto[];
+}
+
+/**
+ * Item returned by:
+ *   GET /api/Learning/KnowledgeGraph/Prerequisites/{nodeId}
+ *   GET /api/Learning/KnowledgeGraph/UnlockedBy/{nodeId}
+ *
+ * These endpoints are [Authorize] (any authenticated user), not AdminOnly.
+ * They return a reduced node shape without IsSkillActive.
+ */
+export interface StudentKnowledgeNodeDto {
+  id: number;       // nodeId
+  name: string;
+  nodeType: NodeTypeValue;
+  skillId?: number | null;
+}
+
+/** POST body for POST /api/Learning/KnowledgeGraph/Edges (AddKnowledgeEdgeCommand). */
+export interface AddKnowledgeEdgeDto {
+  sourceNodeId: number;
+  targetNodeId: number;
+  relationshipType: RelationshipTypeValue;  // always RELATIONSHIP_TYPE.Prerequisite (0) in v1
+  strength?: number;                         // hard-coded to 1.0 in v1 (plan D-OQ6)
+}
+
+/**
+ * Concept picker item from GET /api/learning/Concepts/List.
+ *
+ * Gap 1 RESOLVED: ConceptDto.cs carries `SubjectId: int` (non-nullable).
+ * The FE can filter client-side by concept.subjectId === currentSubjectId
+ * to scope the concept picker to the chosen subject tree.
+ * The backend ListConceptsQuery also accepts an optional SubjectId filter param.
+ */
+export interface ConceptListItemDto {
+  id: number;
+  name: string;
+  subjectId: number;  // CONFIRMED present: ConceptDto.SubjectId (int, non-nullable)
+}
+
+/**
+ * Retained for backwards compatibility (was the only SkillDto before 2c-A).
+ * Use SingleSkillResponse for all admin skill list/detail reads.
+ * @deprecated Use SingleSkillResponse instead.
+ */
 export interface SkillDto {
   id: number;
   name: string;
-  subjectId: number;
   masteryThreshold: number;
-  timeToMasterMinutes?: number | null;
-  conceptId?: number | null;
+  estimatedTimeMinutes: number;
+  conceptId: number;
   isActive: boolean;
-}
-
-/** Skill graph — stub for P7-03. */
-export interface SkillGraphDto {
-  nodes: SkillDto[];
-  edges: Array<{ fromNodeId: number; toNodeId: number; relationshipType: number; strength: number }>;
 }

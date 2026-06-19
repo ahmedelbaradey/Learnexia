@@ -306,3 +306,43 @@ export const GENERATED_BY = {
 } as const;
 
 export type GeneratedByValue = (typeof GENERATED_BY)[keyof typeof GENERATED_BY];
+
+// ── P7-03 Knowledge Graph enum const maps ─────────────────────────────────────
+//
+// Disjoint append after P7-04's QUESTION_TYPE/GENERATED_BY block.
+// Wire values mirror the backend Learning domain enums. 0-based.
+
+/**
+ * NodeType — KnowledgeNode.NodeType discriminant (P7-03).
+ * Mirrors `Learning.Domain.Enums.NodeType`. 0-based.
+ *
+ * Wire values:
+ *   Skill   = 0  — wraps a Skill entity (skillId is non-null)
+ *   Concept = 1  — wraps a Concept entity
+ *   Review  = 2  — review/checkpoint node
+ */
+export const NODE_TYPE = {
+  Skill:   0,
+  Concept: 1,
+  Review:  2,
+} as const;
+
+export type NodeTypeValue = (typeof NODE_TYPE)[keyof typeof NODE_TYPE];
+
+/**
+ * RelationshipType — KnowledgeEdge.RelationshipType discriminant (P7-03).
+ * Mirrors `Learning.Domain.Enums.RelationshipType`. 0-based.
+ *
+ * Wire values:
+ *   Prerequisite = 0  — A must be mastered before B (cycle guard applies)
+ *   Related      = 1  — A and B are related (no cycle guard)
+ *
+ * v1 hard-codes Prerequisite (0). Related is supported by the backend but
+ * the admin UI does not expose it yet (plan D-OQ6 deferred).
+ */
+export const RELATIONSHIP_TYPE = {
+  Prerequisite: 0,
+  Related:      1,
+} as const;
+
+export type RelationshipTypeValue = (typeof RELATIONSHIP_TYPE)[keyof typeof RELATIONSHIP_TYPE];

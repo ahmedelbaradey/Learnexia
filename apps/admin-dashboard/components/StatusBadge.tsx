@@ -1,24 +1,28 @@
 'use client';
 
 /**
- * StatusBadge — pill-shaped label for account status and role.
+ * StatusBadge — pill-shaped label for account status, role, and moderation status.
  *
- * Two variants:
- *   - "status" — maps the `accountStatus` int (0 Active / 1 Suspended / 2 Deleted)
- *                to a coloured chip.  Keyed off `ACCOUNT_STATUS` const — never raw ints.
- *   - "role"   — maps a role string ("Parent" | "Student" | "Admin") to a chip.
+ * Three variants:
+ *   - "status"     — maps the `accountStatus` int (0 Active / 1 Suspended / 2 Deleted)
+ *                    to a coloured chip. Keyed off `ACCOUNT_STATUS` const.
+ *   - "role"       — maps a role string ("Parent" | "Student" | "Admin") to a chip.
+ *   - "moderation" — maps a ModerationStatus string to a coloured chip (P7-09).
+ *                    Pending=amber / Approved=green / Rejected=red / Flagged=purple.
  *
  * Built with Tamagui `@tamagui/core` Stack/Text + design-system tokens.
- * No CSS module.  Design Spec Part A §A.1.
+ * No CSS module. Design Spec Part A §A.1.
  *
  * Usage:
  *   <StatusBadge variant="status" value={ACCOUNT_STATUS.Active} strings={s} />
  *   <StatusBadge variant="role" value="Parent" strings={s} />
+ *   <StatusBadge variant="moderation" value="Pending" strings={s} />
  */
 
 import { Stack, Text } from '@tamagui/core';
 import { ACCOUNT_STATUS, type AccountStatusValue } from '@learnexia/shared';
 import type { AdminStrings } from '../lib/strings';
+import type { ModerationStatus } from '@learnexia/api-client';
 
 // ── Status variant ─────────────────────────────────────────────────────────────
 
@@ -82,9 +86,52 @@ const ROLE_FALLBACK_CONFIG: RoleConfig = {
   getLabel: () => '—',
 };
 
+// ── Moderation status variant ─────────────────────────────────────────────────
+
+interface ModerationStatusConfig {
+  dotColor: string;
+  background: string;
+  textColor: string;
+  getLabel: (s: AdminStrings) => string;
+}
+
+const MODERATION_CONFIGS: Record<ModerationStatus, ModerationStatusConfig> = {
+  Pending: {
+    dotColor: '#F59E0B',
+    background: 'rgba(245,158,11,0.15)',
+    textColor: '#F59E0B',
+    getLabel: (s) => s.modStatusPending,
+  },
+  Approved: {
+    dotColor: '#22C55E',
+    background: 'rgba(34,197,94,0.15)',
+    textColor: '#22C55E',
+    getLabel: (s) => s.modStatusApproved,
+  },
+  Rejected: {
+    dotColor: '#EF4444',
+    background: 'rgba(239,68,68,0.12)',
+    textColor: '#EF4444',
+    getLabel: (s) => s.modStatusRejected,
+  },
+  Flagged: {
+    dotColor: '#A855F7',
+    background: 'rgba(168,85,247,0.15)',
+    textColor: '#A855F7',
+    getLabel: (s) => s.modStatusFlagged,
+  },
+};
+
+const MODERATION_FALLBACK_CONFIG: ModerationStatusConfig = {
+  dotColor: 'var(--lx-fg3)',
+  background: 'rgba(255,255,255,0.08)',
+  textColor: 'var(--lx-fg3)',
+  getLabel: () => '—',
+};
+
 // ── Props ──────────────────────────────────────────────────────────────────────
 
-export type StatusBadgeVariant = 'status' | 'role';
+export type StatusBadgeVariant = 'status' | 'role' | 'moderation';
 
 interface StatusBadgeStatusProps {
   variant: 'status';
@@ -98,11 +145,58 @@ interface StatusBadgeRoleProps {
   strings: AdminStrings;
 }
 
-export type StatusBadgeProps = StatusBadgeStatusProps | StatusBadgeRoleProps;
+interface StatusBadgeModerationProps {
+  variant: 'moderation';
+  /** ModerationStatus string: 'Pending' | 'Approved' | 'Rejected' | 'Flagged' */
+  value: ModerationStatus;
+  strings: AdminStrings;
+}
+
+export type StatusBadgeProps =
+  | StatusBadgeStatusProps
+  | StatusBadgeRoleProps
+  | StatusBadgeModerationProps;
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export function StatusBadge(props: StatusBadgeProps) {
+  if (props.variant === 'moderation') {
+    // Unknown status falls back to neutral chip — never crash.
+    const config = MODERATION_CONFIGS[props.value] ?? MODERATION_FALLBACK_CONFIG;
+    const label = config.getLabel(props.strings);
+    return (
+      <Stack
+        tag="span"
+        flexDirection="row"
+        alignItems="center"
+        gap={5}
+        display="inline-flex"
+        height={22}
+        paddingHorizontal={10}
+        borderRadius="$pill"
+        style={{ background: config.background }}
+      >
+        {/* Dot — non-colour shape signal (a11y: colour is never the only signal) */}
+        <Stack
+          aria-hidden
+          width={6}
+          height={6}
+          borderRadius="$pill"
+          style={{ backgroundColor: config.dotColor, flexShrink: 0 }}
+        />
+        <Text
+          fontFamily="$body"
+          fontSize={12}
+          fontWeight="600"
+          letterSpacing={0.4}
+          style={{ color: config.textColor, textTransform: 'uppercase' }}
+        >
+          {label}
+        </Text>
+      </Stack>
+    );
+  }
+
   if (props.variant === 'status') {
     const config = STATUS_CONFIGS[props.value] ?? STATUS_CONFIGS[ACCOUNT_STATUS.Active];
     const label = config.getLabel(props.strings);

@@ -896,6 +896,617 @@ export interface AdminStrings {
   questionActivateBody: string;
   questionActivateConfirm: string;
   questionActivateSuccess: string;
+
+  // ── P7-03 Skills & Graph (skill* / skillGraph* namespace — disjoint) ──────────
+  // Disjoint from: curriculum*/subject*/unit* (P7-01), lesson*/block* (P7-02),
+  // question* (P7-04), clLifecycle* (P7-05), lifecycle* (P7-07 account).
+
+  // Page
+  skillPageTitle: string;
+  skillListHeading: string;
+  skillResultCount: string;
+  skillListError: string;
+  skillTableCaption: string;
+  skillViewGraph: string;
+  skillNoResults: string;
+  skillNoResultsHint: string;
+  skillNoResultsSelectSubject: string;
+  skillNoSubjectSelected: string;
+
+  // Subject picker (graph scope)
+  skillSubjectPickerLabel: string;
+  skillSubjectPickerPlaceholder: string;
+  skillSubjectPickerLoading: string;
+  skillSubjectPickerError: string;
+
+  // Concept filter
+  skillConceptFilterPlaceholder: string;
+
+  // Search
+  skillSearchPlaceholder: string;
+
+  // "New Skill" button
+  skillNewBtn: string;
+  skillNewBtnAriaLabel: string;
+
+  // Table columns
+  skillColName: string;
+  skillColThreshold: string;
+  skillColTime: string;
+  skillColActive: string;
+
+  // Skill form
+  skillFormCreateTitle: string;
+  skillFormEditTitle: string;
+  skillFormCreateSubtitle: string;
+  skillFormEditSubtitle: string;
+  skillFormNameLabel: string;
+  skillFormNamePlaceholder: string;
+  skillFormNameRequired: string;
+  skillFormThresholdLabel: string;
+  skillFormThresholdHint: string;
+  skillFormThresholdRequired: string;
+  skillFormThresholdRange: string;
+  skillFormTimeLabel: string;
+  skillFormTimeHint: string;
+  skillFormTimeRequired: string;
+  skillFormTimeRange: string;
+  skillFormConceptLabel: string;
+  skillFormConceptPlaceholder: string;
+  skillFormConceptRequired: string;
+  skillFormConceptLoading: string;
+  skillFormConceptError: string;
+  skillFormCreateBtn: string;
+  skillFormSaveBtn: string;
+  skillFormCancel: string;
+
+  // Delete dialog
+  skillDeleteTitle: string;
+  skillDeleteBody: string;
+  skillDeleteConfirm: string;
+  skillDeleteCancel: string;
+
+  // Graph editor
+  skillGraphTitle: string;
+  skillGraphNoSubject: string;
+  skillGraphNoSubjectBody: string;
+  skillGraphLoading: string;
+  skillGraphError: string;
+  skillGraphNodeCount: string;
+  skillGraphEdgeCount: string;
+  skillGraphNodesEmpty: string;
+  skillGraphRetry: string;
+
+  // Node list
+  skillGraphNodeListLabel: string;
+
+  // Prerequisites section
+  skillGraphPrerequisitesHeading: string;
+  skillGraphPrerequisitesEmpty: string;
+
+  // Unlocks section
+  skillGraphUnlocksHeading: string;
+  skillGraphUnlocksEmpty: string;
+
+  // Add prerequisite control
+  skillGraphAddPrerequisiteHeading: string;
+  skillGraphPickerPlaceholder: string;
+  skillGraphPickerAllAdded: string;
+  skillGraphAddBtn: string;
+  skillGraphDeselectNode: string;
+  skillGraphRemovePrerequisite: string;
+
+  // Edge errors
+  skillGraphErrCycle: string;
+  skillGraphErrCrossLanguage: string;
+  skillGraphErrDuplicate: string;
+  skillGraphErrNodeNotFound: string;
+  skillGraphErrSubjectUnresolvable: string;
+  skillGraphErrStrengthOutOfRange: string;
+  skillGraphErrGeneric: string;
+  skillGraphErrNetwork: string;
+
+  // Edge success announcements (aria-live)
+  skillGraphEdgeAdded: string;
+  skillGraphEdgeRemoved: string;
+
+  // Skill detail panel
+  skillDetailSection: string;
+  skillDetailMastery: string;
+  skillDetailTime: string;
+  skillDetailEditLink: string;
+
+  // Skills page — additional a11y / i18n (Nits #2/#3)
+  /** "Clear filters" button label (skills page). */
+  skillClearFilters: string;
+  /** aria-label for the concept filter <select>. */
+  skillConceptFilterAriaLabel: string;
+  /** SR-only label for the "Actions" column header. */
+  skillColActionsLabel: string;
+  /** aria-label for the per-row Edit button: "Edit {name}". */
+  skillEditAriaLabel: string;
+  /** aria-label for the per-row Delete button: "Delete {name}". */
+  skillDeleteAriaLabel: string;
+  /** SR-only label for the "Previous page" pagination button. */
+  skillPrevPage: string;
+  /** SR-only label for the "Next page" pagination button. */
+  skillNextPage: string;
+
+  // SkillGraph — node-type words (aria-label fragments, Nit #3)
+  /** Node-type word: "Skill". */
+  skillGraphNodeTypeSkill: string;
+  /** Node-type word: "Concept". */
+  skillGraphNodeTypeConcept: string;
+  /** Node-type word: "Review". */
+  skillGraphNodeTypeReview: string;
+  /** aria-label for the prerequisites list: "Prerequisites of {name}". */
+  skillGraphPrerequisitesAriaLabel: string;
+  /** aria-label for the unlocks list: "Skills unlocked by {name}". */
+  skillGraphUnlocksAriaLabel: string;
+  /** Accessible name for the remove-edge button (suffix after ": "): "Remove prerequisite: {name}". */
+  skillGraphRemoveEdgeAriaLabel: string;
+
+  // ── P7-12 Audit Log viewer (audit* namespace — DISJOINT from all prior namespaces) ──
+  // Design Spec §G.1. Read-only surface — no mutation strings.
+
+  // Navigation
+  /** Nav item label for "/audit". */
+  navAuditLog: string;
+
+  // Page
+  pageTitleAudit: string;
+  auditPageHeading: string;
+
+  // Filters
+  auditFilterAdminIdLabel: string;
+  auditFilterAdminIdPlaceholder: string;
+  auditFilterActionTypeLabel: string;
+  /** Default placeholder option: "All actions". */
+  auditFilterActionTypePlaceholder: string;
+  auditFilterTargetTypeLabel: string;
+  /** Default placeholder option: "All targets". */
+  auditFilterTargetTypePlaceholder: string;
+  auditFilterDateFromLabel: string;
+  auditFilterDateToLabel: string;
+  auditClearFilters: string;
+  /** Inline validation note when DateTo < DateFrom. */
+  auditDateRangeError: string;
+
+  // Table
+  auditTableCaption: string;
+  auditColAdmin: string;
+  auditColAction: string;
+  auditColTarget: string;
+  auditColWhen: string;
+  /** SR-only header for the expand-toggle column (col 5). */
+  auditColDetailsHeader: string;
+
+  // Result count
+  /** Suffix appended to totalCount: "N entries" / "N سجل". */
+  auditResultCount: string;
+
+  // Loading / states
+  /** role="status" aria-label on the skeleton wrapper. */
+  auditLoadingLabel: string;
+  auditEmptyHeading: string;
+  /** Empty body text when filters are active. */
+  auditEmptyBodyFiltered: string;
+  /** Empty body text when the log is genuinely empty (no filters). */
+  auditEmptyBodyEmpty: string;
+
+  // Error
+  auditListError: string;
+  auditRetry: string;
+
+  // Pagination
+  auditPrevPage: string;
+  auditNextPage: string;
+
+  // Row expand/collapse (aria-label on the button)
+  auditExpandEntry: string;
+  auditCollapseEntry: string;
+
+  // Detail panel field labels
+  auditDetailEventId: string;
+  auditDetailAdmin: string;
+  auditDetailAction: string;
+  auditDetailTargetType: string;
+  auditDetailTargetId: string;
+  auditDetailOccurredAt: string;
+  auditDetailCreatedAt: string;
+  auditDetailDetailsLabel: string;
+  auditDetailCopy: string;
+  auditDetailCopied: string;
+  /** Shown when details is null: "—". */
+  auditDetailNoDetails: string;
+
+  // ── P7-13 Gamification section (gam* / gamification* namespace — DISJOINT) ──
+  // Nav
+  navGamification: string;
+  // Hub page
+  gamificationHubTitle: string;
+  gamificationHubSubtitle: string;
+  gamificationHubManage: string;
+  gamificationStudentOverridesHeading: string;
+  gamificationStudentOverridesNotice: string;
+  // Shared action/button labels
+  gamEditBtn: string;
+  gamActivateBtn: string;
+  gamDeactivateBtn: string;
+  gamExpireBtn: string;
+  gamDialogCancelBtn: string;
+  // Badge catalog page
+  gamBadgesPageTitle: string;
+  gamBadgesNewBtn: string;
+  gamBadgesEmptyHeading: string;
+  gamBadgesEmptyBody: string;
+  gamBadgeDeactivateTitle: string;
+  gamBadgeDeactivateNotice: string;
+  gamBadgeActivateTitle: string;
+  gamBadgeActivateNotice: string;
+  // BadgeForm
+  gamBadgeFormCreateTitle: string;
+  gamBadgeFormCreateSubtitle: string;
+  gamBadgeFormEditTitle: string;
+  gamBadgeFormEditSubtitle: string;
+  gamBadgeFormCodeLabel: string;
+  gamBadgeFormCodePlaceholder: string;
+  gamBadgeFormCodeHint: string;
+  gamBadgeFormNameLabel: string;
+  gamBadgeFormNamePlaceholder: string;
+  gamBadgeFormDescLabel: string;
+  gamBadgeFormIconKeyLabel: string;
+  gamBadgeFormIconKeyPlaceholder: string;
+  gamBadgeFormIconKeyHint: string;
+  gamBadgeFormRarityLabel: string;
+  gamBadgeFormRarityPlaceholder: string;
+  gamBadgeFormTriggerLabel: string;
+  gamBadgeFormThresholdLabel: string;
+  gamBadgeFormThresholdRequired: string;
+  gamBadgeFormRewardXpLabel: string;
+  gamBadgeFormSortOrderLabel: string;
+  gamBadgeFormSortOrderHint: string;
+  gamBadgeFormCancelBtn: string;
+  gamBadgeFormCreateBtn: string;
+  gamBadgeFormSaveBtn: string;
+  // Mission catalog page
+  gamMissionsPageTitle: string;
+  gamMissionDeactivateTitle: string;
+  gamMissionDeactivateNotice: string;
+  gamMissionActivateTitle: string;
+  gamMissionActivateNotice: string;
+  gamMissionsNewBtn: string;
+  gamMissionsEmptyHeading: string;
+  gamMissionsEmptyBody: string;
+  // MissionForm
+  gamMissionFormCreateTitle: string;
+  gamMissionFormCreateSubtitle: string;
+  gamMissionFormEditTitle: string;
+  gamMissionFormEditSubtitle: string;
+  gamMissionFormCodeLabel: string;
+  gamMissionFormIconKeyLabel: string;
+  gamMissionFormTitleKeyLabel: string;
+  gamMissionFormTitleKeyHint: string;
+  gamMissionFormCadenceLabel: string;
+  gamMissionFormTargetTypeLabel: string;
+  gamMissionFormTargetLabel: string;
+  gamMissionFormRewardXpLabel: string;
+  gamMissionFormSortOrderLabel: string;
+  gamMissionFormCancelBtn: string;
+  gamMissionFormCreateBtn: string;
+  gamMissionFormSaveBtn: string;
+  // Timed events page
+  gamEventsPageTitle: string;
+  gamEventsNewBtn: string;
+  gamEventsEmptyHeading: string;
+  gamEventsEmptyBody: string;
+  gamEventActivateTitle: string;
+  gamEventActivateNotice: string;
+  gamEventExpireTitle: string;
+  gamEventExpireNotice: string;
+  gamEventActivateConfirmBtn: string;
+  gamEventExpireConfirmBtn: string;
+  // TimedEventForm
+  gamEventFormCreateTitle: string;
+  gamEventFormCreateSubtitle: string;
+  gamEventFormEditTitle: string;
+  gamEventFormEditSubtitle: string;
+  gamEventFormCodeLabel: string;
+  gamEventFormNameEnLabel: string;
+  gamEventFormNameArLabel: string;
+  gamEventFormDescEnLabel: string;
+  gamEventFormDescArLabel: string;
+  gamEventFormStartLabel: string;
+  gamEventFormEndLabel: string;
+  gamEventFormUtcHint: string;
+  gamEventFormEndBeforeStart: string;
+  gamEventFormMultiplierLabel: string;
+  gamEventFormMultiplierHint: string;
+  gamEventFormScopeLabel: string;
+  gamEventFormScopeNotice: string;
+  gamEventFormCreateBtn: string;
+  gamEventFormSaveBtn: string;
+  gamEventFormCancelBtn: string;
+  // Student overrides — shared
+  gamOverridesHeading: string;
+  // League tier override
+  gamLeagueTierBtn: string;
+  gamLeagueTierDialogTitle: string;
+  gamLeagueTierCurrentLabel: string;
+  gamLeagueTierUnknown: string;
+  gamLeagueTierCaveat: string;
+  gamLeagueTierNewLabel: string;
+  gamLeagueTierSelectPlaceholder: string;
+  gamLeagueTierAuditNotice: string;
+  gamLeagueTierReasonLabel: string;
+  gamLeagueTierConfirmBtn: string;
+  gamLeagueTierSuccessBanner: string;
+  gamLeagueTierErr400SameTier: string;
+  gamLeagueTierErr404: string;
+  gamLeagueTierErr422: string;
+  gamLeagueTierErrNetwork: string;
+  // Streak freeze
+  gamFreezeFreezeBtn: string;
+  gamFreezeDialogTitle: string;
+  gamFreezeBalanceUnavailable: string;
+  gamFreezeCountLabel: string;
+  gamFreezeCountHint: string;
+  gamFreezeReasonLabel: string;
+  gamFreezeConfirmBtn: string;
+  gamFreezeSuccessBanner: string;
+  gamFreezeErrCount: string;
+  gamFreezeErr404: string;
+  gamFreezeErr422: string;
+  gamFreezeErrNetwork: string;
+
+  // ── P7-13 additional string keys used by page/component implementations ────
+  // Generic shared
+  gamification: string;
+  gamCancelBtn: string;
+  gamRetry: string;
+
+  // Badge page
+  gamBadgePageTitle: string;
+  gamBadgeCreateBtn: string;
+  gamBadgeActive: string;
+  gamBadgeInactive: string;
+  gamBadgeLoading: string;
+  gamBadgeFetchError: string;
+  gamBadgeEmpty: string;
+  gamBadgeCreateFirst: string;
+  gamBadgeEditBtn: string;
+  gamBadgeActivateBtn: string;
+  gamBadgeDeactivateBtn: string;
+  gamBadgeTableCaption: string;
+  gamBadgeColCode: string;
+  gamBadgeColName: string;
+  gamBadgeColRarity: string;
+  gamBadgeColTrigger: string;
+  gamBadgeColXp: string;
+  gamBadgeColStatus: string;
+  gamBadgeColActions: string;
+  gamBadgeDeactivateSubtitle: string;
+  gamBadgeDeactivateNote: string;
+  gamBadgeDeactivateConfirmBtn: string;
+  gamBadgeActivateSubtitle: string;
+  gamBadgeActivateNote: string;
+  gamBadgeActivateConfirmBtn: string;
+  gamBadgeActivatedBanner: string;
+  gamBadgeDeactivatedBanner: string;
+  gamBadgeNotFoundError: string;
+  gamBadgeActionError: string;
+
+  // Mission page
+  gamMissionPageTitle: string;
+  gamMissionCreateBtn: string;
+  gamMissionActive: string;
+  gamMissionInactive: string;
+  gamMissionLoading: string;
+  gamMissionFetchError: string;
+  gamMissionEmpty: string;
+  gamMissionCreateFirst: string;
+  gamMissionEditBtn: string;
+  gamMissionActivateBtn: string;
+  gamMissionDeactivateBtn: string;
+  gamMissionTableCaption: string;
+  gamMissionColTitle: string;
+  gamMissionColType: string;
+  gamMissionColTargetType: string;
+  gamMissionColTargetCount: string;
+  gamMissionColXp: string;
+  gamMissionColStatus: string;
+  gamMissionColActions: string;
+  gamMissionDeactivateSubtitle: string;
+  gamMissionDeactivateNote: string;
+  gamMissionDeactivateConfirmBtn: string;
+  gamMissionActivateSubtitle: string;
+  gamMissionActivateNote: string;
+  gamMissionActivateConfirmBtn: string;
+  gamMissionActivatedBanner: string;
+  gamMissionDeactivatedBanner: string;
+  gamMissionNotFoundError: string;
+  gamMissionActionError: string;
+  gamMissionFormTitleLabel: string;
+  gamMissionFormDescLabel: string;
+  gamMissionFormTypeLabel: string;
+  gamMissionFormTypePlaceholder: string;
+  gamMissionFormTargetCountLabel: string;
+  gamMissionFormSortOrderHint: string;
+
+  // Events page
+  gamEventPageTitle: string;
+  gamEventCreateBtn: string;
+  gamEventLoading: string;
+  gamEventFetchError: string;
+  gamEventEmpty: string;
+  gamEventCreateFirst: string;
+  gamEventEditBtn: string;
+  gamEventActivateBtn: string;
+  gamEventExpireBtn: string;
+  gamEventTableCaption: string;
+  gamEventColName: string;
+  gamEventColScope: string;
+  gamEventColMultiplier: string;
+  gamEventColStart: string;
+  gamEventColEnd: string;
+  gamEventColStatus: string;
+  gamEventColActions: string;
+  gamEventActivateSubtitle: string;
+  gamEventActivateNote: string;
+  gamEventExpireSubtitle: string;
+  gamEventExpireNote: string;
+  gamEventActivatedBanner: string;
+  gamEventExpiredBanner: string;
+  gamEventNotFoundError: string;
+  gamEventActionError: string;
+  gamEventFormDescGapNotice: string;
+  gamEventFormDescGapPlaceholder: string;
+  gamEventFormDateHint: string;
+
+  // League tier override dialog
+  gamLeagueTierDialogBody: string;
+  gamLeagueTierCancelBtn: string;
+  gamLeagueTierError400: string;
+  gamLeagueTierError404: string;
+  gamLeagueTierError422: string;
+  gamLeagueTierErrorNetwork: string;
+  gamLeagueTierReasonPlaceholder: string;
+
+  // Streak freeze dialog
+  gamFreezeDialogBody: string;
+  gamFreezeCancelBtn: string;
+  gamFreezeError400: string;
+  gamFreezeError404: string;
+  gamFreezeError422: string;
+  gamFreezeErrorNetwork: string;
+  gamFreezeReasonPlaceholder: string;
+
+  // ── P7-09 Moderation Queue (mod* namespace — DISJOINT from all prior namespaces) ──
+
+  // Nav
+  navModeration: string;
+
+  // Page titles
+  modPageTitleQueue: string;
+  modPageTitleDetail: string;
+
+  // List page
+  modListHeading: string;
+  modResultCount: string;
+  modSearchPlaceholder: string;
+  modFilterAllStatuses: string;
+  modFilterAllSources: string;
+  modFilterAllSubjects: string;
+  modFilterAllGrades: string;
+  modClearFilters: string;
+  modListLoadingLabel: string;
+  modListError: string;
+  modListRetry: string;
+  modTableCaption: string;
+  modPrevPage: string;
+  modNextPage: string;
+
+  // Subject filter options
+  modSubjectMath: string;
+  modSubjectScience: string;
+  modSubjectArabic: string;
+  modSubjectEnglish: string;
+
+  // Empty states
+  modEmptyNoFilters: string;
+  modEmptyNoFiltersBody: string;
+  modEmptyFiltered: string;
+  modEmptyFilteredBody: string;
+
+  // Table columns
+  modColSource: string;
+  modColContentRef: string;
+  modColSubjectGrade: string;
+  modColTaskKind: string;
+  modColStatus: string;
+  modColDetected: string;
+  modViewDetail: string;
+
+  // Status badge labels
+  modStatusPending: string;
+  modStatusApproved: string;
+  modStatusRejected: string;
+  modStatusFlagged: string;
+
+  // Source badge labels
+  modSourceAiOutput: string;
+  modSourceCurriculumUpload: string;
+
+  // Detail page
+  modDetailLoadingLabel: string;
+  modDetailError: string;
+  modNotFoundHeading: string;
+  modNotFoundBody: string;
+  modBackToQueue: string;
+
+  // Detail sections
+  modSectionDetails: string;
+  modSectionReviewHistory: string;
+
+  // Detail fields
+  modFieldStudentId: string;
+  modFieldDetectedAt: string;
+  modFieldItemId: string;
+
+  // Review history fields
+  modReviewedBy: string;
+  modReviewedAt: string;
+  modReviewReason: string;
+
+  // Terminal notice
+  modTerminalNotice: string;
+
+  // Safety verdict
+  modVerdictSection: string;
+  modVerdictPrivacyNote: string;
+  modVerdictFailedChecks: string;
+  modVerdictReasonCodes: string;
+  modVerdictActionTaken: string;
+  modVerdictModelId: string;
+  modVerdictUnavailable: string;
+
+  // Review actions panel
+  modReviewActionsHeading: string;
+  modReviewApprove: string;
+  modReviewReject: string;
+  modReviewFlag: string;
+  modAlreadyFlagged: string;
+
+  // Review dialogs (shared cancel)
+  modDlgCancel: string;
+
+  // Approve dialog
+  modDlgApproveTitle: string;
+  modDlgApproveSubtitle: string;
+  modDlgApproveReasonLabel: string;
+  modDlgApproveConfirm: string;
+
+  // Reject dialog
+  modDlgRejectTitle: string;
+  modDlgRejectSubtitle: string;
+  modDlgRejectReasonLabel: string;
+  modDlgRejectConfirm: string;
+
+  // Flag dialog
+  modDlgFlagTitle: string;
+  modDlgFlagSubtitle: string;
+  modDlgFlagReasonLabel: string;
+  modDlgFlagConfirm: string;
+
+  // Error messages (dialog)
+  modErrAlreadyTerminal: string;
+  modErrAlreadyFlagged: string;
+  modErr404: string;
+  modErrValidation: string;
+  modErrNetwork: string;
+
+  // Success banner
+  modReviewSuccess: string;
 }
 
 const en: AdminStrings = {
@@ -1696,6 +2307,521 @@ const en: AdminStrings = {
   questionActivateBody: 'Students will be able to see and answer this question once it is shown.',
   questionActivateConfirm: 'Show to Students',
   questionActivateSuccess: 'Question shown to students.',
+
+  // ── P7-03 Skills & Graph (EN) ─────────────────────────────────────────────────
+
+  // Page
+  skillPageTitle: 'Skills',
+  skillListHeading: 'Skills',
+  skillResultCount: 'skills',
+  skillListError: 'Failed to load skills. Please try again.',
+  skillTableCaption: 'Skills list',
+  skillViewGraph: 'View graph',
+  skillNoResults: 'No skills found',
+  skillNoResultsHint: 'Try adjusting the concept filter or search term.',
+  skillNoResultsSelectSubject: 'Select a subject tree to view and author its skills.',
+  skillNoSubjectSelected: 'No subject selected',
+
+  // Subject picker
+  skillSubjectPickerLabel: 'Subject Tree',
+  skillSubjectPickerPlaceholder: '-- Select a subject --',
+  skillSubjectPickerLoading: 'Loading subjects…',
+  skillSubjectPickerError: 'Failed to load subjects.',
+
+  // Concept filter
+  skillConceptFilterPlaceholder: 'All Concepts',
+
+  // Search
+  skillSearchPlaceholder: 'Search skills…',
+
+  // "New Skill" button
+  skillNewBtn: 'New Skill',
+  skillNewBtnAriaLabel: 'Create a new skill',
+
+  // Table columns
+  skillColName: 'Name',
+  skillColThreshold: 'Mastery %',
+  skillColTime: 'Time (min)',
+  skillColActive: 'Active',
+
+  // Skill form
+  skillFormCreateTitle: 'New Skill',
+  skillFormEditTitle: 'Edit Skill',
+  skillFormCreateSubtitle: 'Add a new skill to the curriculum.',
+  skillFormEditSubtitle: 'Update skill details.',
+  skillFormNameLabel: 'Name',
+  skillFormNamePlaceholder: 'e.g. Multiply Fractions',
+  skillFormNameRequired: 'Name is required.',
+  skillFormThresholdLabel: 'Mastery Threshold (%)',
+  skillFormThresholdHint: 'Score percentage (0–100) required to mark this skill as mastered.',
+  skillFormThresholdRequired: 'Mastery threshold is required.',
+  skillFormThresholdRange: 'Must be a number between 0 and 100.',
+  skillFormTimeLabel: 'Estimated Time (minutes)',
+  skillFormTimeHint: 'Expected minutes to practice this skill.',
+  skillFormTimeRequired: 'Estimated time is required.',
+  skillFormTimeRange: 'Must be 0 or more.',
+  skillFormConceptLabel: 'Concept',
+  skillFormConceptPlaceholder: 'Select a concept…',
+  skillFormConceptRequired: 'Concept is required.',
+  skillFormConceptLoading: 'Loading concepts…',
+  skillFormConceptError: 'Failed to load concepts.',
+  skillFormCreateBtn: 'Create Skill',
+  skillFormSaveBtn: 'Save Changes',
+  skillFormCancel: 'Cancel',
+
+  // Delete dialog
+  skillDeleteTitle: 'Delete Skill',
+  skillDeleteBody: 'This will permanently delete this skill. This action cannot be undone.',
+  skillDeleteConfirm: 'Delete',
+  skillDeleteCancel: 'Cancel',
+
+  // Graph editor
+  skillGraphTitle: 'Prerequisite Graph',
+  skillGraphNoSubject: 'No subject selected',
+  skillGraphNoSubjectBody: 'Select a subject tree above to view and edit the skill prerequisite graph.',
+  skillGraphLoading: 'Loading skill graph…',
+  skillGraphError: 'Failed to load the skill graph. Please try again.',
+  skillGraphNodeCount: 'nodes',
+  skillGraphEdgeCount: 'edges',
+  skillGraphNodesEmpty: 'No nodes in this subject tree.',
+  skillGraphRetry: 'Try again',
+
+  // Node list
+  skillGraphNodeListLabel: 'Nodes in subject tree',
+
+  // Prerequisites
+  skillGraphPrerequisitesHeading: 'Prerequisites',
+  skillGraphPrerequisitesEmpty: 'No prerequisites — this skill is immediately accessible.',
+
+  // Unlocks
+  skillGraphUnlocksHeading: 'Unlocks',
+  skillGraphUnlocksEmpty: 'This skill is not a prerequisite for any other skill.',
+
+  // Add prerequisite
+  skillGraphAddPrerequisiteHeading: 'Add Prerequisite',
+  skillGraphPickerPlaceholder: 'Choose a prerequisite…',
+  skillGraphPickerAllAdded: 'All nodes are already prerequisites.',
+  skillGraphAddBtn: 'Add',
+  skillGraphDeselectNode: 'Deselect node',
+  skillGraphRemovePrerequisite: 'Remove as prerequisite',
+
+  // Edge errors
+  skillGraphErrCycle: 'This would create a cycle in the prerequisite graph. Choose a different node.',
+  skillGraphErrCrossLanguage: 'Cannot connect nodes from different language trees.',
+  skillGraphErrDuplicate: 'This prerequisite edge already exists.',
+  skillGraphErrNodeNotFound: 'One of the nodes was not found. Refresh and try again.',
+  skillGraphErrSubjectUnresolvable: 'Could not resolve the subject for this node.',
+  skillGraphErrStrengthOutOfRange: 'Edge strength must be between 0.0 and 1.0.',
+  skillGraphErrGeneric: 'Could not update the graph. Please try again.',
+  skillGraphErrNetwork: 'Network error. Check your connection and try again.',
+
+  // Edge aria-live announcements
+  skillGraphEdgeAdded: '{name} added as a prerequisite.',
+  skillGraphEdgeRemoved: '{name} removed from prerequisites.',
+
+  // Skill detail panel
+  skillDetailSection: 'Skill Details',
+  skillDetailMastery: 'Mastery',
+  skillDetailTime: 'Time',
+  skillDetailEditLink: 'Edit this skill',
+
+  // Skills page — additional a11y / i18n (Nits #2/#3)
+  skillClearFilters: 'Clear filters',
+  skillConceptFilterAriaLabel: 'Filter by concept',
+  skillColActionsLabel: 'Actions',
+  skillEditAriaLabel: 'Edit {name}',
+  skillDeleteAriaLabel: 'Delete {name}',
+  skillPrevPage: 'Previous page',
+  skillNextPage: 'Next page',
+
+  // SkillGraph — node-type words
+  skillGraphNodeTypeSkill: 'Skill',
+  skillGraphNodeTypeConcept: 'Concept',
+  skillGraphNodeTypeReview: 'Review',
+  skillGraphPrerequisitesAriaLabel: 'Prerequisites of {name}',
+  skillGraphUnlocksAriaLabel: 'Skills unlocked by {name}',
+  skillGraphRemoveEdgeAriaLabel: 'Remove prerequisite: {name}',
+
+  // ── P7-12 Audit Log viewer (EN) ──────────────────────────────────────────────
+  navAuditLog: 'Audit Log',
+  pageTitleAudit: 'Audit Log',
+  auditPageHeading: 'Audit Log',
+  auditFilterAdminIdLabel: 'Admin user ID',
+  auditFilterAdminIdPlaceholder: 'Admin ID',
+  auditFilterActionTypeLabel: 'Action type',
+  auditFilterActionTypePlaceholder: 'All actions',
+  auditFilterTargetTypeLabel: 'Target type',
+  auditFilterTargetTypePlaceholder: 'All targets',
+  auditFilterDateFromLabel: 'From date',
+  auditFilterDateToLabel: 'To date',
+  auditClearFilters: 'Clear filters',
+  auditDateRangeError: "End date must be on or after start date.",
+  auditTableCaption: 'Admin audit log entries',
+  auditColAdmin: 'Admin',
+  auditColAction: 'Action',
+  auditColTarget: 'Target',
+  auditColWhen: 'When',
+  auditColDetailsHeader: 'Details',
+  auditResultCount: 'entries',
+  auditLoadingLabel: 'Loading audit log…',
+  auditEmptyHeading: 'No audit entries found',
+  auditEmptyBodyFiltered: 'Try adjusting the filters.',
+  auditEmptyBodyEmpty: 'No admin actions have been recorded yet.',
+  auditListError: 'Failed to load audit log. Please try again.',
+  auditRetry: 'Try again',
+  auditPrevPage: 'Previous page',
+  auditNextPage: 'Next page',
+  auditExpandEntry: 'Expand details',
+  auditCollapseEntry: 'Collapse details',
+  auditDetailEventId: 'Event ID',
+  auditDetailAdmin: 'Admin (actor)',
+  auditDetailAction: 'Action',
+  auditDetailTargetType: 'Target type',
+  auditDetailTargetId: 'Target ID',
+  auditDetailOccurredAt: 'Occurred at (UTC)',
+  auditDetailCreatedAt: 'Record created at',
+  auditDetailDetailsLabel: 'Details',
+  auditDetailCopy: 'Copy',
+  auditDetailCopied: 'Copied!',
+  auditDetailNoDetails: '—',
+
+  // ── P7-13 Gamification section (EN) ──────────────────────────────────────────
+  navGamification: 'Gamification',
+  gamificationHubTitle: 'Gamification',
+  gamificationHubSubtitle: 'Manage badges, missions, timed events, and student overrides.',
+  gamificationHubManage: 'Manage',
+  gamificationStudentOverridesHeading: 'Student Overrides',
+  gamificationStudentOverridesNotice:
+    'League-tier override and streak-freeze grant are launched from a student\'s detail page. Navigate to Users, select a student account, then use the Gamification section in the Actions card.',
+  gamEditBtn: 'Edit',
+  gamActivateBtn: 'Activate',
+  gamDeactivateBtn: 'Deactivate',
+  gamExpireBtn: 'Expire',
+  gamDialogCancelBtn: 'Cancel',
+  gamBadgesPageTitle: 'Badge Catalog',
+  gamBadgesNewBtn: 'New Badge',
+  gamBadgesEmptyHeading: 'No badges defined',
+  gamBadgesEmptyBody: 'Create the first badge definition to get started.',
+  gamBadgeDeactivateTitle: 'Deactivate Badge',
+  gamBadgeDeactivateNotice:
+    'This badge will no longer be offered for new achievements. Students who have already earned it retain it — earned badges are never removed.',
+  gamBadgeActivateTitle: 'Activate Badge',
+  gamBadgeActivateNotice: 'This badge will be available for new achievements.',
+  gamBadgeFormCreateTitle: 'New Badge',
+  gamBadgeFormCreateSubtitle: 'Define a new badge for the catalog.',
+  gamBadgeFormEditTitle: 'Edit Badge',
+  gamBadgeFormEditSubtitle: 'Update badge details. Code cannot be changed.',
+  gamBadgeFormCodeLabel: 'Code',
+  gamBadgeFormCodePlaceholder: 'e.g. FIRST_LESSON',
+  gamBadgeFormCodeHint: 'Code cannot be changed after creation.',
+  gamBadgeFormNameLabel: 'Name',
+  gamBadgeFormNamePlaceholder: 'e.g. First Steps',
+  gamBadgeFormDescLabel: 'Description',
+  gamBadgeFormIconKeyLabel: 'Icon Key',
+  gamBadgeFormIconKeyPlaceholder: 'e.g. star, trophy, flame',
+  gamBadgeFormIconKeyHint: 'Identifier used by the student app to render the badge icon.',
+  gamBadgeFormRarityLabel: 'Rarity',
+  gamBadgeFormRarityPlaceholder: 'Select rarity',
+  gamBadgeFormTriggerLabel: 'Trigger',
+  gamBadgeFormThresholdLabel: 'Threshold',
+  gamBadgeFormThresholdRequired: 'Threshold is required for this trigger type.',
+  gamBadgeFormRewardXpLabel: 'Reward XP',
+  gamBadgeFormSortOrderLabel: 'Sort Order',
+  gamBadgeFormSortOrderHint: 'Lower values appear first in the catalog.',
+  gamBadgeFormCancelBtn: 'Cancel',
+  gamBadgeFormCreateBtn: 'Create Badge',
+  gamBadgeFormSaveBtn: 'Save Changes',
+  gamMissionsPageTitle: 'Mission Catalog',
+  gamMissionsNewBtn: 'New Mission',
+  gamMissionsEmptyHeading: 'No missions defined',
+  gamMissionsEmptyBody: 'Create the first mission definition to get started.',
+  gamMissionDeactivateTitle: 'Deactivate Mission',
+  gamMissionDeactivateNotice: 'This mission will no longer be assigned to students.',
+  gamMissionActivateTitle: 'Activate Mission',
+  gamMissionActivateNotice: 'This mission will be assigned to students again.',
+  gamMissionFormCreateTitle: 'New Mission',
+  gamMissionFormCreateSubtitle: 'Define a new mission for the catalog.',
+  gamMissionFormEditTitle: 'Edit Mission',
+  gamMissionFormEditSubtitle: 'Update mission details. Code cannot be changed.',
+  gamMissionFormCodeLabel: 'Code',
+  gamMissionFormIconKeyLabel: 'Icon Key',
+  gamMissionFormTitleKeyLabel: 'Title Key (i18n)',
+  gamMissionFormTitleKeyHint:
+    "The i18n lookup key for the mission title — not the display text itself. E.g. 'mission.daily_lessons'",
+  gamMissionFormCadenceLabel: 'Cadence',
+  gamMissionFormTargetTypeLabel: 'Target Type',
+  gamMissionFormTargetLabel: 'Target Count',
+  gamMissionFormRewardXpLabel: 'Reward XP',
+  gamMissionFormSortOrderLabel: 'Sort Order',
+  gamMissionFormCancelBtn: 'Cancel',
+  gamMissionFormCreateBtn: 'Create Mission',
+  gamMissionFormSaveBtn: 'Save Changes',
+  gamEventsPageTitle: 'Timed Events',
+  gamEventsNewBtn: 'New Event',
+  gamEventsEmptyHeading: 'No timed events',
+  gamEventsEmptyBody: 'Create the first timed event to get started.',
+  gamEventActivateTitle: 'Activate Event',
+  gamEventActivateNotice:
+    'This will immediately apply the XP multiplier for the event\'s active window.',
+  gamEventExpireTitle: 'Expire Event',
+  gamEventExpireNotice:
+    'The event will be immediately marked as expired and stop applying the XP multiplier.',
+  gamEventActivateConfirmBtn: 'Activate Event',
+  gamEventExpireConfirmBtn: 'Expire Event',
+  gamEventFormCreateTitle: 'New Timed Event',
+  gamEventFormCreateSubtitle: 'Schedule a new XP multiplier event.',
+  gamEventFormEditTitle: 'Edit Timed Event',
+  gamEventFormEditSubtitle: 'Update event details. Code cannot be changed.',
+  gamEventFormCodeLabel: 'Code',
+  gamEventFormNameEnLabel: 'Event Name (English)',
+  gamEventFormNameArLabel: 'Event Name (Arabic)',
+  gamEventFormDescEnLabel: 'Description (English, optional)',
+  gamEventFormDescArLabel: 'Description (Arabic, optional)',
+  gamEventFormStartLabel: 'Start (UTC)',
+  gamEventFormEndLabel: 'End (UTC)',
+  gamEventFormUtcHint: 'Enter time in UTC. Times are stored and displayed in UTC.',
+  gamEventFormEndBeforeStart: 'End time must be after start time.',
+  gamEventFormMultiplierLabel: 'XP Multiplier',
+  gamEventFormMultiplierHint: 'Range: 1.0 – 5.0. E.g. 2.0 doubles XP earned.',
+  gamEventFormScopeLabel: 'Scope',
+  gamEventFormScopeNotice:
+    'Currently only All XP scope is active in the engine. Mission XP and League XP are available for future use.',
+  gamEventFormCreateBtn: 'Create Event',
+  gamEventFormSaveBtn: 'Save Changes',
+  gamEventFormCancelBtn: 'Cancel',
+  gamOverridesHeading: 'Gamification Overrides',
+  gamLeagueTierBtn: 'Override League Tier',
+  gamLeagueTierDialogTitle: 'Override League Tier',
+  gamLeagueTierCurrentLabel: 'Current League Tier',
+  gamLeagueTierUnknown: 'No data',
+  gamLeagueTierCaveat:
+    'Shown from weekly activity data — may differ from the stored tier.',
+  gamLeagueTierNewLabel: 'New Tier',
+  gamLeagueTierSelectPlaceholder: 'Select tier',
+  gamLeagueTierAuditNotice:
+    "This override is audited and applies to the student's current tier. XP and progress are not affected.",
+  gamLeagueTierReasonLabel: 'Reason (required)',
+  gamLeagueTierConfirmBtn: 'Override Tier',
+  gamLeagueTierSuccessBanner: "{name}'s league tier has been overridden.",
+  gamLeagueTierErr400SameTier: "This is already the student's current tier.",
+  gamLeagueTierErr404: 'Student account not found.',
+  gamLeagueTierErr422: 'Reason is required and must be under 500 characters.',
+  gamLeagueTierErrNetwork: 'Something went wrong. Please try again.',
+  gamFreezeFreezeBtn: 'Grant Streak Freeze',
+  gamFreezeDialogTitle: 'Grant Streak Freeze',
+  gamFreezeBalanceUnavailable:
+    'Current freeze balance: not available (no read endpoint — see backend follow-up Q2).',
+  gamFreezeCountLabel: 'Freeze Count',
+  gamFreezeCountHint: 'Max 2 per grant',
+  gamFreezeReasonLabel: 'Reason (required)',
+  gamFreezeConfirmBtn: 'Grant Freeze',
+  gamFreezeSuccessBanner: 'Streak freeze granted to {name}.',
+  gamFreezeErrCount: 'Count must be between 1 and 2.',
+  gamFreezeErr404: 'Student account not found.',
+  gamFreezeErr422: 'Reason is required and must be under 500 characters.',
+  gamFreezeErrNetwork: 'Something went wrong. Please try again.',
+
+  // ── P7-13 additional keys ────────────────────────────────────────────────
+  gamification: 'Gamification',
+  gamCancelBtn: 'Cancel',
+  gamRetry: 'Retry',
+
+  gamBadgePageTitle: 'Badge Catalog',
+  gamBadgeCreateBtn: 'New Badge',
+  gamBadgeActive: 'Active',
+  gamBadgeInactive: 'Inactive',
+  gamBadgeLoading: 'Loading badge catalog…',
+  gamBadgeFetchError: 'Failed to load badges.',
+  gamBadgeEmpty: 'No badges defined. Create the first badge to get started.',
+  gamBadgeCreateFirst: 'Create Badge',
+  gamBadgeEditBtn: 'Edit',
+  gamBadgeActivateBtn: 'Activate',
+  gamBadgeDeactivateBtn: 'Deactivate',
+  gamBadgeTableCaption: 'Badge catalog',
+  gamBadgeColCode: 'Code',
+  gamBadgeColName: 'Name',
+  gamBadgeColRarity: 'Rarity',
+  gamBadgeColTrigger: 'Trigger',
+  gamBadgeColXp: 'XP',
+  gamBadgeColStatus: 'Status',
+  gamBadgeColActions: 'Actions',
+  gamBadgeDeactivateSubtitle: 'Deactivate "{name}"?',
+  gamBadgeDeactivateNote: 'This badge will no longer be awarded for new achievements.',
+  gamBadgeDeactivateConfirmBtn: 'Deactivate',
+  gamBadgeActivateSubtitle: 'Activate "{name}"?',
+  gamBadgeActivateNote: 'This badge will be awarded again for qualifying achievements.',
+  gamBadgeActivateConfirmBtn: 'Activate',
+  gamBadgeActivatedBanner: 'Badge activated.',
+  gamBadgeDeactivatedBanner: 'Badge deactivated.',
+  gamBadgeNotFoundError: 'Badge not found.',
+  gamBadgeActionError: 'Something went wrong. Please try again.',
+
+  gamMissionPageTitle: 'Mission Catalog',
+  gamMissionCreateBtn: 'New Mission',
+  gamMissionActive: 'Active',
+  gamMissionInactive: 'Inactive',
+  gamMissionLoading: 'Loading mission catalog…',
+  gamMissionFetchError: 'Failed to load missions.',
+  gamMissionEmpty: 'No missions defined. Create the first mission to get started.',
+  gamMissionCreateFirst: 'Create Mission',
+  gamMissionEditBtn: 'Edit',
+  gamMissionActivateBtn: 'Activate',
+  gamMissionDeactivateBtn: 'Deactivate',
+  gamMissionTableCaption: 'Mission catalog',
+  gamMissionColTitle: 'Title',
+  gamMissionColType: 'Type',
+  gamMissionColTargetType: 'Target Type',
+  gamMissionColTargetCount: 'Target',
+  gamMissionColXp: 'XP',
+  gamMissionColStatus: 'Status',
+  gamMissionColActions: 'Actions',
+  gamMissionDeactivateSubtitle: 'Deactivate "{name}"?',
+  gamMissionDeactivateNote: 'This mission will no longer be assigned to students.',
+  gamMissionDeactivateConfirmBtn: 'Deactivate',
+  gamMissionActivateSubtitle: 'Activate "{name}"?',
+  gamMissionActivateNote: 'This mission will be assigned to students again.',
+  gamMissionActivateConfirmBtn: 'Activate',
+  gamMissionActivatedBanner: 'Mission activated.',
+  gamMissionDeactivatedBanner: 'Mission deactivated.',
+  gamMissionNotFoundError: 'Mission not found.',
+  gamMissionActionError: 'Something went wrong. Please try again.',
+  gamMissionFormTitleLabel: 'Title',
+  gamMissionFormDescLabel: 'Description (optional)',
+  gamMissionFormTypeLabel: 'Mission Type',
+  gamMissionFormTypePlaceholder: 'Select type',
+  gamMissionFormTargetCountLabel: 'Target Count',
+  gamMissionFormSortOrderHint: 'Lower values appear first.',
+
+  gamEventPageTitle: 'Timed Events',
+  gamEventCreateBtn: 'New Event',
+  gamEventLoading: 'Loading timed events…',
+  gamEventFetchError: 'Failed to load timed events.',
+  gamEventEmpty: 'No timed events. Create one to schedule an XP multiplier.',
+  gamEventCreateFirst: 'Create Event',
+  gamEventEditBtn: 'Edit',
+  gamEventActivateBtn: 'Activate',
+  gamEventExpireBtn: 'Expire',
+  gamEventTableCaption: 'Timed events',
+  gamEventColName: 'Name',
+  gamEventColScope: 'Scope',
+  gamEventColMultiplier: 'Multiplier',
+  gamEventColStart: 'Start (UTC)',
+  gamEventColEnd: 'End (UTC)',
+  gamEventColStatus: 'Status',
+  gamEventColActions: 'Actions',
+  gamEventActivateSubtitle: 'Activate "{name}"?',
+  gamEventActivateNote: 'The event will become active and XP multiplier will apply.',
+  gamEventExpireSubtitle: 'Expire "{name}" now?',
+  gamEventExpireNote: 'The event will be immediately expired and XP multiplier will stop.',
+  gamEventActivatedBanner: 'Event activated.',
+  gamEventExpiredBanner: 'Event expired.',
+  gamEventNotFoundError: 'Event not found.',
+  gamEventActionError: 'Something went wrong. Please try again.',
+  gamEventFormDescGapNotice:
+    'Description fields cannot be pre-filled (not in list DTO). Re-enter if you want to update them.',
+  gamEventFormDescGapPlaceholder: 'Re-enter if changing…',
+  gamEventFormDateHint: 'Dates are entered in your local time and saved as UTC.',
+
+  gamLeagueTierDialogBody: "Override {name}'s league tier. This is audited.",
+  gamLeagueTierCancelBtn: 'Cancel',
+  gamLeagueTierError400: "This is already the student's current tier.",
+  gamLeagueTierError404: 'Student account not found.',
+  gamLeagueTierError422: 'Validation failed. Reason is required.',
+  gamLeagueTierErrorNetwork: 'Something went wrong. Please try again.',
+  gamLeagueTierReasonPlaceholder: 'Reason for overriding league tier…',
+
+  gamFreezeDialogBody: "Grant streak freeze tokens to {name}.",
+  gamFreezeCancelBtn: 'Cancel',
+  gamFreezeError400: 'Invalid request. Please check the count.',
+  gamFreezeError404: 'Student account not found.',
+  gamFreezeError422: 'Validation failed. Reason is required.',
+  gamFreezeErrorNetwork: 'Something went wrong. Please try again.',
+  gamFreezeReasonPlaceholder: 'Reason for granting streak freeze…',
+
+  // ── P7-09 Moderation Queue (EN) ───────────────────────────────────────────
+  navModeration: 'Moderation',
+  modPageTitleQueue: 'Moderation Queue',
+  modPageTitleDetail: 'Moderation Item',
+  modListHeading: 'Moderation Queue',
+  modResultCount: 'items',
+  modSearchPlaceholder: 'Search by content reference…',
+  modFilterAllStatuses: 'All Statuses',
+  modFilterAllSources: 'All Sources',
+  modFilterAllSubjects: 'All Subjects',
+  modFilterAllGrades: 'All Grades',
+  modClearFilters: 'Clear filters',
+  modListLoadingLabel: 'Loading moderation queue…',
+  modListError: 'Failed to load the moderation queue. Please try again.',
+  modListRetry: 'Try again',
+  modTableCaption: 'Moderation queue items',
+  modPrevPage: 'Previous page',
+  modNextPage: 'Next page',
+  modSubjectMath: 'Math',
+  modSubjectScience: 'Science',
+  modSubjectArabic: 'Arabic',
+  modSubjectEnglish: 'English',
+  modEmptyNoFilters: 'No items in the queue',
+  modEmptyNoFiltersBody: 'The moderation queue is empty.',
+  modEmptyFiltered: 'No matching items',
+  modEmptyFilteredBody: 'No items match the current filters.',
+  modColSource: 'Source',
+  modColContentRef: 'Content Ref',
+  modColSubjectGrade: 'Subject / Grade',
+  modColTaskKind: 'Task Kind',
+  modColStatus: 'Status',
+  modColDetected: 'Detected',
+  modViewDetail: 'View item',
+  modStatusPending: 'Pending',
+  modStatusApproved: 'Approved',
+  modStatusRejected: 'Rejected',
+  modStatusFlagged: 'Flagged',
+  modSourceAiOutput: 'AI Output',
+  modSourceCurriculumUpload: 'Curriculum Upload',
+  modDetailLoadingLabel: 'Loading moderation item…',
+  modDetailError: 'Failed to load this moderation item.',
+  modNotFoundHeading: 'Item not found',
+  modNotFoundBody: "This moderation item doesn't exist or was removed.",
+  modBackToQueue: 'Back to Queue',
+  modSectionDetails: 'Item Details',
+  modSectionReviewHistory: 'Review History',
+  modFieldStudentId: 'Student ID',
+  modFieldDetectedAt: 'Detected At',
+  modFieldItemId: 'ID',
+  modReviewedBy: 'Reviewed by',
+  modReviewedAt: 'Reviewed at',
+  modReviewReason: 'Reason',
+  modTerminalNotice: 'This item has already been resolved and cannot be reviewed again.',
+  modVerdictSection: 'Automated Safety Signal',
+  modVerdictPrivacyNote: 'v1: no raw content stored — this signal contains only automated check names and reason codes.',
+  modVerdictFailedChecks: 'Failed Checks',
+  modVerdictReasonCodes: 'Reason Codes',
+  modVerdictActionTaken: 'Action Taken',
+  modVerdictModelId: 'Model',
+  modVerdictUnavailable: 'Safety signal unavailable or not yet populated.',
+  modReviewActionsHeading: 'Review Actions',
+  modReviewApprove: 'Approve',
+  modReviewReject: 'Reject',
+  modReviewFlag: 'Flag for Escalation',
+  modAlreadyFlagged: 'Flag option is unavailable — item is already flagged.',
+  modDlgCancel: 'Cancel',
+  modDlgApproveTitle: 'Approve Item',
+  modDlgApproveSubtitle: 'Approve this flagged content item?',
+  modDlgApproveReasonLabel: 'Note (optional)',
+  modDlgApproveConfirm: 'Approve',
+  modDlgRejectTitle: 'Reject Item',
+  modDlgRejectSubtitle: 'Reject this flagged content item.',
+  modDlgRejectReasonLabel: 'Reason for rejection (required)',
+  modDlgRejectConfirm: 'Reject',
+  modDlgFlagTitle: 'Flag for Escalation',
+  modDlgFlagSubtitle: 'Flag this item for additional scrutiny.',
+  modDlgFlagReasonLabel: 'Escalation note (optional)',
+  modDlgFlagConfirm: 'Flag',
+  modErrAlreadyTerminal: 'This item has already been resolved and cannot be reviewed again.',
+  modErrAlreadyFlagged: 'This item is already flagged — use Approve or Reject.',
+  modErr404: 'This item was not found.',
+  modErrValidation: 'The reason is required and must be under 2000 characters.',
+  modErrNetwork: 'Something went wrong. Please try again.',
+  modReviewSuccess: 'Item reviewed — status updated.',
 };
 
 const ar: AdminStrings = {
@@ -2495,6 +3621,521 @@ const ar: AdminStrings = {
   questionActivateBody: 'سيتمكن الطلاب من رؤية هذا السؤال والإجابة عليه بعد إظهاره.',
   questionActivateConfirm: 'إظهار للطلاب',
   questionActivateSuccess: 'تم إظهار السؤال للطلاب.',
+
+  // ── P7-03 Skills & Graph (AR) ─────────────────────────────────────────────────
+
+  // Page
+  skillPageTitle: 'المهارات',
+  skillListHeading: 'المهارات',
+  skillResultCount: 'مهارة',
+  skillListError: 'فشل تحميل المهارات. حاول مرة أخرى.',
+  skillTableCaption: 'قائمة المهارات',
+  skillViewGraph: 'عرض الشجرة',
+  skillNoResults: 'لم يُعثر على مهارات',
+  skillNoResultsHint: 'جرِّب تعديل تصفية المفهوم أو مصطلح البحث.',
+  skillNoResultsSelectSubject: 'اختر شجرة مادة لعرض مهاراتها وتأليفها.',
+  skillNoSubjectSelected: 'لم يُختَر موضوع',
+
+  // Subject picker
+  skillSubjectPickerLabel: 'شجرة المادة',
+  skillSubjectPickerPlaceholder: '-- اختر مادة --',
+  skillSubjectPickerLoading: 'جارٍ تحميل المواد…',
+  skillSubjectPickerError: 'فشل تحميل المواد.',
+
+  // Concept filter
+  skillConceptFilterPlaceholder: 'كل المفاهيم',
+
+  // Search
+  skillSearchPlaceholder: 'ابحث عن المهارات…',
+
+  // "New Skill" button
+  skillNewBtn: 'مهارة جديدة',
+  skillNewBtnAriaLabel: 'إنشاء مهارة جديدة',
+
+  // Table columns
+  skillColName: 'الاسم',
+  skillColThreshold: 'نسبة الإتقان',
+  skillColTime: 'الوقت (دق)',
+  skillColActive: 'الحالة',
+
+  // Skill form
+  skillFormCreateTitle: 'مهارة جديدة',
+  skillFormEditTitle: 'تعديل المهارة',
+  skillFormCreateSubtitle: 'أضف مهارة جديدة إلى المناهج.',
+  skillFormEditSubtitle: 'تحديث تفاصيل المهارة.',
+  skillFormNameLabel: 'اسم المهارة',
+  skillFormNamePlaceholder: 'مثال: ضرب الكسور',
+  skillFormNameRequired: 'الاسم مطلوب.',
+  skillFormThresholdLabel: 'نسبة الإتقان (%)',
+  skillFormThresholdHint: 'نسبة الدرجة (٠–١٠٠) المطلوبة لاعتبار المهارة متقنة.',
+  skillFormThresholdRequired: 'نسبة الإتقان مطلوبة.',
+  skillFormThresholdRange: 'يجب أن يكون رقمًا بين ٠ و١٠٠.',
+  skillFormTimeLabel: 'الوقت التقديري (دقائق)',
+  skillFormTimeHint: 'الدقائق المتوقعة للتدرب على هذه المهارة.',
+  skillFormTimeRequired: 'الوقت التقديري مطلوب.',
+  skillFormTimeRange: 'يجب أن يكون ٠ أو أكثر.',
+  skillFormConceptLabel: 'المفهوم',
+  skillFormConceptPlaceholder: 'اختر مفهومًا…',
+  skillFormConceptRequired: 'المفهوم مطلوب.',
+  skillFormConceptLoading: 'جارٍ تحميل المفاهيم…',
+  skillFormConceptError: 'فشل تحميل المفاهيم.',
+  skillFormCreateBtn: 'إنشاء المهارة',
+  skillFormSaveBtn: 'حفظ التغييرات',
+  skillFormCancel: 'إلغاء',
+
+  // Delete dialog
+  skillDeleteTitle: 'حذف المهارة',
+  skillDeleteBody: 'سيؤدي هذا إلى حذف هذه المهارة بشكل دائم. لا يمكن التراجع عن هذا الإجراء.',
+  skillDeleteConfirm: 'حذف',
+  skillDeleteCancel: 'إلغاء',
+
+  // Graph editor
+  skillGraphTitle: 'شجرة المتطلبات السابقة',
+  skillGraphNoSubject: 'لم يُختَر موضوع',
+  skillGraphNoSubjectBody: 'اختر شجرة مادة أعلاه لعرض المتطلبات السابقة وتعديلها.',
+  skillGraphLoading: 'جارٍ تحميل شجرة المهارات…',
+  skillGraphError: 'فشل تحميل شجرة المهارات. حاول مرة أخرى.',
+  skillGraphNodeCount: 'عقدة',
+  skillGraphEdgeCount: 'حافة',
+  skillGraphNodesEmpty: 'لا توجد عقد في هذه الشجرة.',
+  skillGraphRetry: 'حاول مرة أخرى',
+
+  // Node list
+  skillGraphNodeListLabel: 'عقد الشجرة',
+
+  // Prerequisites
+  skillGraphPrerequisitesHeading: 'المتطلبات السابقة',
+  skillGraphPrerequisitesEmpty: 'لا توجد متطلبات سابقة — هذه المهارة متاحة مباشرةً.',
+
+  // Unlocks
+  skillGraphUnlocksHeading: 'تفتح',
+  skillGraphUnlocksEmpty: 'هذه المهارة ليست متطلبًا سابقًا لأي مهارة أخرى.',
+
+  // Add prerequisite
+  skillGraphAddPrerequisiteHeading: 'إضافة متطلب سابق',
+  skillGraphPickerPlaceholder: 'اختر متطلبًا سابقًا…',
+  skillGraphPickerAllAdded: 'جميع العقد متطلبات سابقة بالفعل.',
+  skillGraphAddBtn: 'إضافة',
+  skillGraphDeselectNode: 'إلغاء تحديد العقدة',
+  skillGraphRemovePrerequisite: 'إزالة من المتطلبات السابقة',
+
+  // Edge errors
+  skillGraphErrCycle: 'سيؤدي هذا إلى إنشاء حلقة في شجرة المتطلبات. اختر عقدة مختلفة.',
+  skillGraphErrCrossLanguage: 'لا يمكن ربط عقد من أشجار لغات مختلفة.',
+  skillGraphErrDuplicate: 'هذا المتطلب السابق موجود بالفعل.',
+  skillGraphErrNodeNotFound: 'لم يُعثر على إحدى العقد. حدِّث الصفحة وحاول مجددًا.',
+  skillGraphErrSubjectUnresolvable: 'تعذَّر تحديد المادة لهذه العقدة.',
+  skillGraphErrStrengthOutOfRange: 'يجب أن تكون قوة الحافة بين ٠٫٠ و١٫٠.',
+  skillGraphErrGeneric: 'تعذَّر تحديث الشجرة. حاول مرة أخرى.',
+  skillGraphErrNetwork: 'خطأ في الشبكة. تحقق من الاتصال وحاول مجددًا.',
+
+  // Edge aria-live announcements
+  skillGraphEdgeAdded: 'تمت إضافة {name} متطلبًا سابقًا.',
+  skillGraphEdgeRemoved: 'تمت إزالة {name} من المتطلبات السابقة.',
+
+  // Skill detail panel
+  skillDetailSection: 'تفاصيل المهارة',
+  skillDetailMastery: 'الإتقان',
+  skillDetailTime: 'الوقت',
+  skillDetailEditLink: 'تعديل هذه المهارة',
+
+  // Skills page — additional a11y / i18n (Nits #2/#3)
+  skillClearFilters: 'مسح التصفية',
+  skillConceptFilterAriaLabel: 'تصفية حسب المفهوم',
+  skillColActionsLabel: 'الإجراءات',
+  skillEditAriaLabel: 'تعديل {name}',
+  skillDeleteAriaLabel: 'حذف {name}',
+  skillPrevPage: 'الصفحة السابقة',
+  skillNextPage: 'الصفحة التالية',
+
+  // SkillGraph — node-type words
+  skillGraphNodeTypeSkill: 'مهارة',
+  skillGraphNodeTypeConcept: 'مفهوم',
+  skillGraphNodeTypeReview: 'مراجعة',
+  skillGraphPrerequisitesAriaLabel: 'المتطلبات السابقة لـ {name}',
+  skillGraphUnlocksAriaLabel: 'المهارات التي تفتحها {name}',
+  skillGraphRemoveEdgeAriaLabel: 'إزالة المتطلب السابق: {name}',
+
+  // ── P7-12 Audit Log viewer (AR) ──────────────────────────────────────────────
+  navAuditLog: 'سجل التدقيق',
+  pageTitleAudit: 'سجل التدقيق',
+  auditPageHeading: 'سجل التدقيق',
+  auditFilterAdminIdLabel: 'معرّف المسؤول',
+  auditFilterAdminIdPlaceholder: 'معرّف المسؤول',
+  auditFilterActionTypeLabel: 'نوع الإجراء',
+  auditFilterActionTypePlaceholder: 'جميع الإجراءات',
+  auditFilterTargetTypeLabel: 'نوع الكيان',
+  auditFilterTargetTypePlaceholder: 'جميع الكيانات',
+  auditFilterDateFromLabel: 'من تاريخ',
+  auditFilterDateToLabel: 'إلى تاريخ',
+  auditClearFilters: 'مسح التصفية',
+  auditDateRangeError: 'يجب أن يكون تاريخ النهاية بعد تاريخ البداية أو مساوياً له.',
+  auditTableCaption: 'سجلات تدقيق الإجراءات الإدارية',
+  auditColAdmin: 'المسؤول',
+  auditColAction: 'الإجراء',
+  auditColTarget: 'الكيان',
+  auditColWhen: 'التوقيت',
+  auditColDetailsHeader: 'التفاصيل',
+  auditResultCount: 'سجل',
+  auditLoadingLabel: 'جارٍ تحميل سجل التدقيق…',
+  auditEmptyHeading: 'لم يُعثر على سجلات تدقيق',
+  auditEmptyBodyFiltered: 'جرِّب تعديل التصفية.',
+  auditEmptyBodyEmpty: 'لم يتم تسجيل أي إجراءات إدارية حتى الآن.',
+  auditListError: 'فشل تحميل سجل التدقيق. يُرجى المحاولة مرة أخرى.',
+  auditRetry: 'حاول مرة أخرى',
+  auditPrevPage: 'الصفحة السابقة',
+  auditNextPage: 'الصفحة التالية',
+  auditExpandEntry: 'توسيع التفاصيل',
+  auditCollapseEntry: 'طي التفاصيل',
+  auditDetailEventId: 'معرّف الحدث',
+  auditDetailAdmin: 'المسؤول (المنفّذ)',
+  auditDetailAction: 'الإجراء',
+  auditDetailTargetType: 'نوع الكيان',
+  auditDetailTargetId: 'معرّف الكيان',
+  auditDetailOccurredAt: 'وقت الحدث (UTC)',
+  auditDetailCreatedAt: 'تاريخ تسجيل السجل',
+  auditDetailDetailsLabel: 'التفاصيل',
+  auditDetailCopy: 'نسخ',
+  auditDetailCopied: 'تم النسخ!',
+  auditDetailNoDetails: '—',
+
+  // ── P7-13 Gamification section (AR) ──────────────────────────────────────────
+  navGamification: 'الألعاب التعليمية',
+  gamificationHubTitle: 'الألعاب التعليمية',
+  gamificationHubSubtitle: 'إدارة الشارات والمهام والأحداث الزمنية وتجاوزات الطلاب.',
+  gamificationHubManage: 'إدارة',
+  gamificationStudentOverridesHeading: 'تجاوزات الطلاب',
+  gamificationStudentOverridesNotice:
+    'يُطلق تجاوز درجة الدوري ومنح تجميد السلسلة من صفحة تفاصيل الطالب. انتقل إلى المستخدمين، واختر حساب طالب، ثم استخدم قسم الألعاب التعليمية في بطاقة الإجراءات.',
+  gamEditBtn: 'تعديل',
+  gamActivateBtn: 'تفعيل',
+  gamDeactivateBtn: 'إلغاء التفعيل',
+  gamExpireBtn: 'إنهاء',
+  gamDialogCancelBtn: 'إلغاء',
+  gamBadgesPageTitle: 'كتالوج الشارات',
+  gamBadgesNewBtn: 'شارة جديدة',
+  gamBadgesEmptyHeading: 'لا توجد شارات محددة',
+  gamBadgesEmptyBody: 'أنشئ أول شارة للبدء.',
+  gamBadgeDeactivateTitle: 'إلغاء تفعيل الشارة',
+  gamBadgeDeactivateNotice:
+    'لن تُعرض هذه الشارة للإنجازات الجديدة. يحتفظ الطلاب الذين كسبوها بها — لا تُحذف الشارات المكتسبة أبدًا.',
+  gamBadgeActivateTitle: 'تفعيل الشارة',
+  gamBadgeActivateNotice: 'ستكون هذه الشارة متاحة للإنجازات الجديدة.',
+  gamBadgeFormCreateTitle: 'شارة جديدة',
+  gamBadgeFormCreateSubtitle: 'أنشئ شارة جديدة للكتالوج.',
+  gamBadgeFormEditTitle: 'تعديل الشارة',
+  gamBadgeFormEditSubtitle: 'حدِّث تفاصيل الشارة. لا يمكن تغيير الكود.',
+  gamBadgeFormCodeLabel: 'الكود',
+  gamBadgeFormCodePlaceholder: 'مثال: FIRST_LESSON',
+  gamBadgeFormCodeHint: 'لا يمكن تغيير الكود بعد الإنشاء.',
+  gamBadgeFormNameLabel: 'الاسم',
+  gamBadgeFormNamePlaceholder: 'مثال: الخطوات الأولى',
+  gamBadgeFormDescLabel: 'الوصف',
+  gamBadgeFormIconKeyLabel: 'مفتاح الأيقونة',
+  gamBadgeFormIconKeyPlaceholder: 'مثال: star, trophy, flame',
+  gamBadgeFormIconKeyHint: 'المعرف الذي يستخدمه تطبيق الطالب لعرض أيقونة الشارة.',
+  gamBadgeFormRarityLabel: 'الندرة',
+  gamBadgeFormRarityPlaceholder: 'اختر الندرة',
+  gamBadgeFormTriggerLabel: 'المُشغِّل',
+  gamBadgeFormThresholdLabel: 'العتبة',
+  gamBadgeFormThresholdRequired: 'العتبة مطلوبة لهذا النوع من المشغلات.',
+  gamBadgeFormRewardXpLabel: 'نقاط المكافأة',
+  gamBadgeFormSortOrderLabel: 'ترتيب الفرز',
+  gamBadgeFormSortOrderHint: 'تظهر القيم الأقل أولًا في الكتالوج.',
+  gamBadgeFormCancelBtn: 'إلغاء',
+  gamBadgeFormCreateBtn: 'إنشاء الشارة',
+  gamBadgeFormSaveBtn: 'حفظ التغييرات',
+  gamMissionsPageTitle: 'كتالوج المهام',
+  gamMissionsNewBtn: 'مهمة جديدة',
+  gamMissionsEmptyHeading: 'لا توجد مهام محددة',
+  gamMissionsEmptyBody: 'أنشئ أول مهمة للبدء.',
+  gamMissionDeactivateTitle: 'إلغاء تفعيل المهمة',
+  gamMissionDeactivateNotice: 'لن تُسنَد هذه المهمة للطلاب بعد الآن.',
+  gamMissionActivateTitle: 'تفعيل المهمة',
+  gamMissionActivateNotice: 'ستُسنَد هذه المهمة للطلاب مجددًا.',
+  gamMissionFormCreateTitle: 'مهمة جديدة',
+  gamMissionFormCreateSubtitle: 'أنشئ مهمة جديدة للكتالوج.',
+  gamMissionFormEditTitle: 'تعديل المهمة',
+  gamMissionFormEditSubtitle: 'حدِّث تفاصيل المهمة. لا يمكن تغيير الكود.',
+  gamMissionFormCodeLabel: 'الكود',
+  gamMissionFormIconKeyLabel: 'مفتاح الأيقونة',
+  gamMissionFormTitleKeyLabel: 'مفتاح العنوان (ترجمة)',
+  gamMissionFormTitleKeyHint:
+    "مفتاح البحث في الترجمة لعنوان المهمة، وليس النص المعروض. مثال: 'mission.daily_lessons'",
+  gamMissionFormCadenceLabel: 'الدورية',
+  gamMissionFormTargetTypeLabel: 'نوع الهدف',
+  gamMissionFormTargetLabel: 'عدد الهدف',
+  gamMissionFormRewardXpLabel: 'نقاط المكافأة',
+  gamMissionFormSortOrderLabel: 'ترتيب الفرز',
+  gamMissionFormCancelBtn: 'إلغاء',
+  gamMissionFormCreateBtn: 'إنشاء المهمة',
+  gamMissionFormSaveBtn: 'حفظ التغييرات',
+  gamEventsPageTitle: 'الأحداث الزمنية',
+  gamEventsNewBtn: 'حدث جديد',
+  gamEventsEmptyHeading: 'لا توجد أحداث زمنية',
+  gamEventsEmptyBody: 'أنشئ أول حدث زمني للبدء.',
+  gamEventActivateTitle: 'تفعيل الحدث',
+  gamEventActivateNotice:
+    'سيُطبَّق مُضاعِف النقاط فورًا خلال نافذة الحدث النشطة.',
+  gamEventExpireTitle: 'إنهاء الحدث',
+  gamEventExpireNotice:
+    'سيُصنَّف الحدث على الفور كمنتهٍ ويتوقف تطبيق مُضاعِف النقاط.',
+  gamEventActivateConfirmBtn: 'تفعيل الحدث',
+  gamEventExpireConfirmBtn: 'إنهاء الحدث',
+  gamEventFormCreateTitle: 'حدث زمني جديد',
+  gamEventFormCreateSubtitle: 'جدوِل حدثًا جديدًا لمضاعفة النقاط.',
+  gamEventFormEditTitle: 'تعديل الحدث الزمني',
+  gamEventFormEditSubtitle: 'حدِّث تفاصيل الحدث. لا يمكن تغيير الكود.',
+  gamEventFormCodeLabel: 'الكود',
+  gamEventFormNameEnLabel: 'اسم الحدث (إنجليزي)',
+  gamEventFormNameArLabel: 'اسم الحدث (عربي)',
+  gamEventFormDescEnLabel: 'الوصف (إنجليزي، اختياري)',
+  gamEventFormDescArLabel: 'الوصف (عربي، اختياري)',
+  gamEventFormStartLabel: 'البدء (UTC)',
+  gamEventFormEndLabel: 'الانتهاء (UTC)',
+  gamEventFormUtcHint: 'أدخل الوقت بتوقيت UTC. تُخزَّن الأوقات وتُعرض بتوقيت UTC.',
+  gamEventFormEndBeforeStart: 'يجب أن يكون وقت الانتهاء بعد وقت البدء.',
+  gamEventFormMultiplierLabel: 'مُضاعِف النقاط',
+  gamEventFormMultiplierHint: 'النطاق: ١٫٠ – ٥٫٠. مثال: ٢٫٠ تضاعف النقاط المكتسبة.',
+  gamEventFormScopeLabel: 'النطاق',
+  gamEventFormScopeNotice:
+    'نطاق كل النقاط فقط هو النشط حاليًا في المحرك. نقاط المهام ونقاط الدوري متاحة للاستخدام المستقبلي.',
+  gamEventFormCreateBtn: 'إنشاء الحدث',
+  gamEventFormSaveBtn: 'حفظ التغييرات',
+  gamEventFormCancelBtn: 'إلغاء',
+  gamOverridesHeading: 'تجاوزات الألعاب التعليمية',
+  gamLeagueTierBtn: 'تجاوز درجة الدوري',
+  gamLeagueTierDialogTitle: 'تجاوز درجة الدوري',
+  gamLeagueTierCurrentLabel: 'درجة الدوري الحالية',
+  gamLeagueTierUnknown: 'لا توجد بيانات',
+  gamLeagueTierCaveat:
+    'مأخوذ من بيانات النشاط الأسبوعي — قد يختلف عن الدرجة المخزَّنة.',
+  gamLeagueTierNewLabel: 'الدرجة الجديدة',
+  gamLeagueTierSelectPlaceholder: 'اختر الدرجة',
+  gamLeagueTierAuditNotice:
+    'يُسجَّل هذا التجاوز ويُطبَّق على درجة الدوري الحالية للطالب. النقاط والتقدم غير متأثرَين.',
+  gamLeagueTierReasonLabel: 'السبب (مطلوب)',
+  gamLeagueTierConfirmBtn: 'تجاوز الدرجة',
+  gamLeagueTierSuccessBanner: 'تم تجاوز درجة دوري {name}.',
+  gamLeagueTierErr400SameTier: 'هذه هي درجة الدوري الحالية للطالب بالفعل.',
+  gamLeagueTierErr404: 'لم يُعثر على حساب الطالب.',
+  gamLeagueTierErr422: 'السبب مطلوب ويجب أن يكون أقل من ٥٠٠ حرف.',
+  gamLeagueTierErrNetwork: 'حدث خطأ ما. يُرجى المحاولة مرة أخرى.',
+  gamFreezeFreezeBtn: 'منح تجميد السلسلة',
+  gamFreezeDialogTitle: 'منح تجميد السلسلة',
+  gamFreezeBalanceUnavailable:
+    'رصيد التجميد الحالي: غير متاح (لا يوجد نقطة قراءة — راجع المتابعة Q2).',
+  gamFreezeCountLabel: 'عدد التجميدات',
+  gamFreezeCountHint: 'الحد الأقصى ٢ لكل منحة',
+  gamFreezeReasonLabel: 'السبب (مطلوب)',
+  gamFreezeConfirmBtn: 'منح التجميد',
+  gamFreezeSuccessBanner: 'تم منح تجميد السلسلة لـ {name}.',
+  gamFreezeErrCount: 'يجب أن يكون العدد بين ١ و٢.',
+  gamFreezeErr404: 'لم يُعثر على حساب الطالب.',
+  gamFreezeErr422: 'السبب مطلوب ويجب أن يكون أقل من ٥٠٠ حرف.',
+  gamFreezeErrNetwork: 'حدث خطأ ما. يُرجى المحاولة مرة أخرى.',
+
+  // ── P7-13 additional keys (AR) ────────────────────────────────────────────
+  gamification: 'التلعيب',
+  gamCancelBtn: 'إلغاء',
+  gamRetry: 'إعادة المحاولة',
+
+  gamBadgePageTitle: 'كتالوج الشارات',
+  gamBadgeCreateBtn: 'شارة جديدة',
+  gamBadgeActive: 'نشط',
+  gamBadgeInactive: 'غير نشط',
+  gamBadgeLoading: 'جارٍ تحميل كتالوج الشارات…',
+  gamBadgeFetchError: 'فشل تحميل الشارات.',
+  gamBadgeEmpty: 'لا توجد شارات محددة. أنشئ أول شارة للبدء.',
+  gamBadgeCreateFirst: 'إنشاء شارة',
+  gamBadgeEditBtn: 'تعديل',
+  gamBadgeActivateBtn: 'تفعيل',
+  gamBadgeDeactivateBtn: 'تعطيل',
+  gamBadgeTableCaption: 'كتالوج الشارات',
+  gamBadgeColCode: 'الرمز',
+  gamBadgeColName: 'الاسم',
+  gamBadgeColRarity: 'الندرة',
+  gamBadgeColTrigger: 'المُشغِّل',
+  gamBadgeColXp: 'نقاط الخبرة',
+  gamBadgeColStatus: 'الحالة',
+  gamBadgeColActions: 'الإجراءات',
+  gamBadgeDeactivateSubtitle: 'تعطيل "{name}"؟',
+  gamBadgeDeactivateNote: 'لن يُمنح هذا الوسام لأي إنجازات جديدة.',
+  gamBadgeDeactivateConfirmBtn: 'تعطيل',
+  gamBadgeActivateSubtitle: 'تفعيل "{name}"؟',
+  gamBadgeActivateNote: 'سيُمنح هذا الوسام مجددًا للإنجازات المستحقة.',
+  gamBadgeActivateConfirmBtn: 'تفعيل',
+  gamBadgeActivatedBanner: 'تم تفعيل الشارة.',
+  gamBadgeDeactivatedBanner: 'تم تعطيل الشارة.',
+  gamBadgeNotFoundError: 'الشارة غير موجودة.',
+  gamBadgeActionError: 'حدث خطأ ما. يُرجى المحاولة مرة أخرى.',
+
+  gamMissionPageTitle: 'كتالوج المهام',
+  gamMissionCreateBtn: 'مهمة جديدة',
+  gamMissionActive: 'نشطة',
+  gamMissionInactive: 'غير نشطة',
+  gamMissionLoading: 'جارٍ تحميل كتالوج المهام…',
+  gamMissionFetchError: 'فشل تحميل المهام.',
+  gamMissionEmpty: 'لا توجد مهام محددة. أنشئ أول مهمة للبدء.',
+  gamMissionCreateFirst: 'إنشاء مهمة',
+  gamMissionEditBtn: 'تعديل',
+  gamMissionActivateBtn: 'تفعيل',
+  gamMissionDeactivateBtn: 'تعطيل',
+  gamMissionTableCaption: 'كتالوج المهام',
+  gamMissionColTitle: 'العنوان',
+  gamMissionColType: 'النوع',
+  gamMissionColTargetType: 'نوع الهدف',
+  gamMissionColTargetCount: 'الهدف',
+  gamMissionColXp: 'نقاط الخبرة',
+  gamMissionColStatus: 'الحالة',
+  gamMissionColActions: 'الإجراءات',
+  gamMissionDeactivateSubtitle: 'تعطيل "{name}"؟',
+  gamMissionDeactivateNote: 'لن تُسند هذه المهمة للطلاب بعد الآن.',
+  gamMissionDeactivateConfirmBtn: 'تعطيل',
+  gamMissionActivateSubtitle: 'تفعيل "{name}"؟',
+  gamMissionActivateNote: 'ستُسند هذه المهمة للطلاب مجددًا.',
+  gamMissionActivateConfirmBtn: 'تفعيل',
+  gamMissionActivatedBanner: 'تم تفعيل المهمة.',
+  gamMissionDeactivatedBanner: 'تم تعطيل المهمة.',
+  gamMissionNotFoundError: 'المهمة غير موجودة.',
+  gamMissionActionError: 'حدث خطأ ما. يُرجى المحاولة مرة أخرى.',
+  gamMissionFormTitleLabel: 'العنوان',
+  gamMissionFormDescLabel: 'الوصف (اختياري)',
+  gamMissionFormTypeLabel: 'نوع المهمة',
+  gamMissionFormTypePlaceholder: 'اختر النوع',
+  gamMissionFormTargetCountLabel: 'عدد الهدف',
+  gamMissionFormSortOrderHint: 'القيم الأصغر تظهر أولاً.',
+
+  gamEventPageTitle: 'الأحداث الزمنية',
+  gamEventCreateBtn: 'حدث جديد',
+  gamEventLoading: 'جارٍ تحميل الأحداث الزمنية…',
+  gamEventFetchError: 'فشل تحميل الأحداث الزمنية.',
+  gamEventEmpty: 'لا توجد أحداث زمنية. أنشئ حدثًا لجدولة مضاعف النقاط.',
+  gamEventCreateFirst: 'إنشاء حدث',
+  gamEventEditBtn: 'تعديل',
+  gamEventActivateBtn: 'تفعيل',
+  gamEventExpireBtn: 'إنهاء',
+  gamEventTableCaption: 'الأحداث الزمنية',
+  gamEventColName: 'الاسم',
+  gamEventColScope: 'النطاق',
+  gamEventColMultiplier: 'المضاعف',
+  gamEventColStart: 'البدء (UTC)',
+  gamEventColEnd: 'الانتهاء (UTC)',
+  gamEventColStatus: 'الحالة',
+  gamEventColActions: 'الإجراءات',
+  gamEventActivateSubtitle: 'تفعيل "{name}"؟',
+  gamEventActivateNote: 'سيصبح الحدث نشطًا وسيُطبَّق مضاعف نقاط الخبرة.',
+  gamEventExpireSubtitle: 'إنهاء "{name}" الآن؟',
+  gamEventExpireNote: 'سيتوقف الحدث فورًا وسيُوقف مضاعف نقاط الخبرة.',
+  gamEventActivatedBanner: 'تم تفعيل الحدث.',
+  gamEventExpiredBanner: 'تم إنهاء الحدث.',
+  gamEventNotFoundError: 'الحدث غير موجود.',
+  gamEventActionError: 'حدث خطأ ما. يُرجى المحاولة مرة أخرى.',
+  gamEventFormDescGapNotice:
+    'لا يمكن تعبئة حقول الوصف مسبقًا (غير متوفرة في القائمة). أعد إدخالها إذا أردت تحديثها.',
+  gamEventFormDescGapPlaceholder: 'أعد الإدخال إذا كنت تريد التغيير…',
+  gamEventFormDateHint: 'تُدخَل التواريخ بتوقيتك المحلي وتُحفظ بصيغة UTC.',
+
+  gamLeagueTierDialogBody: 'تعديل دوري {name}. هذا الإجراء مسجَّل.',
+  gamLeagueTierCancelBtn: 'إلغاء',
+  gamLeagueTierError400: 'هذا هو مستوى الدوري الحالي للطالب.',
+  gamLeagueTierError404: 'لم يُعثر على حساب الطالب.',
+  gamLeagueTierError422: 'فشل التحقق. السبب مطلوب.',
+  gamLeagueTierErrorNetwork: 'حدث خطأ ما. يُرجى المحاولة مرة أخرى.',
+  gamLeagueTierReasonPlaceholder: 'سبب تعديل مستوى الدوري…',
+
+  gamFreezeDialogBody: 'منح رموز تجميد السلسلة لـ {name}.',
+  gamFreezeCancelBtn: 'إلغاء',
+  gamFreezeError400: 'طلب غير صالح. يُرجى مراجعة العدد.',
+  gamFreezeError404: 'لم يُعثر على حساب الطالب.',
+  gamFreezeError422: 'فشل التحقق. السبب مطلوب.',
+  gamFreezeErrorNetwork: 'حدث خطأ ما. يُرجى المحاولة مرة أخرى.',
+  gamFreezeReasonPlaceholder: 'سبب منح تجميد السلسلة…',
+
+  // ── P7-09 Moderation Queue (AR) ───────────────────────────────────────────
+  navModeration: 'الإشراف',
+  modPageTitleQueue: 'قائمة الإشراف',
+  modPageTitleDetail: 'عنصر الإشراف',
+  modListHeading: 'قائمة الإشراف',
+  modResultCount: 'عنصر',
+  modSearchPlaceholder: 'ابحث برقم مرجع المحتوى…',
+  modFilterAllStatuses: 'كل الحالات',
+  modFilterAllSources: 'كل المصادر',
+  modFilterAllSubjects: 'كل المواد',
+  modFilterAllGrades: 'كل الصفوف',
+  modClearFilters: 'مسح التصفية',
+  modListLoadingLabel: 'جار تحميل قائمة الإشراف…',
+  modListError: 'فشل تحميل قائمة الإشراف. يُرجى المحاولة مرة أخرى.',
+  modListRetry: 'حاول مرة أخرى',
+  modTableCaption: 'عناصر قائمة الإشراف',
+  modPrevPage: 'الصفحة السابقة',
+  modNextPage: 'الصفحة التالية',
+  modSubjectMath: 'رياضيات',
+  modSubjectScience: 'علوم',
+  modSubjectArabic: 'عربي',
+  modSubjectEnglish: 'إنجليزي',
+  modEmptyNoFilters: 'لا توجد عناصر في القائمة',
+  modEmptyNoFiltersBody: 'قائمة الإشراف فارغة.',
+  modEmptyFiltered: 'لا توجد عناصر مطابقة',
+  modEmptyFilteredBody: 'لا تتطابق أي عناصر مع التصفية الحالية.',
+  modColSource: 'المصدر',
+  modColContentRef: 'مرجع المحتوى',
+  modColSubjectGrade: 'المادة / الصف',
+  modColTaskKind: 'نوع المهمة',
+  modColStatus: 'الحالة',
+  modColDetected: 'اكتُشف',
+  modViewDetail: 'عرض العنصر',
+  modStatusPending: 'قيد المراجعة',
+  modStatusApproved: 'موافق عليه',
+  modStatusRejected: 'مرفوض',
+  modStatusFlagged: 'مُعلَّق',
+  modSourceAiOutput: 'مخرج الذكاء الاصطناعي',
+  modSourceCurriculumUpload: 'رفع المنهج',
+  modDetailLoadingLabel: 'جار تحميل عنصر الإشراف…',
+  modDetailError: 'فشل تحميل عنصر الإشراف هذا.',
+  modNotFoundHeading: 'العنصر غير موجود',
+  modNotFoundBody: 'عنصر الإشراف هذا غير موجود أو تم إزالته.',
+  modBackToQueue: 'العودة إلى القائمة',
+  modSectionDetails: 'تفاصيل العنصر',
+  modSectionReviewHistory: 'سجل المراجعة',
+  modFieldStudentId: 'معرّف الطالب',
+  modFieldDetectedAt: 'اكتُشف في',
+  modFieldItemId: 'المُعرِّف',
+  modReviewedBy: 'راجعه',
+  modReviewedAt: 'وقت المراجعة',
+  modReviewReason: 'السبب',
+  modTerminalNotice: 'تم حل هذا العنصر بالفعل ولا يمكن مراجعته مجدداً.',
+  modVerdictSection: 'إشارة السلامة الآلية',
+  modVerdictPrivacyNote: 'الإصدار الأول: لا يُخزَّن أي محتوى خام — تحتوي هذه الإشارة فقط على أسماء الفحوصات الآلية ورموز الأسباب.',
+  modVerdictFailedChecks: 'الفحوصات الفاشلة',
+  modVerdictReasonCodes: 'رموز الأسباب',
+  modVerdictActionTaken: 'الإجراء المتخذ',
+  modVerdictModelId: 'النموذج',
+  modVerdictUnavailable: 'إشارة السلامة غير متوفرة أو لم تُملأ بعد.',
+  modReviewActionsHeading: 'إجراءات المراجعة',
+  modReviewApprove: 'موافقة',
+  modReviewReject: 'رفض',
+  modReviewFlag: 'الإحالة للتصعيد',
+  modAlreadyFlagged: 'خيار الإحالة غير متاح — العنصر مُحال بالفعل.',
+  modDlgCancel: 'إلغاء',
+  modDlgApproveTitle: 'الموافقة على العنصر',
+  modDlgApproveSubtitle: 'هل تريد الموافقة على عنصر المحتوى هذا؟',
+  modDlgApproveReasonLabel: 'ملاحظة (اختياري)',
+  modDlgApproveConfirm: 'موافقة',
+  modDlgRejectTitle: 'رفض العنصر',
+  modDlgRejectSubtitle: 'رفض عنصر المحتوى هذا.',
+  modDlgRejectReasonLabel: 'سبب الرفض (مطلوب)',
+  modDlgRejectConfirm: 'رفض',
+  modDlgFlagTitle: 'الإحالة للتصعيد',
+  modDlgFlagSubtitle: 'إحالة هذا العنصر للمراجعة الإضافية.',
+  modDlgFlagReasonLabel: 'ملاحظة التصعيد (اختياري)',
+  modDlgFlagConfirm: 'إحالة',
+  modErrAlreadyTerminal: 'تم حل هذا العنصر بالفعل ولا يمكن مراجعته مجدداً.',
+  modErrAlreadyFlagged: 'هذا العنصر مُحال بالفعل — استخدم موافقة أو رفض.',
+  modErr404: 'لم يُعثر على هذا العنصر.',
+  modErrValidation: 'السبب مطلوب ويجب أن يكون أقل من ٢٠٠٠ حرف.',
+  modErrNetwork: 'حدث خطأ ما. يُرجى المحاولة مرة أخرى.',
+  modReviewSuccess: 'تمت المراجعة — تم تحديث الحالة.',
 };
 
 const STRINGS: Record<Locale, AdminStrings> = { en, ar };

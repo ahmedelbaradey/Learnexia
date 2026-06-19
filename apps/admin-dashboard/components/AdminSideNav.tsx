@@ -8,8 +8,8 @@
  * set yet).
  *
  * Nav items:
- *   - "Users"      → /users  — REAL link, active-aware (P7-06-FE-5, Batch A).
- *   - "Curriculum" → placeholder (no route yet), aria-disabled.
+ *   - "Users"      → /users              — REAL link, active-aware (P7-06-FE-5, Batch A).
+ *   - "Curriculum" → /curriculum/subjects — REAL link, active-aware for /curriculum/* (P7-01, active since sub-wave 2a).
  *   - "Content"    → placeholder (no route yet), aria-disabled.
  *
  * Active detection: `usePathname()` → `aria-current="page"` on the active item
@@ -79,11 +79,35 @@ const NAV_ITEMS: readonly NavItem[] = [
   },
   {
     kind: 'real',
+    key: 'moderation',
+    label: strings.navModeration,
+    icon: '🚨',
+    href: '/moderation',
+    activePrefix: '/moderation',
+  },
+  {
+    kind: 'real',
     key: 'curriculum',
     label: strings.navCurriculum,
     icon: '📚',
     href: '/curriculum/subjects',
     activePrefix: '/curriculum',
+  },
+  {
+    kind: 'real',
+    key: 'audit',
+    label: strings.navAuditLog,
+    icon: '🔍',
+    href: '/audit',
+    activePrefix: '/audit',
+  },
+  {
+    kind: 'real',
+    key: 'gamification',
+    label: strings.navGamification,
+    icon: '🎮',
+    href: '/gamification',
+    activePrefix: '/gamification',
   },
   {
     kind: 'placeholder',
