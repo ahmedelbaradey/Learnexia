@@ -1,3 +1,55 @@
+## P7 Curriculum Admin FE — Sub-wave 2c (P7-03) — 2026-06-19 (committed on `feat/P7-curriculum-2c`)
+
+**Sub-wave 2c of the Curriculum admin FE shipped.** Completes Wave 2 — the entire Curriculum admin FE surface (P7-01..05).
+
+**What shipped (FE-only, P7-03):**
+- **P7-03 Skills & Knowledge Graph** (skills list + skill CRUD + graph editor):
+  - Routes: `app/(admin)/curriculum/skills` (list), `/skills/[id]` (detail + graph editor)
+  - Features: 
+    - Skills list: subject-tree scoped, search + concept filter, paginated, IsActive column + toggle, Edit/Delete actions
+    - SkillForm (create/edit modal): name + masteryThreshold (0–100) + estimatedTimeMinutes + concept picker (subject-scoped)
+    - SkillGraph editor (accessible list/adjacency editor, **NO graph-viz/drag library** per lead decision):
+      - Node list (role=listbox, roving tabindex, keyboard nav)
+      - Prerequisites section (incoming Prerequisite edges) + Unlocks section (outgoing edges)
+      - Add prerequisite control (concept picker) with error handling (cycle-guard, cross-language-guard, duplicate-guard)
+      - Remove edge buttons with aria-live announcements
+  - Cycle detection: via DFS on the working graph (FE-side, error message inline + refetch on add/remove)
+  - Cross-language guard: concepts scoped by subject (ConceptListItemDto.subjectId) → can't cross language boundaries
+  - Duplicate guard: backend rejects, FE validates and maps to user-friendly message
+  - Refetch pattern: add/remove mutations → full graph refetch (no optimistic updates per DG-9)
+  - Subject-tree scoping: concept picker filters by currentSubjectId (concept.subjectId === subjectId)
+  - Components: SkillForm, SkillDeleteDialog, SkillGraph, NodeListBox, PrerequisitesSection, UnlocksSection, AddPrerequisiteControl
+  - API hooks: `useSkillList`, `useCreateSkill`, `useUpdateSkill`, `useDeleteSkill`, `useSkillGraph`, `useAddKnowledgeEdge`, `useRemoveKnowledgeEdge`, `useConceptList`
+  - Strings: 60+ EN+AR keys for skills/graph (skill* and skillGraph* namespaces)
+- **Shared constants** (in `@learnexia/shared`): `NODE_TYPE` (0–2: Skill/Concept/Review), `RELATIONSHIP_TYPE` (0–1: Prerequisite/Related)
+- **Design spec:** `design-system/ui_kits/admin-dashboard/P7-03-FE.md`
+
+**v1 Hard-coded limits (per lead decision):**
+- Edge type = Prerequisite only (0) — Related (1) edges supported by backend but UI does not expose (plan D-OQ6 deferred)
+- Edge strength = 1.0 (hard-coded) — no UI for per-edge strength tuning (plan D-OQ6 deferred)
+
+**Gates:** reviewer **PASS**; security-auditor **not required** (curriculum metadata, no PII/content sink, no sensitive operations).
+
+**Known gaps & follow-ups:**
+- **QC + E2E:** admin curriculum E2E harness exists (from Wave 1); curriculum QC + E2E for the whole Wave 2 is a separate user-invoked step (not part of this PR).
+- **D-OQ6 (deferred, non-blocking):** Related edge type + per-edge strength tuning — backend supports, FE UI deferred (plan for Phase 7+ budget review).
+
+**Wave 2 COMPLETE:** All curriculum admin FE shipped across 3 sub-waves:
+- **2a** (PR #175): P7-01 subjects/units + P7-05 lifecycle backbone
+- **2b** (PR #179): P7-02 lessons/content blocks + P7-04 questions
+- **2c** (this PR): P7-03 skill dependency graph
+
+**Remaining admin phase (after curriculum):**
+- **P7-12 (FE):** audit-log viewer (backend shipped, FE in separate phase-7-admin batch)
+- **P7-13 (FE):** gamification-overrides UI (tier/badges/missions/timed-events; backend shipped, FE in separate phase-7-admin batch)
+- **P7-09 (BE):** content-moderation queue (unblocked by P3-11 AI-safety merge; implementation next)
+- **P7-10 (BE):** analytics KPI dashboard (still blocked on P5-03 analytics events — in backlog)
+- **P7-11 (BE):** AI-safety & quality-monitoring dashboard (unblocked by P3 AI merge; implementation next)
+
+**Next step: QC + E2E for Wave 2.** The curriculum admin E2E test suite (Playwright, `admin` project) needs coverage for the full workflow (subject → unit → lesson + content blocks → questions → skills + graph). Seed data already in place. The lead will trigger this as a separate story/step (as with Wave 1 QC).
+
+---
+
 ## P7 Curriculum Admin FE — Sub-wave 2b (P7-02 + P7-04) — 2026-06-19 (committed on `feat/P7-curriculum-2b`)
 
 **Sub-wave 2b of the Curriculum admin FE shipped.** Layers lessons & questions on top of the sub-wave 2a foundation (subjects/units/lifecycle).

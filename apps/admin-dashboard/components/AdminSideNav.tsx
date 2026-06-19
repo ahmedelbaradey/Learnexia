@@ -8,8 +8,8 @@
  * set yet).
  *
  * Nav items:
- *   - "Users"      → /users  — REAL link, active-aware (P7-06-FE-5, Batch A).
- *   - "Curriculum" → placeholder (no route yet), aria-disabled.
+ *   - "Users"      → /users              — REAL link, active-aware (P7-06-FE-5, Batch A).
+ *   - "Curriculum" → /curriculum/subjects — REAL link, active-aware for /curriculum/* (P7-01, active since sub-wave 2a).
  *   - "Content"    → placeholder (no route yet), aria-disabled.
  *
  * Active detection: `usePathname()` → `aria-current="page"` on the active item
