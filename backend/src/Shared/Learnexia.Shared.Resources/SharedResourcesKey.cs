@@ -2121,5 +2121,21 @@
         /// <summary>Call-to-action key for the cold-start recommendation.</summary>
         public const string RecColdStartCta = "RecColdStartCta";
 
+        // ── P7-10 Platform Analytics / KPI Dashboard ─────────────────────────────────────────────
+
+        /// <summary>Returned on successful retrieval of the platform KPI summary.</summary>
+        public const string PlatformKpisRetrievedSuccessfully = "PlatformKpisRetrievedSuccessfully";
+
+        /// <summary>
+        /// Returned when the KPI query window start is not before the end
+        /// (<c>from &gt;= to</c>).
+        /// </summary>
+        public const string PlatformKpisFromMustBeBeforeTo = "PlatformKpisFromMustBeBeforeTo";
+
+        /// <summary>
+        /// Returned when the KPI query window exceeds the maximum allowed span (365 days).
+        /// </summary>
+        public const string PlatformKpisWindowTooLarge = "PlatformKpisWindowTooLarge";
+
     }
 }

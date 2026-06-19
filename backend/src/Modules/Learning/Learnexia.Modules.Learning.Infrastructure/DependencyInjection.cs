@@ -130,6 +130,11 @@ public static class DependencyInjection
         // a student. Consumed by the Parent analytics endpoint (BE-6) and P3-14 Lexi narration.
         services.AddScoped<IStudentRecommendationsQuery, StudentRecommendationsQueryAdapter>();
 
+        // P7-10-BE: Platform-aggregate read seam — platform-wide learning stats for the admin KPI dashboard.
+        // No studentId — returns aggregated counts for ALL students in the window.
+        // Scoped: depends on scoped LearningDbContext.
+        services.AddScoped<IPlatformLearningStatsQuery, PlatformLearningStatsQueryAdapter>();
+
         // Unit-of-Work behavior (ADR 0001 §2 + ADR 0002 §2): commit once per ICommand<>, then dispatch
         // domain events AFTER commit. Registered here in Infrastructure (not Application) because it
         // injects the concrete LearningDbContext. Registered AFTER ValidationBehavior (added in

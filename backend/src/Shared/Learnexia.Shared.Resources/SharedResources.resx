@@ -694,4 +694,13 @@
   <data name="InvalidLanguageCode" xml:space="preserve">
     <value></value>
   </data>
+  <data name="PlatformKpisRetrievedSuccessfully" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="PlatformKpisFromMustBeBeforeTo" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="PlatformKpisWindowTooLarge" xml:space="preserve">
+    <value></value>
+  </data>
 </root>

@@ -84,6 +84,11 @@ public static class DependencyInjection
         // Safety event store — append-only write to ai.SafetyEvents (Scoped — depends on scoped AiDbContext).
         services.AddScoped<IAiSafetyEventStore, AiSafetyEventStore>();
 
+        // P7-10-BE: Platform-aggregate read seam — platform-wide AI safety stats for the admin KPI dashboard.
+        // Reads SafetyEvent table (OccurredAtUtc window). AI request volume N/A (P7-11 AiUsageLogs not yet built).
+        // Scoped: depends on scoped AiDbContext.
+        services.AddScoped<IPlatformAiSafetyStatsQuery, PlatformAiSafetyStatsQueryAdapter>();
+
         // Safety Layer facade — the ONLY type that produces SafeAiResult for feature handlers.
         // AC1 (P3-02): no feature handler may call IAiGateway directly; only ISafetyLayer.
         services.AddScoped<ISafetyLayer, SafetyLayer>();

@@ -17,6 +17,7 @@ using Learnexia.Modules.Gamification.Infrastructure.Queries.Cached;
 using Learnexia.Modules.Gamification.Infrastructure.Repository;
 using Learnexia.Modules.Gamification.Infrastructure.Service;
 using Learnexia.Modules.Gamification.Infrastructure.Services;
+using Learnexia.Modules.Gamification.Infrastructure.Queries;
 using Learnexia.Shared.Contracts.Gamification;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Logging;
@@ -152,6 +153,11 @@ public static class DependencyInjection
         // Scoped: depends on scoped GamificationDbContext. No cache decorator needed here
         // (time-series reads are caller-window-specific; caching is the handler's concern if needed).
         services.AddScoped<IStudentXpTimeSeriesQuery, PostgresStudentXpTimeSeriesQuery>();
+
+        // P7-10-BE: Platform-aggregate read seam — platform-wide engagement stats for the admin KPI dashboard.
+        // Reads XpAward ledger (OccurredAtUtc window) + StudentMission.CompletedAtUtc window.
+        // Scoped: depends on scoped GamificationDbContext.
+        services.AddScoped<IPlatformEngagementQuery, PlatformEngagementQueryAdapter>();
 
         // Unit-of-Work behavior (ADR 0001 §2 + ADR 0002 §2): commit once per ICommand<>, then dispatch
         // domain events AFTER commit. Registered here in Infrastructure (not Application) because it
