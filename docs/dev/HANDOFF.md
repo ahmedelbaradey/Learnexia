@@ -1,3 +1,66 @@
+## P7 Admin Wave 3 — Moderation + Audit + Gamification (P7-09/12/13 Frontend) — 2026-06-19 (committed on `feat/P7-admin-wave3`)
+
+**Wave 3 of the Admin Dashboard shipped — completes the moderation, audit, and gamification admin surfaces.** All three stories are FE-only; their backends were merged in earlier waves (P7-09 #180, P7-12/13 in earlier curriculum waves).
+
+**What shipped (FE-only, P7-09 + P7-12 + P7-13):**
+
+### P7-09: Content Moderation Queue
+- **Routes:** `app/(admin)/moderation/queue` (list), `/queue/[id]` (detail)
+- **Features:**
+  - Moderation queue list: status filter (Pending/Flagged only), source/subject/grade/date/search filters, paginated
+  - Detail view: read-only metadata (source, status, flagged reason-codes + failed checks), nested `ReviewItemDialog` (approve/reject with reason ≤2000 char / flag actions)
+  - Review transitions: Pending → Approved/Rejected/Flagged (terminal-gated by hidden buttons; reason required on Reject)
+  - `SafetyVerdictView` renders reason-codes + failed checks **ONLY**, never raw flagged content (PII-safe)
+  - Verdict enums transmitted as INT on wire
+- **Components:** `ReviewItemDialog`, `SourceBadge`, shared `ReasonField`, `AdminConfirmDialog` (mod-approve/reject/flag variants)
+- **API hooks:** `useModerationQueue`, `useModerationItem`, `useReviewModerationItem` (via `@learnexia/api-client/src/admin/moderation.ts`)
+
+### P7-12: Audit Log Viewer
+- **Routes:** `app/(admin)/audit/logs` (list)
+- **Features:**
+  - Read-only audit-log viewer: action type + actor/target-type filters, date range, pagination
+  - Inline-expand detail: `details` rendered as escaped JSON/text (no export endpoint — backend has none, deferred follow-up)
+  - Action types use badge-style labels with per-type colors
+- **Components:** `AuditEntryDetail`, `ActionTypeBadge`, `auditActionLabels.ts` mapping (EN+AR labels + badge colors)
+- **API hooks:** `useAuditLog` (via `@learnexia/api-client/src/admin/audit.ts`)
+
+### P7-13: Gamification Overrides
+- **Routes:** `app/(admin)/gamification` (badge/mission/timed-event catalog CRUD) + student league-tier/streak-freeze override launch from `users/[id]` (student-only)
+- **Features:**
+  - Badge/Mission/TimedEvent catalogs: read-only list + PATCH activate (activate/retire) + NO delete (soft-retire via IsActive=false)
+  - MissionType constrained to Daily/Weekly only
+  - Multiplier range 1–5, freeze count 1–2
+  - League-tier + streak-freeze grant dialogs (launched from user-detail page), form validation per ranges
+  - Override success toast notifications
+- **Components:** `gamification/BadgeCatalog`, `BAdgeForm`, `MissionCatalog`, `MissionForm`, `TimedEventCatalog`, `TimedEventForm`, `OverrideSuccessToast`
+- **API hooks:** `useBadgeCatalog`, `useCreateBadge`, `useUpdateBadge`, `useActivateBadge`, `useMissionCatalog`, `useCreateMission`, `useUpdateMission`, `useActivateMission`, `useTimedEventCatalog`, `useCreateTimedEvent`, `useUpdateTimedEvent`, `useActivateTimedEvent`, `useGrantLeagueTier`, `useGrantStreakFreeze` (via `@learnexia/api-client/src/admin/gamification.ts`)
+
+### Shared Edits (Wave 3 + existing components)
+- **`ReasonField.tsx`:** near-limit threshold now scales (`floor(maxLength*0.9)`)
+- **`StatusBadge.tsx`:** gained `moderation` variant
+- **`AdminConfirmDialog.tsx`:** gained mod-approve/reject/flag + retire/expire/gamification-override action variants
+- **`AdminSideNav.tsx`:** 3 new nav items (Audit / Gamification / Moderation), active-aware styling
+- **`lib/strings.ts`:** 180+ new EN+AR keys across moderation, audit, and gamification namespaces
+- **Query keys:** `adminAudit`, `adminGamification`, `adminModeration` namespaces added to `queryKeys.ts`
+
+**Gates:** reviewer **PASS** (should-fixes applied) / security-auditor **PASS** (0 Critical/High — verdicts not exposed, enums int-only, no raw content quarantine in v1).
+
+**Known gaps & backend follow-ups (non-blocking):**
+- **Audit export endpoint:** backend has no export endpoint, deferred follow-up.
+- **Student tier + freeze-balance read:** single-student current-tier + freeze-balance endpoint missing (league/freeze dialogs show tier best-effort, "balance not available" fallback).
+- **Timed-event edit prefill:** list DTO omits description + no GET-by-id endpoint → can't prefill in edit mode.
+- **Curriculum lifecycle-state on DTOs (DG-2 follow-up):** still open — list DTOs may omit `lifecycleState` field.
+
+**Test status:** no backend integration e2e added (FE-only); admin Playwright E2E suite needs coverage for Wave 2 (curriculum) + Wave 3 (moderation/audit/gamification) — deferred, next FE step.
+
+**Pre-existing Wave-2 lint nits (non-blocking):** `@learnexia/api-client` warnings in `useAddKnowledgeEdge`, `useCreateSkill`, `useEditQuestion`, `useUpdateSkill` (`no-unused-vars`) — flagged for cleanup ticket (not introduced by Wave 3).
+
+**Remaining admin phase:**
+- **P7-11 (FE):** AI-safety dashboard (blocked — backend lead building the real slice)
+- **P7-10 (FE):** analytics KPI dashboard (blocked on P5-03 data decision)
+- **Next QC + E2E:** admin Playwright specs for Wave 2 (curriculum) + Wave 3 (all admin surfaces) on the existing `admin` project (Wave 1 user/account already covered).
+
+---
 ## P7 Curriculum Admin FE — Sub-wave 2c (P7-03) — 2026-06-19 (committed on `feat/P7-curriculum-2c`)
 
 **Sub-wave 2c of the Curriculum admin FE shipped.** Completes Wave 2 — the entire Curriculum admin FE surface (P7-01..05).
