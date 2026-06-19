@@ -107,6 +107,7 @@ public sealed class GetPlatformKpisQueryHandler
                 DistinctActiveStudents    = learning.DistinctActiveStudents,
                 BySubject                 = learning.BySubject,
                 ByGrade                   = learning.ByGrade,
+                ByLanguage                = learning.ByLanguage,
 
                 // Engagement
                 MissionsCompleted         = engagement.MissionsCompleted,

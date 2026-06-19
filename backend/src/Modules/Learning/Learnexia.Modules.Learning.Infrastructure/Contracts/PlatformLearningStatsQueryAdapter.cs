@@ -60,7 +60,8 @@ public sealed class PlatformLearningStatsQueryAdapter : IPlatformLearningStatsQu
                 TotalAttempts: 0,
                 DistinctActiveStudents: 0,
                 BySubject: [],
-                ByGrade: []);
+                ByGrade: [],
+                ByLanguage: []);
         }
 
         int lessonsCompleted = attempts.Select(a => a.LessonId).Distinct().Count();
@@ -124,11 +125,24 @@ public sealed class PlatformLearningStatsQueryAdapter : IPlatformLearningStatsQu
             .OrderBy(b => b.GradeId)
             .ToList();
 
+        // ByLanguage group-by — curriculum is bilingual parallel trees, so language (ar/en)
+        // is a first-class breakdown dimension alongside subject and grade (P7-10 AC).
+        var byLanguage = enriched
+            .GroupBy(e => e.Language)
+            .Select(g => new LanguageBreakdown(
+                Language:              g.Key,
+                LessonsCompleted:      g.Select(e => e.LessonId).Distinct().Count(),
+                TotalAttempts:         g.Count(),
+                DistinctActiveStudents: g.Select(e => e.StudentId).Distinct().Count()))
+            .OrderBy(b => b.Language)
+            .ToList();
+
         return new PlatformLearningStats(
             LessonsCompleted:       lessonsCompleted,
             TotalAttempts:          totalAttempts,
             DistinctActiveStudents: distinctActiveStudents,
             BySubject:              bySubject,
-            ByGrade:                byGrade);
+            ByGrade:                byGrade,
+            ByLanguage:             byLanguage);
     }
 }

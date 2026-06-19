@@ -56,12 +56,18 @@ public interface IPlatformLearningStatsQuery
 /// Per-<see cref="GradeBreakdown"/> aggregation.
 /// Empty when no data exists.
 /// </param>
+/// <param name="ByLanguage">
+/// Per-<see cref="LanguageBreakdown"/> aggregation (ar/en). The curriculum is bilingual
+/// parallel trees, so language is a first-class breakdown dimension (story P7-10 AC).
+/// Empty when no data exists.
+/// </param>
 public record PlatformLearningStats(
     int LessonsCompleted,
     int TotalAttempts,
     int DistinctActiveStudents,
     IReadOnlyList<SubjectBreakdown> BySubject,
-    IReadOnlyList<GradeBreakdown> ByGrade);
+    IReadOnlyList<GradeBreakdown> ByGrade,
+    IReadOnlyList<LanguageBreakdown> ByLanguage);
 
 /// <summary>
 /// Completion counts for a single subject (identified by code + language) in the analytics window.
@@ -87,6 +93,20 @@ public record SubjectBreakdown(
 /// <param name="DistinctActiveStudents">Distinct students active within this grade.</param>
 public record GradeBreakdown(
     int GradeId,
+    int LessonsCompleted,
+    int TotalAttempts,
+    int DistinctActiveStudents);
+
+/// <summary>
+/// Completion counts for a single curriculum language (ar/en) in the analytics window.
+/// Lets an admin compare engagement/throughput across the two parallel-tree languages.
+/// </summary>
+/// <param name="Language">Content language (0 = Ar, 1 = En).</param>
+/// <param name="LessonsCompleted">Distinct lessons completed within this language tree.</param>
+/// <param name="TotalAttempts">Total completed attempts within this language tree.</param>
+/// <param name="DistinctActiveStudents">Distinct students active within this language tree.</param>
+public record LanguageBreakdown(
+    int Language,
     int LessonsCompleted,
     int TotalAttempts,
     int DistinctActiveStudents);

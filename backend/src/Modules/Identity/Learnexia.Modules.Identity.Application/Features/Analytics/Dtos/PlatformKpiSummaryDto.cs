@@ -55,8 +55,15 @@ public sealed record PlatformKpiSummaryDto
         "N/A (quiz attempts are not distinguishable from lesson attempts — same Attempt entity; use LessonsCompleted)";
 
     // ── Learning breakdowns (real data, may be empty if no data in window) ────────────────────────
-    public IReadOnlyList<SubjectBreakdown> BySubject { get; init; } = [];
-    public IReadOnlyList<GradeBreakdown>   ByGrade   { get; init; } = [];
+    public IReadOnlyList<SubjectBreakdown>  BySubject  { get; init; } = [];
+    public IReadOnlyList<GradeBreakdown>    ByGrade    { get; init; } = [];
+
+    /// <summary>
+    /// Completion breakdown by curriculum language (ar/en). The curriculum is bilingual
+    /// parallel trees, so language is a first-class breakdown dimension (story P7-10 AC) —
+    /// it lets an admin compare engagement/throughput across the two languages.
+    /// </summary>
+    public IReadOnlyList<LanguageBreakdown> ByLanguage { get; init; } = [];
 
     // ── Engagement KPIs (real data from Gamification) ────────────────────────────────────────────
     public int  MissionsCompleted { get; init; }
