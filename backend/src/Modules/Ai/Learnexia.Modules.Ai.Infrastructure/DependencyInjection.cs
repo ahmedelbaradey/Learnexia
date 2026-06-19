@@ -85,6 +85,11 @@ public static class DependencyInjection
         // Safety event store — append-only write to ai.SafetyEvents (Scoped — depends on scoped AiDbContext).
         services.AddScoped<IAiSafetyEventStore, AiSafetyEventStore>();
 
+        // P7-10-BE: Platform-aggregate read seam — platform-wide AI safety stats for the admin KPI dashboard.
+        // Reads SafetyEvent table (OccurredAtUtc window). AI request volume N/A (P7-11 AiUsageLogs not yet built).
+        // Scoped: depends on scoped AiDbContext.
+        services.AddScoped<IPlatformAiSafetyStatsQuery, PlatformAiSafetyStatsQueryAdapter>();
+
         // ── P7-11 AI-safety admin dashboard (read model) ─────────────────────────────
         // Scoped — depends on scoped AiDbContext; owns all EF read queries for the dashboard.
         services.AddScoped<IAiSafetyDashboardService, AiSafetyDashboardService>();

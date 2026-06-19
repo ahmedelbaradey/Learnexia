@@ -1,3 +1,29 @@
+## P7-10 Platform analytics & KPI dashboard (backend) — 2026-06-19 (`feat/P7-10-platform-analytics`)
+
+**The last buildable admin story is built.** P7-10 was previously called "blocked on P5-03" — that was over-broad. Buildability brief (`docs/briefs/P7-10-analytics-buildability.md`) re-assessed it KPI-by-KPI: ~8 of ~13 facets are derivable **now** over existing module tables; only true retention-cohorts + session-duration genuinely need P5-03. Built as an **honest v1**.
+
+**What shipped (backend-only):**
+- **4 new platform-aggregate read seams in `Shared.Contracts`** (mirror the per-student `IStudentLearningStatsQuery` template, but platform-wide / no studentId):
+  - `IPlatformLearningStatsQuery` (Learning) — lessons/quizzes/attempts completed, distinct active students, subject/grade breakdowns.
+  - `IPlatformEngagementQuery` (Gamification) — XP earned in window, missions completed.
+  - `IPlatformSubscriptionStatsQuery` (Billing) — active subs by tier (+ revenue N/A marker, Fake provider).
+  - `IPlatformAiSafetyStatsQuery` (Ai) — blocks/flags over `ai.SafetyEvents` (+ request-volume N/A until `AiUsageLogs`, P7-11 cost slice).
+- **Infrastructure adapters** in each module (`AsNoTracking` group-by), each registered `Scoped` in that module's `AddXInfrastructure` DI.
+- **Thin façade** (no new module, no new schema): `GetPlatformKpisQuery`/Handler + `PlatformKpiSummaryDto` in **Identity.Application** (injects only the 4 `Shared.Contracts` seams); fans out via `Task.WhenAll` over the 4 **distinct** DbContexts. `AdminAnalyticsController` → `api/Admin/Analytics`, `[Authorize(AdminOnly)]`, in-handler range validation (from<to, ≤365d).
+- **Honest-v1 markers (no fabricated numbers):** retention + session-duration → "available after P5-03" reason strings; revenue + AI-request-volume → non-null N/A reasons; DAU → labelled `DistinctActiveStudents` **activity** proxy (not a session metric). 3 i18n keys (EN+AR).
+
+**Gates:** build 0 errors; suites Learning 382 / Gamification 19 / Billing 166 / Ai 358; **api-tester 21/21**; **security-auditor PASS** (1 Info nit only); **reviewer PASS** (module isolation + `Task.WhenAll` correctness + honest-v1 + localization all verified).
+
+**Documented follow-ups (non-blocking, not built):**
+- Learning adapter computes `Distinct().Count()` + breakdowns **in memory** after `ToListAsync` — accepted v1 trade-off (admin-only, low traffic); DB-side `GROUP BY` push is the scalability follow-up.
+- Redis-cached aggregates (NFR-1) deferred — addable behind the same handler, no contract change.
+- N/A reason strings are hardcoded English (operator-facing) — same deferred "localize persisted strings" nit as elsewhere; FE may localize by reason-code.
+- True DAU/WAU/MAU + retention-cohorts + session-duration **upgrade behind the same endpoint** once P5-03 (session/event backbone) is built as its own story.
+
+**Admin backend status:** P7-01..08 + P7-12/13 (earlier waves) · **P7-09 moderation queue MERGED (#180)** · **P7-11 AI-safety dashboard slice** PR **#184 (open)** · **P7-10** this PR. The only admin backend work NOT done is the **rule-#8-held P7-11 tutor-cost sub-batch** (gateway-write pattern for `ai.AiUsageLogs` — awaiting lead's Decision 1: fire-and-forget vs outbox vs skip).
+
+---
+
 ## P7-11 AI-safety dashboard (buildable slice) — 2026-06-19 (PR open)
 
 Second of the remaining admin trio. Built the slice buildable NOW from the existing `ai.SafetyEvents` (no new table, no seam) on `feat/P7-11-ai-safety-dashboard` (base main).

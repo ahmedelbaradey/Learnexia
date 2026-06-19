@@ -2627,6 +2627,15 @@
   <data name="ModerationItemAlreadyFlagged" xml:space="preserve">
     <value>هذا العنصر في حالة إحالة بالفعل.</value>
   </data>
+  <data name="PlatformKpisRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد مؤشرات الأداء الرئيسية للمنصة بنجاح.</value>
+  </data>
+  <data name="PlatformKpisFromMustBeBeforeTo" xml:space="preserve">
+    <value>يجب أن يكون تاريخ البداية قبل تاريخ النهاية.</value>
+  </data>
+  <data name="PlatformKpisWindowTooLarge" xml:space="preserve">
+    <value>النطاق الزمني المطلوب يتجاوز الحد الأقصى المسموح به البالغ 365 يوماً.</value>
+  </data>
   <data name="AiSafetySignalSummaryRetrievedSuccessfully" xml:space="preserve">
     <value>تم استرداد ملخص إشارات سلامة الذكاء الاصطناعي بنجاح.</value>
   </data>

@@ -2628,6 +2628,15 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="ModerationItemAlreadyFlagged" xml:space="preserve">
     <value>This moderation item is already flagged.</value>
   </data>
+  <data name="PlatformKpisRetrievedSuccessfully" xml:space="preserve">
+    <value>Platform KPIs retrieved successfully.</value>
+  </data>
+  <data name="PlatformKpisFromMustBeBeforeTo" xml:space="preserve">
+    <value>The 'from' date must be before the 'to' date.</value>
+  </data>
+  <data name="PlatformKpisWindowTooLarge" xml:space="preserve">
+    <value>The requested date range exceeds the maximum allowed window of 365 days.</value>
+  </data>
   <data name="AiSafetySignalSummaryRetrievedSuccessfully" xml:space="preserve">
     <value>AI safety signal summary retrieved successfully.</value>
   </data>

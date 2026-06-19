@@ -251,6 +251,11 @@ public static class DependencyInjection
         // Scoped: depends on scoped BillingDbContext.
         services.AddScoped<IChildEnergyUsageQuery, PostgresChildEnergyUsageQuery>();
 
+        // P7-10-BE: Platform-aggregate read seam — platform-wide subscription stats for the admin KPI dashboard.
+        // Reads Subscription table (active rows grouped by PlanCode). Revenue N/A in v1 (Fake provider).
+        // Scoped: depends on scoped BillingDbContext.
+        services.AddScoped<IPlatformSubscriptionStatsQuery, PlatformSubscriptionStatsQueryAdapter>();
+
         return services;
     }
 }
