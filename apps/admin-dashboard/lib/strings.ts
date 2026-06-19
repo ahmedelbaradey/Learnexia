@@ -588,6 +588,314 @@ export interface AdminStrings {
   clCoverageSuccess: string;
   clCoverageError: string;
   clCoverageGoToSubjects: string;
+
+  // ── P7-02 Lessons & Content Blocks (lesson* / block* namespace) ──────────────
+  // Page titles
+  lessonPageTitle: string;
+  lessonContentEditorTitle: string;
+  // Lessons list page
+  lessonListHeading: string;
+  lessonResultCount: string;
+  lessonListLoadingLabel: string;
+  lessonListError: string;
+  lessonTableCaption: string;
+  lessonNoResults: string;
+  lessonNoResultsHint: string;
+  lessonViewDetail: string;
+  lessonNewBtn: string;
+  lessonPrevPage: string;
+  lessonNextPage: string;
+  // Table columns
+  lessonColOrder: string;
+  lessonColTitle: string;
+  lessonColDifficulty: string;
+  lessonColDuration: string;
+  lessonColLock: string;
+  lessonColActive: string;
+  // Difficulty badge labels
+  lessonDifficultyEasy: string;
+  lessonDifficultyMedium: string;
+  lessonDifficultyHard: string;
+  // Lock badge labels
+  lessonLocked: string;
+  lessonUnlocked: string;
+  // Lesson form
+  lessonFormCreateTitle: string;
+  lessonFormCreateSubtitle: string;
+  lessonFormEditTitle: string;
+  lessonFormEditSubtitle: string;
+  lessonFormNameLabel: string;
+  lessonFormNamePlaceholder: string;
+  lessonFormDifficultyLabel: string;
+  lessonFormDifficultyPlaceholder: string;
+  lessonFormMinutesLabel: string;
+  lessonFormMinutesHint: string;
+  lessonFormLockedLabel: string;
+  lessonFormLockedOnHint: string;
+  lessonFormLockedOffHint: string;
+  lessonFormActiveLabel: string;
+  lessonFormActiveOnHint: string;
+  lessonFormActiveOffHint: string;
+  lessonFormInheritedLangPrefix: string;
+  lessonFormCancelBtn: string;
+  lessonFormCreateBtn: string;
+  lessonFormSaveBtn: string;
+  lessonFormErrNameRequired: string;
+  lessonFormErrDifficultyRequired: string;
+  lessonFormErrMinutesInvalid: string;
+  // Lesson detail actions
+  lessonDetailEditBtn: string;
+  lessonDetailActivateBtn: string;
+  lessonDetailDeactivateBtn: string;
+  lessonDetailDeleteBtn: string;
+  lessonActivateSuccess: string;
+  lessonDeactivateSuccess: string;
+  lessonNotFound: string;
+  lessonNotFoundBody: string;
+  // Inherited language badge
+  lessonInheritedLangLabel: string;
+  lessonInheritedLangAr: string;
+  lessonInheritedLangEn: string;
+  // Reorder
+  lessonReorderSaveBtn: string;
+  lessonReorderMoveUp: string;
+  lessonReorderMoveDown: string;
+  lessonReorderPosition: string;
+  // Delete lesson dialog
+  lessonDeleteTitle: string;
+  lessonDeleteSubtitle: string;
+  lessonDeleteCascadeHeading: string;
+  lessonDeleteCascadeBody: string;
+  lessonDeleteConfirmBtn: string;
+  lessonDeleteCancelBtn: string;
+  lessonDeleteSuccess: string;
+  // Block editor
+  blockEditorHeading: string;
+  blockEditorCountLabel: string;
+  blockEditorAddBtn: string;
+  blockEditorLoadingLabel: string;
+  blockEditorListError: string;
+  blockListError: string;
+  blockEditorEmpty: string;
+  blockEditorEmptyHint: string;
+  blockEditorSaveOrderBtn: string;
+  // Block type picker
+  blockPickerHeading: string;
+  blockPickerText: string;
+  blockPickerImage: string;
+  blockPickerVideo: string;
+  blockPickerCallout: string;
+  // Block type badge labels
+  blockTypeText: string;
+  blockTypeImage: string;
+  blockTypeVideo: string;
+  blockTypeCallout: string;
+  // Block card
+  blockCardNumberPrefix: string;
+  blockCardInactiveNotice: string;
+  blockCardEditBtn: string;
+  blockCardDeleteBtn: string;
+  blockCardMoveUpBtn: string;
+  blockCardMoveDownBtn: string;
+  /** Expand/collapse toggle — collapsed state label. */
+  blockCardExpand: string;
+  /** Expand/collapse toggle — expanded state label. */
+  blockCardCollapse: string;
+  // Block form
+  blockFormAddTitle: string;
+  blockFormEditTitle: string;
+  blockFormCancelBtn: string;
+  blockFormAddConfirm: string;
+  blockFormSaveConfirm: string;
+  blockFormTypeChangeWarning: string;
+  blockFormPayloadTooLarge: string;
+  blockFormMarkdownLabel: string;
+  blockFormMarkdownPlaceholder: string;
+  blockFormMarkdownRequired: string;
+  blockFormImageUrlLabel: string;
+  blockFormImageAltLabel: string;
+  blockFormImageAltPlaceholder: string;
+  blockFormImageAltHint: string;
+  blockFormVideoUrlLabel: string;
+  blockFormVideoCaptionLabel: string;
+  blockFormVideoCaptionPlaceholder: string;
+  blockFormCalloutVariantLabel: string;
+  blockFormCalloutVariantInfo: string;
+  blockFormCalloutVariantWarning: string;
+  blockFormCalloutVariantTip: string;
+  blockFormCalloutMarkdownLabel: string;
+  blockFormUrlRequired: string;
+  blockFormUrlHttpsRequired: string;
+  blockFormUrlPrivateNotAllowed: string;
+  blockFormVariantRequired: string;
+  blockFormUrlHint: string;
+  // Block preview
+  blockPreviewImageAlt: string;
+  blockPreviewParseError: string;
+  blockPreviewOpenLink: string;
+  blockPreviewCalloutInfo: string;
+  blockPreviewCalloutWarning: string;
+  blockPreviewCalloutTip: string;
+  blockPreviewCannotPreview: string;
+  // Delete block dialog
+  blockDeleteTitle: string;
+  blockDeleteSubtitle: string;
+  blockDeleteBody: string;
+  blockDeleteConfirmBtn: string;
+
+  // ── P7-04 Questions surface (question* / difficulty* namespace — disjoint) ────
+
+  // Page
+  questionPageTitle: string;
+  questionBreadcrumbLabel: string;
+  questionLessonContextLabel: string;
+  questionLessonIdLabel: string;
+
+  // List page
+  questionsLoadingLabel: string;
+  questionsListError: string;
+  questionsEmpty: string;
+  questionsEmptyHint: string;
+  questionsRetry: string;
+  questionsResultCount: string;
+  questionsNewQuestion: string;
+  questionsSaveOrder: string;
+  questionsOrderSaved: string;
+  questionsOrderError: string;
+
+  // Table columns
+  questionsColOrder: string;
+  questionsColQuestion: string;
+  questionsColType: string;
+  questionsColDifficulty: string;
+  questionsColActive: string;
+
+  // Type badge labels
+  questionTypeMcq: string;
+  questionTypeTrueFalse: string;
+  questionTypeMatching: string;
+  questionTypeFillInBlank: string;
+
+  // Difficulty badge labels (question-specific; mirrors lessonDifficulty* but in question namespace)
+  difficultyEasy: string;
+  difficultyMedium: string;
+  difficultyHard: string;
+
+  // Row actions (aria-labels)
+  questionEditAriaLabel: string;
+  questionDeleteAriaLabel: string;
+  questionActivateAriaLabel: string;
+  questionDeactivateAriaLabel: string;
+  questionMoveUpAriaLabel: string;
+  questionMoveDownAriaLabel: string;
+
+  // Reorder aria-live announcement
+  questionMovedAnnouncement: string;
+
+  // Question editor
+  questionEditorCreateTitle: string;
+  questionEditorCreateSubtitle: string;
+  questionEditorEditTitle: string;
+  questionEditorEditSubtitle: string;
+  questionEditorCloseAriaLabel: string;
+  questionEditorCancelBtn: string;
+  questionEditorSaveBtn: string;
+  questionEditorSaveChangesBtn: string;
+
+  // Shared fields
+  questionFieldTypeLabel: string;
+  questionFieldTypeLockedHint: string;
+  questionFieldTypePlaceholder: string;
+  questionFieldTextLabel: string;
+  questionFieldTextPlaceholder: string;
+  questionFieldDiffLabel: string;
+  questionFieldDiffPlaceholder: string;
+
+  // Lifecycle section in editor
+  questionLifecycleSectionLabel: string;
+
+  // MCQ sub-form
+  /** Fieldset legend for the MCQ options group (a11y). */
+  questionMcqOptionsLegend: string;
+  questionMcqAddOption: string;
+  questionMcqOptionPlaceholder: string;
+  questionMcqRemoveAriaLabel: string;
+  questionMcqCorrectSummary: string;
+  questionMcqCorrectRadioAriaLabel: string;
+
+  // Validation errors — MCQ
+  questionErrMcqMinOptions: string;
+  questionErrMcqEmptyOptions: string;
+  questionErrMcqNoCorrect: string;
+
+  // TrueFalse sub-form
+  questionTfCorrectLabel: string;
+  questionTfTrueLabel: string;
+  questionTfFalseLabel: string;
+  questionErrTfNoChoice: string;
+
+  // FillInBlank sub-form
+  questionFibCorrectLabel: string;
+  questionFibPlaceholder: string;
+  questionFibHint: string;
+  questionErrFibEmpty: string;
+
+  // Matching sub-form
+  /** Outer fieldset legend for the Matching configuration (a11y). */
+  questionMatchConfigLegend: string;
+  questionMatchLeftHeader: string;
+  questionMatchRightHeader: string;
+  questionMatchRightHint: string;
+  questionMatchAddLeft: string;
+  questionMatchAddRight: string;
+  questionMatchPairsHeader: string;
+  questionMatchPairsHint: string;
+  questionMatchLeftPlaceholder: string;
+  questionMatchRightPlaceholder: string;
+  questionMatchSelectPlaceholder: string;
+  questionMatchRemoveLeftAriaLabel: string;
+  questionMatchRemoveRightAriaLabel: string;
+  questionMatchPairSelectAriaLabel: string;
+
+  // Validation errors — Matching
+  questionErrMatchMinLeft: string;
+  questionErrMatchMinRight: string;
+  questionErrMatchEqualCount: string;
+  questionErrMatchEmptyLeft: string;
+  questionErrMatchEmptyRight: string;
+  questionErrMatchAllPaired: string;
+  questionErrMatchDuplicatePair: string;
+
+  // Matching parse error
+  questionMatchParseError: string;
+
+  // Shared validation
+  questionErrTypeRequired: string;
+  questionErrTextRequired: string;
+  questionErrTextTooLong: string;
+  questionErrDiffRequired: string;
+
+  // Delete dialog
+  questionDeleteTitle: string;
+  questionDeleteSubtitle: string;
+  questionDeleteBody: string;
+  questionDeleteConfirm: string;
+  questionDeleteCancel: string;
+  questionDeleteSuccess: string;
+
+  // Deactivate dialog
+  questionDeactivateTitle: string;
+  questionDeactivateSubtitle: string;
+  questionDeactivateBody: string;
+  questionDeactivateConfirm: string;
+  questionDeactivateSuccess: string;
+
+  // Activate dialog
+  questionActivateTitle: string;
+  questionActivateSubtitle: string;
+  questionActivateBody: string;
+  questionActivateConfirm: string;
+  questionActivateSuccess: string;
 }
 
 const en: AdminStrings = {
@@ -1101,6 +1409,293 @@ const en: AdminStrings = {
   clCoverageSuccess: 'All subjects are published for this grade.',
   clCoverageError: 'Unable to load coverage data. Please try again.',
   clCoverageGoToSubjects: 'Manage Subjects',
+
+  // ── P7-02 Lessons & Content Blocks (EN) ──────────────────────────────────────
+  lessonPageTitle: 'Lessons',
+  lessonContentEditorTitle: 'Content Editor',
+  lessonListHeading: 'Lessons',
+  lessonResultCount: 'lessons',
+  lessonListLoadingLabel: 'Loading lessons…',
+  lessonListError: 'Unable to load lessons. Please try again.',
+  lessonTableCaption: 'Lessons in this unit',
+  lessonNoResults: 'No lessons yet',
+  lessonNoResultsHint: 'Add the first lesson to this unit.',
+  lessonViewDetail: 'View content',
+  lessonNewBtn: 'New Lesson',
+  lessonPrevPage: 'Previous page',
+  lessonNextPage: 'Next page',
+  lessonColOrder: 'Order',
+  lessonColTitle: 'Title',
+  lessonColDifficulty: 'Difficulty',
+  lessonColDuration: 'Duration',
+  lessonColLock: 'Lock',
+  lessonColActive: 'Active',
+  lessonDifficultyEasy: 'Easy',
+  lessonDifficultyMedium: 'Medium',
+  lessonDifficultyHard: 'Hard',
+  lessonLocked: 'Locked',
+  lessonUnlocked: 'Unlocked',
+  lessonFormCreateTitle: 'New Lesson',
+  lessonFormCreateSubtitle: 'Add a new lesson to this unit.',
+  lessonFormEditTitle: 'Edit Lesson',
+  lessonFormEditSubtitle: 'Update lesson details.',
+  lessonFormNameLabel: 'Name',
+  lessonFormNamePlaceholder: 'e.g. Introduction to Fractions',
+  lessonFormDifficultyLabel: 'Difficulty',
+  lessonFormDifficultyPlaceholder: 'Select difficulty',
+  lessonFormMinutesLabel: 'Estimated Duration',
+  lessonFormMinutesHint: 'Minutes. Enter 0 if duration is not applicable.',
+  lessonFormLockedLabel: 'Locked',
+  lessonFormLockedOnHint: 'Lesson requires prior completion to unlock',
+  lessonFormLockedOffHint: 'Lesson is accessible immediately',
+  lessonFormActiveLabel: 'Active',
+  lessonFormActiveOnHint: 'Lesson visible to students',
+  lessonFormActiveOffHint: 'Lesson hidden from students',
+  lessonFormInheritedLangPrefix: 'Content language:',
+  lessonFormCancelBtn: 'Cancel',
+  lessonFormCreateBtn: 'Create Lesson',
+  lessonFormSaveBtn: 'Save Changes',
+  lessonFormErrNameRequired: 'Name is required',
+  lessonFormErrDifficultyRequired: 'Difficulty is required',
+  lessonFormErrMinutesInvalid: 'Duration must be 0 or more minutes',
+  lessonDetailEditBtn: 'Edit',
+  lessonDetailActivateBtn: 'Activate',
+  lessonDetailDeactivateBtn: 'Deactivate',
+  lessonDetailDeleteBtn: 'Delete',
+  lessonActivateSuccess: 'Lesson activated.',
+  lessonDeactivateSuccess: 'Lesson deactivated.',
+  lessonNotFound: 'Lesson not found',
+  lessonNotFoundBody: "This lesson doesn't exist or was removed.",
+  lessonInheritedLangLabel: 'Language:',
+  lessonInheritedLangAr: 'Arabic',
+  lessonInheritedLangEn: 'English',
+  lessonReorderSaveBtn: 'Save Order',
+  lessonReorderMoveUp: 'Move {name} up',
+  lessonReorderMoveDown: 'Move {name} down',
+  lessonReorderPosition: '{name} moved to position {N} of {total}',
+  lessonDeleteTitle: 'Delete Lesson',
+  lessonDeleteSubtitle: '"{name}" will be removed.',
+  lessonDeleteCascadeHeading: 'All content blocks will be deleted',
+  lessonDeleteCascadeBody: 'Deleting this lesson will soft-delete all its content blocks. This lesson will no longer be visible to students. Content blocks cannot be restored individually from the dashboard in this version.',
+  lessonDeleteConfirmBtn: 'Delete Lesson',
+  lessonDeleteCancelBtn: 'Cancel',
+  lessonDeleteSuccess: 'Lesson deleted.',
+  blockEditorHeading: 'Content Blocks',
+  blockEditorCountLabel: 'blocks',
+  blockEditorAddBtn: 'Add Block',
+  blockEditorLoadingLabel: 'Loading content blocks…',
+  blockEditorListError: 'Unable to load content blocks. Please try again.',
+  blockListError: 'Unable to load content blocks. Please try again.',
+  blockEditorEmpty: 'No content yet',
+  blockEditorEmptyHint: "Add the first block to build this lesson's content.",
+  blockEditorSaveOrderBtn: 'Save Block Order',
+  blockPickerHeading: 'Choose block type',
+  blockPickerText: 'Text block',
+  blockPickerImage: 'Image',
+  blockPickerVideo: 'Video',
+  blockPickerCallout: 'Callout',
+  blockTypeText: 'Text',
+  blockTypeImage: 'Image',
+  blockTypeVideo: 'Video',
+  blockTypeCallout: 'Callout',
+  blockCardNumberPrefix: 'Block',
+  blockCardInactiveNotice: 'This block is inactive (read-only — no toggle endpoint).',
+  blockCardEditBtn: 'Edit block {N}',
+  blockCardDeleteBtn: 'Delete block {N}',
+  blockCardMoveUpBtn: 'Move {type} block up',
+  blockCardMoveDownBtn: 'Move {type} block down',
+  blockCardExpand: '▼ Expand',
+  blockCardCollapse: '▲ Collapse',
+  blockFormAddTitle: 'Add Block',
+  blockFormEditTitle: 'Edit Block',
+  blockFormCancelBtn: 'Cancel',
+  blockFormAddConfirm: 'Add Block',
+  blockFormSaveConfirm: 'Save Block',
+  blockFormTypeChangeWarning: 'Changing the block type will discard the current content fields.',
+  blockFormPayloadTooLarge: 'Content is too large (max 65,536 characters)',
+  blockFormMarkdownLabel: 'Markdown content',
+  blockFormMarkdownPlaceholder: 'Enter Markdown text…',
+  blockFormMarkdownRequired: 'Content is required',
+  blockFormImageUrlLabel: 'Image URL',
+  blockFormImageAltLabel: 'Alt text (optional)',
+  blockFormImageAltPlaceholder: 'Describe the image for screen readers…',
+  blockFormImageAltHint: 'Recommended for accessibility.',
+  blockFormVideoUrlLabel: 'Video URL',
+  blockFormVideoCaptionLabel: 'Caption (optional)',
+  blockFormVideoCaptionPlaceholder: 'Optional caption shown below the video…',
+  blockFormCalloutVariantLabel: 'Callout type',
+  blockFormCalloutVariantInfo: 'Info',
+  blockFormCalloutVariantWarning: 'Warning',
+  blockFormCalloutVariantTip: 'Tip',
+  blockFormCalloutMarkdownLabel: 'Callout content',
+  blockFormUrlRequired: 'URL is required',
+  blockFormUrlHttpsRequired: 'URL must start with https://',
+  blockFormUrlPrivateNotAllowed: 'Private/local addresses are not allowed',
+  blockFormVariantRequired: 'Callout type is required',
+  blockFormUrlHint: 'Must be an absolute https:// URL. Private IP addresses and localhost are not allowed.',
+  blockPreviewImageAlt: 'Block image',
+  blockPreviewParseError: 'Unable to parse block payload.',
+  blockPreviewOpenLink: 'Open ↗',
+  blockPreviewCalloutInfo: 'Info',
+  blockPreviewCalloutWarning: 'Warning',
+  blockPreviewCalloutTip: 'Tip',
+  blockPreviewCannotPreview: 'Cannot preview',
+  blockDeleteTitle: 'Delete Block',
+  blockDeleteSubtitle: 'This block will be removed from the lesson.',
+  blockDeleteBody: 'The block will be soft-deleted and hidden from students. This is reversible by the backend but there is no restore UI in this version.',
+  blockDeleteConfirmBtn: 'Delete Block',
+
+  // ── P7-04 Questions surface (EN) ─────────────────────────────────────────────
+
+  // Page
+  questionPageTitle: 'Questions',
+  questionBreadcrumbLabel: 'Questions',
+  questionLessonContextLabel: 'Lesson',
+  questionLessonIdLabel: 'ID {id}',
+
+  // List page
+  questionsLoadingLabel: 'Loading questions…',
+  questionsListError: 'Unable to load questions. Please try again.',
+  questionsEmpty: 'No questions yet',
+  questionsEmptyHint: 'Add the first question to this lesson.',
+  questionsRetry: 'Try again',
+  questionsResultCount: 'questions',
+  questionsNewQuestion: 'New Question',
+  questionsSaveOrder: 'Save Order',
+  questionsOrderSaved: 'Order saved.',
+  questionsOrderError: 'Failed to save order.',
+
+  // Table columns
+  questionsColOrder: 'Order',
+  questionsColQuestion: 'Question',
+  questionsColType: 'Type',
+  questionsColDifficulty: 'Difficulty',
+  questionsColActive: 'Active',
+
+  // Type badge labels
+  questionTypeMcq: 'MCQ',
+  questionTypeTrueFalse: 'True/False',
+  questionTypeMatching: 'Matching',
+  questionTypeFillInBlank: 'Fill In Blank',
+
+  // Difficulty badge labels
+  difficultyEasy: 'Easy',
+  difficultyMedium: 'Medium',
+  difficultyHard: 'Hard',
+
+  // Row actions
+  questionEditAriaLabel: 'Edit question {N}',
+  questionDeleteAriaLabel: 'Remove question {N}',
+  questionActivateAriaLabel: 'Show question to students',
+  questionDeactivateAriaLabel: 'Hide question from students',
+  questionMoveUpAriaLabel: 'Move question up',
+  questionMoveDownAriaLabel: 'Move question down',
+
+  // Reorder aria-live
+  questionMovedAnnouncement: 'Question moved to position {N} of {total}.',
+
+  // Question editor
+  questionEditorCreateTitle: 'New Question',
+  questionEditorCreateSubtitle: 'Add a question to this lesson.',
+  questionEditorEditTitle: 'Edit Question',
+  questionEditorEditSubtitle: 'Update question content.',
+  questionEditorCloseAriaLabel: 'Close editor',
+  questionEditorCancelBtn: 'Cancel',
+  questionEditorSaveBtn: 'Save Question',
+  questionEditorSaveChangesBtn: 'Save Changes',
+
+  // Shared fields
+  questionFieldTypeLabel: 'Question Type',
+  questionFieldTypeLockedHint: 'Question type cannot be changed after creation.',
+  questionFieldTypePlaceholder: 'Select type',
+  questionFieldTextLabel: 'Question',
+  questionFieldTextPlaceholder: 'Enter the question text…',
+  questionFieldDiffLabel: 'Difficulty',
+  questionFieldDiffPlaceholder: 'Select difficulty',
+
+  // Lifecycle section
+  questionLifecycleSectionLabel: 'Publishing',
+
+  // MCQ sub-form
+  questionMcqOptionsLegend: 'Options',
+  questionMcqAddOption: 'Add Option',
+  questionMcqOptionPlaceholder: 'Option {N}',
+  questionMcqRemoveAriaLabel: 'Remove option {N}',
+  questionMcqCorrectSummary: 'Correct:',
+  questionMcqCorrectRadioAriaLabel: 'Mark option {N} as correct',
+
+  // Validation — MCQ
+  questionErrMcqMinOptions: 'Add at least 2 options.',
+  questionErrMcqEmptyOptions: 'All options must have text.',
+  questionErrMcqNoCorrect: 'Select the correct answer.',
+
+  // TrueFalse sub-form
+  questionTfCorrectLabel: 'Correct Answer',
+  questionTfTrueLabel: 'True',
+  questionTfFalseLabel: 'False',
+  questionErrTfNoChoice: 'Select True or False.',
+
+  // FillInBlank sub-form
+  questionFibCorrectLabel: 'Correct Answer',
+  questionFibPlaceholder: 'Enter the accepted answer…',
+  questionFibHint: "Student's typed answer must match exactly (case-insensitive).",
+  questionErrFibEmpty: 'Correct answer is required.',
+
+  // Matching sub-form
+  questionMatchConfigLegend: 'Matching configuration',
+  questionMatchLeftHeader: 'Left Items',
+  questionMatchRightHeader: 'Right Items',
+  questionMatchRightHint: "Order these randomly — don't put the correct match in the same row.",
+  questionMatchAddLeft: 'Add Left Item',
+  questionMatchAddRight: 'Add Right Item',
+  questionMatchPairsHeader: 'Correct Pairs',
+  questionMatchPairsHint: 'For each left item, select its matching right item.',
+  questionMatchLeftPlaceholder: 'Left item {N}',
+  questionMatchRightPlaceholder: 'Right item {N}',
+  questionMatchSelectPlaceholder: 'Select match',
+  questionMatchRemoveLeftAriaLabel: 'Remove left item {N}',
+  questionMatchRemoveRightAriaLabel: 'Remove right item {N}',
+  questionMatchPairSelectAriaLabel: 'Match for left item: {text}',
+
+  // Validation — Matching
+  questionErrMatchMinLeft: 'Add at least 1 left item.',
+  questionErrMatchMinRight: 'Add at least 1 right item.',
+  questionErrMatchEqualCount: 'Left and right must have the same number of items.',
+  questionErrMatchEmptyLeft: 'All left items must have text.',
+  questionErrMatchEmptyRight: 'All right items must have text.',
+  questionErrMatchAllPaired: 'All pairs must be assigned.',
+  questionErrMatchDuplicatePair: 'Each right item can only be used once.',
+
+  // Matching parse error
+  questionMatchParseError: 'Failed to load question data — invalid format. Delete and recreate.',
+
+  // Shared validation
+  questionErrTypeRequired: 'Question type is required.',
+  questionErrTextRequired: 'Question text is required.',
+  questionErrTextTooLong: 'Question text must be ≤4096 characters.',
+  questionErrDiffRequired: 'Difficulty is required.',
+
+  // Delete dialog
+  questionDeleteTitle: 'Remove Question',
+  questionDeleteSubtitle: 'Question will be hidden from this lesson.',
+  questionDeleteBody: 'This is a soft delete — the question is hidden from students but can be restored by an engineer. Student progress is preserved.',
+  questionDeleteConfirm: 'Remove Question',
+  questionDeleteCancel: 'Cancel',
+  questionDeleteSuccess: 'Question removed.',
+
+  // Deactivate dialog
+  questionDeactivateTitle: 'Hide Question',
+  questionDeactivateSubtitle: 'The question will be hidden from students.',
+  questionDeactivateBody: 'Hidden questions are not shown to students but remain visible to admins. The question can be re-activated at any time.',
+  questionDeactivateConfirm: 'Hide from Students',
+  questionDeactivateSuccess: 'Question hidden from students.',
+
+  // Activate dialog
+  questionActivateTitle: 'Show Question',
+  questionActivateSubtitle: 'The question will be visible to students again.',
+  questionActivateBody: 'Students will be able to see and answer this question once it is shown.',
+  questionActivateConfirm: 'Show to Students',
+  questionActivateSuccess: 'Question shown to students.',
 };
 
 const ar: AdminStrings = {
@@ -1613,6 +2208,293 @@ const ar: AdminStrings = {
   clCoverageSuccess: 'جميع المواد منشورة لهذا الصف.',
   clCoverageError: 'تعذَّر تحميل بيانات التغطية. يرجى المحاولة مرة أخرى.',
   clCoverageGoToSubjects: 'إدارة المواد',
+
+  // ── P7-02 Lessons & Content Blocks (AR) ──────────────────────────────────────
+  lessonPageTitle: 'الدروس',
+  lessonContentEditorTitle: 'محرر المحتوى',
+  lessonListHeading: 'الدروس',
+  lessonResultCount: 'درس',
+  lessonListLoadingLabel: 'جارٍ تحميل الدروس…',
+  lessonListError: 'تعذَّر تحميل الدروس. يرجى المحاولة مرة أخرى.',
+  lessonTableCaption: 'الدروس في هذه الوحدة',
+  lessonNoResults: 'لا توجد دروس بعد',
+  lessonNoResultsHint: 'أضف الدرس الأول لهذه الوحدة.',
+  lessonViewDetail: 'عرض المحتوى',
+  lessonNewBtn: 'درس جديد',
+  lessonPrevPage: 'الصفحة السابقة',
+  lessonNextPage: 'الصفحة التالية',
+  lessonColOrder: 'الترتيب',
+  lessonColTitle: 'العنوان',
+  lessonColDifficulty: 'الصعوبة',
+  lessonColDuration: 'المدة',
+  lessonColLock: 'القفل',
+  lessonColActive: 'الحالة',
+  lessonDifficultyEasy: 'سهل',
+  lessonDifficultyMedium: 'متوسط',
+  lessonDifficultyHard: 'صعب',
+  lessonLocked: 'مقفل',
+  lessonUnlocked: 'مفتوح',
+  lessonFormCreateTitle: 'درس جديد',
+  lessonFormCreateSubtitle: 'أضف درساً جديداً لهذه الوحدة.',
+  lessonFormEditTitle: 'تعديل الدرس',
+  lessonFormEditSubtitle: 'تحديث تفاصيل الدرس.',
+  lessonFormNameLabel: 'اسم الدرس',
+  lessonFormNamePlaceholder: 'مثال: مقدمة في الكسور',
+  lessonFormDifficultyLabel: 'الصعوبة',
+  lessonFormDifficultyPlaceholder: 'اختر الصعوبة',
+  lessonFormMinutesLabel: 'المدة التقديرية',
+  lessonFormMinutesHint: 'بالدقائق. أدخل ٠ إذا لم تنطبق المدة.',
+  lessonFormLockedLabel: 'مقفل',
+  lessonFormLockedOnHint: 'يتطلب الدرس إكمال سابق لفتحه',
+  lessonFormLockedOffHint: 'الدرس متاح فوراً',
+  lessonFormActiveLabel: 'نشط',
+  lessonFormActiveOnHint: 'الدرس مرئي للطلاب',
+  lessonFormActiveOffHint: 'الدرس مخفي عن الطلاب',
+  lessonFormInheritedLangPrefix: 'لغة المحتوى:',
+  lessonFormCancelBtn: 'إلغاء',
+  lessonFormCreateBtn: 'إنشاء الدرس',
+  lessonFormSaveBtn: 'حفظ التغييرات',
+  lessonFormErrNameRequired: 'الاسم مطلوب',
+  lessonFormErrDifficultyRequired: 'الصعوبة مطلوبة',
+  lessonFormErrMinutesInvalid: 'يجب أن تكون المدة ٠ دقائق أو أكثر',
+  lessonDetailEditBtn: 'تعديل',
+  lessonDetailActivateBtn: 'تفعيل',
+  lessonDetailDeactivateBtn: 'إلغاء التفعيل',
+  lessonDetailDeleteBtn: 'حذف',
+  lessonActivateSuccess: 'تم تفعيل الدرس.',
+  lessonDeactivateSuccess: 'تم إلغاء تفعيل الدرس.',
+  lessonNotFound: 'الدرس غير موجود',
+  lessonNotFoundBody: 'هذا الدرس غير موجود أو تم حذفه.',
+  lessonInheritedLangLabel: 'اللغة:',
+  lessonInheritedLangAr: 'العربية',
+  lessonInheritedLangEn: 'الإنجليزية',
+  lessonReorderSaveBtn: 'حفظ الترتيب',
+  lessonReorderMoveUp: 'تحريك {name} للأعلى',
+  lessonReorderMoveDown: 'تحريك {name} للأسفل',
+  lessonReorderPosition: '{name} نُقل إلى الموضع {N} من {total}',
+  lessonDeleteTitle: 'حذف الدرس',
+  lessonDeleteSubtitle: 'سيُحذف "{name}".',
+  lessonDeleteCascadeHeading: 'ستُحذف جميع كتل المحتوى',
+  lessonDeleteCascadeBody: 'سيؤدي حذف هذا الدرس إلى حذف جميع كتل محتواه ناعمياً. لن يكون الدرس مرئياً للطلاب بعد الآن. لا يمكن استعادة كتل المحتوى بشكل فردي من لوحة التحكم في هذا الإصدار.',
+  lessonDeleteConfirmBtn: 'حذف الدرس',
+  lessonDeleteCancelBtn: 'إلغاء',
+  lessonDeleteSuccess: 'تم حذف الدرس.',
+  blockEditorHeading: 'كتل المحتوى',
+  blockEditorCountLabel: 'كتلة',
+  blockEditorAddBtn: 'إضافة كتلة',
+  blockEditorLoadingLabel: 'جارٍ تحميل كتل المحتوى…',
+  blockEditorListError: 'تعذَّر تحميل كتل المحتوى. يرجى المحاولة مرة أخرى.',
+  blockListError: 'تعذَّر تحميل كتل المحتوى. يرجى المحاولة مرة أخرى.',
+  blockEditorEmpty: 'لا يوجد محتوى بعد',
+  blockEditorEmptyHint: 'أضف الكتلة الأولى لبناء محتوى هذا الدرس.',
+  blockEditorSaveOrderBtn: 'حفظ ترتيب الكتل',
+  blockPickerHeading: 'اختر نوع الكتلة',
+  blockPickerText: 'كتلة نصية',
+  blockPickerImage: 'صورة',
+  blockPickerVideo: 'فيديو',
+  blockPickerCallout: 'تنبيه',
+  blockTypeText: 'نص',
+  blockTypeImage: 'صورة',
+  blockTypeVideo: 'فيديو',
+  blockTypeCallout: 'تنبيه',
+  blockCardNumberPrefix: 'الكتلة',
+  blockCardInactiveNotice: 'هذه الكتلة غير نشطة (للقراءة فقط — لا يوجد نقطة نهاية للتبديل).',
+  blockCardEditBtn: 'تعديل الكتلة {N}',
+  blockCardDeleteBtn: 'حذف الكتلة {N}',
+  blockCardMoveUpBtn: 'تحريك كتلة {type} للأعلى',
+  blockCardMoveDownBtn: 'تحريك كتلة {type} للأسفل',
+  blockCardExpand: '▼ توسيع',
+  blockCardCollapse: '▲ طي',
+  blockFormAddTitle: 'إضافة كتلة',
+  blockFormEditTitle: 'تعديل الكتلة',
+  blockFormCancelBtn: 'إلغاء',
+  blockFormAddConfirm: 'إضافة الكتلة',
+  blockFormSaveConfirm: 'حفظ الكتلة',
+  blockFormTypeChangeWarning: 'تغيير نوع الكتلة سيؤدي إلى حذف حقول المحتوى الحالية.',
+  blockFormPayloadTooLarge: 'المحتوى كبير جداً (الحد الأقصى ٦٥,٥٣٦ حرف)',
+  blockFormMarkdownLabel: 'محتوى Markdown',
+  blockFormMarkdownPlaceholder: 'أدخل نص Markdown…',
+  blockFormMarkdownRequired: 'المحتوى مطلوب',
+  blockFormImageUrlLabel: 'رابط الصورة',
+  blockFormImageAltLabel: 'النص البديل (اختياري)',
+  blockFormImageAltPlaceholder: 'صف الصورة لقراء الشاشة…',
+  blockFormImageAltHint: 'يُوصى به لسهولة الوصول.',
+  blockFormVideoUrlLabel: 'رابط الفيديو',
+  blockFormVideoCaptionLabel: 'التسمية التوضيحية (اختياري)',
+  blockFormVideoCaptionPlaceholder: 'تسمية توضيحية اختيارية تظهر أسفل الفيديو…',
+  blockFormCalloutVariantLabel: 'نوع التنبيه',
+  blockFormCalloutVariantInfo: 'معلومة',
+  blockFormCalloutVariantWarning: 'تحذير',
+  blockFormCalloutVariantTip: 'نصيحة',
+  blockFormCalloutMarkdownLabel: 'محتوى التنبيه',
+  blockFormUrlRequired: 'الرابط مطلوب',
+  blockFormUrlHttpsRequired: 'يجب أن يبدأ الرابط بـ https://',
+  blockFormUrlPrivateNotAllowed: 'العناوين المحلية/الخاصة غير مسموح بها',
+  blockFormVariantRequired: 'نوع التنبيه مطلوب',
+  blockFormUrlHint: 'يجب أن يكون رابطاً مطلقاً يبدأ بـ https://. عناوين IP الخاصة و localhost غير مسموح بها.',
+  blockPreviewImageAlt: 'صورة الكتلة',
+  blockPreviewParseError: 'تعذّر تحليل محتوى الكتلة.',
+  blockPreviewOpenLink: 'فتح ↗',
+  blockPreviewCalloutInfo: 'معلومة',
+  blockPreviewCalloutWarning: 'تحذير',
+  blockPreviewCalloutTip: 'نصيحة',
+  blockPreviewCannotPreview: 'لا يمكن المعاينة',
+  blockDeleteTitle: 'حذف الكتلة',
+  blockDeleteSubtitle: 'ستُحذف هذه الكتلة من الدرس.',
+  blockDeleteBody: 'سيُحذف هذه الكتلة ناعمياً وتُخفى عن الطلاب. هذا قابل للتراجع في الخلفية لكن لا توجد واجهة استعادة في هذا الإصدار.',
+  blockDeleteConfirmBtn: 'حذف الكتلة',
+
+  // ── P7-04 Questions surface (AR) ─────────────────────────────────────────────
+
+  // Page
+  questionPageTitle: 'الأسئلة',
+  questionBreadcrumbLabel: 'الأسئلة',
+  questionLessonContextLabel: 'الدرس',
+  questionLessonIdLabel: 'المعرّف {id}',
+
+  // List page
+  questionsLoadingLabel: 'جارٍ تحميل الأسئلة…',
+  questionsListError: 'تعذَّر تحميل الأسئلة. حاول مرة أخرى.',
+  questionsEmpty: 'لا توجد أسئلة بعد',
+  questionsEmptyHint: 'أضف السؤال الأول إلى هذا الدرس.',
+  questionsRetry: 'حاول مرة أخرى',
+  questionsResultCount: 'سؤال',
+  questionsNewQuestion: 'سؤال جديد',
+  questionsSaveOrder: 'حفظ الترتيب',
+  questionsOrderSaved: 'تم حفظ الترتيب.',
+  questionsOrderError: 'فشل حفظ الترتيب.',
+
+  // Table columns
+  questionsColOrder: 'الترتيب',
+  questionsColQuestion: 'السؤال',
+  questionsColType: 'النوع',
+  questionsColDifficulty: 'الصعوبة',
+  questionsColActive: 'الحالة',
+
+  // Type badge labels
+  questionTypeMcq: 'اختيار متعدد',
+  questionTypeTrueFalse: 'صح/خطأ',
+  questionTypeMatching: 'مطابقة',
+  questionTypeFillInBlank: 'أكمل الفراغ',
+
+  // Difficulty badge labels
+  difficultyEasy: 'سهل',
+  difficultyMedium: 'متوسط',
+  difficultyHard: 'صعب',
+
+  // Row actions
+  questionEditAriaLabel: 'تعديل السؤال {N}',
+  questionDeleteAriaLabel: 'إزالة السؤال {N}',
+  questionActivateAriaLabel: 'إظهار السؤال للطلاب',
+  questionDeactivateAriaLabel: 'إخفاء السؤال عن الطلاب',
+  questionMoveUpAriaLabel: 'تحريك السؤال للأعلى',
+  questionMoveDownAriaLabel: 'تحريك السؤال للأسفل',
+
+  // Reorder aria-live
+  questionMovedAnnouncement: 'السؤال في الموضع {N} من {total}.',
+
+  // Question editor
+  questionEditorCreateTitle: 'سؤال جديد',
+  questionEditorCreateSubtitle: 'أضف سؤالاً إلى هذا الدرس.',
+  questionEditorEditTitle: 'تعديل السؤال',
+  questionEditorEditSubtitle: 'تحديث محتوى السؤال.',
+  questionEditorCloseAriaLabel: 'إغلاق المحرر',
+  questionEditorCancelBtn: 'إلغاء',
+  questionEditorSaveBtn: 'حفظ السؤال',
+  questionEditorSaveChangesBtn: 'حفظ التغييرات',
+
+  // Shared fields
+  questionFieldTypeLabel: 'نوع السؤال',
+  questionFieldTypeLockedHint: 'لا يمكن تغيير نوع السؤال بعد إنشائه.',
+  questionFieldTypePlaceholder: 'اختر النوع',
+  questionFieldTextLabel: 'نص السؤال',
+  questionFieldTextPlaceholder: 'أدخل نص السؤال…',
+  questionFieldDiffLabel: 'الصعوبة',
+  questionFieldDiffPlaceholder: 'اختر الصعوبة',
+
+  // Lifecycle section
+  questionLifecycleSectionLabel: 'النشر',
+
+  // MCQ sub-form
+  questionMcqOptionsLegend: 'الخيارات',
+  questionMcqAddOption: 'إضافة خيار',
+  questionMcqOptionPlaceholder: 'الخيار {N}',
+  questionMcqRemoveAriaLabel: 'إزالة الخيار {N}',
+  questionMcqCorrectSummary: 'الإجابة الصحيحة:',
+  questionMcqCorrectRadioAriaLabel: 'اجعل الخيار {N} صحيحاً',
+
+  // Validation — MCQ
+  questionErrMcqMinOptions: 'أضف خيارَين على الأقل.',
+  questionErrMcqEmptyOptions: 'يجب أن تحتوي كل الخيارات على نص.',
+  questionErrMcqNoCorrect: 'اختر الإجابة الصحيحة.',
+
+  // TrueFalse sub-form
+  questionTfCorrectLabel: 'الإجابة الصحيحة',
+  questionTfTrueLabel: 'صح',
+  questionTfFalseLabel: 'خطأ',
+  questionErrTfNoChoice: 'اختر صح أو خطأ.',
+
+  // FillInBlank sub-form
+  questionFibCorrectLabel: 'الإجابة الصحيحة',
+  questionFibPlaceholder: 'أدخل الإجابة المقبولة…',
+  questionFibHint: 'يجب أن تتطابق إجابة الطالب المكتوبة مع هذا النص تماماً (التحقق غير حساس لحالة الأحرف).',
+  questionErrFibEmpty: 'الإجابة الصحيحة مطلوبة.',
+
+  // Matching sub-form
+  questionMatchConfigLegend: 'إعداد المطابقة',
+  questionMatchLeftHeader: 'العناصر اليسارية',
+  questionMatchRightHeader: 'العناصر اليمينية',
+  questionMatchRightHint: 'رتِّب هذه العناصر بشكل عشوائي — لا تضع التطابق الصحيح في الصف نفسه.',
+  questionMatchAddLeft: 'إضافة عنصر أيسر',
+  questionMatchAddRight: 'إضافة عنصر أيمن',
+  questionMatchPairsHeader: 'التطابقات الصحيحة',
+  questionMatchPairsHint: 'لكل عنصر أيسر، اختر العنصر الأيمن المطابق له.',
+  questionMatchLeftPlaceholder: 'عنصر أيسر {N}',
+  questionMatchRightPlaceholder: 'عنصر أيمن {N}',
+  questionMatchSelectPlaceholder: 'اختر التطابق',
+  questionMatchRemoveLeftAriaLabel: 'إزالة العنصر الأيسر {N}',
+  questionMatchRemoveRightAriaLabel: 'إزالة العنصر الأيمن {N}',
+  questionMatchPairSelectAriaLabel: 'التطابق لـ: {text}',
+
+  // Validation — Matching
+  questionErrMatchMinLeft: 'أضف عنصراً أيسر واحداً على الأقل.',
+  questionErrMatchMinRight: 'أضف عنصراً أيمن واحداً على الأقل.',
+  questionErrMatchEqualCount: 'يجب أن يتطابق عدد العناصر الأيسرة واليمينية.',
+  questionErrMatchEmptyLeft: 'يجب أن تحتوي جميع العناصر الأيسرة على نص.',
+  questionErrMatchEmptyRight: 'يجب أن تحتوي جميع العناصر اليمينية على نص.',
+  questionErrMatchAllPaired: 'يجب ربط جميع الأزواج.',
+  questionErrMatchDuplicatePair: 'لا يمكن استخدام كل عنصر أيمن أكثر من مرة.',
+
+  // Matching parse error
+  questionMatchParseError: 'فشل تحميل بيانات السؤال — تنسيق غير صالح. احذف وأعد الإنشاء.',
+
+  // Shared validation
+  questionErrTypeRequired: 'نوع السؤال مطلوب.',
+  questionErrTextRequired: 'نص السؤال مطلوب.',
+  questionErrTextTooLong: 'يجب ألا يتجاوز النص 4096 حرفاً.',
+  questionErrDiffRequired: 'الصعوبة مطلوبة.',
+
+  // Delete dialog
+  questionDeleteTitle: 'إزالة السؤال',
+  questionDeleteSubtitle: 'سيُخفى السؤال من هذا الدرس.',
+  questionDeleteBody: 'هذا حذف مبدئي — سيُخفى السؤال عن الطلاب لكن يمكن استعادته. يُحفظ تقدم الطلاب على هذا السؤال.',
+  questionDeleteConfirm: 'إزالة السؤال',
+  questionDeleteCancel: 'إلغاء',
+  questionDeleteSuccess: 'تم إزالة السؤال.',
+
+  // Deactivate dialog
+  questionDeactivateTitle: 'إخفاء السؤال',
+  questionDeactivateSubtitle: 'سيُخفى هذا السؤال عن الطلاب.',
+  questionDeactivateBody: 'الأسئلة المخفية لا تظهر للطلاب لكن تبقى مرئية للمسؤولين. يمكن إعادة تفعيل السؤال في أي وقت.',
+  questionDeactivateConfirm: 'إخفاء عن الطلاب',
+  questionDeactivateSuccess: 'تم إخفاء السؤال عن الطلاب.',
+
+  // Activate dialog
+  questionActivateTitle: 'إظهار السؤال',
+  questionActivateSubtitle: 'سيظهر هذا السؤال للطلاب مجدداً.',
+  questionActivateBody: 'سيتمكن الطلاب من رؤية هذا السؤال والإجابة عليه بعد إظهاره.',
+  questionActivateConfirm: 'إظهار للطلاب',
+  questionActivateSuccess: 'تم إظهار السؤال للطلاب.',
 };
 
 const STRINGS: Record<Locale, AdminStrings> = { en, ar };

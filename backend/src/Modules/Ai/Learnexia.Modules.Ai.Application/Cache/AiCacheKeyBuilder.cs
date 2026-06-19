@@ -155,8 +155,9 @@ public static class AiCacheKeyBuilder
     }
 
     /// <summary>
-    /// Cache key for <see cref="AiCacheEntryTypeDto.Recommendation"/> entries (P3-14).
-    /// Tuple: (StudentId, RecommendationDate, AgeBand(jwtGrade), Language, PromptVersion, CurriculumVersion).
+    /// Cache key for <see cref="AiCacheEntryTypeDto.Recommendation"/> entries (P3-14 / P3-14a).
+    /// Tuple: (StudentId, RecommendationDate, ContentHash, AgeBand(jwtGrade), Language,
+    ///         CurrentLevel, EncouragementStyleHint, PromptVersion, CurriculumVersion).
     ///
     /// <para><strong>Date dimension is MANDATORY (P3-14 OQ-5):</strong> including
     /// <paramref name="recommendationDate"/> ensures that a new day's recommendation set always
@@ -167,6 +168,13 @@ public static class AiCacheKeyBuilder
     /// <paramref name="recommendationContentHash"/> is included so that if the recommendation content
     /// changes mid-day (re-run job), the cache key changes automatically — no stale narration served.</para>
     ///
+    /// <para><strong>P3-14a — Level + style dimensions (REQUIRED correctness, OQ-7):</strong>
+    /// <paramref name="currentLevel"/> is included so that a level-up event yields a fresh narration
+    /// (level change → new motivational framing → different prompt → must not serve stale cached narration).
+    /// <paramref name="encouragementStyleHint"/> is included so that a changed profile style yields a
+    /// fresh narration. Both values are anonymous, non-PII dimensions (level integer + coarse style word).
+    /// </para>
+    ///
     /// <para><c>jwtGrade</c> must come from the authenticated student's JWT claim — server-trusted.</para>
     /// </summary>
     public static string ForRecommendation(
@@ -176,7 +184,9 @@ public static class AiCacheKeyBuilder
         int jwtGrade,
         TutorLanguage language,
         string promptVersion,
-        string curriculumVersion)
+        string curriculumVersion,
+        int currentLevel = 1,
+        string? encouragementStyleHint = null)
     {
         var tuple = new
         {
@@ -188,6 +198,10 @@ public static class AiCacheKeyBuilder
             ch   = recommendationContentHash,
             ab   = GradeToAgeBand(jwtGrade),
             lang = (int)language,
+            // P3-14a: level-up yields a fresh narration (OQ-7 — required correctness).
+            lv   = currentLevel,
+            // P3-14a: changed profile style yields a fresh narration (OQ-7 — required correctness).
+            es   = encouragementStyleHint ?? string.Empty,
             pv   = promptVersion,
             cv   = curriculumVersion,
         };

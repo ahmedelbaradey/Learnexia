@@ -69,6 +69,13 @@ public interface IStudentRecommendationsQuery
 /// <c>Learning.Domain.Enums.DifficultyLevel</c> (1=Easy, 2=Medium, 3=Hard).
 /// Derived from <c>IAdaptivityService.GetTargetDifficulty</c> for the skill.
 /// </param>
+/// <param name="PreferredExplanationStyle">
+/// Optional soft passthrough of the student's derived explanation-style preference (P5-09a-BE-3).
+/// Nullable — null when the profile is cold-start or the style is unknown.
+/// Carried for P3-14a so Lexi can honour the preference without a cross-module profile call.
+/// The engine never acts on this field as a hard driver — it is a soft hint only.
+/// Values mirror <c>Learning.Domain.Enums.ExplanationStyle</c> (Standard=0, Simplified=1, Visual=2, StepByStep=3).
+/// </param>
 public record RecommendationItem(
     int SkillId,
     int SubjectCode,
@@ -77,7 +84,38 @@ public record RecommendationItem(
     string CtaKey,
     int Severity,
     RecommendationActionType ActionType,
-    int TargetDifficulty);
+    int TargetDifficulty,
+    RecommendationExplanationStyle? PreferredExplanationStyle = null);
+
+/// <summary>
+/// Explanation-style preference carried on a <see cref="RecommendationItem"/> (P5-09a-BE-3).
+///
+/// Mirrors <c>Learning.Domain.Enums.ExplanationStyle</c> values exactly so that Shared.Contracts
+/// consumers (Lexi / Ai module) can read the preference without a cross-module domain reference.
+/// Values are explicitly assigned to guarantee stable serialization order.
+/// </summary>
+public enum RecommendationExplanationStyle
+{
+    /// <summary>
+    /// Default / cold-start. Standard textual explanation; no special adaptation.
+    /// </summary>
+    Standard   = 0,
+
+    /// <summary>
+    /// Simplified language and shorter sentences.
+    /// </summary>
+    Simplified = 1,
+
+    /// <summary>
+    /// Visual / diagram-oriented explanation.
+    /// </summary>
+    Visual     = 2,
+
+    /// <summary>
+    /// Step-by-step breakdown.
+    /// </summary>
+    StepByStep = 3,
+}
 
 /// <summary>
 /// Recommended action type for a <see cref="RecommendationItem"/>.

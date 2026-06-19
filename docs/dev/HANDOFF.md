@@ -26,6 +26,53 @@ Survey of `backend/tests/Learnexia.IntegrationTests/` (~85 WebApplicationFactory
 **Test-infra to build to unblock the above:** a throwing `IEmailSender`/`SignInManager` double; a `Production`-env + custom-config WebApplicationFactory variant; cheap seed fixtures (league cohort w/ GroupSize>0, empty-subject, all-completed); a re-boot/re-seed fixture. The grade-resolution helper in P7 admin suites also pages only page 1 of `grades/List` (>200 grades → flake).
 
 ---
+## "At his level" enrichment (recommendations + Lexi) — 2026-06-19 (2 stacked PRs open)
+
+**Deepens the merged recommendation engine + Lexi to genuinely fit each child's level**, using the P3-13 behavioral profile. Lead-approved 2026-06-18/19: use the **5 existing `DerivedProfile` dims now** (richer derivations = backlog **P3-13a**); **Moderate** engine depth; **Lexi = level + profile encouragement**; no new energy cost.
+
+**Reality-check (load-bearing):** `DerivedProfile` exposes only 5 fields — `QuestionTypeAffinity`, `RecurringErrorSkillIds`, `AttentionSpanMinutes`, `PreferredExplanationStyle`, `DataPointCount`. The "pace/grit/time-of-day/motivation" model is aspirational, NOT built (→ backlog P3-13a, likely needs P5-03 analytics events).
+
+**PR1 — #177 P5-09a profile-aware engine** (base main): `RecommendationEngine` now uses profile dims 1-4 gated by `DataPointCount` — RecurringError→force Review, low AttentionSpan→smaller set, **bounded one-step difficulty nudge on Review items only (never crosses the adaptivity band)**, recurring-error ordered first, confidence gate (==0 → unchanged cold-start; 0<n<threshold → only RecurringError→Review). New `RecommendationOptions` (config `Recommendations:Engine`). Additive nullable `PreferredExplanationStyle` (+ `RecommendationExplanationStyle` enum) on `RecommendationItem` (Shared.Contracts/Learning) → `ItemsJson` (no migration). Gamification level stays OUT of the engine (un-conflation). Gates: build 0 / Learning 374 / security-auditor PASS (no raw behavioral signal escapes — the style enum is even dropped at the parent boundary) / reviewer PASS.
+
+**PR2 — #178 P3-14a level/profile-aware Lexi framing** (base `feat/P5-09a-profile-aware-recommendations`/#177): Lexi narration adds gamification **level** → motivational framing (closes the open P3-14 AC) + a coarse anonymous **encouragement style** (from the persisted P5-09a field). `PromptContext` +`CurrentLevel`/`EncouragementStyle`; 4 templates (EN+AR) framing-only, guardrails intact. Reuses the **existing** `IStudentXpQuery` (Ai `TryAddScoped` stub → real Gamification impl wins; registration order verified). **Cache-key now includes level+style** (required — level-up → fresh narration, no stale free serve). NO economy change (cost 5, charge-per-delivery). Gates: build 0 / Ai 351 / integration 15/15 (level-up→fresh+charged) / security-auditor PASS (only anonymous level int + coarse enum reach the prompt) / reviewer PASS.
+
+**Merge order: #177 → #178.** New load-bearing config: `Recommendations:Engine` (appsettings). **Backlog: P3-13a** (extend P3-13 with grit/time-of-day derivations — deferred, story+task recorded). Deferred nit: `RecommendationOptions.MinItems` doc overstates (floors the fatigue cap, doesn't pad results).
+
+---
+## P7 Curriculum Admin FE — Sub-wave 2b (P7-02 + P7-04) — 2026-06-19 (committed on `feat/P7-curriculum-2b`)
+
+**Sub-wave 2b of the Curriculum admin FE shipped.** Layers lessons & questions on top of the sub-wave 2a foundation (subjects/units/lifecycle).
+
+**What shipped (FE-only, P7-02 + P7-04):**
+- **P7-02 Lessons & content blocks** (lessons list + lesson detail + content-block editor):
+  - Routes: `app/(admin)/curriculum/subjects/[id]/units/[unitId]/lessons` (list), `/lessons/[lessonId]` (detail)
+  - Features: LessonForm (create/edit/delete + IsActive toggle), ContentBlockEditor (Text/Image/Video/Callout CRUD), keyboard-reorder blocks (↑↓ arrows), inherited-language badge, difficulty badge (1–4), lock badge (indicates prerequisite)
+  - Markdown safety: **NEW `lib/renderMarkdown.ts` = the ONLY HTML sink** — `DOMPurify.sanitize(marked.parse(md))` with strict allowlist (p/br/strong/em/ul/ol/li/h1-4/blockquote/code/pre/hr/a; https: URLs only). **Fail-closed on SSR** (`typeof window === 'undefined' → ''`). Image/video URLs guarded by `isSecureImageUrl` (https + pathname allowlist + denylist: private/loopback/link-local).
+  - Components: LessonForm, ContentBlockEditor, BlockCard, BlockForm, BlockTypePickerSheet, BlockPreview, BlockTypeBadge, InheritedLanguageBadge, DifficultyBadge, LockBadge, LessonDeleteDialog, DeleteBlockDialog
+  - API hooks: `useCreateLesson`, `useEditLesson`, `useDeleteLesson`, `useLessonsByUnit`, `useSetLessonActive`, `useReorderLessons`, `useAddContentBlock`, `useEditContentBlock`, `useDeleteContentBlock`, `useReorderContentBlocks`
+  - Strings: 80+ EN+AR keys for lessons/blocks (curriculum*, lesson*, block*, content* namespaces)
+- **P7-04 Questions (per-lesson quiz)** (questions list on lesson detail + question editor):
+  - Routes: `/lessons/[lessonId]/questions` (modal or embedded list + editor)
+  - Features: QuestionEditor (create/edit/delete + per-type UI), 4 question types (MCQ/TrueFalse/FillInBlank/Matching), type is **locked on edit** (UI disabled, backend validates), CorrectAnswer + Options JSONB round-trip — **non-Matching: CorrectAnswer = raw scalar (TrueFalse = lowercase `"true"`/`"false"`, MCQ/FillInBlank = string option id), Options = JSON-stringified array; Matching: CorrectAnswer = `{pairs:[{leftId,rightId}]}`, Options = `{left,right:[{id,text}]}`** (FE-serialized with stable ids, question state = 4 per the lifecycle)
+  - Components: QuestionEditor, QuestionTypeBadge, DeleteQuestionDialog, DeactivateQuestionDialog, ActivateQuestionDialog
+  - API hooks: `useAddQuestion`, `useEditQuestion`, `useDeleteQuestion`, `useReorderQuestions`, `useSetQuestionActive`, `useAdminQuestion`, `useAdminQuestionsByLesson`
+  - Strings: 50+ EN+AR keys for questions
+- **Shared constants** (in `@learnexia/shared`): `DIFFICULTY_LEVEL` (1–4), `CONTENT_BLOCK_TYPE` (1–4: Text/Image/Video/Callout), `QUESTION_TYPE` (1–4: MCQ/TrueFalse/FillInBlank/Matching), `GENERATED_BY` (1–2: Human/Ai)
+- **Dependencies added to admin-dashboard:**
+  - `marked@15.0.12` — Markdown parser
+  - `dompurify@3.2.3` — DOM sanitization (removed `@types/dompurify`, types are inlined)
+
+**Gates:** reviewer **PASS**; security-auditor **PASS-with-notes** (0 Critical/High; 4 Info notes — all security-sensitive: SSR fail-closed, URL denylist, TrueFalse lowercase, accessibility fieldsets — all applied).
+
+**Design specs:** `design-system/ui_kits/admin-dashboard/P7-02-FE.md`, `P7-04-FE.md`.
+
+**Known gaps & follow-ups:**
+- **DTOs still lack `lifecycleState`** (DG-2) — FE fetches via `GET /ContentLifecycle/Preview` per row (O(N), acceptable for ≤50-row lists); proper fix = backend task to add `lifecycleState` to curriculum read DTOs.
+- **Block `IsActive` is display-only** (no toggle endpoint — backend provides the read, FE shows the state, but parent-level deactivation via lesson IsActive).
+- **QC + E2E:** admin E2E harness exists (from Wave 1; curriculum QC is a separate lead-invoked step, not part of this PR).
+
+**Remaining sub-wave (not in this PR):**
+- **2c:** P7-03 skill graph (accessible list/adjacency editor — no graph-viz lib per lead decision)
 
 ## Recommendation Engine + Lexi narration wave — 2026-06-18 (2 stacked PRs open)
 

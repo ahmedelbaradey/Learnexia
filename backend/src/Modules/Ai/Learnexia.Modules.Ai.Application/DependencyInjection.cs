@@ -10,6 +10,7 @@ using Learnexia.Modules.Ai.Application.Safety;
 using Learnexia.Modules.Ai.Application.Services;
 using Learnexia.Shared.Contracts.Ai;
 using Learnexia.Shared.Contracts.AiTutor;
+using Learnexia.Shared.Contracts.Gamification;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -51,6 +52,13 @@ public static class DependencyInjection
         // P3-04 wires the real implementation from the Identity/Parent seam.
         // Uses TryAdd so a real implementation registered first is not overridden.
         services.TryAddTransient<IChildLearningProfileQuery, DefaultChildLearningProfileQuery>();
+
+        // IStudentXpQuery: default stub returns null (no XP profile / level 1 cold-start fallback).
+        // P3-14a: the Gamification module registers the real CachedStudentXpQuery via
+        // AddGamificationInfrastructure. TryAddScoped so the real implementation wins in the full host.
+        // The Ai module uses this seam to fetch CurrentLevel for motivational framing only —
+        // the handler defaults to CurrentLevel=1 on null (seam contract).
+        services.TryAddScoped<IStudentXpQuery, DefaultStudentXpQuery>();
 
         // ── P3-04 Explain Feature ─────────────────────────────────────────────────────
 
