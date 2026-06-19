@@ -422,6 +422,23 @@ public sealed class P7_11_AiSafetyDashboard_Tests : IAsyncLifetime
         succ.GetBoolean().Should().BeFalse("successed must be false for a 400 range error; body: {0}", body);
     }
 
+    [Fact(DisplayName = "SIGNALS-10b: window > 366 days → 400 BadRequest (AiSafetyDateRangeTooLarge)")]
+    public async Task Signals10b_WindowTooLarge_Returns400()
+    {
+        // 400 days > 366-day max cap on signals handler.
+        var from = DateTime.UtcNow.AddDays(-400);
+        var to   = DateTime.UtcNow;
+        var (resp, root, body) = await SendAsync(HttpMethod.Get,
+            $"{SignalsUrl}?from={FmtDate(from)}&to={FmtDate(to)}",
+            bearer: _adminToken);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            "window > 366 days must return 400 (AiSafetyDateRangeTooLarge cap); body: {0}", body);
+
+        TryProp(root, "successed", out var succ).Should().BeTrue("body: {0}", body);
+        succ.GetBoolean().Should().BeFalse("successed must be false for a too-large window; body: {0}", body);
+    }
+
     [Fact(DisplayName = "SIGNALS-10: empty window (far future) → 200 with TotalEvents=0")]
     public async Task Signals10_EmptyWindow_Returns200WithZeros()
     {
@@ -811,6 +828,23 @@ public sealed class P7_11_AiSafetyDashboard_Tests : IAsyncLifetime
 
         TryProp(root, "successed", out var succ).Should().BeTrue("body: {0}", body);
         succ.GetBoolean().Should().BeFalse("successed must be false for a 400 range error; body: {0}", body);
+    }
+
+    [Fact(DisplayName = "TREND-4b: window > 366 days → 400 BadRequest (AiSafetyDateRangeTooLarge)")]
+    public async Task Trend4b_WindowTooLarge_Returns400()
+    {
+        // 400 days > 366-day max cap on trend handler.
+        var from = DateTime.UtcNow.AddDays(-400);
+        var to   = DateTime.UtcNow;
+        var (resp, root, body) = await SendAsync(HttpMethod.Get,
+            $"{TrendUrl}?from={FmtDate(from)}&to={FmtDate(to)}",
+            bearer: _adminToken);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            "window > 366 days must return 400 (AiSafetyDateRangeTooLarge cap); body: {0}", body);
+
+        TryProp(root, "successed", out var succ).Should().BeTrue("body: {0}", body);
+        succ.GetBoolean().Should().BeFalse("successed must be false for a too-large window; body: {0}", body);
     }
 
     [Fact(DisplayName = "TREND-5: empty window (far future) → 200 with empty array")]

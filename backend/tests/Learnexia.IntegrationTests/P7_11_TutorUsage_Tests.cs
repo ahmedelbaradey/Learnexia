@@ -567,6 +567,23 @@ public sealed class P7_11_TutorUsage_Tests : IAsyncLifetime
         succ.GetBoolean().Should().BeFalse("successed must be false for a reversed-range 400; body: {0}", body);
     }
 
+    [Fact(DisplayName = "USAGE-VALID-3: window > 366 days → 400 BadRequest (AiSafetyDateRangeTooLarge)")]
+    public async Task UsageValid3_WindowTooLarge_Returns400()
+    {
+        // 400 days > 366 days max cap — handler must reject with AiSafetyDateRangeTooLarge.
+        var from = DateTime.UtcNow.AddDays(-400);
+        var to   = DateTime.UtcNow;
+        var (resp, root, body) = await SendAsync(HttpMethod.Get,
+            $"{UsageUrl}?from={Fmt(from)}&to={Fmt(to)}",
+            bearer: _adminToken);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            "window > 366 days must return 400 (AiSafetyDateRangeTooLarge cap); body: {0}", body);
+
+        TryProp(root, "successed", out var succ).Should().BeTrue("body: {0}", body);
+        succ.GetBoolean().Should().BeFalse("successed must be false for a too-large window; body: {0}", body);
+    }
+
     // =========================================================================
     // USAGE-EMPTY: future window → 200 with zeroed payload, never 404
     // =========================================================================

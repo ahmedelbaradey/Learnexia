@@ -19,7 +19,7 @@ namespace Learnexia.IntegrationTests;
 ///   GET    /api/learning/Subjects?id=999999999   — AdminOnly
 ///   GET    /api/learning/Units?id=999999999       — AdminOnly
 ///   GET    /api/learning/Grades?id=999999999      — [Authorize] (any authenticated user)
-///   GET    /api/learning/Concepts?id=999999999    — no auth (open)
+///   GET    /api/learning/Concepts?id=999999999    — [Authorize] (any authenticated user; class-level)
 ///   GET    /api/learning/Skills?id=999999999      — AdminOnly
 ///
 ///   PUT    /api/learning/Subjects/Update          — AdminOnly; body with Id=999999999
@@ -120,9 +120,10 @@ public sealed class P7_01c_LearningGetByIdNotFound_Tests : IAsyncLifetime
     [Fact(DisplayName = "NotFound-regression: GET Concepts?id=999999999 → 404, successed=false, no leak")]
     public async Task GetById_Concept_NonExistentId_Returns404()
     {
-        // ConceptsController has no class-level [Authorize]; endpoint is open.
+        // ConceptsController has class-level [Authorize] — use admin token so auth passes
+        // and the handler can return a real 404 (not 401).
         var (resp, root, body) = await SendAsync(
-            HttpMethod.Get, $"/api/learning/Concepts?id={GhostId}", bearer: null);
+            HttpMethod.Get, $"/api/learning/Concepts?id={GhostId}", bearer: _adminToken);
 
         AssertNotFound(resp, root, body, "Concept GetById with non-existent id");
         AssertNoInternalLeak(root, body, "Concept GetById");
