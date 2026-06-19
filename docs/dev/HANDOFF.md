@@ -1,3 +1,16 @@
+## P7-11 AI-safety dashboard (buildable slice) — 2026-06-19 (PR open)
+
+Second of the remaining admin trio. Built the slice buildable NOW from the existing `ai.SafetyEvents` (no new table, no seam) on `feat/P7-11-ai-safety-dashboard` (base main).
+
+- **`AdminAiSafetyController`** (`api/Admin/AiSafety`, `[Authorize(AdminOnly)]`, read-only): `GET signals` (counts by action/reasonCode/modelId/taskKind over a window), `GET flagged` (paged PII-light drill-in), `GET trend` (per-day buckets). Ai-module read-model (`IAiSafetyDashboardService`, Option C) mirroring `ModerationController`.
+- jsonb `ReasonCodes`/`FailedChecks`: signals/trend aggregate in-memory over the indexed `OccurredAtUtc` window (fail-soft); the `flagged?reasonCode=` filter uses **`EF.Functions.JsonContains` (Postgres `@>` exact array-element match)** — the initial `string.Contains`→`LIKE` 500'd on jsonb (caught by api-tester FLAGGED-6).
+- Gates: build 0 / Ai unit 363 (+1 skip: InMemory can't translate JsonContains, covered by FLAGGED-6) / **P7_11 integration 37/37** / security-auditor PASS-with-notes (its Medium `ex.Message` leak FIXED → generic `ServerError()`) / reviewer PASS.
+- Shared `LearnexiaWebAppFactory` now registers+migrates `AiDbContext` (verified safe; `AC5_SubjectDeactivate` passes in isolation — its suite-level fail is the known grade-pagination data-accumulation flake, not a regression).
+
+**DEFERRED (not in this slice):** tutor usage/cost (`ai.AiUsageLogs` table + wiring the gateway to persist usage — needs a **rule-#8 sign-off** on the write pattern: fire-and-forget vs event/outbox); eval-results (blocked on **P6-02**); subject/language breakdown (no such column on `SafetyEvent`). **Remaining admin: P7-10 analytics** — buildable over existing data (~8 KPIs real, 2 need P5-03) per `docs/briefs/P7-10-analytics-buildability.md`; awaiting lead go-ahead.
+
+---
+
 ## P7 Curriculum Admin FE — Sub-wave 2c (P7-03) — 2026-06-19 (committed on `feat/P7-curriculum-2c`)
 
 **Sub-wave 2c of the Curriculum admin FE shipped.** Completes Wave 2 — the entire Curriculum admin FE surface (P7-01..05).
