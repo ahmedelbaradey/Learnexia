@@ -2169,5 +2169,11 @@
         /// </summary>
         public const string AiSafetyInvalidDateRange = "AiSafetyInvalidDateRange";
 
+        /// <summary>
+        /// Returned when the AI tutor usage/cost summary is retrieved successfully (P7-11 usage endpoint).
+        /// Used by <c>GetTutorUsageQueryHandler</c>.
+        /// </summary>
+        public const string AiTutorUsageRetrievedSuccessfully = "AiTutorUsageRetrievedSuccessfully";
+
     }
 }
