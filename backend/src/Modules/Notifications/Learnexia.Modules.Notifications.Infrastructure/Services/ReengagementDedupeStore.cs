@@ -18,6 +18,9 @@ internal sealed class ReengagementDedupeStore : IReengagementDedupeStore
 {
     private const int DedupeTtlHours = 36;
 
+    // P9-08: key prefix for per-lapse-episode tier dedupe (no day component — episode TTL governs).
+    private const string TierKeyPrefix = "nudge-tier:";
+
     private readonly IDistributedCache _cache;
     private readonly IConnectionMultiplexer? _redisMultiplexer;
     private readonly ILoggerManager _logger;
@@ -69,6 +72,49 @@ internal sealed class ReengagementDedupeStore : IReengagementDedupeStore
             _logger.LogWarn(
                 $"P4-09: Redis dedupe unavailable for key={key} — fail-open, nudge may duplicate.");
             _ = ex; // suppress unused-variable warning
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// P9-08: Per-lapse-episode tier dedupe.
+    /// Key: <c>nudge-tier:{studentId}:{tierCode}</c>; TTL = episode length (e.g. 7d for gentle, 14d for repair).
+    /// No day component — the tier fires at most once per episode, not once per day.
+    /// Fail-open: Redis unavailable → log WARN + return true (allow send; duplicate preferable to drop).
+    /// </summary>
+    public async Task<bool> TryAcquireTierAsync(
+        int studentId,
+        string tierCode,
+        TimeSpan ttl,
+        CancellationToken ct = default)
+    {
+        var key = $"{TierKeyPrefix}{studentId}:{tierCode}";
+
+        try
+        {
+            if (_redisMultiplexer is not null)
+            {
+                var db = _redisMultiplexer.GetDatabase();
+                return await db.StringSetAsync(key, "1", ttl, when: When.NotExists);
+            }
+
+            // Fallback: IDistributedCache (best-effort, race-tolerant).
+            var existing = await _cache.GetStringAsync(key, ct);
+            if (existing is not null)
+                return false;
+
+            await _cache.SetStringAsync(key, "1",
+                new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = ttl,
+                }, ct);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarn(
+                $"P9-08: Redis tier dedupe unavailable for key={key} — fail-open, tier may re-fire.");
+            _ = ex;
             return true;
         }
     }

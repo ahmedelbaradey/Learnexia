@@ -471,7 +471,7 @@ public sealed class P4_09_Reengagement_Tests : IAsyncLifetime
     // T10 — LapseWinBackJob → LapseWinBack notification (3-day idle)
     // =========================================================================
 
-    [Fact(DisplayName = "P409-T10 LapseWinBackJob for 3-day idle student → LapseWinBack notification")]
+    [Fact(DisplayName = "P409-T10 LapseWinBackJob for 3-day idle student → LapseWinBack (REPAIR tier) notification")]
     public async Task T10_LapseWinBackJob_3DayIdle_NotificationCreated()
     {
         var (_, _, _, childId) = await CreateParentChildPairAsync("t10");
@@ -489,11 +489,14 @@ public sealed class P4_09_Reengagement_Tests : IAsyncLifetime
 
         using var verifyScope = _factory.Services.CreateScope();
         var notifDb = verifyScope.ServiceProvider.GetRequiredService<NotificationsDbContext>();
+
+        // P9-08: LapseWinBackIntegrationEventHandler now selects tiered codes.
+        // 3 days idle (threshold_1=2, threshold_2=5): 2 < 3 <= 5 → REPAIR tier.
         var notification = await notifDb.Notifications
             .AsNoTracking()
             .FirstOrDefaultAsync(n => n.RecipientExternalUserId == childId
-                                   && n.Code == "LAPSE_WIN_BACK");
-        notification.Should().NotBeNull("LapseWinBackJob must produce a LAPSE_WIN_BACK notification for 3-day idle student");
+                                   && n.Code == "LAPSE_WIN_BACK_REPAIR");
+        notification.Should().NotBeNull("LapseWinBackJob must produce a LAPSE_WIN_BACK_REPAIR notification for 3-day idle student (P9-08 tier selection: 2 < days=3 <= 5 → REPAIR)");
         notification!.Category.Should().Be(NotificationCategory.LapseWinBack);
     }
 

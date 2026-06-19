@@ -66,4 +66,16 @@ public interface INotificationInboxService
         NotificationCategory category,
         DateTime nowUtc,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Counts how many PUSH-channel notifications were dispatched for <paramref name="childId"/>
+    /// on the UTC day containing <paramref name="nowUtc"/>, across ALL categories.
+    /// Push rows are identified by <c>DeliveredChannels &amp; 2 != 0</c> (Push bitmask = 2).
+    /// This is the AUTHORITATIVE cross-category global push budget counter for P9-07 arbitration —
+    /// it derives from durable DB inbox rows, so the budget is enforced even when Redis is unavailable.
+    /// </summary>
+    Task<int> CountPushesSentTodayAsync(
+        int childId,
+        DateTime nowUtc,
+        CancellationToken ct = default);
 }

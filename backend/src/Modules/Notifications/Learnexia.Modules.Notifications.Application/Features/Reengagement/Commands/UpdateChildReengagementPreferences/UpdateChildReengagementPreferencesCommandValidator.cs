@@ -25,6 +25,12 @@ public sealed class UpdateChildReengagementPreferencesCommandValidator
             .When(x => x.DailyCap.HasValue)
             .WithMessage(localizer[SharedResourcesKey.InvalidDailyCapRange]);
 
+        // P9-07: global daily push budget — parent-configurable, [1, 20] when provided.
+        RuleFor(x => x.GlobalDailyPushBudget)
+            .InclusiveBetween(1, 20)
+            .When(x => x.GlobalDailyPushBudget.HasValue)
+            .WithMessage(localizer[SharedResourcesKey.InvalidGlobalDailyPushBudgetRange]);
+
         RuleFor(x => x.TimeZoneId)
             .Must(BeAValidTimeZone!)
             .When(x => !string.IsNullOrWhiteSpace(x.TimeZoneId))

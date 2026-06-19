@@ -823,6 +823,9 @@
         public const string NotificationAccessForbidden = "NotificationAccessForbidden";
         public const string NotificationIdRequired = "NotificationIdRequired";
 
+        // P9-07 — global push budget (parent-configurable per-child)
+        public const string InvalidGlobalDailyPushBudgetRange = "InvalidGlobalDailyPushBudgetRange";
+
         // P8-03 — learning-language curriculum guard
         /// <summary>
         /// Returned when a student tries to access a lesson whose subject language does not match

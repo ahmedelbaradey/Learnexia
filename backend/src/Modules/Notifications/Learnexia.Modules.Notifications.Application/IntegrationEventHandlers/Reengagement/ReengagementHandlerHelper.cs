@@ -102,6 +102,10 @@ internal static class ReengagementHandlerHelper
 
     /// <summary>
     /// Builds a <see cref="NudgeMessage"/> from the resolved prefs + rendered copy.
+    /// <c>ShouldPush</c> is set to <c>prefs.Push</c> (parent pref only). The dispatcher applies
+    /// the global daily budget + per-type cooldown gate via <see cref="INudgeArbiter"/>.
+    /// Budget resolution is owned entirely by <see cref="INudgeDispatcher"/> — handlers must NOT
+    /// pre-compute or pass a budget value; the dispatcher looks it up uniformly for every nudge.
     /// </summary>
     public static NudgeMessage BuildMessage(
         int childId,
@@ -114,14 +118,14 @@ internal static class ReengagementHandlerHelper
     {
         var (title, body) = ReengagementCopyTemplates.Render(category, code, locale, placeholders);
         return new NudgeMessage(
-            RecipientChildUserId: childId,
-            ParentId:             parentId,
-            Category:             category,
-            Code:                 code,
-            Title:                title,
-            Body:                 body,
-            DataJson:             null,
-            ShouldPush:           prefs.Push,
-            ShouldInApp:          prefs.InApp);
+            RecipientChildUserId:  childId,
+            ParentId:              parentId,
+            Category:              category,
+            Code:                  code,
+            Title:                 title,
+            Body:                  body,
+            DataJson:              null,
+            ShouldPush:            prefs.Push,
+            ShouldInApp:           prefs.InApp);
     }
 }

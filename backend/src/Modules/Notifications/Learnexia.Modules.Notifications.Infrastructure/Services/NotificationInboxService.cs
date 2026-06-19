@@ -159,4 +159,28 @@ internal sealed class NotificationInboxService : INotificationInboxService
                 && n.SentAtUtc < tomorrowStart,
                 ct);
     }
+
+    /// <summary>
+    /// P9-07: Cross-category push count for the global daily push budget.
+    /// Push rows are identified by <c>DeliveredChannels &amp; 2 != 0</c> (Push bitmask = 2).
+    /// This is the durable DB-backed budget authority — enforced even when Redis is unavailable.
+    /// </summary>
+    public async Task<int> CountPushesSentTodayAsync(
+        int childId,
+        DateTime nowUtc,
+        CancellationToken ct = default)
+    {
+        var todayStart    = nowUtc.Date;
+        var tomorrowStart = todayStart.AddDays(1);
+
+        // DeliveredChannels & 2 != 0 selects rows where the push bit was set.
+        return await _db.Notifications
+            .AsNoTracking()
+            .CountAsync(n =>
+                n.RecipientExternalUserId == childId
+                && (n.DeliveredChannels & 2) != 0
+                && n.SentAtUtc >= todayStart
+                && n.SentAtUtc < tomorrowStart,
+                ct);
+    }
 }

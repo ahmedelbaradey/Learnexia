@@ -29,4 +29,13 @@ public sealed record UpdateChildReengagementPreferencesCommand : ICommand<BaseRe
 
     /// <summary>Max nudges per category per day [0..10]. Null = use existing (default 3).</summary>
     public int? DailyCap { get; init; }
+
+    /// <summary>
+    /// Parent-configurable global cross-category daily PUSH budget for this child (P9-07).
+    /// When provided, caps the total number of push notifications the child receives per day
+    /// across ALL categories. Valid range: [1, 20]. Null = use existing (or platform default 4).
+    /// <para>IDOR guard: this command is parent-only; the handler enforces IsParentOfChildAsync.
+    /// Setting budget for another parent's child returns a generic Forbidden.</para>
+    /// </summary>
+    public int? GlobalDailyPushBudget { get; init; }
 }

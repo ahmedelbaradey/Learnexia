@@ -25,6 +25,15 @@ public sealed class ChildReengagementPreference : FullAuditedEntity
     /// <summary>Maximum number of nudges delivered across all channels for this category per day.</summary>
     public int DailyCap { get; private set; } = 3;
 
+    /// <summary>
+    /// Parent-configurable global cross-category daily PUSH budget for this child.
+    /// When <c>null</c>, the platform default applies (sourced from
+    /// <c>IGlobalSettingsProvider.GetInt("Notifications:GlobalDailyPushBudget", 4)</c>
+    /// by the arbiter at runtime).  A non-null value is this parent's explicit per-child cap.
+    /// In-app inbox delivery is never rationed by this budget — only push channel sends are counted.
+    /// </summary>
+    public int? GlobalDailyPushBudget { get; private set; }
+
     private ChildReengagementPreference() { }
 
     public static ChildReengagementPreference CreateDefault(int parentId, int childId, NotificationCategory category)
@@ -57,5 +66,15 @@ public sealed class ChildReengagementPreference : FullAuditedEntity
     public void UpdateDailyCap(int dailyCap)
     {
         DailyCap = dailyCap;
+    }
+
+    /// <summary>
+    /// Sets the parent-configurable global cross-category daily PUSH budget for this child (P9-07).
+    /// Passing <c>null</c> resets it to the platform default (sourced from config at runtime).
+    /// Valid range: [1, 20] (enforced at the command layer; domain accepts any non-negative int or null).
+    /// </summary>
+    public void UpdateGlobalDailyPushBudget(int? globalDailyPushBudget)
+    {
+        GlobalDailyPushBudget = globalDailyPushBudget;
     }
 }

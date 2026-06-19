@@ -15,5 +15,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Modules\Notifications\Learnexia.Modules.Notifications.Application\Learnexia.Modules.Notifications.Application.csproj" />
     <ProjectReference Include="..\..\src\Modules\Notifications\Learnexia.Modules.Notifications.Domain\Learnexia.Modules.Notifications.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Notifications\Learnexia.Modules.Notifications.Infrastructure\Learnexia.Modules.Notifications.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

@@ -1,3 +1,26 @@
+## P9 notifications — nudge arbitration + global push budget (P9-07/05/08) — 2026-06-20 (`feat/P9-nudge-arbitration`)
+
+**The notification "foundation" already existed** (inbox/preferences/read-unread/consumers/fail-soft dispatcher all shipped with P4-09; push is already a config-selected adapter `IPushSender` → Expo/no-op). So this wave built the REAL gap: arbitration + a global push budget + the remaining consumers. Full pipeline ran; all gates PASS.
+
+**What shipped (extends the P4-09 re-engagement subsystem in the Notifications module — no new module):**
+- **P9-07 global daily push budget — the gate lives in `NudgeDispatcher`** (the single choke point), so **all 11 handlers (legacy fire-hose + new) are uniformly gated**. In-app inbox is ALWAYS written; **only push is rationed**. Budget = the child's `ChildReengagementPreference.GlobalDailyPushBudget` (parent-set, additive nullable column, migration `P9_07_AddGlobalDailyPushBudget`) **?? config default 4**, resolved **by the dispatcher from prefs** (NOT passed via `NudgeMessage` — that pitfall was caught + fixed: otherwise legacy handlers ignored the parent's value). Authoritative push count = inbox rows (`DeliveredChannels & 2` today, `CountPushesSentTodayAsync`). Per-type cooldown via Redis SETNX (fail-open). Suppress-reasons → `ILoggerManager` structured lines. `ReengagementEvaluator` gained GlobalBudgetExhausted/PriorityLost/Cooldown.
+- **Parent budget write-path:** the per-child prefs update command accepts `GlobalDailyPushBudget` (validator-bounded [1,20]); **IDOR-guarded** (`IParentChildQuery.IsParentOfChildAsync`, ChildId from route not body).
+- **P9-05:** 3 new consumers — StudentLeveledUp, LeagueTierChanged (promoted/neutral), StreakFreezeConsumed — + ar/en templates, category `Achievement`.
+- **P9-08:** LapseWinBack escalation ladder — idle-day tiers + per-lapse-episode dedupe.
+
+**Load-bearing config (tunable without deploy via `IGlobalSettingsProvider`):** `Notifications:GlobalDailyPushBudget` (4), `Notifications:PriorityOrder`, `Notifications:Cooldown:*` (per-type TTLs), `Notifications:LapseTiers` (`2,5,14`). **Redis key shapes:** `cooldown:{childId}:{typeCode}`, `nudge-tier:{studentId}:{tierCode}`. **Fail-open:** Redis-cooldown outage skips cooldown but the DB-derived budget count stays authoritative (spam guard never silently disabled).
+
+**Gates:** build 0; Notifications unit 76/76; migration snapshot in sync; **api-tester 39/39** (P9 incl. legacy `StreakAtRisk` gated by per-child budget TC-15/16 + P4-09 regression); **security-auditor PASS** (IDOR/budget-integrity/fail-soft/PII/module-isolation all clean); **reviewer PASS**.
+
+**Accepted v1 trade-offs / backlog:**
+- **Achievement-category nudges are inbox-only** (no push) until the P9-04 FE per-type toggle ships (Achievement isn't a parent-managed category yet) — the 3 new consumers write inbox rows but don't push in v1.
+- **Emergent priority, no scheduler** — budget + cooldowns starve low-priority spam rather than literal slot-contention (the `PriorityLost` reason is reserved for a future windowed arbiter).
+- **Timed-event nudges deferred** (`TimedEventStarted/Ended` carry no StudentId → no recipient; needs a recipient fan-out mechanism). 
+- **First-class notification analytics sink** (suppress/send/open events) is a separate story — v1 uses logs.
+- Nit: suppression reason is logged twice (arbiter + dispatcher) — harmless, dedupe later.
+
+---
+
 ## P5-03 analytics backbone (NEW Analytics module) + P7-11b streaming usage — 2026-06-19 (`feat/P5-03-analytics-backbone`)
 
 **A NEW backend module exists: `Analytics`** (4 projects, schema `analytics`) — the product-analytics event sink. Plus P7-11b closed the streaming AI-usage gap. Full pipeline (analyzer→planner→db-migration→backend-feature→api-tester→security-auditor→reviewer) ran; all gates PASS.

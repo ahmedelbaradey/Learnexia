@@ -59,6 +59,7 @@ internal sealed class ChildReengagementPreferenceService : IChildReengagementPre
         TimeOnly? quietHoursEndLocal,
         string? timeZoneId,
         int? dailyCap,
+        int? globalDailyPushBudget = null,
         CancellationToken ct = default)
     {
         var existing = await _db.ChildReengagementPreferences
@@ -83,6 +84,10 @@ internal sealed class ChildReengagementPreferenceService : IChildReengagementPre
 
                 if (dailyCap.HasValue)
                     row.UpdateDailyCap(dailyCap.Value);
+
+                // P9-07: parent-configurable global push budget (applied to all rows for this child).
+                if (globalDailyPushBudget.HasValue)
+                    row.UpdateGlobalDailyPushBudget(globalDailyPushBudget.Value);
             }
             else
             {
@@ -97,6 +102,10 @@ internal sealed class ChildReengagementPreferenceService : IChildReengagementPre
 
                 if (dailyCap.HasValue)
                     newRow.UpdateDailyCap(dailyCap.Value);
+
+                // P9-07: parent-configurable global push budget.
+                if (globalDailyPushBudget.HasValue)
+                    newRow.UpdateGlobalDailyPushBudget(globalDailyPushBudget.Value);
 
                 await _db.ChildReengagementPreferences.AddAsync(newRow, ct);
             }
@@ -119,6 +128,21 @@ internal sealed class ChildReengagementPreferenceService : IChildReengagementPre
                 ct);
 
         return row ?? ChildReengagementPreference.CreateDefault(parentId, childId, category);
+    }
+
+    public async Task<int?> GetGlobalDailyPushBudgetAsync(
+        int parentId,
+        int childId,
+        CancellationToken ct = default)
+    {
+        // UpsertAsync syncs GlobalDailyPushBudget across all 3 category rows for a child,
+        // so any non-null row value is authoritative. Return the first non-null found.
+        return await _db.ChildReengagementPreferences
+            .AsNoTracking()
+            .Where(p => p.ParentId == parentId && p.ChildId == childId
+                        && p.GlobalDailyPushBudget != null)
+            .Select(p => p.GlobalDailyPushBudget)
+            .FirstOrDefaultAsync(ct);
     }
 
     // -------------------------------------------------------------------------

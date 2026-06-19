@@ -34,7 +34,13 @@ public interface INudgeDispatcher
 /// <param name="Title">Resolved + rendered notification title (locale-specific).</param>
 /// <param name="Body">Resolved + rendered notification body (locale-specific).</param>
 /// <param name="DataJson">Optional JSON payload (badge code, mission code, etc.). Defaults to "{}".</param>
-/// <param name="ShouldPush">Whether the push channel should attempt delivery.</param>
+/// <param name="ShouldPush">
+///   Whether the parent pref allows a push for this nudge. The dispatcher applies the global
+///   daily budget + per-type cooldown gate on top of this flag via <see cref="INudgeArbiter"/>.
+///   Set to <c>prefs.Push</c> — handlers must NOT pre-arbitrate the push decision; the dispatcher
+///   is the single choke point for ALL handler paths (legacy + new). Budget resolution is owned
+///   entirely by the dispatcher via <see cref="IChildReengagementPreferenceService.GetGlobalDailyPushBudgetAsync"/>.
+/// </param>
 /// <param name="ShouldInApp">Whether the in-app inbox row should be written.</param>
 public sealed record NudgeMessage(
     int RecipientChildUserId,

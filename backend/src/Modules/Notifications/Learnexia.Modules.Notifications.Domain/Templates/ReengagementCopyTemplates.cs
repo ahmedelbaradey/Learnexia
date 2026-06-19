@@ -81,6 +81,22 @@ public static class ReengagementCopyTemplates
             "New league!",
             "🏆 You moved to a new league! Keep learning and hold your spot"),
 
+        // P9-05: League promotion variant (shown when Status == "Promoted")
+        [$"Achievement:LEAGUE_TIER_CHANGED_PROMOTED:{ArEg}"] = (
+            "ترقيت لدوري أعلى!",
+            "🏆 ارتقيت لدوري أعلى! واصل التعلم وحافظ على مكانتك الجديدة"),
+        [$"Achievement:LEAGUE_TIER_CHANGED_PROMOTED:{EnUs}"] = (
+            "You've been promoted!",
+            "🏆 You moved up to a higher league! Keep learning and hold your new spot"),
+
+        // P9-05: Streak freeze consumed (Achievement v1 per OQ-8 locked decision)
+        [$"Achievement:STREAK_FREEZE_CONSUMED:{ArEg}"] = (
+            "سلسلتك محفوظة!",
+            "❄️ أنقذنا سلسلتك اليوم! سلسلتك لا تزال {streakLength} يوم — ارجع غداً تكمّل"),
+        [$"Achievement:STREAK_FREEZE_CONSUMED:{EnUs}"] = (
+            "Streak saved!",
+            "❄️ Your freeze saved your {streakLength}-day streak today! Come back tomorrow to keep it going"),
+
         // ── DailyMissionReminder ──────────────────────────────────────────────────────────────
         [$"DailyMissionReminder:DAILY_MISSION_REMINDER:{ArEg}"] = (
             "مهمتك اليومية!",
@@ -99,6 +115,34 @@ public static class ReengagementCopyTemplates
         [$"LapseWinBack:LAPSE_WIN_BACK:{EnUs}"] = (
             "We miss you!",
             "We miss you! Come back today to continue your journey 🌟"),
+
+        // P9-08: Comeback escalation ladder (3 tiers: gentle ~2d / repair ~5d / fresh-start ~14d)
+        // Copy-only — streak-repair action is out of scope (economy-dependent, Gap C).
+        // Never shaming; celebration > guilt (BRD §8 child-safety principle).
+
+        // Tier 1 — gentle (~2 days idle): warm, encouraging, low pressure
+        [$"LapseWinBack:LAPSE_WIN_BACK_GENTLE:{ArEg}"] = (
+            "وحشتنا!",
+            "يومين وانت مش معانا — رحلتك بتستناك! 🌟 ارجع النهارده وكمّل من حيث وقفت"),
+        [$"LapseWinBack:LAPSE_WIN_BACK_GENTLE:{EnUs}"] = (
+            "We miss you!",
+            "Two days away — your journey is waiting! 🌟 Come back today and pick up where you left off"),
+
+        // Tier 2 — repair framing (~5 days idle): streak-repair framing (copy only; no action)
+        [$"LapseWinBack:LAPSE_WIN_BACK_REPAIR:{ArEg}"] = (
+            "سلسلتك تستناك!",
+            "⭐ رحلتك مش هتاخدك كتير — درس واحد النهارده يفرق. عد وابدأ من جديد!"),
+        [$"LapseWinBack:LAPSE_WIN_BACK_REPAIR:{EnUs}"] = (
+            "Your journey awaits!",
+            "⭐ Getting back won't take long — just one lesson today makes a difference. Come back and restart!"),
+
+        // Tier 3 — fresh start (~14 days idle): new-beginning framing, zero pressure
+        [$"LapseWinBack:LAPSE_WIN_BACK_FRESH_START:{ArEg}"] = (
+            "بداية جديدة!",
+            "🌱 كل بطل بيبدأ من جديد في أي وقت! رحلتك بتستناك — ارجع وابدأ صفحة جديدة"),
+        [$"LapseWinBack:LAPSE_WIN_BACK_FRESH_START:{EnUs}"] = (
+            "Fresh start!",
+            "🌱 Every champion can start fresh anytime! Your journey is waiting — come back and begin a new chapter"),
     };
 
     /// <summary>

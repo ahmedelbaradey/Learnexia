@@ -1732,6 +1732,9 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="NotificationIdRequired" xml:space="preserve">
     <value>Notification ID is required.</value>
   </data>
+  <data name="InvalidGlobalDailyPushBudgetRange" xml:space="preserve">
+    <value>Global daily push budget must be between 1 and 20.</value>
+  </data>
   <data name="LessonLanguageMismatch" xml:space="preserve">
     <value>This lesson is not available in your current learning language.</value>
   </data>
