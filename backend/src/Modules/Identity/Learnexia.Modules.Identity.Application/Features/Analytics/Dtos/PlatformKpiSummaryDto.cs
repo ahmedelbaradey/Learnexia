@@ -92,7 +92,8 @@ public sealed record PlatformKpiSummaryDto
 
     /// <summary>
     /// Total AI tutor requests in the window — real data from <c>ai.AiUsageLogs</c> (P7-11 tutor-cost).
-    /// Counts non-streaming completions (streamed responses are a documented v1 capture gap).
+    /// Counts both non-streaming (<c>CompleteAsync</c>) and streaming (<c>StreamAsync</c>) calls
+    /// (P7-11b: streaming capture gap closed).
     /// </summary>
     public int AiRequestVolume { get; init; }
 

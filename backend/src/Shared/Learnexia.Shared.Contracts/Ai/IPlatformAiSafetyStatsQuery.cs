@@ -10,8 +10,8 @@ namespace Learnexia.Shared.Contracts.Ai;
 /// Safety event aggregates (<c>SafetyEvent</c> table) are REAL data available now.
 /// AI request volume is now ALSO real — sourced from the <c>ai.AiUsageLogs</c> table (built in
 /// the P7-11 tutor-cost sub-batch). See <see cref="PlatformAiSafetyStats.AiRequestVolume"/>.
-/// (Note: streamed AI responses are not yet captured in <c>AiUsageLogs</c> — a documented v1 gap —
-/// so the volume counts non-streaming completions.)</para>
+/// Both non-streaming (<c>CompleteAsync</c>) and streaming (<c>StreamAsync</c>) calls are captured
+/// (P7-11b: streaming capture gap closed).</para>
 ///
 /// <para>All results are sentinel-safe: an empty window returns zeroed stats — never null, never throws.</para>
 /// </summary>
@@ -49,8 +49,9 @@ public interface IPlatformAiSafetyStatsQuery
 /// </param>
 /// <param name="AiRequestVolume">
 /// Total AI tutor requests in the window — count of <c>ai.AiUsageLogs</c> rows. Real data
-/// (the AiUsageLogs table is built). Counts non-streaming completions; streamed responses are
-/// a documented v1 capture gap. Zero when no calls occurred (a real answer, not N/A).
+/// (the AiUsageLogs table is built). Counts both non-streaming (<c>CompleteAsync</c>) and
+/// streaming (<c>StreamAsync</c>) calls — P7-11b closed the streaming capture gap.
+/// Zero when no calls occurred (a real answer, not N/A).
 /// </param>
 /// <param name="AiRequestVolumeNaReason">
 /// Explicit N/A marker for AI request volume — non-null only if the volume cannot be derived.

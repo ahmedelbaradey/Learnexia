@@ -19,13 +19,9 @@ namespace Learnexia.Modules.Ai.Infrastructure.Gateway;
 /// - Translates ALL provider exceptions to typed <see cref="AiError"/>; NEVER throws to caller.
 /// - Captures <see cref="AiUsage"/> (with estimated cost) and logs at Debug via <see cref="ILoggerManager"/>.
 /// - Fires a background write to <c>ai.AiUsageLogs</c> via <see cref="IAiUsageRecorder"/> (fire-and-forget,
-///   fail-soft, never blocks the hot path).
+///   fail-soft, never blocks the hot path) — for BOTH <see cref="CompleteAsync"/> and <see cref="StreamAsync"/>
+///   paths (P7-11b: streaming capture gap closed).
 /// - Never logs prompt/response text or API keys.
-///
-/// <para><strong>Known limitation (v1):</strong> the <see cref="StreamAsync"/> path does NOT call
-/// <c>EnrichWithCost</c> / <c>LogUsage</c>, so streamed responses are not captured in
-/// <c>ai.AiUsageLogs</c> in v1. Do not try to instrument streaming here until the gateway
-/// accumulates streaming usage internally.</para>
 /// </summary>
 public sealed class AiGateway : IAiGateway
 {
@@ -165,10 +161,50 @@ public sealed class AiGateway : IAiGateway
         using var linkedCts  = CancellationTokenSource.CreateLinkedTokenSource(
             cancellationToken, timeoutCts.Token);
 
-        await foreach (var chunk in provider.StreamAsync(request, route.ModelId, linkedCts.Token)
-            .WithCancellation(linkedCts.Token))
+        // Accumulate the last chunk's Usage so we can record it after clean completion.
+        // Usage arrives on the terminal chunk (IsLast = true) per the AiChunk contract.
+        // For the current stub providers (ClaudeProvider / OpenAiProvider) this is always the
+        // sole chunk, so Usage is reliably present on the last chunk whenever the provider
+        // populates it. When true SSE providers are added (P3-04), they MUST set
+        // chunk.Usage on the final chunk — this gateway then captures it here automatically.
+        AiUsage? streamUsage  = null;
+        bool     cleanFinish  = false;
+
+        try
         {
-            yield return chunk;
+            await foreach (var chunk in provider.StreamAsync(request, route.ModelId, linkedCts.Token)
+                .WithCancellation(linkedCts.Token))
+            {
+                // Track usage carried on any (typically the last) chunk.
+                if (chunk.Usage is not null)
+                    streamUsage = chunk.Usage;
+
+                yield return chunk;
+
+                if (chunk.IsLast)
+                    cleanFinish = true;
+            }
+        }
+        finally
+        {
+            // Record usage only on clean (non-cancelled, non-errored) stream completion —
+            // mirrors CompleteAsync's success-only rule so abandoned streams are not logged.
+            // The try/catch inside this finally is fail-soft: a recorder error must never
+            // propagate into the SSE caller or interrupt the stream.
+            if (cleanFinish && streamUsage is not null)
+            {
+                try
+                {
+                    var enrichedUsage = EnrichStreamUsage(streamUsage, route.ProviderName, route.ModelId);
+                    LogUsage(enrichedUsage, attempt: 1);
+                    _usageRecorder.Record(enrichedUsage, request.Task);
+                }
+                catch (Exception ex)
+                {
+                    // Fail-soft: recording must never throw into or break the SSE stream.
+                    _logger.LogWarn($"AiGateway: failed to record streaming usage (fail-soft): {ex.Message}");
+                }
+            }
         }
     }
 
@@ -190,6 +226,29 @@ public sealed class AiGateway : IAiGateway
 
     private static bool IsTransient(AiErrorKind? kind) =>
         kind is AiErrorKind.RateLimited or AiErrorKind.Unavailable or AiErrorKind.Timeout;
+
+    /// <summary>
+    /// Applies cost enrichment to a streaming <see cref="AiUsage"/> captured from the terminal chunk.
+    /// Mirrors <see cref="EnrichWithCost(AiResult,string,string)"/> but operates directly on a usage
+    /// record rather than an <see cref="AiResult"/> wrapper.
+    /// </summary>
+    private AiUsage EnrichStreamUsage(AiUsage usage, string providerName, string modelId)
+    {
+        decimal estimatedCost = 0m;
+        if (_options.Models.TryGetValue(modelId, out var cfg))
+        {
+            estimatedCost =
+                (usage.PromptTokens     / 1_000_000m) * cfg.InputPricePerMillion +
+                (usage.CompletionTokens / 1_000_000m) * cfg.OutputPricePerMillion;
+        }
+
+        return usage with
+        {
+            Provider         = string.IsNullOrEmpty(usage.Provider) ? providerName : usage.Provider,
+            ModelId          = string.IsNullOrEmpty(usage.ModelId)  ? modelId      : usage.ModelId,
+            EstimatedCostUsd = estimatedCost,
+        };
+    }
 
     private AiResult EnrichWithCost(AiResult result, string providerName, string modelId)
     {

@@ -17,10 +17,9 @@ namespace Learnexia.Modules.Ai.Infrastructure.Gateway;
 /// caller's (request-scoped) <c>AiDbContext</c> is never touched after the request lifetime ends.
 /// Exceptions are logged and swallowed (fail-soft) — never propagated to the caller.</para>
 ///
-/// <para><strong>Known limitation (v1):</strong> the <c>StreamAsync</c> path in <c>AiGateway</c>
-/// does NOT call <c>EnrichWithCost</c> / <c>LogUsage</c>, so streamed responses are not captured in
-/// <c>ai.AiUsageLogs</c> in v1. This is an accepted gap; do not attempt to instrument streaming here
-/// until the gateway accumulates streaming usage internally.</para>
+/// <para>Called from both <c>CompleteAsync</c> and <c>StreamAsync</c> paths in <c>AiGateway</c>
+/// (P7-11b: streaming capture gap closed). The streaming path records usage from the terminal
+/// chunk after clean stream completion.</para>
 /// </summary>
 public sealed class AiUsageRecorder : IAiUsageRecorder
 {
