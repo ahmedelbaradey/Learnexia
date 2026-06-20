@@ -2660,4 +2660,7 @@
   <data name="TimedEventParticipationsRetrievedSuccessfully" xml:space="preserve">
     <value>تم استرداد تقدم المشاركة في الأحداث الزمنية بنجاح.</value>
   </data>
+  <data name="NotificationAnalyticsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد تحليلات الإشعارات بنجاح.</value>
+  </data>
 </root>

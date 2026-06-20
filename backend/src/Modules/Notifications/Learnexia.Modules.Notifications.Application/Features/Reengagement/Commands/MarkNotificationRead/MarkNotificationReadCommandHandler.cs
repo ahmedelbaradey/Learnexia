@@ -1,7 +1,9 @@
 using Learnexia.Modules.Notifications.Application.Abstractions;
+using Learnexia.Shared.Contracts.Notifications;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
+using MediatR;
 using Microsoft.Extensions.Localization;
 using Resources;
 
@@ -20,6 +22,7 @@ public sealed class MarkNotificationReadCommandHandler
     private readonly INotificationInboxService _inboxService;
     private readonly ICurrentUserService _currentUserService;
     private readonly ISystemClock _clock;
+    private readonly IPublisher _publisher;
     private readonly IStringLocalizer<SharedResources> _localizer;
     private readonly ILoggerManager _logger;
 
@@ -27,12 +30,14 @@ public sealed class MarkNotificationReadCommandHandler
         INotificationInboxService inboxService,
         ICurrentUserService currentUserService,
         ISystemClock clock,
+        IPublisher publisher,
         IStringLocalizer<SharedResources> localizer,
         ILoggerManager logger)
     {
         _inboxService       = inboxService;
         _currentUserService = currentUserService;
         _clock              = clock;
+        _publisher          = publisher;
         _localizer          = localizer;
         _logger             = logger;
     }
@@ -64,6 +69,25 @@ public sealed class MarkNotificationReadCommandHandler
             _logger.LogInfo(
                 $"analytics.reengagement.opened id={notification.Id} " +
                 $"childId={userId.Value} category={notification.Category}");
+
+            // P9-11: Emit NotificationOpened analytics event (fail-soft — must NEVER affect
+            // the mark-read response). Inbox-read path only; push-tap opened is deferred to P9-02 FE.
+            // Mark-all-read Opened emission is deferred (ExecuteUpdateAsync path has no materialized entities).
+            try
+            {
+                await _publisher.Publish(new NotificationOpenedIntegrationEvent(
+                    EventId:       Guid.NewGuid(),
+                    OccurredOnUtc: _clock.UtcNow,
+                    StudentId:     userId.Value,
+                    Code:          notification.Code,
+                    Category:      (int)notification.Category), cancellationToken);
+            }
+            catch (Exception pubEx)
+            {
+                _logger.LogError(pubEx,
+                    $"P9-11: MarkNotificationRead — failed to publish NotificationOpenedIntegrationEvent " +
+                    $"id={notification.Id} childId={userId.Value} — analytics sink may miss this event.");
+            }
 
             return Success<string>(_localizer[SharedResourcesKey.NotificationMarkedReadSuccessfully]);
         }

@@ -39,9 +39,14 @@ public static class DependencyInjection
         // Reads analytics.ActivityEvents AsNoTracking, derives sessions and retention in-memory.
         services.AddScoped<IActivitySessionService, ActivitySessionService>();
 
-        // BE-5: platform read seam adapter. Scoped: delegates to IActivitySessionService.
-        // Registered as IPlatformAnalyticsQuery (Shared.Contracts) so Identity façade can inject it
-        // without any direct reference to the Analytics module projects (module isolation rule #1).
+        // P9-11: notification lifecycle aggregate service. Scoped: shares the AnalyticsDbContext scope.
+        // Groups analytics.ActivityEvents by notification EventTypes (Dispatched/Suppressed/Opened)
+        // to compute send/suppress/open rates for the admin dashboard.
+        services.AddScoped<INotificationAnalyticsService, NotificationAnalyticsService>();
+
+        // BE-5: platform read seam adapter. Scoped: delegates to IActivitySessionService +
+        // INotificationAnalyticsService. Registered as IPlatformAnalyticsQuery (Shared.Contracts)
+        // so Identity façade can inject it without any direct reference to Analytics module projects.
         services.AddScoped<IPlatformAnalyticsQuery, PlatformAnalyticsQueryAdapter>();
 
         // BE-4: options — SessionGapMinutes (default 30) bound from "Analytics" section.

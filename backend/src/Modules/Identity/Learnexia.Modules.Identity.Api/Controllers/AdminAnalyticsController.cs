@@ -1,5 +1,6 @@
 using Learnexia.Modules.Identity.Api.Bases;
 using Learnexia.Modules.Identity.Application.Features.Analytics.Dtos;
+using Learnexia.Modules.Identity.Application.Features.Analytics.Queries.GetNotificationAnalytics;
 using Learnexia.Modules.Identity.Application.Features.Analytics.Queries.GetPlatformKpis;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Responses;
@@ -55,4 +56,39 @@ public sealed class AdminAnalyticsController : AppControllerBase
         CancellationToken ct)
         => NewResult(await Mediator.Send(
             new GetPlatformKpisQuery { FromUtc = from, ToUtc = to }, ct));
+
+    /// <summary>
+    /// GET api/Admin/Analytics/notifications?from=&amp;to=&amp;category=
+    /// Returns the notification lifecycle analytics aggregate (dispatched / suppressed / opened
+    /// counts + open-rate per code and per category) over the requested UTC window.
+    ///
+    /// <para>Query parameters:</para>
+    /// <list type="bullet">
+    ///   <item><c>from</c> — window start UTC (inclusive). Defaults to 30 days ago when omitted.</item>
+    ///   <item><c>to</c>   — window end UTC (exclusive). Defaults to now (UTC) when omitted.</item>
+    ///   <item><c>category</c> — optional <c>NotificationCategory</c> int filter (0–9).
+    ///   Omit for all categories.</item>
+    /// </list>
+    ///
+    /// <para><strong>v1 suppression scope:</strong> suppressed counts = push-rationing only (P9-07
+    /// arbiter: GlobalBudgetExhausted, PriorityLost, Cooldown). Pre-dispatch suppressions
+    /// (parent-disabled, quiet-hours, per-category daily-cap) are a deferred follow-up — do not
+    /// interpret "suppressed" as "nudge dropped".</para>
+    ///
+    /// <para><strong>Open-rate undercount (v1):</strong> opened events are emitted only on inbox
+    /// mark-read (single notification). Push-tap opens and mark-all-read opens are deferred to
+    /// P9-02 FE + a follow-up story.</para>
+    /// </summary>
+    [HttpGet("notifications")]
+    [ProducesResponseType(typeof(BaseResponse<NotificationAnalyticsDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetNotificationAnalytics(
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to,
+        [FromQuery] int?      category,
+        CancellationToken ct)
+        => NewResult(await Mediator.Send(
+            new GetNotificationAnalyticsQuery { FromUtc = from, ToUtc = to, Category = category }, ct));
 }

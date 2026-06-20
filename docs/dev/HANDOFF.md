@@ -1,3 +1,24 @@
+## P9-11 notification-analytics sink — 2026-06-20 (`feat/P9-11-notification-analytics-sink`)
+
+**The last unbuilt Phase-9 backend story.** Closes the "v1 logs only" effectiveness gap from P9-07: Notifications now EMITS lifecycle events that the **Analytics module** consumes into its `ActivityEvent` stream (one analytics home), with an admin aggregate endpoint.
+
+**What shipped (cross-module — Notifications emit → Analytics consume → Identity admin read):**
+- **3 events** `Shared.Contracts/Notifications/Notification{Dispatched,Suppressed,Opened}IntegrationEvent` — opaque ids + `Code`/`Category(int)`/`DeliveredChannels(int)`/`Reason(string)` only. **PII-safe by design: Title/Body/DataJson are NOT carried**, only the stable `Code`.
+- **Emit (fail-soft inline `IPublisher.Publish`, mirrors `TimedEventStartedRepublisher`):** `NudgeDispatcher` publishes **Dispatched** after the inbox `SaveChangesAsync` (final `DeliveredChannels` bitmask) and **Suppressed** in the `!result.ShouldPush` push-arbitration block (P9-07 reason). `MarkNotificationReadCommandHandler` publishes **Opened** after mark-read. Each emit in its OWN try/catch — a publish failure can never break a dispatch or a mark-read.
+- **Consume:** 3 `INotificationHandler` in Analytics → `IActivityEventStore.AddAsync`, `EventType` = `NotificationDispatched`/`NotificationSuppressed`/`NotificationOpened`, `SourceEventId=EventId` (idempotent), facets in the new nullable `ActivityEvent` columns (`NotificationCode`/`NotificationCategory`/`NotificationChannels`/`SuppressionReason`) — migration `P9_11_AddNotificationFacetsToActivityEvent` + index `(EventType, OccurredAtUtc)`.
+- **Admin read:** `IPlatformAnalyticsQuery.GetNotificationsAsync(from,to,category?)` → DTO (totals + ByCode + ByCategory + open-rate + suppression-reason buckets); `GET /api/Admin/Analytics/notifications` on the Identity `AdminAnalyticsController` (AdminOnly, alongside P7-10 KPIs), validation (from<to, ≤365d), localized `NotificationAnalyticsRetrievedSuccessfully` (EN+AR). The admin handler injects only the `IPlatformAnalyticsQuery` seam (no Analytics project ref).
+
+**Semantics (important for reading the dashboard):** **Dispatched** fires whenever the in-app row is written (+ which channels delivered); **Suppressed** fires when *push* is rationed (in-app still delivered) → a push-rationed nudge emits BOTH. **Open-rate = Opened / Dispatched.**
+
+**Scope notes / deferred (documented in the DTO/endpoint XML, NOT silently dropped):**
+- **Suppression v1 = dispatcher-only** = the P9-07 push reasons (GlobalBudgetExhausted/PriorityLost/Cooldown). **Pre-dispatch suppressions** (parent-disabled/quiet-hours/daily-cap/dedupe) happen across ~11 handlers before the dispatcher → DEFERRED follow-up (the event contract is forward-compatible — more emit points, no contract change). So v1 suppression counts UNDERCOUNT total suppression — the admin DTO says so.
+- **Opened = inbox-read path only**; push-tap open reporting deferred to the P9-02 FE deep-link handler.
+- **Mark-all-read Opened descoped** (`MarkAllReadAsync` uses bulk `ExecuteUpdateAsync`, no materialized Code/Category) — deferred.
+
+**Gates:** build 0 errors; api-tester 15/15 (`P9_11_NotificationAnalyticsSink_Tests` — RELAY-01..05 incl. dual-emit + idempotency + no-PII; ADMIN-01..10 incl. 401/403/200, aggregate math, reason buckets, category filter, from≥to & >365d validation, sentinel-safe empty window); security-auditor PASS (13 Info, 0 Critical/High/Medium/Low, 0 vulnerable deps); reviewer PASS. **Phase-9 backend is now complete** (P9-05..12 all built; P9-01..04 are the FE lead's). P9-11 admin FE = `P9-11-FE` (other lead).
+
+---
+
 ## P9-12 timed-event nudges — 2026-06-20 (`feat/P9-12-timed-event-nudges`)
 
 **Completes the timed-event chain** (P4-12 entity/events → P9-12 nudges). P9-05 had only left a comment-only `TimedEventNudgeDeferralNote` placeholder (deferred for lack of a recipient seam) — now deleted; P9-12 owns ALL 4 phases.

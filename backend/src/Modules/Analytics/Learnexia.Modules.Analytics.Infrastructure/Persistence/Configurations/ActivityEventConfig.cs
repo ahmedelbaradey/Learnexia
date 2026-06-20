@@ -84,5 +84,35 @@ public class ActivityEventConfig : IEntityTypeConfiguration<ActivityEvent>
         // 4. EventType — secondary filter / grouping for per-type aggregations.
         builder.HasIndex(x => x.EventType)
             .HasDatabaseName("IX_ActivityEvents_EventType");
+
+        // 5. Composite (EventType, OccurredAtUtc) — the P9-11 admin notification aggregate filters
+        //    on EventType IN (NotificationDispatched/Suppressed/Opened) over a date range. The
+        //    existing standalone EventType index (index 4) alone would require a filter-then-sort;
+        //    this composite lets Postgres satisfy the WHERE+ORDER BY in a single index scan.
+        builder.HasIndex(x => new { x.EventType, x.OccurredAtUtc })
+            .HasDatabaseName("IX_ActivityEvents_EventType_OccurredAtUtc");
+
+        // ── P9-11 Notification-analytics facet columns ────────────────────────────────────────────
+        // All nullable — every existing producer writes null; only the 3 notification consumers
+        // (P9-11) populate them. No cross-module enum reference: Category and Channels are int?,
+        // Reason is string?.
+
+        // NotificationCode — nullable string, max 64 chars. Template code group-by/filter key.
+        builder.Property(x => x.NotificationCode)
+            .IsRequired(false)
+            .HasMaxLength(64);
+
+        // NotificationCategory — nullable int. The NotificationCategory enum value (0..9).
+        builder.Property(x => x.NotificationCategory)
+            .IsRequired(false);
+
+        // NotificationChannels — nullable int. DeliveredChannels bitmask (1=email, 2=push, 4=inApp).
+        builder.Property(x => x.NotificationChannels)
+            .IsRequired(false);
+
+        // SuppressionReason — nullable string, max 32 chars. P9-07 push-suppression reason name.
+        builder.Property(x => x.SuppressionReason)
+            .IsRequired(false)
+            .HasMaxLength(32);
     }
 }

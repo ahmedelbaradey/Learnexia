@@ -6,6 +6,7 @@ using Learnexia.Modules.Notifications.Infrastructure.Persistence;
 using Learnexia.Modules.Notifications.Infrastructure.Reengagement;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Settings;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using Xunit;
@@ -47,6 +48,7 @@ public sealed class NudgeDispatcherGlobalBudgetTests : IDisposable
     private readonly Mock<INudgeArbiter>                       _arbiter            = new();
     private readonly Mock<IGlobalSettingsProvider>             _settings           = new();
     private readonly Mock<ISystemClock>                        _clock              = new();
+    private readonly Mock<IPublisher>                          _publisher          = new();
     private readonly Mock<ILoggerManager>                      _logger             = new();
 
     private const int ChildId   = 42;
@@ -410,6 +412,7 @@ public sealed class NudgeDispatcherGlobalBudgetTests : IDisposable
             _arbiter.Object,
             _settings.Object,
             _clock.Object,
+            _publisher.Object,
             _logger.Object);
 
     private static NudgeMessage BuildMessage(

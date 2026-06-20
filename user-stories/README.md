@@ -165,7 +165,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P9-08 Comeback escalation ladder *(day 2/5/14 tiered win-back; extends P4-09 LapseWinBack; BE)*
 - P9-09 Spaced-repetition review reminder *(✅ BUILT 2026-06-20 — consumes P3-10 `ReviewDueIntegrationEvent`; inbox-only v1; BE)*
 - P9-10 Get every notification in my selected language *(🟡 v1 BUILT 2026-06-20 — welcome inbox+email localized at send time; reset-email → P6-06; read-time inbox re-localization → P9-03 FE; BE)*
-- P9-11 Notification analytics sink *(send/suppress/open capture → P5-03 `ActivityEvent` stream; admin read; BE — added 2026-06-20)*
+- P9-11 Notification analytics sink *(✅ BUILT 2026-06-20 — send/suppress/open → Analytics `ActivityEvent` + admin aggregate endpoint; BE)*
 - P9-12 Timed-event nudges *(✅ BUILT 2026-06-20 — join fan-out + progress/ending-soon/completion over P4-12; inbox-only v1; BE)*
 
 ### Phase 10 — Payment, Billing & Credits *(post-MVP)*

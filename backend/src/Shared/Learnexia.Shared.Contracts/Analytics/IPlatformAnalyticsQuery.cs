@@ -35,6 +35,33 @@ public interface IPlatformAnalyticsQuery
         DateTime fromUtc,
         DateTime toUtc,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// P9-11. Returns notification lifecycle aggregate statistics over
+    /// [<paramref name="fromUtc"/>, <paramref name="toUtc"/>), optionally filtered to a single
+    /// <paramref name="category"/> (<c>NotificationCategory</c> int value, 0–9).
+    ///
+    /// <para>Groups by notification code and category; computes dispatched/suppressed/opened counts
+    /// and open-rate per bucket. Also returns suppression-reason buckets.</para>
+    ///
+    /// <para><strong>v1 suppression scope:</strong> suppression counts reflect only push-channel
+    /// rationing via the P9-07 arbiter (GlobalBudgetExhausted, PriorityLost, Cooldown). Pre-dispatch
+    /// suppressions (parent-disabled, quiet-hours, daily-cap in per-handler evaluators) are a
+    /// deferred follow-up and are NOT counted in v1.</para>
+    ///
+    /// <para>All results are sentinel-safe — never <c>null</c>, never throws. Empty window → zeroed stats.</para>
+    /// </summary>
+    /// <param name="fromUtc">Window start (inclusive), UTC.</param>
+    /// <param name="toUtc">Window end (exclusive), UTC.</param>
+    /// <param name="category">
+    /// Optional <c>NotificationCategory</c> int value filter (0–9). <c>null</c> = all categories.
+    /// </param>
+    /// <param name="ct">Cancellation token.</param>
+    Task<NotificationAnalyticsStats> GetNotificationsAsync(
+        DateTime fromUtc,
+        DateTime toUtc,
+        int?     category,
+        CancellationToken ct = default);
 }
 
 /// <summary>
@@ -72,3 +99,53 @@ public record PlatformAnalyticsStats(
     double AvgSessionDurationSeconds,
     double AvgActiveDaysPerStudent,
     double ReturningStudentRate);
+
+// ── P9-11 Notification analytics DTOs ────────────────────────────────────────────────────────
+
+/// <summary>
+/// P9-11. Platform-wide notification lifecycle aggregate returned by
+/// <see cref="IPlatformAnalyticsQuery.GetNotificationsAsync"/>.
+///
+/// <para><strong>v1 suppression scope:</strong> <see cref="TotalSuppressed"/> and per-bucket
+/// suppressed counts capture only push-channel rationing via the P9-07 arbiter. Pre-dispatch
+/// suppressions (parent-disabled, quiet-hours, per-category daily-cap) are deferred follow-up.</para>
+///
+/// <para>Open-rate = Opened / Dispatched (guard divide-by-zero → 0.0). Sentinel-safe.</para>
+/// </summary>
+public record NotificationAnalyticsStats(
+    int TotalDispatched,
+    int TotalSuppressed,
+    int TotalOpened,
+    double OpenRate,
+    IReadOnlyList<NotificationCodeStat>     ByCode,
+    IReadOnlyList<NotificationCategoryStat> ByCategory,
+    IReadOnlyList<NotificationReasonStat>   SuppressionReasons);
+
+/// <summary>
+/// P9-11. Dispatched / suppressed / opened counts + open-rate for one notification template code.
+/// </summary>
+public record NotificationCodeStat(
+    string Code,
+    int    Dispatched,
+    int    Suppressed,
+    int    Opened,
+    double OpenRate);
+
+/// <summary>
+/// P9-11. Dispatched / suppressed / opened counts + open-rate for one <c>NotificationCategory</c>
+/// int value. The admin layer maps the int to a label.
+/// </summary>
+public record NotificationCategoryStat(
+    int    Category,
+    int    Dispatched,
+    int    Suppressed,
+    int    Opened,
+    double OpenRate);
+
+/// <summary>
+/// P9-11. Count of suppression events for one suppression reason string
+/// (e.g. <c>GlobalBudgetExhausted</c>, <c>PriorityLost</c>, <c>Cooldown</c>).
+/// </summary>
+public record NotificationReasonStat(
+    string Reason,
+    int    Count);
