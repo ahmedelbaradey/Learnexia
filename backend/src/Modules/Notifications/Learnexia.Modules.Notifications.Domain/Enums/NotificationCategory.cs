@@ -24,4 +24,10 @@ public enum NotificationCategory
     // Inbox-only in v1 (not in ReengagementCategories push set); push falls out by prefs default.
     // No migration: stored as int with HasSentinel(-1); value 8 != 0 != -1, stores correctly.
     WeeklyChallenge = 8,
+    // P9-12: limited-time timed-event nudges — four phases: live (join fan-out), progress (halfway),
+    // ending-soon, and completion. Distinct category so the parent can toggle it independently
+    // once P9-04 FE per-type toggles ship. Listed in the P9-04 parent catalog.
+    // Inbox-only in v1 (not in ReengagementCategories push set); push falls out by prefs default.
+    // No migration: stored as int with HasSentinel(-1); value 9 != 0 != -1, stores correctly.
+    TimedEvent = 9,
 }
