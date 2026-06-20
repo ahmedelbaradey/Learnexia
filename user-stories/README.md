@@ -89,6 +89,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P4-09 Bring the student back tomorrow (re-engagement notifications) *(barrier-to-entry: BE4)*
 - P4-10 Serve realtime gamification state from Redis *(barrier-to-entry: BE3)*
 - P4-11 Streak freeze, timed events & weekly challenges *(barrier-to-entry: BE4)*
+- P4-12 Timed-event participation *(per-child progress/completion + eligibility queries on P4-11 timed events; unblocks P9-12 timed-event nudges — added 2026-06-20)*
 
 ### Phase 4 — AI Tutor *(story IDs `P3-xx`)*
 - P3-01 Route AI requests through an AI Gateway
@@ -164,6 +165,8 @@ These intentional decisions diverge from the source docs; each affected story re
 - P9-08 Comeback escalation ladder *(day 2/5/14 tiered win-back; extends P4-09 LapseWinBack; BE)*
 - P9-09 Spaced-repetition review reminder — **BLOCKED by P3-10** *(captured for catalog completeness; BE)*
 - P9-10 Get every notification in my selected language *(localize push/in-app/email; welcome is hardcoded English today; coordinates with P6-06; BE — developed later)*
+- P9-11 Notification analytics sink *(send/suppress/open capture → P5-03 `ActivityEvent` stream; admin read; BE — added 2026-06-20)*
+- P9-12 Timed-event nudges *(join/progress/ending-soon/completion over P4-12 participation; BE — added 2026-06-20)*
 
 ### Phase 10 — Payment, Billing & Credits *(post-MVP)*
 *The AI credit economy + monetization. **Parent-driven: all purchasing/billing/payment happens in the parent app/account** — the child only spends "⚡ طاقة المساعد" (energy) and sees a read-only meter. Credits = two pools: monthly **granted** (expire) vs **purchased** packs (never expire). Charge-on-delivery, cache-hits charged the same, no charge on refuse/error. Wires into the AI Gateway (P3-01) and supersedes the AI-Helper MVP daily-cap guardrail.*

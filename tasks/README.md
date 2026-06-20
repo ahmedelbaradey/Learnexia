@@ -117,6 +117,7 @@ The Gamification module (`gamification` schema) reacting to the P4-01 learning d
 | P4-09 | Re-engagement notifications *(barrier-to-entry BE4; child-data sensitive)* | [FE](Frontend/student-app/Phase-3-Gamification/P4-09-FE.md) | [BE](Backend/Phase-3-Gamification/P4-09-BE.md) | 🔲 |
 | P4-10 | Redis realtime gamification state *(barrier-to-entry BE3; enabler)* | — | [BE](Backend/Phase-3-Gamification/P4-10-BE.md) | 🔲 |
 | P4-11 | Streak freeze, timed events & weekly challenges *(barrier-to-entry)* | [FE](Frontend/student-app/Phase-3-Gamification/P4-11-FE.md) | [BE](Backend/Phase-3-Gamification/P4-11-BE.md) | 🔲 |
+| P4-12 | Timed-event participation *(per-child progress/completion + eligibility queries; unblocks P9-12)* | [FE](Frontend/student-app/Phase-3-Gamification/P4-12-FE.md) | [BE](Backend/Phase-3-Gamification/P4-12-BE.md) | 🔲 |
 
 ### Phase 4 — AI Tutor *(story IDs `P3-xx`)*
 
@@ -177,6 +178,25 @@ Learning language (medium of instruction) vs UI language; bilingual curriculum a
 | P8-03 | Serve curriculum in the learning language *(read-path resolution)* | — | [BE](Backend/Phase-8-Localization/P8-03-BE.md) |
 | P8-04 | Change a child's learning language *(parent-only, fresh start)* | [FE](Frontend/student-app/Phase-8-Localization/P8-04-FE.md) | [BE](Backend/Phase-8-Localization/P8-04-BE.md) |
 | P8-99 | App-shell language foundation *(FE-only: api-client regen, fonts, UI-language persistence, RTL/i18n pass — folds in P6-03 FE-relevant)* | [FE](Frontend/student-app/Phase-8-Localization/P8-99-FE.md) | — |
+
+### Phase 9 — Notifications *(post-MVP)*
+
+Push end-to-end (Expo FE) + the full habit-forming notification catalog on the merged **P4-09** engine (`ExpoPushSender`, `DevicesController`, `NudgeDispatcher`, per-child preferences). **P9-01..04 are FE** (student-app: push, deep links, inbox, parent controls); **P9-05..12 are BE** (wire emitted events, new categories, arbitration + global budget, comeback ladder, analytics sink, timed-event nudges). **P9-05/06/07/08 merged to `main`.** P9-09 is **blocked by P3-10**; P9-12 **depends on P4-12**.
+
+| Story | Title | Frontend | Backend |
+|---|---|---|---|
+| P9-01 | Turn on push notifications *(Expo permission + device token)* | [FE](Frontend/student-app/Phase-9-Notifications/P9-01-FE.md) | — |
+| P9-02 | Notification tap routing + foreground + web fallback | [FE](Frontend/student-app/Phase-9-Notifications/P9-02-FE.md) | — |
+| P9-03 | In-app notification inbox *(consumes existing InboxController)* | [FE](Frontend/student-app/Phase-9-Notifications/P9-03-FE.md) | — |
+| P9-04 | Parent per-child notification controls | [FE](Frontend/student-app/Phase-9-Notifications/P9-04-FE.md) | — |
+| P9-05 | Light up existing gamification events *(level-up, league, freeze, timed-event)* | — | [BE](Backend/Phase-9-Notifications/P9-05-BE.md) |
+| P9-06 | New habit-loop categories *(weekly recap shipped; weekly-challenge deferred)* | — | [BE](Backend/Phase-9-Notifications/P9-06-BE.md) |
+| P9-07 | Nudge arbitration + global daily push budget + cooldowns | — | [BE](Backend/Phase-9-Notifications/P9-07-BE.md) |
+| P9-08 | Comeback escalation ladder *(day 2/5/14)* | — | [BE](Backend/Phase-9-Notifications/P9-08-BE.md) |
+| P9-09 | Spaced-repetition review reminder — **BLOCKED by P3-10** | — | [BE](Backend/Phase-9-Notifications/P9-09-BE.md) |
+| P9-10 | Notification localization *(localize push/in-app/email)* | — | [BE](Backend/Phase-9-Notifications/P9-10-BE.md) |
+| P9-11 | Notification analytics sink *(send/suppress/open → P5-03 sink)* | [FE](Frontend/admin-dashboard/Phase-9-Notifications/P9-11-FE.md) *(Next.js)* | [BE](Backend/Phase-9-Notifications/P9-11-BE.md) |
+| P9-12 | Timed-event nudges *(join/progress/ending/completion; depends on P4-12)* | [FE](Frontend/student-app/Phase-9-Notifications/P9-12-FE.md) | [BE](Backend/Phase-9-Notifications/P9-12-BE.md) |
 
 ### Phase 10 — Payment, Billing & Credits *(story IDs `P10-xx`, post-MVP)*
 
