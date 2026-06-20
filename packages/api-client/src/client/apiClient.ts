@@ -216,7 +216,22 @@ export class ApiClient {
       );
     }
 
-    return envelope as unknown as PaginatedResult<T>;
+    // Paginated endpoints are inconsistent across modules: Identity returns a
+    // FLATTENED `PaginatedResult` (pagination fields + `data: T[]` at the top
+    // level), while Learning/Moderation/Audit return `BaseResponse<PaginatedResult>`
+    // (the inner `PaginatedResult` sits under `.data`). Normalise both to the
+    // flattened shape so callers can always read `.data` (the array) and the
+    // pagination fields off the returned object.
+    const body = envelope as unknown as Record<string, unknown>;
+    const inner = body.data as Record<string, unknown> | undefined;
+    const pageResult =
+      typeof body.currentPage === 'number'
+        ? body
+        : inner && typeof inner.currentPage === 'number'
+          ? inner
+          : body;
+
+    return pageResult as unknown as PaginatedResult<T>;
   }
 
   /** Build + execute a single fetch, attaching auth + headers. */

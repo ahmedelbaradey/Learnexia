@@ -267,6 +267,7 @@ export function SubjectForm({
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
+      data-testid="subject-form-dialog"
       style={{
         position: 'fixed',
         inset: 0,

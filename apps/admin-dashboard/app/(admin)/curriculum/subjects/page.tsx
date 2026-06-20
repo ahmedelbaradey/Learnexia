@@ -592,7 +592,7 @@ export default function SubjectsPage() {
           {/* Error state */}
           {isError && !isLoading && (
             <div>
-              <AdminErrorBanner variant="error" message={strings.subjectsListError} data-testid="subjects-error-banner" />
+              <AdminErrorBanner variant="error" message={strings.subjectsListError} testId="subjects-error-banner" />
               <button
                 onClick={() => void refetch()}
                 style={{

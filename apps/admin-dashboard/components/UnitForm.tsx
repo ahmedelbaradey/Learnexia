@@ -181,6 +181,7 @@ export function UnitForm({ open, onClose, subjectId, subjectLanguage, editUnit }
   return (
     <div
       role="dialog" aria-modal="true" aria-labelledby={titleId}
+      data-testid="unit-form-dialog"
       style={{
         position: 'fixed', inset: 0, backgroundColor: 'rgba(15,23,42,0.72)',
         display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 500,

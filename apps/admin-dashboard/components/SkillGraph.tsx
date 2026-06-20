@@ -230,8 +230,17 @@ export function SkillGraph({
   useEffect(() => {
     if (!graph) return;
     if (externalSelectedSkillId == null) {
-      // Row deselected — clear the graph selection too, but only when the
-      // clear originates from the table (avoid clearing on initial render).
+      // A null skill id can mean two different things:
+      //   (a) the table row was deselected → clear the graph selection too, or
+      //   (b) the graph just selected a *concept* node, which has no skillId and
+      //       therefore reported `null` back up via onSelectSkillId.
+      // In case (b) we must NOT clear: that would wipe the selection the user just
+      // made by keyboard/click on a concept node (the CUR-TC-71 defect). Keep the
+      // selection whenever the currently-selected node is a non-skill node.
+      const current = graph.nodes.find((n) => n.id === selectedNodeId);
+      if (current && current.skillId == null) {
+        return;
+      }
       setSelectedNodeId(null);
       setPickerValue('');
       setEdgeErrorMsg(null);

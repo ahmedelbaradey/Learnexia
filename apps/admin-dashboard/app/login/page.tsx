@@ -195,6 +195,7 @@ export default function LoginPage() {
                   autoComplete="username"
                   locale={ADMIN_LOCALE}
                   error={errors.userName?.message}
+                  testID="login-username"
                 />
               )}
             />
@@ -213,6 +214,7 @@ export default function LoginPage() {
                   secureTextEntry
                   locale={ADMIN_LOCALE}
                   error={errors.password?.message}
+                  testID="login-password"
                 />
               )}
             />
@@ -226,6 +228,7 @@ export default function LoginPage() {
               size="full"
               accessibilityLabel={strings.signInButton}
               loading={submitting}
+              testID="login-submit"
               onPress={() => {
                 void onSubmit();
               }}
