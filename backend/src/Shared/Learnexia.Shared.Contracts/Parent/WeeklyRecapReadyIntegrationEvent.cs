@@ -11,8 +11,6 @@ namespace Learnexia.Shared.Contracts.Parent;
 /// never-shaming per FR-GM-8.</para>
 ///
 /// Payload carries opaque int ids + numeric summary scalars only — NO PII.
-/// Mirrors <see cref="Learnexia.Shared.Contracts.Gamification.StreakMilestoneReachedIntegrationEvent"/>
-/// shape.
 /// </summary>
 public sealed record WeeklyRecapReadyIntegrationEvent(
     Guid EventId,
