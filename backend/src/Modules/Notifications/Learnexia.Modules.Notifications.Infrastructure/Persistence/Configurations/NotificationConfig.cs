@@ -30,10 +30,15 @@ public sealed class NotificationConfig : IEntityTypeConfiguration<Notification>
         // Category: stored as int, backfill default = 6 (System) for all pre-P4-09 rows.
         // HasDefaultValueSql is used (not HasDefaultValue) because EF Core rejects a CLR-int default on a
         // converted enum property at design time — the SQL literal bypasses the type check.
+        // HasSentinel(-1): without it, EF treats the CLR-default 0 (NotificationCategory.WeeklyReport) as
+        // "unset" and OMITS the column on insert → Postgres applies the SQL default 6 (System), mis-storing
+        // every WeeklyReport notification as System. -1 is not a real category, so EF now always sends the
+        // actual value (including 0) while the SQL default still backfills raw/pre-P4-09 inserts.
         builder.Property(p => p.Category)
             .HasConversion<int>()
             .IsRequired()
-            .HasDefaultValueSql("6"); // NotificationCategory.System = 6
+            .HasSentinel((NotificationCategory)(-1))
+            .HasDefaultValueSql("6"); // NotificationCategory.System = 6 (backfill for pre-P4-09 rows only)
 
         // Code: stable template key, e.g. "BADGE_EARNED". Max 64 chars. Backfill default 'SYSTEM'.
         builder.Property(p => p.Code)

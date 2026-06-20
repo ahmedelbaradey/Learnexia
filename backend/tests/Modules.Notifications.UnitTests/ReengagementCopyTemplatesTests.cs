@@ -300,54 +300,6 @@ public sealed class ReengagementCopyTemplatesTests
         ((int)NotificationCategory.System).Should().Be(6);
     }
 
-    // =========================================================================
-    // P9-06 new templates — STREAK_MILESTONE + WEEKLY_RECAP
-    // =========================================================================
-
-    // C18 — Achievement / STREAK_MILESTONE / ar-EG → non-empty
-    [Fact(DisplayName = "P906-C18 Achievement STREAK_MILESTONE ar-EG returns non-empty title and body")]
-    public void Achievement_StreakMilestone_Arabic_ReturnsContent()
-    {
-        var (title, body) = ReengagementCopyTemplates.GetTemplate(
-            NotificationCategory.Achievement, "STREAK_MILESTONE", "ar-EG");
-
-        title.Should().NotBeNullOrWhiteSpace();
-        body.Should().NotBeNullOrWhiteSpace();
-    }
-
-    // C19 — Achievement / STREAK_MILESTONE / en-US → non-empty
-    [Fact(DisplayName = "P906-C19 Achievement STREAK_MILESTONE en-US returns non-empty title and body")]
-    public void Achievement_StreakMilestone_English_ReturnsContent()
-    {
-        var (title, body) = ReengagementCopyTemplates.GetTemplate(
-            NotificationCategory.Achievement, "STREAK_MILESTONE", "en-US");
-
-        title.Should().NotBeNullOrWhiteSpace();
-        body.Should().NotBeNullOrWhiteSpace();
-    }
-
-    // C20 — STREAK_MILESTONE body contains {streakLength} placeholder before Render
-    [Fact(DisplayName = "P906-C20 STREAK_MILESTONE raw body contains {streakLength} placeholder")]
-    public void Achievement_StreakMilestone_BodyContainsPlaceholder()
-    {
-        var (_, body) = ReengagementCopyTemplates.GetTemplate(
-            NotificationCategory.Achievement, "STREAK_MILESTONE", "en-US");
-
-        body.Should().Contain("{streakLength}", "the template must carry the {streakLength} placeholder");
-    }
-
-    // C21 — Render STREAK_MILESTONE substitutes {streakLength}
-    [Fact(DisplayName = "P906-C21 Render STREAK_MILESTONE substitutes {streakLength} correctly")]
-    public void Render_StreakMilestone_SubstitutesStreakLength()
-    {
-        var (_, body) = ReengagementCopyTemplates.Render(
-            NotificationCategory.Achievement, "STREAK_MILESTONE", "en-US",
-            ("streakLength", "7"));
-
-        body.Should().Contain("7", "{streakLength} should be replaced with '7'");
-        body.Should().NotContain("{streakLength}", "literal placeholder must be removed after render");
-    }
-
     // C22 — WeeklyReport / WEEKLY_RECAP / ar-EG → non-empty
     [Fact(DisplayName = "P906-C22 WeeklyReport WEEKLY_RECAP ar-EG returns non-empty title and body")]
     public void WeeklyReport_WeeklyRecap_Arabic_ReturnsContent()
@@ -397,14 +349,4 @@ public sealed class ReengagementCopyTemplatesTests
         hasArabic.Should().BeTrue("ar-EG weekly recap template must contain Arabic-script characters");
     }
 
-    // C26 — STREAK_MILESTONE ar-EG template contains Arabic characters
-    [Fact(DisplayName = "P906-C26 STREAK_MILESTONE ar-EG template contains Arabic characters")]
-    public void StreakMilestone_Arabic_ContainsArabicCharacters()
-    {
-        var (title, body) = ReengagementCopyTemplates.GetTemplate(
-            NotificationCategory.Achievement, "STREAK_MILESTONE", "ar-EG");
-
-        var hasArabic = (title + body).Any(c => c >= '؀' && c <= 'ۿ');
-        hasArabic.Should().BeTrue("ar-EG streak milestone template must contain Arabic-script characters");
-    }
 }

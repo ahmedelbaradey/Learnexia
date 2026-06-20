@@ -109,16 +109,6 @@ public static class ReengagementCopyTemplates
             "Streak saved!",
             "❄️ Your freeze saved your {streakLength}-day streak today! Come back tomorrow to keep it going"),
 
-        // P9-06: Streak milestone reached (3/7/14/30 days) — celebration > guilt
-        // Category = Achievement; inbox-only in v1 until P9-04 FE per-type toggles ship.
-        // Placeholder: {streakLength} = the milestone value (e.g. "7").
-        [$"Achievement:STREAK_MILESTONE:{ArEg}"] = (
-            "إنجاز رائع!",
-            "🔥 {streakLength} أيام متواصلة! إنت بطل — واصل وحافظ على سلسلتك"),
-        [$"Achievement:STREAK_MILESTONE:{EnUs}"] = (
-            "Amazing streak!",
-            "🔥 {streakLength} days in a row! You're a champion — keep it going!"),
-
         // ── DailyMissionReminder ──────────────────────────────────────────────────────────────
         [$"DailyMissionReminder:DAILY_MISSION_REMINDER:{ArEg}"] = (
             "مهمتك اليومية!",
