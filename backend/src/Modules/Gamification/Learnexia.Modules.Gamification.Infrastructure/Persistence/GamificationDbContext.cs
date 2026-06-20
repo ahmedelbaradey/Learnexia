@@ -46,6 +46,9 @@ public class GamificationDbContext : DbContext
     // Timed event catalog (P4-11)
     public DbSet<TimedEvent> TimedEvents => Set<TimedEvent>();
 
+    // Timed event per-student participation (P4-12)
+    public DbSet<TimedEventParticipation> TimedEventParticipations => Set<TimedEventParticipation>();
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 

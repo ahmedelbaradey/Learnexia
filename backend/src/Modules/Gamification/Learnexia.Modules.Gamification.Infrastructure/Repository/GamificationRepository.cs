@@ -508,4 +508,33 @@ public sealed class GamificationRepository : IGamificationRepository
             .OrderByDescending(e => e.StartUtc)
             .Take(200)
             .ToListAsync(ct);
+
+    // ---------------------------------------------------------------------------
+    // Timed-Event Participation (P4-12)
+    // ---------------------------------------------------------------------------
+
+    /// <inheritdoc />
+    public async Task<TimedEventParticipation?> GetParticipationAsync(
+        int timedEventId, int studentXpProfileId, CancellationToken ct = default)
+        => await _context.TimedEventParticipations
+            .FirstOrDefaultAsync(
+                p => p.TimedEventId == timedEventId
+                  && p.StudentXpProfileId == studentXpProfileId, ct);
+
+    /// <inheritdoc />
+    public async Task AddParticipationAsync(
+        TimedEventParticipation participation, CancellationToken ct = default)
+        => await _context.TimedEventParticipations.AddAsync(participation, ct);
+
+    /// <inheritdoc />
+    public void AttachParticipation(TimedEventParticipation participation)
+    {
+        var entry = _context.Entry(participation);
+        if (entry.State == Microsoft.EntityFrameworkCore.EntityState.Detached)
+            _context.TimedEventParticipations.Attach(participation);
+
+        if (entry.State != Microsoft.EntityFrameworkCore.EntityState.Added)
+            entry.State = Microsoft.EntityFrameworkCore.EntityState.Modified;
+    }
+
 }

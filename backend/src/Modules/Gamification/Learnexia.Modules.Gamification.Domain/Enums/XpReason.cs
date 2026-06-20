@@ -10,4 +10,5 @@ public enum XpReason
     StreakBonus = 4,
     BadgeEarned = 5,    // P4-05 — rarity-scaled XP bonus awarded when a badge is earned
     MissionCompleted = 6,   // P4-06 — per-mission scalar XP reward awarded on mission completion
+    TimedEventCompleted = 7, // P4-12 — completion reward awarded when a timed-event participation reaches Target
 }

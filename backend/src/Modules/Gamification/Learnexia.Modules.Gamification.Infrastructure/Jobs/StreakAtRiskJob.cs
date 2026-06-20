@@ -1,3 +1,4 @@
+using Learnexia.Modules.Gamification.Application.Abstractions;
 using Learnexia.Modules.Gamification.Application.Configuration;
 using Learnexia.Modules.Gamification.Domain.Enums;
 using Learnexia.Modules.Gamification.Domain.Services;
@@ -13,9 +14,9 @@ namespace Learnexia.Modules.Gamification.Infrastructure.Jobs;
 
 /// <summary>
 /// Hangfire recurring job — runs daily at 18:00 UTC (<c>"0 18 * * *"</c>) (P4-09, AC1 + AC2;
-/// P9-06 Pass 3).
+/// P9-06 Pass 3; P4-12 Pass 4).
 ///
-/// <para><b>Purpose:</b> three-pass daily evaluation for re-engagement nudges:
+/// <para><b>Purpose:</b> four-pass daily evaluation for re-engagement nudges:
 /// <list type="number">
 ///   <item><b>Streak-at-risk pass:</b> scans <c>StudentXpProfile</c> rows where
 ///         <c>CurrentStreak &gt; 0</c> and <c>LastActivityDateUtc &lt; today_utc</c> (active streak
@@ -36,6 +37,12 @@ namespace Learnexia.Modules.Gamification.Infrastructure.Jobs;
 ///         (<c>TryAcquireTierAsync</c>, key <c>nudge-tier:{studentId}:WEEKLY_CHALLENGE:{periodKey}</c>,
 ///         TTL ≈ lookahead + margin) ensures at most one weekly reminder per student per weekly
 ///         period regardless of how many daily runs fall within the 48-hour window.</item>
+///   <item><b>Timed-event participation ending-soon pass (P4-12):</b> scans
+///         <c>TimedEventParticipation</c> rows where <c>Status == InProgress</c> and
+///         <c>EventEndUtc</c> falls within the next <c>EndingSoonLookaheadHours</c> (default 6h).
+///         Publishes one <see cref="TimedEventParticipationEndingSoonIntegrationEvent"/> per
+///         distinct student — most-urgent (earliest <c>EventEndUtc</c>) participation wins.
+///         Fail-soft per student. Bounded by <c>Take(500)</c>.</item>
 /// </list></para>
 ///
 /// <para><b>Pagination note:</b> all passes use <c>Take(500)</c> as a page guard for MVP scale.
@@ -54,6 +61,7 @@ public sealed class StreakAtRiskJob
     private readonly ISystemClock _clock;
     private readonly IOptions<ReengagementOptions> _options;
     private readonly IOptions<StreakOptions> _streakOptions;
+    private readonly IOptions<TimedEventParticipationOptions> _participationOptions;
     private readonly ILoggerManager _logger;
 
     public StreakAtRiskJob(
@@ -61,13 +69,15 @@ public sealed class StreakAtRiskJob
         ISystemClock clock,
         IOptions<ReengagementOptions> options,
         IOptions<StreakOptions> streakOptions,
+        IOptions<TimedEventParticipationOptions> participationOptions,
         ILoggerManager logger)
     {
-        _scopeFactory  = scopeFactory;
-        _clock         = clock;
-        _options       = options;
-        _streakOptions = streakOptions;
-        _logger        = logger;
+        _scopeFactory         = scopeFactory;
+        _clock                = clock;
+        _options              = options;
+        _streakOptions        = streakOptions;
+        _participationOptions = participationOptions;
+        _logger               = logger;
     }
 
     /// <summary>
@@ -217,7 +227,10 @@ public sealed class StreakAtRiskJob
 
         foreach (var s in weeklyReminderByStudent)
         {
-            var minutesRemaining = (int)(s.PeriodEndUtc - nowUtc).TotalMinutes;
+            // PeriodEndUtc is read back as machine-local Kind under Npgsql
+            // EnableLegacyTimestampBehavior=true; normalize to UTC before the arithmetic so
+            // MinutesRemaining is correct regardless of the host timezone (HANDOFF P2-08 quirk).
+            var minutesRemaining = (int)(s.PeriodEndUtc.ToUniversalTime() - nowUtc).TotalMinutes;
 
             try
             {
@@ -240,10 +253,89 @@ public sealed class StreakAtRiskJob
             }
         }
 
+        // ── Pass 4: Timed-event participation ending-soon (P4-12) ────────────────────────────
+        // In-progress participations whose EventEndUtc falls within EndingSoonLookaheadHours.
+        // Per student, the most-urgent (earliest EventEndUtc) in-window participation is selected
+        // so each student receives at most one EndingSoon event per run.
+        var endingSoonLookaheadEnd = nowUtc.AddHours(_participationOptions.Value.EndingSoonLookaheadHours);
+
+        var endingSoonRows = await db.TimedEventParticipations
+            .AsNoTracking()
+            .Where(p => p.Status == Domain.Enums.TimedEventParticipationStatus.InProgress
+                     && p.EventEndUtc > nowUtc
+                     && p.EventEndUtc <= endingSoonLookaheadEnd)
+            .OrderBy(p => p.StudentXpProfile.StudentId)
+            .ThenBy(p => p.EventEndUtc)
+            .Select(p => new
+            {
+                StudentId    = p.StudentXpProfile.StudentId,
+                TimedEventId = p.TimedEventId,
+                p.Progress,
+                p.Target,
+                p.EventEndUtc,
+            })
+            .Take(500)
+            .ToListAsync(ct);
+
+        if (endingSoonRows.Count == 500)
+        {
+            _logger.LogInfo(
+                "P4-12: StreakAtRiskJob — ending-soon page guard hit (count=500). " +
+                "Consider cursor-based pagination when student count grows.");
+        }
+
+        // Resolve Code per TimedEventId (grouped to avoid N+1).
+        var timedEventIds = endingSoonRows.Select(r => r.TimedEventId).Distinct().ToList();
+        var codeByEventId = await db.TimedEvents
+            .AsNoTracking()
+            .Where(e => timedEventIds.Contains(e.Id))
+            .Select(e => new { e.Id, e.Code })
+            .ToDictionaryAsync(e => e.Id, e => e.Code, ct);
+
+        // Deduplicate to one row per student (most-urgent already first due to ThenBy EventEndUtc).
+        var endingSoonByStudent = endingSoonRows
+            .GroupBy(r => r.StudentId)
+            .Select(g => g.First())
+            .ToList();
+
+        int endingSoonPublished = 0;
+        int endingSoonFailed    = 0;
+
+        foreach (var row in endingSoonByStudent)
+        {
+            // EventEndUtc is read back as machine-local Kind under Npgsql
+            // EnableLegacyTimestampBehavior=true; normalize to UTC before the arithmetic so
+            // MinutesRemaining is correct regardless of the host timezone (HANDOFF P2-08 quirk).
+            var minutesRemaining = (int)(row.EventEndUtc.ToUniversalTime() - nowUtc).TotalMinutes;
+            var code = codeByEventId.TryGetValue(row.TimedEventId, out var c) ? c : string.Empty;
+
+            try
+            {
+                await publisher.Publish(new TimedEventParticipationEndingSoonIntegrationEvent(
+                    EventId:          Guid.NewGuid(),
+                    OccurredOnUtc:    nowUtc,
+                    StudentId:        row.StudentId,
+                    TimedEventId:     row.TimedEventId,
+                    Code:             code,
+                    Progress:         row.Progress,
+                    Target:           row.Target,
+                    MinutesRemaining: minutesRemaining), ct);
+
+                endingSoonPublished++;
+            }
+            catch (Exception ex)
+            {
+                endingSoonFailed++;
+                _logger.LogError(ex,
+                    $"P4-12: StreakAtRiskJob — ending-soon publish failed for studentId={row.StudentId}.");
+            }
+        }
+
         _logger.LogInfo(
-            $"P4-09/P9-06: StreakAtRiskJob complete — " +
+            $"P4-09/P9-06/P4-12: StreakAtRiskJob complete — " +
             $"streakAtRiskCount={atRiskStudents.Count}, streakPublished={streakPublished}, streakFailed={streakFailed}; " +
             $"missionReminderCount={reminderStudentIds.Count}, reminderPublished={reminderPublished}, reminderFailed={reminderFailed}; " +
-            $"weeklyReminderCount={weeklyReminderByStudent.Count}, weeklyReminderPublished={weeklyReminderPublished}, weeklyReminderFailed={weeklyReminderFailed}.");
+            $"weeklyReminderCount={weeklyReminderByStudent.Count}, weeklyReminderPublished={weeklyReminderPublished}, weeklyReminderFailed={weeklyReminderFailed}; " +
+            $"endingSoonCount={endingSoonByStudent.Count}, endingSoonPublished={endingSoonPublished}, endingSoonFailed={endingSoonFailed}.");
     }
 }

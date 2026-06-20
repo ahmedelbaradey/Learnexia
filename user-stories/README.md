@@ -89,7 +89,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P4-09 Bring the student back tomorrow (re-engagement notifications) *(barrier-to-entry: BE4)*
 - P4-10 Serve realtime gamification state from Redis *(barrier-to-entry: BE3)*
 - P4-11 Streak freeze, timed events & weekly challenges *(barrier-to-entry: BE4)*
-- P4-12 Timed-event participation *(per-child progress/completion + eligibility queries on P4-11 timed events; unblocks P9-12 timed-event nudges — added 2026-06-20)*
+- P4-12 Timed-event participation *(✅ BUILT 2026-06-20 — per-child progress/completion + eligibility queries on P4-11 timed events; unblocks P9-12 timed-event nudges)*
 
 ### Phase 4 — AI Tutor *(story IDs `P3-xx`)*
 - P3-01 Route AI requests through an AI Gateway
