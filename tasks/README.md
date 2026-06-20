@@ -190,7 +190,7 @@ Push end-to-end (Expo FE) + the full habit-forming notification catalog on the m
 | P9-03 | In-app notification inbox *(consumes existing InboxController)* | [FE](Frontend/student-app/Phase-9-Notifications/P9-03-FE.md) | — |
 | P9-04 | Parent per-child notification controls | [FE](Frontend/student-app/Phase-9-Notifications/P9-04-FE.md) | — |
 | P9-05 | Light up existing gamification events *(level-up, league, freeze, timed-event)* | — | [BE](Backend/Phase-9-Notifications/P9-05-BE.md) |
-| P9-06 | New habit-loop categories *(weekly recap shipped; weekly-challenge deferred)* | — | [BE](Backend/Phase-9-Notifications/P9-06-BE.md) |
+| P9-06 | New habit-loop categories *(✅ weekly recap + weekly-challenge ending-soon; streak-milestone dropped)* | — | [BE](Backend/Phase-9-Notifications/P9-06-BE.md) |
 | P9-07 | Nudge arbitration + global daily push budget + cooldowns | — | [BE](Backend/Phase-9-Notifications/P9-07-BE.md) |
 | P9-08 | Comeback escalation ladder *(day 2/5/14)* | — | [BE](Backend/Phase-9-Notifications/P9-08-BE.md) |
 | P9-09 | Spaced-repetition review reminder *(✅ built — consumes P3-10 `ReviewDueIntegrationEvent`)* | — | [BE](Backend/Phase-9-Notifications/P9-09-BE.md) |

@@ -19,4 +19,9 @@ public enum NotificationCategory
     // independently of Achievement/WeeklyReport once P9-04 FE per-type toggles ship.
     // Inbox-only in v1 (not in ReengagementCategories push set); push falls out by prefs default.
     ReviewReminder = 7,
+    // P9-06: weekly-challenge ending-soon reminder — distinct category so the parent can toggle it
+    // independently of DailyMissionReminder once P9-04 FE per-type toggles ship.
+    // Inbox-only in v1 (not in ReengagementCategories push set); push falls out by prefs default.
+    // No migration: stored as int with HasSentinel(-1); value 8 != 0 != -1, stores correctly.
+    WeeklyChallenge = 8,
 }
