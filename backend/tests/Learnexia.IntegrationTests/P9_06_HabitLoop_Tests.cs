@@ -192,31 +192,16 @@ public sealed class P9_06_HabitLoop_Tests : IAsyncLifetime
 
     // =========================================================================
     // TC-04 — WeeklyRecapReadyIntegrationEvent (XpEarned=150, SkillsImproved=4)
-    //         → consumer writes WEEKLY_RECAP row.
+    //         → consumer writes WEEKLY_RECAP row with Category=WeeklyReport(0).
     //
-    // KNOWN BUG (defect #TC04-EF-DEFAULT-VALUE):
-    //   NotificationConfig.cs configures:
-    //     builder.Property(p => p.Category).HasConversion<int>().IsRequired().HasDefaultValueSql("6");
-    //   NotificationCategory.WeeklyReport = 0 is the CLR default for the enum.
-    //   EF Core detects that the property value equals the CLR default (0) and omits the
-    //   column from the INSERT, letting PostgreSQL use the SQL default (6 = System).
-    //   EF Core emits a warning at startup confirming this:
-    //     "The database-generated default will always be used for inserts when the property
-    //      has the value 'WeeklyReport', since this is the CLR default"
-    //   Fix required in backend-feature (NotificationConfig.cs):
-    //     Option A: add .HasSentinel(-1) so EF sends 0 explicitly when Category=WeeklyReport.
-    //     Option B: make Category nullable (null = unset sentinel).
-    //     Option C: change WeeklyReport enum value to a non-zero value.
-    //   Until fixed, every WEEKLY_RECAP notification is stored with Category=System(6)
-    //   instead of WeeklyReport(0).
-    //
-    // This test asserts the row IS written (consumer works) and separately asserts the
-    // actual persisted category to document the bug.  The category assertion uses the
-    // ACTUAL (buggy) value so this test passes and the bug is documented via the failure
-    // comment.  A separate assertion captures the expected value to make the intent clear.
+    // DEFECT 1 FIX VERIFIED:
+    //   NotificationConfig.cs now has .HasSentinel((NotificationCategory)(-1)) so EF Core
+    //   always sends the actual Category value (including 0=WeeklyReport) in the INSERT,
+    //   instead of omitting the column and letting PostgreSQL apply the SQL default 6=System.
+    //   This assertion confirms the fix: persisted Category must be WeeklyReport(0), not System(6).
     // =========================================================================
 
-    [Fact(DisplayName = "P906-TC04 WeeklyRecapReadyIntegrationEvent (xp=150, skills=4) → WEEKLY_RECAP row written [TC04-EF-DEFAULT-VALUE BUG: Category stored as System(6) not WeeklyReport(0)]")]
+    [Fact(DisplayName = "P906-TC04 WeeklyRecapReadyIntegrationEvent (xp=150, skills=4) → WEEKLY_RECAP row written with Category=WeeklyReport(0) [DEFECT 1 FIXED]")]
     public async Task TC04_WeeklyRecapReadyIntegrationEvent_WritesWeeklyReportRow()
     {
         var (_, _, _, childId) = await CreateParentChildPairAsync("tc04");
@@ -237,16 +222,14 @@ public sealed class P9_06_HabitLoop_Tests : IAsyncLifetime
             "WeeklyRecapReadyIntegrationEventHandler must write a WEEKLY_RECAP row " +
             "when XpEarned > 0 and SkillsImproved > 0");
 
-        // BUG TC04-EF-DEFAULT-VALUE: Category is persisted as System(6) not WeeklyReport(0).
-        // The handler sets Category = NotificationCategory.WeeklyReport (0), but EF omits
-        // the column (CLR default) and PostgreSQL uses HasDefaultValueSql("6") = System.
-        // Expected (correct): NotificationCategory.WeeklyReport
-        // Actual (buggy):     NotificationCategory.System
-        // Fix: add .HasSentinel(-1) to NotificationConfig Category property.
-        notifications.First().Category.Should().Be(NotificationCategory.System,
-            "BUG TC04-EF-DEFAULT-VALUE: WEEKLY_RECAP Category is persisted as System(6) " +
-            "instead of WeeklyReport(0) because HasDefaultValueSql(\"6\") applies when the " +
-            "CLR default (0=WeeklyReport) is used. Fix: add .HasSentinel(-1) in NotificationConfig.");
+        // DEFECT 1 fix verification: Category must be WeeklyReport(0), not System(6).
+        // Before the fix, EF omitted the column (CLR default=0) and PostgreSQL applied
+        // HasDefaultValueSql("6")=System.  HasSentinel(-1) forces EF to always send the
+        // explicit value, so WeeklyReport(0) is stored correctly.
+        notifications.First().Category.Should().Be(NotificationCategory.WeeklyReport,
+            "DEFECT 1 FIXED: WEEKLY_RECAP Category must persist as WeeklyReport(0). " +
+            "NotificationConfig.HasSentinel(-1) forces EF to INSERT the explicit 0 value " +
+            "instead of omitting the column and letting PostgreSQL use the SQL default 6=System.");
     }
 
     // =========================================================================
