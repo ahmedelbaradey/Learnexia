@@ -2661,4 +2661,7 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="TimedEventParticipationsRetrievedSuccessfully" xml:space="preserve">
     <value>Timed-event participation progress retrieved successfully.</value>
   </data>
+  <data name="NotificationAnalyticsRetrievedSuccessfully" xml:space="preserve">
+    <value>Notification analytics retrieved successfully.</value>
+  </data>
 </root>

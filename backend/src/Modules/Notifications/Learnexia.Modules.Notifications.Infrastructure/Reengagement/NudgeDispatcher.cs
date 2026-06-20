@@ -2,8 +2,10 @@ using Learnexia.Modules.Notifications.Application.Abstractions;
 using Learnexia.Modules.Notifications.Domain.Entities;
 using Learnexia.Modules.Notifications.Domain.Services;
 using Learnexia.Modules.Notifications.Infrastructure.Persistence;
+using Learnexia.Shared.Contracts.Notifications;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Settings;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace Learnexia.Modules.Notifications.Infrastructure.Reengagement;
@@ -50,6 +52,7 @@ public sealed class NudgeDispatcher : INudgeDispatcher
     private readonly INudgeArbiter                          _arbiter;
     private readonly IGlobalSettingsProvider                _settings;
     private readonly ISystemClock                           _clock;
+    private readonly IPublisher                             _publisher;
     private readonly ILoggerManager                         _logger;
 
     public NudgeDispatcher(
@@ -60,6 +63,7 @@ public sealed class NudgeDispatcher : INudgeDispatcher
         INudgeArbiter arbiter,
         IGlobalSettingsProvider settings,
         ISystemClock clock,
+        IPublisher publisher,
         ILoggerManager logger)
     {
         _db                 = db;
@@ -69,6 +73,7 @@ public sealed class NudgeDispatcher : INudgeDispatcher
         _arbiter            = arbiter;
         _settings           = settings;
         _clock              = clock;
+        _publisher          = publisher;
         _logger             = logger;
     }
 
@@ -120,6 +125,11 @@ public sealed class NudgeDispatcher : INudgeDispatcher
                 $"analytics.reengagement.sent category={message.Category} " +
                 $"childId={message.RecipientChildUserId} code={message.Code} " +
                 $"channels={deliveredChannels}");
+
+            // ── P9-11: Emit NotificationDispatched analytics event (fail-soft — must NEVER
+            //   affect dispatch). Published inline after SaveChangesAsync so deliveredChannels
+            //   bitmask is final. Analytics consumer handles idempotency via SourceEventId.
+            await PublishDispatchedAsync(message, deliveredChannels, nowUtc, ct);
         }
         catch (Exception ex)
         {
@@ -179,6 +189,11 @@ public sealed class NudgeDispatcher : INudgeDispatcher
                     $"analytics.reengagement.push_suppressed reason={result.SuppressReason} " +
                     $"category={message.Category} code={message.Code} " +
                     $"childId={message.RecipientChildUserId}");
+
+                // ── P9-11: Emit NotificationSuppressed analytics event (fail-soft — must NEVER
+                //   block dispatch or the inbox write). Suppressed = push channel denied only;
+                //   the in-app inbox row is still written (a co-occurring Dispatched will follow).
+                await PublishSuppressedAsync(message, result.SuppressReason.ToString(), nowUtc, ct);
             }
 
             return result.ShouldPush;
@@ -252,6 +267,66 @@ public sealed class NudgeDispatcher : INudgeDispatcher
             _logger.LogError(ex,
                 $"P4-09: NudgeDispatcher — push delivery threw for childId={message.RecipientChildUserId}; inbox row is still written.");
             return 0;
+        }
+    }
+
+    // ── P9-11: Analytics lifecycle event emitters ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Publishes a <see cref="NotificationDispatchedIntegrationEvent"/> in a fail-soft try/catch.
+    /// A publish failure MUST NOT affect the dispatch outcome — the inbox row is already persisted.
+    /// Mirrors the <c>TimedEventStartedRepublisher</c> fail-soft pattern.
+    /// </summary>
+    private async Task PublishDispatchedAsync(
+        NudgeMessage message,
+        int deliveredChannels,
+        DateTime nowUtc,
+        CancellationToken ct)
+    {
+        try
+        {
+            await _publisher.Publish(new NotificationDispatchedIntegrationEvent(
+                EventId:          Guid.NewGuid(),
+                OccurredOnUtc:    nowUtc,
+                StudentId:        message.RecipientChildUserId,
+                Code:             message.Code,
+                Category:         (int)message.Category,
+                DeliveredChannels: deliveredChannels), ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                $"P9-11: NudgeDispatcher — failed to publish NotificationDispatchedIntegrationEvent " +
+                $"childId={message.RecipientChildUserId} code={message.Code} — analytics sink may miss this event.");
+        }
+    }
+
+    /// <summary>
+    /// Publishes a <see cref="NotificationSuppressedIntegrationEvent"/> in a fail-soft try/catch.
+    /// Called when the P9-07 push arbiter denies the push channel (in-app row is still written).
+    /// A publish failure MUST NOT affect the dispatch outcome.
+    /// </summary>
+    private async Task PublishSuppressedAsync(
+        NudgeMessage message,
+        string suppressReason,
+        DateTime nowUtc,
+        CancellationToken ct)
+    {
+        try
+        {
+            await _publisher.Publish(new NotificationSuppressedIntegrationEvent(
+                EventId:       Guid.NewGuid(),
+                OccurredOnUtc: nowUtc,
+                StudentId:     message.RecipientChildUserId,
+                Code:          message.Code,
+                Category:      (int)message.Category,
+                Reason:        suppressReason), ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                $"P9-11: NudgeDispatcher — failed to publish NotificationSuppressedIntegrationEvent " +
+                $"childId={message.RecipientChildUserId} code={message.Code} reason={suppressReason} — analytics sink may miss this event.");
         }
     }
 }

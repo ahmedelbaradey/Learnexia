@@ -2193,5 +2193,19 @@
         public const string TimedEventParticipationsRetrievedSuccessfully =
             "TimedEventParticipationsRetrievedSuccessfully";
 
+        // ── P9-11 Notification analytics sink ─────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Returned on successful retrieval of the notification lifecycle analytics aggregate
+        /// (dispatched/suppressed/opened counts + open-rate by code and category).
+        /// Used by <c>GetNotificationAnalyticsQueryHandler</c>.
+        ///
+        /// <para>v1 suppression scope: suppressed counts = push-rationing only (P9-07 arbiter reasons).
+        /// Pre-dispatch suppressions (parent-disabled, quiet-hours, per-category daily-cap) are
+        /// captured as a deferred follow-up.</para>
+        /// </summary>
+        public const string NotificationAnalyticsRetrievedSuccessfully =
+            "NotificationAnalyticsRetrievedSuccessfully";
+
     }
 }

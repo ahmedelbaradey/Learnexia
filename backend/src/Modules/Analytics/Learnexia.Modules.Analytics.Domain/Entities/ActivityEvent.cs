@@ -80,4 +80,43 @@ public class ActivityEvent : CreationAuditedEntity
     /// and swallowed as a silent no-op. Mirrors <c>ModerationItem.SourceEventId</c>.
     /// </summary>
     public Guid SourceEventId { get; set; }
+
+    // ── P9-11 Notification-analytics facets ──────────────────────────────────────────────────────
+    // All four columns are nullable so every existing producer continues writing null for these
+    // fields. They are populated ONLY for EventType IN (NotificationDispatched, NotificationSuppressed,
+    // NotificationOpened) rows emitted by the P9-11 notification-analytics consumers.
+    // Analytics must NOT reference Notifications.Domain — types are stored as primitives.
+
+    /// <summary>
+    /// P9-11. The notification template code (e.g. <c>BADGE_EARNED</c>, <c>STREAK_BROKEN</c>).
+    /// Populated only for <c>EventType IN (NotificationDispatched, NotificationSuppressed,
+    /// NotificationOpened)</c>; null for all other event types. Max 64 chars. Group-by/filter
+    /// column for the admin notification-analytics aggregate.
+    /// </summary>
+    public string? NotificationCode { get; set; }
+
+    /// <summary>
+    /// P9-11. The <c>NotificationCategory</c> enum's integer value (0..9). Stored as a plain
+    /// <c>int</c> — Analytics must NOT reference Notifications.Domain (module isolation rule #1).
+    /// Populated only for <c>EventType IN (NotificationDispatched, NotificationSuppressed,
+    /// NotificationOpened)</c>; null for all other event types.
+    /// </summary>
+    public int? NotificationCategory { get; set; }
+
+    /// <summary>
+    /// P9-11. Bitmask of channels on which the notification was actually delivered:
+    /// <c>1 = email</c>, <c>2 = push</c>, <c>4 = inApp</c>.
+    /// Populated only for <c>EventType = NotificationDispatched</c>; null for suppressed and
+    /// opened rows (and for all non-notification event types).
+    /// </summary>
+    public int? NotificationChannels { get; set; }
+
+    /// <summary>
+    /// P9-11. The P9-07 push-suppression reason string (e.g. <c>GlobalBudgetExhausted</c>,
+    /// <c>DailyCapReached</c>). Stored as a plain string — Analytics must NOT reference the
+    /// <c>ReengagementEvaluator.NotEligibleReason</c> enum in Notifications.Domain.
+    /// Populated only for <c>EventType = NotificationSuppressed</c>; null otherwise.
+    /// Max 32 chars.
+    /// </summary>
+    public string? SuppressionReason { get; set; }
 }
