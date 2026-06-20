@@ -1,3 +1,22 @@
+## P9-10 notification localization (v1 — welcome) — 2026-06-20 (`feat/P9-10-notification-localization`)
+
+**v1 backend-only slice — localize at SEND TIME, reuse the existing seam.** Closed the concrete gap (hardcoded English welcome) without forking anything or touching contracts/migrations.
+
+**What shipped:**
+- `ReengagementCopyTemplates` `System:WELCOME:ar-EG` + `:en-US` (title+body, `{userName}`). AR primary: "أهلاً بك في لرنكسيا! 🎉".
+- `UserRegisteredIntegrationEventHandler` — the hardcoded English welcome title/body (inbox AND welcome email subject/body) now render via `ReengagementCopyTemplates.Render(System, "WELCOME", locale, …)`, locale from the SAME `ReengagementHandlerHelper.GetLocaleAsync` seam (recipient `PreferredLanguage` → `ar-EG` fallback). Removed a redundant second `IUserLookup` lookup. Fail-soft welcome-email preserved.
+- BE-5 guard (comment): notification copy uses `PreferredLanguage` (UI language), **NEVER** P8 `LearningLanguage` (verified `GetLocaleAsync` reads only `PreferredLanguage`; `UserSummary` has no LearningLanguage field).
+- Graceful fallback (unknown locale → en-US → generic, no empty/key-leak) — covered by new unit tests.
+- **Also fixed a unit test P9-09 left broken:** `ReengagementCopyTemplatesTests` C17 enum-count drift guard asserted 7 but P9-09 added `ReviewReminder=7` (8 values) — P9-09's gate ran integration tests, not the Notifications unit project, so the red unit test slipped into main via #197. Now corrected to 8 + per-value assertion. **(Lesson: when a wave touches `NotificationCategory`, run the Notifications UNIT project too, not just integration.)**
+
+**Explicitly DEFERRED (not silently dropped):**
+- **Reset-email localization → P6-06** (Fork A). `PasswordResetRequestedIntegrationEvent` carries no `UserId`/`Locale` and `IUserLookup` is by-id only, so reset localization needs a `Shared.Contracts` change = P6-06-BE-2's charter (bundled with its timing-oracle work). Left a code comment; did NOT touch the reset handler logic.
+- **Read-time re-localization of historical inbox → P9-03 FE** (Fork B / BE-4). v1 stores send-time copy (no inbox read-path change, no contract change). The `Code`+`Data` columns already exist, so the later upgrade needs no migration. Trade-off accepted: a mid-stream language switch won't retranslate history until P9-03 ships. Documented in `InboxItemDto`/`ListMyInboxQueryHandler` comments.
+
+**Gates:** build 0 errors; Notifications unit tests 87/87; reviewer PASS. security-auditor + api-tester not required (pure copy-localization — no auth/data/recipient change, no new HTTP endpoint; welcome is event-driven, unit-tested).
+
+---
+
 ## P9-09 spaced-repetition review reminder — 2026-06-20 (`feat/P9-09-review-reminder`)
 
 **Now UNBLOCKED + shipped** (was blocked on P3-10). Consumes the `ReviewDueIntegrationEvent` from the P3-10 sweep → a review-reminder nudge. **Near-exact mirror of the merged P9-06 `WeeklyRecapReadyIntegrationEventHandler`** — backend-only, single batch, no migration, no shared-file edits (clean for parallelism).

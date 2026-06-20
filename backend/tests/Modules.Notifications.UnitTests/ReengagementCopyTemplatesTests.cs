@@ -274,17 +274,17 @@ public sealed class ReengagementCopyTemplatesTests
     }
 
     // =========================================================================
-    // C17 — NotificationCategory enum drift guard (7 values)
+    // C17 — NotificationCategory enum drift guard (8 values as of P9-09 + P9-10)
     // =========================================================================
 
-    [Fact(DisplayName = "P409-C17 NotificationCategory has exactly 7 values — drift guard")]
-    public void NotificationCategory_HasExactlySevenValues()
+    [Fact(DisplayName = "P409-C17 NotificationCategory has exactly 8 values — drift guard")]
+    public void NotificationCategory_HasExactlyEightValues()
     {
         var values = Enum.GetValues<NotificationCategory>();
-        values.Should().HaveCount(7,
-            "NotificationCategory must have exactly 7 values: " +
+        values.Should().HaveCount(8,
+            "NotificationCategory must have exactly 8 values: " +
             "WeeklyReport=0, StreakAtRisk=1, ProductAnnouncement=2, Achievement=3, " +
-            "DailyMissionReminder=4, LapseWinBack=5, System=6. " +
+            "DailyMissionReminder=4, LapseWinBack=5, System=6, ReviewReminder=7. " +
             "If you add a value, update this test and the ReengagementCopyTemplates lookup.");
     }
 
@@ -298,6 +298,7 @@ public sealed class ReengagementCopyTemplatesTests
         ((int)NotificationCategory.DailyMissionReminder).Should().Be(4);
         ((int)NotificationCategory.LapseWinBack).Should().Be(5);
         ((int)NotificationCategory.System).Should().Be(6);
+        ((int)NotificationCategory.ReviewReminder).Should().Be(7);
     }
 
     // C22 — WeeklyReport / WEEKLY_RECAP / ar-EG → non-empty
@@ -347,6 +348,100 @@ public sealed class ReengagementCopyTemplatesTests
         // Arabic Unicode range: U+0600–U+06FF
         var hasArabic = (title + body).Any(c => c >= '؀' && c <= 'ۿ');
         hasArabic.Should().BeTrue("ar-EG weekly recap template must contain Arabic-script characters");
+    }
+
+    // =========================================================================
+    // P9-10 WELCOME template tests (BE-6)
+    // =========================================================================
+
+    // C26 — System / WELCOME / ar-EG returns non-empty title and body
+    [Fact(DisplayName = "P910-C26 System WELCOME ar-EG returns non-empty title and body")]
+    public void System_Welcome_Arabic_ReturnsContent()
+    {
+        var (title, body) = ReengagementCopyTemplates.GetTemplate(
+            NotificationCategory.System, "WELCOME", "ar-EG");
+
+        title.Should().NotBeNullOrWhiteSpace();
+        body.Should().NotBeNullOrWhiteSpace();
+    }
+
+    // C27 — System / WELCOME / en-US returns non-empty title and body
+    [Fact(DisplayName = "P910-C27 System WELCOME en-US returns non-empty title and body")]
+    public void System_Welcome_English_ReturnsContent()
+    {
+        var (title, body) = ReengagementCopyTemplates.GetTemplate(
+            NotificationCategory.System, "WELCOME", "en-US");
+
+        title.Should().NotBeNullOrWhiteSpace();
+        body.Should().NotBeNullOrWhiteSpace();
+    }
+
+    // C28 — Render WELCOME ar-EG substitutes {userName} and leaves no literal placeholder
+    [Fact(DisplayName = "P910-C28 Render WELCOME ar-EG substitutes {userName} placeholder correctly")]
+    public void Render_Welcome_Arabic_SubstitutesUserName()
+    {
+        var (title, body) = ReengagementCopyTemplates.Render(
+            NotificationCategory.System, "WELCOME", "ar-EG",
+            ("userName", "أحمد"));
+
+        body.Should().Contain("أحمد", "{userName} should be replaced with the actual user name");
+        body.Should().NotContain("{userName}", "literal placeholder must not remain after substitution");
+        title.Should().NotBeNullOrWhiteSpace();
+    }
+
+    // C29 — Render WELCOME en-US substitutes {userName} and leaves no literal placeholder
+    [Fact(DisplayName = "P910-C29 Render WELCOME en-US substitutes {userName} placeholder correctly")]
+    public void Render_Welcome_English_SubstitutesUserName()
+    {
+        var (title, body) = ReengagementCopyTemplates.Render(
+            NotificationCategory.System, "WELCOME", "en-US",
+            ("userName", "Ahmed"));
+
+        body.Should().Contain("Ahmed", "{userName} should be replaced with 'Ahmed'");
+        body.Should().NotContain("{userName}", "literal placeholder must not remain after substitution");
+        title.Should().NotBeNullOrWhiteSpace();
+    }
+
+    // C30 — WELCOME unknown locale (fr-FR) falls back to en-US
+    [Fact(DisplayName = "P910-C30 WELCOME unknown locale fr-FR falls back to en-US template")]
+    public void Welcome_UnknownLocale_FallsBackToEnUs()
+    {
+        var (titleFr, bodyFr) = ReengagementCopyTemplates.GetTemplate(
+            NotificationCategory.System, "WELCOME", "fr-FR");
+        var (titleEn, bodyEn) = ReengagementCopyTemplates.GetTemplate(
+            NotificationCategory.System, "WELCOME", "en-US");
+
+        titleFr.Should().Be(titleEn, "fr-FR should fall back to en-US title for WELCOME");
+        bodyFr.Should().Be(bodyEn, "fr-FR should fall back to en-US body for WELCOME");
+    }
+
+    // C31 — WELCOME ar-EG title and body contain Arabic characters (ar-first principle)
+    [Fact(DisplayName = "P910-C31 WELCOME ar-EG template contains Arabic characters")]
+    public void Welcome_Arabic_ContainsArabicCharacters()
+    {
+        var (title, body) = ReengagementCopyTemplates.GetTemplate(
+            NotificationCategory.System, "WELCOME", "ar-EG");
+
+        // Arabic Unicode range: U+0600–U+06FF
+        var hasArabic = (title + body).Any(c => c >= '؀' && c <= 'ۿ');
+        hasArabic.Should().BeTrue("ar-EG WELCOME template must contain Arabic-script characters (ar-first)");
+    }
+
+    // C32 — Missing code (UNKNOWN_CODE) → generic fallback, non-empty, no key-leaking string
+    [Fact(DisplayName = "P910-C32 Unknown code for System category returns non-empty generic fallback")]
+    public void System_UnknownCode_ReturnsGenericFallback()
+    {
+        var act = () => ReengagementCopyTemplates.GetTemplate(
+            NotificationCategory.System, "UNKNOWN_CODE_XYZ", "ar-EG");
+        act.Should().NotThrow("unknown codes for System category must fall back gracefully");
+
+        var (title, body) = ReengagementCopyTemplates.GetTemplate(
+            NotificationCategory.System, "UNKNOWN_CODE_XYZ", "ar-EG");
+
+        title.Should().NotBeNullOrWhiteSpace("generic fallback title must not be empty");
+        body.Should().NotBeNullOrWhiteSpace("generic fallback body must not be empty");
+        // Guard: fallback must not echo a key-like pattern (e.g. "System:UNKNOWN_CODE_XYZ:ar-EG")
+        title.Should().NotContain(":", "generic fallback must not contain a key-leaking colon pattern");
     }
 
 }

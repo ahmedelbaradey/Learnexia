@@ -194,7 +194,7 @@ Push end-to-end (Expo FE) + the full habit-forming notification catalog on the m
 | P9-07 | Nudge arbitration + global daily push budget + cooldowns | — | [BE](Backend/Phase-9-Notifications/P9-07-BE.md) |
 | P9-08 | Comeback escalation ladder *(day 2/5/14)* | — | [BE](Backend/Phase-9-Notifications/P9-08-BE.md) |
 | P9-09 | Spaced-repetition review reminder *(✅ built — consumes P3-10 `ReviewDueIntegrationEvent`)* | — | [BE](Backend/Phase-9-Notifications/P9-09-BE.md) |
-| P9-10 | Notification localization *(localize push/in-app/email)* | — | [BE](Backend/Phase-9-Notifications/P9-10-BE.md) |
+| P9-10 | Notification localization *(🟡 v1 — welcome localized; reset→P6-06, read-time→P9-03)* | — | [BE](Backend/Phase-9-Notifications/P9-10-BE.md) |
 | P9-11 | Notification analytics sink *(send/suppress/open → P5-03 sink)* | [FE](Frontend/admin-dashboard/Phase-9-Notifications/P9-11-FE.md) *(Next.js)* | [BE](Backend/Phase-9-Notifications/P9-11-BE.md) |
 | P9-12 | Timed-event nudges *(join/progress/ending/completion; depends on P4-12)* | [FE](Frontend/student-app/Phase-9-Notifications/P9-12-FE.md) | [BE](Backend/Phase-9-Notifications/P9-12-BE.md) |
 

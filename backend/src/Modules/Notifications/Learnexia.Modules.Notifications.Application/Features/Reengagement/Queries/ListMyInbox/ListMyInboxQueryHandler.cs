@@ -12,6 +12,11 @@ namespace Learnexia.Modules.Notifications.Application.Features.Reengagement.Quer
 /// Returns the authenticated user's in-app notification inbox (P4-09 B4-4 / AC4).
 /// Self-scoped: RecipientExternalUserId = currentUser — no IDOR surface.
 /// Paginated, newest-first. EF/pagination lives in <see cref="INotificationInboxService"/> (Option-C rule).
+///
+/// P9-10 (BE-4) — Localization policy:
+/// This handler returns stored Title/Body verbatim (send-time text). No locale resolution happens on the
+/// read path — localization is applied at send time by each producer. Forward target: re-localize on read
+/// from Code+Data, owned by / sequenced with the P9-03 FE inbox consumer. No read-contract change in v1.
 /// </summary>
 public sealed class ListMyInboxQueryHandler
     : BaseResponseHandler,
