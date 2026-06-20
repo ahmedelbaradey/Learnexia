@@ -16,6 +16,24 @@
 - **Mark-all-read Opened descoped** (`MarkAllReadAsync` uses bulk `ExecuteUpdateAsync`, no materialized Code/Category) — deferred.
 
 **Gates:** build 0 errors; api-tester 15/15 (`P9_11_NotificationAnalyticsSink_Tests` — RELAY-01..05 incl. dual-emit + idempotency + no-PII; ADMIN-01..10 incl. 401/403/200, aggregate math, reason buckets, category filter, from≥to & >365d validation, sentinel-safe empty window); security-auditor PASS (13 Info, 0 Critical/High/Medium/Low, 0 vulnerable deps); reviewer PASS. **Phase-9 backend is now complete** (P9-05..12 all built; P9-01..04 are the FE lead's). P9-11 admin FE = `P9-11-FE` (other lead).
+## P7 Admin E2E — Curriculum cluster run + defects — 2026-06-19 (branch `test/P7-admin-qc-e2e`, off main @ 4270111)
+
+Ran the curriculum admin E2E (`docs/qc/P7-curriculum-admin/`, 94 designed). **Result: 68 PASS / 1 FAIL / 16 conditional-skip of 85 executed.** The single failure (CUR-TC-66, Skills/List ignored `Search`) is **fixed by backend PR #193** (now in this rebased base) → passes on a backend rebuilt from current main; last local run was against the pre-#193 build. Full write-up in `docs/qc/P7-curriculum-admin/execution-report.md`. Must-have CUR-TC-53 (Matching grades correctly) PASS.
+
+**FE fixes I made (frontend lead, on this branch):**
+- `packages/api-client/src/client/apiClient.ts` — `requestPaginated` now normalizes BOTH paginated wire shapes. Root cause of a crash that blanked every curriculum + audit list/detail page ("Application error"): the backend is **inconsistent** — Identity `/api/Admin/Users` returns a *flattened* `PaginatedResult` (data:[] at top), but Learning/Moderation/Audit return `BaseResponse<PaginatedResult>` (inner result under `.data`). Client now returns the flattened inner object either way.
+- `app/(admin)/curriculum/subjects/[id]/page.tsx` — subject detail used `useSubjectList({pageNumber:1})` (pageSize 12) + `.find`, so subjects outside page 1 showed "not found". Now `pageSize:100` (hard 48-subject cap: 4 codes × 6 grades × 2 langs).
+- `app/(admin)/curriculum/skills/page.tsx` + `components/SkillGraph.tsx` — fixed graph keyboard nav (CUR-TC-71): (a) the page passed an inline `onSelectSkillId` arrow that, being in SkillGraph's subject-change effect deps, fired that effect every render and wiped node selection → now a stable `useCallback`; (b) the selection-sync effect cleared selection on a null skillId even when a concept node (no skillId) was selected → now keeps non-skill-node selections.
+- Test harness: added `tests/e2e/playwright.admin.config.ts` (admin-only project, reuses :3001) — the shared config aborts admin runs with EADDRINUSE when the marketing :3002 webServer is stale. Use `--config=playwright.admin.config.ts` for admin specs.
+
+**BACKEND defects found — status:**
+1. ✅ **`Skills/List` ignored `Search`** (CUR-TC-66) — **FIXED by PR #193.** (Separate lower-pri note: still no `SubjectId` filter — only ConceptId/Search/paging — so a selected subject narrows the concept dropdown + graph but not the table directly.)
+2. ✅ **`GET /api/learning/Subjects?id={unknown}` returned 500 not 404** — **FIXED by PR #187.** FE keeps the list+find resolution anyway (clean not-found UX, works either way).
+3. ℹ️ **Paginated envelope inconsistency** — Identity flattens, Learning/Moderation/Audit double-wrap. Backend lead **declined** to normalize (would break FE field names for no functional gain); FE `requestPaginated` shim absorbs both. Closed — no action.
+
+**CUR-TC-71 — FIXED** (see skills/SkillGraph fix above). Graph keyboard ArrowDown now selects/advances nodes correctly; row↔graph sync (CUR-TC-70) unaffected.
+
+**Wave-3 admin E2E (moderation/audit/gamification) NOT yet authored** — only QC design exists (`docs/qc/P7-admin-wave3-qc/`, 91 cases). Next step. Moderation queue is empty without AI-flagged events → ~11 cases need a seed or are blocked.
 
 ---
 
