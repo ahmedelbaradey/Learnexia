@@ -117,7 +117,7 @@ The Gamification module (`gamification` schema) reacting to the P4-01 learning d
 | P4-09 | Re-engagement notifications *(barrier-to-entry BE4; child-data sensitive)* | [FE](Frontend/student-app/Phase-3-Gamification/P4-09-FE.md) | [BE](Backend/Phase-3-Gamification/P4-09-BE.md) | 🔲 |
 | P4-10 | Redis realtime gamification state *(barrier-to-entry BE3; enabler)* | — | [BE](Backend/Phase-3-Gamification/P4-10-BE.md) | 🔲 |
 | P4-11 | Streak freeze, timed events & weekly challenges *(barrier-to-entry)* | [FE](Frontend/student-app/Phase-3-Gamification/P4-11-FE.md) | [BE](Backend/Phase-3-Gamification/P4-11-BE.md) | 🔲 |
-| P4-12 | Timed-event participation *(per-child progress/completion + eligibility queries; unblocks P9-12)* | [FE](Frontend/student-app/Phase-3-Gamification/P4-12-FE.md) | [BE](Backend/Phase-3-Gamification/P4-12-BE.md) | 🔲 |
+| P4-12 | Timed-event participation *(per-child progress/completion + eligibility queries; unblocks P9-12)* | [FE](Frontend/student-app/Phase-3-Gamification/P4-12-FE.md) | [BE](Backend/Phase-3-Gamification/P4-12-BE.md) | BE ✅ · FE 🔲 |
 
 ### Phase 4 — AI Tutor *(story IDs `P3-xx`)*
 

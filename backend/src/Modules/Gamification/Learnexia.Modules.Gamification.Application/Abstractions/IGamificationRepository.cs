@@ -353,4 +353,28 @@ public interface IGamificationRepository
     /// Uses AsNoTracking.
     /// </summary>
     Task<IReadOnlyList<TimedEvent>> GetAllTimedEventsAsync(CancellationToken ct = default);
+
+    // ─────── Timed-Event Participation (P4-12) ───────
+
+    /// <summary>
+    /// Returns the <see cref="TimedEventParticipation"/> for (timedEventId, studentXpProfileId)
+    /// as a change-tracked entity so mutations are picked up by UoW. Returns <c>null</c> when
+    /// no row exists yet (lazy-create path).
+    /// </summary>
+    Task<TimedEventParticipation?> GetParticipationAsync(
+        int timedEventId, int studentXpProfileId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Stages a new <see cref="TimedEventParticipation"/> row for insertion.
+    /// Does NOT save — UoW commits.
+    /// </summary>
+    Task AddParticipationAsync(TimedEventParticipation participation, CancellationToken ct = default);
+
+    /// <summary>
+    /// Attaches an existing (AsNoTracking) <see cref="TimedEventParticipation"/> to the
+    /// DbContext as <c>Modified</c> so handler mutations on <c>Progress</c>, <c>Status</c>,
+    /// and <c>CompletedUtc</c> are picked up by the UoW before commit. No-op if already tracked.
+    /// Mirrors <see cref="AttachStudentMission"/>.
+    /// </summary>
+    void AttachParticipation(TimedEventParticipation participation);
 }

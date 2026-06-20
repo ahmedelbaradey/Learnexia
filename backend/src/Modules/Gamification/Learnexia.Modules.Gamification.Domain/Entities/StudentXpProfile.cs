@@ -364,6 +364,42 @@ public class StudentXpProfile : AggregateRoot
     }
 
     // ---------------------------------------------------------------------------
+    // Timed-event participation mutation (P4-12)
+    // ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// Records that this student completed a timed-event participation. Adds the reward XP to
+    /// TotalXp, recomputes level, and raises <see cref="Events.TimedEventParticipationCompletedDomainEvent"/>
+    /// + optionally <see cref="StudentLeveledUpDomainEvent"/> if the XP bonus crosses a level threshold.
+    ///
+    /// Does NOT mutate the <c>TimedEventParticipation</c> row — the <c>XpService</c> accrual hook
+    /// does that explicitly before calling this method.
+    ///
+    /// Mirrors <see cref="RecordMissionCompleted"/> line-for-line (same XP-award + level-up +
+    /// event-raise pattern; different domain event type). The <see cref="XpReason.TimedEventCompleted"/>
+    /// value distinguishes the ledger row in analytics.
+    /// </summary>
+    public void RecordTimedEventCompleted(
+        int timedEventId,
+        string code,
+        int rewardXp,
+        int newLevel,
+        DateTime completedAtUtc)
+    {
+        // Delegate XP mutation + XpAwardedDomainEvent raise + optional level-up event to the
+        // single chokepoint so that XpAwardedLeagueHandler (P4-07) sees timed-event completion XP too.
+        ApplyAward(rewardXp, newLevel, XpReason.TimedEventCompleted, completedAtUtc);
+
+        // Timed-event-specific domain event raised AFTER ApplyAward.
+        RaiseDomainEvent(new Events.TimedEventParticipationCompletedDomainEvent(
+            StudentId,
+            timedEventId,
+            code,
+            rewardXp,
+            completedAtUtc));
+    }
+
+    // ---------------------------------------------------------------------------
     // League fields (P4-07-B1-1)
     // ---------------------------------------------------------------------------
 

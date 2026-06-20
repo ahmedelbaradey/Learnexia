@@ -2184,5 +2184,14 @@
         /// </summary>
         public const string AiTutorUsageRetrievedSuccessfully = "AiTutorUsageRetrievedSuccessfully";
 
+        // ── P4-12 Timed-Event Participation ─────────────────────────────────────────────────
+
+        /// <summary>
+        /// Returned when the student's active timed-event participation snapshots are retrieved
+        /// successfully (P4-12, BE-8). Used by <c>GetMyTimedEventParticipationsQueryHandler</c>.
+        /// </summary>
+        public const string TimedEventParticipationsRetrievedSuccessfully =
+            "TimedEventParticipationsRetrievedSuccessfully";
+
     }
 }

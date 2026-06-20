@@ -17,7 +17,6 @@ using Learnexia.Modules.Gamification.Infrastructure.Queries.Cached;
 using Learnexia.Modules.Gamification.Infrastructure.Repository;
 using Learnexia.Modules.Gamification.Infrastructure.Service;
 using Learnexia.Modules.Gamification.Infrastructure.Services;
-using Learnexia.Modules.Gamification.Infrastructure.Queries;
 using Learnexia.Shared.Contracts.Gamification;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Logging;
@@ -172,6 +171,18 @@ public static class DependencyInjection
         // Mission catalog seeder (P4-06). Scoped — wired into GamificationModule.InitializeAsync in Batch 4.
         // Runs in all environments (product-as-code catalog, not demo data).
         services.AddScoped<MissionSeeder>();
+
+        // ── P4-12: Timed-Event Participation ─────────────────────────────────────────────────
+        // Options
+        services.Configure<TimedEventParticipationOptions>(
+            configuration.GetSection(TimedEventParticipationOptions.SectionName));
+
+        // Read seams (Scoped — share the per-request GamificationDbContext)
+        services.AddScoped<IEligibleStudentsForTimedEventQuery, PostgresEligibleStudentsForTimedEventQuery>();
+        services.AddScoped<IStudentTimedEventParticipationQuery, StudentTimedEventParticipationQuery>();
+
+        // Participation read service (consumed by BE-8 query handler)
+        services.AddScoped<ITimedEventParticipationService, TimedEventParticipationService>();
 
         // ── P4-11-B1-B: Timed Events ─────────────────────────────────────────────────────────
 

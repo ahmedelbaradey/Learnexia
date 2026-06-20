@@ -73,6 +73,17 @@ public class TimedEvent : AggregateRoot
     /// <summary>UTC timestamp when this catalog row was created. Set on insert.</summary>
     public DateTime CreatedAtUtc { get; private set; }
 
+    /// <summary>
+    /// Optional per-event participation goal — how many qualifying in-window XP actions a student
+    /// must accrue to complete this event. When <c>null</c>, the engine falls back to
+    /// <c>TimedEventParticipationOptions.DefaultTarget</c> (config-driven, default 10).
+    ///
+    /// Nullable so existing P4-11 rows need no backfill. Positive values only (enforced by a DB
+    /// CHECK constraint). Snapshotted into <see cref="TimedEventParticipation.Target"/> at
+    /// participation-row creation so a mid-event admin edit does not affect in-flight participants.
+    /// </summary>
+    public int? ParticipationTarget { get; private set; }
+
     // ---------------------------------------------------------------------------
     // EF parameterless constructor
     // ---------------------------------------------------------------------------
@@ -100,13 +111,17 @@ public class TimedEvent : AggregateRoot
         DateTime startUtc,
         DateTime endUtc,
         decimal multiplier,
-        TimedEventScope scope)
+        TimedEventScope scope,
+        int? participationTarget = null)
     {
         if (startUtc >= endUtc)
             throw new ArgumentException("StartUtc must be strictly before EndUtc.", nameof(startUtc));
 
         if (multiplier < 1.0m || multiplier > 5.0m)
             throw new ArgumentOutOfRangeException(nameof(multiplier), "Multiplier must be in [1.00 .. 5.00].");
+
+        if (participationTarget.HasValue && participationTarget.Value <= 0)
+            throw new ArgumentOutOfRangeException(nameof(participationTarget), "ParticipationTarget must be positive when set.");
 
         return new TimedEvent
         {
@@ -121,6 +136,7 @@ public class TimedEvent : AggregateRoot
             Scope = scope,
             IsActive = false,
             CreatedAtUtc = DateTime.UtcNow,
+            ParticipationTarget = participationTarget,
         };
     }
 
@@ -166,13 +182,17 @@ public class TimedEvent : AggregateRoot
         DateTime startUtc,
         DateTime endUtc,
         decimal multiplier,
-        TimedEventScope scope)
+        TimedEventScope scope,
+        int? participationTarget = null)
     {
         if (startUtc >= endUtc)
             throw new ArgumentException("StartUtc must be strictly before EndUtc.", nameof(startUtc));
 
         if (multiplier < 1.0m || multiplier > 5.0m)
             throw new ArgumentOutOfRangeException(nameof(multiplier), "Multiplier must be in [1.00 .. 5.00].");
+
+        if (participationTarget.HasValue && participationTarget.Value <= 0)
+            throw new ArgumentOutOfRangeException(nameof(participationTarget), "ParticipationTarget must be positive when set.");
 
         NameEn = nameEn;
         NameAr = nameAr;
@@ -182,5 +202,6 @@ public class TimedEvent : AggregateRoot
         EndUtc = endUtc;
         Multiplier = multiplier;
         Scope = scope;
+        ParticipationTarget = participationTarget;
     }
 }

@@ -80,6 +80,10 @@ public class TimedEventConfig : IEntityTypeConfiguration<TimedEvent>
             .HasColumnType("timestamp with time zone")
             .IsRequired();
 
+        // Optional per-event participation goal. Nullable — existing rows remain untouched (zero backfill).
+        builder.Property(x => x.ParticipationTarget)
+            .IsRequired(false);
+
         // -----------------------------------------------------------------------
         // Indexes
         // -----------------------------------------------------------------------
@@ -112,6 +116,11 @@ public class TimedEventConfig : IEntityTypeConfiguration<TimedEvent>
             tb.HasCheckConstraint(
                 "CK_TimedEvents_DateRange",
                 "\"StartUtc\" < \"EndUtc\"");
+
+            // ParticipationTarget must be positive when set (null = use config default).
+            tb.HasCheckConstraint(
+                "CK_TimedEvents_ParticipationTarget",
+                "\"ParticipationTarget\" IS NULL OR \"ParticipationTarget\" > 0");
         });
     }
 }
