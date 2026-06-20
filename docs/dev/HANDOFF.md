@@ -1,3 +1,19 @@
+## P9-09 spaced-repetition review reminder — 2026-06-20 (`feat/P9-09-review-reminder`)
+
+**Now UNBLOCKED + shipped** (was blocked on P3-10). Consumes the `ReviewDueIntegrationEvent` from the P3-10 sweep → a review-reminder nudge. **Near-exact mirror of the merged P9-06 `WeeklyRecapReadyIntegrationEventHandler`** — backend-only, single batch, no migration, no shared-file edits (clean for parallelism).
+
+**What shipped:**
+- NEW consumer `Notifications.Application/IntegrationEventHandlers/Reengagement/ReviewDueIntegrationEventHandler.cs` — `INotificationHandler<Shared.Contracts.Learning.ReviewDueIntegrationEvent>`; find-parent → prefs → `ReengagementEvaluator` → per-(child,category,day) Redis dedupe → `BuildMessage` → `NudgeDispatcher`, all fail-soft (ADR 0002). Empty-`TopSkills` guard + orphan-child guard (no blind `TopSkills[0]`). Auto-registers via the host MediatR scan (no Program.cs/DI edit).
+- NEW enum member `NotificationCategory.ReviewReminder = 7` (next free non-zero int after `System=6`). **No migration / no `NotificationConfig` change** — the enum-0 trap is value-0-specific; `HasSentinel(-1)` + the dispatcher always setting `Category` means EF always inserts the explicit value 7.
+- `ReengagementCopyTemplates` `ReviewReminder:REVIEW_DUE` ar-EG + en-US (placeholders `{skill}`,`{minutes}`; `{dueCount}` passed but unused in v1 copy). Top skill from `TopSkills[0]`. Nudge copy lives in `ReengagementCopyTemplates` (NOT resx — that's API-envelope-only).
+- code `REVIEW_DUE`; deep-link by `Code` (P9-02 maps `REVIEW_DUE` → review route; `DataJson: null` like all reengagement handlers). **Inbox-only in v1** — emergent, not special-cased: `ReviewReminder` is absent from the parent-managed push-upsert set (`ChildReengagementPreferenceService.ReengagementCategories`) and `Push` defaults false, so the dispatcher gate keeps it inbox-only until P9-04 FE adds the toggle.
+
+**Gates:** build 0 errors; api-tester 8/8 (`P9_09_ReviewReminder_Tests`: happy/dedupe/not-eligible/inbox-only-channels/ar+en/orphan-fail-soft/no-PII/empty-TopSkills); security-auditor PASS (2 Info only); reviewer PASS. (Docker had to be restarted mid-session to run the Testcontainers integration tests.)
+
+**Follow-up (tracked, not blocking):** add `ReviewReminder` to the P9-04 FE per-type toggle catalog + the push-upsert set so parents can enable push — then it flips to push for free (no handler change).
+
+---
+
 ## P3-10 ReviewDue cross-module event — 2026-06-20 (`feat/P3-10-review-due-event`)
 
 **P3-10's scheduler was ALREADY built+merged** (commit `25e9b98`: `SpacedRepetitionEngine` IsDue+ladder, daily `SpacedRepetitionSweepJob` "SR-Sweep", `GET /api/Learning/Reviews/Due`, SR columns on `StudentSkillMastery`, `CompleteAttemptCommandHandler` ladder hook). This wave added the ONE deferred piece the lead asked for: the cross-module **`ReviewDueIntegrationEvent`** seam — which **UNBLOCKS P9-09** (spaced-repetition review reminder).

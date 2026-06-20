@@ -128,6 +128,19 @@ public static class ReengagementCopyTemplates
             "We miss you!",
             "We miss you! Come back today to continue your journey 🌟"),
 
+        // ── ReviewReminder ────────────────────────────────────────────────────────────────────
+        // P9-09: Spaced-repetition review-due nudge — once per SR sweep, top due skill as headline.
+        // Category = ReviewReminder; inbox-only in v1 (not in ReengagementCategories push set until P9-04 FE).
+        // Placeholders: {skill} = TopSkills[0].SkillName, {minutes} = TopSkills[0].EstimatedTimeMinutes.
+        // Arabic minutes phrasing uses fixed "دقائق بس" — no CLDR plural agreement (v1 accepted simplification,
+        // consistent with existing "{streakLength} يوم" templates).
+        [$"ReviewReminder:REVIEW_DUE:{ArEg}"] = (
+            "وقت المراجعة! 🧠",
+            "🧠 وقت مراجعة سريعة لمهارة {skill} ({minutes} دقائق بس) — تعالى نثبّتها!"),
+        [$"ReviewReminder:REVIEW_DUE:{EnUs}"] = (
+            "Time to review! 🧠",
+            "🧠 Quick review time for {skill} (just {minutes} min) — let's lock it in!"),
+
         // P9-08: Comeback escalation ladder (3 tiers: gentle ~2d / repair ~5d / fresh-start ~14d)
         // Copy-only — streak-repair action is out of scope (economy-dependent, Gap C).
         // Never shaming; celebration > guilt (BRD §8 child-safety principle).
