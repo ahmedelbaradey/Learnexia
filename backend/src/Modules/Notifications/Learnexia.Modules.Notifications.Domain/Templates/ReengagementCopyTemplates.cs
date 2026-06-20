@@ -197,6 +197,46 @@ public static class ReengagementCopyTemplates
         [$"LapseWinBack:LAPSE_WIN_BACK_FRESH_START:{EnUs}"] = (
             "Fresh start!",
             "🌱 Every champion can start fresh anytime! Your journey is waiting — come back and begin a new chapter"),
+
+        // ── TimedEvent ────────────────────────────────────────────────────────────────────────────
+        // P9-12: Limited-time timed-event nudges — four phases.
+        // Category = TimedEvent (9); inbox-only in v1 (not in ReengagementCategories push set).
+        // Copy is event-name-agnostic (generic) — the event Code is in DataJson for FE deep-linking.
+        // Arabic-first, child-safe, energetic, never-shaming (BRD §8).
+
+        // Phase 1 — join/live: fan-out to the eligibility cohort when the event goes live. No placeholders.
+        [$"TimedEvent:TIMED_EVENT_LIVE:{ArEg}"] = (
+            "تحدي محدود المدة شغّال! 🔥",
+            "🔥 في تحدي محدود المدة شغّال دلوقتي — اكسب نقاط مضاعفة قبل ما الوقت يخلص!"),
+        [$"TimedEvent:TIMED_EVENT_LIVE:{EnUs}"] = (
+            "A limited-time event is live! 🔥",
+            "🔥 A limited-time event is on now — earn bonus XP before the clock runs out!"),
+
+        // Phase 2 — progress/halfway: fired when the student crosses the halfway threshold.
+        // Placeholders: {progress} = current progress, {target} = mission target.
+        [$"TimedEvent:TIMED_EVENT_PROGRESS:{ArEg}"] = (
+            "نص الطريق! ⚡",
+            "⚡ وصلت لنص التحدي — {progress} من {target}! كمّل وانت في الجو 💪"),
+        [$"TimedEvent:TIMED_EVENT_PROGRESS:{EnUs}"] = (
+            "Halfway there! ⚡",
+            "⚡ You're halfway through — {progress} of {target}! Keep the momentum 💪"),
+
+        // Phase 3 — ending-soon: fired by StreakAtRiskJob Pass 4 for close-but-incomplete participations.
+        // Placeholders: {remaining} = Target - Progress (work left).
+        [$"TimedEvent:TIMED_EVENT_ENDING:{ArEg}"] = (
+            "التحدي بيخلص قريب! ⏳",
+            "⏳ باقي خطوة وتخلّص التحدي — لسه ناقصك {remaining}! اخلصه قبل ما يفوت"),
+        [$"TimedEvent:TIMED_EVENT_ENDING:{EnUs}"] = (
+            "Event ending soon! ⏳",
+            "⏳ Almost done — {remaining} to go! Finish before time's up"),
+
+        // Phase 4 — completion: celebration nudge when the student finishes the timed event. No placeholders.
+        [$"TimedEvent:TIMED_EVENT_COMPLETED:{ArEg}"] = (
+            "خلّصت التحدي! 🎉",
+            "🎉 مبروك! خلّصت التحدي محدود المدة — إنجاز رائع، استمر!"),
+        [$"TimedEvent:TIMED_EVENT_COMPLETED:{EnUs}"] = (
+            "Event complete! 🎉",
+            "🎉 Congrats! You finished the limited-time event — awesome work, keep it up!"),
     };
 
     /// <summary>

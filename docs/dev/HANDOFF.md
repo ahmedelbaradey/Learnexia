@@ -1,3 +1,19 @@
+## P9-12 timed-event nudges — 2026-06-20 (`feat/P9-12-timed-event-nudges`)
+
+**Completes the timed-event chain** (P4-12 entity/events → P9-12 nudges). P9-05 had only left a comment-only `TimedEventNudgeDeferralNote` placeholder (deferred for lack of a recipient seam) — now deleted; P9-12 owns ALL 4 phases.
+
+**What shipped (4 Notifications consumers, category `NotificationCategory.TimedEvent = 9`, no migration):**
+- **Join / event-live** (`TimedEventStartedIntegrationEventHandler`): consumes the platform-wide `TimedEventStartedIntegrationEvent` (no StudentId) and **fans out 1→many** to the scope-eligible cohort via `IEligibleStudentsForTimedEventQuery` — a plain `foreach` over the standard per-student pipeline (parent→prefs→evaluator→dedupe→dispatch), **per-student try/catch** so one orphan/failure never aborts the cohort, Take(500)-bounded. Code `TIMED_EVENT_LIVE`. NOT a blind blast (eligibility-gated).
+- **Progress (halfway)** / **Ending-soon** / **Completed**: 1:1 consumers of the 3 P4-12 per-student events, each mirroring `WeeklyMissionReminderIntegrationEventHandler`. Codes `TIMED_EVENT_PROGRESS` / `_ENDING` / `_COMPLETED`.
+- **Dedupe per-(child, event, phase):** `TryAcquireTierAsync(studentId, "{PHASE_CODE}:{TimedEventId}", ttl)` — phase-prefixed + TimedEventId-scoped + studentId-namespaced (no cross-phase / cross-child / cross-event collision). Join TTL = window-derived (capped 72h), others 72h.
+- 8 ar/en templates in `ReengagementCopyTemplates` (event-name-AGNOSTIC — the events carry only `Code`, not a display name; NO cross-module name lookup). Arbiter: `TimedEvent` in `DefaultPriorityOrder` **before** `WeeklyChallenge` + 4 cooldown cases (24h). `DataJson` stays null (parity; deep-link by Code — per-event eventId payload is a follow-up bundled with the P9-02 FE deep-link router). **Inbox-only v1** (TimedEvent not in the parent push-upsert set).
+
+**Gates:** build 0 errors; api-tester 21/21 (`P9_12_TimedEventNudges_Tests` — join fan-out to N eligible / stale-activity exclusion / orphan-in-cohort fail-soft / 3 participation phases / cross-phase isolation / not-eligible cap / inbox-only push-bit-unset / ar+en / no-PII / sentinel Category=9); security-auditor PASS (all Info — fan-out recipient correctness confirmed, no cross-recipient leak); reviewer PASS. Note: the arbiter daily-cap correctly rations across all TimedEvent phases/day (so a single child won't get all 4 phases same-day if the cap is hit — by design).
+
+**Follow-ups (non-blocking):** the `EndingSoon` handler passes an unused `{minutes}` placeholder (template uses `{remaining}`) — harmless; populate `DataJson{timedEventId,code}` when the P9-02 FE deep-link router is built; (pre-existing, not P9-12) arbiter CSV says `DailyMission` while the enum is `DailyMissionReminder` → that one category falls to lowest priority — worth a separate fix.
+
+---
+
 ## P4-12 timed-event participation — 2026-06-20 (`feat/P4-12-timed-event-participation`)
 
 **Unblocks P9-12 timed-event nudges.** New per-child `TimedEventParticipation` aggregate (Gamification) — lead chose a **participation entity** (NOT a blind active-student blast / upfront fan-out). Mirrors `StudentMission` field-for-field.

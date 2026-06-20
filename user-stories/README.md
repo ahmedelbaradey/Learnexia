@@ -166,7 +166,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P9-09 Spaced-repetition review reminder *(✅ BUILT 2026-06-20 — consumes P3-10 `ReviewDueIntegrationEvent`; inbox-only v1; BE)*
 - P9-10 Get every notification in my selected language *(🟡 v1 BUILT 2026-06-20 — welcome inbox+email localized at send time; reset-email → P6-06; read-time inbox re-localization → P9-03 FE; BE)*
 - P9-11 Notification analytics sink *(send/suppress/open capture → P5-03 `ActivityEvent` stream; admin read; BE — added 2026-06-20)*
-- P9-12 Timed-event nudges *(join/progress/ending-soon/completion over P4-12 participation; BE — added 2026-06-20)*
+- P9-12 Timed-event nudges *(✅ BUILT 2026-06-20 — join fan-out + progress/ending-soon/completion over P4-12; inbox-only v1; BE)*
 
 ### Phase 10 — Payment, Billing & Credits *(post-MVP)*
 *The AI credit economy + monetization. **Parent-driven: all purchasing/billing/payment happens in the parent app/account** — the child only spends "⚡ طاقة المساعد" (energy) and sees a read-only meter. Credits = two pools: monthly **granted** (expire) vs **purchased** packs (never expire). Charge-on-delivery, cache-hits charged the same, no charge on refuse/error. Wires into the AI Gateway (P3-01) and supersedes the AI-Helper MVP daily-cap guardrail.*
