@@ -3,6 +3,8 @@ using Learnexia.Modules.Parent.Domain.Entities;
 using Learnexia.Modules.Parent.Infrastructure.Persistence;
 using Learnexia.Shared.Contracts.Gamification;
 using Learnexia.Shared.Contracts.Learning;
+using Learnexia.Shared.Contracts.Parent;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
@@ -38,6 +40,7 @@ public sealed class WeeklyReportGeneratorService : IWeeklyReportGeneratorService
     private readonly IStudentXpTimeSeriesQuery _xpTimeSeries;
     private readonly IStudentMasterySummaryQuery _masterySummary;
     private readonly IStudentAllSubjectsWeakAreasQuery _weakAreas;
+    private readonly IPublisher _publisher;
     private readonly ILoggerManager _logger;
 
     private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web);
@@ -50,13 +53,15 @@ public sealed class WeeklyReportGeneratorService : IWeeklyReportGeneratorService
         IStudentXpTimeSeriesQuery xpTimeSeries,
         IStudentMasterySummaryQuery masterySummary,
         IStudentAllSubjectsWeakAreasQuery weakAreas,
+        IPublisher publisher,
         ILoggerManager logger)
     {
-        _db            = db;
-        _xpTimeSeries  = xpTimeSeries;
+        _db             = db;
+        _xpTimeSeries   = xpTimeSeries;
         _masterySummary = masterySummary;
-        _weakAreas     = weakAreas;
-        _logger        = logger;
+        _weakAreas      = weakAreas;
+        _publisher      = publisher;
+        _logger         = logger;
     }
 
     /// <inheritdoc />
@@ -166,5 +171,36 @@ public sealed class WeeklyReportGeneratorService : IWeeklyReportGeneratorService
         await _db.SaveChangesAsync(ct);
 
         _logger.LogInfo($"WeeklyReportGeneratorService: upserted report for childId={childId}, week={weekStartUtc:O}, xp={xpEarned}.");
+
+        // ── P9-06: Publish weekly-recap integration event (fail-soft) ─────────────────
+        // Suppress zero-activity weeks — never-shaming per FR-GM-8.
+        // The WeeklyReport row is still written; only the nudge is skipped.
+        if (xpEarned == 0 && skillsImproved == 0)
+        {
+            _logger.LogInfo(
+                $"WeeklyReportGeneratorService: zero-activity week for childId={childId} — recap nudge suppressed.");
+            return;
+        }
+
+        try
+        {
+            await _publisher.Publish(new WeeklyRecapReadyIntegrationEvent(
+                EventId:       Guid.NewGuid(),
+                OccurredOnUtc: DateTime.UtcNow,
+                StudentId:     childId,
+                XpEarned:     xpEarned,
+                SkillsImproved: skillsImproved,
+                WeekStartUtc: weekStartUtc), ct);
+
+            _logger.LogInfo(
+                $"WeeklyReportGeneratorService: published WeeklyRecapReadyIntegrationEvent " +
+                $"for childId={childId}, xp={xpEarned}, skills={skillsImproved}.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                $"P9-06: publish WeeklyRecapReadyIntegrationEvent failed for childId={childId} — " +
+                $"recap nudge may be missed.");
+        }
     }
 }

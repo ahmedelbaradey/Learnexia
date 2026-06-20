@@ -299,4 +299,54 @@ public sealed class ReengagementCopyTemplatesTests
         ((int)NotificationCategory.LapseWinBack).Should().Be(5);
         ((int)NotificationCategory.System).Should().Be(6);
     }
+
+    // C22 — WeeklyReport / WEEKLY_RECAP / ar-EG → non-empty
+    [Fact(DisplayName = "P906-C22 WeeklyReport WEEKLY_RECAP ar-EG returns non-empty title and body")]
+    public void WeeklyReport_WeeklyRecap_Arabic_ReturnsContent()
+    {
+        var (title, body) = ReengagementCopyTemplates.GetTemplate(
+            NotificationCategory.WeeklyReport, "WEEKLY_RECAP", "ar-EG");
+
+        title.Should().NotBeNullOrWhiteSpace();
+        body.Should().NotBeNullOrWhiteSpace();
+    }
+
+    // C23 — WeeklyReport / WEEKLY_RECAP / en-US → non-empty
+    [Fact(DisplayName = "P906-C23 WeeklyReport WEEKLY_RECAP en-US returns non-empty title and body")]
+    public void WeeklyReport_WeeklyRecap_English_ReturnsContent()
+    {
+        var (title, body) = ReengagementCopyTemplates.GetTemplate(
+            NotificationCategory.WeeklyReport, "WEEKLY_RECAP", "en-US");
+
+        title.Should().NotBeNullOrWhiteSpace();
+        body.Should().NotBeNullOrWhiteSpace();
+    }
+
+    // C24 — Render WEEKLY_RECAP substitutes {xp} and {skills}
+    [Fact(DisplayName = "P906-C24 Render WEEKLY_RECAP substitutes {xp} and {skills} correctly")]
+    public void Render_WeeklyRecap_SubstitutesXpAndSkills()
+    {
+        var (_, body) = ReengagementCopyTemplates.Render(
+            NotificationCategory.WeeklyReport, "WEEKLY_RECAP", "en-US",
+            ("xp", "350"),
+            ("skills", "4"));
+
+        body.Should().Contain("350", "{xp} should be replaced with '350'");
+        body.Should().Contain("4",   "{skills} should be replaced with '4'");
+        body.Should().NotContain("{xp}",     "literal {xp} placeholder must be removed");
+        body.Should().NotContain("{skills}", "literal {skills} placeholder must be removed");
+    }
+
+    // C25 — WEEKLY_RECAP ar-EG template contains Arabic characters
+    [Fact(DisplayName = "P906-C25 WEEKLY_RECAP ar-EG template contains Arabic characters")]
+    public void WeeklyRecap_Arabic_ContainsArabicCharacters()
+    {
+        var (title, body) = ReengagementCopyTemplates.GetTemplate(
+            NotificationCategory.WeeklyReport, "WEEKLY_RECAP", "ar-EG");
+
+        // Arabic Unicode range: U+0600–U+06FF
+        var hasArabic = (title + body).Any(c => c >= '؀' && c <= 'ۿ');
+        hasArabic.Should().BeTrue("ar-EG weekly recap template must contain Arabic-script characters");
+    }
+
 }

@@ -23,6 +23,18 @@ public static class ReengagementCopyTemplates
     // Named placeholders use {name} syntax; callers replace with Render().
     private static readonly Dictionary<string, (string Title, string Body)> Templates = new()
     {
+        // ── WeeklyReport ─────────────────────────────────────────────────────────────────────
+        // P9-06: Weekly recap — once/week personalized summary, celebration > guilt, never-shaming.
+        // Category = WeeklyReport; inbox-only in v1 until P9-04 FE per-type toggles ship.
+        // Zero-activity weeks are suppressed at the producer — these templates never appear for them.
+        // Placeholders: {xp} = XpEarned, {skills} = SkillsImproved.
+        [$"WeeklyReport:WEEKLY_RECAP:{ArEg}"] = (
+            "إنجازك الأسبوعي!",
+            "🌟 إنجازك الأسبوع ده: {xp} XP و {skills} مهارات — رائع! استمر في التقدم"),
+        [$"WeeklyReport:WEEKLY_RECAP:{EnUs}"] = (
+            "Your weekly achievement!",
+            "🌟 This week: {xp} XP and {skills} skills — great job! Keep up the momentum"),
+
         // ── StreakAtRisk ──────────────────────────────────────────────────────────────────────
         [$"StreakAtRisk:STREAK_AT_RISK:{ArEg}"] = (
             "سلسلتك في خطر!",
