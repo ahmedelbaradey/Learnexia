@@ -281,6 +281,13 @@ export default function SkillsPage() {
     [],
   );
 
+  // Stable reference — SkillGraph's subject-change effect lists this in its deps,
+  // so an inline arrow here would change every render and make the effect clear
+  // the graph node selection on every keystroke/selection (the CUR-TC-71 defect).
+  const handleGraphSelectSkillId = useCallback((skillId: number | null) => {
+    setSelectedSkillId(skillId);
+  }, []);
+
   const handleDeleted = useCallback(() => {
     if (deleteTarget?.id === selectedSkillId) setSelectedSkillId(null);
   }, [deleteTarget, selectedSkillId]);
@@ -663,9 +670,7 @@ export default function SkillsPage() {
               selectedSubject={selectedSubject}
               skills={allSkills}
               onEditSkill={handleEditSkill}
-              onSelectSkillId={(skillId) => {
-                setSelectedSkillId(skillId);
-              }}
+              onSelectSkillId={handleGraphSelectSkillId}
               externalSelectedSkillId={selectedSkillId}
             />
           </div>

@@ -299,11 +299,15 @@ export default function SubjectDetailPage() {
   const router = useRouter();
   const subjectId = Number(params.id);
 
-  // Fetch subject by listing with a tiny page — use subjects list hook with an id filter
-  // (API: GET /api/learning/Subjects/List?gradeId= with no grade means all).
-  // We'll use the list and find by id.
+  // Resolve the subject by listing and finding by id. There is a hard product cap of
+  // 48 subjects total (4 subject codes × 6 grades × 2 languages), so a single page of
+  // 100 is guaranteed to contain every subject — this avoids missing subjects that fall
+  // outside the default 12-item first page. (We deliberately do NOT use GET Subjects?id=
+  // here: that endpoint returns 500 — not 404 — on an unknown id, which would surface as
+  // an error state instead of the clean not-found UI below.)
   const { data: subjectListData, isLoading: subjectLoading, isError: subjectError } = useSubjectList({
     pageNumber: 1,
+    pageSize: 100,
   });
 
   // Units
@@ -710,7 +714,7 @@ export default function SubjectDetailPage() {
             {/* Units error */}
             {unitsError && !unitsLoading && (
               <div>
-                <AdminErrorBanner variant="error" message={strings.unitsListError} data-testid="units-error-banner" />
+                <AdminErrorBanner variant="error" message={strings.unitsListError} testId="units-error-banner" />
                 <button
                   onClick={() => void refetchUnits()}
                   style={{

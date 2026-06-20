@@ -22,6 +22,8 @@ export type AdminBannerVariant = 'error' | 'forbidden' | 'warning' | 'success';
 export interface AdminErrorBannerProps {
   variant?: AdminBannerVariant;
   message: string;
+  /** Optional stable hook for E2E selectors. */
+  testId?: string;
 }
 
 interface VariantTokens {
@@ -55,7 +57,7 @@ const VARIANTS: Record<AdminBannerVariant, VariantTokens> = {
   },
 };
 
-export function AdminErrorBanner({ variant = 'error', message }: AdminErrorBannerProps) {
+export function AdminErrorBanner({ variant = 'error', message, testId }: AdminErrorBannerProps) {
   const tokens = VARIANTS[variant];
 
   return (
@@ -67,6 +69,7 @@ export function AdminErrorBanner({ variant = 'error', message }: AdminErrorBanne
       padding="$4"
       borderRadius="$sm"
       borderWidth={1}
+      data-testid={testId}
       style={{
         // Variant colors + CSS keyframe entrance (globals.css). The variant
         // soft-fills are non-token rgba values, so they go through `style`.
