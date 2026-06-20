@@ -1,3 +1,25 @@
+## P9-06 weekly-recap habit-loop nudge + Curriculum QC — 2026-06-20 (`feat/P9-06-habit-loop`, `fix/cur-tc-66-skills-search` #193)
+
+### P9-06 — shipped WEEKLY-RECAP ONLY (the other 2 of 3 categories were redundant/blocked)
+The wave was re-scoped during the pipeline by what the code actually supports:
+- ✅ **Weekly recap** (shipped): new `WeeklyRecapReadyIntegrationEvent` (`Shared.Contracts.Parent`, PII-light) emitted by the existing **`WeeklyReportJob`/`WeeklyReportGeneratorService`** after the per-child weekly upsert (no new Hangfire job); **zero-activity recaps suppressed** (never-shaming); fail-soft. Notifications consumer `WeeklyRecapReadyIntegrationEventHandler` → `WeeklyReport`-category `Notification`, code `WEEKLY_RECAP`, ar/en templates; routes through the P9-07 dispatcher gate; **inbox-only in v1** (WeeklyReport category not in the parent-managed push set until the P9-04 FE toggle).
+- ⛔ **Streak milestones (DROPPED — redundant):** 3/7/14/30 are exactly the existing `STREAK_3/7/14/30` badge thresholds, which already fire `BADGE_EARNED` nudges; the category-scoped dedup suppressed the milestone. Lead decision: drop it (the badge nudge already celebrates streaks) rather than double-celebrate or change dedup system-wide. Removed cleanly.
+- ⛔ **Weekly challenge (DEFERRED):** no per-child challenge entity exists (only platform-wide `TimedEvent`, no StudentId/no halfway signal) — same recipient-fanout blocker as deferred timed-event nudges.
+
+**Real EF bug fixed (found by api-tester):** `NotificationConfig.Category` had `HasDefaultValueSql("6")` and `NotificationCategory.WeeklyReport = 0` is the CLR default → EF omitted the column on insert → Postgres applied the default 6, mis-storing **every** WeeklyReport notification as `System`. Fixed with `HasSentinel((NotificationCategory)(-1))` (no DDL; an empty migration `P9_06_NotificationCategorySentinel` records the metadata so the snapshot stays in sync). TC-04 asserts `Category=WeeklyReport` end-to-end.
+
+**Gates:** build 0; Gamification 19 / Parent 34 / Notifications 80; api-tester 42/42 (P9_06 + P9_07 + P4_09); security-auditor PASS; reviewer PASS.
+
+### Curriculum QC cleanup (PR #193, MERGED)
+- **#1 CUR-TC-66 (FIXED):** `Skills/List` ignored the `Search` param (`ListSkillsQuery.Search` never reached `SkillService.GetPagedAsync`). Threaded it through + applied case-insensitive `EF.Functions.ILike` (mirrors Identity Users-List). 60/60 P7_03 green.
+- **#2 (`Subjects?id=<unknown>` → 404):** already fixed by PR #187 — no action.
+- **#3 (pagination envelope normalize):** investigated → **already consistent** (one shared `PaginatedResult<T>` across all 7 modules); only `data`→`items`/`currentPage`→`page` differ from canonical, and renaming is FE-breaking across every list screen. Lead decision: **leave as-is**.
+
+### P9 backlog (carried)
+Weekly-challenge nudges (need a per-child challenge feature or active-student fanout); timed-event nudges (no recipient id); P9-09 (blocked on P3-10); P9-10 localization (large); first-class notification-analytics sink; Achievement/WeeklyReport push-enable when the P9-04 FE toggles ship.
+
+---
+
 ## P9 notifications — nudge arbitration + global push budget (P9-07/05/08) — 2026-06-20 (`feat/P9-nudge-arbitration`)
 
 **The notification "foundation" already existed** (inbox/preferences/read-unread/consumers/fail-soft dispatcher all shipped with P4-09; push is already a config-selected adapter `IPushSender` → Expo/no-op). So this wave built the REAL gap: arbitration + a global push budget + the remaining consumers. Full pipeline ran; all gates PASS.
