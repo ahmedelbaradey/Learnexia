@@ -15,4 +15,8 @@ public enum NotificationCategory
     LapseWinBack = 5,
     // Used as backfill default for the new Category column on existing Notification rows
     System = 6,
+    // P9-09: spaced-repetition review reminder — distinct category so the parent can toggle it
+    // independently of Achievement/WeeklyReport once P9-04 FE per-type toggles ship.
+    // Inbox-only in v1 (not in ReengagementCategories push set); push falls out by prefs default.
+    ReviewReminder = 7,
 }

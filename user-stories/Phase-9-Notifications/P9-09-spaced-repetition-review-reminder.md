@@ -1,4 +1,4 @@
-# Remind me when a skill is due for review (spaced repetition) — BLOCKED
+# Remind me when a skill is due for review (spaced repetition) — ✅ BUILT 2026-06-20
 
 - **Project:** Learnexia
 - **Sprint / Phase:** Phase 9 — Notifications (post-MVP)
@@ -17,5 +17,4 @@ As a student, I want a nudge when a weak/forgotten skill is due for a quick revi
 - Subject to P9-07 arbitration + parent toggle; sends/opens logged per type (P5-03 seam).
 
 ## Notes
-- **BLOCKED by P3-10 (spaced repetition)** — not yet built; the scheduler that emits "skill due" does not exist. This story is captured now for completeness of the habit-loop catalog and **must not be scheduled as buildable** until P3-10 ships.
-- When unblocked: new `Shared.Contracts` event from the AI-Tutor/Learning side; Notifications consumes (module isolation).
+- **✅ BUILT 2026-06-20** (`feat/P9-09-review-reminder`) — unblocked once P3-10 shipped the `ReviewDueIntegrationEvent` (PR #196). Notifications consumes the `Shared.Contracts.Learning` event (module isolation, one-way seam); review-reminder nudge via `NudgeDispatcher` (arbitrated + dedupe), category `ReviewReminder`, code `REVIEW_DUE`, ar/en copy using the top due skill + minutes. **Inbox-only in v1** until the P9-04 FE per-type toggle adds it to the parent-managed push set.

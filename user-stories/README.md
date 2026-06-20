@@ -163,7 +163,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P9-06 New habit-loop notification categories *(streak milestones, weekly challenge lifecycle, weekly recap; BE)*
 - P9-07 Many types, few sends *(cross-category arbitration + global daily push budget + cooldowns; BE)*
 - P9-08 Comeback escalation ladder *(day 2/5/14 tiered win-back; extends P4-09 LapseWinBack; BE)*
-- P9-09 Spaced-repetition review reminder — **BLOCKED by P3-10** *(captured for catalog completeness; BE)*
+- P9-09 Spaced-repetition review reminder *(✅ BUILT 2026-06-20 — consumes P3-10 `ReviewDueIntegrationEvent`; inbox-only v1; BE)*
 - P9-10 Get every notification in my selected language *(localize push/in-app/email; welcome is hardcoded English today; coordinates with P6-06; BE — developed later)*
 - P9-11 Notification analytics sink *(send/suppress/open capture → P5-03 `ActivityEvent` stream; admin read; BE — added 2026-06-20)*
 - P9-12 Timed-event nudges *(join/progress/ending-soon/completion over P4-12 participation; BE — added 2026-06-20)*
