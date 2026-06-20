@@ -11,6 +11,11 @@ namespace Learnexia.Modules.Notifications.Application.Features.SendNotification;
 /// the command still succeeds (the in-app notification path is unaffected). Transport failures are logged
 /// server-side by the adapter and returned as a generic <see cref="Result"/> failure — no provider
 /// internals leak to the caller.
+///
+/// P9-10 (BE-3/BE-4): This handler is a generic email passthrough — it has no recipient user-id to
+/// resolve a locale from. Callers are responsible for supplying locale-correct Title and Body copy
+/// before dispatching this command. This handler does not localize and should not be changed to do so;
+/// locale resolution belongs at the producer (the integration-event handler or command caller).
 /// </summary>
 public sealed class SendNotificationCommandHandler(IEmailSender emailSender, ILoggerManager logger)
     : IRequestHandler<SendNotificationCommand, Result>

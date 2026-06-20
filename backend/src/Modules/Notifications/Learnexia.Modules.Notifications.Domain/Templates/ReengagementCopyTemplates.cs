@@ -128,6 +128,22 @@ public static class ReengagementCopyTemplates
             "We miss you!",
             "We miss you! Come back today to continue your journey 🌟"),
 
+        // ── System / Welcome ──────────────────────────────────────────────────────────────────
+        // P9-10: Welcome notification sent to every newly registered user (parent or child).
+        // Category = System (6); Code = WELCOME; inbox row + welcome email both use this template.
+        // Placeholder: {userName} = display name of the registering user.
+        // ar-EG is primary (Arabic-first platform promise, BRD §8); en-US is the fallback.
+        // Child-safe, warm, encouraging — no pressure framing.
+        // NOTE (BE-5 / P9-10): copy locale is resolved from the recipient's PreferredLanguage
+        // (UI language), NEVER from LearningLanguage (P8 curriculum medium). These are distinct
+        // user settings; GetLocaleAsync reads ONLY PreferredLanguage via IUserLookup.
+        [$"System:WELCOME:{ArEg}"] = (
+            "أهلاً بك في لرنكسيا! 🎉",
+            "مرحباً {userName}! 🌟 حسابك جاهز — ابدأ رحلتك التعليمية الآن وافتح عوالم المعرفة!"),
+        [$"System:WELCOME:{EnUs}"] = (
+            "Welcome to Learnexia! 🎉",
+            "Hello {userName}! 🌟 Your account is ready — start your learning journey now and unlock a world of knowledge!"),
+
         // ── ReviewReminder ────────────────────────────────────────────────────────────────────
         // P9-09: Spaced-repetition review-due nudge — once per SR sweep, top due skill as headline.
         // Category = ReviewReminder; inbox-only in v1 (not in ReengagementCategories push set until P9-04 FE).

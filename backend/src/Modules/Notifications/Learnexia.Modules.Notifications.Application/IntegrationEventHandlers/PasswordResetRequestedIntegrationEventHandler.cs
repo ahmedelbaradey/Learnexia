@@ -22,6 +22,8 @@ public sealed class PasswordResetRequestedIntegrationEventHandler
 {
     // Simple English copy for now (P1-12 BE-6). User-facing, but this is the Notifications module's email
     // body — there is no string-localizer wired into this email path yet; templating is a follow-up.
+    // P9-10 (Fork A): reset-email localization is DEFERRED to P6-06-BE-2 — that story adds Locale to
+    // PasswordResetRequestedIntegrationEvent (no UserId on this event, so IUserLookup cannot resolve here).
     private const string EmailSubject = "Reset your Learnexia password";
 
     private readonly ILoggerManager _logger;

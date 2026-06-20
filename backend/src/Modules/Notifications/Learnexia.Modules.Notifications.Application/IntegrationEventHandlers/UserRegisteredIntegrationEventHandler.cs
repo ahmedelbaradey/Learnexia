@@ -1,4 +1,7 @@
 using Learnexia.Modules.Notifications.Application.Abstractions;
+using Learnexia.Modules.Notifications.Application.IntegrationEventHandlers.Reengagement;
+using Learnexia.Modules.Notifications.Domain.Enums;
+using Learnexia.Modules.Notifications.Domain.Templates;
 using Learnexia.Shared.Contracts.Identity;
 using Learnexia.Shared.Kernel.Abstractions;
 using MediatR;
@@ -15,6 +18,11 @@ namespace Learnexia.Modules.Notifications.Application.IntegrationEventHandlers;
 /// Persistence and idempotency live in <see cref="INotificationInboxService"/> (Option-C rule).
 /// The write is idempotent-friendly: a welcome notification is created at most once per originating user id.
 /// Per-handler failures are isolated + logged by the IsolatedNotificationPublisher.
+///
+/// P9-10: Welcome copy (inbox title/body + email subject/body) is now localized. Locale is resolved
+/// via <see cref="ReengagementHandlerHelper.GetLocaleAsync"/> — the same single seam used by all
+/// re-engagement handlers — which reads the recipient's <c>PreferredLanguage</c> (UI language)
+/// via <see cref="IUserLookup.FindByIdAsync"/> and falls back to "ar-EG" (platform default).
 /// </summary>
 public sealed class UserRegisteredIntegrationEventHandler
     : INotificationHandler<UserRegisteredIntegrationEvent>
@@ -42,8 +50,19 @@ public sealed class UserRegisteredIntegrationEventHandler
             $"Notifications: received UserRegisteredIntegrationEvent (EventId={notification.EventId}) " +
             $"for user {notification.UserId}.");
 
-        const string title = "Welcome to Learnexia";
-        var body = $"Welcome {notification.UserName}! Your account has been created.";
+        // P9-10 (BE-5): locale comes from recipient PreferredLanguage (UI language) ONLY —
+        // NEVER from LearningLanguage (P8 curriculum medium). These are distinct user settings.
+        // GetLocaleAsync is the single locale seam for all recipient-bound notifications.
+        var userLookup = _services.GetService<IUserLookup>();
+        var locale     = await ReengagementHandlerHelper.GetLocaleAsync(userLookup, notification.UserId, cancellationToken);
+
+        // P9-10 (BE-2): welcome copy rendered from template (ar-EG primary, en-US fallback).
+        // Template key: System:WELCOME:{locale}. Placeholder: {userName}.
+        var (title, body) = ReengagementCopyTemplates.Render(
+            NotificationCategory.System,
+            "WELCOME",
+            locale,
+            ("userName", notification.UserName));
 
         var written = await _inboxService.WriteWelcomeIfAbsentAsync(
             notification.UserId, title, body, cancellationToken);
@@ -56,21 +75,22 @@ public sealed class UserRegisteredIntegrationEventHandler
         }
 
         _logger.LogInfo(
-            $"Notifications: created welcome notification for user {notification.UserId}.");
+            $"Notifications: created welcome notification for user {notification.UserId} (locale={locale}).");
 
         // Best-effort welcome email: never let an email failure fail this handler.
-        await TrySendWelcomeEmailAsync(notification, title, body, cancellationToken);
+        // P9-10 (BE-3): email subject/body use the same rendered locale-correct copy (title/body).
+        await TrySendWelcomeEmailAsync(notification, userLookup, title, body, cancellationToken);
     }
 
     private async Task TrySendWelcomeEmailAsync(
         UserRegisteredIntegrationEvent notification,
-        string title,
-        string body,
+        IUserLookup? userLookup,
+        string emailSubject,
+        string emailBody,
         CancellationToken cancellationToken)
     {
         try
         {
-            var userLookup = _services.GetService<IUserLookup>();
             if (userLookup is null)
             {
                 _logger.LogInfo(
@@ -86,7 +106,9 @@ public sealed class UserRegisteredIntegrationEventHandler
                 return;
             }
 
-            var result = await _emailSender.SendAsync(user.Email, title, body, cancellationToken);
+            // P9-10 (BE-3): subject = template title, body = template body (confirmed by brief OQ-3).
+            // Both are already locale-correct from the Render call in Handle().
+            var result = await _emailSender.SendAsync(user.Email, emailSubject, emailBody, cancellationToken);
             if (result.IsFailure)
             {
                 _logger.LogWarn(
