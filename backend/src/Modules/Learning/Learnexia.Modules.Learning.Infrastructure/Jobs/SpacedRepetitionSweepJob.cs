@@ -2,7 +2,9 @@ using Hangfire;
 using Learnexia.Modules.Learning.Application.Abstractions;
 using Learnexia.Modules.Learning.Domain.Enums;
 using Learnexia.Modules.Learning.Domain.Services;
+using Learnexia.Shared.Contracts.Learning;
 using Learnexia.Shared.Kernel.Abstractions;
+using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -47,6 +49,13 @@ public sealed class SpacedRepetitionSweepJob
     }
 
     /// <summary>
+    /// Maximum number of top-N skills included in each <see cref="ReviewDueIntegrationEvent"/> digest.
+    /// Kept as a producer constant (mirrors <c>MaxWeakAreasSnapshot = 5</c> in
+    /// <c>WeeklyReportGeneratorService</c>). Not worth a config knob at this cap.
+    /// </summary>
+    private const int TopSkillsCap = 3;
+
+    /// <summary>
     /// Executes the sweep. Creates a fresh DI scope with its own <see cref="ILearningRepository"/>
     /// (Hangfire worker has no HTTP request scope — a new scope is mandatory).
     ///
@@ -61,12 +70,17 @@ public sealed class SpacedRepetitionSweepJob
 
         await using var scope      = _scopeFactory.CreateAsyncScope();
         var repository             = scope.ServiceProvider.GetRequiredService<ILearningRepository>();
+        var publisher              = scope.ServiceProvider.GetRequiredService<IPublisher>();
 
         // Load all due rows (NeedsReview OR Mastered+stale) — AsNoTracking.
+        // GetDueMasteryRowsAsync already does .Include(m => m.Skill) so Skill.Name and
+        // Skill.EstimatedTimeMinutes are available in-memory without an extra query.
         var dueRows = await repository.GetDueMasteryRowsAsync(utcNow, ct);
 
-        int updatedCount = 0;
-        int errorCount   = 0;
+        int updatedCount       = 0;
+        int errorCount         = 0;
+        int eventsPublished    = 0;
+        int eventPublishFailed = 0;
 
         foreach (var row in dueRows)
         {
@@ -112,7 +126,56 @@ public sealed class SpacedRepetitionSweepJob
             }
         }
 
+        // ── P3-10: Publish one ReviewDueIntegrationEvent digest per student (post-write, fail-soft) ──
+        // All SR column writes above use ExecuteUpdateAsync which commits immediately (no UoW,
+        // rule 3). This publish block runs after the full update loop — guaranteed post-commit.
+        // An empty dueRows list produces no groups, so no events are published (AC4 guard).
+        if (dueRows.Count > 0)
+        {
+            var byStudent = dueRows.GroupBy(r => r.StudentId);
+
+            foreach (var studentGroup in byStudent)
+            {
+                try
+                {
+                    var studentId = studentGroup.Key;
+                    var rows      = studentGroup.ToList();
+
+                    // Top-N urgency ordering (deterministic, no extra query):
+                    //   1. NeedsReview rows first (most actionable — student is actively struggling).
+                    //   2. Within each status bucket, oldest NextReviewDueAt first (most overdue).
+                    //      NeedsReview rows may have null NextReviewDueAt (set to MinValue for ordering).
+                    var topSkills = rows
+                        .OrderBy(r => r.Status == MasteryStatus.NeedsReview ? 0 : 1)
+                        .ThenBy(r => r.NextReviewDueAt ?? DateTime.MinValue)
+                        .Take(TopSkillsCap)
+                        .Select(r => new DueSkillSnapshot(
+                            SkillId:              r.SkillId,
+                            SkillName:            r.Skill.Name,
+                            EstimatedTimeMinutes: r.Skill.EstimatedTimeMinutes))
+                        .ToList();
+
+                    await publisher.Publish(new ReviewDueIntegrationEvent(
+                        EventId:       Guid.NewGuid(),
+                        OccurredOnUtc: utcNow,
+                        StudentId:     studentId,
+                        DueCount:      rows.Count,
+                        TopSkills:     topSkills), ct);
+
+                    eventsPublished++;
+                }
+                catch (Exception ex)
+                {
+                    eventPublishFailed++;
+                    _logger.LogError(ex,
+                        $"P3-10: SpacedRepetitionSweepJob — ReviewDueIntegrationEvent publish failed for studentId={studentGroup.Key}. " +
+                        $"SR column writes already committed; nudge may be missed this sweep.");
+                }
+            }
+        }
+
         _logger.LogInfo(
-            $"P3-10: SR-Sweep complete — dueRows={dueRows.Count}, updated={updatedCount}, errors={errorCount}, utcNow={utcNow:O}.");
+            $"P3-10: SR-Sweep complete — dueRows={dueRows.Count}, updated={updatedCount}, errors={errorCount}, " +
+            $"eventsPublished={eventsPublished}, eventPublishFailed={eventPublishFailed}, utcNow={utcNow:O}.");
     }
 }

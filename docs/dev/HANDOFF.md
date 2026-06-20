@@ -1,3 +1,19 @@
+## P3-10 ReviewDue cross-module event — 2026-06-20 (`feat/P3-10-review-due-event`)
+
+**P3-10's scheduler was ALREADY built+merged** (commit `25e9b98`: `SpacedRepetitionEngine` IsDue+ladder, daily `SpacedRepetitionSweepJob` "SR-Sweep", `GET /api/Learning/Reviews/Due`, SR columns on `StudentSkillMastery`, `CompleteAttemptCommandHandler` ladder hook). This wave added the ONE deferred piece the lead asked for: the cross-module **`ReviewDueIntegrationEvent`** seam — which **UNBLOCKS P9-09** (spaced-repetition review reminder).
+
+**What shipped (surgical — one contract + one fail-soft publish, no migration, no FE, no new column):**
+- NEW `Shared.Contracts/Learning/ReviewDueIntegrationEvent.cs`: `(Guid EventId, DateTime OccurredOnUtc, int StudentId, int DueCount, IReadOnlyList<DueSkillSnapshot> TopSkills) : IIntegrationEvent` + `DueSkillSnapshot(int SkillId, string SkillName, int EstimatedTimeMinutes)`. **Per-student digest** (one event per student per sweep), not per-skill — the consumer (P9-09) is day-deduped + globally push-budgeted, so a digest with the top skills is what it wants. **`SkillName` is the single `Skill.Name`** — Learning curriculum is NOT bilingual (the analyzer corrected the original "NameEn/NameAr" framing; don't fabricate that pair). `EstimatedTimeMinutes` from `Skill.EstimatedTimeMinutes` feeds the "~X دقائق" copy. Opaque ids only, no PII.
+- EDITED `Learning.Infrastructure/Jobs/SpacedRepetitionSweepJob.cs`: after the existing per-row SR update loop, `GroupBy(StudentId)` the already-loaded due rows in-memory and publish ONE digest per student via `IPublisher` resolved from the job's own scope (host-wide MediatR fans out). **Fail-soft per-student try/catch** — a throwing consumer can't break the sweep or roll back committed SR writes (writes commit per call before the publish block; no UoW). TopSkills capped at 3, **NeedsReview-first then most-overdue-first**.
+- **Cadence/dedup is the CONSUMER's job (no Learning-side `LastReviewNotifiedAt` column).** Key finding: the sweep OVERWRITES `NextReviewDueAt` every run, so "was-future-now-elapsed" is not a reliable newly-due signal without a new column+migration. Not worth it — P9-09 already enforces per-(child,category,day) Redis dedup + daily cap + P9-07 global budget. So Learning emits every sweep; the consumer rations.
+- Pattern: mirrors `WeeklyReportGeneratorService`/`StreakSweepJob` fail-soft `IPublisher.Publish`-from-job-scope (NOT the republisher pattern — the sweep has no change-tracked aggregate / MediatR request scope). No new pattern (rule 8).
+
+**Gates:** build 0 errors; api-tester 6/6 new (`P3_10a_ReviewDueEvent_Tests`: one-per-student, zero-when-none, payload/no-PII, idempotent-per-sweep, fail-soft, top-N ordering+cap); security-auditor PASS (all Info); reviewer PASS. (Full suite: 1 pre-existing flaky `P1_13_BE1_Lockout_Tests.BeTc04` Npgsql-timeout, unrelated.)
+
+**P9-09 is now UNBLOCKED** — it consumes `ReviewDueIntegrationEvent` (mirror `WeeklyRecapReadyIntegrationEventHandler`): Reminder/Achievement-category nudge, ar/en copy using `SkillName` + `EstimatedTimeMinutes`, top skill from `TopSkills`, deep-link to review (P9-02), via `NudgeDispatcher` (arbitrated + budgeted). Notifications must NOT reference Learning.Domain (consume the Shared.Contracts event only). Later, P4-06 missions can consume the same event.
+
+---
+
 ## P9-06 weekly-recap habit-loop nudge + Curriculum QC — 2026-06-20 (`feat/P9-06-habit-loop`, `fix/cur-tc-66-skills-search` #193)
 
 ### P9-06 — shipped WEEKLY-RECAP ONLY (the other 2 of 3 categories were redundant/blocked)
