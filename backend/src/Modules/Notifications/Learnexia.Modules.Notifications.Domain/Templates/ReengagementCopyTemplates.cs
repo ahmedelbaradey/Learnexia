@@ -157,6 +157,19 @@ public static class ReengagementCopyTemplates
             "Time to review! 🧠",
             "🧠 Quick review time for {skill} (just {minutes} min) — let's lock it in!"),
 
+        // ── WeeklyChallenge ───────────────────────────────────────────────────────────────────────
+        // P9-06: Weekly-challenge ending-soon reminder — fired by StreakAtRiskJob Pass 3 (daily cron,
+        // 48h lookahead). At most once per student per weekly period via Option-A period-scoped dedupe.
+        // Category = WeeklyChallenge (8); inbox-only in v1 (not in ReengagementCategories push set).
+        // Placeholders: {remaining} = Target - Progress (work left), {progress}, {target}.
+        // Arabic-first, child-safe, encouraging, never-shaming (BRD §8).
+        [$"WeeklyChallenge:WEEKLY_CHALLENGE_REMINDER:{ArEg}"] = (
+            "تحدي الأسبوع بيخلص!",
+            "⏳ تحدي الأسبوع بيخلص — لسه ناقصك {remaining}! اخلصه قبل ما يفوت 💪"),
+        [$"WeeklyChallenge:WEEKLY_CHALLENGE_REMINDER:{EnUs}"] = (
+            "Weekly challenge ending soon!",
+            "⏳ Your weekly challenge ends soon — {remaining} to go! Finish it before time's up 💪"),
+
         // P9-08: Comeback escalation ladder (3 tiers: gentle ~2d / repair ~5d / fresh-start ~14d)
         // Copy-only — streak-repair action is out of scope (economy-dependent, Gap C).
         // Never shaming; celebration > guilt (BRD §8 child-safety principle).

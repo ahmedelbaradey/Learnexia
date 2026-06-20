@@ -1,3 +1,22 @@
+## P9-06 weekly-challenge ending-soon reminder — 2026-06-20 (`feat/P9-06-weekly-challenge`)
+
+**The old "weekly-challenge deferred — no per-child entity" reason is DEAD.** Discovery: weekly missions ARE the per-child weekly challenge (P4-11-BE-4 — weekly challenges reuse `MissionType.Weekly`; `StudentMission` has Progress/Target/Status/PeriodEndUtc/CompletedAtUtc, built+merged). The earlier defer conflated it with the platform-wide `TimedEvent` (no StudentId).
+
+**Honest scope call — built ONE thing, skipped the redundant one:**
+- ⛔ **Weekly COMPLETION nudge — NOT built (redundant).** `MissionCompletedIntegrationEventHandler` already nudges EVERY mission completion (daily + weekly) as `Achievement/MISSION_COMPLETED`. `MissionCompletedIntegrationEvent` carries no cadence; enriching it to give weekly its own copy = a serialized edit to a hot shipped contract for marginal copy gain. Not worth it. (Tiny optional follow-up if weekly-specific completion copy is ever wanted.)
+- ✅ **Weekly ending-soon / progress REMINDER — the genuine gap, built.** There was no weekly analog of `DailyMissionReminderIntegrationEvent` (daily-only, 6h lookahead).
+
+**What shipped (cross-module — Gamification emit → Notifications consume):**
+- NEW `Shared.Contracts/Gamification/WeeklyMissionReminderIntegrationEvent.cs` `(EventId, OccurredOnUtc, StudentId, Progress, Target, MinutesRemaining, PeriodKey)`. `MinutesRemaining` is mission-relative (`PeriodEndUtc - now`) for an accurate countdown (the daily event is window-relative — documented divergence). `PeriodKey` carried for period-scoped dedupe.
+- **Gamification:** a THIRD pass on the existing `StreakAtRiskJob` (mirrors Pass 2 daily-reminder) — scans `MissionType.Weekly` missions NOT Completed/Expired with `PeriodEndUtc` within a **48h** lookahead (`ReengagementOptions.WeeklyMissionReminderLookaheadHours`, config), one event per student (most-urgent `PeriodEndUtc`), fail-soft per student. Job runs daily 18:00 UTC; period-scoped dedupe makes the daily cron safe.
+- **Notifications:** new `NotificationCategory.WeeklyChallenge = 8` (no migration — non-zero, enum-0 trap N/A); consumer `WeeklyMissionReminderIntegrationEventHandler` mirrors the daily-reminder handler; **period-scoped dedupe (Option A)** `TryAcquireTierAsync(studentId, "WEEKLY_CHALLENGE:{PeriodKey}", 72h)` → exactly ONE reminder per child per weekly period regardless of how many daily runs fall in the window; `WEEKLY_CHALLENGE_REMINDER` ar/en copy ("⏳ تحدي الأسبوع بيخلص…"); arbiter priority after `DailyMission`, cooldown 168h. **Inbox-only v1** (emergent — not in the parent push set).
+
+**Gates:** build 0 errors; api-tester 13/13 (`P9_06_WeeklyMissionReminder_Tests`: 5 Gamification emit G1-G5 incl. cadence/window/multi-mission filters + 8 Notifications consume N1-N8 incl. period-dedupe same/different PeriodKey, inbox-only, ar/en, sentinel Category=8, no-PII, orphan fail-soft); security-auditor PASS (no Critical/High/Medium/Low); reviewer PASS (fixed one stale `NudgeArbiter` doc-comment).
+
+**P9-06 status now:** weekly-recap ✅ (#194), weekly-challenge ✅ (this), streak-milestone DROPPED (redundant). P9-06 is effectively complete. **Note for future waves touching `NotificationCategory`: run the Notifications UNIT project too** (P9-09 added an enum value and broke a unit drift-guard that integration gates missed — fixed in P9-10).
+
+---
+
 ## P9-10 notification localization (v1 — welcome) — 2026-06-20 (`feat/P9-10-notification-localization`)
 
 **v1 backend-only slice — localize at SEND TIME, reuse the existing seam.** Closed the concrete gap (hardcoded English welcome) without forking anything or touching contracts/migrations.

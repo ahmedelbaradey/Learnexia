@@ -28,7 +28,7 @@ internal sealed class NudgeArbiter : INudgeArbiter
     // ── Config keys (tunable via IGlobalSettingsProvider without deploy) ─────────────────────────
     private const string PriorityOrderKey       = "Notifications:PriorityOrder";
     private const string CooldownKeyPrefix      = "Notifications:Cooldown:";
-    private const string DefaultPriorityOrder   = "StreakAtRisk,DailyMission,LapseWinBack,Achievement,WeeklyReport";
+    private const string DefaultPriorityOrder   = "StreakAtRisk,DailyMission,WeeklyChallenge,LapseWinBack,Achievement,WeeklyReport";
 
     // Default per-type cooldown TTLs in hours (24h = 1/day, 168h = 1/week)
     private const int DefaultCooldownHours = 24;
@@ -165,7 +165,7 @@ internal sealed class NudgeArbiter : INudgeArbiter
     /// <summary>
     /// Returns the priority rank for <paramref name="category"/>: 0 = highest priority.
     /// Config key: <c>Notifications:PriorityOrder</c> (CSV of category names, highest first).
-    /// Default: StreakAtRisk,DailyMission,LapseWinBack,Achievement,WeeklyReport
+    /// Default: StreakAtRisk,DailyMission,WeeklyChallenge,LapseWinBack,Achievement,WeeklyReport
     /// Categories not listed get the highest-available rank (treated as lowest priority).
     /// </summary>
     private int GetPriorityRank(NotificationCategory category)
@@ -200,8 +200,9 @@ internal sealed class NudgeArbiter : INudgeArbiter
             "LAPSE_WIN_BACK_GENTLE"   => DefaultCooldownHours,
             "LAPSE_WIN_BACK_REPAIR"   => DefaultCooldownHours,
             "LAPSE_WIN_BACK_FRESH_START" => DefaultCooldownHours,
-            "WEEKLY_RECAP"            => WeeklyCooldownHours,    // ≤1/week
-            _                         => DefaultCooldownHours,
+            "WEEKLY_RECAP"                => WeeklyCooldownHours,    // ≤1/week
+            "WEEKLY_CHALLENGE_REMINDER"   => WeeklyCooldownHours,    // ≤1/week (Option-A dedupe is primary guard; cooldown backs it up for push channel)
+            _                             => DefaultCooldownHours,
         };
 
         var hours = _settings.GetInt(configKey, defaultHours);

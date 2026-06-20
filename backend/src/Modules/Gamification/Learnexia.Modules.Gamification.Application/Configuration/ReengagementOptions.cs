@@ -43,6 +43,15 @@ public sealed class ReengagementOptions
     public int MissionReminderLookaheadHours { get; set; } = 6;
 
     /// <summary>
+    /// Lookahead window in hours for the weekly mission reminder sub-pass (Pass 3) in
+    /// <see cref="StreakAtRiskJob"/>. Default: 48 (missions expiring within the next 48 hours).
+    /// A daily job driving a weekly nudge is intentional — the per-(student, period) consumer-side
+    /// Redis dedupe (<c>TryAcquireTierAsync</c>, TTL ≈ lookahead + margin) caps to at most one
+    /// weekly reminder per student per weekly period regardless of how many daily runs fall in window.
+    /// </summary>
+    public int WeeklyMissionReminderLookaheadHours { get; set; } = 48;
+
+    /// <summary>
     /// IANA time-zone identifier used to compute the UTC "today" boundary.
     /// Default: <c>"UTC"</c>. Must be a valid <c>TimeZoneInfo</c> ID.
     /// </summary>

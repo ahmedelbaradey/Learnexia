@@ -12,9 +12,10 @@ using Microsoft.Extensions.Options;
 namespace Learnexia.Modules.Gamification.Infrastructure.Jobs;
 
 /// <summary>
-/// Hangfire recurring job — runs daily at 18:00 UTC (<c>"0 18 * * *"</c>) (P4-09, AC1 + AC2).
+/// Hangfire recurring job — runs daily at 18:00 UTC (<c>"0 18 * * *"</c>) (P4-09, AC1 + AC2;
+/// P9-06 Pass 3).
 ///
-/// <para><b>Purpose:</b> two-pass daily evaluation for re-engagement nudges:
+/// <para><b>Purpose:</b> three-pass daily evaluation for re-engagement nudges:
 /// <list type="number">
 ///   <item><b>Streak-at-risk pass:</b> scans <c>StudentXpProfile</c> rows where
 ///         <c>CurrentStreak &gt; 0</c> and <c>LastActivityDateUtc &lt; today_utc</c> (active streak
@@ -25,9 +26,19 @@ namespace Learnexia.Modules.Gamification.Infrastructure.Jobs;
 ///         <c>PeriodEndUtc</c> falls within the next <c>MissionReminderLookaheadHours</c>.
 ///         Publishes one <see cref="DailyMissionReminderIntegrationEvent"/> per distinct student
 ///         (even if multiple missions are outstanding).</item>
+///   <item><b>Weekly-mission-reminder pass (P9-06):</b> scans <c>StudentMission</c> rows where
+///         <c>MissionType = Weekly</c>, <c>Status IN (NotStarted, InProgress)</c>, and
+///         <c>PeriodEndUtc</c> falls within the next <c>WeeklyMissionReminderLookaheadHours</c>
+///         (default 48h). Publishes one <see cref="WeeklyMissionReminderIntegrationEvent"/> per
+///         distinct student — most-urgent (earliest <c>PeriodEndUtc</c>) mission wins when a
+///         student has multiple weekly missions in window. Note: this daily job intentionally drives
+///         a weekly nudge — the consumer-side period-scoped Redis dedupe
+///         (<c>TryAcquireTierAsync</c>, key <c>nudge-tier:{studentId}:WEEKLY_CHALLENGE:{periodKey}</c>,
+///         TTL ≈ lookahead + margin) ensures at most one weekly reminder per student per weekly
+///         period regardless of how many daily runs fall within the 48-hour window.</item>
 /// </list></para>
 ///
-/// <para><b>Pagination note:</b> both passes use <c>Take(500)</c> as a page guard for MVP scale.
+/// <para><b>Pagination note:</b> all passes use <c>Take(500)</c> as a page guard for MVP scale.
 /// If the count reaches 500, a WARN is logged for operator attention. A cursor-based page loop
 /// can replace this when the student count grows past the threshold.</para>
 ///
@@ -60,7 +71,7 @@ public sealed class StreakAtRiskJob
     }
 
     /// <summary>
-    /// Executes both passes (streak-at-risk + daily-mission-reminder).
+    /// Executes all three passes (streak-at-risk + daily-mission-reminder + weekly-mission-reminder).
     /// Creates a fresh DI scope (Hangfire worker has no HTTP request scope — mandatory).
     /// </summary>
     public async Task RunAsync(CancellationToken ct)
@@ -160,9 +171,79 @@ public sealed class StreakAtRiskJob
             }
         }
 
+        // ── Pass 3: Weekly-mission-reminder (P9-06) ───────────────────────────────────────────
+        // Active weekly missions expiring within the configured lookahead window (default 48h).
+        // Per student, the most-urgent (earliest PeriodEndUtc) in-window mission is selected so
+        // each student receives at most one WeeklyMissionReminderIntegrationEvent per run.
+        // Consumer-side period-scoped dedupe (TryAcquireTierAsync keyed on PeriodKey) ensures
+        // at most one weekly reminder per student per weekly period across multiple daily runs.
+        var weeklyLookaheadEnd = nowUtc.AddHours(_options.Value.WeeklyMissionReminderLookaheadHours);
+
+        // Project per-student the most-urgent (min PeriodEndUtc) in-window weekly mission.
+        var weeklyReminderStudents = await db.StudentMissions
+            .AsNoTracking()
+            .Where(m => m.MissionType == MissionType.Weekly
+                     && (m.Status == MissionStatus.NotStarted || m.Status == MissionStatus.InProgress)
+                     && m.PeriodEndUtc > nowUtc
+                     && m.PeriodEndUtc <= weeklyLookaheadEnd)
+            .OrderBy(m => m.StudentXpProfile.StudentId)
+            .ThenBy(m => m.PeriodEndUtc)
+            .Select(m => new
+            {
+                StudentId  = m.StudentXpProfile.StudentId,
+                m.Progress,
+                m.Target,
+                m.PeriodEndUtc,
+                m.PeriodKey,
+            })
+            .Take(500)
+            .ToListAsync(ct);
+
+        if (weeklyReminderStudents.Count == 500)
+        {
+            _logger.LogInfo(
+                "P9-06: StreakAtRiskJob — weekly-mission-reminder page guard hit (count=500). " +
+                "Consider cursor-based pagination when student count grows.");
+        }
+
+        // Deduplicate to one row per student (most-urgent already first due to ThenBy PeriodEndUtc).
+        var weeklyReminderByStudent = weeklyReminderStudents
+            .GroupBy(r => r.StudentId)
+            .Select(g => g.First())
+            .ToList();
+
+        int weeklyReminderPublished = 0;
+        int weeklyReminderFailed = 0;
+
+        foreach (var s in weeklyReminderByStudent)
+        {
+            var minutesRemaining = (int)(s.PeriodEndUtc - nowUtc).TotalMinutes;
+
+            try
+            {
+                await publisher.Publish(new WeeklyMissionReminderIntegrationEvent(
+                    EventId:          Guid.NewGuid(),
+                    OccurredOnUtc:    nowUtc,
+                    StudentId:        s.StudentId,
+                    Progress:         s.Progress,
+                    Target:           s.Target,
+                    MinutesRemaining: minutesRemaining,
+                    PeriodKey:        s.PeriodKey), ct);
+
+                weeklyReminderPublished++;
+            }
+            catch (Exception ex)
+            {
+                weeklyReminderFailed++;
+                _logger.LogError(ex,
+                    $"P9-06: StreakAtRiskJob — weekly-mission-reminder publish failed for studentId={s.StudentId}.");
+            }
+        }
+
         _logger.LogInfo(
-            $"P4-09: StreakAtRiskJob complete — " +
+            $"P4-09/P9-06: StreakAtRiskJob complete — " +
             $"streakAtRiskCount={atRiskStudents.Count}, streakPublished={streakPublished}, streakFailed={streakFailed}; " +
-            $"missionReminderCount={reminderStudentIds.Count}, reminderPublished={reminderPublished}, reminderFailed={reminderFailed}.");
+            $"missionReminderCount={reminderStudentIds.Count}, reminderPublished={reminderPublished}, reminderFailed={reminderFailed}; " +
+            $"weeklyReminderCount={weeklyReminderByStudent.Count}, weeklyReminderPublished={weeklyReminderPublished}, weeklyReminderFailed={weeklyReminderFailed}.");
     }
 }

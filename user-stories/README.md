@@ -160,7 +160,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P9-03 In-app notification inbox *(consumes existing InboxController; FE)*
 - P9-04 Parent per-child notification controls *(per-child toggles, quiet hours, daily cap; FE)*
 - P9-05 Light up the gamification events we already emit *(level-up, league, freeze, timed-event handlers; BE)*
-- P9-06 New habit-loop notification categories *(streak milestones, weekly challenge lifecycle, weekly recap; BE)*
+- P9-06 New habit-loop notification categories *(✅ weekly-recap #194 + weekly-challenge ending-soon 2026-06-20; streak-milestone DROPPED as redundant; BE)*
 - P9-07 Many types, few sends *(cross-category arbitration + global daily push budget + cooldowns; BE)*
 - P9-08 Comeback escalation ladder *(day 2/5/14 tiered win-back; extends P4-09 LapseWinBack; BE)*
 - P9-09 Spaced-repetition review reminder *(✅ BUILT 2026-06-20 — consumes P3-10 `ReviewDueIntegrationEvent`; inbox-only v1; BE)*
