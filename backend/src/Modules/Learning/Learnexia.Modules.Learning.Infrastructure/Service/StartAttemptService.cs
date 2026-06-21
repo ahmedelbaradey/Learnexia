@@ -54,11 +54,25 @@ public class StartAttemptService : IStartAttemptService
                 ct);
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// P5-07 BE-3 SERVE-GATE (single enforcement point):
+    /// Adds <c>&amp;&amp; q.QualityState == QuestionQualityState.Approved</c> alongside the existing
+    /// <c>IsActive &amp;&amp; LifecycleState == Published</c> filters.
+    ///
+    /// Questions flagged by the calibration job (<c>QualityState == FlaggedForReview</c>) are
+    /// excluded from the auto-serve candidate pool. In-flight attempts that already served a
+    /// question are NOT affected — <c>AttemptWriteService</c> / <c>GetQuestionForAnswerAsync</c>
+    /// do NOT apply this filter so scoring of already-served questions continues normally.
+    ///
+    /// This is the ONLY place the QualityState filter is applied. Admins can re-enable a question
+    /// via <c>ClearFlagCommand</c> (BE-5).
+    /// </remarks>
     public async Task<List<QuizQuestion>> GetPublishedActiveQuestionsAsync(int lessonId, CancellationToken ct = default)
         => await _dbContext.QuizQuestions
             .AsNoTracking()
             .Where(q => q.LessonId == lessonId
                      && q.IsActive
-                     && q.LifecycleState == LifecycleState.Published)
+                     && q.LifecycleState == LifecycleState.Published
+                     && q.QualityState == QuestionQualityState.Approved)
             .ToListAsync(ct);
 }

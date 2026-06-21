@@ -15,6 +15,11 @@ namespace Learnexia.Modules.Learning.Domain.Entities;
 /// <see cref="SequenceOrder"/> (display order within the owning lesson/skill question set).
 /// Soft-delete (<c>IsDeleted</c> + <c>DeletedAt</c>) is inherited from <see cref="AggregateRoot"/>
 /// via <c>FullAuditedEntity</c>.
+///
+/// P5-07: Added <see cref="QualityState"/> (calibration job flag — <c>Approved</c> or
+/// <c>FlaggedForReview</c>) and <see cref="FlagReason"/> (nullable string carrying a stable
+/// machine-generated reason code set by the job; localized at read). DB DEFAULT 1 (Approved)
+/// backfills all existing rows to Approved — mirrors the P7-05 <see cref="LifecycleState"/> pattern.
 /// </summary>
 public class QuizQuestion : AggregateRoot
 {
@@ -76,4 +81,27 @@ public class QuizQuestion : AggregateRoot
     public LifecycleState LifecycleState { get; set; } = LifecycleState.Draft;
 
     public ICollection<StudentAnswer> StudentAnswers { get; set; } = new List<StudentAnswer>();
+
+    /// <summary>
+    /// P5-07: Calibration quality state — whether the question is eligible for auto-serve.
+    /// DB column defaults to 1 (<see cref="QuestionQualityState.Approved"/>) so ALL existing rows
+    /// backfill to Approved, keeping current questions servable. Mirrors the P7-05
+    /// <see cref="LifecycleState"/> <c>HasDefaultValue</c> pattern exactly.
+    /// C# initializer is also <see cref="QuestionQualityState.Approved"/> — new questions start
+    /// as Approved until the calibration job may flag them.
+    /// System-controlled (job) and reversible via the admin Clear-flag endpoint (BE-5).
+    /// Stored as <c>integer</c> via <c>HasConversion&lt;int&gt;()</c> in <c>QuizQuestionConfig</c>.
+    /// </summary>
+    public QuestionQualityState QualityState { get; set; } = QuestionQualityState.Approved;
+
+    /// <summary>
+    /// P5-07: Nullable reason code set by the calibration job when flagging this question
+    /// (<see cref="QualityState"/> = <see cref="QuestionQualityState.FlaggedForReview"/>).
+    /// Stores a stable machine-generated code (e.g. <c>"AI_PVALUE_TOO_LOW"</c>), NOT localized prose.
+    /// The application layer maps the code to a localized string at read time (BE-5 DTOs).
+    /// <c>null</c> when the question has not been flagged (i.e., <see cref="QualityState"/> =
+    /// <see cref="QuestionQualityState.Approved"/>), or after an admin clears the flag.
+    /// Stored as <c>text NULL</c>.
+    /// </summary>
+    public string? FlagReason { get; set; }
 }

@@ -2667,4 +2667,46 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="NotificationAnalyticsRetrievedSuccessfully" xml:space="preserve">
     <value>Notification analytics retrieved successfully.</value>
   </data>
+  <data name="CalibrationProposalIdMustBePositive" xml:space="preserve">
+    <value>Proposal ID must be greater than 0.</value>
+  </data>
+  <data name="CalibrationQuestionIdMustBePositive" xml:space="preserve">
+    <value>Question ID must be greater than 0.</value>
+  </data>
+  <data name="CalibrationProposalsRetrievedSuccessfully" xml:space="preserve">
+    <value>Calibration proposals retrieved successfully.</value>
+  </data>
+  <data name="CalibrationFlaggedQuestionsRetrievedSuccessfully" xml:space="preserve">
+    <value>Flagged questions retrieved successfully.</value>
+  </data>
+  <data name="CalibrationProposalNotFound" xml:space="preserve">
+    <value>Calibration proposal not found.</value>
+  </data>
+  <data name="CalibrationProposalAlreadyResolved" xml:space="preserve">
+    <value>This proposal has already been resolved (promoted or rejected).</value>
+  </data>
+  <data name="CalibrationProposalPromotedSuccessfully" xml:space="preserve">
+    <value>Proposal promoted successfully. The question difficulty has been updated.</value>
+  </data>
+  <data name="CalibrationProposalRejectedSuccessfully" xml:space="preserve">
+    <value>Proposal rejected successfully. The authored difficulty is unchanged.</value>
+  </data>
+  <data name="CalibrationQuestionNotFlagged" xml:space="preserve">
+    <value>This question is not currently flagged for review.</value>
+  </data>
+  <data name="CalibrationFlagClearedSuccessfully" xml:space="preserve">
+    <value>Flag cleared. The question is now eligible for auto-serve.</value>
+  </data>
+  <data name="CalibrationFlagConfirmedSuccessfully" xml:space="preserve">
+    <value>Flag confirmed. The question remains excluded from auto-serve.</value>
+  </data>
+  <data name="CalibrationReasonDifficultyDiverged" xml:space="preserve">
+    <value>Empirical difficulty band diverges from authored difficulty based on student answer data.</value>
+  </data>
+  <data name="CalibrationReasonAiPValueExtremeHigh" xml:space="preserve">
+    <value>AI-generated question: extremely high pass rate detected (question may be too easy or trivial).</value>
+  </data>
+  <data name="CalibrationReasonAiPValueExtremeLow" xml:space="preserve">
+    <value>AI-generated question: extremely low pass rate detected (question may be broken or too hard).</value>
+  </data>
 </root>

@@ -2666,4 +2666,46 @@
   <data name="NotificationAnalyticsRetrievedSuccessfully" xml:space="preserve">
     <value>تم استرداد تحليلات الإشعارات بنجاح.</value>
   </data>
+  <data name="CalibrationProposalIdMustBePositive" xml:space="preserve">
+    <value>يجب أن يكون معرّف المقترح أكبر من 0.</value>
+  </data>
+  <data name="CalibrationQuestionIdMustBePositive" xml:space="preserve">
+    <value>يجب أن يكون معرّف السؤال أكبر من 0.</value>
+  </data>
+  <data name="CalibrationProposalsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد مقترحات المعايرة بنجاح.</value>
+  </data>
+  <data name="CalibrationFlaggedQuestionsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد الأسئلة المُعلَّمة بنجاح.</value>
+  </data>
+  <data name="CalibrationProposalNotFound" xml:space="preserve">
+    <value>مقترح المعايرة غير موجود.</value>
+  </data>
+  <data name="CalibrationProposalAlreadyResolved" xml:space="preserve">
+    <value>تمت معالجة هذا المقترح مسبقًا (تمت الترقية أو الرفض).</value>
+  </data>
+  <data name="CalibrationProposalPromotedSuccessfully" xml:space="preserve">
+    <value>تمت ترقية المقترح بنجاح. تم تحديث مستوى صعوبة السؤال.</value>
+  </data>
+  <data name="CalibrationProposalRejectedSuccessfully" xml:space="preserve">
+    <value>تم رفض المقترح بنجاح. مستوى الصعوبة المُؤلَّف لم يتغير.</value>
+  </data>
+  <data name="CalibrationQuestionNotFlagged" xml:space="preserve">
+    <value>هذا السؤال غير مُعلَّم للمراجعة حاليًا.</value>
+  </data>
+  <data name="CalibrationFlagClearedSuccessfully" xml:space="preserve">
+    <value>تم إزالة العلامة. السؤال مؤهل الآن للعرض التلقائي.</value>
+  </data>
+  <data name="CalibrationFlagConfirmedSuccessfully" xml:space="preserve">
+    <value>تم تأكيد العلامة. السؤال لا يزال مستبعدًا من العرض التلقائي.</value>
+  </data>
+  <data name="CalibrationReasonDifficultyDiverged" xml:space="preserve">
+    <value>نطاق الصعوبة التجريبي يختلف عن الصعوبة المُؤلَّفة بناءً على بيانات إجابات الطلاب.</value>
+  </data>
+  <data name="CalibrationReasonAiPValueExtremeHigh" xml:space="preserve">
+    <value>سؤال مُولَّد بالذكاء الاصطناعي: تم رصد معدل نجاح مرتفع جدًا (قد يكون السؤال سهلًا للغاية).</value>
+  </data>
+  <data name="CalibrationReasonAiPValueExtremeLow" xml:space="preserve">
+    <value>سؤال مُولَّد بالذكاء الاصطناعي: تم رصد معدل نجاح منخفض جدًا (قد يكون السؤال معطوبًا أو صعبًا للغاية).</value>
+  </data>
 </root>

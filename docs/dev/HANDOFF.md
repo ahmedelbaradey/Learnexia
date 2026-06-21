@@ -15,6 +15,25 @@ EF won't re-run an "applied" migration, and **direct DDL on the shared Postgres 
 
 ---
 
+## P5-07 Data-feedback / calibration loop — 2026-06-21 (`feat/P5-07-data-feedback-calibration`)
+
+**Turns dormant learning signals into a calibration loop (barrier-to-entry BE7 "data network effect", closes gap 3a-7).** Learning-module only; **focused slice** — AC3 (config-driven adaptivity thresholds, BE-4) **DEFERRED** to a follow-up.
+
+**Safety model = PROPOSE-ONLY + human promotion** (lead decision): the nightly job never overwrites authored content; it raises **proposals** an admin promotes/rejects.
+
+**What shipped:**
+- **New schema (migration `P5_07_AddCalibration`):** `learning.QuestionDifficultyStats` (per-question empirical aggregate — de-identified), `learning.QuestionRecalibrationProposals` (propose-only, `AggregateRoot`), enums `ProposalStatus`(Pending=1/Promoted=2/Rejected=3) + `QuestionQualityState`(Approved=1/FlaggedForReview=2), and `QuizQuestion.QualityState` (**DB `DEFAULT 1` Approved backfill** — all existing rows stay servable, mirrors P7-05 `LifecycleState`) + `FlagReason text NULL`. FKs intra-module Restrict; unique index on `QuestionDifficultyStats.QuestionId`; **partial unique** `WHERE "Status"=1` (one open Pending proposal per question).
+- **Calibration job** (`CalibrationJob`, Hangfire recurring `"Calibrate"`, daily ~00:20 UTC via `Calibration:Engine:CronExpression`): aggregates `StudentAnswer` **grouped by QuestionId, counts/averages only — never selects StudentId** (AC5 de-identification, the headline gate); upserts stats; raises Pending proposals on band divergence; flags AI questions (`GeneratedBy != Curated`) with extreme p-value. Mirrors `RecommendationRecomputeJob` (own scope, fail-soft, `SaveChangesAsync(0)`).
+- **Engine config** (`Calibration:Engine` in appsettings, all tunable): `MinSamples=30`, `EasyThreshold=0.85`, `HardThreshold=0.45` (Medium between), `AiFlagHighPValue=0.95`, `AiFlagLowPValue=0.20`. p-value is 0.0–1.0.
+- **Serve-gate (single point):** `StartAttemptService.GetPublishedActiveQuestionsAsync` now requires `QualityState == Approved` → flagged questions are excluded from auto-serve. Scoring reads untouched (in-flight attempts still score).
+- **AdminOnly API** `api/Learning/Calibration`: `GET /Proposals`, `GET /Flagged`, `POST /Proposals/{id}/Promote` (the ONLY place authored `Difficulty` changes — human-driven), `/Reject`, `POST /Flagged/{questionId}/Clear`, `/Confirm`. All audited via `AdminActionPerformedDomainEvent` (new `AdminActions` constants). Reason **codes** persisted, **localized at read** (EN+AR) — no persisted prose (avoids the prior-P5 localization debt).
+
+**Gates:** build 0 · api-tester **22/22** (incl. a live `information_schema` no-PII column scan) · **security-auditor PASS** (de-identification verified clean; its one Low — raw `ex.Message` in the 6 new handlers — was fixed to localized generic keys) · reviewer PASS.
+
+**Deferred / notes:** **BE-4** config-driven adaptivity thresholds (AC3) = next slice. No question-**report** signal exists yet → AI-flagging uses p-value extremes only (future enhancement). Nightly `ApplyAiFlagsAsync` has a benign N+1 (acceptable for a daily off-peak sweep). Thin admin-FE (`tasks/Frontend/Phase-5-Parent-Analytics/P5-07-FE.md`) owned by the FE lead.
+
+---
+
 ## AI flip-to-live runbook (#3/#4 prep) — 2026-06-21 (`docs/P6-AI-activation-runbook`)
 
 **New doc: [docs/dev/AI-ACTIVATION-RUNBOOK.md](AI-ACTIVATION-RUNBOOK.md)** — the verified, code-grounded devops procedure to turn on live AI (provider keys → BGE-M3 TEI → `POST /api/Admin/Curriculum/ReEmbed` → verify placeholder vectors gone → `AiHelper:ContextProvider=Rag` → smoke test → Gate-B eval → monitor via P6-05 `/health` `ai-gateway` + OTel). Full env-var table with code citations, rollback steps, and a per-capability readiness checklist. **No keys, no code change, no live activation** — docs only.

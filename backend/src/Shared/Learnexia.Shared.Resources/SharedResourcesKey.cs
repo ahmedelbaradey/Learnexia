@@ -2213,5 +2213,60 @@
         public const string NotificationAnalyticsRetrievedSuccessfully =
             "NotificationAnalyticsRetrievedSuccessfully";
 
+        // ── P5-07 Calibration loop (proposals + AI flags) ───────────────────────────────────────
+
+        /// <summary>Validation: CalibrationProposalId must be greater than 0.</summary>
+        public const string CalibrationProposalIdMustBePositive = "CalibrationProposalIdMustBePositive";
+
+        /// <summary>Validation: CalibrationQuestionId must be greater than 0.</summary>
+        public const string CalibrationQuestionIdMustBePositive = "CalibrationQuestionIdMustBePositive";
+
+        /// <summary>Returned when the paged proposal list is retrieved successfully.</summary>
+        public const string CalibrationProposalsRetrievedSuccessfully = "CalibrationProposalsRetrievedSuccessfully";
+
+        /// <summary>Returned when the paged flagged-question list is retrieved successfully.</summary>
+        public const string CalibrationFlaggedQuestionsRetrievedSuccessfully = "CalibrationFlaggedQuestionsRetrievedSuccessfully";
+
+        /// <summary>Returned when a recalibration proposal is not found by id.</summary>
+        public const string CalibrationProposalNotFound = "CalibrationProposalNotFound";
+
+        /// <summary>Returned when an admin tries to promote/reject a proposal that is already resolved.</summary>
+        public const string CalibrationProposalAlreadyResolved = "CalibrationProposalAlreadyResolved";
+
+        /// <summary>Returned on successful promotion of a recalibration proposal.</summary>
+        public const string CalibrationProposalPromotedSuccessfully = "CalibrationProposalPromotedSuccessfully";
+
+        /// <summary>Returned on successful rejection of a recalibration proposal.</summary>
+        public const string CalibrationProposalRejectedSuccessfully = "CalibrationProposalRejectedSuccessfully";
+
+        /// <summary>Returned when an admin tries to clear/confirm a flag on a question that is not flagged.</summary>
+        public const string CalibrationQuestionNotFlagged = "CalibrationQuestionNotFlagged";
+
+        /// <summary>Returned when an admin clears the quality flag (question re-enabled for auto-serve).</summary>
+        public const string CalibrationFlagClearedSuccessfully = "CalibrationFlagClearedSuccessfully";
+
+        /// <summary>Returned when an admin confirms the quality flag (question remains excluded from auto-serve).</summary>
+        public const string CalibrationFlagConfirmedSuccessfully = "CalibrationFlagConfirmedSuccessfully";
+
+        // ── P5-07 Calibration reason-code localizations (OQ-6: store code, localize at read) ────
+
+        /// <summary>
+        /// Localized text for reason code <c>"DIFFICULTY_DIVERGENCE"</c>.
+        /// Displayed in the admin proposal list when empirical band diverges from authored band.
+        /// </summary>
+        public const string CalibrationReasonDifficultyDiverged = "CalibrationReasonDifficultyDiverged";
+
+        /// <summary>
+        /// Localized text for reason code <c>"AI_PVALUE_EXTREME_HIGH"</c>.
+        /// Displayed when an AI question has an extremely high p-value (nearly everyone answered correctly).
+        /// </summary>
+        public const string CalibrationReasonAiPValueExtremeHigh = "CalibrationReasonAiPValueExtremeHigh";
+
+        /// <summary>
+        /// Localized text for reason code <c>"AI_PVALUE_EXTREME_LOW"</c>.
+        /// Displayed when an AI question has an extremely low p-value (very few answered correctly).
+        /// </summary>
+        public const string CalibrationReasonAiPValueExtremeLow = "CalibrationReasonAiPValueExtremeLow";
+
     }
 }

@@ -68,6 +68,19 @@ public static class DependencyInjection
         // Mirrors StudentProfileRecomputeJob registration.
         services.AddTransient<RecommendationRecomputeJob>();
 
+        // P5-07-BE-1/2/3: Calibration Engine options (Domain, same pattern as AdaptivityOptions).
+        // Placed before service registration so the options are available when the service is resolved.
+        services.Configure<CalibrationOptions>(
+            configuration.GetSection(CalibrationOptions.SectionName));
+
+        // P5-07-BE-1/2/3: Calibration computation + persistence service (Option C — EF only here).
+        services.AddScoped<ICalibrationService, CalibrationService>();
+
+        // P5-07-BE-1: Daily calibration job.
+        // Transient — the job creates its own inner scope via IServiceScopeFactory.CreateAsyncScope().
+        // Mirrors RecommendationRecomputeJob registration.
+        services.AddTransient<CalibrationJob>();
+
         // P3-08 Adaptivity Engine options + service.
         // AdaptivityOptions lives in Domain so the pure engine can reference it without violating
         // the Application → Domain dependency direction.
