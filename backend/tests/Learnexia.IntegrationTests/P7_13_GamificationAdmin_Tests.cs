@@ -1055,6 +1055,41 @@ public sealed class P7_13_GamificationAdmin_Tests : IAsyncLifetime
         actionProp.GetString().Should().Be("TimedEvent.Activated");
     }
 
+    [Fact(DisplayName = "DEF-GAM-01: ExpireTimedEvent rewinds EndUtc to now (active future-window event → ENDED, not SCHEDULED)")]
+    public async Task ExpireTimedEvent_RewindsEndUtc()
+    {
+        // CreateTimedEventGetIdAsync seeds an event with EndUtc = now + 7 days, IsActive = false.
+        int eventId = await CreateTimedEventGetIdAsync();
+
+        // Must be active before it can be expired (ExpireTimedEvent rejects inactive events).
+        var (actResp, _, actBody) = await SendAsync(HttpMethod.Post,
+            $"{TimedEventsUrl}/{eventId}/activate", bearer: _adminToken);
+        actResp.StatusCode.Should().Be(HttpStatusCode.OK, "activate must succeed; body: {0}", actBody);
+
+        var beforeUtc = DateTime.UtcNow;
+
+        var (expResp, expRoot, expBody) = await SendAsync(HttpMethod.Post,
+            $"{TimedEventsUrl}/{eventId}/expire", bearer: _adminToken);
+        expResp.StatusCode.Should().Be(HttpStatusCode.OK, "expire must succeed; body: {0}", expBody);
+        AssertSucceeded(expRoot, expBody);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<GamificationDbContext>();
+        var ev = await db.TimedEvents.AsNoTracking().FirstOrDefaultAsync(e => e.Id == eventId);
+        ev.Should().NotBeNull("timed event must exist after expire; id={0}", eventId);
+
+        ev!.IsActive.Should().BeFalse("expire must deactivate the event; id={0}", eventId);
+
+        // DEF-GAM-01: EndUtc must be rewound to ~now (it was now+7d), so the timestamp-based FE
+        // status renders ENDED instead of SCHEDULED. (timestamptz reads back machine-local under
+        // EnableLegacyTimestampBehavior → normalize to UTC before comparing.)
+        var endUtc = ev.EndUtc.ToUniversalTime();
+        endUtc.Should().BeOnOrAfter(beforeUtc.AddSeconds(-5),
+            "EndUtc should be the expire time, not the original future value");
+        endUtc.Should().BeOnOrBefore(DateTime.UtcNow.AddSeconds(5),
+            "EndUtc must NOT remain in the future after a manual expire (DEF-GAM-01)");
+    }
+
     // =========================================================================
     // Seeder seed-if-absent (AC-8 from brief): admin-edited badge survives re-seed
     // =========================================================================
