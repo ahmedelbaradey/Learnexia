@@ -1,34 +1,33 @@
 /**
- * FocusAreasCard — the "Areas to focus on" card on the parent Overview
- * (capture `web/05-dashboard.png`). Header ("Areas to focus on" + subtitle +
- * "See all" link) then one row per weak topic: an icon chip, the topic + its
- * subject, a small confidence bar, and the percentage.
+ * FocusAreasCard — the "Areas to focus on" card on the parent Overview (P5-05).
  *
- * Topics / subjects / percentages are Phase-5 stubs (TODO(P5)); "See all" is a
- * no-op stub until analytics ship. The bar/percent tint is driven by a fixed
- * severity enum (high → danger, medium → warning), never a raw string.
+ * Replaced stub data (`getFocusAreasStub`) with real `useWeakAreas` hook
+ * (GET api/Parent/Children/{id}/WeakAreas). Empty `areas` list → graceful
+ * empty-state (not an error). Loading skeleton + error + retry all present.
+ *
+ * Field mapping from WeakAreaItemDto:
+ *   - `skillName` → topic display text (backend string, displayed as-is)
+ *   - `subjectCode` (0=Math,1=Science,2=Arabic,3=English) → subject label + icon
+ *   - `masteryPercent` → confidence bar fill (0–100)
+ *   - `severity` (1=Low,2=Medium,3=High) → bar tint + chip bg
  *
  * RTL + ar/en; tokens only (no raw hex).
  */
+import { useWeakAreas, PARENT_SUBJECT_CODE_MAP } from '@learnexia/api-client';
+import { Button } from '@learnexia/ui';
 import { type Direction } from '@learnexia/shared/i18n';
 import { Stack, Text, type StackProps } from '@tamagui/core';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import {
-  FOCUS_SEVERITY,
-  getFocusAreasStub,
-  OVERVIEW_SUBJECT,
-  type FocusSeverity,
-  type OverviewSubjectKey,
-} from './parentDashboardStubs';
+import { OVERVIEW_SUBJECT, type OverviewSubjectKey } from './parentDashboardStubs';
 
 export interface FocusAreasCardProps {
   childId: string;
   childName: string;
   direction: Direction;
   rowDir: 'row' | 'row-reverse';
-  /** Active locale — formats the percent in the a11y label (N-10). */
+  /** Active locale — formats the percent in the a11y label. */
   locale: string;
 }
 
@@ -50,7 +49,7 @@ const SUBJECT_LABEL_KEY: Record<OverviewSubjectKey, string> = {
   [OVERVIEW_SUBJECT.English]: 'parent.overview.subjects.english',
 };
 
-/** Subject → focus-row icon glyph (decorative; subject-keyed per capture). */
+/** Subject → focus-row icon glyph (decorative). */
 const SUBJECT_ICON: Record<OverviewSubjectKey, string> = {
   [OVERVIEW_SUBJECT.Math]: '🔢',
   [OVERVIEW_SUBJECT.Science]: '🔬',
@@ -58,32 +57,30 @@ const SUBJECT_ICON: Record<OverviewSubjectKey, string> = {
   [OVERVIEW_SUBJECT.English]: '🔡',
 };
 
-/** Topic key → i18n label key (reuses the existing myChildren topic copy). */
-const TOPIC_LABEL_KEY: Record<string, string> = {
-  fractions: 'parent.myChildren.topics.fractions',
-  letters: 'parent.myChildren.topics.letters',
-  geometry: 'parent.myChildren.topics.geometry',
-  reading: 'parent.myChildren.topics.reading',
-  numbers: 'parent.myChildren.topics.numbers',
-};
-
 type TextColor = StackProps['backgroundColor'];
 
-/** Severity → fill color token. */
-const SEVERITY_COLOR: Record<FocusSeverity, TextColor> = {
-  [FOCUS_SEVERITY.High]: '$danger',
-  [FOCUS_SEVERITY.Medium]: '$warning',
-};
+/**
+ * Map integer severity (1=Low, 2=Medium, 3=High) to fill/chip colors.
+ * High (3) → danger, Medium (2) → warning, Low (1) → fg3 / muted.
+ */
+function severityFillColor(severity: number): TextColor {
+  if (severity >= 3) return '$danger';
+  if (severity === 2) return '$warning';
+  return '$fg3';
+}
 
-/** Severity → soft icon-chip background tint (B-14). */
-const SEVERITY_CHIP_BG: Record<FocusSeverity, TextColor> = {
-  [FOCUS_SEVERITY.High]: '$dangerSoft',
-  [FOCUS_SEVERITY.Medium]: '$warningSoft',
-};
+function severityChipBg(severity: number): TextColor {
+  if (severity >= 3) return '$dangerSoft';
+  if (severity === 2) return '$warningSoft';
+  return '$cardSoft';
+}
 
 export function FocusAreasCard({ childId, childName, direction, rowDir, locale }: FocusAreasCardProps) {
   const { t } = useTranslation();
-  const rows = getFocusAreasStub(childId);
+  // childId may be '' when no active child — useWeakAreas disables when falsy.
+  const query = useWeakAreas(childId || undefined);
+
+  const areas = query.data?.areas ?? [];
 
   return (
     <Stack
@@ -118,7 +115,7 @@ export function FocusAreasCard({ childId, childName, direction, rowDir, locale }
             {t('parent.overview.focusAreas.subtitle', { name: childName })}
           </Text>
         </Stack>
-        {/* See all — ghost pill (M-20). Phase-5 stub (no-op until topics ship). */}
+        {/* See all — ghost pill stub (no full list screen yet). */}
         <Stack
           minHeight={36}
           paddingHorizontal="$4"
@@ -145,110 +142,149 @@ export function FocusAreasCard({ childId, childName, direction, rowDir, locale }
         </Stack>
       </Stack>
 
-      {/* Rows */}
-      <Stack flexDirection="column" gap={10}>
-        {rows.map((row) => {
-          const topic = t(TOPIC_LABEL_KEY[row.topicKey] ?? 'parent.myChildren.topics.numbers');
-          const subject = t(SUBJECT_LABEL_KEY[row.subject]);
-          const fill = SEVERITY_COLOR[row.severity];
-          const chipBg = SEVERITY_CHIP_BG[row.severity];
-          const a11yPercent = formatPercent(row.percent, locale);
-          return (
+      {/* Loading skeleton */}
+      {query.isLoading ? (
+        <Stack flexDirection="column" gap={10}>
+          {[0, 1, 2].map((i) => (
             <Stack
-              key={`${row.topicKey}-${row.subject}`}
-              flexDirection={rowDir}
-              alignItems="center"
-              gap={14}
+              key={i}
+              height={64}
               borderRadius="$cardInner"
-              backgroundColor="$bg"
-              borderWidth={1}
-              borderColor="$borderSubtle"
-              paddingVertical={12}
-              paddingHorizontal={14}
-              accessible
-              accessibilityLabel={`${topic} ${subject} ${a11yPercent}`}
-              aria-label={`${topic} ${subject} ${a11yPercent}`}
-            >
-              {/* Icon chip — severity-tinted soft bg + matching icon color (B-14).
-                  flexDirection={rowDir}: chip is the FIRST child so in RTL (row-reverse)
-                  it renders on the visual RIGHT (leading/start side). */}
+              backgroundColor="$cardSoft"
+              opacity={0.5}
+            />
+          ))}
+        </Stack>
+      ) : query.isError ? (
+        /* Error + retry */
+        <Stack gap="$3" alignItems="flex-start">
+          <Text color="$fg3" fontSize={13} fontFamily="$body" writingDirection={direction}>
+            {t('parent.overview.loadError')}
+          </Text>
+          <Button
+            variant="ghost"
+            size="sm"
+            accessibilityLabel={t('common.retry')}
+            onPress={() => query.refetch()}
+          >
+            {t('common.retry')}
+          </Button>
+        </Stack>
+      ) : areas.length === 0 ? (
+        /* Empty state — no weak areas detected (common for new child) */
+        <Text
+          color="$fg3"
+          fontSize={13}
+          fontFamily="$body"
+          textAlign="center"
+          writingDirection={direction}
+        >
+          {t('parent.overview.focusAreas.empty')}
+        </Text>
+      ) : (
+        /* Rows */
+        <Stack flexDirection="column" gap={10}>
+          {areas.map((area) => {
+            const subjectKey = PARENT_SUBJECT_CODE_MAP[area.subjectCode] as OverviewSubjectKey | undefined;
+            const subject = subjectKey
+              ? t(SUBJECT_LABEL_KEY[subjectKey])
+              : '';
+            const icon = subjectKey ? SUBJECT_ICON[subjectKey] : '📚';
+            const fill = severityFillColor(area.severity);
+            const chipBg = severityChipBg(area.severity);
+            const a11yPercent = formatPercent(area.masteryPercent, locale);
+
+            return (
               <Stack
-                width={40}
-                height={40}
-                borderRadius="$sm"
-                backgroundColor={chipBg}
+                key={area.skillId}
+                flexDirection={rowDir}
                 alignItems="center"
-                justifyContent="center"
-                accessibilityElementsHidden
-              >
-                <Text fontSize={18} color={fill}>
-                  {SUBJECT_ICON[row.subject]}
-                </Text>
-              </Stack>
-
-              {/* Topic + subject — text aligns to writing-direction start (right in RTL). */}
-              <Stack flexDirection="column" gap="$1" flex={1}>
-                <Text
-                  color="$fg1"
-                  fontSize={13}
-                  fontWeight="700"
-                  fontFamily="$heading"
-                  writingDirection={direction}
-                  textAlign={direction === 'rtl' ? 'right' : 'left'}
-                >
-                  {topic}
-                </Text>
-                <Text
-                  color="$fg3"
-                  fontSize={12}
-                  fontFamily="$body"
-                  writingDirection={direction}
-                  textAlign={direction === 'rtl' ? 'right' : 'left'}
-                >
-                  {subject}
-                </Text>
-              </Stack>
-
-              {/* Confidence bar — fill grows from the inline-start: LEFT in LTR,
-                  RIGHT in RTL (Arabic progresses right-to-left). The explicit `dir`
-                  pins the track direction so the fill anchors to the correct edge.
-                  Track bg = $card + hairline (B-13). */}
-              <Stack
-                dir={direction === 'rtl' ? 'rtl' : 'ltr'}
-                width={120}
-                height={8}
-                borderRadius={9999}
-                backgroundColor="$card"
+                gap={14}
+                borderRadius="$cardInner"
+                backgroundColor="$bg"
                 borderWidth={1}
                 borderColor="$borderSubtle"
-                overflow="hidden"
-                flexDirection="row"
-                accessibilityElementsHidden
+                paddingVertical={12}
+                paddingHorizontal={14}
+                accessible
+                accessibilityLabel={`${area.skillName} ${subject} ${a11yPercent}`}
+                aria-label={`${area.skillName} ${subject} ${a11yPercent}`}
               >
+                {/* Icon chip */}
                 <Stack
-                  width={`${Math.max(0, Math.min(100, row.percent))}%` as StackProps['width']}
-                  height="100%"
-                  backgroundColor={fill}
-                />
-              </Stack>
+                  width={40}
+                  height={40}
+                  borderRadius="$sm"
+                  backgroundColor={chipBg}
+                  alignItems="center"
+                  justifyContent="center"
+                  accessibilityElementsHidden
+                >
+                  <Text fontSize={18} color={fill}>
+                    {icon}
+                  </Text>
+                </Stack>
 
-              {/* Percent — localized numerals + locale-correct percent symbol (٪ in AR).
-                  Text aligns to logical end (left in RTL, right in LTR) per spec B-17. */}
-              <Text
-                color={fill}
-                fontSize={14}
-                fontWeight="800"
-                fontFamily="$heading"
-                width={44}
-                textAlign={direction === 'rtl' ? 'left' : 'right'}
-                style={{ fontVariant: ['tabular-nums'] }}
-              >
-                {formatPercent(row.percent, locale)}
-              </Text>
-            </Stack>
-          );
-        })}
-      </Stack>
+                {/* Topic + subject */}
+                <Stack flexDirection="column" gap="$1" flex={1}>
+                  <Text
+                    color="$fg1"
+                    fontSize={13}
+                    fontWeight="700"
+                    fontFamily="$heading"
+                    writingDirection={direction}
+                    textAlign={direction === 'rtl' ? 'right' : 'left'}
+                  >
+                    {area.skillName}
+                  </Text>
+                  <Text
+                    color="$fg3"
+                    fontSize={12}
+                    fontFamily="$body"
+                    writingDirection={direction}
+                    textAlign={direction === 'rtl' ? 'right' : 'left'}
+                  >
+                    {subject}
+                  </Text>
+                </Stack>
+
+                {/* Confidence bar — fill anchors to inline-start */}
+                <Stack
+                  dir={direction === 'rtl' ? 'rtl' : 'ltr'}
+                  width={120}
+                  height={8}
+                  borderRadius={9999}
+                  backgroundColor="$card"
+                  borderWidth={1}
+                  borderColor="$borderSubtle"
+                  overflow="hidden"
+                  flexDirection="row"
+                  accessibilityElementsHidden
+                >
+                  <Stack
+                    width={`${Math.max(0, Math.min(100, area.masteryPercent))}%` as StackProps['width']}
+                    height="100%"
+                    backgroundColor={fill}
+                  />
+                </Stack>
+
+                {/* Percent readout */}
+                <Text
+                  color={fill}
+                  fontSize={14}
+                  fontWeight="800"
+                  fontFamily="$heading"
+                  width={44}
+                  textAlign={direction === 'rtl' ? 'left' : 'right'}
+                  style={{ fontVariant: ['tabular-nums'] }}
+                >
+                  {formatPercent(area.masteryPercent, locale)}
+                </Text>
+              </Stack>
+            );
+          })}
+        </Stack>
+      )}
     </Stack>
   );
 }

@@ -223,6 +223,50 @@ export const queryKeys = {
     item: (id: number) =>
       [...queryKeys.adminModeration.all, 'item', id] as const,
   },
+  /**
+   * P5-05 parent analytics hooks.
+   *
+   * All per-child queries include childId so child-switching invalidates
+   * correctly. The namespace is `parentAnalytics` — distinct from both
+   * `family.*` (children list) and `learning.*` (student-facing).
+   *
+   * Key design: `reports(childId)` covers ALL THREE chart panels (dailyXpSeries,
+   * xpTrend20Day, timeOfDayBuckets) — a single GET /api/Parent/Children/{id}/Reports
+   * call. The old `weeklyActivity`, `twentyDayActivity`, `timeOfDay` keys are
+   * REMOVED — those endpoints do not exist.
+   *
+   * `familySummary()` is NOT keyed by childId — it covers all children in the family.
+   */
+  parentAnalytics: {
+    all: ['parentAnalytics'] as const,
+    /** GET api/Parent/Children/{id}/WeeklyKpis */
+    weeklyKpis: (childId: string) =>
+      [...queryKeys.parentAnalytics.all, 'weekly-kpis', childId] as const,
+    /**
+     * GET api/Parent/Children/{id}/Reports — feeds daily-activity, 20-day trend,
+     * and time-of-day charts. ONE key for all three panels.
+     */
+    reports: (childId: string) =>
+      [...queryKeys.parentAnalytics.all, 'reports', childId] as const,
+    /** GET api/Parent/Children/{id}/SubjectMastery */
+    subjectMastery: (childId: string) =>
+      [...queryKeys.parentAnalytics.all, 'subject-mastery', childId] as const,
+    /** GET api/Parent/Children/{id}/WeakAreas */
+    weakAreas: (childId: string) =>
+      [...queryKeys.parentAnalytics.all, 'weak-areas', childId] as const,
+    /** GET api/Parent/Children/{id}/Recommendations */
+    recommendations: (childId: string) =>
+      [...queryKeys.parentAnalytics.all, 'recommendations', childId] as const,
+    /** GET api/Parent/Children/{id}/Progress */
+    childProgress: (childId: string) =>
+      [...queryKeys.parentAnalytics.all, 'child-progress', childId] as const,
+    /** GET api/Parent/Family/Summary (not per-child) */
+    familySummary: () =>
+      [...queryKeys.parentAnalytics.all, 'family-summary'] as const,
+    /** GET api/Parent/Children/{id}/Energy */
+    childEnergy: (childId: string) =>
+      [...queryKeys.parentAnalytics.all, 'child-energy', childId] as const,
+  },
 } as const;
 
 export type QueryKeys = typeof queryKeys;

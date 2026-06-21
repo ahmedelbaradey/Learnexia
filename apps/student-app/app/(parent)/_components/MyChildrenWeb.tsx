@@ -23,7 +23,7 @@
  * RTL `row-reverse` the button stays in-row and does not wrap to an unexpected
  * position where pointer-events fail. Text alignment follows locale direction.
  */
-import { useMyChildren } from '@learnexia/api-client';
+import { useMyChildren, useFamilySummary } from '@learnexia/api-client';
 import { Button } from '@learnexia/ui';
 import { Stack, Text } from '@tamagui/core';
 import { useRouter } from 'expo-router';
@@ -42,7 +42,7 @@ import { AddChildCard } from './AddChildCard';
 import { ChildDashboardCard } from './ChildDashboardCard';
 import { ParentHeader } from './ParentHeader';
 import { FamilySummaryStrip } from './FamilySummaryStrip';
-import { getChildStatsStub, getFamilyTotalsStub } from './parentDashboardStubs';
+import { getChildStatsStub } from './parentDashboardStubs';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -83,8 +83,15 @@ export function MyChildrenWeb() {
   const setActiveChildId = useActiveChildStore((s) => s.setActiveChildId);
   const rowDir = isRtl ? 'row-reverse' : 'row';
   const children = query.data ?? [];
-  const childIds = children.map((c) => String(c.id));
-  const totals = getFamilyTotalsStub(childIds);
+  // Real family summary from GET api/Parent/Family/Summary (replaces getFamilyTotalsStub).
+  const familyQuery = useFamilySummary();
+  const totals = familyQuery.data ?? {
+    activeLearners: 0,
+    lessonsCompleted: 0,
+    totalXp: 0,
+    bestStreakDays: 0,
+    badgesEarned: 0,
+  };
 
   // Responsive CSS Grid on web (C-43): cards are ≥340px (a little wider) and the
   // column count auto-fills to the container. AR reverses column order via direction:rtl.

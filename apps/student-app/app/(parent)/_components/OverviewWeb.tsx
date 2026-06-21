@@ -1,20 +1,16 @@
 /**
- * OverviewWeb — the parent "Dashboard / Overview" main content (capture
- * `web/05-dashboard.png`): page header ("<Child>'s progress" + date range +
- * "This week" select + "Send Report"), four KPI stat cards, a "Daily activity"
- * card (header + "Export CSV" — the bar chart itself is DEFERRED to Phase 5 and
- * rendered as a placeholder), the "Subject mastery" card (4 product subjects),
- * and the "Areas to focus on" list + "Recommendations from Lexi" panel side-by-side.
+ * OverviewWeb — parent "Dashboard / Overview" content (P5-05 real data wiring).
  *
- * The active child comes from `useActiveChildStore` (set by the ChildSwitcher),
- * falling back to `children[0]`. Every weekly stat (KPIs / mastery / focus areas /
- * date range) is a Phase-5 stub (TODO(P5)). "Send Report" and "Export CSV" are
- * no-op stubs until analytics ship.
+ * Replaces `getOverviewKpiStub` with `useWeeklyKpis` (real endpoint).
+ * GAP-8 fixed: xpDelta is ABSOLUTE (not a percent) — copy reads "+120 XP this week".
+ *
+ * Active child from `useActiveChildStore`. Every query includes childId so
+ * child-switching triggers independent per-child fetches.
  *
  * RTL + ar/en throughout; tokens only (no raw hex); reuses `@learnexia/ui`
- * primitives (KPIStatCard, MasteryBar) — no new design pattern.
+ * primitives. No new design patterns.
  */
-import { useMyChildren } from '@learnexia/api-client';
+import { useMyChildren, useWeeklyKpis } from '@learnexia/api-client';
 import { Button } from '@learnexia/ui';
 import { Stack, Text, type StackProps } from '@tamagui/core';
 import React from 'react';
@@ -28,15 +24,9 @@ import { ParentHeader } from './ParentHeader';
 import { FocusAreasCard } from './FocusAreasCard';
 import { RecommendationsCard } from './RecommendationsCard';
 import { SubjectMasteryCard } from './SubjectMasteryCard';
-import { getOverviewKpiStub, type OverviewKpiStub } from './parentDashboardStubs';
-
 
 /**
- * Format minutes as "Xh Ym" (EN) / "Xس Yد" (AR). Digits are localized via Intl
- * (`ar-EG` → Eastern-Arabic numerals); the unit glyphs are fixed locale symbols
- * (h/m in EN, س/د in AR) per the align spec (M-25). These are unit symbols, not
- * free-text copy, so they live with the deferred duration formatter rather than
- * the i18n resource bundle (which only carries the surrounding delta phrase).
+ * Format minutes as "Xh Ym" (EN) / "Xس Yد" (AR). Digits are localized via Intl.
  */
 const DURATION_UNITS = {
   en: { hour: 'h', minute: 'm' },
@@ -61,15 +51,32 @@ interface KpiTileDef {
   value: string;
   label: string;
   delta: string;
-  /** 32×32 icon-chip tint, per accent (align spec accent-to-soft map B-03/N-06). */
+  /** Whether the delta is positive/negative/zero — drives color. */
+  deltaSign: 'positive' | 'negative' | 'zero';
   chipBg: StackProps['backgroundColor'];
 }
 
+/**
+ * Build KPI tile definitions from the real `WeeklyKpisDto`.
+ * GAP-8: xpDelta is ABSOLUTE — not a percent. Copy uses "+{n} XP this week".
+ */
 function buildKpis(
-  kpi: OverviewKpiStub,
+  kpi: {
+    timeLearningMinutes: number;
+    timeLearningDeltaMinutes: number;
+    xpEarned: number;
+    xpDelta: number;
+    lessonsDone: number;
+    lessonsDelta: number;
+    streakDays: number;
+    streakDelta: number;
+  },
   t: ReturnType<typeof useTranslation>['t'],
   locale: string,
 ): KpiTileDef[] {
+  const sign = (n: number): 'positive' | 'negative' | 'zero' =>
+    n > 0 ? 'positive' : n < 0 ? 'negative' : 'zero';
+
   return [
     {
       icon: '⏱️',
@@ -77,17 +84,20 @@ function buildKpis(
       value: formatDuration(kpi.timeLearningMinutes, locale),
       label: t('parent.overview.kpi.timeLearning'),
       delta: t('parent.overview.kpi.timeDelta', {
-        value: formatDuration(kpi.timeLearningDeltaMinutes, locale),
+        value: formatDuration(Math.abs(kpi.timeLearningDeltaMinutes), locale),
       }),
+      deltaSign: sign(kpi.timeLearningDeltaMinutes),
     },
     {
       icon: '⭐',
       chipBg: '$xpSoft',
       value: formatNumber(kpi.xpEarned, locale),
       label: t('parent.overview.kpi.xpEarned'),
+      // GAP-8: xpDelta is ABSOLUTE — key now reads "+{n} XP this week" (EN) / "+{n} نقطة هذا الأسبوع" (AR).
       delta: t('parent.overview.kpi.xpDelta', {
-        value: formatNumber(kpi.xpDeltaPercent, locale),
+        value: formatNumber(Math.abs(kpi.xpDelta), locale),
       }),
+      deltaSign: sign(kpi.xpDelta),
     },
     {
       icon: '✅',
@@ -95,8 +105,9 @@ function buildKpis(
       value: formatNumber(kpi.lessonsDone, locale),
       label: t('parent.overview.kpi.lessonsDone'),
       delta: t('parent.overview.kpi.lessonsDelta', {
-        value: formatNumber(kpi.lessonsDelta, locale),
+        value: formatNumber(Math.abs(kpi.lessonsDelta), locale),
       }),
+      deltaSign: sign(kpi.lessonsDelta),
     },
     {
       icon: '🔥',
@@ -104,18 +115,17 @@ function buildKpis(
       value: formatNumber(kpi.streakDays, locale),
       label: t('parent.overview.kpi.streak'),
       delta: t('parent.overview.kpi.streakDelta', {
-        value: formatNumber(kpi.streakDelta, locale),
+        value: formatNumber(Math.abs(kpi.streakDelta), locale),
       }),
+      deltaSign: sign(kpi.streakDelta),
     },
   ];
 }
 
 export interface OverviewWebProps {
-  /** Called when the "Add child" CTA is tapped (empty state). Opens the AddChildModal. */
   onAddChild?: () => void;
 }
 
-/** Desktop threshold: full 4-col KPI grid at ≥1025 viewport width. */
 const DESKTOP_VIEWPORT_BREAKPOINT = 1025;
 
 export function OverviewWeb({ onAddChild }: OverviewWebProps) {
@@ -127,7 +137,6 @@ export function OverviewWeb({ onAddChild }: OverviewWebProps) {
   const rowDir = isRtl ? 'row-reverse' : 'row';
   const children = query.data ?? [];
 
-  // Active child: from the child switcher store (fallback to first child).
   const activeChildId = useActiveChildStore((s) => s.activeChildId);
   const activeChild =
     (activeChildId ? children.find((c) => String(c.id) === activeChildId) : null) ??
@@ -136,56 +145,50 @@ export function OverviewWeb({ onAddChild }: OverviewWebProps) {
   const childId = activeChild ? String(activeChild.id) : undefined;
   const childName = activeChild?.fullName ?? '';
 
-  // Static "this week" range — the real range comes with Phase-5 analytics.
   const dateRange = t('parent.overview.dateRange');
-
-  // Use viewport width as the tier discriminator so the tiers align with the shell breakpoints.
   const isDesktop = width >= DESKTOP_VIEWPORT_BREAKPOINT;
 
   return (
     <Stack testID="overview-root" flexDirection="column" width="100%">
-      {/* Unified parent header (title + ChildSwitcher + AccountMenu). */}
       <ParentHeader
         title={t('parent.overview.title', { name: childName })}
         subtitle={dateRange}
       />
 
-      {/* Body content — own gutter (header is full-bleed with its own padding). */}
       <Stack flexDirection="column" gap="$6" padding="$6">
-      {/* Error state */}
-      {query.isError ? (
-        <Stack alignItems="center" gap="$4" paddingVertical="$8">
-          <Text color="$fg3" fontSize={15} fontFamily="$body" textAlign="center" writingDirection={direction}>
-            {t('parent.overview.loadError')}
-          </Text>
-          <Button variant="ghost" accessibilityLabel={t('common.retry')} onPress={() => query.refetch()}>
-            {t('common.retry')}
-          </Button>
-        </Stack>
-      ) : !query.isLoading && !activeChild ? (
-        <Stack alignItems="center" gap="$4" paddingVertical="$8">
-          <Text color="$fg3" fontSize={15} fontFamily="$body" textAlign="center" writingDirection={direction}>
-            {t('parent.overview.empty')}
-          </Text>
-          <Button
-            variant="primary"
-            accessibilityLabel={t('parent.myChildren.addChild')}
-            onPress={onAddChild ?? (() => {})}
-          >
-            {t('parent.myChildren.addChild')}
-          </Button>
-        </Stack>
-      ) : (
-        <OverviewBody
-          childId={childId}
-          childName={childName}
-          rowDir={rowDir}
-          direction={direction}
-          locale={locale}
-          isDesktop={isDesktop}
-          isRtl={isRtl}
-        />
-      )}
+        {query.isError ? (
+          <Stack alignItems="center" gap="$4" paddingVertical="$8">
+            <Text color="$fg3" fontSize={15} fontFamily="$body" textAlign="center" writingDirection={direction}>
+              {t('parent.overview.loadError')}
+            </Text>
+            <Button variant="ghost" accessibilityLabel={t('common.retry')} onPress={() => query.refetch()}>
+              {t('common.retry')}
+            </Button>
+          </Stack>
+        ) : !query.isLoading && !activeChild ? (
+          <Stack alignItems="center" gap="$4" paddingVertical="$8">
+            <Text color="$fg3" fontSize={15} fontFamily="$body" textAlign="center" writingDirection={direction}>
+              {t('parent.overview.empty')}
+            </Text>
+            <Button
+              variant="primary"
+              accessibilityLabel={t('parent.myChildren.addChild')}
+              onPress={onAddChild ?? (() => {})}
+            >
+              {t('parent.myChildren.addChild')}
+            </Button>
+          </Stack>
+        ) : (
+          <OverviewBody
+            childId={childId}
+            childName={childName}
+            rowDir={rowDir}
+            direction={direction}
+            locale={locale}
+            isDesktop={isDesktop}
+            isRtl={isRtl}
+          />
+        )}
       </Stack>
     </Stack>
   );
@@ -199,22 +202,22 @@ interface OverviewBodyProps {
   rowDir: 'row' | 'row-reverse';
   direction: 'ltr' | 'rtl';
   locale: string;
-  /** True when viewport ≥1025 (full desktop multi-column). */
   isDesktop: boolean;
   isRtl: boolean;
 }
 
-function OverviewBody({ childId, childName, rowDir, direction, locale, isDesktop, isRtl }: OverviewBodyProps) {
+function OverviewBody({
+  childId,
+  childName,
+  rowDir,
+  direction,
+  locale,
+  isDesktop,
+  isRtl,
+}: OverviewBodyProps) {
   const { t } = useTranslation();
-  // Deterministic per-child stubs (TODO(P5-05)). Loading skeleton: render with
-  // a placeholder id so the layout stays stable until children resolve.
-  const seed = childId ?? '0';
-  const kpi = getOverviewKpiStub(seed);
-  const kpis = buildKpis(kpi, t, locale);
+  const kpiQuery = useWeeklyKpis(childId);
 
-  // KPI grid: 4-col desktop (≥1025), 2-col tablet (769–1024) + mobile (≤768).
-  // Uses CSS Grid on web for pixel-accurate column control; falls back to flex on native.
-  // Handoff: KPIs stay 2-up on mobile — NOT 1-up.
   const kpiGridStyle: object | undefined = IS_WEB
     ? ({
         display: 'grid',
@@ -225,112 +228,79 @@ function OverviewBody({ childId, childName, rowDir, direction, locale, isDesktop
       } as object)
     : undefined;
 
+  // Build KPI tiles (loading / error / populated)
+  const kpis: KpiTileDef[] = kpiQuery.data
+    ? buildKpis(kpiQuery.data, t, locale)
+    : [];
+
   return (
     <>
-      {/* 4 KPI cards — CSS Grid on web (4-col desktop / 2-col tablet+mobile);
-          native falls back to flex-wrap. Per handoff KPIs stay 2-up on mobile. */}
+      {/* 4 KPI tiles */}
       <Stack
         testID="overview-kpi-region"
         {...(IS_WEB
           ? { style: kpiGridStyle }
           : { flexDirection: rowDir, flexWrap: 'wrap' as const, gap: 14, alignItems: 'stretch' })}
       >
-        {kpis.map((k) => (
-          <Stack
-            key={k.label}
-            {...(!IS_WEB ? { flex: 1, minWidth: 200 } : {})}
-            borderRadius={20}
-            backgroundColor="$card"
-            borderWidth={1}
-            borderColor="$borderSubtle"
-            padding="$5"
-            gap="$2"
-            hoverStyle={{ backgroundColor: '$cardSoft', scale: 1.02 }}
-          >
-            {/* Icon chip + label row — direction-aware: label on logical-start, chip on
-                logical-end. flexDirection={rowDir} places chip on the trailing visual
-                side in LTR (right) and the trailing visual side in RTL (left), matching
-                the AR/EN pixel references (ar-web-kpi.html, web-kpi-row.html). */}
-            <Stack flexDirection={rowDir} alignItems="center" justifyContent="space-between" gap="$2">
-              <Text
-                color="$fg3"
-                fontSize={11}
-                fontWeight="700"
-                fontFamily="$heading"
-                textTransform="uppercase"
-                letterSpacing={0.88}
-                writingDirection={direction}
-                textAlign={direction === 'rtl' ? 'right' : 'left'}
-                flex={1}
-              >
-                {k.label}
-              </Text>
-              {/* 32×32 radius-10 tinted icon chip, per accent (B-03/N-06). */}
+        {kpiQuery.isLoading
+          ? [0, 1, 2, 3].map((i) => (
               <Stack
-                width={32}
-                height={32}
-                borderRadius={10}
-                backgroundColor={k.chipBg}
-                alignItems="center"
-                justifyContent="center"
-                accessibilityElementsHidden
-              >
-                <Text fontSize={18}>{k.icon}</Text>
-              </Stack>
-            </Stack>
-            {/* Value — tabular numerals, locale-formatted; right-aligned in RTL. */}
-            <Text
-              color="$fg1"
-              fontSize={28}
-              fontWeight="800"
-              fontFamily="$heading"
-              style={{ fontVariant: ['tabular-nums'] }}
-              writingDirection={direction}
-              textAlign={direction === 'rtl' ? 'right' : 'left'}
-            >
-              {k.value}
-            </Text>
-            {/* Delta — right-aligned in RTL. */}
-            <Text
-              color="$success"
-              fontSize={12}
-              fontWeight="700"
-              fontFamily="$heading"
-              writingDirection={direction}
-              textAlign={direction === 'rtl' ? 'right' : 'left'}
-            >
-              {k.delta}
-            </Text>
-            {/* a11y: one composed label per tile (label + value + delta) */}
+                key={i}
+                {...(!IS_WEB ? { flex: 1, minWidth: 200 } : {})}
+                height={110}
+                borderRadius={20}
+                backgroundColor="$cardSoft"
+                opacity={0.6}
+              />
+            ))
+          : kpiQuery.isError
+          ? (
             <Stack
-              position="absolute"
-              top={0}
-              left={0}
-              right={0}
-              bottom={0}
-              accessible
-              accessibilityLabel={`${k.label} ${k.value} ${k.delta}`}
-              aria-label={`${k.label} ${k.value} ${k.delta}`}
-              pointerEvents="none"
-            />
-          </Stack>
-        ))}
+              padding={16}
+              backgroundColor="$dangerSoft"
+              borderRadius={20}
+              flexDirection={rowDir}
+              alignItems="center"
+              gap="$3"
+            >
+              <Text color="$fg1" fontSize={13} fontFamily="$body" writingDirection={direction}>
+                {t('parent.overview.loadError')}
+              </Text>
+              <Button
+                variant="ghost"
+                size="sm"
+                accessibilityLabel={t('common.retry')}
+                onPress={() => kpiQuery.refetch()}
+              >
+                {t('common.retry')}
+              </Button>
+            </Stack>
+          )
+          : kpis.map((k) => (
+              <KpiTile key={k.label} tile={k} rowDir={rowDir} direction={direction} />
+            ))}
       </Stack>
 
-      {/* Daily activity (chart deferred) + Subject mastery, side by side on wide */}
+      {/* Daily activity (chart wired P5-05) + Subject mastery, side by side on wide */}
       <Stack flexDirection={rowDir} gap="$4" flexWrap="wrap" alignItems="stretch">
         <Stack flex={2} minWidth={320}>
-          <DailyActivityCard direction={direction} rowDir={rowDir} />
+          <DailyActivityCard
+            direction={direction}
+            rowDir={rowDir}
+            childId={childId}
+            locale={locale}
+          />
         </Stack>
         <Stack testID="overview-mastery-region" flex={1} minWidth={280}>
-          <SubjectMasteryCard childId={seed} direction={direction} />
+          <SubjectMasteryCard
+            childId={childId ?? ''}
+            direction={direction}
+            locale={locale}
+          />
         </Stack>
       </Stack>
 
-      {/* 2-col row: "Areas to focus on" (1fr) + "Recommendations from Lexi" (1fr).
-          Uses flexWrap so it stacks to 1 column on narrow widths (<~680px).
-          Per spec C.2: flexDirection={rowDir}, gap=$5 (20), alignItems=flex-start,
-          each child flex=1 minWidth=320. */}
+      {/* 2-col row: "Areas to focus on" + "Recommendations from Lexi" */}
       <Stack
         testID="overview-focus-recommendations-row"
         flexDirection={rowDir}
@@ -340,7 +310,7 @@ function OverviewBody({ childId, childName, rowDir, direction, locale, isDesktop
       >
         <Stack flex={1} minWidth={320}>
           <FocusAreasCard
-            childId={seed}
+            childId={childId ?? '0'}
             childName={childName}
             direction={direction}
             rowDir={rowDir}
@@ -349,6 +319,7 @@ function OverviewBody({ childId, childName, rowDir, direction, locale, isDesktop
         </Stack>
         <Stack flex={1} minWidth={320}>
           <RecommendationsCard
+            childId={childId}
             childName={childName}
             direction={direction}
             rowDir={rowDir}
@@ -356,6 +327,103 @@ function OverviewBody({ childId, childName, rowDir, direction, locale, isDesktop
         </Stack>
       </Stack>
     </>
+  );
+}
+
+/**
+ * Single KPI tile — exact anatomy from `web-kpi-row.html`.
+ * Delta color: $success (positive) | $danger (negative) | $fg3 (zero).
+ */
+function KpiTile({
+  tile,
+  rowDir,
+  direction,
+}: {
+  tile: KpiTileDef;
+  rowDir: 'row' | 'row-reverse';
+  direction: 'ltr' | 'rtl';
+}) {
+  const deltaColor =
+    tile.deltaSign === 'positive'
+      ? '$success'
+      : tile.deltaSign === 'negative'
+      ? '$danger'
+      : '$fg3';
+
+  return (
+    <Stack
+      {...(!IS_WEB ? { flex: 1, minWidth: 200 } : {})}
+      borderRadius={20}
+      backgroundColor="$card"
+      borderWidth={1}
+      borderColor="$borderSubtle"
+      padding={18}
+      gap="$2"
+      hoverStyle={{ backgroundColor: '$cardSoft', scale: 1.02 }}
+    >
+      <Stack flexDirection={rowDir} alignItems="center" justifyContent="space-between" gap="$2">
+        <Text
+          color="$fg3"
+          fontSize={11}
+          fontWeight="700"
+          fontFamily="$heading"
+          textTransform="uppercase"
+          letterSpacing={0.88}
+          writingDirection={direction}
+          textAlign={direction === 'rtl' ? 'right' : 'left'}
+          flex={1}
+        >
+          {tile.label}
+        </Text>
+        <Stack
+          width={32}
+          height={32}
+          borderRadius={10}
+          backgroundColor={tile.chipBg}
+          alignItems="center"
+          justifyContent="center"
+          accessibilityElementsHidden
+        >
+          <Text fontSize={18}>{tile.icon}</Text>
+        </Stack>
+      </Stack>
+
+      <Text
+        color="$fg1"
+        fontSize={28}
+        fontWeight="800"
+        fontFamily="$heading"
+        style={{ fontVariant: ['tabular-nums'] }}
+        writingDirection={direction}
+        textAlign={direction === 'rtl' ? 'right' : 'left'}
+      >
+        {tile.value}
+      </Text>
+
+      <Text
+        color={deltaColor}
+        fontSize={12}
+        fontWeight="700"
+        fontFamily="$heading"
+        writingDirection={direction}
+        textAlign={direction === 'rtl' ? 'right' : 'left'}
+      >
+        {tile.delta}
+      </Text>
+
+      {/* a11y: one composed label per tile */}
+      <Stack
+        position="absolute"
+        top={0}
+        left={0}
+        right={0}
+        bottom={0}
+        accessible
+        accessibilityLabel={`${tile.label} ${tile.value} ${tile.delta}`}
+        aria-label={`${tile.label} ${tile.value} ${tile.delta}`}
+        pointerEvents="none"
+      />
+    </Stack>
   );
 }
 

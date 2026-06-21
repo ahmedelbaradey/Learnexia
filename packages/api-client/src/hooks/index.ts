@@ -412,6 +412,50 @@ export {
   type ReviewModerationItemInput,
 } from './useReviewModerationItem';
 
+// --- P5-05 parent analytics hooks ---
+// Real endpoints on base `api/Parent` (PascalCase, childId in path as int).
+// Auth: Bearer parent JWT. IDOR-guarded server-side (non-owned child → 403).
+// Empty/first-week → 200 zero-state on every endpoint (never 404).
+//
+// KEY DESIGN: useChildReports feeds all three chart panels (dailyXpSeries,
+// xpTrend20Day, timeOfDayBuckets) from ONE endpoint — do NOT split.
+// xpDelta in WeeklyKpisDto is ABSOLUTE (not a percent).
+// subjectCode is 0-indexed (0=Math, 1=Science, 2=Arabic, 3=English).
+export {
+  useWeeklyKpis,
+  useChildReports,
+  useSubjectMastery,
+  useWeakAreas,
+  useChildRecommendations,
+  useChildProgress,
+  useFamilySummary,
+  useChildEnergy,
+} from './useParentAnalytics';
+export type {
+  WeeklyKpisDto,
+  ChildReportsDto,
+  DailyXpEntryDto,
+  TimeOfDayBucketDto,
+  SubjectMasteryResponseDto,
+  SubjectMasteryItemDto,
+  WeakAreasResponseDto,
+  WeakAreaItemDto,
+  RecommendationsDto,
+  RecommendationItemDto,
+  ChildProgressDto,
+  WeakSkillDto,
+  EnergySnapshotDto,
+  FamilySummaryDto,
+  ChildEnergyDto,
+  EnergyUsageItemDto,
+} from './parentAnalytics.types';
+/**
+ * Maps backend `subjectCode` int (0-indexed) to product subject key.
+ * 0=Math, 1=Science, 2=Arabic, 3=English.
+ * Exported as PARENT_SUBJECT_CODE_MAP (preferred) and legacy PARENT_SUBJECT_ID_MAP.
+ */
+export { SUBJECT_CODE_MAP as PARENT_SUBJECT_CODE_MAP, SUBJECT_ID_MAP as PARENT_SUBJECT_ID_MAP } from './parentAnalytics.types';
+
 // --- P7-05 curriculum lifecycle hooks (Batch 2a-C — lifecycle backbone) ---
 // Publish/Unpublish/Archive/Restore + Rollback + VersionHistory + Preview +
 // PublicationCoverage. All target /api/learning/ContentLifecycle/* (AdminOnly).
