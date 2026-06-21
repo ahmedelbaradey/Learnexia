@@ -6,9 +6,11 @@ Authored + ran the Wave-3 admin E2E (`docs/qc/P7-admin-wave3-qc/`). **Combined: 
 - The 3 BLOCKED are all the build-time `ADMIN_LOCALE='en'` RTL limitation (one per surface) — same as Wave 1/2; needs a runtime locale toggle (separate story).
 - **Seeding:** audit has 252 real rows; gamification creates throwaway entities via admin POST endpoints; **moderation queue only fills via `AiOutputFlaggedIntegrationEvent`** (no HTTP seed endpoint), so the 19 seed-dependent MOD cases use Playwright `page.route()` interception with real-shaped synthetic payloads (documented, not faked).
 
-**⚠️ BACKEND defect for the backend lead — DEF-GAM-01 (Medium):** `GamificationAdminService.ExpireTimedEventAsync` calls `timedEvent.Deactivate()` (sets `IsActive=false` only) but does NOT rewind `EndUtc`. The FE `deriveStatus` is timestamp-based, so an expired event keeps a future `EndUtc` → renders as **SCHEDULED** with edit still enabled. Fix: set `EndUtc = DateTime.UtcNow` on expire (or in domain `Deactivate()`).
+**⚠️ OUTSTANDING — BACKEND defect for the backend lead — DEF-GAM-01 (Medium, OPEN):** `GamificationAdminService.ExpireTimedEventAsync` calls `timedEvent.Deactivate()` (sets `IsActive=false` only) but does NOT rewind `EndUtc`. The FE `deriveStatus` is timestamp-based, so an expired event keeps a future `EndUtc` → renders as **SCHEDULED** with edit still enabled. Fix: set `EndUtc = DateTime.UtcNow` on expire (or in domain `Deactivate()`). Repro: `tests/e2e/specs/P7-admin-gamification.spec.ts` GAM-TC-23 (soft-assert so the suite stays green pending the fix). **This is the only open item from the P7 admin E2E.**
 
-**Minor FE follow-ups (mine, non-blocking):** moderation date-range `<input type="date">` is fed an ISO datetime (only accepts `YYYY-MM-DD`) so the picked date visually clears (API still gets the param); `AdminConfirmDialog` ESC only fires when focus is inside the dialog (not the backdrop).
+**Minor FE follow-ups — ✅ FIXED (PR #206):** moderation date-range `<input type="date">` now displays `value.slice(0,10)` (state still holds the full ISO bound for the query); `AdminConfirmDialog` ESC now closes from anywhere via a window keydown listener while open (the dialog-scoped handler missed focus-on-backdrop).
+
+**P7 admin E2E — COMPLETE:** curriculum (#200) + Wave-3 moderation/audit/gamification (#205) + FE polish (#206) all merged to `main`. Only DEF-GAM-01 (above) remains, and it's backend-owned.
 
 ---
 
