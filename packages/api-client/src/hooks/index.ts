@@ -456,6 +456,41 @@ export type {
  */
 export { SUBJECT_CODE_MAP as PARENT_SUBJECT_CODE_MAP, SUBJECT_ID_MAP as PARENT_SUBJECT_ID_MAP } from './parentAnalytics.types';
 
+// --- P7-10 admin platform analytics hook (Wave 3 — read-only aggregates) ---
+// Targets GET /api/Admin/Analytics/kpis (Identity module, AdminOnly).
+// No trend endpoint — breakdowns are embedded in the KPI DTO. Read-only only.
+export {
+  usePlatformKpis,
+  type PlatformKpiSummaryDto,
+  type SubjectBreakdown,
+  type GradeBreakdown,
+  type LanguageBreakdown,
+  type SubscriptionTierCount,
+} from '../admin/analytics';
+
+// --- P7-11 admin AI-safety monitoring hooks (Wave 3 — read-only, PII-light) ---
+// Targets /api/Admin/AiSafety/* (Ai module, AdminOnly). All read-only.
+// CRITICAL: studentId in FlaggedOutputDto MUST NEVER be rendered on screen.
+export {
+  useSafetySignals,
+  useSafetyTrend,
+  useTutorUsage,
+  useEvalResults,
+  useFlaggedOutputs,
+  isEvalBootstrapSentinel,
+  type CountBreakdownDto,
+  type SafetySignalSummaryDto,
+  type SafetyTrendBucketDto,
+  type TutorUsageDto,
+  type TutorUsageByModelDto,
+  type TutorUsageByTaskKindDto,
+  type TutorUsageTrendDto,
+  type EvalResultsDto,
+  type EvalCheckBreakdownDto,
+  type FlaggedOutputDto,
+  type FlaggedOutputsFilters,
+} from '../admin/ai-safety';
+
 // --- P7-05 curriculum lifecycle hooks (Batch 2a-C — lifecycle backbone) ---
 // Publish/Unpublish/Archive/Restore + Rollback + VersionHistory + Preview +
 // PublicationCoverage. All target /api/learning/ContentLifecycle/* (AdminOnly).

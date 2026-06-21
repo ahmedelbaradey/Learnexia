@@ -1507,6 +1507,218 @@ export interface AdminStrings {
 
   // Success banner
   modReviewSuccess: string;
+
+  // ── P7-10 Platform Analytics (analytics* namespace — DISJOINT) ──────────────
+
+  // Navigation
+  navAnalytics: string;
+
+  // Page
+  analyticsPageTitle: string;
+  analyticsPageHeading: string;
+  analyticsPageSubtitle: string;
+  analyticsLoadingLabel: string;
+  analyticsLoadError: string;
+  analyticsRetry: string;
+  analyticsEmptyHeading: string;
+  analyticsEmptyBody: string;
+
+  // Filters
+  analyticsDateFrom: string;
+  analyticsDateTo: string;
+  analyticsDateRangeError: string;
+  analyticsClearFilters: string;
+  analyticsSubjectSlice: string;
+  analyticsGradeSlice: string;
+  analyticsLanguageSlice: string;
+  analyticsAllSubjects: string;
+  analyticsAllGrades: string;
+  analyticsAllLanguages: string;
+
+  // Subject slice labels
+  analyticsSubjectMath: string;
+  analyticsSubjectScience: string;
+  analyticsSubjectArabic: string;
+  analyticsSubjectEnglish: string;
+
+  // Language slice labels
+  analyticsLanguageArabic: string;
+  analyticsLanguageEnglish: string;
+
+  // KPI card labels
+  analyticsKpiActiveStudents: string;
+  analyticsKpiAnalyticsStudents: string;
+  analyticsKpiLessonsCompleted: string;
+  analyticsKpiTotalAttempts: string;
+  analyticsKpiMissionsCompleted: string;
+  analyticsKpiXpEarned: string;
+  analyticsKpiQuizzesCompleted: string;
+  analyticsKpiActiveSubscriptions: string;
+  analyticsKpiAiSafetyEvents: string;
+  analyticsKpiAiBlocked: string;
+  analyticsKpiAiFlagged: string;
+  analyticsKpiAiRequests: string;
+  analyticsKpiTotalSessions: string;
+  analyticsKpiAvgSessionDuration: string;
+  analyticsKpiAvgActiveDays: string;
+  analyticsKpiReturningRate: string;
+  analyticsNaValue: string;
+
+  // Breakdown chart headings
+  analyticsBySubjectHeading: string;
+  analyticsByGradeHeading: string;
+  analyticsByLanguageHeading: string;
+  analyticsMetricLessons: string;
+  analyticsMetricAttempts: string;
+  analyticsMetricStudents: string;
+  analyticsSubscriptionsByTier: string;
+
+  // ── P7-11 AI-Safety Monitoring (aiSafety* namespace — DISJOINT) ─────────────
+
+  // Navigation
+  navAiSafety: string;
+
+  // Page
+  aiSafetyPageTitle: string;
+  aiSafetyPageHeading: string;
+  aiSafetyPageSubtitle: string;
+  aiSafetyLoadingLabel: string;
+  aiSafetyLoadError: string;
+  aiSafetyRetry: string;
+  aiSafetyDateFrom: string;
+  aiSafetyDateTo: string;
+  aiSafetyDateRangeError: string;
+  aiSafetyClearFilters: string;
+
+  // Safety Signals section
+  aiSafetySignalsHeading: string;
+  aiSafetySignalsTotalEvents: string;
+  aiSafetySignalsBlocked: string;
+  aiSafetySignalsRegenerated: string;
+  aiSafetySignalsFallback: string;
+  aiSafetySignalsBlockedRate: string;
+  aiSafetySignalsRegeneratedRate: string;
+  aiSafetySignalsFallbackRate: string;
+  aiSafetyBreakdownByAction: string;
+  aiSafetyBreakdownByReason: string;
+  aiSafetyBreakdownByModel: string;
+  aiSafetyBreakdownByTaskKind: string;
+
+  // Safety Trend section
+  aiSafetyTrendHeading: string;
+  aiSafetyTrendTotal: string;
+  aiSafetyTrendBlocked: string;
+  aiSafetyTrendRegenerated: string;
+  aiSafetyTrendFallback: string;
+  aiSafetyTrendEmpty: string;
+
+  // Eval Results section
+  aiSafetyEvalHeading: string;
+  aiSafetyEvalPassRate: string;
+  aiSafetyEvalThreshold: string;
+  aiSafetyEvalTier: string;
+  aiSafetyEvalNote: string;
+  aiSafetyEvalByCheck: string;
+  aiSafetyEvalBySubject: string;
+  aiSafetyEvalByLanguage: string;
+  aiSafetyEvalBreachBadge: string;
+  aiSafetyEvalBreachDetail: string;
+  aiSafetyEvalSentinelHeading: string;
+  aiSafetyEvalSentinelBody: string;
+  aiSafetyEvalRunId: string;
+  aiSafetyEvalRanAt: string;
+  aiSafetyEvalTotalCases: string;
+  aiSafetyEvalPassed: string;
+  aiSafetyEvalFailed: string;
+
+  // Tutor Usage section
+  aiSafetyUsageHeading: string;
+  aiSafetyUsageTotalCalls: string;
+  aiSafetyUsagePromptTokens: string;
+  aiSafetyUsageCompletionTokens: string;
+  aiSafetyUsageCost: string;
+  aiSafetyUsageAvgLatency: string;
+  aiSafetyUsageCacheHit: string;
+  aiSafetyUsageByModel: string;
+  aiSafetyUsageByTaskKind: string;
+  aiSafetyUsageCostTrend: string;
+  aiSafetyUsageEmpty: string;
+
+  // Flagged Outputs section
+  aiSafetyFlaggedHeading: string;
+  aiSafetyFlaggedColContentRef: string;
+  aiSafetyFlaggedColTaskKind: string;
+  aiSafetyFlaggedColAction: string;
+  aiSafetyFlaggedColReasonCodes: string;
+  aiSafetyFlaggedColFailedChecks: string;
+  aiSafetyFlaggedColModel: string;
+  aiSafetyFlaggedColOccurredAt: string;
+  aiSafetyFlaggedFilterAction: string;
+  aiSafetyFlaggedFilterReason: string;
+  aiSafetyFlaggedFilterTaskKind: string;
+  aiSafetyFlaggedAllActions: string;
+  aiSafetyFlaggedAllReasons: string;
+  aiSafetyFlaggedAllTaskKinds: string;
+  aiSafetyFlaggedEmpty: string;
+  aiSafetyFlaggedLoadError: string;
+  aiSafetyFlaggedTableCaption: string;
+  aiSafetyPrevPage: string;
+  aiSafetyNextPage: string;
+
+  // ── P7-11 flagged outputs — action / reason / task option labels ──────────────
+  aiSafetyFlaggedActionBlocked: string;
+  aiSafetyFlaggedActionRegenerated: string;
+  aiSafetyFlaggedActionFallback: string;
+  aiSafetyFlaggedActionLogged: string;
+  aiSafetyFlaggedReasonProfanity: string;
+  aiSafetyFlaggedReasonHateSpeech: string;
+  aiSafetyFlaggedReasonViolence: string;
+  aiSafetyFlaggedReasonAdultContent: string;
+  aiSafetyFlaggedReasonPromptInjection: string;
+  aiSafetyFlaggedReasonOffTopic: string;
+  aiSafetyFlaggedTaskKindHint: string;
+  aiSafetyFlaggedTaskKindExplanation: string;
+  aiSafetyFlaggedTaskKindQuestion: string;
+  aiSafetyFlaggedTaskKindFeedback: string;
+  aiSafetyFlaggedPaginationInfo: string;
+
+  // ── P7-11 eval — column headers and card metric labels ───────────────────────
+  evalColName: string;
+  evalColPassed: string;
+  evalColTotal: string;
+  evalColPassRate: string;
+  evalMetricPassRate: string;
+  evalMetricTotalCases: string;
+  evalMetricPassedCases: string;
+  evalMetricFailedCases: string;
+  evalBreachHeading: string;
+  evalBreachBody: string;
+  evalCurrentRate: string;
+  evalPassingHeading: string;
+  evalPassingRate: string;
+  evalThreshold: string;
+  evalRunAt: string;
+  evalTier: string;
+  evalNote: string;
+  evalByCheck: string;
+  evalBySubject: string;
+  evalByLanguage: string;
+  evalSentinelHeading: string;
+  evalSentinelBody: string;
+
+  // ── P7-11 usage — KPI card / metric tab labels ───────────────────────────────
+  usageKpiTotalCalls: string;
+  usageKpiPromptTokens: string;
+  usageKpiCompletionTokens: string;
+  usageKpiCostUsd: string;
+  usageKpiAvgLatency: string;
+  usageCacheHit: string;
+  usageByModel: string;
+  usageByTaskKind: string;
+  usageDailyCostTrend: string;
+  usageMetricCalls: string;
+  usageMetricTokens: string;
+  usageMetricCost: string;
 }
 
 const en: AdminStrings = {
@@ -2822,6 +3034,190 @@ const en: AdminStrings = {
   modErrValidation: 'The reason is required and must be under 2000 characters.',
   modErrNetwork: 'Something went wrong. Please try again.',
   modReviewSuccess: 'Item reviewed — status updated.',
+
+  // ── P7-10 Platform Analytics (EN) ──────────────────────────────────────────
+  navAnalytics: 'Analytics',
+  analyticsPageTitle: 'Analytics',
+  analyticsPageHeading: 'Platform Analytics',
+  analyticsPageSubtitle: 'Aggregated platform metrics. Last 30 days by default.',
+  analyticsLoadingLabel: 'Loading analytics...',
+  analyticsLoadError: 'Failed to load analytics data.',
+  analyticsRetry: 'Retry',
+  analyticsEmptyHeading: 'No data for this range',
+  analyticsEmptyBody: 'Try a wider date range or check back after some activity.',
+  analyticsDateFrom: 'From',
+  analyticsDateTo: 'To',
+  analyticsDateRangeError: "'To' must be after 'From'.",
+  analyticsClearFilters: 'Clear',
+  analyticsSubjectSlice: 'Subject',
+  analyticsGradeSlice: 'Grade',
+  analyticsLanguageSlice: 'Language',
+  analyticsAllSubjects: 'All Subjects',
+  analyticsAllGrades: 'All Grades',
+  analyticsAllLanguages: 'All Languages',
+  analyticsSubjectMath: 'Math',
+  analyticsSubjectScience: 'Science',
+  analyticsSubjectArabic: 'Arabic',
+  analyticsSubjectEnglish: 'English',
+  analyticsLanguageArabic: 'Arabic',
+  analyticsLanguageEnglish: 'English',
+  analyticsKpiActiveStudents: 'Active Students',
+  analyticsKpiAnalyticsStudents: 'Analytics Active',
+  analyticsKpiLessonsCompleted: 'Lessons Completed',
+  analyticsKpiTotalAttempts: 'Total Attempts',
+  analyticsKpiMissionsCompleted: 'Missions Completed',
+  analyticsKpiXpEarned: 'XP Earned',
+  analyticsKpiQuizzesCompleted: 'Quizzes Completed',
+  analyticsKpiActiveSubscriptions: 'Active Subscriptions',
+  analyticsKpiAiSafetyEvents: 'AI Safety Events',
+  analyticsKpiAiBlocked: 'AI Blocked',
+  analyticsKpiAiFlagged: 'AI Flagged',
+  analyticsKpiAiRequests: 'AI Request Volume',
+  analyticsKpiTotalSessions: 'Total Sessions',
+  analyticsKpiAvgSessionDuration: 'Avg. Session (min)',
+  analyticsKpiAvgActiveDays: 'Avg. Active Days / Student',
+  analyticsKpiReturningRate: 'Returning Student Rate',
+  analyticsNaValue: 'N/A',
+  analyticsBySubjectHeading: 'By Subject',
+  analyticsByGradeHeading: 'By Grade',
+  analyticsByLanguageHeading: 'By Language',
+  analyticsMetricLessons: 'Lessons',
+  analyticsMetricAttempts: 'Attempts',
+  analyticsMetricStudents: 'Students',
+  analyticsSubscriptionsByTier: 'Subscriptions by Plan',
+
+  // ── P7-11 AI-Safety Monitoring (EN) ────────────────────────────────────────
+  navAiSafety: 'AI Safety',
+  aiSafetyPageTitle: 'AI Safety',
+  aiSafetyPageHeading: 'AI Safety & Quality Monitoring',
+  aiSafetyPageSubtitle: 'Safety signals, eval pass/fail, tutor usage, and flagged outputs.',
+  aiSafetyLoadingLabel: 'Loading AI safety data...',
+  aiSafetyLoadError: 'Failed to load AI safety data.',
+  aiSafetyRetry: 'Retry',
+  aiSafetyDateFrom: 'From',
+  aiSafetyDateTo: 'To',
+  aiSafetyDateRangeError: "'To' must be after 'From'.",
+  aiSafetyClearFilters: 'Clear',
+  aiSafetySignalsHeading: 'Safety Signals',
+  aiSafetySignalsTotalEvents: 'Total Events',
+  aiSafetySignalsBlocked: 'Blocked',
+  aiSafetySignalsRegenerated: 'Regenerated',
+  aiSafetySignalsFallback: 'Fallback Returned',
+  aiSafetySignalsBlockedRate: 'Block Rate',
+  aiSafetySignalsRegeneratedRate: 'Regen Rate',
+  aiSafetySignalsFallbackRate: 'Fallback Rate',
+  aiSafetyBreakdownByAction: 'By Action',
+  aiSafetyBreakdownByReason: 'By Reason Code',
+  aiSafetyBreakdownByModel: 'By Model',
+  aiSafetyBreakdownByTaskKind: 'By Task Kind',
+  aiSafetyTrendHeading: 'Safety Event Trend',
+  aiSafetyTrendTotal: 'Total',
+  aiSafetyTrendBlocked: 'Blocked',
+  aiSafetyTrendRegenerated: 'Regenerated',
+  aiSafetyTrendFallback: 'Fallback',
+  aiSafetyTrendEmpty: 'No trend data for this range.',
+  aiSafetyEvalHeading: 'Eval Results',
+  aiSafetyEvalPassRate: 'Pass Rate',
+  aiSafetyEvalThreshold: 'Threshold',
+  aiSafetyEvalTier: 'Tier',
+  aiSafetyEvalNote: 'Note',
+  aiSafetyEvalByCheck: 'By Check',
+  aiSafetyEvalBySubject: 'By Subject',
+  aiSafetyEvalByLanguage: 'By Language',
+  aiSafetyEvalBreachBadge: 'THRESHOLD BREACH',
+  aiSafetyEvalBreachDetail: 'Pass rate is below the required threshold.',
+  aiSafetyEvalSentinelHeading: 'No Eval Run Yet',
+  aiSafetyEvalSentinelBody: 'Run the AI eval harness to populate this panel.',
+  aiSafetyEvalRunId: 'Run ID',
+  aiSafetyEvalRanAt: 'Ran at',
+  aiSafetyEvalTotalCases: 'Total Cases',
+  aiSafetyEvalPassed: 'Passed',
+  aiSafetyEvalFailed: 'Failed',
+  aiSafetyUsageHeading: 'Tutor Usage & Cost',
+  aiSafetyUsageTotalCalls: 'Total Calls',
+  aiSafetyUsagePromptTokens: 'Prompt Tokens',
+  aiSafetyUsageCompletionTokens: 'Completion Tokens',
+  aiSafetyUsageCost: 'Est. Cost (USD)',
+  aiSafetyUsageAvgLatency: 'Avg. Latency (ms)',
+  aiSafetyUsageCacheHit: 'Cache Hit Rate',
+  aiSafetyUsageByModel: 'By Model',
+  aiSafetyUsageByTaskKind: 'By Task Kind',
+  aiSafetyUsageCostTrend: 'Daily Cost Trend',
+  aiSafetyUsageEmpty: 'No usage data for this range.',
+  aiSafetyFlaggedHeading: 'Flagged Outputs',
+  aiSafetyFlaggedColContentRef: 'Ref. ID',
+  aiSafetyFlaggedColTaskKind: 'Task Kind',
+  aiSafetyFlaggedColAction: 'Action',
+  aiSafetyFlaggedColReasonCodes: 'Reason Codes',
+  aiSafetyFlaggedColFailedChecks: 'Failed Checks',
+  aiSafetyFlaggedColModel: 'Model',
+  aiSafetyFlaggedColOccurredAt: 'Occurred At',
+  aiSafetyFlaggedFilterAction: 'Filter by action',
+  aiSafetyFlaggedFilterReason: 'Filter by reason',
+  aiSafetyFlaggedFilterTaskKind: 'Filter by task kind',
+  aiSafetyFlaggedAllActions: 'All Actions',
+  aiSafetyFlaggedAllReasons: 'All Reasons',
+  aiSafetyFlaggedAllTaskKinds: 'All Task Kinds',
+  aiSafetyFlaggedEmpty: 'No flagged outputs for this range.',
+  aiSafetyFlaggedLoadError: 'Failed to load flagged outputs.',
+  aiSafetyFlaggedTableCaption: 'Flagged AI outputs (PII-light)',
+  aiSafetyPrevPage: 'Previous page',
+  aiSafetyNextPage: 'Next page',
+
+  // P7-11 flagged option labels
+  aiSafetyFlaggedActionBlocked: 'Blocked',
+  aiSafetyFlaggedActionRegenerated: 'Regenerated',
+  aiSafetyFlaggedActionFallback: 'Fallback Returned',
+  aiSafetyFlaggedActionLogged: 'Logged',
+  aiSafetyFlaggedReasonProfanity: 'Profanity',
+  aiSafetyFlaggedReasonHateSpeech: 'Hate Speech',
+  aiSafetyFlaggedReasonViolence: 'Violence',
+  aiSafetyFlaggedReasonAdultContent: 'Adult Content',
+  aiSafetyFlaggedReasonPromptInjection: 'Prompt Injection',
+  aiSafetyFlaggedReasonOffTopic: 'Off Topic',
+  aiSafetyFlaggedTaskKindHint: 'Hint',
+  aiSafetyFlaggedTaskKindExplanation: 'Explanation',
+  aiSafetyFlaggedTaskKindQuestion: 'Question',
+  aiSafetyFlaggedTaskKindFeedback: 'Feedback',
+  aiSafetyFlaggedPaginationInfo: 'Page {page} of {total}',
+
+  // P7-11 eval labels
+  evalColName: 'Name',
+  evalColPassed: 'Passed',
+  evalColTotal: 'Total',
+  evalColPassRate: 'Pass Rate',
+  evalMetricPassRate: 'Pass Rate',
+  evalMetricTotalCases: 'Total Cases',
+  evalMetricPassedCases: 'Passed Cases',
+  evalMetricFailedCases: 'Failed Cases',
+  evalBreachHeading: 'Threshold Breach',
+  evalBreachBody: 'Pass rate is below',
+  evalCurrentRate: 'Current:',
+  evalPassingHeading: 'Passing',
+  evalPassingRate: '— above',
+  evalThreshold: 'threshold',
+  evalRunAt: 'Ran at',
+  evalTier: 'Tier',
+  evalNote: 'Note',
+  evalByCheck: 'By Check',
+  evalBySubject: 'By Subject',
+  evalByLanguage: 'By Language',
+  evalSentinelHeading: 'No Eval Run Yet',
+  evalSentinelBody: 'Run the AI eval harness to populate this panel.',
+
+  // P7-11 usage labels
+  usageKpiTotalCalls: 'Total Calls',
+  usageKpiPromptTokens: 'Prompt Tokens',
+  usageKpiCompletionTokens: 'Completion Tokens',
+  usageKpiCostUsd: 'Est. Cost (USD)',
+  usageKpiAvgLatency: 'Avg. Latency (ms)',
+  usageCacheHit: 'Cache Hit',
+  usageByModel: 'By Model',
+  usageByTaskKind: 'By Task Kind',
+  usageDailyCostTrend: 'Daily Cost Trend',
+  usageMetricCalls: 'Calls',
+  usageMetricTokens: 'Tokens',
+  usageMetricCost: 'Cost (USD)',
 };
 
 const ar: AdminStrings = {
@@ -4136,6 +4532,190 @@ const ar: AdminStrings = {
   modErrValidation: 'السبب مطلوب ويجب أن يكون أقل من ٢٠٠٠ حرف.',
   modErrNetwork: 'حدث خطأ ما. يُرجى المحاولة مرة أخرى.',
   modReviewSuccess: 'تمت المراجعة — تم تحديث الحالة.',
+
+  // ── P7-10 Platform Analytics (AR) ──────────────────────────────────────────
+  navAnalytics: 'التحليلات',
+  analyticsPageTitle: 'التحليلات',
+  analyticsPageHeading: 'تحليلات المنصة',
+  analyticsPageSubtitle: 'مقاييس المنصة المجمّعة. آخر ٣٠ يومًا افتراضيًا.',
+  analyticsLoadingLabel: 'جارٍ تحميل التحليلات...',
+  analyticsLoadError: 'فشل تحميل بيانات التحليلات.',
+  analyticsRetry: 'إعادة المحاولة',
+  analyticsEmptyHeading: 'لا توجد بيانات لهذه الفترة',
+  analyticsEmptyBody: 'جرّب نطاقًا زمنيًا أوسع أو تحقق لاحقًا بعد حدوث نشاط.',
+  analyticsDateFrom: 'من',
+  analyticsDateTo: 'إلى',
+  analyticsDateRangeError: "يجب أن يكون 'إلى' بعد 'من'.",
+  analyticsClearFilters: 'مسح',
+  analyticsSubjectSlice: 'المادة',
+  analyticsGradeSlice: 'الصف',
+  analyticsLanguageSlice: 'اللغة',
+  analyticsAllSubjects: 'جميع المواد',
+  analyticsAllGrades: 'جميع الصفوف',
+  analyticsAllLanguages: 'جميع اللغات',
+  analyticsSubjectMath: 'الرياضيات',
+  analyticsSubjectScience: 'العلوم',
+  analyticsSubjectArabic: 'اللغة العربية',
+  analyticsSubjectEnglish: 'اللغة الإنجليزية',
+  analyticsLanguageArabic: 'العربية',
+  analyticsLanguageEnglish: 'الإنجليزية',
+  analyticsKpiActiveStudents: 'الطلاب النشطون',
+  analyticsKpiAnalyticsStudents: 'النشاط التحليلي',
+  analyticsKpiLessonsCompleted: 'الدروس المكتملة',
+  analyticsKpiTotalAttempts: 'إجمالي المحاولات',
+  analyticsKpiMissionsCompleted: 'المهام المكتملة',
+  analyticsKpiXpEarned: 'النقاط المكتسبة',
+  analyticsKpiQuizzesCompleted: 'الاختبارات المكتملة',
+  analyticsKpiActiveSubscriptions: 'الاشتراكات النشطة',
+  analyticsKpiAiSafetyEvents: 'أحداث سلامة الذكاء الاصطناعي',
+  analyticsKpiAiBlocked: 'محجوب بالذكاء الاصطناعي',
+  analyticsKpiAiFlagged: 'مُعلَّم بالذكاء الاصطناعي',
+  analyticsKpiAiRequests: 'حجم طلبات الذكاء الاصطناعي',
+  analyticsKpiTotalSessions: 'إجمالي الجلسات',
+  analyticsKpiAvgSessionDuration: 'متوسط الجلسة (دقيقة)',
+  analyticsKpiAvgActiveDays: 'متوسط الأيام النشطة / طالب',
+  analyticsKpiReturningRate: 'معدل عودة الطلاب',
+  analyticsNaValue: 'غ.م.',
+  analyticsBySubjectHeading: 'حسب المادة',
+  analyticsByGradeHeading: 'حسب الصف',
+  analyticsByLanguageHeading: 'حسب اللغة',
+  analyticsMetricLessons: 'الدروس',
+  analyticsMetricAttempts: 'المحاولات',
+  analyticsMetricStudents: 'الطلاب',
+  analyticsSubscriptionsByTier: 'الاشتراكات حسب الخطة',
+
+  // ── P7-11 AI-Safety Monitoring (AR) ────────────────────────────────────────
+  navAiSafety: 'سلامة الذكاء الاصطناعي',
+  aiSafetyPageTitle: 'سلامة الذكاء الاصطناعي',
+  aiSafetyPageHeading: 'مراقبة سلامة وجودة الذكاء الاصطناعي',
+  aiSafetyPageSubtitle: 'إشارات السلامة ومعدلات النجاح والفشل في التقييم واستخدام المعلم والمخرجات المُعلَّمة.',
+  aiSafetyLoadingLabel: 'جارٍ تحميل بيانات سلامة الذكاء الاصطناعي...',
+  aiSafetyLoadError: 'فشل تحميل بيانات سلامة الذكاء الاصطناعي.',
+  aiSafetyRetry: 'إعادة المحاولة',
+  aiSafetyDateFrom: 'من',
+  aiSafetyDateTo: 'إلى',
+  aiSafetyDateRangeError: "يجب أن يكون 'إلى' بعد 'من'.",
+  aiSafetyClearFilters: 'مسح',
+  aiSafetySignalsHeading: 'إشارات السلامة',
+  aiSafetySignalsTotalEvents: 'إجمالي الأحداث',
+  aiSafetySignalsBlocked: 'محجوبة',
+  aiSafetySignalsRegenerated: 'مُعاد توليدها',
+  aiSafetySignalsFallback: 'استجابة بديلة',
+  aiSafetySignalsBlockedRate: 'معدل الحجب',
+  aiSafetySignalsRegeneratedRate: 'معدل إعادة التوليد',
+  aiSafetySignalsFallbackRate: 'معدل الاستجابة البديلة',
+  aiSafetyBreakdownByAction: 'حسب الإجراء',
+  aiSafetyBreakdownByReason: 'حسب رمز السبب',
+  aiSafetyBreakdownByModel: 'حسب النموذج',
+  aiSafetyBreakdownByTaskKind: 'حسب نوع المهمة',
+  aiSafetyTrendHeading: 'اتجاه أحداث السلامة',
+  aiSafetyTrendTotal: 'الإجمالي',
+  aiSafetyTrendBlocked: 'محجوبة',
+  aiSafetyTrendRegenerated: 'مُعاد توليدها',
+  aiSafetyTrendFallback: 'بديلة',
+  aiSafetyTrendEmpty: 'لا توجد بيانات اتجاه لهذه الفترة.',
+  aiSafetyEvalHeading: 'نتائج التقييم',
+  aiSafetyEvalPassRate: 'معدل النجاح',
+  aiSafetyEvalThreshold: 'العتبة',
+  aiSafetyEvalTier: 'المستوى',
+  aiSafetyEvalNote: 'ملاحظة',
+  aiSafetyEvalByCheck: 'حسب الفحص',
+  aiSafetyEvalBySubject: 'حسب المادة',
+  aiSafetyEvalByLanguage: 'حسب اللغة',
+  aiSafetyEvalBreachBadge: 'خرق العتبة',
+  aiSafetyEvalBreachDetail: 'معدل النجاح أقل من العتبة المطلوبة.',
+  aiSafetyEvalSentinelHeading: 'لم يُجرَ أي تقييم بعد',
+  aiSafetyEvalSentinelBody: 'شغّل اختبارات التقييم لملء هذا القسم.',
+  aiSafetyEvalRunId: 'معرّف التشغيل',
+  aiSafetyEvalRanAt: 'وقت التشغيل',
+  aiSafetyEvalTotalCases: 'إجمالي الحالات',
+  aiSafetyEvalPassed: 'ناجحة',
+  aiSafetyEvalFailed: 'فاشلة',
+  aiSafetyUsageHeading: 'استخدام المعلم والتكلفة',
+  aiSafetyUsageTotalCalls: 'إجمالي الاستدعاءات',
+  aiSafetyUsagePromptTokens: 'رموز الإدخال',
+  aiSafetyUsageCompletionTokens: 'رموز الإتمام',
+  aiSafetyUsageCost: 'التكلفة التقديرية (دولار)',
+  aiSafetyUsageAvgLatency: 'متوسط وقت الاستجابة (مللي ثانية)',
+  aiSafetyUsageCacheHit: 'معدل إصابة الذاكرة المؤقتة',
+  aiSafetyUsageByModel: 'حسب النموذج',
+  aiSafetyUsageByTaskKind: 'حسب نوع المهمة',
+  aiSafetyUsageCostTrend: 'اتجاه التكلفة اليومية',
+  aiSafetyUsageEmpty: 'لا توجد بيانات استخدام لهذه الفترة.',
+  aiSafetyFlaggedHeading: 'المخرجات المُعلَّمة',
+  aiSafetyFlaggedColContentRef: 'المعرّف',
+  aiSafetyFlaggedColTaskKind: 'نوع المهمة',
+  aiSafetyFlaggedColAction: 'الإجراء',
+  aiSafetyFlaggedColReasonCodes: 'رموز الأسباب',
+  aiSafetyFlaggedColFailedChecks: 'الفحوصات الفاشلة',
+  aiSafetyFlaggedColModel: 'النموذج',
+  aiSafetyFlaggedColOccurredAt: 'وقت الحدوث',
+  aiSafetyFlaggedFilterAction: 'تصفية حسب الإجراء',
+  aiSafetyFlaggedFilterReason: 'تصفية حسب السبب',
+  aiSafetyFlaggedFilterTaskKind: 'تصفية حسب النوع',
+  aiSafetyFlaggedAllActions: 'جميع الإجراءات',
+  aiSafetyFlaggedAllReasons: 'جميع الأسباب',
+  aiSafetyFlaggedAllTaskKinds: 'جميع الأنواع',
+  aiSafetyFlaggedEmpty: 'لا توجد مخرجات مُعلَّمة لهذه الفترة.',
+  aiSafetyFlaggedLoadError: 'فشل تحميل المخرجات المُعلَّمة.',
+  aiSafetyFlaggedTableCaption: 'مخرجات الذكاء الاصطناعي المُعلَّمة',
+  aiSafetyPrevPage: 'الصفحة السابقة',
+  aiSafetyNextPage: 'الصفحة التالية',
+
+  // P7-11 flagged option labels
+  aiSafetyFlaggedActionBlocked: 'محجوب',
+  aiSafetyFlaggedActionRegenerated: 'مُعاد توليده',
+  aiSafetyFlaggedActionFallback: 'استجابة بديلة',
+  aiSafetyFlaggedActionLogged: 'مسجّل',
+  aiSafetyFlaggedReasonProfanity: 'ألفاظ بذيئة',
+  aiSafetyFlaggedReasonHateSpeech: 'خطاب كراهية',
+  aiSafetyFlaggedReasonViolence: 'عنف',
+  aiSafetyFlaggedReasonAdultContent: 'محتوى للبالغين',
+  aiSafetyFlaggedReasonPromptInjection: 'حقن أوامر',
+  aiSafetyFlaggedReasonOffTopic: 'خارج الموضوع',
+  aiSafetyFlaggedTaskKindHint: 'تلميح',
+  aiSafetyFlaggedTaskKindExplanation: 'شرح',
+  aiSafetyFlaggedTaskKindQuestion: 'سؤال',
+  aiSafetyFlaggedTaskKindFeedback: 'ملاحظة',
+  aiSafetyFlaggedPaginationInfo: 'صفحة {page} من {total}',
+
+  // P7-11 eval labels
+  evalColName: 'الاسم',
+  evalColPassed: 'ناجح',
+  evalColTotal: 'الإجمالي',
+  evalColPassRate: 'معدل النجاح',
+  evalMetricPassRate: 'معدل النجاح',
+  evalMetricTotalCases: 'إجمالي الحالات',
+  evalMetricPassedCases: 'حالات ناجحة',
+  evalMetricFailedCases: 'حالات فاشلة',
+  evalBreachHeading: 'خرق العتبة',
+  evalBreachBody: 'معدل النجاح أقل من',
+  evalCurrentRate: 'الحالي:',
+  evalPassingHeading: 'ناجح',
+  evalPassingRate: '— فوق',
+  evalThreshold: 'العتبة',
+  evalRunAt: 'وقت التشغيل',
+  evalTier: 'المستوى',
+  evalNote: 'ملاحظة',
+  evalByCheck: 'حسب الفحص',
+  evalBySubject: 'حسب المادة',
+  evalByLanguage: 'حسب اللغة',
+  evalSentinelHeading: 'لم يُجرَ أي تقييم بعد',
+  evalSentinelBody: 'شغّل اختبارات التقييم لملء هذا القسم.',
+
+  // P7-11 usage labels
+  usageKpiTotalCalls: 'إجمالي الاستدعاءات',
+  usageKpiPromptTokens: 'رموز الإدخال',
+  usageKpiCompletionTokens: 'رموز الإتمام',
+  usageKpiCostUsd: 'التكلفة التقديرية (دولار)',
+  usageKpiAvgLatency: 'متوسط وقت الاستجابة',
+  usageCacheHit: 'إصابة الذاكرة المؤقتة',
+  usageByModel: 'حسب النموذج',
+  usageByTaskKind: 'حسب نوع المهمة',
+  usageDailyCostTrend: 'اتجاه التكلفة اليومية',
+  usageMetricCalls: 'الاستدعاءات',
+  usageMetricTokens: 'الرموز',
+  usageMetricCost: 'التكلفة (دولار)',
 };
 
 const STRINGS: Record<Locale, AdminStrings> = { en, ar };

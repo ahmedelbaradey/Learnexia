@@ -110,6 +110,22 @@ const NAV_ITEMS: readonly NavItem[] = [
     activePrefix: '/gamification',
   },
   {
+    kind: 'real',
+    key: 'analytics',
+    label: strings.navAnalytics,
+    icon: '📊',
+    href: '/analytics',
+    activePrefix: '/analytics',
+  },
+  {
+    kind: 'real',
+    key: 'ai-safety',
+    label: strings.navAiSafety,
+    icon: '🛡️',
+    href: '/ai-safety',
+    activePrefix: '/ai-safety',
+  },
+  {
     kind: 'placeholder',
     key: 'content',
     label: strings.navContent,

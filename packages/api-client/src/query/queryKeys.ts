@@ -266,6 +266,40 @@ export const queryKeys = {
     /** GET api/Parent/Children/{id}/Energy */
     childEnergy: (childId: string) =>
       [...queryKeys.parentAnalytics.all, 'child-energy', childId] as const,
+    },
+
+  /**
+   * P7-10 admin platform analytics hooks.
+   *
+   * Read-only aggregate endpoints in the Identity module.
+   * Params for kpis: camelCase `from`/`to` (controller binding).
+   * No time-series endpoint in v1 — only summary + categorical breakdowns.
+   */
+  adminAnalytics: {
+    all: ['adminAnalytics'] as const,
+    kpis: (from?: string, to?: string) =>
+      [...queryKeys.adminAnalytics.all, 'kpis', { from, to }] as const,
+  },
+
+  /**
+   * P7-11 admin AI-safety monitoring hooks.
+   *
+   * Read-only aggregate endpoints in the Ai module.
+   * Params for signals/trend/usage: PascalCase `From`/`To` (controller binding).
+   * `evals` takes NO params. `flagged` adds PascalCase paging/filter params.
+   */
+  adminAiSafety: {
+    all: ['adminAiSafety'] as const,
+    signals: (From?: string, To?: string) =>
+      [...queryKeys.adminAiSafety.all, 'signals', { From, To }] as const,
+    trend: (From?: string, To?: string) =>
+      [...queryKeys.adminAiSafety.all, 'trend', { From, To }] as const,
+    usage: (From?: string, To?: string) =>
+      [...queryKeys.adminAiSafety.all, 'usage', { From, To }] as const,
+    evals: () =>
+      [...queryKeys.adminAiSafety.all, 'evals'] as const,
+    flagged: (filters?: object) =>
+      [...queryKeys.adminAiSafety.all, 'flagged', filters ?? {}] as const,
   },
 } as const;
 
