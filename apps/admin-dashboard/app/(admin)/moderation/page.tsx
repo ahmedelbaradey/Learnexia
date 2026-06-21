@@ -518,7 +518,9 @@ export default function ModerationPage() {
               id="mod-date-from"
               type="date"
               data-testid="mod-date-from"
-              value={dateFrom}
+              // State holds the full ISO bound for the query; a date input only accepts
+              // YYYY-MM-DD as its value, so display just the date portion.
+              value={dateFrom.slice(0, 10)}
               onChange={(e) => setDateFrom(e.target.value ? `${e.target.value}T00:00:00Z` : '')}
               dir="ltr"
               style={{ ...selectStyle, width: 150 }}
@@ -534,7 +536,9 @@ export default function ModerationPage() {
               id="mod-date-to"
               type="date"
               data-testid="mod-date-to"
-              value={dateTo}
+              // State holds the full ISO bound for the query; a date input only accepts
+              // YYYY-MM-DD as its value, so display just the date portion.
+              value={dateTo.slice(0, 10)}
               onChange={(e) => setDateTo(e.target.value ? `${e.target.value}T23:59:59Z` : '')}
               dir="ltr"
               style={{ ...selectStyle, width: 150 }}

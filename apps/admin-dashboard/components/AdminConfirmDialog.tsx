@@ -377,14 +377,24 @@ export function AdminConfirmDialog({
     }
   }, [open]);
 
-  // Focus trap — keep Tab inside the dialog.
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => {
+  // ESC closes from anywhere while open — the dialog's onKeyDown only fires when
+  // focus is inside the dialog, which misses the case where focus sits on the backdrop.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
-        return;
       }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
+  // Focus trap — keep Tab inside the dialog. (ESC is handled globally above so it
+  // works regardless of where focus currently sits.)
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
       if (e.key !== 'Tab') return;
       if (!dialogRef.current) return;
 
@@ -407,7 +417,7 @@ export function AdminConfirmDialog({
         }
       }
     },
-    [onClose],
+    [],
   );
 
   if (!open) return null;
