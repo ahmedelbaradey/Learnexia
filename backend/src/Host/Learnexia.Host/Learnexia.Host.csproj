@@ -6,6 +6,8 @@
     <PackageReference Include="Swashbuckle.AspNetCore" />
     <PackageReference Include="Swashbuckle.AspNetCore.Annotations" />
     <PackageReference Include="AspNetCoreRateLimit" />
+    <!-- BE-4 (P6-06): Redis-backed rate-limit store (activates when ConnectionStrings:Redis is set) -->
+    <PackageReference Include="AspNetCoreRateLimit.Redis" />
     <PackageReference Include="Asp.Versioning.Mvc" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" />
     <PackageReference Include="FluentValidation" />

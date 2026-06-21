@@ -1,3 +1,5 @@
+using Learnexia.Modules.Notifications.Domain.Enums;
+using Learnexia.Modules.Notifications.Domain.Templates;
 using Learnexia.Modules.Notifications.Application.Abstractions;
 using Learnexia.Shared.Contracts.Identity;
 using Learnexia.Shared.Kernel.Abstractions;
@@ -12,19 +14,22 @@ namespace Learnexia.Modules.Notifications.Application.IntegrationEventHandlers;
 /// the host's unified MediatR registration delivers it here → this handler sends the reset email via the
 /// Notifications module's <see cref="IEmailSender"/>.
 ///
-/// Unlike the welcome handler this needs NO IUserLookup — the event already carries the recipient email and
-/// the prebuilt reset URL. Delivery is best-effort and fully isolated: any send failure is logged and
-/// swallowed so it can never fail the handler (or, upstream, the forgot-password request). The reset URL
+/// Unlike the welcome handler this needs NO IUserLookup — the event already carries the recipient email,
+/// the prebuilt reset URL, and (P6-06 BE-2) the recipient's <c>Locale</c> (PreferredLanguage). Delivery
+/// is best-effort and fully isolated: any send failure is logged and swallowed so it can never fail the
+/// handler (or, upstream, the forgot-password request — which is now out-of-band per BE-1). The reset URL
 /// embeds a single-use token, so we NEVER log the URL — only the fact that an email was attempted.
+///
+/// P6-06 BE-2: subject and body are now localized via <see cref="ReengagementCopyTemplates"/> (the same
+/// established email-copy store used for the welcome email in P9-10), NOT via resx/IStringLocalizer.
+/// Locale falls back to "ar-EG" (platform default) when <see cref="PasswordResetRequestedIntegrationEvent.Locale"/>
+/// is null (backward-compatible with events emitted before BE-2 was deployed).
 /// </summary>
 public sealed class PasswordResetRequestedIntegrationEventHandler
     : INotificationHandler<PasswordResetRequestedIntegrationEvent>
 {
-    // Simple English copy for now (P1-12 BE-6). User-facing, but this is the Notifications module's email
-    // body — there is no string-localizer wired into this email path yet; templating is a follow-up.
-    // P9-10 (Fork A): reset-email localization is DEFERRED to P6-06-BE-2 — that story adds Locale to
-    // PasswordResetRequestedIntegrationEvent (no UserId on this event, so IUserLookup cannot resolve here).
-    private const string EmailSubject = "Reset your Learnexia password";
+    // Template code for the password-reset email. Technical non-user-facing identifier (dictionary key).
+    private const string PasswordResetCode = "PASSWORD_RESET";
 
     private readonly ILoggerManager _logger;
     private readonly IEmailSender _emailSender;
@@ -45,15 +50,21 @@ public sealed class PasswordResetRequestedIntegrationEventHandler
 
         try
         {
-            var greetingName = string.IsNullOrWhiteSpace(notification.UserName) ? "there" : notification.UserName;
-            var body =
-                $"Hello {greetingName},<br/><br/>" +
-                "We received a request to reset your Learnexia password. " +
-                $"Click the link below to choose a new password:<br/><br/>" +
-                $"<a href=\"{notification.ResetUrl}\">Reset my password</a><br/><br/>" +
-                "If you did not request this, you can safely ignore this email — your password will not change.";
+            // P6-06 BE-2: resolve locale from the event (falls back to ar-EG when null — backward-compatible).
+            var locale = string.IsNullOrWhiteSpace(notification.Locale) ? "ar-EG" : notification.Locale;
+            var greetingName = string.IsNullOrWhiteSpace(notification.UserName) ? string.Empty : notification.UserName;
 
-            var result = await _emailSender.SendAsync(notification.Email, EmailSubject, body, cancellationToken);
+            // Render subject + body from the template store (mirrors UserRegisteredIntegrationEventHandler).
+            // The {resetUrl} placeholder substitutes the prebuilt reset link (carries the single-use token —
+            // confirmed not logged; only the fact of the send is logged above).
+            var (subject, body) = ReengagementCopyTemplates.Render(
+                NotificationCategory.System,
+                PasswordResetCode,
+                locale,
+                ("userName", greetingName),
+                ("resetUrl", notification.ResetUrl));
+
+            var result = await _emailSender.SendAsync(notification.Email, subject, body, cancellationToken);
             if (result.IsFailure)
             {
                 _logger.LogWarn(

@@ -170,7 +170,11 @@ public static class DependencyInjection
                 x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             }).AddJwtBearer(x =>
             {
-                x.RequireHttpsMetadata = false;
+                // P6-06 BE-3: require HTTPS for bearer token transmission in Production/Staging.
+                // Development and Testing keep false so local dev and the integration suite (HTTP) work
+                // unchanged. IsProtectedEnvironment mirrors GuardJwtSecret/GuardCaptcha's env resolution,
+                // defaulting fail-closed to Production when the env key is absent.
+                x.RequireHttpsMetadata = IsProtectedEnvironment(configuration);
                 x.SaveToken = true;
                 x.TokenValidationParameters = new TokenValidationParameters
                 {

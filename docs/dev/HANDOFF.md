@@ -1,3 +1,38 @@
+## P6-06 Backend security hardening — 2026-06-21 (`feat/P6-06-backend-security-hardening`)
+
+**Closes the four Phase-1 auth-audit follow-ups (BE-1..BE-4). BE-5 = security-auditor gate (pending).**
+
+**What shipped:**
+- **BE-1 (timing oracle closed):** `ForgotPasswordCommandHandler` now mints the reset token + builds the event **inline** (cheap in-process HMAC), then dispatches `IPublisher.Publish` **out-of-band** via `Task.Run` + a fresh `IServiceScopeFactory.CreateAsyncScope()` scope. The request returns the generic 200 immediately regardless of whether the email exists — SMTP latency is no longer observable. Mirrors the AI-cache fire-and-forget pattern (`GetHintCommandHandler`). `IServiceScopeFactory` replaces `IPublisher` in the constructor (fresh scope resolves its own `IPublisher`). Anti-enumeration body/status contract unchanged.
+- **BE-2 (reset email localized):** `string? Locale` added (additive nullable, default null) to `PasswordResetRequestedIntegrationEvent` (Shared.Contracts). Identity sets `Locale = user.PreferredLanguage` at emit time (user is in hand, no extra lookup). Two new template entries (`System:PASSWORD_RESET:ar-EG` + `:en-US`) added to `ReengagementCopyTemplates` (placeholders `{userName}`, `{resetUrl}`; `<a href>` link preserved; Arabic-first). `PasswordResetRequestedIntegrationEventHandler` now renders subject+body via `ReengagementCopyTemplates.Render(NotificationCategory.System, "PASSWORD_RESET", locale, ...)` — fallback to `ar-EG` when `Locale` is null. The hardcoded English copy and the "deferred P6-06-BE-2" comment are removed.
+- **BE-3 (transport/secret hygiene):** `x.RequireHttpsMetadata` in `Identity.Infrastructure/DependencyInjection.cs` now uses `IsProtectedEnvironment(configuration)` — `true` in Production/Staging, `false` in Development/Testing (local dev + integration suite unaffected).
+- **BE-4 (Redis rate-limit store):** `ServiceExtensions.ConfigureRateLimitingOptions` branches on `ConnectionStrings:Redis` — when non-empty calls `services.AddRedisRateLimiting()` (from `AspNetCoreRateLimit.Redis 2.0.0`, new package); when absent keeps existing `MemoryCacheRateLimitCounterStore` + `MemoryCacheIpPolicyStore` verbatim. No rule or limit changes. `IConnectionMultiplexer` singleton (registered in Program.cs) is reused — no second Redis connection.
+
+### Required production environment variables (P6-06 BE-3 — document for devops)
+
+| Env var | Purpose | Notes |
+|---|---|---|
+| `ASPNETCORE_ENVIRONMENT=Production` (or `Staging`) | Drives every env-gate below (`RequireHttpsMetadata`, JWT/Captcha guards, rate-limit rules). | Required for all guards to activate. |
+| `ConnectionStrings__Default` | Postgres connection string incl. real password (replaces the committed `Password=admin` placeholder). | Required. ASP.NET config hierarchy picks this up automatically — no code change needed. |
+| `ConnectionStrings__Redis` | Redis endpoint (e.g. `redis:6379`). Activates distributed cache + `IConnectionMultiplexer` + **Redis rate-limit stores** (BE-4). | Optional — absent = in-memory fallback. Multi-instance rate-limit correctness only holds once this is set. |
+| `JwtSettings__Secret` | Strong JWT signing key. `GuardJwtSecret` throws at startup in Prod/Staging if unset or if it matches the committed placeholder. | Required. |
+| `ClientAppBaseUrl` | HTTPS origin for reset links (e.g. `https://app.learnexia.com`). Must be HTTPS in prod. | Required for reset email links to be correct. |
+| `Captcha__Enabled=true` + `Captcha__SecretKey` | Turnstile bot-protection on `/register-parent`. `GuardCaptcha` throws at startup in Prod/Staging if not set. | Required. |
+| `Email__Provider=Smtp` + `Email__Host` / `Email__UserName` / `Email__Password` / `Email__FromAddress` | SMTP for the (now localized) password-reset + welcome emails. | Required for email delivery. |
+| `Ai__Providers__Claude__ApiKey` / `Ai__Providers__OpenAi__ApiKey` | AI gateway keys (pre-existing). | Devops-gated. |
+| `Curriculum__Embedding__AuthToken` | BGE-M3 TEI auth token (pre-existing). | Devops-gated. |
+| `MinIOConfiguration__*` | MinIO object storage (pre-existing). | Devops-gated. |
+
+**G2 token revocation:** out of scope for P6-06 (confirmed by brief). Separate future story required — see brief §open-questions #1.
+
+**Gates:** build 0; api-tester (recovered after a transient agent drop, re-run by lead) — Notifications unit 43/43 (incl. PASSWORD_RESET) + `P6_06_BackendSecurity_Tests` 12/12 (anti-enumeration AE1-4, reset-flow regression RC1-2, ar/en/null/unknown localization, in-memory rate-limit fallback) + regression P1_12 reset 28/28, P1_13b rate-limit 17/17; **security-auditor PASS** (no Critical/High); reviewer PASS.
+
+**Deferred security follow-ups (non-blocking, NOT in this PR):**
+- **(Low) HTML-encode `{userName}` in the email render path** — `ReengagementCopyTemplates.Render` does a plain `string.Replace` of `{userName}` into the HTML email body; a name with markup could inject content into the *recipient's own* reset/welcome email (self-targeted, low risk; username charset is registration-constrained). **PRE-EXISTING** (the welcome email does the same; P6-06 only newly routes the reset email through it). A correct fix HTML-encodes placeholder *values* in the email path WITHOUT double-encoding the shared inbox-nudge copy (Render is shared by inbox + email) — needs its own focused change + inbox-render verification.
+- **(Info) Credentialed-wildcard CORS** — `ServiceExtensions.ConfigureCors` defaults `AllowedOrigins` to `"*"` combined with `AllowCredentials()`; if `AllowedOrigins` is unset in prod that's a misconfig. PRE-EXISTING, out of P6-06 scope. Recommend a dedicated item: fail-closed when `AllowedOrigins` is unset in Prod/Staging (or drop `AllowCredentials` on the wildcard path).
+
+---
+
 ## P7 Admin E2E — Wave 3 (Moderation + Audit + Gamification) — 2026-06-20 (branch `test/P7-admin-wave3-e2e`, off main @ 6d55a0a)
 
 Authored + ran the Wave-3 admin E2E (`docs/qc/P7-admin-wave3-qc/`). **Combined: 103 PASS / 0 FAIL / 3 BLOCKED-RTL of 106 Playwright tests** (covers MOD-TC-01..35, GAM-TC-01..34, AUD-TC-01..19). Full write-up: `docs/qc/P7-admin-wave3-qc/execution-report.md` (+ per-surface `execution-{audit,gamification,moderation}.md`). **No product-code changes** — pure test + docs (existing testIDs sufficed).

@@ -1,6 +1,7 @@
 using System.Globalization;
 using Asp.Versioning;
 using AspNetCoreRateLimit;
+using AspNetCoreRateLimit.Redis;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Localization;
@@ -73,10 +74,30 @@ public static class ServiceExtensions
             // Health probes must never be throttled — container/orchestrator probes hit them repeatedly.
             opt.EndpointWhitelist = new List<string> { "get:/health", "get:/health/live" };
         });
-        services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
-        services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
-        services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
-        services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
+        // P6-06 BE-4: use Redis-backed rate-limit stores when a Redis connection is configured,
+        // otherwise fall back to in-memory (dev / tests / single-instance deployments without Redis).
+        // This mirrors the Program.cs "Redis-when-present else in-memory" gate for IDistributedCache.
+        // The Redis stores consume the existing IConnectionMultiplexer singleton (registered in
+        // Program.cs when ConnectionStrings:Redis is non-empty) — no second Redis connection.
+        // Multi-instance correctness only holds once ConnectionStrings__Redis is set in prod (HANDOFF).
+        var redisCs = configuration.GetConnectionString("Redis");
+        if (!string.IsNullOrWhiteSpace(redisCs))
+        {
+            // AspNetCoreRateLimit.Redis 2.0.0 registers DistributedCache-backed stores
+            // (DistributedCacheRateLimitCounterStore / DistributedCacheIpPolicyStore) + RedisProcessingStrategy,
+            // which consume the Redis-backed IDistributedCache registered in Program.cs on the SAME
+            // ConnectionStrings:Redis gate (AddStackExchangeRedisCache) — so no second Redis connection is opened.
+            services.AddRedisRateLimiting();
+            services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+        }
+        else
+        {
+            // Dev / Testing / single-instance: keep the existing in-memory stores unchanged.
+            services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
+            services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+            services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+            services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
+        }
     }
 
     public static void ConfigureLocalization(this IServiceCollection services)
