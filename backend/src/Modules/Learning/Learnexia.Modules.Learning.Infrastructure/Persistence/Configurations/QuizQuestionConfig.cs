@@ -76,6 +76,22 @@ public class QuizQuestionConfig : IEntityTypeConfiguration<QuizQuestion>
             .HasConversion<int>()
             .HasDefaultValue(LifecycleState.Published);
 
+        // P5-07: QualityState — calibration quality flag (Approved=1 / FlaggedForReview=2).
+        // DB DEFAULT 1 (Approved) backfills all existing rows to Approved (servable) — mirrors the
+        // P7-05 LifecycleState HasDefaultValue(LifecycleState.Published) pattern exactly.
+        // C# initializer is also Approved so new inserts default to Approved at the EF layer.
+        // The serve-path guard (StartAttemptService.GetPublishedActiveQuestionsAsync) filters
+        // on q.QualityState == QuestionQualityState.Approved alongside IsActive and LifecycleState.
+        builder.Property(x => x.QualityState)
+            .IsRequired()
+            .HasConversion<int>()
+            .HasDefaultValue(QuestionQualityState.Approved);
+
+        // P5-07: FlagReason — nullable stable reason code set by the calibration job when flagging.
+        // Null when not flagged. Stored as text NULL.
+        builder.Property(x => x.FlagReason)
+            .IsRequired(false);
+
         builder.HasIndex(x => x.LessonId)
             .HasDatabaseName("IX_QuizQuestions_LessonId");
 

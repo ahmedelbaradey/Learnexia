@@ -56,6 +56,12 @@ public class LearningDbContext : DbContext
     // P5-09: Per-student daily recommendation set (deterministic engine output)
     public DbSet<StudentRecommendation> StudentRecommendations => Set<StudentRecommendation>();
 
+    // P5-07: Per-question empirical difficulty aggregates (de-identified; no StudentId)
+    public DbSet<QuestionDifficultyStats> QuestionDifficultyStats => Set<QuestionDifficultyStats>();
+
+    // P5-07: Human-promotable difficulty-recalibration proposals
+    public DbSet<QuestionRecalibrationProposal> QuestionRecalibrationProposals => Set<QuestionRecalibrationProposal>();
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 
@@ -126,6 +132,17 @@ public class LearningDbContext : DbContext
         // to other entities with global query filters (EntityId is a loose plain int, no navigation
         // properties). Therefore no required-relationship-filter warning is expected here.
         modelBuilder.Entity<ContentVersion>().HasQueryFilter(cv => cv.IsDeleted != true);
+
+        // P5-07: Soft-delete filters for calibration entities.
+        //
+        // Both QuestionDifficultyStats and QuestionRecalibrationProposal carry a real intra-module FK
+        // (QuestionId, Restrict) to QuizQuestion, which already has a global query filter above.
+        // EF Core requires that dependents with a required FK to a filtered principal also carry their
+        // own matching filter — same pattern as StudentAnswer → QuizQuestion above.
+        // These filters ensure soft-deleted calibration rows are invisible to standard EF queries;
+        // admin reads that need to see them must use .IgnoreQueryFilters().
+        modelBuilder.Entity<QuestionDifficultyStats>().HasQueryFilter(qds => qds.IsDeleted != true);
+        modelBuilder.Entity<QuestionRecalibrationProposal>().HasQueryFilter(qrp => qrp.IsDeleted != true);
 
         base.OnModelCreating(modelBuilder);
     }

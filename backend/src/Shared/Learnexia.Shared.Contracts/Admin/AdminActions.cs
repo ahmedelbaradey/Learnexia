@@ -100,4 +100,10 @@ public static class AdminActions
 
     // ── P7-09 Moderation Queue ────────────────────────────────────────────────
     public const string ModerationItemReviewed = "ModerationItem.Reviewed";
+
+    // P5-07 Calibration proposals + quality flags
+    public const string DifficultyProposalPromoted = "Calibration.DifficultyProposalPromoted";
+    public const string DifficultyProposalRejected = "Calibration.DifficultyProposalRejected";
+    public const string QuestionUnflagged          = "Calibration.QuestionUnflagged";
+    public const string QuestionFlagConfirmed      = "Calibration.QuestionFlagConfirmed";
 }

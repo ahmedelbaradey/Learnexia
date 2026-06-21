@@ -86,5 +86,17 @@ public static class LearningModule
             job => job.Execute(CancellationToken.None),
             "5 0 * * *",
             new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+        // Register the daily calibration job (P5-07-BE-1/2/3).
+        // Fixed ID "Calibrate" — Hangfire dedupes by ID (idempotency requirement).
+        // Runs at 00:20 UTC — AFTER SP-Recompute (00:00) and Rec-Recompute (00:05) so that the
+        // behavioral profile and recommendation data are both fresh when calibration aggregates.
+        // Cron is read from CalibrationOptions to allow deployment override without code change.
+        var calibrationOptions = serviceProvider.GetRequiredService<IOptions<CalibrationOptions>>().Value;
+        recurringJobs.AddOrUpdate<CalibrationJob>(
+            "Calibrate",
+            job => job.Execute(CancellationToken.None),
+            calibrationOptions.JobCronExpression,
+            new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
     }
 }
