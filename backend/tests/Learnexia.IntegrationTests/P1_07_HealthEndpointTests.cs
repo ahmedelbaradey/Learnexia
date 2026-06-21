@@ -37,6 +37,13 @@ public sealed class HealthCheckWebAppFactory : WebApplicationFactory<Program>, I
         .WithPassword("testpassword")
         .Build();
 
+    /// <summary>
+    /// The Testcontainers Postgres connection string — exposed so P6-05 Scenario 6
+    /// (the ai-key flip variant) can point its one-shot factory at the same container
+    /// rather than spinning up a second one.
+    /// </summary>
+    public string PostgresConnectionString => _postgres.GetConnectionString();
+
     public async Task InitializeAsync()
     {
         await _postgres.StartAsync();
