@@ -15,6 +15,20 @@ EF won't re-run an "applied" migration, and **direct DDL on the shared Postgres 
 
 ---
 
+## P6-01 Performance targets — NBomber perf/load harness — 2026-06-22 (`feat/P6-01-performance-targets`)
+
+**Test-infra + docs only — ZERO production-code (`backend/src`) changes.** Delivers a reusable NBomber load harness for NFR-1 (core API p95<500ms, AI<4s) + a directional local baseline.
+
+**What shipped:** `backend/tests/Learnexia.PerfTests` (NBomber 6.4.1, centrally versioned; project added to the sln). 12 core-API scenarios (sign-in, StartAttempt/SubmitAnswer, Learning reads, gamification, parent P5-08) asserting **p95<500ms** + 2 AI-overhead scenarios. Scenarios run **sequentially in isolation** (5 copies × 20s) so p95 ≈ handler latency. Warmup registers parent→child→student via API and **seeds a real Subject/Unit/Lesson(Published)+questions via in-process `LearningDbContext`** (Testing env has no Dev curriculum seed; Subject/Unit MUST be `IsActive`+`Published` or the student reads 404). **Integrity gate:** a scenario with zero-OK or >5% errors = FAIL (prevents the `Ok.Latency.Percent95==0` fake-pass when an endpoint errors entirely). Warmup-id assertions fail the run fast if seeding didn't take.
+
+**Baseline result (`docs/perf/P6-01-baseline.md`) — read the caveat:** the in-process numbers are a **Testcontainers-PG-on-Windows-Docker latency FLOOR (~250ms/DB-round-trip), NOT production**. Proof: the no-DB AI scenarios run at 17–38ms p50 while every DB-touching read is 280ms+ p50. So the "12 scenarios >500ms" is the env DB-overhead floor × query count, **not 12 real hotspots**. Relative ranking IS useful: heaviest = **Dashboard** (composes many reads) + **SubjectLessons/SkillTree** (the `LearningPathEngine` does ~6 sequential reads) — candidates for a devops deep-dive. **BE-5 fixes deliberately NOT applied** (chasing env-artifact numbers would be wrong); documented as mitigations per AC-3.
+
+**⚠ Authoritative numbers + AI<4s = devops responsibility.** The harness's **Kestrel/`PERF_BASE_URL` targeting is NOT yet wired** (it always uses the in-process factory because the warmup seeds via in-process `DbContext`). Until a small follow-up wires the HTTP client to `PERF_BASE_URL` + API-based seeding, devops runs the authoritative load with an external tool (k6/bombardier) against a seeded staging Host (endpoint table in the PerfTests README). **CI execution is also blocked by the GitHub Actions billing issue** (the "documented harness" form of AC-4).
+
+**Gates:** build 0 · zero `backend/src` changes · reviewer PASS (required fix = harness-honesty/no-fake-Kestrel-claim, applied). Bulky NBomber HTML/CSV gitignored; only the authored `P6-01-baseline.md` is committed.
+
+---
+
 ## P5-07 Data-feedback / calibration loop — 2026-06-21 (`feat/P5-07-data-feedback-calibration`)
 
 **Turns dormant learning signals into a calibration loop (barrier-to-entry BE7 "data network effect", closes gap 3a-7).** Learning-module only; **focused slice** — AC3 (config-driven adaptivity thresholds, BE-4) **DEFERRED** to a follow-up.

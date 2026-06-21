@@ -1,0 +1,9 @@
+# NBomber raw reports are regenerated on every run and are bulky — do not commit.
+# The committed artifacts are the authored P6-01-baseline.md + the concise P6-01-run-summary.md.
+*.html
+*.csv
+*.txt
+nbomber-log-*
+P6-01-S*.md
+P6-01-nbomber-run.md
+P6-01-run-summary.md
