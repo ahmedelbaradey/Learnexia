@@ -1,4 +1,6 @@
+using System.IdentityModel.Tokens.Jwt;
 using Learnexia.Modules.Identity.Application.Abstractions;
+using Learnexia.Modules.Identity.Application.Features.Authentications.Commands.SignIn;
 using Learnexia.Modules.Identity.Domain.Enums;
 using Learnexia.Modules.Identity.Domain.Helpers;
 using Learnexia.Shared.Kernel.Abstractions;
@@ -12,15 +14,18 @@ namespace Learnexia.Modules.Identity.Application.Features.Authentications.Comman
 public class RefreshTokenCommandHandler : BaseResponseHandler, ICommandHandler<RefreshTokenCommand, BaseResponse<JwtAuthResponse>>
 {
     private readonly IIdentityServiceManager _service;
+    private readonly ISessionManagementService _sessionManagementService;
     private readonly IStringLocalizer<SharedResources> _localizer;
     private readonly ILoggerManager _logger;
 
     public RefreshTokenCommandHandler(
         IIdentityServiceManager service,
+        ISessionManagementService sessionManagementService,
         IStringLocalizer<SharedResources> localizer,
         ILoggerManager logger)
     {
         _service = service;
+        _sessionManagementService = sessionManagementService;
         _localizer = localizer;
         _logger = logger;
     }
@@ -67,6 +72,28 @@ public class RefreshTokenCommandHandler : BaseResponseHandler, ICommandHandler<R
             }
 
             var result = await _service.AuthenticationService.GetRefreshToken(user, jwtToken, expiryDate, request.RefreshToken);
+
+            // P6-07 BE-1: GetRefreshToken mints a brand-new JWT with a new SessionId claim (a fresh GUID
+            // from GetClaims). Without creating a session here, OnTokenValidated would reject the newly
+            // issued token immediately. Thread the claim's SessionId into session creation — same pattern
+            // as SignInCommandHandler / RegisterParentCommandHandler / GoogleSignInCommandHandler.
+            var sessionInfo = ExtractSessionInfoFromToken(result.AccessToken);
+            if (sessionInfo != null)
+            {
+                var userIdInt = int.Parse(userId);
+                try
+                {
+                    var session = await _sessionManagementService.CreateSessionAsync(userIdInt, sessionInfo.JwtId, sessionInfo.SessionId);
+                    result.SessionId = session.SessionId;
+                }
+                catch (Exception ex)
+                {
+                    // Session creation failed. The issued token's first authenticated call will be rejected by
+                    // OnTokenValidated because no session is persisted under its SessionId claim. Log loudly.
+                    _logger.LogError(ex, $"RefreshToken: failed to create session for user {userId}. The refreshed token will be invalid on first authenticated call.");
+                }
+            }
+
             return Success(result);
         }
         catch (Exception ex)
@@ -75,6 +102,36 @@ public class RefreshTokenCommandHandler : BaseResponseHandler, ICommandHandler<R
             // return a generic localized error, mirroring the delete/login handlers.
             _logger.LogError(ex, $"RefreshTokenCommandHandler: unexpected error during token refresh — {ex.Message}");
             return ServerError<JwtAuthResponse>(_localizer[SharedResourcesKey.LoginSystemError]);
+        }
+    }
+
+    private static SessionExtractionInfo? ExtractSessionInfoFromToken(string? accessToken)
+    {
+        if (string.IsNullOrEmpty(accessToken))
+            return null;
+
+        try
+        {
+            var jwtHandler = new JwtSecurityTokenHandler();
+            if (!jwtHandler.CanReadToken(accessToken))
+                return null;
+
+            var jwtToken = jwtHandler.ReadJwtToken(accessToken);
+            var jwtIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Jti);
+            var sessionIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "SessionId");
+
+            if (jwtIdClaim == null || sessionIdClaim == null)
+                return null;
+
+            return new SessionExtractionInfo
+            {
+                JwtId = jwtIdClaim.Value,
+                SessionId = sessionIdClaim.Value,
+            };
+        }
+        catch
+        {
+            return null;
         }
     }
 }

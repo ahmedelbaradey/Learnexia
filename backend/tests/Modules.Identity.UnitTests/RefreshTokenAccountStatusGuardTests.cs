@@ -24,6 +24,7 @@ public sealed class RefreshTokenAccountStatusGuardTests
     private readonly Mock<IIdentityServiceManager> _serviceMock = new();
     private readonly Mock<IAuthenticationService> _authServiceMock = new();
     private readonly Mock<IUserManagmentService> _userMgmtMock = new();
+    private readonly Mock<ISessionManagementService> _sessionManagementServiceMock = new();
     private readonly Mock<IStringLocalizer<SharedResources>> _localizerMock = new();
     private readonly Mock<ILoggerManager> _loggerMock = new();
 
@@ -60,7 +61,7 @@ public sealed class RefreshTokenAccountStatusGuardTests
     }
 
     private RefreshTokenCommandHandler BuildHandler() =>
-        new(_serviceMock.Object, _localizerMock.Object, _loggerMock.Object);
+        new(_serviceMock.Object, _sessionManagementServiceMock.Object, _localizerMock.Object, _loggerMock.Object);
 
     private static RefreshTokenCommand BuildCommand() => new()
     {

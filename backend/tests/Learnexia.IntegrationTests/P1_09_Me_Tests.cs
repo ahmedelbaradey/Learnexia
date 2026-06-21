@@ -1031,40 +1031,29 @@ public sealed class P1_09_Me_Tests : IAsyncLifetime
             "BE-TC-17 Leg 1: Me with the refreshed token must return a valid user id; body: {0}", meBody);
     }
 
-    [Fact(DisplayName = "BE-TC-17 Leg 2: Me with post-sign-out access token returns 200 (JWT not revoked — observe & note for lead)")]
-    public async Task BeTc17_Leg2_PostSignOut_Me_Returns200_BecauseJwtNotRevoked()
+    [Fact(DisplayName = "BE-TC-17 Leg 2: Me with post-sign-out access token returns 401 (P6-07 access-token revocation)")]
+    public async Task BeTc17_Leg2_PostSignOut_Me_Returns401_BecauseSessionRevoked()
     {
         // Arrange: register to get a fresh access token
         var (accessToken, _) = await RegisterParentWithRefreshAsync("betc17leg2");
 
-        // Sign out (revokes refresh token, rotates security stamp — but does NOT blocklist the JWT)
+        // Sign out (revokes refresh token, rotates security stamp, AND terminates the session)
         var (signOutResp, _, signOutBody) = await SendAsync(
             _client, HttpMethod.Post, SignOutUrl, new { }, accessToken);
         signOutResp.StatusCode.Should().Be(HttpStatusCode.OK,
             "BE-TC-17 Leg 2: Sign-Out must succeed; body: {0}", signOutBody);
 
         // Act: call Me with the same access token that was used to sign out
-        var (meResp, meRoot, meBody) = await GetMeAsync(accessToken);
+        var (meResp, _, meBody) = await GetMeAsync(accessToken);
 
-        // OBSERVED BEHAVIOR: the JWT bearer middleware validates only the signature and lifetime
-        // (ValidateLifetime=true per DependencyInjection.cs). There is no security-stamp check and
-        // no token blocklist for access tokens. Therefore the access token remains valid until its
-        // own expiry even after Sign-Out. Me returns 200.
-        //
-        // LEAD NOTE (Open Q2): If the intended behavior is 401 (session revocation), a token
-        // blocklist or security-stamp validation must be added to the bearer OnTokenValidated event.
-        // Until then, the contract is: Sign-Out invalidates the refresh token (P1-02 AC-3 confirmed)
-        // but does NOT immediately revoke the access token — it expires naturally after ~30 min.
-        meResp.StatusCode.Should().Be(HttpStatusCode.OK,
-            "BE-TC-17 Leg 2: OBSERVED — Me with a post-sign-out access token returns 200 because " +
-            "the JWT bearer has no blocklist/security-stamp check; if 401 was intended, " +
-            "add a token blocklist and update this assertion; body: {0}", meBody);
-
-        // The response still returns the user's data (not an error envelope)
-        TryProp(meRoot, "data", out var meData).Should().BeTrue(
-            "BE-TC-17 Leg 2: Me still returns a data payload with the valid (not-yet-expired) token; body: {0}", meBody);
-        TryProp(meData, "id", out var idProp).Should().BeTrue("body: {0}", meBody);
-        idProp.GetInt32().Should().BeGreaterThan(0, "body: {0}", meBody);
+        // P6-07: the JWT bearer pipeline now validates the token's "SessionId" claim against the
+        // session store on every request (JwtBearerEvents.OnTokenValidated). Sign-Out terminates
+        // the session, so the same access token is rejected on its next call even though it is not
+        // yet past its lifetime. This was previously an OBSERVED 200 (no per-request server check);
+        // P6-07 closes that gap (audit finding G2). Sign-Out remains a real, immediate revocation.
+        meResp.StatusCode.Should().Be(HttpStatusCode.Unauthorized,
+            "BE-TC-17 Leg 2: P6-07 — Me with a post-sign-out access token must return 401 because the " +
+            "bearer pipeline now rejects a terminated session; body: {0}", meBody);
     }
 
     // ===========================================================================

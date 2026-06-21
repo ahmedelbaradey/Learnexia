@@ -27,7 +27,7 @@ tasks/
     ├── Phase-3-Gamification/ P4-xx-BE.md
     ├── Phase-4-AI-Tutor/     P3-xx-BE.md   (AI gateway/safety/prompt, RAG retrieval, explain/hints, adaptivity/mastery/SR/profile, Lexi recommendation narration P3-14 + P3-14a framing; P3-13a profile-depth = BACKLOG)
     ├── Phase-5-Parent-Analytics/ P5-xx-BE.md  (parent-scoped read API P5-08, weak-area detection P5-02, weekly report P5-01, recommendation engine P5-09 + P5-09a profile-aware selection, analytics event-capture backbone P5-03 [NEW Analytics module])
-    ├── Phase-6-Stabilization/ P6-06-BE.md
+    ├── Phase-6-Stabilization/ P6-06-BE.md, P6-07-BE.md (access-token revocation, G2)
     ├── Phase-7-Admin-Console/ P7-xx-BE.md
     ├── Phase-8-Localization/  P8-xx-BE.md
     ├── Phase-9-Notifications/ P9-0x-BE.md   (wire emitted events, new habit categories, arbitration, comeback ladder)
@@ -85,6 +85,7 @@ tasks/
 | P1-13b | Backend hardening pass — BE-1 rate-limiting done (PR #50); rest → P6-06 | — | [BE](Backend/Phase-1-Foundation/P1-13b-BE.md) |
 | P6-02 | Validate AI safety with an eval set *(✅ BE built — offline CI-native eval harness; closed the last P7-11 facet)* | — | [BE](Backend/Phase-6-Stabilization/P6-02-BE.md) |
 | P6-06 | Backend security hardening — timing-oracle/email-locale/secrets/Redis rate-limit store *(Phase 6; relocated from P1-13b)* | — | [BE](Backend/Phase-6-Stabilization/P6-06-BE.md) |
+| P6-07 | Access-token revocation — per-request SessionId validation (`OnTokenValidated`) *(audit finding G2; split out of P6-06)* | [FE](Frontend/Phase-6-Stabilization/P6-07-FE.md) | [BE](Backend/Phase-6-Stabilization/P6-07-BE.md) |
 | P2-01 | Model curriculum hierarchy | — | [BE](Backend/Phase-2-Learning-Core/P2-01-BE.md) |
 | P2-02 | Browse subjects & lessons | [FE](Frontend/student-app/Phase-2-Learning-Core/P2-02-FE.md) | [BE](Backend/Phase-2-Learning-Core/P2-02-BE.md) |
 | P2-03 | Navigate the skill tree | [FE](Frontend/student-app/Phase-2-Learning-Core/P2-03-FE.md) | [BE](Backend/Phase-2-Learning-Core/P2-03-BE.md) |

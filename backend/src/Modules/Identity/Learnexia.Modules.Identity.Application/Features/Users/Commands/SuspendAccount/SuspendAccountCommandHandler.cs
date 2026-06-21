@@ -137,26 +137,15 @@ public class SuspendAccountCommandHandler : BaseResponseHandler, ICommandHandler
             _logger.LogError(ex, $"Failed to revoke refresh token for user {userId} (suspend) — ignored.");
         }
 
-        // (c) Terminate all tracked sessions.
+        // (c) Terminate all tracked sessions via the new P6-07 helper (DRY).
         try
         {
-            var sessions = await _sessionManagementService.GetUserSessionsAsync(userId);
-            foreach (var session in sessions)
-            {
-                try
-                {
-                    await _sessionManagementService.TerminateSessionAsync(
-                        session.SessionId, Domain.Enums.SessionTerminationReason.AdminTermination);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, $"Failed to terminate session {session.SessionId} for user {userId} (suspend) — ignored.");
-                }
-            }
+            var count = await _sessionManagementService.TerminateAllUserSessionsAsync(userId, Domain.Enums.SessionTerminationReason.AdminTermination);
+            _logger.LogInfo($"Terminated {count} session(s) for user {userId} (suspend).");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Failed to enumerate sessions for user {userId} (suspend) — ignored.");
+            _logger.LogError(ex, $"Failed to terminate sessions for user {userId} (suspend) — ignored.");
         }
     }
 

@@ -17,6 +17,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System.Reflection;
+using System.Security.Claims;
 using System.Text;
 using Learnexia.Shared.Kernel.Logging;
 
@@ -185,6 +186,65 @@ public static class DependencyInjection
                     ValidateAudience = jwtSettings.validateAudience,
                     ValidAudience = jwtSettings.Audience,
                     ValidateLifetime = jwtSettings.ValidateLifeTime
+                };
+
+                // P6-07 BE-2/BE-4: per-request SessionId validation.
+                // Read-only (OQ-2): uses GetSessionAsync + in-memory IsActive/IsExpired check — no write per request.
+                // Fail-mode (OQ-1): fail-closed in Production/Staging (context.Fail on store error); fail-open with
+                // warning log in Development/Testing. Uses the same IsProtectedEnvironment helper as GuardJwtSecret.
+                // Scoped service resolved from RequestServices — never captured in the singleton options closure.
+                x.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = async context =>
+                    {
+                        var sessionId = context.Principal?.FindFirstValue("SessionId");
+
+                        // A token without the SessionId claim pre-dates the BE-1 fix (GUID-A era) or was
+                        // tampered. Treat as invalid per the same fail-mode logic.
+                        if (string.IsNullOrEmpty(sessionId))
+                        {
+                            context.Fail("session_revoked");
+                            return;
+                        }
+
+                        var sessionService = context.HttpContext.RequestServices
+                            .GetRequiredService<ISessionManagementService>();
+
+                        var logger = context.HttpContext.RequestServices
+                            .GetRequiredService<ILoggerManager>();
+
+                        try
+                        {
+                            // OQ-2: read-only — single Redis GET, zero writes. IsSessionActiveAsync
+                            // (unlike GetSessionAsync) does NOT swallow store faults, so a genuine
+                            // revocation returns false (→ fail-closed below) while a Redis/serialize
+                            // FAULT propagates to the catch for the explicit env-gated fail-mode (OQ-1).
+                            var isActive = await sessionService.IsSessionActiveAsync(sessionId);
+
+                            if (!isActive)
+                            {
+                                context.Fail("session_revoked");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            // OQ-1: explicit fail-mode — do NOT rely on GetSessionAsync's exception swallow.
+                            if (IsProtectedEnvironment(configuration))
+                            {
+                                // Fail-closed in Production/Staging: a store error is treated the same as a
+                                // missing session. A Redis blip temporarily 401s valid tokens, which is the
+                                // safer trade-off (a revoked token must never slip through during an outage).
+                                logger.LogError(ex, "P6-07 OnTokenValidated: session store error — failing closed (protected environment). SessionId omitted from log.");
+                                context.Fail("session_store_error");
+                            }
+                            else
+                            {
+                                // Fail-open in Development/Testing: log a warning and allow the request.
+                                // This preserves local dev/integration-test ergonomics when the cache is cold.
+                                logger.LogWarn($"P6-07 OnTokenValidated: session store error in non-protected environment — allowing request. Error: {ex.Message}");
+                            }
+                        }
+                    }
                 };
             });
             services.AddAuthorization(options =>
