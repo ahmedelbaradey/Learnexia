@@ -78,9 +78,8 @@ public class RefreshTokenCommandHandler : BaseResponseHandler, ICommandHandler<R
             // issued token immediately. Thread the claim's SessionId into session creation — same pattern
             // as SignInCommandHandler / RegisterParentCommandHandler / GoogleSignInCommandHandler.
             var sessionInfo = ExtractSessionInfoFromToken(result.AccessToken);
-            if (sessionInfo != null)
+            if (sessionInfo != null && int.TryParse(userId, out var userIdInt))
             {
-                var userIdInt = int.Parse(userId);
                 try
                 {
                     var session = await _sessionManagementService.CreateSessionAsync(userIdInt, sessionInfo.JwtId, sessionInfo.SessionId);
