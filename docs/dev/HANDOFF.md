@@ -1,3 +1,17 @@
+## P7 Admin E2E — Wave 3 (Moderation + Audit + Gamification) — 2026-06-20 (branch `test/P7-admin-wave3-e2e`, off main @ 6d55a0a)
+
+Authored + ran the Wave-3 admin E2E (`docs/qc/P7-admin-wave3-qc/`). **Combined: 103 PASS / 0 FAIL / 3 BLOCKED-RTL of 106 Playwright tests** (covers MOD-TC-01..35, GAM-TC-01..34, AUD-TC-01..19). Full write-up: `docs/qc/P7-admin-wave3-qc/execution-report.md` (+ per-surface `execution-{audit,gamification,moderation}.md`). **No product-code changes** — pure test + docs (existing testIDs sufficed).
+
+- New specs: `tests/e2e/specs/P7-admin-{audit,gamification,moderation}.spec.ts`. Run: `cd tests/e2e && npx playwright test --config=playwright.admin.config.ts --workers=1 P7-admin-audit P7-admin-gamification P7-admin-moderation`.
+- The 3 BLOCKED are all the build-time `ADMIN_LOCALE='en'` RTL limitation (one per surface) — same as Wave 1/2; needs a runtime locale toggle (separate story).
+- **Seeding:** audit has 252 real rows; gamification creates throwaway entities via admin POST endpoints; **moderation queue only fills via `AiOutputFlaggedIntegrationEvent`** (no HTTP seed endpoint), so the 19 seed-dependent MOD cases use Playwright `page.route()` interception with real-shaped synthetic payloads (documented, not faked).
+
+**⚠️ BACKEND defect for the backend lead — DEF-GAM-01 (Medium):** `GamificationAdminService.ExpireTimedEventAsync` calls `timedEvent.Deactivate()` (sets `IsActive=false` only) but does NOT rewind `EndUtc`. The FE `deriveStatus` is timestamp-based, so an expired event keeps a future `EndUtc` → renders as **SCHEDULED** with edit still enabled. Fix: set `EndUtc = DateTime.UtcNow` on expire (or in domain `Deactivate()`).
+
+**Minor FE follow-ups (mine, non-blocking):** moderation date-range `<input type="date">` is fed an ISO datetime (only accepts `YYYY-MM-DD`) so the picked date visually clears (API still gets the param); `AdminConfirmDialog` ESC only fires when focus is inside the dialog (not the backdrop).
+
+---
+
 ## P6-02 AI-safety eval set + harness — 2026-06-20 (`feat/P6-02-ai-safety-eval-set`)
 
 **Closes the last P7-11 facet** (`GET /api/Admin/AiSafety/evals`, previously "deferred — blocked on P6-02"). v1 = **offline, CI-native, no migration, no live keys**.
