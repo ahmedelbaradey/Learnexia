@@ -12,4 +12,11 @@ public sealed record PasswordResetRequestedIntegrationEvent(
     DateTime OccurredOnUtc,
     string Email,
     string ResetUrl,
-    string? UserName) : IIntegrationEvent;
+    string? UserName,
+    /// <summary>
+    /// The recipient's preferred UI language (e.g. "ar-EG", "en-US"), resolved at emit time from the
+    /// Identity <c>User.PreferredLanguage</c> field. Consumers use this to render the reset email in
+    /// the recipient's own language (P6-06 BE-2). Nullable for backward compatibility — consumers
+    /// must fall back to "ar-EG" (platform default) when null.
+    /// </summary>
+    string? Locale = null) : IIntegrationEvent;

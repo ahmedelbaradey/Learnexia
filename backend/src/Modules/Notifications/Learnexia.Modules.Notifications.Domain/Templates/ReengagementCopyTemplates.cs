@@ -144,6 +144,21 @@ public static class ReengagementCopyTemplates
             "Welcome to Learnexia! 🎉",
             "Hello {userName}! 🌟 Your account is ready — start your learning journey now and unlock a world of knowledge!"),
 
+        // ── System / Password Reset ───────────────────────────────────────────────────────────────
+        // P6-06 BE-2: Transactional password-reset email — sent when a user requests a password reset.
+        // Category = System (6); Code = PASSWORD_RESET; email-only (no inbox row for this notification).
+        // Placeholders: {userName} = display name, {resetUrl} = prebuilt single-use reset link.
+        // Locale resolved from PasswordResetRequestedIntegrationEvent.Locale (PreferredLanguage at emit
+        // time); falls back to ar-EG (platform default) when null. Body keeps the <a href> link shape
+        // consistent with the previously hardcoded English body. Arabic-first, parent-safe.
+        // IMPORTANT: consumers must NOT log {resetUrl} — it carries the single-use reset token.
+        [$"System:PASSWORD_RESET:{ArEg}"] = (
+            "إعادة تعيين كلمة المرور",
+            "مرحباً {userName}،<br/><br/>تلقينا طلباً لإعادة تعيين كلمة مرور حسابك في لرنكسيا. انقر على الرابط أدناه لاختيار كلمة مرور جديدة:<br/><br/><a href=\"{resetUrl}\">إعادة تعيين كلمة المرور</a><br/><br/>إذا لم تطلب ذلك، يمكنك تجاهل هذه الرسالة بأمان — لن تتغير كلمة مرورك."),
+        [$"System:PASSWORD_RESET:{EnUs}"] = (
+            "Reset your Learnexia password",
+            "Hello {userName},<br/><br/>We received a request to reset your Learnexia password. Click the link below to choose a new password:<br/><br/><a href=\"{resetUrl}\">Reset my password</a><br/><br/>If you did not request this, you can safely ignore this email — your password will not change."),
+
         // ── ReviewReminder ────────────────────────────────────────────────────────────────────
         // P9-09: Spaced-repetition review-due nudge — once per SR sweep, top due skill as headline.
         // Category = ReviewReminder; inbox-only in v1 (not in ReengagementCategories push set until P9-04 FE).

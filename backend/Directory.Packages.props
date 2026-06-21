@@ -82,6 +82,11 @@
     <PackageVersion Include="Asp.Versioning.Mvc" Version="8.1.0" />
     <PackageVersion Include="Marvin.Cache.Headers" Version="7.1.0" />
     <PackageVersion Include="AspNetCoreRateLimit" Version="5.0.0" />
+    <!-- BE-4 (P6-06): Redis-backed rate-limit stores. AspNetCoreRateLimit.Redis 2.x targets the 5.x
+         core package line; 2.0.0 is the stable release compatible with AspNetCoreRateLimit 5.0.0.
+         Reuses the existing IConnectionMultiplexer singleton (StackExchange.Redis 2.7.27, registered
+         in Program.cs) — no second Redis connection. -->
+    <PackageVersion Include="AspNetCoreRateLimit.Redis" Version="2.0.0" />
 
     <!-- EF Core -->
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.8" />
