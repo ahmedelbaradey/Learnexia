@@ -1,3 +1,39 @@
+## P6-05 Observability (OTel tracing + metrics, NLog targets, AI-gateway health check) — 2026-06-21 (`feat/P6-05-observability`)
+
+**Closes the observability blind-spot at launch** — NLog now has configured targets, OpenTelemetry tracing + metrics are wired (OTLP config-gated), and the readiness probe reports DB + Redis + **AI-Gateway + MinIO** dependency status.
+
+**What shipped (Host + one Shared.Contracts seam; no new module, no DB migration, no new NuGet):**
+
+- **OTel wiring (BE-1):** `AddOpenTelemetry()` in `Program.cs` with `ResourceBuilder` (service name/version/env), `.WithTracing(ASP.NET Core + HttpClient, health-probe filtered, configurable sampler)`, `.WithMetrics(ASP.NET Core + HttpClient + Runtime)`. OTLP exporter registered **only** when `OpenTelemetry:Otlp:Endpoint` is non-empty — absent = no-op (local dev + integration suite unaffected). Npgsql/EF DB tracing deferred (no centrally-versioned package, no-new-NuGet rule).
+- **AI-Gateway health check (BE-2):** new `IAiReadinessProbe` seam in `Shared.Contracts/Ai/` (booleans/enum only — never key values), implemented by `AiReadinessProbe` in `Ai.Infrastructure` (Scoped, mirrors `IAiSafetyEvalResultsQuery`). `AiGatewayHealthCheck : IHealthCheck` in `Host/HealthChecks/` injects the seam only (module isolation). Degraded-tolerant — an unconfigured AI Tutor never causes a hard 503. Also added `MinioHealthCheck` (lightweight TCP probe, Degraded-tolerant).
+- **Minimal JSON health writer:** `/health` now emits `{"status":"…","entries":{"name":"status",…}}` — no exception text, stack traces, or secret values. `/health/live` unchanged (always 200).
+- **NLog targets (BE-3):** `nlog.config` created from scratch (CONVENTIONS §13 — none existed). Console + rolling daily file targets. Layout includes `${activity:property=TraceId}` + `${activity:property=SpanId}` so every log line correlates with the OTel trace. No second `ILoggerManager` registration added.
+
+### OTLP / observability env vars for devops
+
+| Env var | Default | Purpose |
+|---|---|---|
+| `OpenTelemetry__Otlp__Endpoint` | (empty = no-op) | OTLP gRPC/HTTP endpoint, e.g. `http://otel-collector:4317`. Set to activate export. |
+| `OpenTelemetry__ServiceName` | `Learnexia` | Service name reported in OTel resource attributes. |
+| `OpenTelemetry__SamplingRatio` | `1.0` | Trace sampling ratio [0.0–1.0]. Devops should lower in production (e.g. 0.1). |
+
+### Dashboard / alerts — devops boundary (AC-3)
+
+The **KPI + uptime dashboard and alerts are devops** — built on the OTLP stream (Grafana/Tempo/Prometheus) + the existing backend analytics endpoints:
+
+- `GET api/Admin/Analytics/kpis?from=&to=` — returns `PlatformKpiSummaryDto` with DAU/WAU/MAU activity proxies (`distinctActiveStudents`), session duration, retention (`ReturningStudentRate`), XP, missions, AI safety counts. Auth: `AdminOnly`.
+- `GET api/Admin/Analytics/notifications?from=&to=&category=` — notification lifecycle aggregates (dispatched/suppressed/opened by code + category + suppression reason). Auth: `AdminOnly`.
+
+**`/health` is the 99.5%-uptime probe** for the orchestrator/uptime monitor. It now reports:
+- `database` — Npgsql check (hard-fail → 503 when DB is down).
+- `redis` — Degraded-tolerant (only when `ConnectionStrings:Redis` is set).
+- `ai-gateway` — **new** config-readiness check; Degraded-tolerant; never hard-fails.
+- `minio` — **new** TCP liveness check; Degraded-tolerant.
+
+**Gates:** build 0 errors · module isolation confirmed (Host injects `Shared.Contracts` seam only, no Ai-internal ref) · no DB migration · no new NuGet (all OTel packages were already in `Directory.Packages.props`).
+
+---
+
 ## P6-07 Access-token revocation (per-request SessionId validation) — 2026-06-21 (`feat/P6-07-access-token-revocation`)
 
 **Closes Phase-1 audit finding G2** (the access-token-revocation item deliberately split out of P6-06). An already-issued JWT now stops working **on its next call** after sign-out / password-change / password-reset / admin-suspend / delete — instead of surviving its full 30-min lifetime.

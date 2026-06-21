@@ -8,6 +8,7 @@ using Learnexia.Modules.Ai.Infrastructure.Cache;
 using Learnexia.Modules.Ai.Infrastructure.Gateway;
 using Learnexia.Modules.Ai.Infrastructure.Persistence;
 using Learnexia.Modules.Ai.Infrastructure.Providers;
+using Learnexia.Modules.Ai.Infrastructure.Readiness;
 using Learnexia.Modules.Ai.Infrastructure.Safety;
 using Learnexia.Modules.Ai.Infrastructure.Services;
 using Learnexia.Shared.Contracts.Ai;
@@ -94,6 +95,11 @@ public static class DependencyInjection
         // embedded safety-eval-results.json artifact (no DB, no migration; Option 1 from brief §C).
         // Scoped: mirrors IPlatformAiSafetyStatsQuery registration; depends on ILoggerManager (Singleton-safe).
         services.AddScoped<IAiSafetyEvalResultsQuery, AiSafetyEvalResultsQueryAdapter>();
+
+        // P6-05-BE-2: AI-readiness probe seam — config-inspection only; no model call, no real key needed.
+        // Scoped: mirrors IAiSafetyEvalResultsQuery registration. Host's AiGatewayHealthCheck injects
+        // only this Shared.Contracts interface — never an Ai-module internal type (module isolation).
+        services.AddScoped<IAiReadinessProbe, AiReadinessProbe>();
 
         // ── P7-11 AI-safety admin dashboard (read model) ─────────────────────────────
         // Scoped — depends on scoped AiDbContext; owns all EF read queries for the dashboard.

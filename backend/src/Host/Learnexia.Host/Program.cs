@@ -1,20 +1,21 @@
+using System.Text.Json;
 using AspNetCoreRateLimit;
-using StackExchange.Redis;
 using Hangfire;
 using Hangfire.PostgreSql;
 using Learnexia.Host.Extensions;
+using Learnexia.Host.HealthChecks;
 using Learnexia.Host.Middleware;
 using Learnexia.Host.SystemConfiguration;
+using Learnexia.Modules.Ai.Api;
+using Learnexia.Modules.Analytics.Api;
+using Learnexia.Modules.Billing.Api;
+using Learnexia.Modules.Curriculum.Api;
+using Learnexia.Modules.Gamification.Api;
 using Learnexia.Modules.Identity.Api;
 using Learnexia.Modules.Learning.Api;
-using Learnexia.Modules.Parent.Api;
-using Learnexia.Modules.Notifications.Api;
-using Learnexia.Modules.Gamification.Api;
 using Learnexia.Modules.Moderation.Api;
-using Learnexia.Modules.Ai.Api;
-using Learnexia.Modules.Curriculum.Api;
-using Learnexia.Modules.Billing.Api;
-using Learnexia.Modules.Analytics.Api;
+using Learnexia.Modules.Notifications.Api;
+using Learnexia.Modules.Parent.Api;
 using Learnexia.Shared.Kernel.Settings;
 using Learnexia.Shared.Kernel.Storage;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -23,6 +24,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using StackExchange.Redis;
 
 // The codebase stamps DateTime.Now (Kind=Local) on entities/audit/seed (ported from the SQL Server
 // original). Npgsql maps DateTime to 'timestamp with time zone', which rejects Local kinds. This switch
@@ -55,6 +60,59 @@ builder.Services.AddHttpContextAccessor();
 // Platform-wide MinIO object storage (relocated from Identity to Shared.Kernel — a shared capability for
 // ANY file upload). Registered ONCE here at the Host so every module can inject IStorageService.
 builder.Services.AddMinIODependencies(builder.Configuration);
+
+// ── OpenTelemetry — tracing + metrics (P6-05) ────────────────────────────────────────────────
+// Config-gated: the OTLP exporter is registered ONLY when OpenTelemetry:Otlp:Endpoint is set.
+// Without an endpoint the app runs with zero behaviour change (no collector needed in local
+// dev or the integration suite). Mirrors the Redis-when-present gate pattern.
+//
+// Instrumentation: ASP.NET Core + HttpClient + Runtime.
+// Npgsql/EF DB tracing is deferred (no centrally-versioned OTel Npgsql package; no-new-NuGet rule).
+//
+// Secret/PII guard: request/response body capture is NOT enabled; no header enrichment that
+// could carry Authorization. Default instrumentation = span-name + route + status only.
+var otlpSettings = builder.Configuration.GetSection(OpenTelemetrySettings.SectionName).Get<OpenTelemetrySettings>()
+    ?? new OpenTelemetrySettings();
+var otlpEndpoint = otlpSettings.Otlp.Endpoint;
+var serviceName = string.IsNullOrWhiteSpace(otlpSettings.ServiceName) ? "Learnexia" : otlpSettings.ServiceName;
+var serviceVersion = typeof(Program).Assembly.GetName().Version?.ToString() ?? "1.0.0";
+var samplingRatio = Math.Clamp(otlpSettings.SamplingRatio, 0.0, 1.0);
+
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource
+        .AddService(
+            serviceName: serviceName,
+            serviceVersion: serviceVersion,
+            autoGenerateServiceInstanceId: true)
+        .AddAttributes(new Dictionary<string, object>
+        {
+            ["deployment.environment"] = builder.Environment.EnvironmentName,
+        }))
+    .WithTracing(tracing =>
+    {
+        tracing
+            .AddAspNetCoreInstrumentation(opts =>
+            {
+                // Filter health probes out of traces to avoid noise.
+                opts.Filter = ctx =>
+                    !ctx.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase);
+            })
+            .AddHttpClientInstrumentation()
+            .SetSampler(new TraceIdRatioBasedSampler(samplingRatio));
+
+        if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+            tracing.AddOtlpExporter(o => o.Endpoint = new Uri(otlpEndpoint));
+    })
+    .WithMetrics(metrics =>
+    {
+        metrics
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddRuntimeInstrumentation();
+
+        if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+            metrics.AddOtlpExporter(o => o.Endpoint = new Uri(otlpEndpoint));
+    });
 
 // IDistributedCache backing for sessions / token cache.
 // When a Redis endpoint is configured (compose injects ConnectionStrings__Redis=redis:6379), back the
@@ -102,6 +160,20 @@ if (!string.IsNullOrWhiteSpace(redisConnectionString))
 {
     healthChecks.AddRedis(redisConnectionString, name: "redis", failureStatus: HealthStatus.Degraded, tags: ["ready"]);
 }
+
+// P6-05-BE-2: AI-Gateway readiness check — config-inspection only (booleans; no model call; no keys).
+// Degraded-tolerant: an unconfigured AI Tutor never causes a hard 503.
+// Injects IAiReadinessProbe from Shared.Contracts (registered in AddAiModule → AddAiInfrastructure).
+healthChecks.AddCheck<AiGatewayHealthCheck>(
+    name: "ai-gateway",
+    failureStatus: HealthStatus.Degraded,
+    tags: ["ready"]);
+
+// P6-05-BE-2: MinIO readiness check — lightweight TCP probe; Degraded-tolerant.
+healthChecks.AddCheck<MinioHealthCheck>(
+    name: "minio",
+    failureStatus: HealthStatus.Degraded,
+    tags: ["ready"]);
 
 // Background-jobs host (P1-07-BE-5) — Hangfire with PostgreSQL storage.
 // This registers the scheduler + server only; NO jobs are implemented in this story. It is the home for
@@ -228,7 +300,26 @@ app.MapHealthChecks("/health/live", new HealthCheckOptions
 
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
-    Predicate = _ => true
+    Predicate = _ => true,
+    // P6-05: minimal status-only JSON writer — {status, entries:{<name>:<status>}}.
+    // NEVER emits exception text, stack traces, description detail, or connection-string
+    // passwords/API keys (security; matches the existing "does not leak sensitive info" test).
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var result = new
+        {
+            status = report.Status.ToString(),
+            entries = report.Entries.ToDictionary(
+                e => e.Key,
+                e => e.Value.Status.ToString()),
+        };
+        await context.Response.WriteAsync(
+            JsonSerializer.Serialize(result, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            }));
+    },
 }).AllowAnonymous();
 
 app.UseMiddleware<ErrorHandlerMiddleWare>();
