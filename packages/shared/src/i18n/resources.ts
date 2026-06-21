@@ -386,7 +386,8 @@ export const en = {
         timeLearning: 'Time learning',
         timeDelta: '+{{value}} vs last week',
         xpEarned: 'XP earned',
-        xpDelta: '+{{value}}% vs last week',
+        /** GAP-8 fix: xpDelta is ABSOLUTE (not a percent). */
+        xpDelta: '+{{value}} XP this week',
         lessonsDone: 'Lessons done',
         lessonsDelta: '+{{value}} vs last week',
         streak: 'Day streak',
@@ -397,10 +398,14 @@ export const en = {
         subtitle: 'XP earned per day',
         exportCsv: 'Export CSV',
         placeholder: 'Activity chart — coming soon',
+        /** P5-05: empty state when all xpEarned === 0. */
+        empty: 'No activity yet this week',
       },
       subjectMastery: {
         title: 'Subject mastery',
         subtitle: 'Last 7 days',
+        /** P5-05: empty state when no mastery data yet. */
+        empty: 'Complete lessons to see mastery',
       },
       subjects: {
         math: 'Math',
@@ -412,27 +417,14 @@ export const en = {
         title: 'Areas to focus on',
         subtitle: 'Topics where {{name}} is still building confidence',
         seeAll: 'See all',
+        /** P5-05 FIX: shown when no weak areas are detected (new child, zero-state). */
+        empty: 'No focus areas right now — keep going!',
       },
       recommendations: {
         title: 'Recommendations from Lexi',
         subtitle: 'Personalised suggestions for this week',
-        rows: {
-          subtraction: {
-            title: 'Practice subtraction 5 min/day',
-            body: 'Short daily reps will lift accuracy from 42% in about a week.',
-            cta: 'Plan it →',
-          },
-          reading: {
-            title: 'Read with a parent on Fridays',
-            body: '{{name}} reads 28% faster when reading aloud with a grown-up.',
-            cta: 'Schedule →',
-          },
-          streak: {
-            title: 'Celebrate the 7-day streak',
-            body: 'A weekend reward keeps motivation high. Suggest a screen-time bonus.',
-            cta: 'Send praise →',
-          },
-        },
+        /** P5-05 real wiring: shown when items[] is empty (cold-start / no weak areas yet). */
+        empty: 'No recommendations yet — keep learning to unlock personalised tips!',
       },
     },
     // Per-child Child Overview drill-down (Batch C; (parent)/child/[id]).
@@ -482,8 +474,31 @@ export const en = {
       },
       charts: {
         xpTitle: 'Last 20 days · XP earned',
+        /** P5-05 NEW: subtitle for the 20-day chart panel. */
+        xpSubtitle: 'Today highlighted in indigo',
         todTitle: 'Time of day',
+        /** P5-05 NEW: subtitle for time-of-day chart panel ({{name}} = child name). */
+        todSubtitle: 'When {{name}} learns best',
+        /** P5-05 NEW: peak-focus insight tip ({{start}} / {{end}} = Latin hour labels). */
+        peakInsight: 'Peak focus is {{start}}–{{end}} — great time for new material',
+        /**
+         * P5-05 FIX: peak-focus insight for named bucket (replaces peakInsight with
+         * hour-range labels; the real DTO has named buckets, not hourly bars).
+         * {{bucket}} = translated bucket name (Morning / Afternoon / Evening / Night).
+         */
+        peakBucketInsight: '{{bucket}} is the peak focus time — great for new material',
+        /** P5-05 NEW: empty state caption for 20-day chart when no data. */
+        noData: 'No data yet — check back soon',
+        /** P5-05 NEW: empty state caption for time-of-day chart. */
+        todEmpty: 'No session data yet',
         comingSoon: 'Charts coming soon',
+        /** P5-05 FIX: Named time-of-day bucket labels (4 buckets from backend). */
+        tod: {
+          morning: 'Morning',
+          afternoon: 'Afternoon',
+          evening: 'Evening',
+          night: 'Night',
+        },
       },
       empty: {
         firstWeek:
@@ -1348,6 +1363,29 @@ export const en = {
       },
     },
   },
+  /**
+   * Backend recommendation item i18n keys (P5-05 real wiring).
+   *
+   * The backend sends `titleKey`, `bodyKey`, `ctaKey` as bare string constants
+   * (e.g. "RecReviewTitle") matching `SharedResourcesKey` values. The FE maps
+   * each backend key to one of these entries via `REC_ITEM_KEY_MAP` in
+   * `RecommendationsCard.tsx`. All 9 keys (3 action types × title/body/cta) are
+   * required; both locales must be complete.
+   *
+   * Source of truth: SharedResources.en-US.resx / SharedResources.ar-EG.resx
+   * (backend/src/Shared/Learnexia.Shared.Resources/).
+   */
+  rec: {
+    RecReviewTitle: 'Time to review',
+    RecReviewBody: 'This topic needs a concept review before more practice.',
+    RecReviewCta: 'Review concept',
+    RecPracticeTitle: 'Keep practising',
+    RecPracticeBody: 'Practise this skill to strengthen understanding.',
+    RecPracticeCta: 'Start practice',
+    RecColdStartTitle: 'Great start!',
+    RecColdStartBody: 'No weak areas yet — keep up the great work!',
+    RecColdStartCta: 'Continue learning',
+  },
 } as const;
 
 export const ar = {
@@ -1705,7 +1743,8 @@ export const ar = {
         timeLearning: 'وقت التعلم',
         timeDelta: '+{{value}} عن الأسبوع الماضي',
         xpEarned: 'النقاط المكتسبة',
-        xpDelta: '+{{value}}٪ عن الأسبوع الماضي',
+        /** GAP-8 fix: xpDelta مطلق (لا نسبة مئوية). Eastern-Arabic digit + نقطة. */
+        xpDelta: '+{{value}} نقطة هذا الأسبوع',
         lessonsDone: 'دروس منجزة',
         lessonsDelta: '+{{value}} عن الأسبوع الماضي',
         streak: 'التحدى',
@@ -1716,10 +1755,14 @@ export const ar = {
         subtitle: 'النقاط المكتسبة لكل يوم',
         exportCsv: 'تصدير CSV',
         placeholder: 'الرسم البياني قريباً',
+        /** P5-05: الحالة الفارغة عندما لا يوجد نشاط. */
+        empty: 'لا نشاط هذا الأسبوع',
       },
       subjectMastery: {
         title: 'إتقان المواد',
         subtitle: 'آخر ٧ أيام',
+        /** P5-05: الحالة الفارغة قبل بدء الدروس. */
+        empty: 'أكمل الدروس لعرض الإتقان',
       },
       subjects: {
         math: 'الرياضيات',
@@ -1731,27 +1774,14 @@ export const ar = {
         title: 'مجالات للتركيز عليها',
         subtitle: 'مواضيع لا يزال {{name}} يبني ثقته فيها',
         seeAll: 'رؤية الكل',
+        /** P5-05 FIX: عندما لا توجد مجالات ضعف (طفل جديد، حالة الأصفار). */
+        empty: 'لا مجالات تحتاج تركيزاً الآن — واصل المسيرة!',
       },
       recommendations: {
         title: 'توصيات من ليكسي',
         subtitle: 'اقتراحات مخصصة لهذا الأسبوع',
-        rows: {
-          subtraction: {
-            title: 'تدرّب على الطرح ٥ دقائق يومياً',
-            body: 'تكرار يومي قصير يرفع الدقّة من ٤٢٪ خلال أسبوع تقريباً.',
-            cta: 'خطّط له ←',
-          },
-          reading: {
-            title: 'اقرأ مع أحد الوالدين أيام الجمعة',
-            body: 'يقرأ {{name}} أسرع بنسبة ٢٨٪ عند القراءة بصوت عالٍ مع شخص بالغ.',
-            cta: 'حدّد موعداً ←',
-          },
-          streak: {
-            title: 'احتفِ بتحدى الـ٧ أيام',
-            body: 'مكافأة في نهاية الأسبوع تبقي الحماس عالياً. اقترح مكافأة وقت شاشة.',
-            cta: 'أرسل تشجيعاً ←',
-          },
-        },
+        /** P5-05 real wiring: shown when items[] is empty (cold-start / no weak areas yet). */
+        empty: 'لا توصيات بعد — واصل التعلم لتحصل على نصائح مخصصة!',
       },
     },
     // نظرة عامة على الطفل (Batch C؛ (parent)/child/[id]).
@@ -1800,9 +1830,31 @@ export const ar = {
         empty: 'يظهر الإتقان بعد أولى الدروس',
       },
       charts: {
-        xpTitle: 'آخر ٢٠ يومًا · النقاط',
-        todTitle: 'أوقات اليوم',
+        xpTitle: 'آخر ٢٠ يوماً · النقاط',
+        /** P5-05 NEW: عنوان فرعي للرسم البياني ٢٠ يوم. */
+        xpSubtitle: 'اليوم بالنيلي',
+        todTitle: 'وقت اليوم',
+        /** P5-05 NEW: عنوان فرعي لرسم وقت اليوم ({{name}} = اسم الطفل). */
+        todSubtitle: 'متى يتعلم {{name}} بأفضل ما يمكن',
+        /** P5-05 NEW: تلميح ذروة التركيز ({{start}} / {{end}} = توقيتات Latin). */
+        peakInsight: 'أفضل تركيز في {{start}}–{{end}} — وقت مثالي للمادة الجديدة',
+        /**
+         * P5-05 FIX: تلميح ذروة التركيز للحزمة المسمّاة (الشبكة الحقيقية تحتوي على حزم
+         * مسمّاة لا أعمدة ساعية). {{bucket}} = اسم الحزمة المترجم.
+         */
+        peakBucketInsight: '{{bucket}} هو وقت ذروة التركيز — مثالي للمادة الجديدة',
+        /** P5-05 NEW: الحالة الفارغة للرسم البياني ٢٠ يوم. */
+        noData: 'لا بيانات بعد — تحقق قريباً',
+        /** P5-05 NEW: الحالة الفارغة لرسم وقت اليوم. */
+        todEmpty: 'لا بيانات جلسات بعد',
         comingSoon: 'الرسوم البيانية قريبًا',
+        /** P5-05 FIX: تسميات حزم وقت اليوم المسمّاة (٤ حزم من الخلفية). */
+        tod: {
+          morning: 'الصباح',
+          afternoon: 'بعد الظهر',
+          evening: 'المساء',
+          night: 'الليل',
+        },
       },
       empty: {
         firstWeek: 'لم يبدأ {{name}} بعد — أول درس سيضيء هذه الصفحة!',
@@ -2708,6 +2760,21 @@ export const ar = {
         body: 'ستظهر تحديات الأسبوع هنا — عُد قريبًا!',
       },
     },
+  },
+  /**
+   * Backend recommendation item i18n keys (P5-05 real wiring) — AR.
+   * Mirrors `en.rec` exactly. Source: SharedResources.ar-EG.resx.
+   */
+  rec: {
+    RecReviewTitle: 'حان وقت المراجعة',
+    RecReviewBody: 'هذا الموضوع يحتاج مراجعة المفهوم قبل مزيد من التدريب.',
+    RecReviewCta: 'مراجعة المفهوم',
+    RecPracticeTitle: 'واصل التدريب',
+    RecPracticeBody: 'تدرّب على هذه المهارة لتعزيز فهمك.',
+    RecPracticeCta: 'ابدأ التدريب',
+    RecColdStartTitle: 'بداية رائعة!',
+    RecColdStartBody: 'ليس لديك مناطق ضعف حتى الآن — أحسنت!',
+    RecColdStartCta: 'تابع التعلم',
   },
 } as const;
 

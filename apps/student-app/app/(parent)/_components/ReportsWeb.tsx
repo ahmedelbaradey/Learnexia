@@ -1,30 +1,31 @@
 /**
- * ReportsWeb — the A4 parent Reports page body (CO-FE-1 / P1-11-FE-9,
- * design spec `design-system/ui_kits/parent-dashboard/A4-reports.md`).
+ * ReportsWeb — parent Reports page body (P5-05 real charts + data wiring).
  *
- * Composition (§1): page header (title + range select + Send Report stub) →
- * KPI row (4-up) → "Last 20 days · XP earned" chart SLOT → 2-col
- * [skills mastery | "Time of day" chart SLOT] → Recent attempts panel (A5).
- * Charts are DEFERRED to P5-05 — slots reserve the space, nothing is faked.
+ * Charts replacing ChartPlaceholderPanel slots:
+ *  - 20-day XP trend (BarChart Shape B, testID "reports-chart-20day")
+ *  - Time-of-day distribution (BarChart Shape C, testID "reports-chart-tod")
  *
- * REAL data only: KPIs (time / lessons / accuracy) derive from the active
- * child's attempts via `useStudentAttempts` (range-filtered client-side,
- * §2.1). Honest gaps per spec:
- *   - G-2: no parent-readable child XP → the XP tile shows "—" + sub copy.
- *   - G-1: no per-subject mastery endpoint → the mastery panel renders its
- *     empty state (bars at 0). Never fabricated.
- *   - L6: "Send Report" fires a local toast (Settings notice pattern) + a 2s
- *     button cooldown. No network call until P5-04 / Phase-9.
+ * Data sources:
+ *  - KPI row: `useWeeklyKpis` endpoint (time / lessons / accuracy from weekly-kpis;
+ *    XP tile stays "—" — G-2 gap unchanged per spec)
+ *  - All three charts: `useChildReports` (single GET /api/Parent/Children/{id}/Reports)
+ *    - `dailyXpSeries`    → daily-activity (not used here, consumed by DailyActivityCard)
+ *    - `xpTrend20Day`     → 20-day trend (Shape B); field `day`+`xp` (not `date`+`xpEarned`)
+ *    - `timeOfDayBuckets` → 4 named buckets "Morning|Afternoon|Evening|Night" (Shape C)
+ *      NOTE: NOT 8 hourly bars — the real DTO has named buckets, not an `hour` integer.
+ *  - Mastery panel: `useSubjectMastery` — fields `bySubject[].subjectCode`+`percent`
+ *    (not `subjects[].subjectId`+`masteryPercent`)
  *
- * Active child comes from the shell ChildSwitcher (`activeChildStore`) — the
- * page has no child picker and never takes a student id from the route/URL.
- * Attempt-fetch failures (incl. 403/404) render ONE generic error strip — no
- * IDOR leakage. RTL + ar/en; tokens only (spec pixel literals allowed).
+ * RTL + ar/en; tokens only; no new design patterns.
  */
 import {
   ATTEMPT_STATUS,
   useMyChildren,
   useStudentAttempts,
+  useChildReports,
+  useSubjectMastery,
+  useWeeklyKpis,
+  PARENT_SUBJECT_CODE_MAP,
   type AttemptListItemDto,
 } from '@learnexia/api-client';
 import { type Direction } from '@learnexia/shared/i18n';
@@ -50,16 +51,13 @@ import {
   splitByRange,
   type ReportRangeValue,
 } from './reportsFormat';
+import { BarChart } from './BarChart';
 
 const IS_WEB = Platform.OS === 'web';
-
-/** Desktop threshold: full 4-col KPI grid at ≥1025 viewport width. */
 const DESKTOP_VIEWPORT_BREAKPOINT = 1025;
-
-/** Empty-value placeholder glyph mandated by the spec ("—", §2.2/§2.5). */
 const EMPTY_VALUE = '—';
 
-/** Subject label keys — reuse the existing Overview subject copy (4 subjects). */
+/** Subject label keys */
 const SUBJECT_LABEL_KEY: Record<OverviewSubjectKey, string> = {
   [OVERVIEW_SUBJECT.Math]: 'parent.overview.subjects.math',
   [OVERVIEW_SUBJECT.Science]: 'parent.overview.subjects.science',
@@ -67,7 +65,6 @@ const SUBJECT_LABEL_KEY: Record<OverviewSubjectKey, string> = {
   [OVERVIEW_SUBJECT.English]: 'parent.overview.subjects.english',
 };
 
-/** Per-subject mastery-bar accents (A4 §2.3 / Design Gap GAP-03 precedent). */
 const SUBJECT_ACCENT: Record<OverviewSubjectKey, MasteryBarProps['accent']> = {
   [OVERVIEW_SUBJECT.Math]: '$subjectMathFg',
   [OVERVIEW_SUBJECT.Science]: '$subjectScienceFg',
@@ -76,6 +73,19 @@ const SUBJECT_ACCENT: Record<OverviewSubjectKey, MasteryBarProps['accent']> = {
 };
 
 const SUBJECT_KEYS = Object.values(OVERVIEW_SUBJECT);
+
+/**
+ * Convert a named time-of-day bucket to a short display label.
+ * The backend returns "Morning" | "Afternoon" | "Evening" | "Night" (4 buckets).
+ * These are NOT hourly bars — there is no `hour` integer in the real DTO.
+ * Labels are i18n keys resolved here for display.
+ */
+const TOD_BUCKET_LABEL_KEY: Record<string, string> = {
+  Morning: 'parent.reports.charts.tod.morning',
+  Afternoon: 'parent.reports.charts.tod.afternoon',
+  Evening: 'parent.reports.charts.tod.evening',
+  Night: 'parent.reports.charts.tod.night',
+} as const;
 
 export function ReportsWeb() {
   const { t } = useTranslation();
@@ -89,23 +99,19 @@ export function ReportsWeb() {
   const activeChildId = useActiveChildStore((s) => s.activeChildId);
   const openAddChild = useActiveChildStore((s) => s.openAddChild);
 
-  // Active child from the shell switcher (never a route/user-supplied id).
   const activeChild =
     (activeChildId ? children.find((c) => String(c.id) === activeChildId) : null) ??
     children[0];
   const childName = activeChild?.fullName ?? '';
+  const childId = activeChild ? String(activeChild.id) : undefined;
 
   const attemptsQuery = useStudentAttempts(activeChild?.id);
-
-  // Report range is fixed to "this week" (the selector + Send Report were removed
-  // from the header per the design — no period/send controls on any parent page).
   const [range] = useState<ReportRangeValue>(REPORT_RANGE.Week);
 
   const isLoading =
     childrenQuery.isLoading || (activeChild != null && attemptsQuery.isLoading);
   const hasChildren = !childrenQuery.isLoading && children.length > 0;
   const attempts = attemptsQuery.data ?? [];
-  /** Zero attempts EVER → first-week page state (§2.5); hides the A5 panel. */
   const isFirstWeek =
     activeChild != null && attemptsQuery.isSuccess && attempts.length === 0;
 
@@ -113,8 +119,6 @@ export function ReportsWeb() {
 
   return (
     <Stack testID="reports-root" flexDirection="column" width="100%">
-      {/* ---- Unified parent header (§2.1) — range select + Send Report are
-           wide-only `actions`; ChildSwitcher + AccountMenu always show. ---- */}
       <ParentHeader
         title={
           activeChild
@@ -124,152 +128,148 @@ export function ReportsWeb() {
         subtitle={t('parent.reports.subtitle')}
       />
 
-      {/* Body content — own gutter (header is full-bleed with its own padding). */}
       <Stack flexDirection="column" gap="$6" padding="$6">
-      {/* ---- Page states ---- */}
-      {childrenQuery.isError ? (
-        <ErrorStrip
-          message={t('parent.reports.loadError')}
-          retryLabel={t('common.retry')}
-          onRetry={() => childrenQuery.refetch()}
-          rowDir={rowDir}
-          direction={direction}
-        />
-      ) : isLoading ? (
-        <LoadingSkeleton rowDir={rowDir} />
-      ) : !hasChildren ? (
-        /* No children — defer to the shell's add-child path (§2.5). */
-        <Stack
-          testID="reports-add-child-band"
-          backgroundColor="$primarySoft"
-          borderRadius="$card"
-          padding={16}
-          gap="$3"
-          alignItems="flex-start"
-        >
-          <Text
-            color="$fg1"
-            fontSize={13}
-            fontWeight="700"
-            fontFamily="$heading"
-            writingDirection={direction}
-          >
-            {t('parent.reports.empty.addChild')}
-          </Text>
-          <Button
-            variant="ghost"
-            size="sm"
-            accessibilityLabel={t('parent.myChildren.addChild')}
-            onPress={() => openAddChild()}
-          >
-            {t('parent.myChildren.addChild')}
-          </Button>
-        </Stack>
-      ) : attemptsQuery.isError ? (
-        /* Generic error strip for ALL failures incl. 403/404 — no IDOR leak. */
-        <ErrorStrip
-          message={t('parent.reports.loadError')}
-          retryLabel={t('common.retry')}
-          onRetry={() => attemptsQuery.refetch()}
-          rowDir={rowDir}
-          direction={direction}
-        />
-      ) : (
-        <>
-          {/* First-week friendly band (§2.5) — no CTA (parents can't start lessons). */}
-          {isFirstWeek ? (
-            <Stack
-              testID="reports-first-week-band"
-              backgroundColor="$primarySoft"
-              borderRadius="$card"
-              padding={16}
-            >
-              <Text
-                color="$fg1"
-                fontSize={13}
-                fontWeight="700"
-                fontFamily="$heading"
-                writingDirection={direction}
-              >
-                {t('parent.reports.empty.firstWeek', { name: childName })}
-              </Text>
-            </Stack>
-          ) : null}
-
-          {/* ---- KPI row (§2.2) — 4-col desktop / 2-col tablet+mobile ---- */}
-          <KpiRow
-            windows={windows}
-            range={range}
+        {childrenQuery.isError ? (
+          <ErrorStrip
+            message={t('parent.reports.loadError')}
+            retryLabel={t('common.retry')}
+            onRetry={() => childrenQuery.refetch()}
             rowDir={rowDir}
             direction={direction}
-            locale={locale}
-            isDesktop={isDesktop}
-            isRtl={isRtl}
           />
-
-          {/* ---- Chart slot: "Last 20 days · XP earned" (§2.4, P5-05) ---- */}
-          <ChartPlaceholderPanel
-            title={t('parent.reports.charts.xpTitle')}
-            body={t('parent.reports.charts.comingSoon')}
+        ) : isLoading ? (
+          <LoadingSkeleton rowDir={rowDir} />
+        ) : !hasChildren ? (
+          <Stack
+            testID="reports-add-child-band"
+            backgroundColor="$primarySoft"
+            borderRadius="$card"
+            padding={16}
+            gap="$3"
+            alignItems="flex-start"
+          >
+            <Text
+              color="$fg1"
+              fontSize={13}
+              fontWeight="700"
+              fontFamily="$heading"
+              writingDirection={direction}
+            >
+              {t('parent.reports.empty.addChild')}
+            </Text>
+            <Button
+              variant="ghost"
+              size="sm"
+              accessibilityLabel={t('parent.myChildren.addChild')}
+              onPress={() => openAddChild()}
+            >
+              {t('parent.myChildren.addChild')}
+            </Button>
+          </Stack>
+        ) : attemptsQuery.isError ? (
+          <ErrorStrip
+            message={t('parent.reports.loadError')}
+            retryLabel={t('common.retry')}
+            onRetry={() => attemptsQuery.refetch()}
+            rowDir={rowDir}
             direction={direction}
-            borderRadius="$modal"
-            testID="reports-chart-slot-xp"
           />
-
-          {/* ---- 2-col: skills mastery + "Time of day" slot (§1) ---- */}
-          <Stack flexDirection={rowDir} gap="$6" flexWrap="wrap" alignItems="flex-start">
-            <Stack flex={1} minWidth={320}>
-              <SkillsMasteryPanel direction={direction} />
-            </Stack>
-            <Stack flex={1} minWidth={320}>
-              <ChartPlaceholderPanel
-                title={t('parent.reports.charts.todTitle')}
-                body={t('parent.reports.charts.comingSoon')}
-                direction={direction}
+        ) : (
+          <>
+            {isFirstWeek ? (
+              <Stack
+                testID="reports-first-week-band"
+                backgroundColor="$primarySoft"
                 borderRadius="$card"
-                testID="reports-chart-slot-tod"
-              />
-            </Stack>
-          </Stack>
+                padding={16}
+              >
+                <Text
+                  color="$fg1"
+                  fontSize={13}
+                  fontWeight="700"
+                  fontFamily="$heading"
+                  writingDirection={direction}
+                >
+                  {t('parent.reports.empty.firstWeek', { name: childName })}
+                </Text>
+              </Stack>
+            ) : null}
 
-          {/* ---- Areas to focus + Recommendations from Lexi (parent-mobile design) ---- */}
-          <Stack flexDirection={rowDir} gap="$6" flexWrap="wrap" alignItems="flex-start">
-            <Stack flex={1} minWidth={320}>
-              <FocusAreasCard
-                childId={String(activeChild?.id ?? '')}
-                childName={childName}
-                direction={direction}
-                rowDir={rowDir}
-                locale={locale}
-              />
-            </Stack>
-            <Stack flex={1} minWidth={320}>
-              <RecommendationsCard
-                childName={childName}
-                direction={direction}
-                rowDir={rowDir}
-              />
-            </Stack>
-          </Stack>
-
-          {/* ---- Recent attempts (A5 parent surface) — hidden first-week ---- */}
-          {!isFirstWeek ? (
-            <RecentAttemptsPanel
-              attempts={windows.current}
-              childName={childName}
+            {/* KPI row — now uses useWeeklyKpis for real values */}
+            <KpiRow
+              childId={childId}
+              windows={windows}
+              range={range}
+              rowDir={rowDir}
               direction={direction}
               locale={locale}
+              isDesktop={isDesktop}
+              isRtl={isRtl}
             />
-          ) : null}
-        </>
-      )}
+
+            {/* 20-day XP trend chart (Shape B) */}
+            <TwentyDayChartPanel
+              childId={childId}
+              direction={direction}
+              rowDir={rowDir}
+              locale={locale}
+            />
+
+            {/* 2-col: skills mastery + time-of-day chart */}
+            <Stack flexDirection={rowDir} gap="$6" flexWrap="wrap" alignItems="flex-start">
+              <Stack flex={1} minWidth={320}>
+                <SkillsMasteryPanel childId={childId} direction={direction} locale={locale} />
+              </Stack>
+              <Stack flex={1} minWidth={320}>
+                <TimeOfDayChartPanel
+                  childId={childId}
+                  childName={childName}
+                  direction={direction}
+                  rowDir={rowDir}
+                  locale={locale}
+                />
+              </Stack>
+            </Stack>
+
+            {/* Areas to focus + Recommendations */}
+            <Stack flexDirection={rowDir} gap="$6" flexWrap="wrap" alignItems="flex-start">
+              <Stack flex={1} minWidth={320}>
+                <FocusAreasCard
+                  childId={childId ?? ''}
+                  childName={childName}
+                  direction={direction}
+                  rowDir={rowDir}
+                  locale={locale}
+                />
+              </Stack>
+              <Stack flex={1} minWidth={320}>
+                <RecommendationsCard
+                  childId={childId}
+                  childName={childName}
+                  direction={direction}
+                  rowDir={rowDir}
+                />
+              </Stack>
+            </Stack>
+
+            {!isFirstWeek ? (
+              <RecentAttemptsPanel
+                attempts={windows.current}
+                childName={childName}
+                direction={direction}
+                locale={locale}
+              />
+            ) : null}
+          </>
+        )}
       </Stack>
     </Stack>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* KPI row (§2.2) — real attempt-derived values; honest gaps           */
+/* KPI row — real endpoint (useWeeklyKpis) for time / lessons;        */
+/* XP tile stays "—" (G-2 gap); accuracy from attempts client-side.   */
 /* ------------------------------------------------------------------ */
 
 interface KpiTileDef {
@@ -278,70 +278,67 @@ interface KpiTileDef {
   chipBg: StackProps['backgroundColor'];
   label: string;
   value: string;
-  /** Delta line text (12/700) or muted sub line; tone picks the color. */
   subText?: string;
-  subTone: 'success' | 'muted';
+  subTone: 'success' | 'danger' | 'muted';
 }
 
 interface KpiRowProps {
+  childId: string | undefined;
   windows: ReturnType<typeof splitByRange>;
   range: ReportRangeValue;
   rowDir: 'row' | 'row-reverse';
   direction: Direction;
   locale: string;
-  /** True when viewport ≥1025 — renders 4 columns; false = 2 columns. */
   isDesktop: boolean;
   isRtl: boolean;
 }
 
-function KpiRow({ windows, range, rowDir, direction, locale, isDesktop, isRtl }: KpiRowProps) {
+function KpiRow({
+  childId,
+  windows,
+  range,
+  rowDir,
+  direction,
+  locale,
+  isDesktop,
+  isRtl,
+}: KpiRowProps) {
   const { t } = useTranslation();
-  const { current, previous } = windows;
+  const kpiQuery = useWeeklyKpis(childId);
 
+  const { current, previous } = windows;
   const completed = current.filter((a) => a.status === ATTEMPT_STATUS.Completed);
   const prevCompleted = previous.filter(
     (a) => a.status === ATTEMPT_STATUS.Completed,
   );
 
-  const sumSeconds = (list: AttemptListItemDto[]) =>
-    list.reduce((acc, a) => acc + (a.durationSeconds ?? 0), 0);
   const meanAccuracy = (list: AttemptListItemDto[]): number | null =>
     list.length === 0
       ? null
       : list.reduce((acc, a) => acc + (a.accuracyPercentage ?? 0), 0) / list.length;
 
-  const totalSeconds = sumSeconds(current);
-  const lessonsDone = completed.length;
   const avgAccuracy = meanAccuracy(completed);
 
-  const hasActivity = current.length > 0;
-  // Deltas only for the week range vs the previous week, and only when the
-  // previous window has data (first week omits the line, §2.2).
+  // Accuracy delta from attempts (kept client-side per spec §3.4)
   const withDeltas = range === REPORT_RANGE.Week && previous.length > 0;
-
-  const deltaText = (value: number | null): string | undefined =>
-    value == null
-      ? undefined
-      : t('parent.reports.delta.vsLastWeek', {
-          value: formatSignedNumber(value, locale),
-        });
-
-  const prevSeconds = sumSeconds(previous);
-  const timeDelta =
-    withDeltas && prevSeconds > 0
-      ? ((totalSeconds - prevSeconds) / prevSeconds) * 100
-      : null;
-  const lessonsDelta =
-    withDeltas && prevCompleted.length > 0
-      ? ((lessonsDone - prevCompleted.length) / prevCompleted.length) * 100
-      : null;
   const prevAccuracy = meanAccuracy(prevCompleted);
   const accuracyDelta =
     withDeltas && prevAccuracy != null && avgAccuracy != null
-      ? avgAccuracy - prevAccuracy // percentage-point diff
+      ? avgAccuracy - prevAccuracy
       : null;
 
-  const noActivitySub = hasActivity ? undefined : t('parent.reports.kpi.noActivity');
+  const signTone = (n: number | null): 'success' | 'danger' | 'muted' =>
+    n == null ? 'muted' : n >= 0 ? 'success' : 'danger';
+
+  const kpiData = kpiQuery.data;
+
+  // Time tile — from endpoint or attempts fallback
+  const timeLearningMinutes = kpiData?.timeLearningMinutes ?? null;
+  const timeLearningDeltaMinutes = kpiData?.timeLearningDeltaMinutes ?? null;
+
+  // Lessons tile — from endpoint or attempts fallback
+  const lessonsDone = kpiData?.lessonsDone ?? completed.length;
+  const lessonsDelta = kpiData?.lessonsDelta ?? null;
 
   const tiles: KpiTileDef[] = [
     {
@@ -349,12 +346,20 @@ function KpiRow({ windows, range, rowDir, direction, locale, isDesktop, isRtl }:
       icon: '⏱️',
       chipBg: '$primarySoft',
       label: t('parent.reports.kpi.time'),
-      value: hasActivity ? formatHoursMinutes(totalSeconds, locale) : EMPTY_VALUE,
-      subText: deltaText(timeDelta) ?? noActivitySub,
-      subTone: timeDelta != null && timeDelta >= 0 ? 'success' : 'muted',
+      value:
+        timeLearningMinutes != null
+          ? formatHoursMinutes(timeLearningMinutes * 60, locale)
+          : EMPTY_VALUE,
+      subText:
+        timeLearningDeltaMinutes != null && withDeltas
+          ? t('parent.overview.kpi.timeDelta', {
+              value: formatNumber(Math.abs(timeLearningDeltaMinutes), locale),
+            })
+          : undefined,
+      subTone: signTone(timeLearningDeltaMinutes),
     },
     {
-      // G-2: no parent-readable child XP endpoint — honest placeholder.
+      // G-2: no parent-readable child XP — honest "—".
       key: 'xp',
       icon: '⭐',
       chipBg: '$xpSoft',
@@ -368,9 +373,14 @@ function KpiRow({ windows, range, rowDir, direction, locale, isDesktop, isRtl }:
       icon: '✓',
       chipBg: '$successSoft',
       label: t('parent.reports.kpi.lessons'),
-      value: hasActivity ? formatNumber(lessonsDone, locale) : EMPTY_VALUE,
-      subText: deltaText(lessonsDelta) ?? noActivitySub,
-      subTone: lessonsDelta != null && lessonsDelta >= 0 ? 'success' : 'muted',
+      value: formatNumber(lessonsDone, locale),
+      subText:
+        lessonsDelta != null && withDeltas
+          ? t('parent.overview.kpi.lessonsDelta', {
+              value: formatNumber(Math.abs(lessonsDelta), locale),
+            })
+          : undefined,
+      subTone: signTone(lessonsDelta),
     },
     {
       key: 'accuracy',
@@ -378,14 +388,16 @@ function KpiRow({ windows, range, rowDir, direction, locale, isDesktop, isRtl }:
       chipBg: '$streakSoft',
       label: t('parent.reports.kpi.accuracy'),
       value: avgAccuracy != null ? formatPercent(avgAccuracy, locale) : EMPTY_VALUE,
-      subText: deltaText(accuracyDelta) ?? noActivitySub,
-      subTone: accuracyDelta != null && accuracyDelta >= 0 ? 'success' : 'muted',
+      subText:
+        accuracyDelta != null
+          ? t('parent.reports.delta.vsLastWeek', {
+              value: formatSignedNumber(accuracyDelta, locale),
+            })
+          : undefined,
+      subTone: signTone(accuracyDelta),
     },
   ];
 
-  // KPI grid: 4-col desktop (≥1025), 2-col tablet (769–1024) + mobile (≤768).
-  // Uses CSS Grid on web for pixel-accurate column control; flex-wrap on native.
-  // Handoff: KPIs stay 2-up on mobile — NOT 1-up.
   const kpiGridStyle: object | undefined = IS_WEB
     ? ({
         display: 'grid',
@@ -395,6 +407,29 @@ function KpiRow({ windows, range, rowDir, direction, locale, isDesktop, isRtl }:
         direction: isRtl ? 'rtl' : 'ltr',
       } as object)
     : undefined;
+
+  if (kpiQuery.isLoading) {
+    return (
+      <Stack
+        testID="reports-kpi-region"
+        {...(IS_WEB
+          ? { style: kpiGridStyle }
+          : { flexDirection: rowDir, flexWrap: 'wrap' as const, gap: 14 })}
+      >
+        {[0, 1, 2, 3].map((i) => (
+          <Stack
+            key={i}
+            flex={1}
+            minWidth={200}
+            height={110}
+            borderRadius="$card"
+            backgroundColor="$cardSoft"
+            opacity={0.6}
+          />
+        ))}
+      </Stack>
+    );
+  }
 
   return (
     <Stack
@@ -427,7 +462,6 @@ function KpiRow({ windows, range, rowDir, direction, locale, isDesktop, isRtl }:
             >
               {tile.label}
             </Text>
-            {/* 32×32 tinted icon chip, radius 10 (spec literal). */}
             <Stack
               width={32}
               height={32}
@@ -453,7 +487,13 @@ function KpiRow({ windows, range, rowDir, direction, locale, isDesktop, isRtl }:
           </Text>
           {tile.subText ? (
             <Text
-              color={tile.subTone === 'success' ? '$success' : '$fg3'}
+              color={
+                tile.subTone === 'success'
+                  ? '$success'
+                  : tile.subTone === 'danger'
+                  ? '$danger'
+                  : '$fg3'
+              }
               fontSize={12}
               fontWeight="700"
               fontFamily="$heading"
@@ -462,7 +502,6 @@ function KpiRow({ windows, range, rowDir, direction, locale, isDesktop, isRtl }:
               {tile.subText}
             </Text>
           ) : null}
-          {/* a11y: one composed label per tile (Overview precedent). */}
           <Stack
             position="absolute"
             top={0}
@@ -481,11 +520,38 @@ function KpiRow({ windows, range, rowDir, direction, locale, isDesktop, isRtl }:
 }
 
 /* ------------------------------------------------------------------ */
-/* Skills mastery panel (§2.3) — EMPTY state until P5-05 (gap G-1)     */
+/* Skills mastery panel — real values from useSubjectMastery (P5-05)   */
 /* ------------------------------------------------------------------ */
 
-function SkillsMasteryPanel({ direction }: { direction: Direction }) {
+function SkillsMasteryPanel({
+  childId,
+  direction,
+  locale = 'en',
+}: {
+  childId: string | undefined;
+  direction: Direction;
+  locale?: string;
+}) {
   const { t } = useTranslation();
+  const isAr = locale === 'ar';
+  const rowDir: 'row' | 'row-reverse' = direction === 'rtl' ? 'row-reverse' : 'row';
+
+  const query = useSubjectMastery(childId);
+
+  // Field names: `bySubject` (not `subjects`), `subjectCode` (not `subjectId`),
+  // `percent` (not `masteryPercent`). subjectCode is 0-indexed (0=Math…3=English).
+  const masteryMap: Record<string, { masteryPercent: number }> = {};
+  if (query.data?.bySubject) {
+    for (const row of query.data.bySubject) {
+      const subjectKey = PARENT_SUBJECT_CODE_MAP[row.subjectCode];
+      if (subjectKey) {
+        masteryMap[subjectKey] = {
+          masteryPercent: row.percent,
+        };
+      }
+    }
+  }
+
   return (
     <Stack
       testID="reports-mastery-panel"
@@ -511,56 +577,121 @@ function SkillsMasteryPanel({ direction }: { direction: Direction }) {
         <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction}>
           {t('parent.reports.mastery.sub')}
         </Text>
-        {/* G-1: no per-subject mastery aggregate yet — honest empty copy. */}
-        <Text color="$fg4" fontSize={12} fontFamily="$body" writingDirection={direction}>
-          {t('parent.reports.mastery.empty')}
-        </Text>
       </Stack>
 
-      <Stack flexDirection="column" gap={14}>
-        {SUBJECT_KEYS.map((subject) => {
-          const label = t(SUBJECT_LABEL_KEY[subject]);
-          return (
-            <MasteryBar
-              key={subject}
-              value={0}
-              asPercent
-              label={label}
-              direction={direction}
-              accent={SUBJECT_ACCENT[subject]}
-              accessibilityLabel={`${label} 0%`}
+      {query.isLoading ? (
+        <Stack flexDirection="column" gap={14}>
+          {[0, 1, 2, 3].map((i) => (
+            <Stack
+              key={i}
+              height={10}
+              borderRadius={9999}
+              backgroundColor="$cardSoft"
+              opacity={0.5}
             />
-          );
-        })}
-      </Stack>
+          ))}
+        </Stack>
+      ) : query.isError ? (
+        <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction}>
+          {t('parent.reports.mastery.empty')}
+        </Text>
+      ) : (
+        <Stack flexDirection="column" gap={14}>
+          {SUBJECT_KEYS.map((subject) => {
+            const row = masteryMap[subject];
+            const pct = row?.masteryPercent ?? 0;
+            const label = t(SUBJECT_LABEL_KEY[subject]);
+            const fmt = (n: number) =>
+              new Intl.NumberFormat(isAr ? 'ar-EG' : 'en-US').format(n);
+            // SubjectMasteryItemDto has no lessonsCount — show percent only.
+            const pctText = isAr ? `${fmt(pct)}٪` : `${pct}%`;
+
+            return (
+              <Stack key={subject} flexDirection="column" gap={6}>
+                <Stack
+                  flexDirection={rowDir}
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
+                  <Text
+                    color="$fg1"
+                    fontSize={13}
+                    fontWeight="700"
+                    fontFamily="$heading"
+                    writingDirection={direction}
+                  >
+                    {label}
+                  </Text>
+                  <Text
+                    color={SUBJECT_ACCENT[subject] as StackProps['backgroundColor']}
+                    fontSize={12}
+                    fontWeight="800"
+                    fontFamily="$heading"
+                  >
+                    {pctText}
+                  </Text>
+                </Stack>
+                <MasteryBar
+                  value={pct}
+                  asPercent
+                  label=""
+                  direction={direction}
+                  accent={SUBJECT_ACCENT[subject]}
+                  accessibilityLabel={`${label} ${pctText}`}
+                />
+              </Stack>
+            );
+          })}
+        </Stack>
+      )}
     </Stack>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* Chart placeholder panels (§2.4) — P5-05 slots, build nothing         */
+/* 20-day XP trend chart panel (Shape B, P5-05-FE-3)                   */
 /* ------------------------------------------------------------------ */
 
-// TODO(P5-05): replace the placeholder bodies with the real 20-day XP and
-// time-of-day charts once the parent analytics aggregates land.
-function ChartPlaceholderPanel({
-  title,
-  body,
+function TwentyDayChartPanel({
+  childId,
   direction,
-  borderRadius,
-  testID,
+  rowDir,
+  locale,
 }: {
-  title: string;
-  body: string;
+  childId: string | undefined;
   direction: Direction;
-  borderRadius: StackProps['borderRadius'];
-  testID?: string;
+  rowDir: 'row' | 'row-reverse';
+  locale: string;
 }) {
+  const { t } = useTranslation();
+  // useChildReports feeds ALL three chart panels from one GET /api/Parent/Children/{id}/Reports.
+  // Use xpTrend20Day (exactly 20 entries; fields: `day` + `xp` — not `date`/`xpEarned`).
+  const query = useChildReports(childId);
+
+  const days = query.data?.xpTrend20Day ?? [];
+  const today = new Date();
+  const allEmpty = days.every((d) => d.xp === 0);
+
+  /** Download 20-day CSV */
+  function handleExport() {
+    if (!IS_WEB) return;
+    const isAr = locale === 'ar';
+    const header = isAr ? 'التاريخ,النقاط' : 'Date,XP';
+    const rows = days.map((d) => `${d.day},${d.xp}`).join('\n');
+    const blob = new Blob([`${header}\n${rows}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'xp-trend-20day.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <Stack
-      testID={testID}
+      testID="reports-chart-20day"
       backgroundColor="$card"
-      borderRadius={borderRadius}
+      borderRadius="$modal"
       borderWidth={1}
       borderColor="$borderSubtle"
       padding={22}
@@ -568,39 +699,280 @@ function ChartPlaceholderPanel({
       gap="$4"
       width="100%"
     >
-      <Text
-        color="$fg1"
-        fontSize={16}
-        fontWeight="800"
-        fontFamily="$heading"
-        accessibilityRole="header"
-        writingDirection={direction}
-      >
-        {title}
-      </Text>
-      <Stack flex={1} alignItems="center" justifyContent="center" gap="$3">
-        <Text
-          color="$fg4"
-          fontSize={13}
-          fontWeight="600"
-          fontFamily="$body"
-          writingDirection={direction}
+      {/* Header row */}
+      <Stack flexDirection={rowDir} alignItems="flex-start" justifyContent="space-between" gap="$3">
+        <Stack flexDirection="column" gap="$1">
+          <Text
+            color="$fg1"
+            fontSize={16}
+            fontWeight="800"
+            fontFamily="$heading"
+            accessibilityRole="header"
+            writingDirection={direction}
+          >
+            {t('parent.reports.charts.xpTitle')}
+          </Text>
+          <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction}>
+            {t('parent.reports.charts.xpSubtitle')}
+          </Text>
+        </Stack>
+        {/* Export CSV ghost pill */}
+        <Stack
+          minHeight={36}
+          minWidth={44}
+          paddingHorizontal="$4"
+          alignItems="center"
+          justifyContent="center"
+          borderRadius={9999}
+          borderWidth={1}
+          borderColor="$borderStrong"
+          backgroundColor="transparent"
+          cursor="pointer"
+          hoverStyle={{ backgroundColor: '$cardSoft' }}
+          pressStyle={{ scale: 0.95 }}
+          onPress={handleExport}
+          accessibilityRole="button"
+          accessible
+          accessibilityLabel={t('parent.overview.dailyActivity.exportCsv')}
+          aria-label={t('parent.overview.dailyActivity.exportCsv')}
         >
-          {body}
-        </Text>
-        {/* Skeleton hint bands (8px ×3, $cardSoft) — visual slot marker. */}
-        <Stack width="70%" gap="$2" accessibilityElementsHidden>
-          <Stack height={8} borderRadius="$pill" backgroundColor="$cardSoft" width="100%" />
-          <Stack height={8} borderRadius="$pill" backgroundColor="$cardSoft" width="80%" />
-          <Stack height={8} borderRadius="$pill" backgroundColor="$cardSoft" width="55%" />
+          <Text color="$primaryLight" fontSize={12} fontWeight="700" fontFamily="$heading" writingDirection={direction}>
+            {t('parent.overview.dailyActivity.exportCsv')}
+          </Text>
         </Stack>
       </Stack>
+
+      {/* Chart area */}
+      {query.isLoading ? (
+        <Stack
+          height={200}
+          borderRadius="$modal"
+          backgroundColor="$cardSoft"
+          opacity={0.5}
+        />
+      ) : query.isError ? (
+        <ErrorStrip
+          message={t('parent.reports.loadError')}
+          retryLabel={t('common.retry')}
+          onRetry={() => query.refetch()}
+          rowDir={rowDir}
+          direction={direction}
+        />
+      ) : (
+        <>
+          <BarChart
+            data={days.map((d, index) => ({
+              label: String(index + 1),
+              value: d.xp,
+              isActive: isSameCalendarDay(d.day, today),
+            }))}
+            chartHeight={200}
+            showValueLabels={false}
+            barGap={6}
+            direction={direction}
+            locale={locale}
+            shape="B"
+            testID="reports-chart-20day-bars"
+            accessibilityLabel={
+              locale === 'ar'
+                ? 'مخطط نقاط XP لآخر ٢٠ يوماً'
+                : 'XP trend chart for the last 20 days'
+            }
+          />
+          {allEmpty && days.length > 0 ? (
+            <Text
+              color="$fg3"
+              fontSize={13}
+              fontFamily="$body"
+              textAlign="center"
+              writingDirection={direction}
+            >
+              {t('parent.reports.charts.noData')}
+            </Text>
+          ) : null}
+        </>
+      )}
+    </Stack>
+  );
+}
+
+/** Checks two date strings refer to the same calendar day. */
+function isSameCalendarDay(dateStr: string, today: Date): boolean {
+  try {
+    const d = new Date(dateStr);
+    return (
+      d.getFullYear() === today.getFullYear() &&
+      d.getMonth() === today.getMonth() &&
+      d.getDate() === today.getDate()
+    );
+  } catch {
+    return false;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Time-of-day chart panel (Shape C, P5-05-FE-3)                        */
+/* ------------------------------------------------------------------ */
+
+function TimeOfDayChartPanel({
+  childId,
+  childName,
+  direction,
+  rowDir,
+  locale,
+}: {
+  childId: string | undefined;
+  childName: string;
+  direction: Direction;
+  rowDir: 'row' | 'row-reverse';
+  locale: string;
+}) {
+  const { t } = useTranslation();
+  // useChildReports feeds all three chart panels. timeOfDayBuckets is the 4-bucket data.
+  // Buckets: { bucket: "Morning"|"Afternoon"|"Evening"|"Night", totalXp: number }
+  // NOT 8 hourly bars with an integer `hour` field.
+  const query = useChildReports(childId);
+
+  const buckets = query.data?.timeOfDayBuckets ?? [];
+  const allEmpty = buckets.every((b) => b.totalXp === 0);
+
+  // Find peak XP bucket
+  const peakXp = Math.max(0, ...buckets.map((b) => b.totalXp));
+
+  // Build bar colors
+  const barColors: Array<'peak' | 'secondary' | 'muted'> = buckets.map((b) => {
+    if (b.totalXp === peakXp && peakXp > 0) return 'peak';
+    if (b.totalXp > 0 && b.totalXp >= peakXp * 0.6) return 'secondary';
+    return 'muted';
+  });
+
+  // Find peak bucket for insight tip — use the i18n label for the bucket name
+  const peakBucket = buckets.find((b) => b.totalXp === peakXp && peakXp > 0);
+  const peakBucketLabel = peakBucket
+    ? t(TOD_BUCKET_LABEL_KEY[peakBucket.bucket] ?? 'parent.reports.charts.tod.morning')
+    : null;
+
+  // Value label suffix: "XP" for time-of-day (totalXp, not minutes)
+  const valueSuffix = 'XP';
+
+  return (
+    <Stack
+      testID="reports-chart-tod"
+      backgroundColor="$card"
+      borderRadius={20}
+      borderWidth={1}
+      borderColor="$borderSubtle"
+      padding={20}
+      width="100%"
+    >
+      {/* Header */}
+      <Stack flexDirection="column" gap="$1" marginBottom="$4">
+        <Text
+          color="$fg1"
+          fontSize={16}
+          fontWeight="800"
+          fontFamily="$heading"
+          accessibilityRole="header"
+          writingDirection={direction}
+        >
+          {t('parent.reports.charts.todTitle')}
+        </Text>
+        <Text color="$fg3" fontSize={12} fontFamily="$body" writingDirection={direction}>
+          {t('parent.reports.charts.todSubtitle', { name: childName })}
+        </Text>
+      </Stack>
+
+      {/* Chart area */}
+      {query.isLoading ? (
+        <Stack
+          height={160}
+          borderRadius="$card"
+          backgroundColor="$cardSoft"
+          opacity={0.5}
+        />
+      ) : query.isError ? (
+        <ErrorStrip
+          message={t('parent.reports.loadError')}
+          retryLabel={t('common.retry')}
+          onRetry={() => query.refetch()}
+          rowDir={rowDir}
+          direction={direction}
+        />
+      ) : (
+        <>
+          <BarChart
+            data={buckets.map((b) => ({
+              // Use the translated bucket name as the bar label
+              label: t(TOD_BUCKET_LABEL_KEY[b.bucket] ?? 'parent.reports.charts.tod.morning'),
+              value: b.totalXp,
+            }))}
+            chartHeight={160}
+            showValueLabels
+            barGap={6}
+            barColors={barColors}
+            valueSuffix={valueSuffix}
+            direction={direction}
+            locale={locale}
+            shape="C"
+            testID="reports-chart-tod-bars"
+            accessibilityLabel={
+              locale === 'ar'
+                ? 'مخطط نقاط XP حسب وقت اليوم'
+                : 'XP by time of day chart'
+            }
+          />
+
+          {allEmpty ? (
+            <Text
+              color="$fg3"
+              fontSize={13}
+              fontFamily="$body"
+              textAlign="center"
+              writingDirection={direction}
+              marginTop="$2"
+            >
+              {t('parent.reports.charts.todEmpty')}
+            </Text>
+          ) : null}
+
+          {/* Peak focus insight tip (only when there is data) */}
+          {!allEmpty && peakBucketLabel ? (
+            <Stack
+              testID="tod-peak-insight"
+              backgroundColor="rgba(251,146,60,0.08)"
+              borderWidth={1}
+              borderColor="rgba(251,146,60,0.2)"
+              borderRadius={12}
+              padding={10}
+              paddingHorizontal={12}
+              marginTop="$2"
+              flexDirection={rowDir}
+              alignItems="center"
+              gap="$2"
+            >
+              <Text fontSize={16} accessibilityElementsHidden>💡</Text>
+              <Text
+                color="#FB923C"
+                fontSize={13}
+                fontWeight="700"
+                fontFamily="$heading"
+                writingDirection={direction}
+                flex={1}
+              >
+                {t('parent.reports.charts.peakBucketInsight', {
+                  bucket: peakBucketLabel,
+                })}
+              </Text>
+            </Stack>
+          ) : null}
+        </>
+      )}
     </Stack>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* Loading + error states (§2.5)                                       */
+/* Loading + error states                                               */
 /* ------------------------------------------------------------------ */
 
 function LoadingSkeleton({ rowDir }: { rowDir: 'row' | 'row-reverse' }) {

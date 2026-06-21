@@ -45,7 +45,10 @@ export interface ChildStatsStub {
   locale: 'ar' | 'en';
 }
 
-/** Family "this week" combined totals (TODO(P5)). */
+/**
+ * Family "this week" combined totals.
+ * Type still used by `FamilySummaryStrip` (legacy prop shape; generator removed — P5-05 fix).
+ */
 export interface FamilyTotalsStub {
   activeLearners: number;
   lessonsCompleted: number;
@@ -81,18 +84,6 @@ export function getChildStatsStub(childId: string): ChildStatsStub {
   };
 }
 
-/** TODO(P5): replace with the real combined family totals. */
-export function getFamilyTotalsStub(childIds: string[]): FamilyTotalsStub {
-  const stats = childIds.map(getChildStatsStub);
-  return {
-    activeLearners: stats.filter((s) => s.activeToday).length,
-    lessonsCompleted: stats.reduce((sum, s) => sum + (s.level % 9), 0),
-    totalXp: stats.reduce((sum, s) => sum + s.xp, 0),
-    bestStreakDays: stats.reduce((max, s) => Math.max(max, s.streakDays), 0),
-    badgesEarned: stats.reduce((sum, s) => sum + (s.level % 4), 0),
-  };
-}
-
 /* ------------------------------------------------------------------ */
 /* Overview screen stubs (P1-11-FE-8) — TODO(P5-05).                   */
 /* The Overview "this week" KPIs, per-subject mastery and focus areas   */
@@ -110,30 +101,6 @@ export const OVERVIEW_SUBJECT = {
 
 export type OverviewSubjectKey = (typeof OVERVIEW_SUBJECT)[keyof typeof OVERVIEW_SUBJECT];
 
-const OVERVIEW_SUBJECT_KEYS = Object.values(OVERVIEW_SUBJECT);
-
-/** Per-child "this week" overview KPIs (TODO(P5): reports endpoint). */
-export interface OverviewKpiStub {
-  /** Minutes learning this week. */
-  timeLearningMinutes: number;
-  /** Minutes gained vs last week (positive = improvement). */
-  timeLearningDeltaMinutes: number;
-  xpEarned: number;
-  /** Percent change vs last week. */
-  xpDeltaPercent: number;
-  lessonsDone: number;
-  lessonsDelta: number;
-  streakDays: number;
-  streakDelta: number;
-}
-
-/** One subject-mastery row (TODO(P5)). */
-export interface SubjectMasteryStub {
-  subject: OverviewSubjectKey;
-  /** Mastery percentage 0..100. */
-  percent: number;
-}
-
 /** Fixed focus-area severity (drives the bar tint), never a raw string. */
 export const FOCUS_SEVERITY = {
   High: 'high',
@@ -142,64 +109,11 @@ export const FOCUS_SEVERITY = {
 
 export type FocusSeverity = (typeof FOCUS_SEVERITY)[keyof typeof FOCUS_SEVERITY];
 
-/** One "areas to focus on" row (TODO(P5)). */
-export interface FocusAreaStub {
-  topicKey: WeakestTopicKey;
-  subject: OverviewSubjectKey;
-  /** Confidence percentage 0..100. */
-  percent: number;
-  severity: FocusSeverity;
-}
-
-/** TODO(P5-05): replace with the real per-child weekly KPIs. */
-export function getOverviewKpiStub(childId: string): OverviewKpiStub {
-  const h = hash(childId);
-  return {
-    timeLearningMinutes: 120 + (h % 180),
-    timeLearningDeltaMinutes: 10 + (h % 50),
-    xpEarned: ((h % 9) + 1) * 60,
-    xpDeltaPercent: 5 + (h % 35),
-    lessonsDone: (h % 18) + 2,
-    lessonsDelta: (h % 5) + 1,
-    streakDays: h % 12,
-    streakDelta: (h % 2) + 1,
-  };
-}
-
-/** TODO(P5-05): replace with real per-subject mastery (4 product subjects). */
-export function getSubjectMasteryStub(childId: string): SubjectMasteryStub[] {
-  const h = hash(childId);
-  return OVERVIEW_SUBJECT_KEYS.map((subject, i) => ({
-    subject,
-    percent: 45 + ((h + i * 17) % 50),
-  }));
-}
-
-/** TODO(P5-05): replace with real focus areas (weakest topics). */
-export function getFocusAreasStub(childId: string): FocusAreaStub[] {
-  const h = hash(childId);
-  const rows: FocusAreaStub[] = [
-    {
-      topicKey: WEAKEST_TOPIC.Fractions,
-      subject: OVERVIEW_SUBJECT.Math,
-      percent: 35 + (h % 15),
-      severity: FOCUS_SEVERITY.High,
-    },
-    {
-      topicKey: WEAKEST_TOPIC.Letters,
-      subject: OVERVIEW_SUBJECT.Arabic,
-      percent: 50 + (h % 15),
-      severity: FOCUS_SEVERITY.Medium,
-    },
-    {
-      topicKey: WEAKEST_TOPIC.Geometry,
-      subject: OVERVIEW_SUBJECT.Science,
-      percent: 55 + (h % 12),
-      severity: FOCUS_SEVERITY.Medium,
-    },
-  ];
-  return rows;
-}
+/*
+ * P5-05 fix: `getOverviewKpiStub`, `getSubjectMasteryStub`, `getFocusAreasStub`
+ * have been removed — their real-data counterparts (`useWeeklyKpis`,
+ * `useSubjectMastery`, `useWeakAreas`) are wired in `OverviewWeb` / `FocusAreasCard`.
+ */
 
 /* ================================================================== */
 /* Batch D — Helper Energy screen stubs.                              */
