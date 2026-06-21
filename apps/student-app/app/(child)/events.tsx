@@ -1,5 +1,9 @@
 /**
  * Events screen — B8 / P4-11-FE (carryover batch 3b, lane B8).
+ * P4-12-FE extends the timed-event surface with per-child participation
+ * progress (InProgress bar), completion state, and "join by playing" empty
+ * state, plus a RewardPopup celebration on Completed transition.
+ *
  * Design Spec: design-system/ui_kits/student-app/P4-08.md §8 (B8 — freeze
  * balance · timed events · weekly challenges; derived design, spec gap G-9).
  *
@@ -28,6 +32,9 @@
  *   `CHALLENGE_*` row.) Honest empty state when no challenges are active;
  *   the challenge section carries its own loading/error states so a
  *   missions-endpoint failure never hides the freeze/timed sections.
+ * - `useMyTimedEventParticipations()` — P4-12: per-child participation
+ *   snapshots (progress/target/status). Joined to activeTimedEvents by `code`.
+ *   Empty array = child not yet participating (join-by-playing state).
  *
  * Countdown: a single `setInterval` ticks once per MINUTE (not per second —
  * battery, spec §8.2); events whose `endUtc` passed are filtered out on the
@@ -38,16 +45,26 @@
  * Eastern-Arabic numerals in ar via Intl (`ar-EG`), Latin in en. The XP
  * multiplier ("×2 XP") keeps Latin digits + LTR in BOTH locales (XP-counter
  * exception). The local `formatNumber` helper mirrors `(child)/streak.tsx`.
+ *
+ * P4-12 completion celebration:
+ * Diff consecutive participation snapshots by `code`; when a participation
+ * transitions to `Completed` (Status=2), fire one `RewardPopup` (variant="xp",
+ * non-numeric "event complete!" copy). De-duped like the dashboard celebration
+ * queue in index.tsx. Motion degrades gracefully: Moti spring plays when Moti
+ * loads; if unavailable the popup renders statically (no spring, still legible).
  */
 import {
   MissionStatusDto,
+  TimedEventParticipationStatus,
   useDashboard,
   useMyMissions,
+  useMyTimedEventParticipations,
   type ActiveTimedEventDto,
   type MissionStateDto,
+  type TimedEventParticipationSnapshot,
 } from '@learnexia/api-client';
 import { gradientStops } from '@learnexia/design-system';
-import { Button, GradientBox } from '@learnexia/ui';
+import { Button, GradientBox, RewardPopup } from '@learnexia/ui';
 import { Stack as TamStack, Text as TamText, styled } from '@tamagui/core';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -224,6 +241,8 @@ function EmptyCard({
 
 /* ------------------------------------------------------------------ */
 /* Timed-event banner (spec §8.2 — mobile-mission-hero chrome)          */
+/* P4-12 extension: accepts a participation snapshot to render           */
+/* three states: join-by-playing, in-progress (bar), completed.         */
 /* ------------------------------------------------------------------ */
 
 function TimedEventBanner({
@@ -231,11 +250,14 @@ function TimedEventBanner({
   nowMs,
   locale,
   direction,
+  snapshot,
 }: {
   event: ActiveTimedEventDto;
   nowMs: number;
   locale: string;
   direction: 'ltr' | 'rtl';
+  /** P4-12: participation snapshot joined by code; undefined = not yet joined. */
+  snapshot: TimedEventParticipationSnapshot | undefined;
 }) {
   const { t } = useTranslation();
   const isRtl = direction === 'rtl';
@@ -273,11 +295,40 @@ function TimedEventBanner({
           })
         : t('events.timed.endsInMinute', { m: formatNumber(m, locale) });
 
-  const a11y = t('events.timed.cardA11y', {
-    name,
-    multiplier: multiplierText,
-    ends: endsText,
+  // --- P4-12: participation state derivation ---
+  const isCompleted =
+    snapshot?.status === TimedEventParticipationStatus.Completed;
+  const hasSnapshot = snapshot !== undefined;
+  const progress = snapshot?.progress ?? 0;
+  const target = Math.max(1, snapshot?.target ?? 1);
+  const pct = isCompleted
+    ? 100
+    : Math.max(0, Math.min(100, Math.round((progress * 100) / target)));
+
+  // P4-12 a11y: progress-aware label when participating.
+  // Three-way: completed / in-progress (has snapshot, not done) / join-by-playing.
+  const a11y = isCompleted
+    ? t('events.timed.progress.cardCompletedA11y', { name, ends: endsText })
+    : hasSnapshot
+      ? t('events.timed.progress.cardProgressA11y', {
+          name,
+          progress: formatNumber(progress, locale),
+          target: formatNumber(target, locale),
+          ends: endsText,
+        })
+      : t('events.timed.progress.joinByPlayingA11y', { name });
+
+  // P4-12: join-by-playing prose label (no bar, encouraging copy).
+  const joinLabel = t('events.timed.progress.joinByPlaying');
+
+  // P4-12: in-progress status prose "6 of 10" → Eastern-Arabic in ar.
+  const progressLabel = t('events.timed.progress.label', {
+    progress: formatNumber(progress, locale),
+    target: formatNumber(target, locale),
   });
+
+  // P4-12: completed label.
+  const completedLabel = t('events.timed.progress.completed');
 
   return (
     <GradientBox
@@ -294,63 +345,129 @@ function TimedEventBanner({
       aria-label={a11y}
       testID="event-banner"
     >
-      <XStack
-        flexDirection={rowDir}
-        alignItems="center"
-        gap="$4"
-        paddingVertical={18}
-        paddingHorizontal={20}
-      >
-        {/* ⭐ disc — XP semantics (events are XP multipliers, spec §8.2). */}
-        <TamStack
-          width={60}
-          height={60}
-          borderRadius="$pill"
-          backgroundColor={BANNER_DISC_BG}
+      <YStack paddingVertical={18} paddingHorizontal={20} gap="$2">
+        <XStack
+          flexDirection={rowDir}
           alignItems="center"
-          justifyContent="center"
-          flexShrink={0}
-          accessibilityElementsHidden
+          gap="$4"
         >
-          <Text fontSize={30} accessibilityElementsHidden>
-            {'⭐'}
-          </Text>
-        </TamStack>
+          {/* ⭐ disc — XP semantics (events are XP multipliers, spec §8.2). */}
+          <TamStack
+            width={60}
+            height={60}
+            borderRadius="$pill"
+            backgroundColor={BANNER_DISC_BG}
+            alignItems="center"
+            justifyContent="center"
+            flexShrink={0}
+            accessibilityElementsHidden
+          >
+            <Text fontSize={30} accessibilityElementsHidden>
+              {isCompleted ? '✓' : '⭐'}
+            </Text>
+          </TamStack>
 
-        <YStack flex={1} alignItems={startAlign} gap={2}>
+          <YStack flex={1} alignItems={startAlign} gap={2}>
+            <Text
+              color={BANNER_FG}
+              fontSize={18}
+              fontWeight="900"
+              fontFamily="$heading"
+              writingDirection={direction}
+              accessibilityElementsHidden
+            >
+              {name}
+            </Text>
+            {/* Multiplier — Latin digits, LTR-locked in both locales. */}
+            <Text
+              color={BANNER_FG}
+              fontSize={22}
+              fontWeight="900"
+              fontFamily="$heading"
+              writingDirection="ltr"
+              style={{ fontVariant: ['tabular-nums'] }}
+              accessibilityElementsHidden
+            >
+              {multiplierText}
+            </Text>
+            <Text
+              color={BANNER_FG_SOFT}
+              fontSize={12}
+              fontFamily="$body"
+              writingDirection={direction}
+              accessibilityElementsHidden
+            >
+              {endsText}
+            </Text>
+          </YStack>
+        </XStack>
+
+        {/* P4-12 — participation sub-section (additive, below countdown). */}
+        {/* State (a): no snapshot → join-by-playing empty nudge. */}
+        {!hasSnapshot ? (
           <Text
-            color={BANNER_FG}
-            fontSize={18}
-            fontWeight="900"
-            fontFamily="$heading"
-            writingDirection={direction}
-            accessibilityElementsHidden
-          >
-            {name}
-          </Text>
-          {/* Multiplier — Latin digits, LTR-locked in both locales. */}
-          <Text
-            color={BANNER_FG}
-            fontSize={22}
-            fontWeight="900"
-            fontFamily="$heading"
-            writingDirection="ltr"
-            style={{ fontVariant: ['tabular-nums'] }}
-            accessibilityElementsHidden
-          >
-            {multiplierText}
-          </Text>
-          <Text
+            testID="event-banner-join"
             color={BANNER_FG_SOFT}
             fontSize={12}
             fontFamily="$body"
             writingDirection={direction}
             accessibilityElementsHidden
           >
-            {endsText}
+            {joinLabel}
           </Text>
-        </YStack>
-      </XStack>
+        ) : (
+          /* State (b) InProgress / (c) Completed — progress bar + label. */
+          <YStack gap={4}>
+            {/* Progress prose label — Eastern-Arabic in ar. */}
+            <Text
+              testID="event-banner-progress-label"
+              color={isCompleted ? BANNER_FG : BANNER_FG_SOFT}
+              fontSize={12}
+              fontWeight={isCompleted ? '700' : '400'}
+              fontFamily="$body"
+              writingDirection={direction}
+              accessibilityElementsHidden
+            >
+              {isCompleted ? completedLabel : progressLabel}
+            </Text>
+
+            {/*
+             * Progress bar — LTR-locked regardless of locale (SKILL.md rule 6,
+             * MasteryBar / WeeklyChallengeCard precedent): explicit
+             * flexDirection="row" so the fill grows from the visual left even
+             * in RTL. Fill = gradLevelup (achievement-class); completed →
+             * solid rgba(255,255,255,0.9).
+             */}
+            <TamStack
+              testID="event-banner-progress-bar"
+              height={CHALLENGE_BAR_HEIGHT}
+              borderRadius="$pill"
+              backgroundColor="rgba(255,255,255,0.25)"
+              overflow="hidden"
+              flexDirection="row"
+              accessibilityElementsHidden
+            >
+              {isCompleted ? (
+                <TamStack
+                  width="100%"
+                  height="100%"
+                  borderRadius="$pill"
+                  backgroundColor="rgba(255,255,255,0.9)"
+                />
+              ) : pct > 0 ? (
+                <GradientBox
+                  stops={gradientStops.gradLevelup.colors}
+                  angle={135}
+                  width={`${pct}%`}
+                  height="100%"
+                  borderRadius="$pill"
+                  overflow="hidden"
+                />
+              ) : null}
+            </TamStack>
+          </YStack>
+        )}
+      </YStack>
     </GradientBox>
   );
 }
@@ -536,6 +653,10 @@ export default function EventsScreen() {
   // Section-local states: a missions failure never hides freeze/timed.
   const missionsQuery = useMyMissions();
 
+  // P4-12 — per-child participation snapshots (section-independent; a
+  // participation failure never hides the freeze/challenge sections).
+  const participationsQuery = useMyTimedEventParticipations();
+
   const isLoading = dashboardQuery.isPending;
   const isError = dashboardQuery.isError;
 
@@ -569,6 +690,68 @@ export default function EventsScreen() {
     [missionsQuery.data?.weekly],
   );
 
+  // P4-12 — build code→snapshot map so each banner can look up its row.
+  // If participations failed or are still loading, snapMap is empty (banners
+  // fall through to join-by-playing state gracefully — no crash).
+  const snapMap = React.useMemo<Map<string, TimedEventParticipationSnapshot>>(() => {
+    const list = participationsQuery.data ?? [];
+    const map = new Map<string, TimedEventParticipationSnapshot>();
+    for (const snap of list) {
+      if (snap.code) map.set(snap.code, snap);
+    }
+    return map;
+  }, [participationsQuery.data]);
+
+  // P4-12 — completion celebration diff (mirrors index.tsx pattern).
+  // Detect a participation transitioning to Completed across query refreshes
+  // by diffing prev vs current snapshot list by `code`. Cold-start safe:
+  // prevRef is undefined on mount → ZERO_DIFF on first load.
+  const prevParticipationsRef = React.useRef<readonly TimedEventParticipationSnapshot[] | undefined>(
+    undefined,
+  );
+  const [timedCelebrations, setTimedCelebrations] = React.useState<string[]>([]);
+
+  React.useEffect(() => {
+    const list = participationsQuery.data;
+    if (list === undefined) return;
+
+    const prev = prevParticipationsRef.current;
+    prevParticipationsRef.current = list;
+
+    if (prev === undefined) {
+      // First successful load — store as baseline, no celebration.
+      return;
+    }
+
+    // Build prev status map by code.
+    const prevStatusMap = new Map<string, TimedEventParticipationStatus>();
+    for (const snap of prev) {
+      if (snap.code) prevStatusMap.set(snap.code, snap.status);
+    }
+
+    // Find codes newly transitioning to Completed in the current list.
+    const newlyCompleted: string[] = [];
+    for (const snap of list) {
+      if (!snap.code) continue;
+      if (
+        snap.status === TimedEventParticipationStatus.Completed &&
+        prevStatusMap.get(snap.code) !== TimedEventParticipationStatus.Completed
+      ) {
+        newlyCompleted.push(snap.code);
+      }
+    }
+
+    if (newlyCompleted.length > 0) {
+      // Enqueue one celebration per newly-completed event (first one wins if
+      // multiple complete simultaneously — matches the dashboard single-popup rule).
+      setTimedCelebrations((queue) => [...queue, ...newlyCompleted]);
+    }
+  }, [participationsQuery.data]);
+
+  const activeTimedCelebration = timedCelebrations[0] ?? null;
+  const dismissTimedCelebration = () =>
+    setTimedCelebrations((queue) => queue.slice(1));
+
   const rowDir = (isRtl ? 'row-reverse' : 'row') as 'row' | 'row-reverse';
   const backChevron = isRtl ? '→' : '←';
 
@@ -581,6 +764,12 @@ export default function EventsScreen() {
     count: freezeBalance,
     value: formatNumber(freezeBalance, locale),
   });
+
+  // P4-12 — Celebration copy resolved at render (locale-reactive).
+  const celebrationTitle = t('events.timed.celebration.title');
+  const celebrationSubtitle = t('events.timed.celebration.subtitle');
+  const celebrationCta = t('events.timed.celebration.cta');
+  const celebrationA11y = t('events.timed.celebration.a11y');
 
   return (
     <TamStack flex={1} backgroundColor="$bg" testID="events-screen">
@@ -769,6 +958,7 @@ export default function EventsScreen() {
                         nowMs={nowMs}
                         locale={locale}
                         direction={direction}
+                        snapshot={event.code ? snapMap.get(event.code) : undefined}
                       />
                     ))}
                     {overflowCount > 0 ? (
@@ -867,6 +1057,29 @@ export default function EventsScreen() {
           )}
         </YStack>
       </ScrollView>
+
+      {/*
+       * P4-12 — Completion celebration overlay (RewardPopup, P4-08 motion).
+       * Fires once per event-completion transition detected in the participation
+       * diff. `variant="xp"` — reward is XP-engine-granted (no amount from DTO,
+       * per brief O-2: non-numeric "event complete!" celebration). xpAmount=0
+       * suppresses the "+N XP" count line (RewardPopup only renders that line
+       * when xpAmount > 0); only the icon + title + subtitle are shown.
+       * Motion: Moti spring plays when Moti loads; if Moti is unavailable the
+       * popup renders statically (card without the entrance spring — no
+       * useReduceMotion check in RewardPopup itself).
+       */}
+      <RewardPopup
+        variant="xp"
+        xpAmount={0}
+        title={celebrationTitle}
+        subtitle={celebrationSubtitle}
+        ctaLabel={celebrationCta}
+        visible={activeTimedCelebration !== null}
+        onDismiss={dismissTimedCelebration}
+        accessibilityLabel={celebrationA11y}
+        locale={locale}
+      />
     </TamStack>
   );
 }

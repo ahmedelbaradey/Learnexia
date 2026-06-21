@@ -1342,6 +1342,28 @@ export const en = {
         title: 'No events right now',
         body: 'Special XP events will appear here — check back soon!',
       },
+      // P4-12 — participation progress states
+      progress: {
+        /** "{{progress}} of {{target}}" prose label on the progress bar. */
+        label: '{{progress}} of {{target}}',
+        /** Short remaining label below the bar. */
+        remaining: '{{remaining}} to go',
+        /** Completed state label on the card. */
+        completed: 'Completed!',
+        /** Empty / join-by-playing state — no participation row yet. */
+        joinByPlaying: 'Play a lesson to join this event!',
+        joinByPlayingA11y: 'Not yet joined. {{name}} — play a lesson to start.',
+        /** Per-card a11y including progress. */
+        cardProgressA11y: '{{name}} — {{progress}} of {{target}} completed — {{ends}}',
+        cardCompletedA11y: '{{name}} — Event completed! — {{ends}}',
+      },
+      /** Completion celebration popup (RewardPopup via P4-08 motion). */
+      celebration: {
+        title: 'Event Complete!',
+        subtitle: 'Amazing! You finished the event.',
+        cta: 'Keep Going!',
+        a11y: 'Event complete! You finished the event.',
+      },
     },
     challenges: {
       eyebrow: 'Weekly Challenge',
@@ -2739,6 +2761,28 @@ export const ar = {
       empty: {
         title: 'لا فعاليات الآن',
         body: 'ستظهر فعاليات النقاط الخاصة هنا — عُد قريبًا!',
+      },
+      // P4-12 — حالات تقدم المشاركة
+      progress: {
+        /** "{{progress}} من {{target}}" — نص تقدم شريط التقدم. */
+        label: '{{progress}} من {{target}}',
+        /** تسمية المتبقي القصيرة أسفل الشريط. */
+        remaining: 'متبقٍ {{remaining}}',
+        /** تسمية حالة الاكتمال على البطاقة. */
+        completed: 'اكتملت!',
+        /** الحالة الفارغة / انضم عن طريق اللعب — لا يوجد صف مشاركة بعد. */
+        joinByPlaying: 'العب درسًا للانضمام إلى هذه الفعالية!',
+        joinByPlayingA11y: 'لم تنضم بعد. {{name}} — العب درسًا للبدء.',
+        /** إمكانية وصول كل بطاقة تتضمن التقدم. */
+        cardProgressA11y: '{{name}} — {{progress}} من {{target}} مكتمل — {{ends}}',
+        cardCompletedA11y: '{{name}} — الفعالية مكتملة! — {{ends}}',
+      },
+      /** نافذة احتفال الاكتمال (RewardPopup عبر حركة P4-08). */
+      celebration: {
+        title: 'اكتملت الفعالية!',
+        subtitle: 'رائع! لقد أنهيت الفعالية.',
+        cta: 'استمر!',
+        a11y: 'اكتملت الفعالية! لقد أنهيت الفعالية.',
       },
     },
     challenges: {
