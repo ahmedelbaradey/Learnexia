@@ -1,3 +1,20 @@
+## ⚠️ Shared dev DB `Learnexia` is in a broken migration state — 2026-06-21
+
+**Symptom:** `POST /api/Parent/Add-Child` → **500** on the shared dev DB (`localhost:5432/Learnexia`). **NOT a code bug** — a corrupted local migration state.
+
+**Root cause:** migration `20260616201439_AddSeatModel` is marked **applied** in `__EFMigrationsHistory` but its DDL only **partially took** (an earlier interrupted backend start). Missing on the shared DB:
+- `billing.Subscriptions` — `PurchasedExtraSeats`, `PendingExtraSeatRemovals`, `ExtraSeatCancelEffectiveAt`
+- `billing.Plans` — `IncludedSeats`
+- table `billing.SeatReservations` (+ its indexes / Plan seed updates)
+
+EF won't re-run an "applied" migration, and **direct DDL on the shared Postgres is (correctly) blocked** — do **not** hand-patch the columns (the partial-apply spans two tables + a table, so a surgical add would still be wrong/incomplete).
+
+**Proper fix (coordinate first — destructive shared infra):** drop + recreate `Learnexia`, then boot the backend → all migrations reapply cleanly + curriculum/admin reseed. (Alternative: delete the `AddSeatModel` row from `__EFMigrationsHistory` then `dotnet ef database update` — messier, since some columns already exist.) **Warn anyone else on the dev stack before dropping.**
+
+**Interim (non-destructive, used for P5-05 verify):** run the backend against a throwaway DB via a `ConnectionStrings__Default` override (`Database=Learnexia_verify`) — leaves the shared DB untouched. See the run recipe in §"How to run the stack". Remember to revert the override before any work against the real DB.
+
+---
+
 ## AI flip-to-live runbook (#3/#4 prep) — 2026-06-21 (`docs/P6-AI-activation-runbook`)
 
 **New doc: [docs/dev/AI-ACTIVATION-RUNBOOK.md](AI-ACTIVATION-RUNBOOK.md)** — the verified, code-grounded devops procedure to turn on live AI (provider keys → BGE-M3 TEI → `POST /api/Admin/Curriculum/ReEmbed` → verify placeholder vectors gone → `AiHelper:ContextProvider=Rag` → smoke test → Gate-B eval → monitor via P6-05 `/health` `ai-gateway` + OTel). Full env-var table with code citations, rollback steps, and a per-capability readiness checklist. **No keys, no code change, no live activation** — docs only.
