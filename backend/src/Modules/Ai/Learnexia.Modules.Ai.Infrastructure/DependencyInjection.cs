@@ -90,6 +90,11 @@ public static class DependencyInjection
         // Scoped: depends on scoped AiDbContext.
         services.AddScoped<IPlatformAiSafetyStatsQuery, PlatformAiSafetyStatsQueryAdapter>();
 
+        // P6-02-BE-5: Eval-result read seam — returns the latest offline eval run result from the
+        // embedded safety-eval-results.json artifact (no DB, no migration; Option 1 from brief §C).
+        // Scoped: mirrors IPlatformAiSafetyStatsQuery registration; depends on ILoggerManager (Singleton-safe).
+        services.AddScoped<IAiSafetyEvalResultsQuery, AiSafetyEvalResultsQueryAdapter>();
+
         // ── P7-11 AI-safety admin dashboard (read model) ─────────────────────────────
         // Scoped — depends on scoped AiDbContext; owns all EF read queries for the dashboard.
         services.AddScoped<IAiSafetyDashboardService, AiSafetyDashboardService>();

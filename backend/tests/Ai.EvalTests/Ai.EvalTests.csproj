@@ -4,8 +4,10 @@
     <IsTestProject>true</IsTestProject>
     <!--
       Eval tests: excluded from default CI run.
-      All tests are tagged [Trait("Category", "Eval")] so they do not run with standard test suites.
-      To run: dotnet test (path) - -filter Category=Eval   (no space between the two hyphens)
+      All tests in the offline tier are tagged [Trait("Category", "EvalOffline")] and run without live keys.
+      To run the offline tier: dotnet test (path) -filter Category=EvalOffline
+      The live tier [Trait("Category", "EvalLive")] requires real provider keys - devops/launch Gate B only,
+      not in CI.
     -->
   </PropertyGroup>
   <ItemGroup>
@@ -27,6 +29,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Update="Data\safety-eval-set.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\safety-eval-results.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

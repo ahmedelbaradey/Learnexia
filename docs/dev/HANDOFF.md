@@ -1,3 +1,20 @@
+## P6-02 AI-safety eval set + harness — 2026-06-20 (`feat/P6-02-ai-safety-eval-set`)
+
+**Closes the last P7-11 facet** (`GET /api/Admin/AiSafety/evals`, previously "deferred — blocked on P6-02"). v1 = **offline, CI-native, no migration, no live keys**.
+
+**Ground truth:** safety checks are MIXED — `ToxicityCheck` + `AgeAppropriatenessCheck` are LLM-backed (`IAiGateway`, keys devops-gated); `HallucinationCheck` is deterministic; composed in `Ai.Application/Safety/SafetyLayer.cs` (Block / NeedsRegeneration / Allow). "Unsafe" spans BOTH Block (high severity) and NeedsRegeneration (medium) — eval cases assert the expected OUTCOME.
+
+**What shipped:**
+- **Eval harness** (`backend/tests/Ai.EvalTests`, `Category=EvalOffline`): **62 curated cases** (4 subjects × ar/en × {toxicity, age, hallucination} + 6 fail-closed cases) in `Data/safety-eval-set.json`, GENUINE Arabic content. A **deterministic fake `IAiGateway`** feeds per-case canned judge JSON into the REAL checks (exercises real parse/map/**fail-closed** — NOT tautological; it's the PRIMARY coverage of the real check parse logic, which has no other unit tests). Per-case `[Theory]` + a **100% threshold Fact** (non-vacuous: asserts `TotalCases==62` first) + a Block-severity structural Fact. Re-run = run the suite. **65/65.**
+- **Fail-closed COVERAGE** (security-auditor #1): 6 cases drive Toxicity+Age through gateway-failure (`null` verdict) AND malformed-verdict → all genuinely map to **Block** by the real code (verified — NO fail-open). The safety-critical regression net.
+- **Result surfacing (no DB):** harness emits a run summary (`passRate/failRate/threshold/breached/ranAt(UTC) + by check/subject/language`) to `Data/safety-eval-results.json`, **synced to an embedded resource** `Ai.Infrastructure/EvalResults/safety-eval-results.json`. `IAiSafetyEvalResultsQuery` seam (`Shared.Contracts/Ai`, mirrors `IPlatformAiSafetyStatsQuery`) → adapter reads the embedded resource (sentinel-safe; `RunId==Guid.Empty` = not-yet-run). `GET /api/Admin/AiSafety/evals` (AdminOnly) over the seam, localized EN+AR.
+
+**🚨 LOAD-BEARING CAVEAT — CI-green ≠ AI-safety-proven.** The offline tier proves OUR parse/map/fail-closed logic, NOT the real model's judgment (esp. the documented **Arabic-moderation weak spot**). The model's classification is validated ONLY by a **key-gated live ar+en run = launch Gate B** (`Category=EvalLive`, devops-run, NOT in CI). Run Gate B before trusting child-safety at launch. (Trend-across-runs history = future `ai.SafetyEvalRuns` table; v1 = latest-result-only.)
+
+**Gates:** build 0; `Ai.EvalTests` 65/65; `P6_02_AiSafetyEvalResults_Tests` 20/20 (authz 401/403/200, envelope, exact artifact counts, sentinel-never-500); security-auditor PASS-with-notes → **all 3 notes fixed**; reviewer PASS. **No migration.** **Committer/CI note:** running `Ai.EvalTests` rewrites `Data/safety-eval-results.json` (test output); the embedded `EvalResults/` copy is authoritative (served by the endpoint, pinned by the integration test) and is NOT touched by test runs.
+
+---
+
 ## P9-11 notification-analytics sink — 2026-06-20 (`feat/P9-11-notification-analytics-sink`)
 
 **The last unbuilt Phase-9 backend story.** Closes the "v1 logs only" effectiveness gap from P9-07: Notifications now EMITS lifecycle events that the **Analytics module** consumes into its `ActivityEvent` stream (one analytics home), with an admin aggregate endpoint.

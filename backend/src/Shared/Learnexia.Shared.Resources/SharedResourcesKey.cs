@@ -2184,6 +2184,12 @@
         /// </summary>
         public const string AiTutorUsageRetrievedSuccessfully = "AiTutorUsageRetrievedSuccessfully";
 
+        /// <summary>
+        /// Returned when the AI-safety eval run results are retrieved successfully (P6-02 / P7-11-BE-3).
+        /// Used by <c>GetEvalResultsQueryHandler</c>.
+        /// </summary>
+        public const string AiSafetyEvalResultsRetrievedSuccessfully = "AiSafetyEvalResultsRetrievedSuccessfully";
+
         // ── P4-12 Timed-Event Participation ─────────────────────────────────────────────────
 
         /// <summary>

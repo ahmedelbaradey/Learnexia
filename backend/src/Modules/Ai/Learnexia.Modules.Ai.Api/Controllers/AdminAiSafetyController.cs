@@ -1,4 +1,5 @@
 using Learnexia.Modules.Ai.Api.Bases;
+using Learnexia.Modules.Ai.Application.Features.AdminSafety.Queries.GetEvalResults;
 using Learnexia.Modules.Ai.Application.Features.AdminSafety.Queries.GetFlaggedOutputs;
 using Learnexia.Modules.Ai.Application.Features.AdminSafety.Queries.GetSafetySignalSummary;
 using Learnexia.Modules.Ai.Application.Features.AdminSafety.Queries.GetSafetyTrend;
@@ -11,13 +12,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace Learnexia.Modules.Ai.Api.Controllers;
 
 /// <summary>
-/// Admin-only AI-safety monitoring dashboard (P7-11 buildable slice).
+/// Admin-only AI-safety monitoring dashboard (P7-11 + P6-02).
 ///
 /// Security constraints (P7-11 brief §security):
 /// - All endpoints require <see cref="AuthorizationPolicies.AdminOnly"/> — anonymous → 401, non-admin → 403.
 /// - No full-table loads: paged queries only for flagged outputs; aggregate queries are date-windowed.
 /// - No raw prompt/response text exposed — PII-light by design (P3-02 Q5/Q6).
-/// - Eval results endpoint is omitted (deferred — blocked on P6-02).
+/// - Eval results: served from the committed artifact (no DB; P6-02 Option 1 §C).
 /// </summary>
 [Route("api/Admin/AiSafety")]
 [ApiController]
@@ -75,4 +76,24 @@ public class AdminAiSafetyController : AppControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetTutorUsage([FromQuery] GetTutorUsageQuery query)
         => NewResult(await Mediator.Send(query));
+
+    /// <summary>
+    /// Returns the latest offline AI-safety eval run result (P6-02 / P7-11-BE-3).
+    ///
+    /// Served from the committed <c>safety-eval-results.json</c> artifact produced by the
+    /// <c>Ai.EvalTests</c> harness (no DB; P6-02 Option 1 §C). When no run has been performed
+    /// yet, returns HTTP 200 with a bootstrap sentinel (breached=true, totalCases=0) —
+    /// never 404 or 500.
+    ///
+    /// PII-light: no prompt/response text, no student identifiers — aggregate metrics only.
+    ///
+    /// <para><strong>CI green ≠ AI safety proven.</strong> The offline tier validates parse/map/fail-closed
+    /// logic. Arabic moderation quality is validated by the live tier (Gate B, devops launch gate).</para>
+    /// </summary>
+    [HttpGet("evals")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetEvalResults()
+        => NewResult(await Mediator.Send(new GetEvalResultsQuery()));
 }

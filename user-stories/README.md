@@ -123,7 +123,7 @@ These intentional decisions diverge from the source docs; each affected story re
 
 ### Phase 6 — Stabilization
 - P6-01 Meet API & AI performance targets
-- P6-02 Validate AI safety with an eval set
+- P6-02 Validate AI safety with an eval set *(✅ BUILT 2026-06-20 — offline CI eval harness, 62 cases; closed the last P7-11 facet; live ar+en run = launch Gate B)*
 - P6-03 Pass localization & RTL review
 - P6-04 Regression, prompt-tuning & bug triage
 - P6-05 Observability: logging, tracing, dashboards
