@@ -18,6 +18,18 @@
     <PackageReference Include="StackExchange.Redis" />
   </ItemGroup>
   <ItemGroup>
+    <!--
+      P6-02: safety-eval-results.json is the committed run-summary artifact produced by
+      the Ai.EvalTests harness (dotnet test - -filter Category=EvalOffline).
+      Embedded so AiSafetyEvalResultsQueryAdapter can read the latest result at runtime
+      without a DB call (Option 1 from the brief §C decision).
+      Re-run the harness after any prompt/model/check change to refresh this artifact.
+    -->
+    <EmbeddedResource Include="EvalResults\safety-eval-results.json">
+      <LogicalName>safety-eval-results.json</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Learnexia.Modules.Ai.Application\Learnexia.Modules.Ai.Application.csproj" />
     <ProjectReference Include="..\Learnexia.Modules.Ai.Domain\Learnexia.Modules.Ai.Domain.csproj" />
     <ProjectReference Include="..\..\..\Shared\Learnexia.Shared.Kernel\Learnexia.Shared.Kernel.csproj" />

@@ -2657,6 +2657,9 @@
   <data name="AiTutorUsageRetrievedSuccessfully" xml:space="preserve">
     <value>تم استرداد ملخص استخدام المدرس الذكي بنجاح.</value>
   </data>
+  <data name="AiSafetyEvalResultsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرداد نتائج تقييم سلامة الذكاء الاصطناعي بنجاح.</value>
+  </data>
   <data name="TimedEventParticipationsRetrievedSuccessfully" xml:space="preserve">
     <value>تم استرداد تقدم المشاركة في الأحداث الزمنية بنجاح.</value>
   </data>
