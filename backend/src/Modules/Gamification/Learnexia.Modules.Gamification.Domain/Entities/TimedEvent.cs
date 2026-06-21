@@ -155,11 +155,34 @@ public class TimedEvent : AggregateRoot
 
     /// <summary>
     /// Marks the event as inactive (called by <c>TimedEventSweepJob</c> on window-exit transition).
-    /// No-op if already inactive (idempotent).
+    /// No-op if already inactive (idempotent). Does NOT touch <see cref="EndUtc"/> — on natural
+    /// window-exit the window has already ended, so the timestamps are already correct.
     /// </summary>
     public void Deactivate()
     {
         IsActive = false;
+    }
+
+    /// <summary>
+    /// DEF-GAM-01 (admin manual expire): ends the event NOW. Sets <see cref="IsActive"/> false AND
+    /// rewinds <see cref="EndUtc"/> to <paramref name="nowUtc"/> so the (timestamp-based) FE status
+    /// renders as ENDED rather than SCHEDULED. If the event had not started yet, <see cref="StartUtc"/>
+    /// is pulled back too so <c>StartUtc &lt;= EndUtc</c> still holds. Distinct from
+    /// <see cref="Deactivate"/> (used by the sweep job on natural window-exit, which must NOT rewind
+    /// <see cref="EndUtc"/>). <paramref name="nowUtc"/> must be UTC.
+    /// </summary>
+    public void Expire(DateTime nowUtc)
+    {
+        IsActive = false;
+        EndUtc = nowUtc;
+
+        // CK_TimedEvents_DateRange requires StartUtc < EndUtc (STRICT). Only a not-yet-started event
+        // (force-activated then expired) can violate it. Compare in UTC: under
+        // EnableLegacyTimestampBehavior a read-back timestamptz is machine-LOCAL Kind, so a raw
+        // compare of StartUtc against the UTC nowUtc is wrong (HANDOFF P2-08 quirk). Pull the start
+        // to just before the expire instant so the invariant holds.
+        if (StartUtc.ToUniversalTime() >= EndUtc)
+            StartUtc = EndUtc.AddSeconds(-1);
     }
 
     // ---------------------------------------------------------------------------

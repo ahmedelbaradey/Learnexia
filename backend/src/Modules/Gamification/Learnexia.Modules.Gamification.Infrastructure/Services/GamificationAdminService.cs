@@ -418,14 +418,16 @@ internal sealed class GamificationAdminService : BaseResponseHandler, IGamificat
             if (!timedEvent.IsActive)
                 return BadRequest<bool>(_localizer[SharedResourcesKey.GamificationTimedEventAlreadyInactive]);
 
-            timedEvent.Deactivate();
+            // DEF-GAM-01: manual expire must rewind EndUtc to now (not just IsActive=false), else the
+            // timestamp-based FE status keeps rendering the event as SCHEDULED with edit enabled.
+            timedEvent.Expire(DateTime.UtcNow);
 
             timedEvent.RaiseDomainEvent(new AdminActionPerformedDomainEvent(
                 AdminUserId: _currentUser.UserId.GetValueOrDefault(),
                 Action: AdminActions.TimedEventExpired,
                 TargetEntityType: nameof(TimedEvent),
                 TargetEntityId: timedEvent.Id,
-                Details: $"Code={timedEvent.Code}; IsActive=false"));
+                Details: $"Code={timedEvent.Code}; IsActive=false; EndUtc={timedEvent.EndUtc:O}"));
 
             return Success(true);
         }
