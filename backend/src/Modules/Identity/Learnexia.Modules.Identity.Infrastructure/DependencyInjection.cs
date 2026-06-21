@@ -199,9 +199,10 @@ public static class DependencyInjection
                     {
                         var sessionId = context.Principal?.FindFirstValue("SessionId");
 
-                        // A token without the SessionId claim pre-dates the BE-1 fix (GUID-A era) or was
-                        // tampered. Treat as invalid per the same fail-mode logic.
-                        if (string.IsNullOrEmpty(sessionId))
+                        // A token whose SessionId claim is absent or not a well-formed GUID pre-dates the
+                        // BE-1 fix (GUID-A era) or was tampered. A malformed value can never match a stored
+                        // session key, so reject fast (and skip a pointless store lookup) per the same logic.
+                        if (string.IsNullOrEmpty(sessionId) || !Guid.TryParse(sessionId, out _))
                         {
                             context.Fail("session_revoked");
                             return;
