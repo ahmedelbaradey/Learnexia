@@ -106,12 +106,14 @@ public class RegisterParentCommandHandler : BaseResponseHandler, ICommandHandler
             {
                 try
                 {
-                    var session = await _sessionManagementService.CreateSessionAsync(user.Id, sessionInfo.JwtId);
+                    var session = await _sessionManagementService.CreateSessionAsync(user.Id, sessionInfo.JwtId, sessionInfo.SessionId);
                     accessToken.SessionId = session.SessionId;
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Session will be created by middleware on first API call.
+                    // Session creation failed. The issued token's first authenticated call will be rejected by
+                    // OnTokenValidated because no session is persisted under its SessionId claim. Log loudly.
+                    _logger.LogError(ex, $"RegisterParent: failed to create session for user {user.Id}. The issued token will be invalid on first authenticated call.");
                 }
             }
 

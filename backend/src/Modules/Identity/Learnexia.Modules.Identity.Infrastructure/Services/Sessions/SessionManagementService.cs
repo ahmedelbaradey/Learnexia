@@ -25,11 +25,10 @@ public class SessionManagementService : ISessionManagementService
         _logger = logger;
     }
 
-    public async Task<UserSession> CreateSessionAsync(int userId, string jwtTokenId)
+    public async Task<UserSession> CreateSessionAsync(int userId, string jwtTokenId, string sessionId)
     {
         try
         {
-            var sessionId = GenerateSessionId();
             var now = DateTime.Now;
             var timeoutMinutes = _sessionSettings.TimeoutMinutes;
 
@@ -70,6 +69,21 @@ public class SessionManagementService : ISessionManagementService
             _logger.LogError(ex, $"Error retrieving session {sessionId}");
             return null;
         }
+    }
+
+    // P6-07 OQ-1: read-only validity probe for the OnTokenValidated hot path. Deliberately does NOT
+    // swallow store faults (unlike GetSessionAsync above) so the caller can apply an explicit
+    // fail-open/fail-closed policy on a Redis/serialization error. A genuinely absent / terminated /
+    // expired session returns false (a real revocation → always fail-closed at the caller); only a
+    // store/deserialize FAULT throws (→ the caller's env-gated fail-mode). Single GET, zero writes.
+    public async Task<bool> IsSessionActiveAsync(string sessionId)
+    {
+        var json = await _distributedCache.GetStringAsync(GetSessionKey(sessionId));
+        if (string.IsNullOrEmpty(json))
+            return false;
+
+        var session = JsonSerializer.Deserialize<UserSession>(json);
+        return session is { IsActive: true } && !session.IsExpired;
     }
 
     public async Task<List<UserSession>> GetUserSessionsAsync(int userId)
@@ -216,6 +230,36 @@ public class SessionManagementService : ISessionManagementService
         }
     }
 
+    public async Task<int> TerminateAllUserSessionsAsync(int userId, SessionTerminationReason reason)
+    {
+        var terminated = 0;
+        try
+        {
+            var sessions = await GetUserSessionsAsync(userId);
+            foreach (var session in sessions)
+            {
+                try
+                {
+                    var success = await TerminateSessionAsync(session.SessionId, reason);
+                    if (success)
+                        terminated++;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Error terminating session {session.SessionId} for user {userId} during terminate-all");
+                }
+            }
+
+            _logger.LogInfo($"TerminateAllUserSessionsAsync: terminated {terminated} session(s) for user {userId}, reason={reason}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error enumerating sessions for user {userId} during terminate-all");
+        }
+
+        return terminated;
+    }
+
     private async Task StoreSessionAsync(UserSession session)
     {
         var options = new DistributedCacheEntryOptions { AbsoluteExpiration = session.ExpiresAt };
@@ -270,7 +314,6 @@ public class SessionManagementService : ISessionManagementService
         CreatedAt = session.CreatedAt,
     };
 
-    private static string GenerateSessionId() => Guid.NewGuid().ToString("N");
     private static string GetSessionKey(string sessionId) => $"{SESSION_KEY_PREFIX}{sessionId}";
     private static string GetUserSessionsKey(int userId) => $"{USER_SESSIONS_KEY_PREFIX}{userId}";
     private static string GetActivityKey(string sessionId) => $"{ACTIVITY_KEY_PREFIX}{sessionId}";

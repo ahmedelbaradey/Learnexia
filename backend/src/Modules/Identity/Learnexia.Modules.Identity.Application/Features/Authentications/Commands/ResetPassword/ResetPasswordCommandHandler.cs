@@ -1,5 +1,6 @@
 using Learnexia.Modules.Identity.Application.Abstractions;
 using Learnexia.Modules.Identity.Domain.Entities;
+using Learnexia.Modules.Identity.Domain.Enums;
 using Learnexia.Shared.Kernel.Abstractions;
 using Learnexia.Shared.Kernel.Messaging;
 using Learnexia.Shared.Kernel.Responses;
@@ -12,25 +13,29 @@ namespace Learnexia.Modules.Identity.Application.Features.Authentications.Comman
 // P1-12 BE-6. Validates the single-use reset token (Identity enforces single-use + expiry) and applies the
 // configured password policy via ResetPasswordAsync. A missing account and an invalid/expired token return
 // the SAME generic localized failure (ResetPasswordInvalidLink) — the caller cannot distinguish them, so
-// neither path is an enumeration oracle. On success we invalidate every OTHER session: bump the security
-// stamp (cookie/stamp-validated tokens are rejected) AND delete the Redis refresh-token entry (reusing the
-// exact key SignOutCommandHandler revokes) so no refresh token can be exchanged again.
+// neither path is an enumeration oracle. On success we invalidate all sessions: bump the security stamp
+// (cookie/stamp-validated tokens are rejected), delete the Redis refresh-token entry so no refresh token can
+// be exchanged again, AND terminate all tracked Redis sessions so existing access tokens are immediately
+// rejected by OnTokenValidated (P6-07 BE-3). No current session to preserve — anonymous reset path.
 public class ResetPasswordCommandHandler : BaseResponseHandler, ICommandHandler<ResetPasswordCommand, BaseResponse<string>>
 {
     private readonly IIdentityServiceManager _service;
     private readonly IStringLocalizer<SharedResources> _localizer;
     private readonly IDistributedCache _distributedCache;
+    private readonly ISessionManagementService _sessionManagementService;
     private readonly ILoggerManager _logger;
 
     public ResetPasswordCommandHandler(
         IIdentityServiceManager service,
         IStringLocalizer<SharedResources> localizer,
         IDistributedCache distributedCache,
+        ISessionManagementService sessionManagementService,
         ILoggerManager logger)
     {
         _service = service;
         _localizer = localizer;
         _distributedCache = distributedCache;
+        _sessionManagementService = sessionManagementService;
         _logger = logger;
     }
 
@@ -68,8 +73,10 @@ public class ResetPasswordCommandHandler : BaseResponseHandler, ICommandHandler<
         }
     }
 
-    // Mirrors SignOutCommandHandler's revocation: bump the security stamp so existing stamp-validated
-    // tokens are rejected, and delete the Redis refresh-token entry so it can never be exchanged again.
+    // P6-07 BE-3: revoke ALL sessions on anonymous password reset. No current session to preserve.
+    // Bumps the security stamp (stamp-validated tokens rejected), deletes the Redis refresh-token entry
+    // (no refresh can be exchanged), and terminates all tracked Redis sessions (access tokens rejected
+    // by OnTokenValidated on the next call).
     private async Task InvalidateOtherSessionsAsync(User user)
     {
         try
@@ -89,6 +96,17 @@ public class ResetPasswordCommandHandler : BaseResponseHandler, ICommandHandler<
         catch (Exception ex)
         {
             _logger.LogError(ex, $"ResetPassword: failed to revoke refresh token for user {user.Id}.");
+        }
+
+        // P6-07 BE-3: terminate all tracked sessions so existing access tokens are immediately rejected.
+        try
+        {
+            var count = await _sessionManagementService.TerminateAllUserSessionsAsync(user.Id, SessionTerminationReason.SecurityRevocation);
+            _logger.LogInfo($"ResetPassword: terminated {count} session(s) for user {user.Id}.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"ResetPassword: failed to terminate sessions for user {user.Id}.");
         }
     }
 }

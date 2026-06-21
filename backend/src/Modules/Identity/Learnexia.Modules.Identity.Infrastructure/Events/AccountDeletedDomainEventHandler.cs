@@ -110,28 +110,16 @@ public sealed class AccountDeletedDomainEventHandler
                 $"P7-07: failed to revoke refresh token for userId={userId} (post-commit delete) — ignored.");
         }
 
-        // Terminate all tracked sessions.
+        // Terminate all tracked sessions via the new P6-07 helper (DRY).
         try
         {
-            var sessions = await _sessionManagementService.GetUserSessionsAsync(userId);
-            foreach (var session in sessions)
-            {
-                try
-                {
-                    await _sessionManagementService.TerminateSessionAsync(
-                        session.SessionId, SessionTerminationReason.AdminTermination);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex,
-                        $"P7-07: failed to terminate session {session.SessionId} for userId={userId} (post-commit delete) — ignored.");
-                }
-            }
+            var count = await _sessionManagementService.TerminateAllUserSessionsAsync(userId, SessionTerminationReason.AdminTermination);
+            _logger.LogInfo($"P7-07: terminated {count} session(s) for userId={userId} (post-commit delete).");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex,
-                $"P7-07: failed to enumerate sessions for userId={userId} (post-commit delete) — ignored.");
+                $"P7-07: failed to terminate sessions for userId={userId} (post-commit delete) — ignored.");
         }
     }
 }
