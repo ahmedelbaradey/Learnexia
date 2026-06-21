@@ -12,6 +12,7 @@
 - `â€”` â€” no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
+- **2026-06-21 — P5-05 parent dashboard FE (PR #217)** + **P7-10/P7-11 admin dashboards FE (PR #218)** merged. Parent analytics dashboard (real /api/Parent data, hand-rolled Tamagui charts) + admin platform-KPI & AI-safety dashboards (Recharts, PII-light flagged table). reviewer PASS · E2E green · security-auditor PASS (P7-11). **Phase-7 admin console FE is now COMPLETE (P7-01..13).**
 - **2026-06-19 – P7 curriculum sub-wave 2c (P7-03 FE):** Skill dependency graph — accessible list/adjacency editor (role=listbox + roving tabindex + aria-live; NO graph-viz/drag lib per lead decision); skills CRUD + KnowledgeGraph read + edge add/remove (Prerequisite only, strength 1.0 hard-coded); subject-tree scoping (concept.subjectId); cycle/cross-language/duplicate rejections mapped inline; refetch-on-update (no optimistic); NODE_TYPE/RELATIONSHIP_TYPE consts in shared; gates PASS (reviewer PASS; security-auditor not required — curriculum metadata, no PII/content sink). Wave 2 — **Curriculum admin FE COMPLETE** (P7-01..05 all shipped across 3 sub-waves: 2a #175, 2b #179, 2c this PR).
 - **2026-06-19 – P7 Wave 3 Admin Dashboard — moderation queue (P7-09) + audit log viewer (P7-12) + gamification overrides (P7-13 FE):** Moderation queue list + detail + ReviewItemDialog (approve/reject with reason≤2000/flag; Pending→terminal; SafetyVerdictView reason-codes only, no raw content; verdict enums INT on wire); Audit read-only list + inline-expand detail (escaped JSON/text, no export endpoint deferred); Gamification badge/mission/timed-event catalogs (list+PATCH activate/retire, NO delete soft-retire) + league-tier + streak-freeze grant dialogs from users/[id] (student-only); shared ReasonField near-limit scaling + StatusBadge moderation variant + AdminConfirmDialog mod/override variants + AdminSideNav 3 new nav items + lib/strings 180+ keys + queryKeys adminAudit/adminGamification/adminModeration. Gates: reviewer PASS (should-fixes applied), security-auditor PASS (0 Critical/High). Known gaps: audit export endpoint, student tier+freeze-balance read, timed-event edit prefill, DG-2 lifecycle-state on DTOs. Test status: no backend e2e (FE-only); admin Playwright E2E coverage for Wave 2+3 deferred (next FE step). Pre-existing Wave-2 lint: @learnexia/api-client no-unused-vars (useAddKnowledgeEdge/useCreateSkill/useEditQuestion/useUpdateSkill) — flagged cleanup. Remaining admin: P7-11 FE (blocked backend), P7-10 FE (blocked P5-03).
 - **2026-06-19 – P7 curriculum sub-wave 2b (P7-02 + P7-04 FE):** Lessons CRUD + ContentBlockEditor (Text/Image/Video/Callout) with sanitized Markdown preview via marked+DOMPurify; per-lesson questions MCQ/TrueFalse/FillInBlank/Matching with JSONB round-trip; keyboard reorder; inherited-language + difficulty + lock badges; lifecycle reuse Lesson=3/QuizQuestion=4. Gates: reviewer PASS, security-auditor PASS-with-notes (0 Critical/High; sanitization verified fail-closed SSR + URL denylist + TrueFalse lowercase). Committed on `feat/P7-curriculum-2b`.
@@ -122,7 +123,7 @@
 | P5-02 | Detect and rank weak areas | ðŸ”² |
 | P5-03 | Capture product analytics events | ðŸ”² |
 | P5-04 | Deliver reports via notifications | ðŸ”² |
-| P5-05 | View the parent dashboard | ðŸ”² |
+| P5-05 | View the parent dashboard | ✅ |
 | P5-06 | Transition a child to a new grade | ðŸ”² |
 
 ## Phase 6 â€” Stabilization
@@ -136,19 +137,20 @@
 | P6-06 | Backend security hardening (timing-oracle/email-locale/secrets/Redis rate-limit) | ðŸ”² |
 
 ## Phase 7 â€” Admin Console *(post-MVP)*
+> **Admin Console FE COMPLETE** — curriculum (P7-01..05, #175/#179/#182), users/accounts/child (P7-06..08, #170), moderation/audit/gamification (P7-09/12/13, #185), platform-analytics + AI-safety dashboards (P7-10/11, #218). All ✅.
 | Story | Title | Backend | Frontend |
 |---|---|:--:|:--:|
-| P7-01 | Manage subjects & units | âœ… | ðŸ”² |
-| P7-02 | Manage lessons & lesson content | âœ… | ðŸ”² |
-| P7-03 | Author skills & the skill dependency graph | âœ… | ðŸ”² |
-| P7-04 | Manage quizzes & questions | âœ… | ðŸ”² |
-| P7-05 | Publish, version & preview curriculum content | âœ… | ðŸ”² |
-| P7-06 | Search & inspect users | âœ… | ðŸ”² |
-| P7-07 | Suspend, reactivate & delete accounts | âœ… | ðŸ”² |
-| P7-08 | Manage child profiles & grade overrides | âœ… | ðŸ”² |
+| P7-01 | Manage subjects & units | ✅ | ✅ |
+| P7-02 | Manage lessons & lesson content | ✅ | ✅ |
+| P7-03 | Author skills & the skill dependency graph | ✅ | ✅ |
+| P7-04 | Manage quizzes & questions | ✅ | ✅ |
+| P7-05 | Publish, version & preview curriculum content | ✅ | ✅ |
+| P7-06 | Search & inspect users | ✅ | ✅ |
+| P7-07 | Suspend, reactivate & delete accounts | ✅ | ✅ |
+| P7-08 | Manage child profiles & grade overrides | ✅ | ✅ |
 | P7-09 | Content moderation queue & review actions | ✅ | ✅ |
-| P7-10 | Platform analytics & KPI dashboard | ðŸ”² | ðŸ”² |
-| P7-11 | AI-safety & quality monitoring dashboard | ðŸ”² | ðŸ”² |
+| P7-10 | Platform analytics & KPI dashboard | ✅ | ✅ |
+| P7-11 | AI-safety & quality monitoring dashboard | ✅ | ✅ |
 | P7-12 | Admin action audit log | ✅ | ✅ |
 | P7-13 | Gamification admin overrides (tier / badge & mission catalog / timed-event write / streak-freeze) | ✅ | ✅ |
 
@@ -162,10 +164,21 @@
 | P8-03 | Serve curriculum in the student's learning language | ðŸ”² | â€” |
 | P8-04 | Change a child's learning language (parent-only, fresh start) | âœ… | ðŸŸ¡ |
 
+
+## Phase 9 — Notifications *(story IDs `P9-xx`)*
+> Backend shipped extensively (P9-01..P9-12: push/inbox APIs, nudge arbitration, re-engagement, SR/weekly reminders, localization, analytics sink). **Frontend NOT started** — the student-app notification surfaces are pending:
+| Story | Title | Backend | Frontend |
+|---|---|:--:|:--:|
+| P9-01 | Push permission + device registration | ✅ | 🔲 |
+| P9-02 | Notification deep-linking + foreground | ✅ | 🔲 |
+| P9-03 | In-app notification inbox | ✅ | 🔲 |
+| P9-04 | Parent per-child notification controls (toggles/quiet-hours/cap) | ✅ | 🔲 |
+
 ## Phase 10 - Payment, Billing & Credits *(story IDs `P10-xx`, post-MVP)*
 > Task breakdown authored 2026-06-13 (PR #124). AI credit economy ("⚡ طاقة المساعد") + monetization; **parent-driven** (web checkout, no native IAP); new `Billing` module owns the dual-pool ledger + subscriptions + payments; Global Settings (P10-12) makes the economy runtime-tunable. **Renumbered from Phase 9** (which `main` owns as **Notifications**) - files under `*/Phase-10-Payments-Billing/`. `P10-03` (spend) is hard-blocked on the AI Helper cluster (P3-01..06). **Stacked wave (PRs #157 → #158 → #159):** P10-12 intake + P10-13 (family wallet) + P10-14 (child seats & add-child) + P10-15/16/18 (enforcement, redistribution, pause).
 | Story | Title | Backend | Frontend |
 |---|---|:--:|:--:|
+> ⚠️ **FE status below is OVERSTATED.** A 2026-06-21 code audit found the P10 frontend is largely **stubs/not-built**: only a read-only `PlanPanel` (disabled "Manage") + an `EnergyWeb` display fed by `getEnergyBalanceStub()`. No checkout / energy-pack / billing-history / refund / admin-billing-config / family-wallet / seat-lifecycle screens exist. Treat P10-05..11 + P10-13 FE as **🔲 (verify)** despite the ✅ marks; P10-15/16/18 FE 🔲.
 | P10-01 | Credit (energy) account & ledger *(enabler)* | ✅ | — |
 | P10-02 | Grant monthly energy per plan | ✅ | — |
 | P10-03 | Spend energy on AI help (charge-on-delivery) | ✅ | — |
