@@ -1,3 +1,13 @@
+## AI flip-to-live runbook (#3/#4 prep) — 2026-06-21 (`docs/P6-AI-activation-runbook`)
+
+**New doc: [docs/dev/AI-ACTIVATION-RUNBOOK.md](AI-ACTIVATION-RUNBOOK.md)** — the verified, code-grounded devops procedure to turn on live AI (provider keys → BGE-M3 TEI → `POST /api/Admin/Curriculum/ReEmbed` → verify placeholder vectors gone → `AiHelper:ContextProvider=Rag` → smoke test → Gate-B eval → monitor via P6-05 `/health` `ai-gateway` + OTel). Full env-var table with code citations, rollback steps, and a per-capability readiness checklist. **No keys, no code change, no live activation** — docs only.
+
+**Two findings that supersede prior notes:**
+- ✅ **Stale claim corrected:** the old "AiResponseCache serving DORMANT until a Confidence signal is wired (OQ-7)" is **no longer true**. `SafetyLayer` now assigns `safetyPassConfidence` (default 0.90 > the 0.85 auto-approval threshold) on the safety-pass path, so cache entries auto-approve and serve **once a provider key exists**; serving is gated only by the runtime kill-switch `AiHelper:Cache:autoApproveEnabled` (default `true`).
+- ⚠ **GAP for #3 (Gate-B live eval):** the P6-02 eval harness is **offline-only** — `DeterministicFakeAiGateway` has **no DI/env seam to swap in a real provider**, and the `EvalLive` tier is documented but **not implemented** (no `SafetyEvalHarnessLiveTests` class). A true live ar+en Gate-B eval needs that NEW test class first (not built — scoped out per lead: "do not require keys / do not activate live AI in this story"). Interim live-safety validation = the manual smoke procedure in runbook §6/§7. **This is the next actionable for #3.**
+
+---
+
 ## P6-05 Observability (OTel tracing + metrics, NLog targets, AI-gateway health check) — 2026-06-21 (`feat/P6-05-observability`)
 
 **Closes the observability blind-spot at launch** — NLog now has configured targets, OpenTelemetry tracing + metrics are wired (OTLP config-gated), and the readiness probe reports DB + Redis + **AI-Gateway + MinIO** dependency status.
