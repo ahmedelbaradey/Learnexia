@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+    <!--
+      Perf harness — excluded from the default CI test run.
+      Run via: dotnet test ... -filter Category=Perf
+      OR as a console runner: dotnet run (see README.md).
+      In-process WebApplicationFactory + Testcontainers PG (rate-limiter neutralised).
+    -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- NBomber load-test framework (centrally versioned) -->
+    <PackageReference Include="NBomber" />
+
+    <!-- xUnit runner for the [Trait("Category","Perf")] entry point -->
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Reference the IntegrationTests project to reuse LearnexiaWebAppFactory
+      (Testcontainers PG, rate-limiter neutralised, migrations + seed, seam doubles).
+      This brings in the Host transitively (all modules).
+    -->
+    <ProjectReference Include="..\Learnexia.IntegrationTests\Learnexia.IntegrationTests.csproj" />
+  </ItemGroup>
+</Project>

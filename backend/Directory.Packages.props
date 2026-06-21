@@ -28,6 +28,10 @@
     <PackageVersion Include="FirebaseAdmin" Version="3.5.0" />
     <PackageVersion Include="ClosedXML" Version="0.105.0" />
 
+    <!-- Performance testing (P6-01 NBomber harness) -->
+    <!-- NBomber 6.4.1 — latest stable 6.x; targets net8.0 assets (valid on .NET 10). -->
+    <PackageVersion Include="NBomber" Version="6.4.1" />
+
     <!-- Testing -->
     <PackageVersion Include="Moq" Version="4.20.72" />
     <PackageVersion Include="FluentAssertions" Version="6.12.2" />
