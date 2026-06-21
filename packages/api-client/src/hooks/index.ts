@@ -87,6 +87,13 @@ export { useMyBadges } from './useMyBadges';
 export { useMyMissions } from './useMyMissions';
 export { useMyLeague } from './useMyLeague';
 
+// --- P4-12 timed-event participation hook ---
+export {
+  useMyTimedEventParticipations,
+  TimedEventParticipationStatus,
+  type TimedEventParticipationSnapshot,
+} from '../gamification/timed-events';
+
 // --- P7-06 admin user-management read hooks (Batch A foundation) ---
 // These hooks target GET /api/Admin/Users/* — a DISTINCT namespace from the
 // legacy `useUserList`/`useUserProfile` hooks (which target /api/Users/…).

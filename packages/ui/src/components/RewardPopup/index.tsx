@@ -120,15 +120,17 @@ export function RewardPopup({
         </Text>
       ) : null}
 
-      <Text
-        color="$xp"
-        fontSize={36}
-        fontWeight="900"
-        fontFamily="$heading"
-        style={{ fontVariant: ['tabular-nums'], textShadowColor: 'rgba(250,204,21,0.5)', textShadowRadius: 18 }}
-      >
-        {`+${xpAmount} XP`}
-      </Text>
+      {xpAmount > 0 ? (
+        <Text
+          color="$xp"
+          fontSize={36}
+          fontWeight="900"
+          fontFamily="$heading"
+          style={{ fontVariant: ['tabular-nums'], textShadowColor: 'rgba(250,204,21,0.5)', textShadowRadius: 18 }}
+        >
+          {`+${xpAmount} XP`}
+        </Text>
+      ) : null}
 
       <Button
         variant="primary"

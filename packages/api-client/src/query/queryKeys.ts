@@ -64,6 +64,9 @@ export const queryKeys = {
     missions: () => [...queryKeys.gamification.all, 'missions'] as const,
     /** GET /api/Gamification/Leagues/Me — cohort standings + tier + week boundaries. */
     league: () => [...queryKeys.gamification.all, 'league'] as const,
+    /** GET /api/Gamification/TimedEventParticipations/Me — P4-12 per-child participation snapshots. */
+    timedEventParticipations: () =>
+      [...queryKeys.gamification.all, 'timed-event-participations'] as const,
   },
 
   /**
