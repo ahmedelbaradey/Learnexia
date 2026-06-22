@@ -21,6 +21,19 @@ EF won't re-run an "applied" migration, and **direct DDL on the shared Postgres 
 
 ---
 
+## P5-06 parent grade transition — 2026-06-22 (`feat/P5-06-grade-transition`)
+
+Parents can now transition a linked child to a new grade from their own surface (story existed since the intake audit; this is the build). **New endpoint:** `PUT api/Parent/Children/{childId}/Grade`, body `{ "targetGrade": 1..6 }` → `BaseResponse<{ childId, oldGrade, newGrade, isNoOp }>`.
+
+**Pure reuse — no migration, no new entity, no re-scope code.** The admin `OverrideChildGrade` path (P7-08) already introduced `ChildGradeChangedIntegrationEvent` + the contract; P5-06 just adds the **parent entry-point + IDOR auth + audit**:
+- Parent module: `TransitionChildGradeCommand`/handler/validator on `ParentController`. Parent id from JWT; **IDOR via `ILinkParentStudentService.IsLinkedAsync`** before any write; non-owner **and** unknown child both return the **same generic 403** (anti-enumeration). Grade 1–6 via `ValidationBehavior` → 422.
+- Identity seam: new `IChildAccountService.TransitionGradeAsync` (cloned from `ChangeLearningLanguageAsync`) — resolve → **same-grade no-op** (returns `isNoOp:true`, no mutation/publish) → **Student-role guard** (defense-in-depth) → mutate `User.Grade` → commit → best-effort publish `ChildGradeChangedIntegrationEvent` (parent id in `ChangedByAdminUserId`, opaque actor) + `AdminActionPerformedEvent(ChildGradeTransitioned)`.
+- **Re-scope is lazy** — Learning reads grade at query time, so the existing `ChildGradeChangedIntegrationEventHandler` stays a no-op and **history (XP/badges/streaks/mastery) is inherently preserved**.
+
+Gates: build 0 err · `P5_06_GradeTransition_Tests` **9/9** (owner 200 + persisted, history intact, same-grade no-op, non-owner/unknown 403 identical, grade 0/7 → 422, no-JWT 401, Student-role 403) · security-auditor **PASS** (0 Crit/High; IDOR before mutation, JWT actor, anti-enumeration, audit complete) · reviewer **PASS**. **FE pending the FE-lead** — the `P5-06-FE` task carries the exact API contract.
+
+---
+
 ## Localize persisted weekly-report recommendations — 2026-06-22 (`feat/localize-persisted-reports`)
 
 Cleanup-batch follow-up (the i18n item deferred from P5-01). `WeeklyReportGeneratorService` persisted **English prose** recommendations (`"Review concept for {SkillName}"` / `"Practice skill: {SkillName}"`) into `RecommendationsJson` — so a parent reading the report always got English regardless of their UI language.

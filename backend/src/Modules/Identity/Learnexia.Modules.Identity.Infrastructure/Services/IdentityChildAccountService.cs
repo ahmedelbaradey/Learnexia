@@ -1,6 +1,7 @@
 using Learnexia.Modules.Identity.Application.Abstractions;
 using Learnexia.Modules.Identity.Domain.Constants;
 using Learnexia.Modules.Identity.Domain.Entities;
+using Learnexia.Shared.Contracts.Admin;
 using Learnexia.Shared.Contracts.Identity;
 using Learnexia.Shared.Kernel.Abstractions;
 using MediatR;
@@ -194,6 +195,107 @@ public sealed class IdentityChildAccountService : IChildAccountService
         await PublishLearningLanguageChangedEventAsync(childUserId, oldLanguage, newLearningLanguage, ct);
 
         return new ChildLanguageChangeResult(true, childUserId, oldLanguage, newLearningLanguage);
+    }
+
+    public async Task<ChildGradeChangeResult> TransitionGradeAsync(
+        int childUserId,
+        int newGrade,
+        int actingParentId,
+        CancellationToken ct = default)
+    {
+        // Step 1 — Resolve child; missing → NotFound.
+        var child = await _identityServiceManager.UserManagmentService.FindByIdAsync(childUserId.ToString());
+        if (child is null)
+            return new ChildGradeChangeResult(false, 0, 0, newGrade, ErrorCode: ChildAccountError.NotFound);
+
+        // Step 1b — Defense-in-depth: only student accounts have a grade. The parent endpoint already
+        // constrains the target to a linked student (only students enter the ParentStudent table), but
+        // guard the seam too so a future caller can't transition a non-student. Same NotFound result →
+        // the handler maps it to the generic Forbidden (anti-enumeration). Mirrors the admin
+        // OverrideChildGrade role check (Roles.Student via GetUserRolesAsync).
+        var roles = await _identityServiceManager.UserManagmentService.GetUserRolesAsync(child);
+        if (!roles.Any(r => string.Equals(r, Roles.Student.ToString(), StringComparison.OrdinalIgnoreCase)))
+            return new ChildGradeChangeResult(false, 0, 0, newGrade, ErrorCode: ChildAccountError.NotFound);
+
+        // Step 2 — Capture old grade; same-grade request → no-op success (no mutation, no publish).
+        var oldGrade = child.Grade ?? 0;
+        if (oldGrade == newGrade)
+        {
+            _logger.LogInfo($"TransitionGradeAsync: child {childUserId} already has Grade={newGrade}. No-op.");
+            return new ChildGradeChangeResult(true, childUserId, oldGrade, newGrade, IsNoOp: true);
+        }
+
+        // Step 3 — Mutate and commit. Identity has no UoW; UpdateAsync commits immediately.
+        child.Grade = newGrade;
+        child.UpdatedAt = DateTime.UtcNow;
+        child.UpdatedBy = actingParentId;
+
+        var result = await _identityServiceManager.UserManagmentService.UpdateAsync(child);
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            _logger.LogError(null, $"TransitionGradeAsync UpdateAsync failed for child {childUserId}: {errors}");
+            return new ChildGradeChangeResult(false, childUserId, oldGrade, newGrade, ErrorCode: ChildAccountError.GradeUpdateFailed);
+        }
+
+        _logger.LogInfo($"TransitionGradeAsync: child {childUserId} Grade changed from {oldGrade} to {newGrade} by parent {actingParentId}.");
+
+        // Step 4 — Best-effort post-commit publish ChildGradeChangedIntegrationEvent.
+        // A publish failure must NEVER roll back the already-committed User change.
+        // The field ChangedByAdminUserId carries the opaque acting-user id (here: parent).
+        await PublishGradeChangedEventAsync(childUserId, oldGrade, newGrade, actingParentId, ct);
+
+        // Step 5 — Best-effort post-commit publish AdminActionPerformedEvent (audit sink).
+        await PublishGradeTransitionAuditEventAsync(actingParentId, childUserId, oldGrade, newGrade, ct);
+
+        return new ChildGradeChangeResult(true, childUserId, oldGrade, newGrade);
+    }
+
+    private async Task PublishGradeChangedEventAsync(
+        int childId, int oldGrade, int newGrade, int actingParentId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var integrationEvent = new ChildGradeChangedIntegrationEvent(
+                EventId: Guid.NewGuid(),
+                OccurredOnUtc: DateTime.UtcNow,
+                ChildUserId: childId,
+                OldGrade: oldGrade,
+                NewGrade: newGrade,
+                ChangedByAdminUserId: actingParentId);
+
+            await _publisher.Publish(integrationEvent, cancellationToken);
+            _logger.LogInfo($"Published ChildGradeChangedIntegrationEvent for child {childId} ({oldGrade} → {newGrade}).");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                $"Failed to publish ChildGradeChangedIntegrationEvent for child {childId} " +
+                $"({oldGrade} → {newGrade}) — ignored (best-effort). Grade change is committed.");
+        }
+    }
+
+    private async Task PublishGradeTransitionAuditEventAsync(
+        int actingParentId, int childId, int oldGrade, int newGrade, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var auditEvent = new AdminActionPerformedEvent(
+                EventId: Guid.NewGuid(),
+                OccurredAtUtc: DateTime.UtcNow,
+                AdminUserId: actingParentId,
+                Action: AdminActions.ChildGradeTransitioned,
+                TargetEntityType: "User",
+                TargetEntityId: childId,
+                Details: $"oldGrade={oldGrade};newGrade={newGrade}");
+
+            await _publisher.Publish(auditEvent, cancellationToken);
+            _logger.LogInfo($"Published AdminActionPerformedEvent(ChildGradeTransitioned) for child {childId} by parent {actingParentId}.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Failed to publish AdminActionPerformedEvent(ChildGradeTransitioned) for child {childId} — ignored (best-effort).");
+        }
     }
 
     private async Task PublishUserRegisteredEventAsync(User user, CancellationToken cancellationToken)

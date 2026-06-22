@@ -76,6 +76,16 @@ public static class AdminActions
     public const string ChildGradeOverridden       = "Child.GradeOverridden";
     public const string ChildLearningLanguageChanged = "Child.LearningLanguageChanged";
 
+    // ── P5-06 Parent-initiated grade transition ───────────────────────────────
+    /// <summary>
+    /// A parent transitioned their linked child to a new grade (self-service, non-destructive).
+    /// Distinct from <see cref="ChildGradeOverridden"/> (admin path) so the audit log can
+    /// distinguish parent-initiated vs admin-initiated grade changes.
+    /// The <c>AdminUserId</c> field on <see cref="AdminActionPerformedEvent"/> carries the parent id
+    /// (opaque acting-user id — the field is named for the admin origin but is role-agnostic here).
+    /// </summary>
+    public const string ChildGradeTransitioned = "Child.GradeTransitioned";
+
     // ── P7-13 Gamification Admin Overrides ────────────────────────────────────
     public const string GamificationLeagueTierOverridden = "Gamification.LeagueTierOverridden";
     public const string GamificationStreakFreezeGranted  = "Gamification.StreakFreezeGranted";

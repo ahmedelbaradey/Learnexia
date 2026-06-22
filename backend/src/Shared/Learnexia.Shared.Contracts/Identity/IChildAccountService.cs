@@ -59,6 +59,34 @@ public interface IChildAccountService
         int childUserId,
         string newLearningLanguage,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Transitions a child's school grade (<c>User.Grade</c>) to a new value (parent-initiated, P5-06).
+    /// Non-destructive: XP, badges, streaks, mastery, and attempt rows are NOT touched.
+    /// Learning re-scope is automatic — the Learning module reads grade at query time.
+    ///
+    /// Contract:
+    ///   1. Resolves the child by <paramref name="childUserId"/>; missing → <see cref="ChildAccountError.NotFound"/>.
+    ///   2. Captures old grade; if <paramref name="newGrade"/> already equals the current value,
+    ///      returns a success no-op result (<see cref="ChildGradeChangeResult.IsNoOp"/> = <c>true</c>)
+    ///      — no publish, no audit (idempotent AC6).
+    ///   3. Sets <c>User.Grade = newGrade</c>, <c>UpdatedAt = UtcNow</c>,
+    ///      <c>UpdatedBy = actingParentId</c> and calls <c>UpdateAsync</c> (commits immediately).
+    ///   4. After the commit, best-effort publishes <see cref="ChildGradeChangedIntegrationEvent"/>
+    ///      (publish failure never rolls back the committed change).
+    ///   5. After the commit, best-effort publishes <see cref="Learnexia.Shared.Contracts.Admin.AdminActionPerformedEvent"/>
+    ///      with action <c>AdminActions.ChildGradeTransitioned</c> and <c>AdminUserId = actingParentId</c>
+    ///      (the field is named for the admin origin but carries the opaque acting-user id).
+    ///   6. Returns <see cref="ChildGradeChangeResult"/>.
+    ///
+    /// Grade-range validation (1–6) is enforced by the Parent command validator BEFORE this method
+    /// is called. The seam does NOT re-validate the range.
+    /// </summary>
+    Task<ChildGradeChangeResult> TransitionGradeAsync(
+        int childUserId,
+        int newGrade,
+        int actingParentId,
+        CancellationToken ct = default);
 }
 
 /// <summary>Request to provision a new child account. <c>ActingParentId</c> is the JWT-resolved parent.</summary>
@@ -129,6 +157,7 @@ public enum ChildAccountError
     NotFound = 4,
     UpdateFailed = 5,
     LanguageUpdateFailed = 6,
+    GradeUpdateFailed = 7,
 }
 
 /// <summary>
@@ -141,5 +170,18 @@ public sealed record ChildLanguageChangeResult(
     int ChildUserId,
     string OldLanguage,
     string NewLanguage,
+    bool IsNoOp = false,
+    ChildAccountError ErrorCode = ChildAccountError.None);
+
+/// <summary>
+/// Shaped outcome of <see cref="IChildAccountService.TransitionGradeAsync"/> (P5-06).
+/// On success, <see cref="OldGrade"/> and <see cref="NewGrade"/> carry the before/after grade values.
+/// For same-grade no-ops, <see cref="IsNoOp"/> is <c>true</c> and both values are equal.
+/// </summary>
+public sealed record ChildGradeChangeResult(
+    bool Succeeded,
+    int ChildUserId,
+    int OldGrade,
+    int NewGrade,
     bool IsNoOp = false,
     ChildAccountError ErrorCode = ChildAccountError.None);

@@ -3,6 +3,7 @@ using Learnexia.Modules.Parent.Application.Features.AddChild;
 using Learnexia.Modules.Parent.Application.Features.ChangeChildLearningLanguage;
 using Learnexia.Modules.Parent.Application.Features.LinkChild;
 using Learnexia.Modules.Parent.Application.Features.ListMyChildren;
+using Learnexia.Modules.Parent.Application.Features.TransitionChildGrade;
 using Learnexia.Modules.Parent.Application.Features.UnlinkChild;
 using Learnexia.Modules.Parent.Application.Features.UpdateChild;
 using Learnexia.Shared.Kernel.Responses;
@@ -55,4 +56,22 @@ public class ParentController : AppControllerBase
     [ProducesResponseType(typeof(BaseResponse<ChangedLearningLanguageResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ChangeLearningLanguage([FromBody] ChangeLearningLanguageCommand command)
         => NewResult(await Mediator.Send(command));
+
+    // NEW (P5-06): parent-initiated grade transition for a linked child.
+    // Non-destructive: XP, badges, streaks, mastery are preserved.
+    // childId from route; targetGrade from body; acting parent resolved from JWT.
+    // Same-grade request is a success no-op (isNoOp=true, no event). Invalid grade (outside 1–6) → 422.
+    [HttpPut("Children/{childId:int}/Grade")]
+    [ProducesResponseType(typeof(BaseResponse<TransitionedChildGradeResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> TransitionChildGrade(
+        [FromRoute] int childId,
+        [FromBody] TransitionChildGradeCommand command)
+    {
+        command.ChildId = childId;
+        return NewResult(await Mediator.Send(command));
+    }
 }

@@ -1253,6 +1253,13 @@
         /// <summary>Generic server-error for child profile/grade/language operations.</summary>
         public const string ChildAdminOperationSystemError = "ChildAdminOperationSystemError";
 
+        // ── P5-06 Parent-initiated grade transition ──────────────────────────────
+        /// <summary>Returned when a parent successfully transitions a child to a new grade (P5-06).</summary>
+        public const string ChildGradeTransitionedSuccessfully = "ChildGradeTransitionedSuccessfully";
+
+        /// <summary>Returned when the grade update commit fails during a parent-initiated transition (P5-06).</summary>
+        public const string ChildGradeUpdateFailed = "ChildGradeUpdateFailed";
+
         // ── P7-12 Audit Log (Moderation module) ─────────────────────────────────────
 
         /// <summary>Returned when the audit log is retrieved successfully.</summary>
