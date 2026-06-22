@@ -44,6 +44,7 @@ public sealed class TimedEventParticipationEndingSoonIntegrationEventHandler
     private readonly IReengagementDedupeStore            _dedupeStore;
     private readonly IParentChildQuery                   _parentChildQuery;
     private readonly INudgeDispatcher                    _dispatcher;
+    private readonly IPublisher                          _publisher;
     private readonly IUserLookup?                        _userLookup;
     private readonly ISystemClock                        _clock;
     private readonly ILoggerManager                      _logger;
@@ -54,6 +55,7 @@ public sealed class TimedEventParticipationEndingSoonIntegrationEventHandler
         IReengagementDedupeStore dedupeStore,
         IParentChildQuery parentChildQuery,
         INudgeDispatcher dispatcher,
+        IPublisher publisher,
         ISystemClock clock,
         ILoggerManager logger,
         IUserLookup? userLookup = null)
@@ -63,6 +65,7 @@ public sealed class TimedEventParticipationEndingSoonIntegrationEventHandler
         _dedupeStore       = dedupeStore;
         _parentChildQuery  = parentChildQuery;
         _dispatcher        = dispatcher;
+        _publisher         = publisher;
         _clock             = clock;
         _logger            = logger;
         _userLookup        = userLookup;
@@ -100,6 +103,8 @@ public sealed class TimedEventParticipationEndingSoonIntegrationEventHandler
             {
                 _logger.LogInfo(
                     $"analytics.reengagement.dedupe_hit category={category} childId={ev.StudentId} timedEventId={ev.TimedEventId}");
+                // P9-13 BE-3: Emit Deduped suppression (fail-soft).
+                await ReengagementHandlerHelper.PublishDedupeSuppressionAsync(_publisher, _logger, ev.StudentId, category, code, _clock.UtcNow, ct);
                 return;
             }
 

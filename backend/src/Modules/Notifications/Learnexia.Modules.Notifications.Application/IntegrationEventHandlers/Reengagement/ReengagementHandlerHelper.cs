@@ -1,10 +1,13 @@
 using Learnexia.Modules.Notifications.Application.Abstractions;
+using Learnexia.Modules.Notifications.Domain.Constants;
 using Learnexia.Modules.Notifications.Domain.Entities;
 using Learnexia.Modules.Notifications.Domain.Enums;
 using Learnexia.Modules.Notifications.Domain.Services;
 using Learnexia.Modules.Notifications.Domain.Templates;
 using Learnexia.Shared.Contracts.Identity;
+using Learnexia.Shared.Contracts.Notifications;
 using Learnexia.Shared.Kernel.Abstractions;
+using MediatR;
 
 namespace Learnexia.Modules.Notifications.Application.IntegrationEventHandlers.Reengagement;
 
@@ -56,18 +59,66 @@ internal static class ReengagementHandlerHelper
     // -------------------------------------------------------------------------
 
     /// <summary>
-    /// Attempts to acquire the dedupe lock for (studentId, category, eventDay) via the store.
-    /// Fail-open: if the store throws → logs WARN + returns <c>true</c> (allow send; duplicate
+    /// P9-13 BE-3. Attempts to acquire the dedupe lock for (studentId, category, eventDay) via
+    /// the store. When the lock is already held (duplicate), publishes a
+    /// <see cref="NotificationSuppressedIntegrationEvent"/> with reason
+    /// <see cref="SuppressionReasonCodes.Deduped"/> via <paramref name="publisher"/> — fail-soft,
+    /// a publish failure NEVER blocks the return value.
+    ///
+    /// Fail-open on store throw: logs WARN + returns <c>true</c> (allow send; duplicate
     /// is preferable to a silently dropped nudge per D4).
     /// </summary>
-    public static Task<bool> TryAcquireDedupeAsync(
+    public static async Task<bool> TryAcquireDedupeAsync(
         IReengagementDedupeStore dedupeStore,
+        ILoggerManager logger,
+        IPublisher publisher,
+        int studentId,
+        NotificationCategory category,
+        string code,
+        DateTime eventDay,
+        DateTime nowUtc,
+        CancellationToken ct)
+    {
+        var acquired = await dedupeStore.TryAcquireAsync(studentId, category, eventDay, ct);
+        if (!acquired)
+        {
+            await PublishDedupeSuppressionAsync(publisher, logger, studentId, category, code, nowUtc, ct);
+        }
+        return acquired;
+    }
+
+    /// <summary>
+    /// P9-13 BE-3. Publishes a <see cref="NotificationSuppressedIntegrationEvent"/> with reason
+    /// <see cref="SuppressionReasonCodes.Deduped"/> in a fail-soft try/catch. A publish failure
+    /// MUST NOT affect the caller — mirrors <c>NudgeDispatcher.PublishSuppressedAsync</c> exactly.
+    /// Call this at any dedupe short-circuit point (both daily and tier dedupe).
+    /// </summary>
+    public static async Task PublishDedupeSuppressionAsync(
+        IPublisher publisher,
         ILoggerManager logger,
         int studentId,
         NotificationCategory category,
-        DateTime eventDay,
+        string code,
+        DateTime nowUtc,
         CancellationToken ct)
-        => dedupeStore.TryAcquireAsync(studentId, category, eventDay, ct);
+    {
+        try
+        {
+            await publisher.Publish(new NotificationSuppressedIntegrationEvent(
+                EventId:       Guid.NewGuid(),
+                OccurredOnUtc: nowUtc,
+                StudentId:     studentId,
+                Code:          code,
+                Category:      (int)category,
+                Reason:        SuppressionReasonCodes.Deduped), ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex,
+                $"P9-13: ReengagementHandlerHelper — failed to publish Deduped suppression " +
+                $"studentId={studentId} category={category} code={code} — analytics sink may miss this event.");
+        }
+    }
 
     // -------------------------------------------------------------------------
     // Locale resolution

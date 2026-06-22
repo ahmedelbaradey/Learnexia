@@ -60,6 +60,7 @@ public sealed class LapseWinBackIntegrationEventHandler
     private readonly IReengagementDedupeStore _dedupeStore;
     private readonly IParentChildQuery _parentChildQuery;
     private readonly INudgeDispatcher _dispatcher;
+    private readonly IPublisher _publisher;
     private readonly IGlobalSettingsProvider _settings;
     private readonly IUserLookup? _userLookup;
     private readonly ISystemClock _clock;
@@ -71,6 +72,7 @@ public sealed class LapseWinBackIntegrationEventHandler
         IReengagementDedupeStore dedupeStore,
         IParentChildQuery parentChildQuery,
         INudgeDispatcher dispatcher,
+        IPublisher publisher,
         IGlobalSettingsProvider settings,
         ISystemClock clock,
         ILoggerManager logger,
@@ -81,6 +83,7 @@ public sealed class LapseWinBackIntegrationEventHandler
         _dedupeStore       = dedupeStore;
         _parentChildQuery  = parentChildQuery;
         _dispatcher        = dispatcher;
+        _publisher         = publisher;
         _settings          = settings;
         _clock             = clock;
         _logger            = logger;
@@ -114,7 +117,7 @@ public sealed class LapseWinBackIntegrationEventHandler
             }
 
             // ── Daily dedupe (one-shot-per-day semantics, as before) ─────────────────────────────
-            var dailyAcquired = await ReengagementHandlerHelper.TryAcquireDedupeAsync(_dedupeStore, _logger, ev.StudentId, category, ev.OccurredOnUtc, ct);
+            var dailyAcquired = await ReengagementHandlerHelper.TryAcquireDedupeAsync(_dedupeStore, _logger, _publisher, ev.StudentId, category, tierCode, ev.OccurredOnUtc, _clock.UtcNow, ct);
             if (!dailyAcquired)
             {
                 _logger.LogInfo($"analytics.reengagement.dedupe_hit category={category} childId={ev.StudentId}");
@@ -126,6 +129,8 @@ public sealed class LapseWinBackIntegrationEventHandler
             if (!tierAcquired)
             {
                 _logger.LogInfo($"analytics.reengagement.tier_dedupe_hit category={category} tier={tierCode} childId={ev.StudentId}");
+                // P9-13 BE-3: Emit Deduped suppression for tier dedupe (fail-soft).
+                await ReengagementHandlerHelper.PublishDedupeSuppressionAsync(_publisher, _logger, ev.StudentId, category, tierCode, _clock.UtcNow, ct);
                 return;
             }
 

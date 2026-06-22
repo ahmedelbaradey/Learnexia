@@ -1,4 +1,5 @@
 using Learnexia.Modules.Notifications.Application.Abstractions;
+using Learnexia.Modules.Notifications.Domain.Constants;
 using Learnexia.Modules.Notifications.Domain.Entities;
 using Learnexia.Modules.Notifications.Domain.Services;
 using Learnexia.Modules.Notifications.Infrastructure.Persistence;
@@ -115,6 +116,17 @@ public sealed class NudgeDispatcher : INudgeDispatcher
                 if (pushGranted)
                     deliveredChannels |= await TrySendPushAsync(message, notification, ct);
             }
+            else
+            {
+                // P9-13 BE-2: push pref is OFF — the parent preference / category default disabled
+                // the push channel for this child. The in-app inbox row is still written (above).
+                // Emit a PushPrefOff suppression event (fail-soft — must NEVER block the inbox write).
+                _logger.LogInfo(
+                    $"analytics.reengagement.push_suppressed reason={SuppressionReasonCodes.PushPrefOff} " +
+                    $"category={message.Category} code={message.Code} " +
+                    $"childId={message.RecipientChildUserId}");
+                await PublishSuppressedAsync(message, SuppressionReasonCodes.PushPrefOff, nowUtc, ct);
+            }
 
             // ── Step 3: Stamp the bitmask + SentAtUtc on the row.
             notification.RecordSent(deliveredChannels, nowUtc);
@@ -230,6 +242,12 @@ public sealed class NudgeDispatcher : INudgeDispatcher
             {
                 _logger.LogInfo(
                     $"P4-09: NudgeDispatcher — no active device tokens for childId={message.RecipientChildUserId}; push skipped.");
+
+                // P9-13 BE-2: Emit NoDeviceTokens suppression (fail-soft — must NEVER block the send path).
+                // The arbiter already granted, but there is nothing to send to.
+                await PublishSuppressedAsync(
+                    message, SuppressionReasonCodes.NoDeviceTokens, _clock.UtcNow, ct);
+
                 return 0;
             }
 

@@ -203,7 +203,7 @@ Push end-to-end (Expo FE) + the full habit-forming notification catalog on the m
 | P9-10 | Notification localization *(🟡 v1 — welcome localized; reset→P6-06, read-time→P9-03)* | — | [BE](Backend/Phase-9-Notifications/P9-10-BE.md) |
 | P9-11 | Notification analytics sink *(✅ BE built — send/suppress/open → Analytics + admin endpoint)* | [FE](Frontend/admin-dashboard/Phase-9-Notifications/P9-11-FE.md) *(Next.js)* | [BE](Backend/Phase-9-Notifications/P9-11-BE.md) |
 | P9-12 | Timed-event nudges *(✅ BE built — join/progress/ending/completion over P4-12)* | [FE](Frontend/student-app/Phase-9-Notifications/P9-12-FE.md) | [BE](Backend/Phase-9-Notifications/P9-12-BE.md) |
-| P9-13 | Complete notification-suppression analytics capture *(scoped — emit NotificationSuppressed for pref-off/no-device/dedupe, not just arbiter; closes P9-11/P6-04 metric gap)* | — | [BE](Backend/Phase-9-Notifications/P9-13-BE.md) |
+| P9-13 | Complete notification-suppression analytics capture *(✅ BE built 2026-06-22 — emit NotificationSuppressed for pref-off/no-device/dedupe, not just arbiter; closes P9-11/P6-04 metric gap)* | — | [BE](Backend/Phase-9-Notifications/P9-13-BE.md) |
 
 ### Phase 10 — Payment, Billing & Credits *(story IDs `P10-xx`, post-MVP)*
 
