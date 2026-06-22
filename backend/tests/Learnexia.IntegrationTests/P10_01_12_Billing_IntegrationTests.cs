@@ -572,10 +572,13 @@ public sealed class P10_01_12_Billing_IntegrationTests : IAsyncLifetime
         TryProp(root, "data", out var data).Should().BeTrue($"body: {body}");
         var settings = data.EnumerateArray().ToList();
 
-        // 17 Phase-10 economy keys + 4 P10-14 seat keys (seats.included_free/premium, seats.max, seats.extra_price_egp)
-        // + 1 P10-15 key (seats.grace_days) = 22.
-        settings.Count.Should().Be(22,
-            $"GlobalSettingsSeeder must produce exactly 22 rows; found {settings.Count}. body: {body}");
+        // Phase-10 baseline = 22 keys: 17 economy + 4 P10-14 seat keys
+        // (seats.included_free/premium, seats.max, seats.extra_price_egp) + 1 P10-15 (seats.grace_days).
+        // Use a FLOOR, not an exact count — the GlobalSettings store is shared and grows over time
+        // (e.g. GlobalSettingsSeeder now also bakes ai_cost.recommendation for P3-14 Lexi → 23). The
+        // individual key assertions below are the real guard that each Phase-10 economy key is present + correct.
+        settings.Count.Should().BeGreaterThanOrEqualTo(22,
+            $"GlobalSettingsSeeder must produce at least the 22 Phase-10 rows; found {settings.Count}. body: {body}");
 
         // Build a lookup by key.
         var dict = new Dictionary<string, string>(StringComparer.Ordinal);

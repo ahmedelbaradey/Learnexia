@@ -21,6 +21,18 @@ EF won't re-run an "applied" migration, and **direct DDL on the shared Postgres 
 
 ---
 
+## Phase 10 backend QC + E2E — 2026-06-22 (`test/P10-qc-gaps`)
+
+Full QC + E2E pass over Phase-10 backend. The money-paths (P10-01..12) were already QC'd (`docs/qc/P10-Billing`, 75 cases); this run formalized QC for the **family/seats cluster (P10-13..18) + the payment-sim** (had E2E but no QC doc) and ran the whole phase.
+- **QC design:** `docs/qc/P10-13..18/` + `docs/qc/P10-payment-sim/` (131 cases mapped 1:1 to the 137 existing integration tests) + phase matrix `docs/qc/P10-Billing/phase-coverage-report.md`. 22 gaps flagged.
+- **Gap closure** (`P10_QC_Gaps_Tests`, 11 new tests): **3/3 P0** closed (GAP-13-A monthly rollover reset; GAP-15-A grace-expiry→enforcement; GAP-SIM-A real-provider→404) + 8 P1; 5 P1 justified-skips, 1 blocked (legacy CreditAccount retired), 4 P2 deferred. Clock boundaries driven via `TestClock`/seeded expired timestamps.
+- **Full Phase-10 E2E: 269 tests → 266 pass, 3 pre-existing fails (now resolved/triaged):**
+  - **FINDING-15-B (Medium product bug) — ✅ FIXED:** `payment.succeeded` within a grace window didn't clear `GraceEndsAt`/`SeatGraceReason`/`SeatGraceStartedAt` (stale audit data). Fixed in `WebhookEventService.HandlePaymentSucceededAsync` (grace is only-ever payment-failure → clear unconditionally on success). GAP-15-B flipped to a regression sentinel.
+  - **TC_GS_04 — ✅ FIXED (test):** hard-coded GlobalSettings count `22`; P5-09 legitimately added `ai_cost.recommendation` → 23. Changed the exact-count assertion to a floor (`>= 22`); the per-key assertions remain the real guard. (GlobalSettings is a shared store — don't pin its exact size.)
+  - **ENERGY-2A / ENERGY-3C — env-gated, not a bug:** the `AiRuntimeE2E` AI-SSE energy tests need live AI keys + Redis (absent in the Testcontainers-only harness). Documented limitation (same as the P6 perf-harness note); they pass with the full stack.
+
+---
+
 ## P10 payment provider — mock-complete for dev/staging — 2026-06-22 (`feat/P10-payment-mock-complete`)
 
 The `IPaymentProvider` seam + `FakePaymentProvider` already existed and are config-wired (`Billing:PaymentProvider:Provider`). The gap for a *usable* mock was that, in a running app, nothing completes a payment (no real gateway sends the success webhook — only tests POST it). Added a **gated simulate-webhook** so the full money flow (checkout → success → subscription Active / energy credited; also failed/refund) works on the Fake provider until the real Paymob/Fawry adapter is chosen.
