@@ -113,6 +113,12 @@ export interface ConfettiLayerProps {
   count?: number;
   /** Called once shortly after the burst expires. */
   onComplete?: () => void;
+  /**
+   * Stable test identifier — present in both animated and reduce-motion paths
+   * (reduce-motion returns null so the tester asserts absence in that case).
+   * @default 'confetti-layer'
+   */
+  testID?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -201,6 +207,7 @@ export function ConfettiLayer({
   paletteVariant = 'multicolor',
   count = DEFAULT_COUNT,
   onComplete,
+  testID = 'confetti-layer',
 }: ConfettiLayerProps) {
   const reduceMotion = useReduceMotion();
 
@@ -216,13 +223,14 @@ export function ConfettiLayer({
         paletteVariant={paletteVariant}
         count={clamped}
         onComplete={onComplete}
+        testID={testID}
       />
     );
   }
 
   // Web / no-Skia fallback (Design Spec §0.1).
   return (
-    <RectFallback paletteVariant={paletteVariant} count={clamped} onComplete={onComplete} />
+    <RectFallback paletteVariant={paletteVariant} count={clamped} onComplete={onComplete} testID={testID} />
   );
 }
 
@@ -236,9 +244,10 @@ interface RectFallbackProps {
   paletteVariant: ConfettiPaletteVariant;
   count: number;
   onComplete?: () => void;
+  testID?: string;
 }
 
-function RectFallback({ paletteVariant, count, onComplete }: RectFallbackProps) {
+function RectFallback({ paletteVariant, count, onComplete, testID }: RectFallbackProps) {
   const [done, setDone] = useState(false);
 
   const particles = useMemo(
@@ -265,6 +274,7 @@ function RectFallback({ paletteVariant, count, onComplete }: RectFallbackProps) 
 
   return (
     <Stack
+      testID={testID}
       position="absolute"
       top={0}
       left={0}
@@ -311,9 +321,10 @@ interface SkiaCanvasProps {
   paletteVariant: ConfettiPaletteVariant;
   count: number;
   onComplete?: () => void;
+  testID?: string;
 }
 
-function SkiaCanvas({ skia, paletteVariant, count, onComplete }: SkiaCanvasProps) {
+function SkiaCanvas({ skia, paletteVariant, count, onComplete, testID }: SkiaCanvasProps) {
   const { width, height } = Dimensions.get('window');
 
   // Mutable physics state — never stored in React state to avoid re-renders
@@ -406,6 +417,7 @@ function SkiaCanvas({ skia, paletteVariant, count, onComplete }: SkiaCanvasProps
 
   return (
     <Canvas
+      testID={testID}
       style={{
         position: 'absolute' as const,
         top: 0,

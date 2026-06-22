@@ -35,6 +35,13 @@ export interface RewardPopupProps {
   locale?: string;
   /** Required for screen readers. */
   accessibilityLabel: string;
+  /**
+   * Stable test identifier for E2E targeting.
+   * Defaults to `"reward-popup"`. Pass a more specific value (e.g.
+   * `"league-promotion-popup"` / `"league-demotion-popup"`) when the caller
+   * needs to distinguish between celebration kinds in assertions.
+   */
+  testID?: string;
 }
 
 export function RewardPopup({
@@ -47,6 +54,7 @@ export function RewardPopup({
   ctaLabel = 'Keep Going',
   onDismiss,
   accessibilityLabel,
+  testID = 'reward-popup',
 }: RewardPopupProps) {
   const moti = tryLoadMoti();
   const MotiView = moti?.MotiView as React.ComponentType<Record<string, unknown>> | undefined;
@@ -161,6 +169,7 @@ export function RewardPopup({
   return (
     <Stack
       // Overlay fill
+      testID={testID}
       position="absolute"
       top={0}
       left={0}

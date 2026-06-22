@@ -34,6 +34,13 @@ export interface BadgeProps {
   isNewlyEarned?: boolean;
   /** Required for screen readers, e.g. "Gold badge, earned". */
   accessibilityLabel: string;
+  /**
+   * Stable test identifier placed on the disc container (present in both
+   * animated and static/reduce-motion paths). The legendary variant uses the
+   * convention `"badge-legendary-shimmer"` when the caller targets that
+   * specific animation assertion.
+   */
+  testID?: string;
 }
 
 const DISC = 74;
@@ -67,7 +74,11 @@ export function Badge({
   sublabel,
   isNewlyEarned = false,
   accessibilityLabel,
+  testID,
 }: BadgeProps) {
+  // Default testID: legendary disc gets the convention name for E2E targeting
+  // (spec G8); other variants left undefined unless the caller provides one.
+  const resolvedTestID = testID ?? (variant === 'legendary' ? 'badge-legendary-shimmer' : undefined);
   const locked = variant === 'locked';
 
   // Boss variant renders as a pill (design spec §3.4), not a disc.
@@ -110,6 +121,7 @@ export function Badge({
 
   const discInner = (
     <Stack
+      testID={resolvedTestID}
       width={DISC}
       height={DISC}
       borderRadius={9999}
@@ -167,7 +179,8 @@ export function Badge({
       </Text>
       {sublabel ? (
         <Text
-          color="$fg3"
+          // P4-08 FE-2 spec §2.2: legendary rarity text uses $purple not $fg3.
+          color={variant === 'legendary' ? '$purple' : '$fg3'}
           fontWeight="600"
           fontSize={10}
           fontFamily="$body"

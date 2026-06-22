@@ -58,6 +58,7 @@ export default defineConfig({
         '**/specs/P4-gamification-xp-streak-hearts.spec.ts',
         '**/specs/P4-gamification-badges-missions-league.spec.ts',
         '**/specs/P4-gamification-events-shell.spec.ts',
+        '**/specs/P4-08-gamification-motion.spec.ts',
       ],
     },
   ],

@@ -1178,6 +1178,10 @@ export default function ChildHomeScreen() {
           onDismiss={dismissCelebration}
           locale={locale}
           accessibilityLabel={celebrationCopy.a11y}
+          // Stable testID per celebration kind (G1/G3): badge-unlock uses
+          // "badge-unlock-overlay" so E2E can distinguish it from level-up /
+          // streak-milestone / mission-complete ("reward-popup" default).
+          testID={celebrationCopy.variant === 'badge-unlock' ? 'badge-unlock-overlay' : 'reward-popup'}
         />
       ) : null}
     </TamStack>

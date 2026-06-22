@@ -23,6 +23,12 @@ export interface HeartsProps {
   locale?: string;
   /** Required for screen readers, e.g. "3 of 5 hearts remaining". */
   accessibilityLabel: string;
+  /**
+   * Stable test identifier for the hearts row container.
+   * Individual heart slots receive `testID="heart-slot-{index}"` automatically.
+   * @default 'hearts-row'
+   */
+  testID?: string;
 }
 
 const HEART_SIZE = 30;
@@ -84,6 +90,7 @@ export function Hearts({
   recoveringIn = null,
   locale = 'en',
   accessibilityLabel,
+  testID = 'hearts-row',
 }: HeartsProps) {
   const isRtl = directionForLocale(locale) === 'rtl';
   const slots = Array.from({ length: maxHearts }, (_, i) => i < current);
@@ -92,6 +99,7 @@ export function Hearts({
   return (
     <YStack gap="$2">
       <XStack
+        testID={testID}
         gap="$2"
         flexDirection={isRtl ? 'row-reverse' : 'row'}
         accessibilityRole="text"
@@ -101,7 +109,11 @@ export function Hearts({
         accessibilityValue={{ min: 0, max: maxHearts, now: current }}
       >
         {slots.map((filled, i) => (
-          <HeartIcon key={i} filled={filled} recovering={recovering && !filled} />
+          // testID="heart-slot-{i}" on each slot wrapper (G8 — E2E can assert
+          // individual slot states; present in both animated and static paths).
+          <XStack key={i} testID={`heart-slot-${i}`}>
+            <HeartIcon filled={filled} recovering={recovering && !filled} />
+          </XStack>
         ))}
       </XStack>
 

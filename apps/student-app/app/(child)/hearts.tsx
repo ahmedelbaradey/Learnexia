@@ -71,15 +71,18 @@ const GLYPHS = {
 /**
  * One heart in the row. `breaking` plays the heart-break motion (only ever
  * set on the most-recently-lost slot when arriving with `?lost=1`).
+ * `index` drives `testID="heart-slot-{index}"` for E2E targeting.
  */
 function BigHeart({
   filled,
   breaking,
   reduceMotion,
+  index,
 }: {
   filled: boolean;
   breaking: boolean;
   reduceMotion: boolean;
+  index: number;
 }) {
   // ❤️→💔 swap at 80ms, then settle back to the standard lost glyph so the
   // row stays consistent with the other lost hearts (spec §0.1 heart-break).
@@ -97,8 +100,11 @@ function BigHeart({
     };
   }, [breaking, reduceMotion]);
 
+  const slotTestID = `heart-slot-${index}`;
+
   const node = (
     <Text
+      testID={slotTestID}
       fontSize={HEART_SIZE}
       lineHeight={HEART_SIZE + 8}
       opacity={breaking && !reduceMotion ? 1 : filled ? 1 : LOST_OPACITY}
@@ -124,6 +130,7 @@ function BigHeart({
 
   return (
     <MotiView
+      testID={slotTestID}
       from={{ scale: 1, opacity: 1 }}
       animate={{ scale: [1.2, 1], opacity: [1, LOST_OPACITY] }}
       transition={{
@@ -346,6 +353,7 @@ export default function HeartsScreen() {
                 {slots.map((filled, i) => (
                   <BigHeart
                     key={i}
+                    index={i}
                     filled={filled}
                     breaking={i === breakingIndex}
                     reduceMotion={reduceMotion}
@@ -354,43 +362,89 @@ export default function HeartsScreen() {
               </XStack>
 
               {/* Heart-lost info card — only on `?lost=1` arrival (spec §3.1.4).
-                  Never-shaming voice; spec literals for the red-soft chrome. */}
+                  Never-shaming voice; spec literals for the red-soft chrome.
+                  P4-08 FE-5: fade-in entrance opacity 0→1, durations.base (240ms).
+                  Reduce-motion: render at opacity 1 instantly (no MotiView). */}
               {arrivedFromLoss && !heartsFull ? (
-                <XStack
-                  testID="hearts-lost-card"
-                  flexDirection={rowDir}
-                  alignItems="center"
-                  gap={12}
-                  padding={14}
-                  borderRadius={16}
-                  backgroundColor="rgba(239, 68, 68, 0.12)"
-                  borderWidth={1}
-                  borderColor="rgba(239, 68, 68, 0.3)"
-                  accessibilityLiveRegion="polite"
-                >
-                  <Text fontSize={22} accessibilityElementsHidden>
-                    {GLYPHS.broken}
-                  </Text>
-                  <YStack flex={1} gap={2}>
-                    <Text
-                      color="$danger"
-                      fontSize={14}
-                      fontWeight="800"
-                      fontFamily="$heading"
-                      writingDirection={direction}
-                    >
-                      {t('hearts.lost.title')}
+                reduceMotion ? (
+                  <XStack
+                    testID="hearts-lost-card"
+                    flexDirection={rowDir}
+                    alignItems="center"
+                    gap={12}
+                    padding={14}
+                    borderRadius={16}
+                    backgroundColor="rgba(239, 68, 68, 0.12)"
+                    borderWidth={1}
+                    borderColor="rgba(239, 68, 68, 0.3)"
+                    accessibilityLiveRegion="polite"
+                  >
+                    <Text fontSize={22} accessibilityElementsHidden>
+                      {GLYPHS.broken}
                     </Text>
-                    <Text
-                      color="$heart"
-                      fontSize={11}
-                      fontFamily="$body"
-                      writingDirection={direction}
+                    <YStack flex={1} gap={2}>
+                      <Text
+                        color="$danger"
+                        fontSize={14}
+                        fontWeight="800"
+                        fontFamily="$heading"
+                        writingDirection={direction}
+                      >
+                        {t('hearts.lost.title')}
+                      </Text>
+                      <Text
+                        color="$heart"
+                        fontSize={11}
+                        fontFamily="$body"
+                        writingDirection={direction}
+                      >
+                        {t('hearts.lost.sub')}
+                      </Text>
+                    </YStack>
+                  </XStack>
+                ) : (
+                  <MotiView
+                    from={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ type: 'timing', duration: durations.base }}
+                  >
+                    <XStack
+                      testID="hearts-lost-card"
+                      flexDirection={rowDir}
+                      alignItems="center"
+                      gap={12}
+                      padding={14}
+                      borderRadius={16}
+                      backgroundColor="rgba(239, 68, 68, 0.12)"
+                      borderWidth={1}
+                      borderColor="rgba(239, 68, 68, 0.3)"
+                      accessibilityLiveRegion="polite"
                     >
-                      {t('hearts.lost.sub')}
-                    </Text>
-                  </YStack>
-                </XStack>
+                      <Text fontSize={22} accessibilityElementsHidden>
+                        {GLYPHS.broken}
+                      </Text>
+                      <YStack flex={1} gap={2}>
+                        <Text
+                          color="$danger"
+                          fontSize={14}
+                          fontWeight="800"
+                          fontFamily="$heading"
+                          writingDirection={direction}
+                        >
+                          {t('hearts.lost.title')}
+                        </Text>
+                        <Text
+                          color="$heart"
+                          fontSize={11}
+                          fontFamily="$body"
+                          writingDirection={direction}
+                        >
+                          {t('hearts.lost.sub')}
+                        </Text>
+                      </YStack>
+                    </XStack>
+                  </MotiView>
+                )
               ) : null}
 
               {/* Refill card — shown only when hearts < 5 (spec §3.1.3).

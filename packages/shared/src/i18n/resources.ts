@@ -1172,6 +1172,11 @@ export const en = {
     subEmpty: 'Earn your first badge by finishing a lesson!',
     empty: 'No badges yet — earn your first!',
     error: "Couldn't load your badges. Try again",
+    // P4-08 FE-2 — BadgeUnlockOverlay celebration copy (spec §8.4).
+    unlock: {
+      title: 'New Badge!',
+      cta: 'Awesome!',
+    },
     stats: {
       bronze: 'Bronze',
       silver: 'Silver',
@@ -1314,6 +1319,14 @@ export const en = {
       title: 'Earn XP this week to join a league!',
     },
     error: 'We could not load your league. Try again!',
+    // P4-08 FE-3 — promotion/demotion celebration popup copy (spec §8.4).
+    promotion: {
+      title: "You're Moving Up!",
+      subtitle: 'Moving to {{tierName}} League',
+    },
+    demotion: {
+      title: 'Keep Practicing!',
+    },
   },
   // B8 — Events screen: streak freeze + timed events + weekly challenge
   // (Design Spec P4-08 §8). Freezes are EARNED-only — no purchase copy.
@@ -2567,6 +2580,11 @@ export const ar = {
     subEmpty: 'اكسب أول شارة بإكمال درس!',
     empty: 'لا شارات بعد — اكسب أولى شاراتك!',
     error: 'تعذّر تحميل شاراتك. حاول مجددًا',
+    // P4-08 FE-2 — نص احتفالية BadgeUnlockOverlay (المواصفة §8.4).
+    unlock: {
+      title: 'شارة جديدة!',
+      cta: 'رائع!',
+    },
     stats: {
       bronze: 'برونزية',
       silver: 'فضية',
@@ -2726,6 +2744,14 @@ export const ar = {
       title: 'اكسب نقاطًا هذا الأسبوع للانضمام إلى دوري!',
     },
     error: 'تعذّر تحميل الدوري. حاول مجددًا!',
+    // P4-08 FE-3 — نص احتفالية الترقية / الهبوط (المواصفة §8.4).
+    promotion: {
+      title: 'أنت تتقدم!',
+      subtitle: 'تنتقل إلى الدوري {{tierName}}',
+    },
+    demotion: {
+      title: 'استمر في التدرب!',
+    },
   },
   // B8 — شاشة الفعاليات: مجمِّد التحدى + الفعاليات المؤقتة + تحدي الأسبوع
   // (Design Spec P4-08 §8). المجمِّدات تُكتسب فقط — لا نصوص شراء.

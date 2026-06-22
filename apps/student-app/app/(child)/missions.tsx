@@ -641,6 +641,46 @@ export default function MissionsScreen() {
                     width="100%"
                     borderRadius="$modal"
                   >
+                    {/* P4-08 FE-4: Hero shimmer — one-shot opacity pulse on mount
+                        when heroXp > 0. Reduce-motion: white overlay stays at
+                        opacity 0 (not rendered). Spec §4.3: 600ms timing.
+                        testID="mission-hero-shimmer" is present in both branches:
+                        animated → MotiView; reduce-motion → static View at opacity 0
+                        (ensures the tester can always query the element). */}
+                    {!reduceMotion ? (
+                      <MotiView
+                        testID="mission-hero-shimmer"
+                        pointerEvents="none"
+                        from={{ opacity: 0 }}
+                        animate={{ opacity: [0, 0.18, 0] }}
+                        transition={{ type: 'timing', duration: 600, loop: false }}
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: 24,
+                        }}
+                      />
+                    ) : (
+                      /* Reduce-motion: static placeholder at opacity 0 keeps the
+                         testID queryable so E2E can assert the static state. */
+                      <TamStack
+                        testID="mission-hero-shimmer"
+                        pointerEvents="none"
+                        position="absolute"
+                        top={0}
+                        left={0}
+                        right={0}
+                        bottom={0}
+                        backgroundColor="#FFFFFF"
+                        borderRadius={24}
+                        opacity={0}
+                        accessible={false}
+                      />
+                    )}
                     <XStack
                       flexDirection={rowDir}
                       alignItems="center"
@@ -689,6 +729,7 @@ export default function MissionsScreen() {
                   </GradientBox>
                 </TamStack>
               ) : null}
+
 
               {/* ---------------------------------------------------------- */}
               {/* 4. Daily list (spec §5.4)                                   */}
