@@ -2720,4 +2720,22 @@
   <data name="CalibrationReasonAiPValueExtremeLow" xml:space="preserve">
     <value>سؤال مُولَّد بالذكاء الاصطناعي: تم رصد معدل نجاح منخفض جدًا (قد يكون السؤال معطوبًا أو صعبًا للغاية).</value>
   </data>
+  <data name="SimulationNotAvailable" xml:space="preserve">
+    <value>غير موجود.</value>
+  </data>
+  <data name="SimulationWebhookDispatched" xml:space="preserve">
+    <value>تم إرسال الـ webhook المُحاكَى بنجاح عبر مسار معالجة الـ webhook الحقيقي.</value>
+  </data>
+  <data name="SimulationPaymentRefMissing" xml:space="preserve">
+    <value>لا يحتوي الدفع على مرجع مزوّد حتى الآن. ابدأ جلسة دفع قبل محاكاة الـ webhook.</value>
+  </data>
+  <data name="SimulationEventTypeUnsupported" xml:space="preserve">
+    <value>نوع الحدث المطلوب غير مدعوم للمحاكاة. القيم المسموح بها: payment.succeeded, payment.failed, refund.succeeded.</value>
+  </data>
+  <data name="SimulationPaymentIdRequired" xml:space="preserve">
+    <value>مطلوب معرّف دفع صالح (أكبر من 0).</value>
+  </data>
+  <data name="SimulationEventTypeRequired" xml:space="preserve">
+    <value>نوع الحدث مطلوب.</value>
+  </data>
 </root>

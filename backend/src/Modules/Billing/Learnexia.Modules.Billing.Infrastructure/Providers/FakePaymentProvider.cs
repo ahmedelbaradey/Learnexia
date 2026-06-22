@@ -26,8 +26,16 @@ namespace Learnexia.Modules.Billing.Infrastructure.Providers;
 /// </para>
 ///
 /// <para><strong>Config selection:</strong> registered when
-/// <c>Billing:PaymentProvider:Provider = "Fake"</c> (the default).
-/// Swap to a real adapter by changing the config key — no code change needed.</para>
+/// <c>Billing:PaymentProvider:Provider = "Fake"</c> (the default, MVP).
+/// Swap to a real adapter by changing the config key — no code change needed.
+/// The <c>PaymobPaymentProvider</c> adapter is [EXTERNAL] and slots in here when credentials
+/// are available.</para>
+///
+/// <para><strong>Mock simulation (dev/staging):</strong> after the parent is redirected to the
+/// fake checkout URL, complete the mock-payment loop by calling
+/// <c>POST /api/Billing/Webhooks/Simulate</c> (AdminOnly JWT, <c>AllowSimulation=true</c>).
+/// The simulate endpoint reuses <c>BuildSignedWebhookPayload</c> + <c>IWebhookEventService</c>
+/// — no state-machine logic is duplicated. See <c>IPaymentSimulationService</c>.</para>
 ///
 /// <para><strong>Secrets:</strong> <c>FakeSigningSecret</c> is read from config/environment
 /// and defaults to an empty string (unsigned) only for local dev. Tests must supply a secret

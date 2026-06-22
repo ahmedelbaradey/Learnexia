@@ -7,9 +7,15 @@ namespace Learnexia.Modules.Billing.Application.Abstractions;
 /// gateway. The active provider (Fake or live) is injected by DI; the application layer
 /// never references a concrete provider class.
 ///
-/// <para>GATE-2 LOCKED: <c>FakePaymentProvider</c> is the only implementation now.
+/// <para><strong>MVP provider:</strong> <c>FakePaymentProvider</c> is the active implementation.
 /// The real adapter (<c>PaymobPaymentProvider</c>) is [EXTERNAL] — swap it behind this seam
-/// when credentials and onboarding are available.</para>
+/// when credentials and onboarding are available. Config key: <c>Billing:PaymentProvider:Provider</c>.</para>
+///
+/// <para><strong>Mock simulation:</strong> to complete the mock-payment loop in dev/staging
+/// (simulate a provider webhook after the parent is redirected to the fake checkout URL),
+/// use <c>POST /api/Billing/Webhooks/Simulate</c> — requires AdminOnly JWT +
+/// <c>Billing:PaymentProvider:AllowSimulation=true</c> + <c>Provider="Fake"</c>.
+/// See <c>IPaymentSimulationService</c>.</para>
 ///
 /// <para><strong>One interface, one impl now</strong> — per CLAUDE.md rule 8 no
 /// Strategy/Factory/registry is introduced. Config-driven DI selection replaces patterns.</para>
