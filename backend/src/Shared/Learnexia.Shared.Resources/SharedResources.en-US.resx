@@ -577,6 +577,12 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="SystemErrorRetrievingData" xml:space="preserve">
     <value>An error occurred while retrieving data</value>
   </data>
+  <data name="WeeklyReportRecReviewConcept" xml:space="preserve">
+    <value>Review the concept: {0}</value>
+  </data>
+  <data name="WeeklyReportRecPracticeSkill" xml:space="preserve">
+    <value>Practice the skill: {0}</value>
+  </data>
   <data name="CannotCancelNonPendingResolution" xml:space="preserve">
     <value>Only pending resolutions can be cancelled</value>
   </data>

@@ -21,6 +21,16 @@ EF won't re-run an "applied" migration, and **direct DDL on the shared Postgres 
 
 ---
 
+## Localize persisted weekly-report recommendations — 2026-06-22 (`feat/localize-persisted-reports`)
+
+Cleanup-batch follow-up (the i18n item deferred from P5-01). `WeeklyReportGeneratorService` persisted **English prose** recommendations (`"Review concept for {SkillName}"` / `"Practice skill: {SkillName}"`) into `RecommendationsJson` — so a parent reading the report always got English regardless of their UI language.
+
+**Fix (P5-07 reason-code pattern):** the generator now persists **stable codes** `{ code: "REVIEW_CONCEPT" | "PRACTICE_SKILL", skillName }` (no migration — `RecommendationsJson` is a free-form column), and `GetWeeklyReportQueryHandler` **localizes at read** via `IStringLocalizer` (new resx keys `WeeklyReportRecReviewConcept` / `WeeklyReportRecPracticeSkill`, `{0}` = skill name, EN+AR). The reader is **back-compatible** with the legacy `["prose string"]` shape (passed through; old rows age out as reports regenerate weekly). High severity → REVIEW_CONCEPT, else PRACTICE_SKILL; unknown code → bare skill name.
+
+**Scope:** only the weekly-report recommendations had persisted prose — the P5-09 Learning `RecommendationEngine` was already code/structured-based (no prose found), so nothing there. Gates: build 0 · Parent unit 12/12 (incl. new WR-06 localize, WR-07 legacy-passthrough, GEN-05 structured-persist) · P5_08_ParentReadApi integ 28/28. Test+i18n only; no security surface.
+
+---
+
 ## P6-04 Regression, triage & launch exit-criteria — 2026-06-22 (`feat/P6-04-regression`)
 
 **The launch-readiness gate.** Test + docs only — **zero `backend/src` production-code changes.**

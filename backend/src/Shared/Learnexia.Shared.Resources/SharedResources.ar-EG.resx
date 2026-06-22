@@ -577,6 +577,12 @@
   <data name="SystemErrorRetrievingData" xml:space="preserve">
     <value>حدث خطأ أثناء استرداد البيانات</value>
   </data>
+  <data name="WeeklyReportRecReviewConcept" xml:space="preserve">
+    <value>راجع المفهوم: {0}</value>
+  </data>
+  <data name="WeeklyReportRecPracticeSkill" xml:space="preserve">
+    <value>تدرّب على المهارة: {0}</value>
+  </data>
   <data name="CannotCancelNonPendingResolution" xml:space="preserve">
     <value>يمكن إلغاء القرارات المعلقة فقط</value>
   </data>
