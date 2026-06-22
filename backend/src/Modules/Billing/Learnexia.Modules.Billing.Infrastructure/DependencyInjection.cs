@@ -84,7 +84,9 @@ public static class DependencyInjection
         else
         {
             // TODO (EXTERNAL): register real PaymobPaymentProvider here when the adapter is built.
-            // Until then, fall back to Fake so the application starts without secrets.
+            // FakePaymentProvider is the MVP provider; the real adapter swaps in behind this seam
+            // (config key Billing:PaymentProvider:Provider) — no code change needed.
+            // Until the real adapter is ready, fall back to Fake so the application starts without secrets.
             services.AddScoped<IPaymentProvider, FakePaymentProvider>();
         }
 
@@ -105,6 +107,14 @@ public static class DependencyInjection
         // IServiceScopeFactory is used inside ProcessDunningRetriesAsync for per-subscription scopes
         // (mirrors BillingGrantJob pattern).
         services.AddScoped<IRefundService, RefundService>();
+
+        // ── Mock simulation: IPaymentSimulationService (dev/staging only) ─────────────────────────
+        // Builds a correctly signed fake webhook payload and runs it through IWebhookEventService
+        // (the same path as a real provider webhook) so the full state machine fires.
+        // Gate: IsSimulationAllowed() checks BOTH Billing:PaymentProvider:Provider=="Fake" AND
+        //       Billing:PaymentProvider:AllowSimulation==true (default false — safe in prod).
+        // Scoped: depends on the scoped BillingDbContext + IWebhookEventService + IConfiguration.
+        services.AddScoped<IPaymentSimulationService, PaymentSimulationService>();
 
         // ── P10-08: Billing history query service (Option C seam) ──────────────────────────────
         // IBillingHistoryQueryService owns all EF query/projection/pagination logic.

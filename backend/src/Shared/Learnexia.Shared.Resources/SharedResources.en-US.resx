@@ -2721,4 +2721,22 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="CalibrationReasonAiPValueExtremeLow" xml:space="preserve">
     <value>AI-generated question: extremely low pass rate detected (question may be broken or too hard).</value>
   </data>
+  <data name="SimulationNotAvailable" xml:space="preserve">
+    <value>Not found.</value>
+  </data>
+  <data name="SimulationWebhookDispatched" xml:space="preserve">
+    <value>Simulated webhook dispatched successfully through the real webhook processing pipeline.</value>
+  </data>
+  <data name="SimulationPaymentRefMissing" xml:space="preserve">
+    <value>The payment does not have a provider reference yet. Start a checkout session before simulating a webhook.</value>
+  </data>
+  <data name="SimulationEventTypeUnsupported" xml:space="preserve">
+    <value>The requested event type is not supported for simulation. Allowed values: payment.succeeded, payment.failed, refund.succeeded.</value>
+  </data>
+  <data name="SimulationPaymentIdRequired" xml:space="preserve">
+    <value>A valid payment id (greater than 0) is required.</value>
+  </data>
+  <data name="SimulationEventTypeRequired" xml:space="preserve">
+    <value>An event type is required.</value>
+  </data>
 </root>

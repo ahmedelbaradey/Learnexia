@@ -2279,5 +2279,37 @@
         /// </summary>
         public const string CalibrationReasonAiPValueExtremeLow = "CalibrationReasonAiPValueExtremeLow";
 
+        // ── P10 Payment mock simulation (dev/staging only) ───────────────────────────────────────
+
+        /// <summary>
+        /// Returned as a 404 when the simulation gate is not satisfied (Provider != Fake or
+        /// AllowSimulation != true). Intentionally generic — does not reveal the endpoint exists.
+        /// </summary>
+        public const string SimulationNotAvailable = "SimulationNotAvailable";
+
+        /// <summary>
+        /// Returned when a simulated provider webhook is successfully dispatched through the
+        /// real webhook state machine. Dev/staging only.
+        /// </summary>
+        public const string SimulationWebhookDispatched = "SimulationWebhookDispatched";
+
+        /// <summary>
+        /// Returned (400) when the target payment does not yet have a provider payment ref
+        /// (checkout session was never started, so there is nothing to simulate).
+        /// </summary>
+        public const string SimulationPaymentRefMissing = "SimulationPaymentRefMissing";
+
+        /// <summary>
+        /// Returned (400) when the requested event type is not supported for simulation.
+        /// Allowed values: <c>payment.succeeded</c>, <c>payment.failed</c>, <c>refund.succeeded</c>.
+        /// </summary>
+        public const string SimulationEventTypeUnsupported = "SimulationEventTypeUnsupported";
+
+        /// <summary>Validation: PaymentId must be a positive integer.</summary>
+        public const string SimulationPaymentIdRequired = "SimulationPaymentIdRequired";
+
+        /// <summary>Validation: EventType is required.</summary>
+        public const string SimulationEventTypeRequired = "SimulationEventTypeRequired";
+
     }
 }
