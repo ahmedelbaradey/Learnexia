@@ -357,6 +357,14 @@ public sealed class WebhookEventService : IWebhookEventService
 
                     subscription.PendingPlanCode      = null;
                     subscription.PendingBillingPeriod = null;
+
+                    // FINDING-15-B: a successful payment resolves any open payment-failure grace
+                    // window. Grace is ONLY ever payment-failure (SeatGraceReason has a single value),
+                    // so clear it unconditionally here — leaving it set is stale audit data that can
+                    // mislead enforcement/monitoring tooling that reads GraceEndsAt.
+                    subscription.GraceEndsAt        = null;
+                    subscription.SeatGraceStartedAt = null;
+                    subscription.SeatGraceReason    = null;
                 }
             }
 
