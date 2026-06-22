@@ -30,10 +30,10 @@ Closed the backend QC/E2E coverage gaps in Phase 8 (Localization) and Phase 5 (P
 
 **Combined run: 64/64 green** (43 P8 + 21 P5). Fixed one shared-collection fragility — `P8_02 TC02` queried ALL subjects (a fresh-grade fixture from another test polluted the global ENGLISH-only-En invariant); scoped it to canonical grades 1–6 (the P6-04 lesson).
 
-**Findings (no code change — flagged for decision):**
-- **DEL-F01 (LOW, P5-04 recipient semantics):** the weekly-recap nudge — like **all 11 re-engagement handlers** — writes the inbox row keyed to **`childId`, not the parent** (`Notification.RecipientExternalUserId = childId`). Cross-family isolation holds (zero leakage, asserted). So a "parent notification" actually lands in the **child's** inbox; the parent app must read child-keyed notifications via the family linkage. AC3 ("only linked parents notified") is met functionally, but if the product wants a **parent-keyed** inbox that's a feature change + product decision (NOT done here).
-- **FINDING-P801-01 (INFO):** `Add-Child` with duplicate email + seat-exhausted parent returns 409 (seat gate) before 400 (email) — DB protected, message-ordering UX note only.
-- **DEL-INT-06 (P2, documented limitation):** push-failure → inbox-still-written is structurally guaranteed (inbox row written before push; fail-soft) but not asserted — the shared `TestPushSenderImpl` has no fault-injection. Unblock = a dedicated fault-mode push factory (mirror `FailingEmailSenderFactory`); deferred to avoid shared-mutable-singleton flakiness.
+**Findings — both resolved 2026-06-22:**
+- **DEL-F01 (P5-04 recipient semantics) — RESOLVED BY-DESIGN ([ADR 0003](adr/0003-child-scoped-family-inbox.md)).** The weekly-recap nudge — like **all 11 re-engagement handlers** — keys the inbox row to **`childId`** (`Notification.RecipientExternalUserId = childId`); the parent accesses it via the **family relationship**, NOT a parent-keyed inbox. This is the ratified **child-scoped family inbox model**. Cross-family isolation holds (asserted). **No parent-keyed inbox in MVP.** **FE constraint:** the parent app MUST read child-keyed notifications via the linkage (a parent-id query returns nothing). Not a defect.
+- **DEL-INT-06 — CLOSED.** Added `P5_04_ReportDeliveryPushFailure_Tests`: a stateless `ThrowingPushSender` injected via a per-test `WithWebHostBuilder` factory (over the same Testcontainers DB — **no shared-mutable fake state**) proves a push-delivery throw does NOT prevent the inbox row from persisting (push bit unset, in-app bit set, `SentAtUtc` stamped). P5-04 suite now 7/7.
+- **FINDING-P801-01 (INFO, no action):** `Add-Child` with duplicate email + seat-exhausted parent returns 409 (seat gate) before 400 (email) — DB protected, message-ordering UX note only.
 
 ---
 
