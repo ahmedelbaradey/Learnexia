@@ -21,6 +21,16 @@ EF won't re-run an "applied" migration, and **direct DDL on the shared Postgres 
 
 ---
 
+## P5-07 BE-4 — config-driven adaptivity thresholds (AC3) — 2026-06-22 (`feat/P5-07-BE4-adaptivity-config`)
+
+Closes the one deferred slice of P5-07 (and the AC3 footnote from the readiness review). **Turned out ~95% already done:** P3-08 already bound every `AdaptivityEngine` tunable to config via `AdaptivityOptions` (section `Adaptivity:Engine`) — weights, HighBand/LowBand, ExpectedAttempts, FatigueSignalWeight. The only hardcoded tunable left was the time-normalization baseline (`DefaultExpectedTimeSeconds = 30.0`). Externalized it to **`AdaptivityOptions.ExpectedTimeSecondsBaseline`** (default 30, so behavior-preserving; a misconfigured ≤0 value falls back to 30 to avoid divide-by-zero). `SkillAdaptivityAggregate` is a raw-counts projection — no thresholds. Added the key to `appsettings.json:Adaptivity:Engine`.
+
+Gates: full build 0 err · `AdaptivityEngineTests` **17/17** (15 existing unchanged + 2 new: baseline-is-live, ≤0→fallback) · `P3_08_AdaptivityEngine` + `P3_11_AdaptiveQuizSelection` integration **16/16** (serving path intact).
+
+**Still deferred (needs a product decision — NOT auto-built per rule #8/#9):** auto-*tuning* the adaptivity thresholds *from the calibration loop's outcome data* (a closed calibration→adaptivity feedback loop on the live serving path). AC3 as written ("config-driven, tunable") is satisfied; closed-loop auto-tuning is a distinct future story.
+
+---
+
 ## P5-06 parent grade transition — 2026-06-22 (`feat/P5-06-grade-transition`)
 
 Parents can now transition a linked child to a new grade from their own surface (story existed since the intake audit; this is the build). **New endpoint:** `PUT api/Parent/Children/{childId}/Grade`, body `{ "targetGrade": 1..6 }` → `BaseResponse<{ childId, oldGrade, newGrade, isNoOp }>`.
