@@ -2069,6 +2069,12 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="ChildAdminOperationSystemError" xml:space="preserve">
     <value>An error occurred while performing the child admin operation.</value>
   </data>
+  <data name="ChildGradeTransitionedSuccessfully" xml:space="preserve">
+    <value>The child's grade has been updated successfully. Learning history has been preserved.</value>
+  </data>
+  <data name="ChildGradeUpdateFailed" xml:space="preserve">
+    <value>An error occurred while updating the child's grade. Please try again.</value>
+  </data>
   <data name="AuditLogRetrievedSuccessfully" xml:space="preserve">
     <value>Audit log retrieved successfully.</value>
   </data>

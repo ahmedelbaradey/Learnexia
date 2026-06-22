@@ -102,7 +102,7 @@ tasks/
 | P2-12 | Parent account settings tabs *(carved from P1-11)* | [FE](Frontend/student-app/Phase-2-Learning-Core/P2-12-FE.md) | [BE](Backend/Phase-2-Learning-Core/P2-12-BE.md) |
 | P5-05 | Parent dashboard charts + wire real analytics *(charts carved from P1-11)* | [FE](Frontend/student-app/Phase-5-Parent-Analytics/P5-05-FE.md) | — |
 | P5-04 | Deliver reports via notifications *(✅ already built via WeeklyRecapReady — traceability)* | — | [BE](Backend/Phase-5-Parent-Analytics/P5-04-BE.md) |
-| P5-06 | Transition a child to a new grade *(parent-initiated; reuses ChildGradeChanged re-scope; preserves history)* | [FE](Frontend/student-app/Phase-5-Parent-Analytics/P5-06-FE.md) | [BE](Backend/Phase-5-Parent-Analytics/P5-06-BE.md) |
+| P5-06 | Transition a child to a new grade *(parent-initiated; ✅ BE built 2026-06-22 — reuses ChildGradeChanged; preserves history; FE pending FE-lead)* | [FE](Frontend/student-app/Phase-5-Parent-Analytics/P5-06-FE.md) | [BE](Backend/Phase-5-Parent-Analytics/P5-06-BE.md) |
 
 ### Phase 3 — Gamification *(story IDs `P4-xx`)*
 

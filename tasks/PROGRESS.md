@@ -1,4 +1,4 @@
-﻿# Learnexia â€” Build Progress Tracker
+# Learnexia — Build Progress Tracker
 
 > Single source of truth for **what's done vs. not** across the whole backlog.
 > Maintained automatically: the **`committer` agent updates this file on every commit** (flips the row for the story it just committed). The lead may also reconcile it after merges.
@@ -6,11 +6,14 @@
 > Status reflects **merged to `main`** unless a row says otherwise.
 
 ## Legend
-- âœ… **Done** â€” pipeline complete, reviewer PASS, committed, merged to `main`
-- ðŸŸ¡ **In progress** â€” pipeline running (branch exists, not yet merged)
-- ðŸ”² **Not started**
-- `â€”` â€” no work in this stack for this story (single-stack story)
+- ✅ **Done** — pipeline complete, reviewer PASS, committed, merged to `main`
+- 🟡 **In progress** — pipeline running (branch exists, not yet merged)
+- 🔲 **Not started**
+- `—` — no work in this stack for this story (single-stack story)
 
+## Recently completed (newest first)
+- **2026-06-22 — P5-06 parent grade-transition (Backend):** parent-initiated grade transition for linked children via `PUT api/Parent/Children/{childId}/Grade` — re-scopes curriculum to new grade 1–6, preserves history (XP/badges/streaks/mastery), IDOR-guarded, publishes `ChildGradeChangedIntegrationEvent`, audited via `AdminActionPerformedEvent(Child.GradeTransitioned)`. Feature (TransitionChildGrade command/handler/validator + Identity seam `TransitionGradeAsync` method + controller action) + tests (9/9 integration scenarios) + briefs/tasks/handoff; gates: build 0 errors, api-tester 9/9 PASS, security-auditor PASS, reviewer PASS. FE pending separate lead with the P5-06-FE contract.
+- **2026-06-21 — P5-05 parent dashboard FE (PR #217)** + **P7-10/P7-11 admin dashboards FE (PR #218)** merged. Parent analytics dashboard (real /api/Parent data, hand-rolled Tamagui charts) + admin platform-KPI & AI-safety dashboards (Recharts, PII-light flagged table). reviewer PASS · E2E green · security-auditor PASS (P7-11). **Phase-7 admin console FE is now COMPLETE (P7-01..13).**
 ## Recently completed (newest first)
 - **2026-06-21 — P5-05 parent dashboard FE (PR #217)** + **P7-10/P7-11 admin dashboards FE (PR #218)** merged. Parent analytics dashboard (real /api/Parent data, hand-rolled Tamagui charts) + admin platform-KPI & AI-safety dashboards (Recharts, PII-light flagged table). reviewer PASS · E2E green · security-auditor PASS (P7-11). **Phase-7 admin console FE is now COMPLETE (P7-01..13).**
 - **2026-06-19 – P7 curriculum sub-wave 2c (P7-03 FE):** Skill dependency graph — accessible list/adjacency editor (role=listbox + roving tabindex + aria-live; NO graph-viz/drag lib per lead decision); skills CRUD + KnowledgeGraph read + edge add/remove (Prerequisite only, strength 1.0 hard-coded); subject-tree scoping (concept.subjectId); cycle/cross-language/duplicate rejections mapped inline; refetch-on-update (no optimistic); NODE_TYPE/RELATIONSHIP_TYPE consts in shared; gates PASS (reviewer PASS; security-auditor not required — curriculum metadata, no PII/content sink). Wave 2 — **Curriculum admin FE COMPLETE** (P7-01..05 all shipped across 3 sub-waves: 2a #175, 2b #179, 2c this PR).
@@ -124,7 +127,7 @@
 | P5-03 | Capture product analytics events | ðŸ”² |
 | P5-04 | Deliver reports via notifications | ðŸ”² |
 | P5-05 | View the parent dashboard | ✅ |
-| P5-06 | Transition a child to a new grade | ðŸ”² |
+| P5-06 | Transition a child to a new grade | ✅ |
 
 ## Phase 6 â€” Stabilization
 | Story | Title | Status |

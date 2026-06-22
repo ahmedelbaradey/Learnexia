@@ -2068,6 +2068,12 @@
   <data name="ChildAdminOperationSystemError" xml:space="preserve">
     <value>حدث خطأ أثناء تنفيذ عملية إدارة الطفل.</value>
   </data>
+  <data name="ChildGradeTransitionedSuccessfully" xml:space="preserve">
+    <value>تم تحديث صف الطفل بنجاح. تم الحفاظ على سجل التعلم.</value>
+  </data>
+  <data name="ChildGradeUpdateFailed" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث صف الطفل. يرجى المحاولة مرة أخرى.</value>
+  </data>
   <data name="AuditLogRetrievedSuccessfully" xml:space="preserve">
     <value>تم استرجاع سجل التدقيق بنجاح.</value>
   </data>

@@ -115,7 +115,7 @@ These intentional decisions diverge from the source docs; each affected story re
 - P5-03 Capture product analytics events
 - P5-04 Deliver reports via notifications
 - P5-05 View the parent dashboard
-- P5-06 Transition a child to a new grade
+- P5-06 Transition a child to a new grade *(✅ BE built 2026-06-22 — parent-scoped `PUT api/Parent/Children/{id}/Grade`, IDOR-guarded, reuses ChildGradeChanged, history preserved; FE pending FE-lead)*
 - P5-07 Feed learning data back into the system (calibration loop) *(barrier-to-entry: BE7)*
 - P5-08 Parent-scoped per-child read API *(unblocks the faked parent dashboard; backend fan-out over Gamification/Learning/Billing/Ai behind parent-owns-child authz — added 2026-06-18)*
 - P5-09 Per-child recommendation engine *(deterministic "Areas to focus" → next actions, free, daily job; narrated by P3-14 Lexi — added 2026-06-18)*
