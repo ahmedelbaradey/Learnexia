@@ -22,6 +22,7 @@ public sealed class MissionCompletedIntegrationEventHandler
     private readonly IReengagementDedupeStore _dedupeStore;
     private readonly IParentChildQuery _parentChildQuery;
     private readonly INudgeDispatcher _dispatcher;
+    private readonly IPublisher _publisher;
     private readonly IUserLookup? _userLookup;
     private readonly ISystemClock _clock;
     private readonly ILoggerManager _logger;
@@ -32,6 +33,7 @@ public sealed class MissionCompletedIntegrationEventHandler
         IReengagementDedupeStore dedupeStore,
         IParentChildQuery parentChildQuery,
         INudgeDispatcher dispatcher,
+        IPublisher publisher,
         ISystemClock clock,
         ILoggerManager logger,
         IUserLookup? userLookup = null)
@@ -41,6 +43,7 @@ public sealed class MissionCompletedIntegrationEventHandler
         _dedupeStore       = dedupeStore;
         _parentChildQuery  = parentChildQuery;
         _dispatcher        = dispatcher;
+        _publisher         = publisher;
         _clock             = clock;
         _logger            = logger;
         _userLookup        = userLookup;
@@ -70,7 +73,7 @@ public sealed class MissionCompletedIntegrationEventHandler
                 return;
             }
 
-            var acquired = await ReengagementHandlerHelper.TryAcquireDedupeAsync(_dedupeStore, _logger, ev.StudentId, category, ev.OccurredOnUtc, ct);
+            var acquired = await ReengagementHandlerHelper.TryAcquireDedupeAsync(_dedupeStore, _logger, _publisher, ev.StudentId, category, code, ev.OccurredOnUtc, _clock.UtcNow, ct);
             if (!acquired)
             {
                 _logger.LogInfo($"analytics.reengagement.dedupe_hit category={category} childId={ev.StudentId}");

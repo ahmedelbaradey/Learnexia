@@ -21,6 +21,17 @@ EF won't re-run an "applied" migration, and **direct DDL on the shared Postgres 
 
 ---
 
+## P9-13 complete notification-suppression analytics — 2026-06-22 (`feat/P9-13-suppression-analytics`)
+
+Closes the P9-11/P6-04 metric gap: `NotificationSuppressed` was emitted ONLY on the P9-07 arbiter push-deny branch. Now emitted (fail-soft) for all suppression paths:
+- **`PushPrefOff`** — `NudgeDispatcher.DispatchAsync`, the new `else` of `if (message.ShouldPush)` (parent/category disabled push; in-app row still written).
+- **`NoDeviceTokens`** — `NudgeDispatcher.TrySendPushAsync`, the no-active-tokens branch.
+- **`Deduped`** — `ReengagementHandlerHelper` dedupe short-circuit (auto-emits on `!acquired`), wired through all 18 dedupe-using handlers via injected `IPublisher`.
+
+New `Notifications.Domain/Constants/SuppressionReasonCodes.cs` centralizes the 6 reasons (3 new + 3 mirrored arbiter reasons), all ≤32 chars. **No migration** — Analytics `NotificationAnalyticsService.GetStatsAsync` already groups `NotificationSuppressed` by the `SuppressionReason` facet (varchar(32)); new reasons surface automatically in `GET /api/Admin/Analytics/notifications`. Module isolation kept (emit only via `Shared.Contracts.Notifications.NotificationSuppressedIntegrationEvent`). Gates: build 0 · `P9_13_SuppressionAnalytics_Tests` 6/6 · full P9 suite 82/82 (no regression) · reviewer PASS. **Phase 9 backend now fully complete** (only the P9-10 reset-email i18n follow-up remained — see next).
+
+---
+
 ## Phase 5 + Phase 8 backend QC + E2E — 2026-06-22 (`test/P5-P8-backend-qc-e2e`)
 
 Closed the backend QC/E2E coverage gaps in Phase 8 (Localization) and Phase 5 (Parent+Analytics). **Test + QC-docs only — no feature code changed.** qc-test-designer → api-tester pipeline.
