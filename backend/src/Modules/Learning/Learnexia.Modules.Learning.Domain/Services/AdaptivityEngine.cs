@@ -19,7 +19,8 @@ namespace Learnexia.Modules.Learning.Domain.Services;
 ///
 /// TIME NORMALIZATION (Q3):
 ///   When <c>signals.AvgTimeSeconds ≤ 0</c>, the time component is zeroed (graceful degradation).
-///   A reference baseline of 30 s is used: faster answers yield a higher time score, capped at 1.
+///   A config-driven reference baseline (<c>AdaptivityOptions.ExpectedTimeSecondsBaseline</c>, default 30 s)
+///   is used: faster answers yield a higher time score, capped at 1.
 ///
 /// COLD-START (Q4):
 ///   When <c>signals.IsDefault == true</c> (no answers recorded), returns (Medium, IsDefault=true, Score=0).
@@ -30,8 +31,12 @@ namespace Learnexia.Modules.Learning.Domain.Services;
 /// </summary>
 public static class AdaptivityEngine
 {
-    /// <summary>Expected answer time in seconds used as the time-normalization baseline (Q3).</summary>
-    private const double DefaultExpectedTimeSeconds = 30.0;
+    /// <summary>
+    /// Fallback time-normalization baseline (seconds, Q3) used only when
+    /// <see cref="AdaptivityOptions.ExpectedTimeSecondsBaseline"/> is misconfigured to a non-positive
+    /// value. The normal baseline is config-driven (P5-07 BE-4 / AC3).
+    /// </summary>
+    private const double FallbackExpectedTimeSeconds = 30.0;
 
     /// <summary>
     /// Computes the target difficulty for a student on a skill from four pre-fetched signals.
@@ -65,7 +70,11 @@ public static class AdaptivityEngine
         {
             // Faster than expected → timeNorm > 1 before clamping; slower → timeNorm < 1.
             // Cap at [0, 1] so an outlier fast answer doesn't dominate.
-            timeNorm = Math.Clamp(DefaultExpectedTimeSeconds / signals.AvgTimeSeconds, 0.0, 1.0);
+            // Baseline is config-driven (AC3); guard a misconfigured non-positive value.
+            var baseline = options.ExpectedTimeSecondsBaseline > 0.0
+                ? options.ExpectedTimeSecondsBaseline
+                : FallbackExpectedTimeSeconds;
+            timeNorm = Math.Clamp(baseline / signals.AvgTimeSeconds, 0.0, 1.0);
         }
 
         // Hint component: fewer hints = higher score. HintRate is in [0,1].

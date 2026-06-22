@@ -60,4 +60,13 @@ public sealed class AdaptivityOptions
     /// When non-zero, the fatigue signal is subtracted from the performance score before banding.
     /// </summary>
     public double FatigueSignalWeight { get; set; } = 0.0;
+
+    /// <summary>
+    /// Reference baseline (seconds) for time normalization (Q3): an average answer time at this
+    /// baseline yields a time score of 1.0; slower answers score proportionally lower (capped [0,1]).
+    /// Default: 30. Externalized for P5-07 BE-4 / AC3 so the last adaptivity tunable is config-driven
+    /// (no hardcoded thresholds remain). A non-positive configured value is ignored — the engine
+    /// falls back to 30 — to avoid divide-by-zero / nonsensical normalization.
+    /// </summary>
+    public double ExpectedTimeSecondsBaseline { get; set; } = 30.0;
 }

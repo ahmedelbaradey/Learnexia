@@ -264,4 +264,47 @@ public sealed class AdaptivityEngineTests
         result.Score.Should().BeLessThanOrEqualTo(0.5);
         result.Difficulty.Should().Be(DifficultyLevel.Easy);
     }
+
+    // ── Case 12 (P5-07 BE-4 / AC3): ExpectedTimeSecondsBaseline is config-driven ──────────────────
+    // The time-normalization baseline is now tunable from config. For a fixed AvgTimeSeconds, a
+    // larger baseline raises timeNorm (capped at 1) → a higher (or equal) score, proving the knob
+    // actually feeds the engine rather than a hardcoded 30 s.
+
+    [Fact]
+    public void DecideDifficulty_LargerExpectedTimeBaseline_RaisesTimeContribution()
+    {
+        // 45 s average answer: with the default 30 s baseline timeNorm = 30/45 ≈ 0.667;
+        // with a 60 s baseline timeNorm = clamp(60/45) = 1.0 → strictly higher score.
+        var signals = new AdaptivitySignals(
+            AccuracyPct: 0.6, AvgTimeSeconds: 45.0, HintRate: 0.2, RetryCount: 1, MasteryPct: 50,
+            IsDefault: false);
+
+        var defaultBaseline = DefaultOptions();                      // ExpectedTimeSecondsBaseline = 30 (default)
+        var largerBaseline  = DefaultOptions();
+        largerBaseline.ExpectedTimeSecondsBaseline = 60.0;
+
+        var scoreDefault = AdaptivityEngine.DecideDifficulty(signals, defaultBaseline).Score;
+        var scoreLarger  = AdaptivityEngine.DecideDifficulty(signals, largerBaseline).Score;
+
+        scoreLarger.Should().BeGreaterThan(scoreDefault);
+    }
+
+    [Fact]
+    public void DecideDifficulty_NonPositiveExpectedTimeBaseline_FallsBackTo30()
+    {
+        // A misconfigured non-positive baseline must not divide-by-zero / zero-out time; it falls
+        // back to the 30 s default, producing the same result as the explicit 30 s baseline.
+        var signals = new AdaptivitySignals(
+            AccuracyPct: 0.7, AvgTimeSeconds: 15.0, HintRate: 0.1, RetryCount: 1, MasteryPct: 60,
+            IsDefault: false);
+
+        var explicitThirty = DefaultOptions();                       // 30 s
+        var misconfigured  = DefaultOptions();
+        misconfigured.ExpectedTimeSecondsBaseline = 0.0;             // invalid → fallback 30 s
+
+        var scoreThirty       = AdaptivityEngine.DecideDifficulty(signals, explicitThirty).Score;
+        var scoreMisconfigured = AdaptivityEngine.DecideDifficulty(signals, misconfigured).Score;
+
+        scoreMisconfigured.Should().Be(scoreThirty);
+    }
 }
