@@ -27,7 +27,7 @@ tasks/
     ├── Phase-3-Gamification/ P4-xx-BE.md
     ├── Phase-4-AI-Tutor/     P3-xx-BE.md   (AI gateway/safety/prompt, RAG retrieval, explain/hints, adaptivity/mastery/SR/profile, Lexi recommendation narration P3-14 + P3-14a framing; P3-13a profile-depth = BACKLOG)
     ├── Phase-5-Parent-Analytics/ P5-xx-BE.md  (parent-scoped read API P5-08, weak-area detection P5-02, weekly report P5-01, recommendation engine P5-09 + P5-09a profile-aware selection, analytics event-capture backbone P5-03 [NEW Analytics module], data-feedback/calibration loop P5-07 [empirical difficulty + AI-question flagging, propose-only])
-    ├── Phase-6-Stabilization/ P6-01-BE.md (perf/load harness: NBomber, NFR-1 p95<500ms), P6-02-BE.md (AI-safety eval + EvalLive tier), P6-05-BE.md (observability: OTel/health/logs), P6-06-BE.md, P6-07-BE.md (access-token revocation, G2)
+    ├── Phase-6-Stabilization/ P6-01-BE.md (perf/load harness: NBomber, NFR-1 p95<500ms), P6-02-BE.md (AI-safety eval + EvalLive tier), P6-04-BE.md (regression golden-journey + triage + launch exit-criteria), P6-05-BE.md (observability: OTel/health/logs), P6-06-BE.md, P6-07-BE.md (access-token revocation, G2)
     ├── Phase-7-Admin-Console/ P7-xx-BE.md
     ├── Phase-8-Localization/  P8-xx-BE.md
     ├── Phase-9-Notifications/ P9-0x-BE.md   (wire emitted events, new habit categories, arbitration, comeback ladder)
