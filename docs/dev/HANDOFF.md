@@ -21,6 +21,22 @@ EF won't re-run an "applied" migration, and **direct DDL on the shared Postgres 
 
 ---
 
+## Phase 5 + Phase 8 backend QC + E2E — 2026-06-22 (`test/P5-P8-backend-qc-e2e`)
+
+Closed the backend QC/E2E coverage gaps in Phase 8 (Localization) and Phase 5 (Parent+Analytics). **Test + QC-docs only — no feature code changed.** qc-test-designer → api-tester pipeline.
+
+- **Phase 8 (was: only P8-04 tested):** QC designs `docs/qc/P8-0{1,2,3}/` + `docs/qc/P8-localization/` → **43 new integration tests** `P8_01_SetLearningLanguage_Tests` / `P8_02_BilingualContent_Tests` / `P8_03_ServeInLearningLanguage_Tests`. Notables asserted as-built: list reads (`Subjects/{id}/Lessons`,`/SkillTree`) **silently redirect** a wrong-language SubjectId to the correct tree, but single-lesson (`Lessons/{id}`) returns **403 `LessonLanguageMismatch`**; learning-language comes from the JWT claim, not a query param; claim-absent → Ar fallback (unit-tested). P8-02 is seed/schema → DB/Model assertions.
+- **Phase 5 (gaps: P5-01/02/04; rest already covered):** QC designs `docs/qc/P5-0{1,2,4}/` + `docs/qc/P5-analytics/` → **21 new tests** `P5_01_WeeklyReportGeneration_Tests` / `P5_02_WeakAreaDetection_Tests` / `P5_04_ReportDelivery_Tests` (generation path, detection accuracy over real Npgsql, event→nudge delivery). Read endpoints stay covered by `P5_08`; unit logic by the existing `*ServiceTests`.
+
+**Combined run: 64/64 green** (43 P8 + 21 P5). Fixed one shared-collection fragility — `P8_02 TC02` queried ALL subjects (a fresh-grade fixture from another test polluted the global ENGLISH-only-En invariant); scoped it to canonical grades 1–6 (the P6-04 lesson).
+
+**Findings (no code change — flagged for decision):**
+- **DEL-F01 (LOW, P5-04 recipient semantics):** the weekly-recap nudge — like **all 11 re-engagement handlers** — writes the inbox row keyed to **`childId`, not the parent** (`Notification.RecipientExternalUserId = childId`). Cross-family isolation holds (zero leakage, asserted). So a "parent notification" actually lands in the **child's** inbox; the parent app must read child-keyed notifications via the family linkage. AC3 ("only linked parents notified") is met functionally, but if the product wants a **parent-keyed** inbox that's a feature change + product decision (NOT done here).
+- **FINDING-P801-01 (INFO):** `Add-Child` with duplicate email + seat-exhausted parent returns 409 (seat gate) before 400 (email) — DB protected, message-ordering UX note only.
+- **DEL-INT-06 (P2, documented limitation):** push-failure → inbox-still-written is structurally guaranteed (inbox row written before push; fail-soft) but not asserted — the shared `TestPushSenderImpl` has no fault-injection. Unblock = a dedicated fault-mode push factory (mirror `FailingEmailSenderFactory`); deferred to avoid shared-mutable-singleton flakiness.
+
+---
+
 ## P5-07 BE-4 — config-driven adaptivity thresholds (AC3) — 2026-06-22 (`feat/P5-07-BE4-adaptivity-config`)
 
 Closes the one deferred slice of P5-07 (and the AC3 footnote from the readiness review). **Turned out ~95% already done:** P3-08 already bound every `AdaptivityEngine` tunable to config via `AdaptivityOptions` (section `Adaptivity:Engine`) — weights, HighBand/LowBand, ExpectedAttempts, FatigueSignalWeight. The only hardcoded tunable left was the time-normalization baseline (`DefaultExpectedTimeSeconds = 30.0`). Externalized it to **`AdaptivityOptions.ExpectedTimeSecondsBaseline`** (default 30, so behavior-preserving; a misconfigured ≤0 value falls back to 30 to avoid divide-by-zero). `SkillAdaptivityAggregate` is a raw-counts projection — no thresholds. Added the key to `appsettings.json:Adaptivity:Engine`.
