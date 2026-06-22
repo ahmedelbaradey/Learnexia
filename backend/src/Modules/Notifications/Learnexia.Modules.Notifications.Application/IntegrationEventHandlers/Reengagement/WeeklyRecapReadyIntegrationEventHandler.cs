@@ -38,6 +38,7 @@ public sealed class WeeklyRecapReadyIntegrationEventHandler
     private readonly IReengagementDedupeStore _dedupeStore;
     private readonly IParentChildQuery _parentChildQuery;
     private readonly INudgeDispatcher _dispatcher;
+    private readonly IPublisher _publisher;
     private readonly IUserLookup? _userLookup;
     private readonly ISystemClock _clock;
     private readonly ILoggerManager _logger;
@@ -48,6 +49,7 @@ public sealed class WeeklyRecapReadyIntegrationEventHandler
         IReengagementDedupeStore dedupeStore,
         IParentChildQuery parentChildQuery,
         INudgeDispatcher dispatcher,
+        IPublisher publisher,
         ISystemClock clock,
         ILoggerManager logger,
         IUserLookup? userLookup = null)
@@ -57,6 +59,7 @@ public sealed class WeeklyRecapReadyIntegrationEventHandler
         _dedupeStore       = dedupeStore;
         _parentChildQuery  = parentChildQuery;
         _dispatcher        = dispatcher;
+        _publisher         = publisher;
         _clock             = clock;
         _logger            = logger;
         _userLookup        = userLookup;
@@ -89,7 +92,7 @@ public sealed class WeeklyRecapReadyIntegrationEventHandler
             }
 
             var acquired = await ReengagementHandlerHelper.TryAcquireDedupeAsync(
-                _dedupeStore, _logger, ev.StudentId, category, ev.OccurredOnUtc, ct);
+                _dedupeStore, _logger, _publisher, ev.StudentId, category, code, ev.OccurredOnUtc, _clock.UtcNow, ct);
             if (!acquired)
             {
                 _logger.LogInfo(
