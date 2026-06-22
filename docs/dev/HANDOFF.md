@@ -1,4 +1,10 @@
-## ⚠️ Shared dev DB `Learnexia` is in a broken migration state — 2026-06-21
+## ✅ RESOLVED (2026-06-22) — shared dev DB `Learnexia` recreated & repaired
+
+**The broken-migration state below is FIXED.** The backend lead dropped the corrupted `Learnexia` and did a clean reboot → all migrations reapplied in full (incl. `AddSeatModel`) + reseeded (36 subjects). Verified live 2026-06-22: `billing.Subscriptions` has `PurchasedExtraSeats`/`PendingExtraSeatRemovals`/`ExtraSeatCancelEffectiveAt` and `billing.Plans` has `IncludedSeats`; **`POST /api/Parent/Add-Child` against shared `Learnexia` now returns 200**. The :5080 backend is back on shared `Learnexia` (no `ConnectionStrings__Default` override needed; `.local.json` points local). The throwaway `Learnexia_verify` is untouched/clean — droppable. (Open follow-up, backend lead's: a stray reseed hit the remote `…102:5344/learnexia` before being caught — pending inspect/clean.) **Historical broken-state details kept below for reference.**
+
+---
+
+## ⚠️ Shared dev DB `Learnexia` was in a broken migration state — 2026-06-21 (RESOLVED above)
 
 **Symptom:** `POST /api/Parent/Add-Child` → **500** on the shared dev DB (`localhost:5432/Learnexia`). **NOT a code bug** — a corrupted local migration state.
 
