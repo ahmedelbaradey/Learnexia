@@ -32,7 +32,7 @@ export default defineConfig({
   workers: 1,
   reporter: [['html', { open: 'never' }], ['list']],
   // Budget: up to 11 tests × ~80 s each (API seed + page load + assertions).
-  globalTimeout: 1_200_000,
+  globalTimeout: 3_600_000,
   timeout: 120_000,
   use: {
     baseURL: WEB_URL,
@@ -55,6 +55,9 @@ export default defineConfig({
       // Match all child-surface specs.  Add new stories here as they land.
       testMatch: [
         '**/specs/P4-12-timed-event-participation.spec.ts',
+        '**/specs/P4-gamification-xp-streak-hearts.spec.ts',
+        '**/specs/P4-gamification-badges-missions-league.spec.ts',
+        '**/specs/P4-gamification-events-shell.spec.ts',
       ],
     },
   ],
