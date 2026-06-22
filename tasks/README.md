@@ -26,11 +26,11 @@ tasks/
     ├── Phase-2-Learning-Core/ P2-xx-BE.md
     ├── Phase-3-Gamification/ P4-xx-BE.md
     ├── Phase-4-AI-Tutor/     P3-xx-BE.md   (AI gateway/safety/prompt, RAG retrieval, explain/hints, adaptivity/mastery/SR/profile, Lexi recommendation narration P3-14 + P3-14a framing; P3-13a profile-depth = BACKLOG)
-    ├── Phase-5-Parent-Analytics/ P5-xx-BE.md  (parent-scoped read API P5-08, weak-area detection P5-02, weekly report P5-01, recommendation engine P5-09 + P5-09a profile-aware selection, analytics event-capture backbone P5-03 [NEW Analytics module], data-feedback/calibration loop P5-07 [empirical difficulty + AI-question flagging, propose-only])
+    ├── Phase-5-Parent-Analytics/ P5-xx-BE.md  (parent-scoped read API P5-08, weak-area detection P5-02, weekly report P5-01, report-delivery P5-04 [✅ built via WeeklyRecapReady — traceability], grade-transition P5-06 [parent-initiated, BE+FE], recommendation engine P5-09 + P5-09a profile-aware selection, analytics event-capture backbone P5-03 [NEW Analytics module], data-feedback/calibration loop P5-07 [empirical difficulty + AI-question flagging, propose-only])
     ├── Phase-6-Stabilization/ P6-01-BE.md (perf/load harness: NBomber, NFR-1 p95<500ms), P6-02-BE.md (AI-safety eval + EvalLive tier), P6-04-BE.md (regression golden-journey + triage + launch exit-criteria), P6-05-BE.md (observability: OTel/health/logs), P6-06-BE.md, P6-07-BE.md (access-token revocation, G2)
     ├── Phase-7-Admin-Console/ P7-xx-BE.md
     ├── Phase-8-Localization/  P8-xx-BE.md
-    ├── Phase-9-Notifications/ P9-0x-BE.md   (wire emitted events, new habit categories, arbitration, comeback ladder)
+    ├── Phase-9-Notifications/ P9-0x-BE.md   (wire emitted events, new habit categories, arbitration, comeback ladder, P9-13 complete suppression-analytics capture)
     ├── Phase-10-Payments-Billing/ P10-xx-BE.md  (credit ledger/grant/spend, subscriptions, payment provider, dunning/refunds, admin config)
     └── Backlog-Phase-2-Plus/ BL-xx-BE.md   (Curriculum Intelligence: schema/upload/parsing/ingestion/knowledge-graph — .NET + Python pipeline)
 ```
@@ -84,6 +84,7 @@ tasks/
 | P1-13 | Backend hardening — lockout/sign-in safety/admin seed/CAPTCHA *(post-Batch-2 gap analysis)* | — | [BE](Backend/Phase-1-Foundation/P1-13-BE.md) |
 | P1-13b | Backend hardening pass — BE-1 rate-limiting done (PR #50); rest → P6-06 | — | [BE](Backend/Phase-1-Foundation/P1-13b-BE.md) |
 | P6-02 | Validate AI safety with an eval set *(✅ BE built — offline CI-native eval harness; closed the last P7-11 facet)* | — | [BE](Backend/Phase-6-Stabilization/P6-02-BE.md) |
+| P6-03 | Localization & RTL review pass *(FE/QA; all screens ar-RTL + en; NFR-5)* | [FE](Frontend/Phase-6-Stabilization/P6-03-FE.md) | — |
 | P6-05 | Observability — OTel (OTLP config-gated) tracing+metrics, AI-gateway health check, NLog trace correlation *(dashboard/alerts = devops)* | [FE](Frontend/Phase-6-Stabilization/P6-05-FE.md) | [BE](Backend/Phase-6-Stabilization/P6-05-BE.md) |
 | P6-06 | Backend security hardening — timing-oracle/email-locale/secrets/Redis rate-limit store *(Phase 6; relocated from P1-13b)* | — | [BE](Backend/Phase-6-Stabilization/P6-06-BE.md) |
 | P6-07 | Access-token revocation — per-request SessionId validation (`OnTokenValidated`) *(audit finding G2; split out of P6-06)* | [FE](Frontend/Phase-6-Stabilization/P6-07-FE.md) | [BE](Backend/Phase-6-Stabilization/P6-07-BE.md) |
@@ -100,6 +101,8 @@ tasks/
 | P2-11 | Author the skill dependency graph *(barrier-to-entry BE1)* | — | [BE](Backend/Phase-2-Learning-Core/P2-11-BE.md) |
 | P2-12 | Parent account settings tabs *(carved from P1-11)* | [FE](Frontend/student-app/Phase-2-Learning-Core/P2-12-FE.md) | [BE](Backend/Phase-2-Learning-Core/P2-12-BE.md) |
 | P5-05 | Parent dashboard charts + wire real analytics *(charts carved from P1-11)* | [FE](Frontend/student-app/Phase-5-Parent-Analytics/P5-05-FE.md) | — |
+| P5-04 | Deliver reports via notifications *(✅ already built via WeeklyRecapReady — traceability)* | — | [BE](Backend/Phase-5-Parent-Analytics/P5-04-BE.md) |
+| P5-06 | Transition a child to a new grade *(parent-initiated; reuses ChildGradeChanged re-scope; preserves history)* | [FE](Frontend/student-app/Phase-5-Parent-Analytics/P5-06-FE.md) | [BE](Backend/Phase-5-Parent-Analytics/P5-06-BE.md) |
 
 ### Phase 3 — Gamification *(story IDs `P4-xx`)*
 
@@ -200,6 +203,7 @@ Push end-to-end (Expo FE) + the full habit-forming notification catalog on the m
 | P9-10 | Notification localization *(🟡 v1 — welcome localized; reset→P6-06, read-time→P9-03)* | — | [BE](Backend/Phase-9-Notifications/P9-10-BE.md) |
 | P9-11 | Notification analytics sink *(✅ BE built — send/suppress/open → Analytics + admin endpoint)* | [FE](Frontend/admin-dashboard/Phase-9-Notifications/P9-11-FE.md) *(Next.js)* | [BE](Backend/Phase-9-Notifications/P9-11-BE.md) |
 | P9-12 | Timed-event nudges *(✅ BE built — join/progress/ending/completion over P4-12)* | [FE](Frontend/student-app/Phase-9-Notifications/P9-12-FE.md) | [BE](Backend/Phase-9-Notifications/P9-12-BE.md) |
+| P9-13 | Complete notification-suppression analytics capture *(scoped — emit NotificationSuppressed for pref-off/no-device/dedupe, not just arbiter; closes P9-11/P6-04 metric gap)* | — | [BE](Backend/Phase-9-Notifications/P9-13-BE.md) |
 
 ### Phase 10 — Payment, Billing & Credits *(story IDs `P10-xx`, post-MVP)*
 
