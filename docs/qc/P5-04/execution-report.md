@@ -21,10 +21,10 @@ dotnet test backend/tests/Learnexia.IntegrationTests --filter "FullyQualifiedNam
 | DEL-INT-03 | Only the linked family notified (cross-family isolation) | PASS | Family 1 has recap; Family 2 has zero WEEKLY_RECAP rows — load-bearing AC3 assertion passes |
 | DEL-INT-04 | Zero-activity week → no recap (suppressed end-to-end) | PASS | WeeklyReport row written; no WEEKLY_RECAP notification; no push attempts |
 | DEL-INT-05 | Orphan child → fail-soft, no throw, no row | PASS | No exception; no WEEKLY_RECAP row for orphanChildId=998_004_001 |
-| DEL-INT-06 | Push failure isolated; inbox row still written | BLOCKED | BLOCKED-pushsender-fault-mode: TestPushSenderImpl always succeeds; cannot inject fault mode. Isolation is verified by code review (NudgeDispatcher persists inbox row BEFORE push attempt). Test passes trivially as a documented blocker. |
+| DEL-INT-06 | Push failure isolated; inbox row still written | PASS | **Closed 2026-06-22** — `P5_04_ReportDeliveryPushFailure_Tests`: a single-purpose `ThrowingPushSender` (always throws, no shared-mutable state) injected via a per-test `WithWebHostBuilder` factory over the same Testcontainers DB. With an active device token seeded, the dispatcher attempts push → throws → caught in `TrySendPushAsync` → `SaveChangesAsync` still commits. Asserts: dispatch does not throw; inbox row persists; push bit (2) NOT set; in-app bit (4) set; `SentAtUtc` stamped. |
 
 ## Summary
-- Total: 6 · Passed: 5 · Failed: 0 · Blocked: 1 · Skipped: 0
+- Total: 6 designed (+1 follow-up) · Passed: 7 · Failed: 0 · Blocked: 0 · Skipped: 0 (DEL-INT-06 unblocked 2026-06-22)
 
 ## Recipient-semantics finding (FINDING DEL-F01)
 
@@ -42,10 +42,12 @@ dotnet test backend/tests/Learnexia.IntegrationTests --filter "FullyQualifiedNam
 - Impact: If the FE reads the notification inbox keyed on parentId (not childId), no notifications will be found. The FE must read child-keyed notifications via the linkage.
 - Verdict: As-built contract is consistent with all other re-engagement handlers. Flagged for lead review to confirm the FE reads model is aligned.
 
+**RESOLUTION (lead, 2026-06-22): RESOLVED — BY DESIGN. Not a defect.** The platform uses a **child-scoped family inbox model**: notification ownership is child-keyed (`RecipientExternalUserId = childId`) and the parent accesses notifications through the family relationship (read via the parent→child linkage), NOT a parent-keyed inbox. This is the consistent contract across all 11 re-engagement handlers; cross-family isolation is intact (DEL-INT-03). **No parent-keyed inbox in MVP.** AC3 ("only linked parents notified") is satisfied through the linkage. Ratified in **ADR 0003** (`docs/dev/adr/0003-child-scoped-family-inbox.md`). The FE parent app MUST read child-keyed notifications via the family linkage.
+
 ## Blockers encountered
 
-**DEL-INT-06 — BLOCKED-pushsender-fault-mode**
-`TestPushSenderImpl.SendAsync` always returns success. There is no fault-mode injection. To unblock: add `SetFaultMode(bool throws)` to `TestPushSenderImpl` that causes the next `SendAsync` call to throw. Mitigation: NudgeDispatcher source code confirms the inbox row is persisted in Step 1, before the push attempt in Step 3 — push isolation by design. The existing P9-07 arbitration tests also exercise the dispatcher's fail-soft path.
+**DEL-INT-06 — RESOLVED 2026-06-22 (was BLOCKED-pushsender-fault-mode).**
+Rather than add a `SetFaultMode` toggle to the shared `TestPushSenderImpl` (shared-mutable state → cross-test flakiness risk), a dedicated stateless `ThrowingPushSender` is injected via a per-test `WithWebHostBuilder` factory over the same Testcontainers DB (`P5_04_ReportDeliveryPushFailure_Tests`). The case now asserts push-fault isolation directly (not just by code review). No shared fake state.
 
 ## Defects found
 | # | Severity | Case | Description | Status |
