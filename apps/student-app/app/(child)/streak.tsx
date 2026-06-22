@@ -31,7 +31,7 @@
  * lifting into `packages/shared` is a noted carry-forward).
  */
 import { useDashboard } from '@learnexia/api-client';
-import { colors } from '@learnexia/design-system';
+import { colors, springs } from '@learnexia/design-system';
 import { Button, useReduceMotion } from '@learnexia/ui';
 import { Stack as TamStack, Text as TamText, styled } from '@tamagui/core';
 import { useRouter } from 'expo-router';
@@ -161,6 +161,7 @@ export default function StreakScreen() {
   const flame =
     !reduceMotion && hasStreak ? (
       <MotiView
+        testID="streak-flame"
         from={{ scale: 1 }}
         animate={{ scale: 1.04 }}
         transition={{
@@ -173,7 +174,9 @@ export default function StreakScreen() {
         {flameGlyph}
       </MotiView>
     ) : (
-      flameGlyph
+      // Static fallback (reduce-motion or zero-state): testID on the Text so
+      // E2E can still assert the flame is present.
+      React.cloneElement(flameGlyph, { testID: 'streak-flame' })
     );
 
   return (
@@ -352,15 +355,19 @@ export default function StreakScreen() {
                   direction={direction}
                 />
 
-                {/* List of days → follows reading direction (RTL flips). */}
+                {/* List of days → follows reading direction (RTL flips).
+                    P4-08 FE-6: stagger entrance per marker — scale 0.8→1 +
+                    opacity 0→1, springs.settle, delay = milestoneIndex * 80ms.
+                    Reduce-motion: render all markers at final state instantly. */}
                 <XStack flexDirection={rowDir} justifyContent="space-between">
-                  {STREAK_MILESTONES.map((milestone) => {
+                  {STREAK_MILESTONES.map((milestone, milestoneIndex) => {
                     const reached = streak >= milestone;
                     const milestoneValue = formatNumber(milestone, locale);
                     const markerA11y = reached
                       ? t('streak.milestones.reachedA11y', { value: milestoneValue })
                       : t('streak.milestones.upcomingA11y', { value: milestoneValue });
-                    return (
+
+                    const markerContent = (
                       <YStack
                         key={milestone}
                         alignItems="center"
@@ -402,6 +409,26 @@ export default function StreakScreen() {
                           {t('streak.milestones.dayLabel', { value: milestoneValue })}
                         </Text>
                       </YStack>
+                    );
+
+                    if (reduceMotion) {
+                      // Reduce-motion: all markers at final state, no animation.
+                      return markerContent;
+                    }
+
+                    return (
+                      <MotiView
+                        key={`milestone-animated-${milestone}`}
+                        from={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{
+                          type: 'spring',
+                          ...springs.settle,
+                          delay: milestoneIndex * 80,
+                        }}
+                      >
+                        {markerContent}
+                      </MotiView>
                     );
                   })}
                 </XStack>

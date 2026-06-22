@@ -27,9 +27,15 @@
  * (informational — spec §9).
  */
 import { LeagueTierDto, useMyLeague, type LeagueStandingDto } from '@learnexia/api-client';
-import { nativeShadow } from '@learnexia/design-system';
-import { Button, GradientBox } from '@learnexia/ui';
+import { durations, nativeShadow, springs } from '@learnexia/design-system';
+import {
+  Button,
+  GradientBox,
+  RewardPopup,
+  useReduceMotion,
+} from '@learnexia/ui';
 import { Stack as TamStack, Text as TamText, styled } from '@tamagui/core';
+import { MotiView } from 'moti';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, type LayoutChangeEvent } from 'react-native';
@@ -121,12 +127,44 @@ function formatXp(value: number): string {
 /* Screen                                                              */
 /* ------------------------------------------------------------------ */
 
+/** Tier promotion/demotion celebration snapshot. */
+interface LeagueCelebration {
+  kind: 'promotion' | 'demotion';
+  /** Resolved tier name in the current locale (e.g. "Gold" / "ذهب"). */
+  tierName: string;
+}
+
 export default function LeagueScreen() {
   const { t } = useTranslation();
   const { locale, direction, isRtl } = useLocale();
   const insets = useSafeAreaInsets();
+  const reduceMotion = useReduceMotion();
 
   const leagueQuery = useMyLeague();
+
+  // --- Promotion/demotion celebration (P4-08 FE-3) ----------------------
+  // Track the previous tier in a ref; on each successful refetch, compare
+  // prev → current. Cold-start safe: prevTierRef starts as undefined so the
+  // first successful load never fires a celebration.
+  const prevTierRef = useRef<LeagueTierDto | undefined>(undefined);
+  const [leagueCelebration, setLeagueCelebration] = useState<LeagueCelebration | null>(null);
+
+  useEffect(() => {
+    const currentTier = leagueQuery.data?.tier;
+    if (currentTier === undefined) return;
+
+    const prev = prevTierRef.current;
+    prevTierRef.current = currentTier;
+
+    // Cold-start: first load, just baseline — no celebration.
+    if (prev === undefined) return;
+    if (prev === currentTier) return;
+
+    // Tier numbers: _1=1 (Bronze) < _2=2 (Silver) < _3=3 (Gold) < _4=4 (Diamond).
+    const kind: 'promotion' | 'demotion' = currentTier > prev ? 'promotion' : 'demotion';
+    const tierName = t(TIER_I18N_KEYS[currentTier]);
+    setLeagueCelebration({ kind, tierName });
+  }, [leagueQuery.data, t]);
 
   // --- Week countdown (minute tick — information, not decoration) --------
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -265,7 +303,7 @@ export default function LeagueScreen() {
     </XStack>
   );
 
-  const renderRow = (row: LeagueStandingDto) => {
+  const renderRow = (row: LeagueStandingDto, rowIndex: number) => {
     const rank = row.rank ?? 0;
     const isMe = row.isMe === true || (myRank > 0 && rank === myRank);
     const weeklyXp = isMe ? (row.weeklyXp ?? myWeeklyXp) : (row.weeklyXp ?? 0);
@@ -283,7 +321,12 @@ export default function LeagueScreen() {
           xp: formatXp(weeklyXp),
         });
 
-    return (
+    // Stagger delay per spec §3.4: rowIndex * 30ms, cap at 600ms.
+    const staggerDelay = Math.min(rowIndex * 30, 600);
+    // Slide direction: from logical-start side (RTL: from right → left start = positive X).
+    const fromX = isRtl ? 8 : -8;
+
+    const rowContent = (
       <XStack
         key={`rank-${rank}`}
         flexDirection={rowDir}
@@ -379,6 +422,38 @@ export default function LeagueScreen() {
         </Text>
       </XStack>
     );
+
+    // You-row: one-shot pulse on first mount (spec §3.3), motion-gated.
+    // Stagger entrance (spec §3.4): opacity+translateX per row, reduce-motion safe.
+    if (reduceMotion) {
+      // Reduce-motion: render all rows instantly at final state.
+      return rowContent;
+    }
+
+    // Animated wrapper: staggered fade + slide entrance.
+    const animated = (
+      <MotiView
+        key={`animated-rank-${rank}`}
+        from={{ opacity: 0, translateX: fromX }}
+        animate={{ opacity: 1, translateX: 0 }}
+        transition={{ type: 'timing', duration: durations.base, delay: staggerDelay }}
+      >
+        {/* You-row: additionally plays a one-shot scale pulse after entrance. */}
+        {isMe ? (
+          <MotiView
+            from={{ scale: 1 }}
+            animate={{ scale: [1.02, 1.0] }}
+            transition={{ type: 'spring', ...springs.settle, delay: staggerDelay + durations.base }}
+          >
+            {rowContent}
+          </MotiView>
+        ) : (
+          rowContent
+        )}
+      </MotiView>
+    );
+
+    return animated;
   };
 
   /* ---------------------------------------------------------------- */
@@ -495,70 +570,114 @@ export default function LeagueScreen() {
             <>
               {/* ------------------------------------------------------ */}
               {/* 1. Tier banner (mobile-league-header.html, spec §6.1)    */}
+              {/* Banner entrance: opacity+translateY, 240ms (spec §3.2).  */}
+              {/* Reduce-motion: render statically. Not MotiView-wrapped.  */}
               {/* ------------------------------------------------------ */}
-              <GradientBox
-                stops={TIER_BANNER_GRADIENTS[tier]}
-                angle={135}
-                borderRadius="$modal"
-                overflow="hidden"
-                testID="league-banner"
-                accessible
-                accessibilityRole="text"
-                accessibilityLabel={t('league.banner.a11y', {
-                  tier: tierLabel,
-                  timeLeft: timeLeftText,
-                  promote: promoteText ?? '',
-                })}
-                aria-label={t('league.banner.a11y', {
-                  tier: tierLabel,
-                  timeLeft: timeLeftText,
-                  promote: promoteText ?? '',
-                })}
-              >
-                <XStack
-                  flexDirection={rowDir}
-                  alignItems="center"
-                  gap="$4"
-                  paddingVertical={20}
-                  paddingHorizontal={18}
+              {reduceMotion ? (
+                <GradientBox
+                  stops={TIER_BANNER_GRADIENTS[tier]}
+                  angle={135}
+                  borderRadius="$modal"
+                  overflow="hidden"
+                  testID="league-banner"
+                  accessible
+                  accessibilityRole="text"
+                  accessibilityLabel={t('league.banner.a11y', {
+                    tier: tierLabel,
+                    timeLeft: timeLeftText,
+                    promote: promoteText ?? '',
+                  })}
+                  aria-label={t('league.banner.a11y', {
+                    tier: tierLabel,
+                    timeLeft: timeLeftText,
+                    promote: promoteText ?? '',
+                  })}
                 >
-                  {/* 🏆 disc 56×56 — never mirrored (spec §9). */}
-                  <TamStack
-                    width={56}
-                    height={56}
-                    borderRadius={9999}
-                    backgroundColor={BANNER_DISC_BG}
+                  <XStack
+                    flexDirection={rowDir}
                     alignItems="center"
-                    justifyContent="center"
-                    accessibilityElementsHidden
-                    importantForAccessibility="no-hide-descendants"
+                    gap="$4"
+                    paddingVertical={20}
+                    paddingHorizontal={18}
                   >
-                    <Text fontSize={28} lineHeight={34}>
-                      {GLYPHS.trophy}
-                    </Text>
-                  </TamStack>
-                  <YStack flex={1} gap="$1" accessibilityElementsHidden>
-                    <Text
-                      color={BANNER_FG}
-                      fontSize={20}
-                      fontWeight="900"
-                      fontFamily="$heading"
-                      writingDirection={direction}
+                    <TamStack
+                      width={56}
+                      height={56}
+                      borderRadius={9999}
+                      backgroundColor={BANNER_DISC_BG}
+                      alignItems="center"
+                      justifyContent="center"
+                      accessibilityElementsHidden
+                      importantForAccessibility="no-hide-descendants"
                     >
-                      {t('league.banner.title', { tier: tierLabel })}
-                    </Text>
-                    <Text
-                      color={BANNER_FG_SOFT}
-                      fontSize={12}
-                      fontWeight="500"
-                      fontFamily="$body"
-                      writingDirection={direction}
+                      <Text fontSize={28} lineHeight={34}>{GLYPHS.trophy}</Text>
+                    </TamStack>
+                    <YStack flex={1} gap="$1" accessibilityElementsHidden>
+                      <Text color={BANNER_FG} fontSize={20} fontWeight="900" fontFamily="$heading" writingDirection={direction}>
+                        {t('league.banner.title', { tier: tierLabel })}
+                      </Text>
+                      <Text color={BANNER_FG_SOFT} fontSize={12} fontWeight="500" fontFamily="$body" writingDirection={direction}>
+                        {bannerSub}
+                      </Text>
+                    </YStack>
+                  </XStack>
+                </GradientBox>
+              ) : (
+                <MotiView
+                  from={{ opacity: 0, translateY: -8 }}
+                  animate={{ opacity: 1, translateY: 0 }}
+                  transition={{ type: 'timing', duration: durations.base }}
+                >
+                  <GradientBox
+                    stops={TIER_BANNER_GRADIENTS[tier]}
+                    angle={135}
+                    borderRadius="$modal"
+                    overflow="hidden"
+                    testID="league-banner"
+                    accessible
+                    accessibilityRole="text"
+                    accessibilityLabel={t('league.banner.a11y', {
+                      tier: tierLabel,
+                      timeLeft: timeLeftText,
+                      promote: promoteText ?? '',
+                    })}
+                    aria-label={t('league.banner.a11y', {
+                      tier: tierLabel,
+                      timeLeft: timeLeftText,
+                      promote: promoteText ?? '',
+                    })}
+                  >
+                    <XStack
+                      flexDirection={rowDir}
+                      alignItems="center"
+                      gap="$4"
+                      paddingVertical={20}
+                      paddingHorizontal={18}
                     >
-                      {bannerSub}
-                    </Text>
-                  </YStack>
-                </XStack>
-              </GradientBox>
+                      <TamStack
+                        width={56}
+                        height={56}
+                        borderRadius={9999}
+                        backgroundColor={BANNER_DISC_BG}
+                        alignItems="center"
+                        justifyContent="center"
+                        accessibilityElementsHidden
+                        importantForAccessibility="no-hide-descendants"
+                      >
+                        <Text fontSize={28} lineHeight={34}>{GLYPHS.trophy}</Text>
+                      </TamStack>
+                      <YStack flex={1} gap="$1" accessibilityElementsHidden>
+                        <Text color={BANNER_FG} fontSize={20} fontWeight="900" fontFamily="$heading" writingDirection={direction}>
+                          {t('league.banner.title', { tier: tierLabel })}
+                        </Text>
+                        <Text color={BANNER_FG_SOFT} fontSize={12} fontWeight="500" fontFamily="$body" writingDirection={direction}>
+                          {bannerSub}
+                        </Text>
+                      </YStack>
+                    </XStack>
+                  </GradientBox>
+                </MotiView>
+              )}
 
               {/* ------------------------------------------------------ */}
               {/* 2. Week countdown chip — text only (spec §6.5)           */}
@@ -584,7 +703,7 @@ export default function LeagueScreen() {
                 testID="league-standings"
                 onLayout={(e: LayoutChangeEvent) => setListY(e.nativeEvent.layout.y)}
               >
-                {standings.map((row) => {
+                {standings.map((row, rowIndex) => {
                   const rank = row.rank ?? 0;
                   return (
                     <React.Fragment key={`standing-${rank}`}>
@@ -592,7 +711,7 @@ export default function LeagueScreen() {
                       {demotionCutoff > 0 && rank === demotionCutoff && rank > 1
                         ? renderZoneDivider('demotion')
                         : null}
-                      {renderRow(row)}
+                      {renderRow(row, rowIndex)}
                       {/* Promotion cutline AFTER the last promoted rank. */}
                       {promotionCutoff > 0 && rank === promotionCutoff && rank < maxRank
                         ? renderZoneDivider('promotion')
@@ -620,6 +739,40 @@ export default function LeagueScreen() {
           )}
         </YStack>
       </ScrollView>
+
+      {/* --- P4-08 FE-3: Promotion/demotion celebration overlay (spec §3.5). */}
+      {/* Promotion: full confetti (default ConfettiLayer in RewardPopup).      */}
+      {/* Demotion: RewardPopup with xpAmount=0 and no confetti (count self-   */}
+      {/* gates to 0 when variant='xp' + xpAmount=0).                          */}
+      {leagueCelebration ? (
+        <RewardPopup
+          variant="xp"
+          xpAmount={0}
+          title={
+            leagueCelebration.kind === 'promotion'
+              ? t('league.promotion.title')
+              : t('league.demotion.title')
+          }
+          subtitle={
+            leagueCelebration.kind === 'promotion'
+              ? t('league.promotion.subtitle', { tierName: leagueCelebration.tierName })
+              : undefined
+          }
+          visible
+          ctaLabel={t('missions.complete.cta')}
+          onDismiss={() => setLeagueCelebration(null)}
+          accessibilityLabel={
+            leagueCelebration.kind === 'promotion'
+              ? t('league.promotion.title')
+              : t('league.demotion.title')
+          }
+          testID={
+            leagueCelebration.kind === 'promotion'
+              ? 'league-promotion-popup'
+              : 'league-demotion-popup'
+          }
+        />
+      ) : null}
     </TamStack>
   );
 }

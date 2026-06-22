@@ -142,6 +142,10 @@ export type { SubjectKey as ContinueCardSubjectKey } from './components/Continue
 export { MissionBanner } from './components/MissionBanner';
 export type { MissionBannerProps } from './components/MissionBanner';
 
+// --- P4-08 gamification motion layer ---
+export { BadgeUnlockOverlay } from './components/BadgeUnlockOverlay';
+export type { BadgeUnlockOverlayProps } from './components/BadgeUnlockOverlay';
+
 // --- P4-08 carryover (batch 2a) — motion foundation, salvaged from the
 // retired feat/P4-08-gamification-screens-motion branch (plan L5) ---
 export { useReduceMotion } from './hooks/useReduceMotion';
