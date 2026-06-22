@@ -27,6 +27,10 @@ public sealed class GetWeeklyReportQueryHandlerTests
     {
         var mock = new Mock<IStringLocalizer<SharedResources>>();
         mock.Setup(l => l[It.IsAny<string>()]).Returns<string>(k => new LocalizedString(k, k));
+        // Two-arg (formatted) indexer used by the localized recommendations: render "key:arg0" so a
+        // test can assert BOTH the chosen resource key and the substituted skill name.
+        mock.Setup(l => l[It.IsAny<string>(), It.IsAny<object[]>()])
+            .Returns((string k, object[] args) => new LocalizedString(k, $"{k}:{(args.Length > 0 ? args[0] : string.Empty)}"));
         return mock.Object;
     }
 
@@ -125,6 +129,56 @@ public sealed class GetWeeklyReportQueryHandlerTests
         dto.Recommendations.Should().ContainSingle(r => r == "Practice skill: Addition");
         dto.GeneratedAtUtc.Should().Be(generatedAt);
         result.Message.Should().Be(SharedResourcesKey.WeeklyReportRetrievedSuccessfully);
+    }
+
+    /// <summary>
+    /// WR-06 — New structured recommendations ({code, skillName}) are LOCALIZED at read (P6 cleanup).
+    /// Each entry maps to its resource key with the skill name substituted; an unknown code falls back
+    /// to the bare skill name.
+    /// </summary>
+    [Fact]
+    public async Task Should_localize_structured_recommendation_codes()
+    {
+        var storedReport = new WeeklyReportReadDto
+        {
+            Id                  = 99,
+            ChildId             = 5,
+            WeekStartUtc        = new DateTime(2026, 6, 8, 0, 0, 0, DateTimeKind.Utc),
+            XpEarned            = 120,
+            SkillsImproved      = 1,
+            WeakAreasJson       = "[]",
+            RecommendationsJson =
+                """[{"code":"REVIEW_CONCEPT","skillName":"Fractions"},{"code":"PRACTICE_SKILL","skillName":"Addition"},{"code":"WAT","skillName":"Geometry"}]""",
+            GeneratedAtUtc      = DateTime.UtcNow,
+        };
+
+        var handler = BuildSut(parentId: 1, childId: 5, isOwner: true, report: storedReport);
+        var result  = await handler.Handle(new GetWeeklyReportQuery(5), CancellationToken.None);
+
+        result.StatusCode.Should().Be(HttpStatusCode.OK);
+        result.Data!.Recommendations.Should().Equal(
+            $"{SharedResourcesKey.WeeklyReportRecReviewConcept}:Fractions",
+            $"{SharedResourcesKey.WeeklyReportRecPracticeSkill}:Addition",
+            "Geometry"); // unknown code → bare skill name
+    }
+
+    /// <summary>WR-07 — Legacy prose recommendations (pre-P6) are passed through unchanged (back-compat).</summary>
+    [Fact]
+    public async Task Should_passthrough_legacy_prose_recommendations()
+    {
+        var storedReport = new WeeklyReportReadDto
+        {
+            Id = 100, ChildId = 5,
+            WeekStartUtc = new DateTime(2026, 6, 8, 0, 0, 0, DateTimeKind.Utc),
+            XpEarned = 50, SkillsImproved = 0, WeakAreasJson = "[]",
+            RecommendationsJson = """["Practice skill: Addition","Review concept for Fractions"]""",
+            GeneratedAtUtc = DateTime.UtcNow,
+        };
+
+        var handler = BuildSut(parentId: 1, childId: 5, isOwner: true, report: storedReport);
+        var result  = await handler.Handle(new GetWeeklyReportQuery(5), CancellationToken.None);
+
+        result.Data!.Recommendations.Should().Equal("Practice skill: Addition", "Review concept for Fractions");
     }
 
     /// <summary>WR-04 — childId ≤ 0 → 400 Bad Request.</summary>

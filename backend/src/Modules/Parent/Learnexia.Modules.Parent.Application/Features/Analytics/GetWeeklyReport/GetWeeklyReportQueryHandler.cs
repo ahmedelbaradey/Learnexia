@@ -94,16 +94,9 @@ public class GetWeeklyReportQueryHandler
                 _logger.LogError(ex, $"Failed to deserialise WeakAreasJson for childId={request.ChildId}");
             }
 
-            IReadOnlyList<string> recommendations = [];
-            try
-            {
-                recommendations = JsonSerializer.Deserialize<List<string>>(
-                    row.RecommendationsJson, JsonOpts) ?? [];
-            }
-            catch (JsonException ex)
-            {
-                _logger.LogError(ex, $"Failed to deserialise RecommendationsJson for childId={request.ChildId}");
-            }
+            // P6 cleanup: recommendations are persisted as stable {code, skillName} and localized HERE
+            // (parent's request culture). Back-compatible with the legacy ["prose string"] shape.
+            IReadOnlyList<string> recommendations = LocalizeRecommendations(row.RecommendationsJson, request.ChildId);
 
             var dto = new WeeklyReportDto
             {
@@ -126,5 +119,57 @@ public class GetWeeklyReportQueryHandler
             _logger.LogError(ex, "Error in GetWeeklyReportQueryHandler");
             return ServerError<WeeklyReportDto>(_localizer[SharedResourcesKey.SystemErrorRetrievingData]);
         }
+    }
+
+    /// <summary>
+    /// Localizes the persisted recommendation snapshot into the request culture. New rows are stored as
+    /// <c>{ code, skillName }</c> objects (P6 cleanup) and rendered via <see cref="SharedResources"/>
+    /// ({0} = skill name). Legacy rows (pre-P6) were stored as already-localized prose strings — those
+    /// are passed through unchanged for back-compat (they age out as reports regenerate weekly).
+    /// Unknown codes fall back to the bare skill name. Degrades to an empty list on parse failure.
+    /// </summary>
+    private List<string> LocalizeRecommendations(string? recommendationsJson, int childId)
+    {
+        var result = new List<string>();
+        if (string.IsNullOrWhiteSpace(recommendationsJson))
+            return result;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(recommendationsJson);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+                return result;
+
+            foreach (var item in doc.RootElement.EnumerateArray())
+            {
+                if (item.ValueKind == JsonValueKind.String)
+                {
+                    // Legacy shape: already-localized prose. Pass through.
+                    var legacy = item.GetString();
+                    if (!string.IsNullOrWhiteSpace(legacy))
+                        result.Add(legacy!);
+                    continue;
+                }
+
+                if (item.ValueKind != JsonValueKind.Object)
+                    continue;
+
+                var code = item.TryGetProperty("code", out var c) ? c.GetString() : null;
+                var skillName = item.TryGetProperty("skillName", out var s) ? (s.GetString() ?? string.Empty) : string.Empty;
+
+                result.Add(code switch
+                {
+                    "REVIEW_CONCEPT" => _localizer[SharedResourcesKey.WeeklyReportRecReviewConcept, skillName],
+                    "PRACTICE_SKILL" => _localizer[SharedResourcesKey.WeeklyReportRecPracticeSkill, skillName],
+                    _ => skillName, // unknown code → bare skill name (defensive)
+                });
+            }
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex, $"Failed to deserialise RecommendationsJson for childId={childId}");
+        }
+
+        return result;
     }
 }

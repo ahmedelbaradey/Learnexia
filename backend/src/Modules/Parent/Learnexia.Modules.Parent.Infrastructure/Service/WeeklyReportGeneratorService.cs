@@ -120,10 +120,18 @@ public sealed class WeeklyReportGeneratorService : IWeeklyReportGeneratorService
             weakAreasJson = JsonSerializer.Serialize(snapshot, JsonOpts);
 
             // ── Deterministic recommendations from weak areas ──
+            // P6 cleanup (localize persisted reports): persist a STABLE CODE + skill name, NOT localized
+            // English prose, so the read path (GetWeeklyReportQueryHandler) can render the recommendation
+            // in the parent's language. Mirrors the P5-07 reason-code-at-write / localize-at-read pattern.
+            // (Reader is back-compatible with the legacy ["prose string"] shape — old rows age out weekly.)
             var recommendations = areas
-                .Select(a => a.Severity == Shared.Contracts.Learning.WeakAreaSeverity.High
-                    ? $"Review concept for {a.SkillName}"
-                    : $"Practice skill: {a.SkillName}")
+                .Select(a => new
+                {
+                    code = a.Severity == Shared.Contracts.Learning.WeakAreaSeverity.High
+                        ? "REVIEW_CONCEPT"
+                        : "PRACTICE_SKILL",
+                    skillName = a.SkillName,
+                })
                 .ToList();
             recommendationsJson = JsonSerializer.Serialize(recommendations, JsonOpts);
         }

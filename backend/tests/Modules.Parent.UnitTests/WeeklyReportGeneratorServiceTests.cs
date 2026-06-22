@@ -182,4 +182,33 @@ public sealed class WeeklyReportGeneratorServiceTests : IDisposable
         rows[0].XpEarned.Should().Be(0);           // degraded to 0
         rows[0].SkillsImproved.Should().Be(2);     // mastery data still captured
     }
+
+    /// <summary>
+    /// GEN-05 — Recommendations are persisted as STRUCTURED {code, skillName} (P6 cleanup: localize
+    /// persisted reports), NOT as localized English prose. High severity → REVIEW_CONCEPT, else
+    /// PRACTICE_SKILL. The read handler localizes these at request time.
+    /// </summary>
+    [Fact]
+    public async Task Should_persist_structured_recommendation_codes_not_prose()
+    {
+        const int childId = 14;
+
+        var weak = new Mock<IStudentAllSubjectsWeakAreasQuery>();
+        weak.Setup(q => q.GetWeakAreasAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<WeakAreaEntry>
+            {
+                new(1, "Fractions", 0, 20, WeakAreaSeverity.High, "review"),
+                new(2, "Addition", 0, 40, WeakAreaSeverity.Medium, "practice"),
+            });
+
+        var sut = BuildSut(XpSeamWithXp(childId, 10), MasterySeam(childId, 1), weak);
+        await sut.GenerateAsync(childId, PriorMonday);
+
+        var row = (await _db.WeeklyReports.ToListAsync()).Single();
+        row.RecommendationsJson.Should()
+            .Contain("REVIEW_CONCEPT").And.Contain("PRACTICE_SKILL")     // stable codes, severity-mapped
+            .And.Contain("skillName").And.Contain("Fractions").And.Contain("Addition");
+        row.RecommendationsJson.Should()
+            .NotContain("Review concept for").And.NotContain("Practice skill:"); // no localized prose persisted
+    }
 }

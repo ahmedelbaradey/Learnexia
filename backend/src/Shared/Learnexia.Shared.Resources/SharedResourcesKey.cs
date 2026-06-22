@@ -419,6 +419,10 @@
 
 
         public const string SystemErrorRetrievingData = "SystemErrorRetrievingData";
+        // P6 cleanup: weekly-report recommendations are persisted as stable codes + skill name and
+        // localized at read time ({0} = skill name).
+        public const string WeeklyReportRecReviewConcept = "WeeklyReportRecReviewConcept";
+        public const string WeeklyReportRecPracticeSkill = "WeeklyReportRecPracticeSkill";
         public const string NoRecords = "NoRecords";
 
         // Sprint 3 User Management Message Codes
