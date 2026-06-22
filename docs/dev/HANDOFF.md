@@ -21,6 +21,21 @@ EF won't re-run an "applied" migration, and **direct DDL on the shared Postgres 
 
 ---
 
+## P10 payment provider — mock-complete for dev/staging — 2026-06-22 (`feat/P10-payment-mock-complete`)
+
+The `IPaymentProvider` seam + `FakePaymentProvider` already existed and are config-wired (`Billing:PaymentProvider:Provider`). The gap for a *usable* mock was that, in a running app, nothing completes a payment (no real gateway sends the success webhook — only tests POST it). Added a **gated simulate-webhook** so the full money flow (checkout → success → subscription Active / energy credited; also failed/refund) works on the Fake provider until the real Paymob/Fawry adapter is chosen.
+
+- **`POST api/Billing/Webhooks/Simulate`** (`DevWebhookController`, `[Authorize(AdminOnly)]`) → `SimulateProviderPaymentCommand{ PaymentId, EventType }` → `IPaymentSimulationService` builds a signed Fake payload and routes it through the **same `IWebhookEventService`** the real webhook uses (no state-machine duplication).
+- **Triple gate (prod-safe):** `Provider=="Fake"` AND `AllowSimulation==true` (**default false**) AND AdminOnly → else **404** (existence not disclosed). No environment-name gate.
+- **Idempotent:** deterministic synthetic `eventId = sim-{paymentId}-{eventType}` → a replay short-circuits the existing webhook idempotency guard (no double-grant — this was the security-auditor's Medium finding, fixed).
+- The **real `POST .../Webhooks/Provider` HMAC gate is untouched** (simulation calls the service post-verification only).
+
+> **⚠️ PROD DEPLOY CHECKLIST (devops):** the live payment provider is still **NOT built** — this is a mock. Before prod: (1) set `Billing:PaymentProvider:Provider` to the real provider (NOT `Fake`), (2) keep `Billing:PaymentProvider:AllowSimulation = false`, (3) build the real `IPaymentProvider` adapter (Paymob/Fawry — blocked on the provider decision + sandbox keys/webhook secret). The default `Provider` is `Fake`, so a prod deploy that forgets (1) keeps the mock active — the dual gate + AdminOnly still protect simulation, but the real money path won't work until the adapter exists.
+
+Gates: build 0 · `P10_PaymentSimulation_Tests` 14/14 · security-auditor PASS (0 Crit/High; replay double-grant fixed) · reviewer PASS. **Phase 10 backend: all stories built; only the real provider adapter remains (business decision + secrets).**
+
+---
+
 ## P9-13 complete notification-suppression analytics — 2026-06-22 (`feat/P9-13-suppression-analytics`)
 
 Closes the P9-11/P6-04 metric gap: `NotificationSuppressed` was emitted ONLY on the P9-07 arbiter push-deny branch. Now emitted (fail-soft) for all suppression paths:
