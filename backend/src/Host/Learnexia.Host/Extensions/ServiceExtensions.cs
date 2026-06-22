@@ -13,15 +13,62 @@ public static class ServiceExtensions
 {
     public static void ConfigureCors(this IServiceCollection services, IConfiguration configuration) => services.AddCors(options =>
     {
-        var urls = (configuration.GetValue<string>("AllowedOrigins") ?? "*").Split(',', StringSplitOptions.RemoveEmptyEntries);
+        var configured = configuration.GetValue<string>("AllowedOrigins");
+        var isWildcardOrUnset = string.IsNullOrWhiteSpace(configured) || configured.Trim() == "*";
+
+        // Audit H2 fix: FAIL CLOSED in Production/Staging when AllowedOrigins is unset or "*". A
+        // credentialed CORS policy (AllowCredentials) must NEVER pair with a wildcard origin — it is
+        // both invalid (the framework rejects it at request time) and a misconfiguration risk. A prod
+        // deploy that forgets AllowedOrigins should not silently run an unsafe/broken policy. Mirrors
+        // GuardJwtSecret/GuardCaptcha. Development/Testing keep a permissive (NON-credentialed) policy
+        // so local tooling/tests work.
+        if (isWildcardOrUnset && IsProtectedEnvironment(configuration))
+            throw new InvalidOperationException(
+                "AllowedOrigins must be configured with explicit origin(s) in Production/Staging (no '*'). " +
+                "Set AllowedOrigins (env/config) to the comma-separated front-end origin(s) — a credentialed " +
+                "CORS policy cannot use a wildcard origin.");
+
         options.AddPolicy("CorsPolicy", builder =>
-            builder.WithOrigins(urls)
-                .AllowAnyMethod()
-                .AllowAnyHeader()
-                .AllowCredentials()
-                .SetPreflightMaxAge(TimeSpan.FromMinutes(10))
-                .WithExposedHeaders("X-Pagination"));
+        {
+            if (isWildcardOrUnset)
+            {
+                // Dev/Testing only (Prod/Staging is rejected above): permissive, but WITHOUT credentials,
+                // since AllowAnyOrigin + AllowCredentials is an invalid (and unsafe) combination.
+                builder.AllowAnyOrigin()
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .SetPreflightMaxAge(TimeSpan.FromMinutes(10))
+                    .WithExposedHeaders("X-Pagination");
+            }
+            else
+            {
+                var urls = configured!.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                builder.WithOrigins(urls)
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials()
+                    .SetPreflightMaxAge(TimeSpan.FromMinutes(10))
+                    .WithExposedHeaders("X-Pagination");
+            }
+        });
     });
+
+    /// <summary>
+    /// Resolves whether the app is running in a protected (Production/Staging) environment, defaulting
+    /// to Production (fail-closed) when the environment can't be resolved. Mirrors the Identity module's
+    /// GuardJwtSecret / GuardCaptcha env resolution + the rate-limit gate in this file.
+    /// </summary>
+    private static bool IsProtectedEnvironment(IConfiguration configuration)
+    {
+        var environment = configuration[Microsoft.Extensions.Hosting.HostDefaults.EnvironmentKey]
+            ?? configuration["ASPNETCORE_ENVIRONMENT"]
+            ?? configuration["DOTNET_ENVIRONMENT"]
+            ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+            ?? "Production";
+
+        return environment.Equals("Production", StringComparison.OrdinalIgnoreCase)
+            || environment.Equals("Staging", StringComparison.OrdinalIgnoreCase);
+    }
 
     public static void ConfigureIISIntegration(this IServiceCollection services) => services.Configure<IISOptions>(_ => { });
 

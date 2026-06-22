@@ -47,6 +47,10 @@ public class AccountController : AppControllerBase
     [Authorize]
     [HttpPost("Avatar")]
     [Consumes("multipart/form-data")]
+    // Audit D4 fix: cap the request body at the framework boundary so an oversized upload is rejected
+    // (413) BEFORE it is fully buffered — the handler's precise MaxFileSize check runs only after the
+    // body is read. 8 MB is a generous ceiling over a typical avatar (handler enforces the real limit).
+    [RequestSizeLimit(8 * 1024 * 1024)]
     [ProducesResponseType(typeof(BaseResponse<AvatarUploadResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(BaseResponse<AvatarUploadResponse>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UploadAvatar(IFormFile file)

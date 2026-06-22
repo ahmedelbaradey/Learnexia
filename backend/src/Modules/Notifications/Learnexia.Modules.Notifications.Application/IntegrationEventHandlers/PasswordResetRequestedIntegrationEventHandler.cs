@@ -1,3 +1,4 @@
+using System.Net;
 using Learnexia.Modules.Notifications.Domain.Enums;
 using Learnexia.Modules.Notifications.Domain.Templates;
 using Learnexia.Modules.Notifications.Application.Abstractions;
@@ -52,7 +53,12 @@ public sealed class PasswordResetRequestedIntegrationEventHandler
         {
             // P6-06 BE-2: resolve locale from the event (falls back to ar-EG when null — backward-compatible).
             var locale = string.IsNullOrWhiteSpace(notification.Locale) ? "ar-EG" : notification.Locale;
-            var greetingName = string.IsNullOrWhiteSpace(notification.UserName) ? string.Empty : notification.UserName;
+            // HTML-encode the user-controlled display name before it is substituted into the HTML email
+            // body (the template body contains <a href> markup). Prevents a crafted display name from
+            // injecting markup/script into the recipient's reset email. {resetUrl} is app-generated and
+            // must stay a valid href, so it is NOT encoded.
+            var greetingName = WebUtility.HtmlEncode(
+                string.IsNullOrWhiteSpace(notification.UserName) ? string.Empty : notification.UserName);
 
             // Render subject + body from the template store (mirrors UserRegisteredIntegrationEventHandler).
             // The {resetUrl} placeholder substitutes the prebuilt reset link (carries the single-use token —

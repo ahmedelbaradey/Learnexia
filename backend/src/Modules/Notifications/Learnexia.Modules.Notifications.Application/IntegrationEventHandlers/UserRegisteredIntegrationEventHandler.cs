@@ -58,11 +58,14 @@ public sealed class UserRegisteredIntegrationEventHandler
 
         // P9-10 (BE-2): welcome copy rendered from template (ar-EG primary, en-US fallback).
         // Template key: System:WELCOME:{locale}. Placeholder: {userName}.
+        // HTML-encode the user-controlled display name: this rendered body is reused as the welcome
+        // EMAIL body (sent as HTML), so a crafted FullName must not inject markup. The inbox copy shows
+        // the encoded value too (negligible cosmetic for a pathological name; FullName is the user's own).
         var (title, body) = ReengagementCopyTemplates.Render(
             NotificationCategory.System,
             "WELCOME",
             locale,
-            ("userName", notification.UserName));
+            ("userName", System.Net.WebUtility.HtmlEncode(notification.UserName ?? string.Empty)));
 
         var written = await _inboxService.WriteWelcomeIfAbsentAsync(
             notification.UserId, title, body, cancellationToken);
