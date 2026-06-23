@@ -72,5 +72,21 @@ public class KnowledgeNodeConfig : IEntityTypeConfiguration<KnowledgeNode>
             .IsUnique()
             .HasFilter($"\"{LearningSchema.Name}\".\"KnowledgeNodes\".\"SkillId\" IS NOT NULL")
             .HasDatabaseName("UX_KnowledgeNodes_SkillId");
+
+        // ── BL-04 BE-11/12 — SkillKey (stable semantic identity, Decision C) ──────────────────────
+        // Format: {SubjectCode}.grade{N}.{unitSlug}.{skillSlug}
+        // Example: math.grade4.fractions.add-unlike-denominators
+        // Slugify = lowercase, spaces→hyphens, strip non-alphanumeric except hyphens.
+        // Nullable (Q3 decision): NOT NULL deferred until all KnowledgeNode writers confirm readiness.
+        builder.Property(x => x.SkillKey)
+            .HasMaxLength(200)
+            .IsRequired(false);
+
+        // Partial unique index mirroring UX_KnowledgeNodes_SkillId pattern.
+        // Filter syntax matches the existing UX_KnowledgeNodes_SkillId filter exactly.
+        builder.HasIndex(x => x.SkillKey)
+            .IsUnique()
+            .HasFilter($"\"{LearningSchema.Name}\".\"KnowledgeNodes\".\"SkillKey\" IS NOT NULL")
+            .HasDatabaseName("UX_KnowledgeNodes_SkillKey");
     }
 }

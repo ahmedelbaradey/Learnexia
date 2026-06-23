@@ -33,6 +33,14 @@ public class CurriculumDbContext : DbContext
     public DbSet<CurriculumChunk> CurriculumChunks => Set<CurriculumChunk>();
     public DbSet<ChunkEmbeddingBgeM3> ChunkEmbeddingsBgeM3 => Set<ChunkEmbeddingBgeM3>();
 
+    // BL-04 BE-8: provenance tree (AddProvenanceTree migration)
+    public DbSet<ContentSource> ContentSources => Set<ContentSource>();
+    public DbSet<Chapter> Chapters => Set<Chapter>();
+    public DbSet<ProvenanceMapping> ProvenanceMappings => Set<ProvenanceMapping>();
+
+    // BL-04 BE-10: KG suggestion queue (AddKGSuggestionTable migration)
+    public DbSet<KGSuggestion> KGSuggestions => Set<KGSuggestion>();
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 

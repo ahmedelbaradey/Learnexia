@@ -13,12 +13,18 @@ namespace Learnexia.Modules.Curriculum.Domain.Entities;
 /// - Visibility governs retrieval: <c>chunk_embeddings_bge_m3</c> only returns chunks whose version
 ///   has <c>Status = Active</c> (P3-07 retrieval filter).
 ///
-/// BL-04 will extend this entity with additional lifecycle fields; P3-07 provides the minimal slice.
+/// Note (BL-04 Q4 decision): this entity is the curriculum-tree publish unit, distinct from
+/// <c>learning.ContentVersions</c> (P7-05's per-content-entity snapshot log). They are complementary
+/// layers — do NOT unify or rename. See curriculum-system-of-record.md §3.
+///
+/// Note (BL-04 Q-A decision): SubjectId (int) is the canonical keying dimension. SubjectCode is
+/// documentation-only and is not stored as a separate column here.
 /// </summary>
 public class CurriculumVersion : AggregateRoot
 {
     /// <summary>
     /// Loose reference to the subject (no cross-module FK). E.g. the SubjectId from the Learning module.
+    /// Canonical keying dimension — do NOT add a SubjectCode column (Q-A decision).
     /// </summary>
     public int SubjectId { get; set; }
 
@@ -40,6 +46,30 @@ public class CurriculumVersion : AggregateRoot
     /// displays it. Stable once assigned.
     /// </summary>
     public string Name { get; set; } = null!;
+
+    // ── BL-04 lifecycle fields (BE-9) ─────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// When this version was published (Status transitioned to Active). Null while in Draft.
+    /// The P7-05 publish action sets this when switching Active versions.
+    /// </summary>
+    public DateTimeOffset? PublishedAt { get; set; }
+
+    /// <summary>
+    /// The user who published this version (plain int — no cross-module FK). Null while in Draft.
+    /// </summary>
+    public int? PublishedByUserId { get; set; }
+
+    /// <summary>
+    /// When this version was archived (Status transitioned to Archived). Null while Active or Draft.
+    /// Set atomically during the Draft → Active version switch (former Active becomes Archived).
+    /// </summary>
+    public DateTimeOffset? ArchivedAt { get; set; }
+
+    /// <summary>
+    /// Optional human-readable notes about this version (e.g. what changed from the prior Active).
+    /// </summary>
+    public string? Notes { get; set; }
 
     // Navigation
     public ICollection<CurriculumChunk> Chunks { get; set; } = new List<CurriculumChunk>();

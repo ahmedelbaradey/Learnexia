@@ -38,6 +38,20 @@ public class KnowledgeNode : AggregateRoot
 
     public Skill? Skill { get; set; }
 
+    /// <summary>
+    /// Stable human-readable semantic identifier for cross-version identity (BL-04 BE-11/12, Decision C).
+    /// Format: {SubjectCode}.grade{N}.{unitSlug}.{skillSlug}
+    /// Example: math.grade4.fractions.add-unlike-denominators
+    /// Slugify = lowercase, spaces→hyphens, strip non-alphanumeric except hyphens.
+    ///
+    /// Rules:
+    /// - Set at creation time. Immutable once non-null — an explicit correction command is required to change it.
+    /// - Nullable (Q3 decision): NOT NULL constraint is deferred until all writers confirm readiness.
+    /// - Partial unique index UX_KnowledgeNodes_SkillKey WHERE SkillKey IS NOT NULL.
+    ///   Mirrors UX_KnowledgeNodes_SkillId (see KnowledgeNodeConfig).
+    /// </summary>
+    public string? SkillKey { get; set; }
+
     // ── Inverse navigation collections ──────────────────────────────────────────────────────────
 
     /// <summary>Edges that originate from this node (this node is the prerequisite/source).</summary>
