@@ -3,6 +3,7 @@
 > Story: [../../../user-stories/Phase-4-AI-Tutor/P3-14a-level-profile-aware-lexi-framing.md](../../../user-stories/Phase-4-AI-Tutor/P3-14a-level-profile-aware-lexi-framing.md)
 > Brief: [../../../docs/briefs/recommendations-as-his-level-enrichment.md](../../../docs/briefs/recommendations-as-his-level-enrichment.md)
 > Phase 4 · Module: **Ai** (enrich the merged P3-14 narration). **PR 2 of 2 — stacked on P5-09a** (consumes the persisted style field).
+> **Status: ✅ BUILT + MERGED (PR #178).** Level- + profile-aware Lexi framing (gamification level → motivational framing + profile encouragement style) over the P3-14 narration.
 
 ## Design rules (binding)
 - **Prompt-template + context enrichment only** — NO new orchestration, NO new energy cost (still `ai_cost.recommendation = 5`, charge-per-delivery, cache-hit-charges). Grounding stays strictly the persisted `RecommendationItem[]` (no skill invention).
