@@ -71,8 +71,10 @@ public class PipelineJob : AggregateRoot
     public DateTimeOffset? CompletedAt { get; set; }
 
     /// <summary>
-    /// Number of times this job has been attempted (retried). Default 0.
-    /// Incremented by the Python poller on each claim attempt.
+    /// Number of times this job has been retried. Default 0.
+    /// Owned by the .NET advance poller (ParseJobAdvanceService — BL-02-BE-7):
+    /// incremented each time a Failed job is re-enqueued. Python only reports terminal
+    /// Failed; it does not increment this counter (ADR-0004 Q7).
     /// </summary>
     public int RetryCount { get; set; } = 0;
 

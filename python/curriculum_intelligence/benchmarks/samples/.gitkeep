@@ -1,0 +1,5 @@
+# Arabic OCR benchmark corpus (PY-1b) goes here — devops/lead-supplied.
+# 20-30 pages across 5 categories: dense prose, diacritized lower-grade,
+# geometry/science diagrams, equation-heavy Math, scanned/photographed worksheet.
+# Each sample may ship a `<name>.groundtruth.txt` for CAR + tashkeel scoring.
+# Intentionally empty until devops provisions Azure DI and supplies the corpus.

@@ -76,6 +76,20 @@ public class CurriculumDocument : AggregateRoot
     /// </summary>
     public string? StatusReason { get; set; }
 
+    /// <summary>
+    /// MinIO object key of the per-document structured JSON artifact produced by the Python parsing
+    /// worker and stored in the <c>curriculum</c> bucket (ADR-0004, BL-02-BE-1).
+    /// Written by <c>ParseCurriculumDocumentResultHandler</c> when the advance poller picks up a
+    /// Done parse job. Null until parsing completes successfully.
+    /// </summary>
+    public string? ParsedArtifactObjectKey { get; set; }
+
+    /// <summary>
+    /// UTC timestamp of when parsing completed (i.e. when the .NET advance poller advanced
+    /// the document from the Done <c>PipelineJob</c> row). Null until parsing completes.
+    /// </summary>
+    public DateTimeOffset? ParsedAt { get; set; }
+
     // Navigation — PipelineJobs for this document (intra-module, same schema).
     public ICollection<PipelineJob> PipelineJobs { get; set; } = new List<PipelineJob>();
 }
