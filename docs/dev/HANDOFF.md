@@ -1,3 +1,27 @@
+## BL-04 curriculum/knowledge-graph schema — 2026-06-23 (`feat/BL-04-curriculum-vector-schema`)
+
+**All BL-04 schema work complete. Reviewer gate PASSED (build clean, BE-6 8/8 green vs `pgvector/pgvector:pg17`). `Curriculum.IntegrationTests` added to `Learnexia.Modular.sln` so the BE-6 gate now runs under solution-wide `dotnet test`.**
+
+**Curriculum chain** (appended after `20260613213836_InitialCurriculum`):
+- `20260623011803_AddProvenanceTree` — Creates `ContentSources`, `Chapters`, `ProvenanceMappings`, `KGSuggestions` tables; adds lifecycle columns (`PublishedAt`, `PublishedByUserId`, `ArchivedAt`, `Notes`) to `CurriculumVersions` via `AddColumn` ONLY (no re-create). Note: EF batched all three curriculum deltas into this one migration; `AddCurriculumVersionLifecycle` and `AddKGSuggestionTable` are empty/placeholder migrations that preserve the logical chain sequence.
+- `20260623011839_AddCurriculumVersionLifecycle` — Empty (all curriculum changes in `AddProvenanceTree`).
+- `20260623011907_AddKGSuggestionTable` — Empty (KGSuggestions created in `AddProvenanceTree`).
+
+**Learning chain** (appended after `20260621142605_P5_07_AddCalibration`):
+- `20260623012040_AddSkillKeyToKnowledgeNode` — Adds `SkillKey varchar(200) NULL` + partial unique index `UX_KnowledgeNodes_SkillKey WHERE SkillKey IS NOT NULL`.
+- `20260623012123_BackfillSkillKeys` — SQL data migration: derives `{subjectCode}.grade{N}.{slugified_name}` from Subjects.SubjectCode + Grades.Number + KnowledgeNode.Name; skips rows where the derived key conflicts. Down() clears backfilled values by pattern match.
+
+**Test gate (BE-6):** `backend/tests/Curriculum.IntegrationTests/BL04_CurriculumSchema_Tests.cs` — 8 tests, all green against pgvector/pgvector:pg17 Testcontainers.
+
+**Key load-bearing notes:**
+- NO cross-module FK/nav in curriculum module — all learning refs are plain int (SourceNodeId, TargetNodeId, PedagogicalNodeId, GradeId).
+- `CurriculumVersions` is not re-created in BL-04 (Gate A passes: only AddColumn operations).
+- SkillKey stays NULLABLE per Q3 decision. NOT NULL flip deferred until BL-03/all KnowledgeNode writers confirm.
+- `BackfillSkillKeys` uses slugified Node.Name (not a full unit/skill tree join) — adequate for P2-11 seed rows.
+- Testcontainers image updated to `pgvector/pgvector:pg17` in the new smoke test (existing tests use pg16 — no change to existing tests).
+
+---
+
 ## ✅ RESOLVED (2026-06-22) — shared dev DB `Learnexia` recreated & repaired
 
 **The broken-migration state below is FIXED.** The backend lead dropped the corrupted `Learnexia` and did a clean reboot → all migrations reapplied in full (incl. `AddSeatModel`) + reseeded (36 subjects). Verified live 2026-06-22: `billing.Subscriptions` has `PurchasedExtraSeats`/`PendingExtraSeatRemovals`/`ExtraSeatCancelEffectiveAt` and `billing.Plans` has `IncludedSeats`; **`POST /api/Parent/Add-Child` against shared `Learnexia` now returns 200**. The :5080 backend is back on shared `Learnexia` (no `ConnectionStrings__Default` override needed; `.local.json` points local). The throwaway `Learnexia_verify` is untouched/clean — droppable. (Open follow-up, backend lead's: a stray reseed hit the remote `…102:5344/learnexia` before being caught — pending inspect/clean.) **Historical broken-state details kept below for reference.**
