@@ -75,5 +75,16 @@ public class CurriculumDocumentConfig : IEntityTypeConfiguration<CurriculumDocum
         builder.Property(d => d.StatusReason)
             .HasMaxLength(1024)
             .IsRequired(false);
+
+        // ParsedArtifactObjectKey: nullable MinIO object key written when the parse job completes.
+        // Max 512 mirrors ObjectKey. Column type: character varying(512), nullable.
+        builder.Property(d => d.ParsedArtifactObjectKey)
+            .HasMaxLength(512)
+            .IsRequired(false);
+
+        // ParsedAt: nullable timestamptz — stamped by the .NET advance poller on parse completion.
+        builder.Property(d => d.ParsedAt)
+            .HasColumnType("timestamp with time zone")
+            .IsRequired(false);
     }
 }

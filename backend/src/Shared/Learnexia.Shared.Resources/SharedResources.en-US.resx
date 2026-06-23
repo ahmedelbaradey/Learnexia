@@ -2778,4 +2778,22 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="CurriculumCountryTooLong" xml:space="preserve">
     <value>Country must not exceed 64 characters.</value>
   </data>
+  <data name="CurriculumReparseJobInFlight" xml:space="preserve">
+    <value>A parse job is already in progress for this document. Wait for it to complete before requesting a reparse.</value>
+  </data>
+  <data name="CurriculumReparseEnqueued" xml:space="preserve">
+    <value>Reparse job enqueued. The document has been reset to processing status.</value>
+  </data>
+  <data name="CurriculumDocumentNotFoundForReparse" xml:space="preserve">
+    <value>Curriculum document not found.</value>
+  </data>
+  <data name="CurriculumDocumentIdRequired" xml:space="preserve">
+    <value>A valid document id (greater than 0) is required.</value>
+  </data>
+  <data name="CurriculumParseResultInvalid" xml:space="preserve">
+    <value>The parse result returned by the worker is invalid or contains values that exceed allowed lengths. The document has been marked as failed.</value>
+  </data>
+  <data name="CurriculumDocumentParseProcessingFailed" xml:space="preserve">
+    <value>An unexpected error occurred while processing the parse result. The document has been marked as failed.</value>
+  </data>
 </root>

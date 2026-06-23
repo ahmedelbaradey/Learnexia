@@ -1,3 +1,26 @@
+## BL-02 multimodal parsing — first Python in the repo — 2026-06-23 (`feat/BL-02-multimodal-parsing`)
+
+**Status: COMPLETE — reviewer PASS, security PASS (1 High + 1 Med fixed), api-tester 15/15 + Python 31/31 green.** Third story of the Curriculum Intelligence pipeline (BL-04 ✅ → BL-01 ✅ → **BL-02** ✅ → BL-05 → BL-03). Architecture recorded in **ADR-0004** (`docs/dev/adr/0004-python-curriculum-pipeline-service.md`) — read it before touching the pipeline.
+
+**The boundary: DB-outbox only.** The .NET side and the Python worker never call each other — they meet only at `curriculum.PipelineJobs`. `JobType`/`Status` are **strings** = a cross-process contract; do NOT convert to int enums on either side.
+
+**.NET orchestration slice (`backend/src/Modules/Curriculum/**`):**
+- `ParseJobAdvanceService : BackgroundService` (`Infrastructure/Jobs/`) — polls `PipelineJobs`, claims `JobType='parse'` rows in `Status IN ('Done','Failed')` with `FOR UPDATE SKIP LOCKED`. **Done** → reads `ResultJson`, sets `CurriculumDocument.Status=Done`+`ParsedArtifactObjectKey`+`ParsedAt`, builds the provenance tree (`ContentSource` keyed on (GradeId, FileName) + `Chapter` rows), archives the job (`Status='Archived'`). **Failed** → **.NET owns retry** (Q7): RetryCount<=MaxRetries re-enqueues a fresh `Pending` job; else doc=`Failed`. Config `CurriculumPipeline:{PollerIntervalSeconds=5, MaxRetries=3}` in appsettings. **Hardening (security High/Med fix):** all `ResultJson`-derived strings are bounded to their column maxes before assignment (over-long `artifact_key` → doc `Failed`, not silently truncated; titles/error text truncated); raw `ex.Message` is never persisted (localized constants + ILoggerManager); a per-job exception always routes to a terminal write (`PermanentlyFailed`/`Failed`) so **no job is ever stranded at `Processing`** under normal operation (only a full DB outage is a documented manual-recovery residual).
+- `POST api/curriculum/documents/{id}/reparse` — admin-only; 404 / 409 (in-flight) / 200 re-enqueue.
+- `IParsingServiceClient` is **mock-only** (`NoOpParsingServiceClient`) — no live .NET→Python HTTP (Q10).
+- Migration `20260623161330_AddParseResultFieldsToCurriculumDocument` — adds ONLY `ParsedArtifactObjectKey`(varchar512)+`ParsedAt`(timestamptz); reuses existing `Status`/`StatusReason` (Q9).
+
+**Python worker — NEW `python/curriculum_intelligence/` (LOAD-BEARING, first Python in repo):**
+- Atomic claim (`app/db.py`, `SELECT … FOR UPDATE SKIP LOCKED`, Pending→Processing; never touches RetryCount), reads source from the `curriculum` MinIO bucket via `ObjectKey`, writes a per-document JSON artifact back to the bucket (`artifacts/<base>.artifact.json`), transitions job Done/Failed. Artifact + inline `ResultJson` shape: `{artifact_key, chapters[{number,title,page_start,page_end}], parse_status, parsers_used[], diagnostics}` — **field names/casing must stay in lockstep with `ParseJobAdvanceService.DeserializeAndValidateResult`** (verified agreeing at review).
+- **Azure DI is devops-gated → MOCKED now.** OCR behind a `ParserBackend` protocol; `PARSER_BACKEND` env selects `mock` (DEFAULT, dev+CI) vs `azure_di` (only when endpoint+key set, else degrades to mock with a warning). Real `AzureDocumentIntelligenceParser` (prebuilt-layout, `ar`) + MinerU fallback are wired with lazy imports; live deps in the `[live]` pyproject extra. Arabic OCR benchmark (`benchmarks/`) runs OFFLINE and currently emits a PENDING report — **gates the live Azure DI flip (AC1/AC10 = "mock-satisfied; live-pending"), not this build.**
+- **Runtime:** new `curriculum-intelligence` compose service (poll loop + FastAPI `/health` :8091, no published ports, on `learnexia-network`, `depends_on` postgres+minio). The **`curriculum` bucket was added to `minio-setup`** (it previously created only `avatars`). New CI job `python-curriculum-intelligence` (ruff + pytest, `PARSER_BACKEND=mock`). Secrets env-only (`.env.example`); `AZURE_DI_ENDPOINT`/`AZURE_DI_KEY`/`ANTHROPIC_API_KEY` are empty `${VAR}` refs — never committed.
+
+**DEVOPS follow-up (gated, NOT blocking the merged build):** provision an Azure Document Intelligence resource + key + supply Arabic benchmark samples (`benchmarks/samples/`), then `PARSER_BACKEND=azure_di` + rebuild image with the `[live]` extra + clear the benchmark gate. **A live re-audit is mandatory at the flip** — deferred security items: #4 zip-bomb/download-size bound, #5 XXE/VLM prompt-injection (DOCX/Claude-captioning code doesn't exist yet). Mirrors the BGE-M3 / AI-activation precedent.
+
+**Next:** BL-05 (curriculum ingestion — LLM extraction → Grade→Subject→Unit→Lesson→Concept→Skill + semantic chunking + BGE-M3 embedding prep) reuses this same Python service + outbox pattern (`JobType='ingest'`). Then BL-03 (knowledge graph). Note review nit: `ContentSource` idempotency key `(GradeId, FileName)` could collide two different docs sharing a filename+grade — revisit in BL-05.
+
+---
+
 ## BL-01 curriculum document upload (front door of the Curriculum pipeline) — 2026-06-23 (`feat/BL-01-curriculum-upload`)
 
 **Status: COMPLETE — reviewer PASS, security PASS, api-tester 24/24 green vs Testcontainers PostgreSQL.** Second story of the Curriculum Intelligence pipeline (build order BL-04 → **BL-01** → BL-02 → BL-05 → BL-03). Branch stacked on the merged BL-04 schema.

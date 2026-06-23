@@ -2777,4 +2777,22 @@
   <data name="CurriculumCountryTooLong" xml:space="preserve">
     <value>يجب ألا يتجاوز حقل الدولة 64 حرفاً.</value>
   </data>
+  <data name="CurriculumReparseJobInFlight" xml:space="preserve">
+    <value>توجد مهمة تحليل جارية بالفعل لهذا المستند. يرجى انتظار اكتمالها قبل طلب إعادة التحليل.</value>
+  </data>
+  <data name="CurriculumReparseEnqueued" xml:space="preserve">
+    <value>تم إضافة مهمة إعادة التحليل إلى قائمة الانتظار. تمت إعادة المستند إلى حالة المعالجة.</value>
+  </data>
+  <data name="CurriculumDocumentNotFoundForReparse" xml:space="preserve">
+    <value>مستند المنهج غير موجود.</value>
+  </data>
+  <data name="CurriculumDocumentIdRequired" xml:space="preserve">
+    <value>معرّف المستند مطلوب ويجب أن يكون أكبر من صفر.</value>
+  </data>
+  <data name="CurriculumParseResultInvalid" xml:space="preserve">
+    <value>نتيجة التحليل التي أرسلها العامل غير صالحة أو تحتوي على قيم تتجاوز الأطوال المسموح بها. تم تعيين المستند على أنه فاشل.</value>
+  </data>
+  <data name="CurriculumDocumentParseProcessingFailed" xml:space="preserve">
+    <value>حدث خطأ غير متوقع أثناء معالجة نتيجة التحليل. تم تعيين المستند على أنه فاشل.</value>
+  </data>
 </root>

@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Pgvector.EntityFrameworkCore;
 
 namespace Learnexia.Modules.Curriculum.Infrastructure;
@@ -101,6 +102,23 @@ public static class DependencyInjection
         // Creates its own inner scope via IServiceScopeFactory so scoped deps (DbContext,
         // IEmbeddingProvider) are always resolved in a fresh, non-HTTP scope.
         services.AddTransient<ReEmbedCurriculumJob>();
+
+        // ── BL-02 BE-2: IParsingServiceClient — mock-only test seam (Q10, ADR-0004) ─────────────
+        // No live HTTP call — the Python worker polls the DB-outbox directly.
+        // NoOpParsingServiceClient is the only registered implementation.
+        // The api-tester replaces this with a mock that returns a seeded ParseArtifactResult.
+        services.AddScoped<IParsingServiceClient, NoOpParsingServiceClient>();
+
+        // ── BL-02 BE-7: PipelineJobPollerConfiguration + ParseJobAdvanceService ──────────────────
+        // PipelineJobPollerConfiguration is bound from the "CurriculumPipeline" appsettings section.
+        // ParseJobAdvanceService is a BackgroundService (hosted service) that polls PipelineJobs
+        // WHERE Status IN ('Done','Failed') AND JobType='parse' using FOR UPDATE SKIP LOCKED.
+        // It owns the .NET retry policy (RetryCount/MaxRetries/PermanentlyFailed — ADR-0004 Q7).
+        services.AddOptions<PipelineJobPollerConfiguration>()
+            .Bind(configuration.GetSection(PipelineJobPollerConfiguration.Section));
+
+        services.AddSingleton<ParseJobAdvanceService>();
+        services.AddHostedService(sp => sp.GetRequiredService<ParseJobAdvanceService>());
 
         return services;
     }

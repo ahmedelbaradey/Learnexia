@@ -48,3 +48,36 @@ jobs:
       # Validates the rewritten multi-stage Dockerfile builds from the repo root (no push).
       - name: Build API image
         run: docker build -f docker/Dockerfile -t learnexia-api:ci .
+
+  python-curriculum-intelligence:
+    name: Python — curriculum-intelligence (pytest)
+    # ubuntu-latest has the Docker daemon preinstalled — required by the Testcontainers
+    # Postgres outbox contract test (same posture as the .NET integration tests above).
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: python/curriculum_intelligence
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install (runtime + test deps)
+        # Mock parser backend by default — Azure DI / Claude are NOT exercised in CI.
+        run: |
+          python -m pip install --upgrade pip
+          pip install ".[test]"
+
+      - name: Lint (ruff)
+        run: |
+          pip install ruff==0.8.4
+          ruff check .
+
+      - name: Test (pytest — incl. Testcontainers Postgres contract test)
+        env:
+          PARSER_BACKEND: mock
+        run: pytest -v

@@ -2352,5 +2352,34 @@
         /// <summary>Validation: Country must not exceed 64 characters.</summary>
         public const string CurriculumCountryTooLong = "CurriculumCountryTooLong";
 
+        // ── BL-02 Curriculum parsing pipeline (reparse + advance poller) ─────────────────────────
+
+        /// <summary>409: A reparse request was made while a non-terminal parse job is already in flight.</summary>
+        public const string CurriculumReparseJobInFlight = "CurriculumReparseJobInFlight";
+
+        /// <summary>200 success: reparse job enqueued; document reset to Processing.</summary>
+        public const string CurriculumReparseEnqueued = "CurriculumReparseEnqueued";
+
+        /// <summary>404: Curriculum document not found for the given id on reparse.</summary>
+        public const string CurriculumDocumentNotFoundForReparse = "CurriculumDocumentNotFoundForReparse";
+
+        /// <summary>Validation: Document id must be a positive integer.</summary>
+        public const string CurriculumDocumentIdRequired = "CurriculumDocumentIdRequired";
+
+        /// <summary>
+        /// Written to <c>CurriculumDocument.StatusReason</c> when the advance poller cannot parse or
+        /// validate the <c>ResultJson</c> written by the Python worker (malformed JSON, missing/invalid
+        /// fields, or a field value that exceeds the DB column length).  Admin-facing diagnostic.
+        /// </summary>
+        public const string CurriculumParseResultInvalid = "CurriculumParseResultInvalid";
+
+        /// <summary>
+        /// Written to <c>CurriculumDocument.StatusReason</c> when the advance poller encounters an
+        /// unexpected exception while processing a completed job and must transition both the job and
+        /// the document to a terminal failed state to prevent the job from being stranded at
+        /// <c>Processing</c>.  Admin-facing diagnostic.
+        /// </summary>
+        public const string CurriculumDocumentParseProcessingFailed = "CurriculumDocumentParseProcessingFailed";
+
     }
 }

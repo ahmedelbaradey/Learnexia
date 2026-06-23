@@ -1,3 +1,4 @@
+using Learnexia.Modules.Curriculum.Application.Features.CurriculumDocuments.Commands.ReparseCurriculumDocument;
 using Learnexia.Modules.Curriculum.Application.Features.CurriculumDocuments.Commands.UploadCurriculumDocument;
 using Learnexia.Modules.Curriculum.Application.Features.CurriculumDocuments.Dtos;
 using Learnexia.Modules.Curriculum.Application.Features.CurriculumDocuments.Queries.GetCurriculumDocument;
@@ -105,5 +106,33 @@ public sealed class CurriculumDocumentsController : AppControllerBase
         CancellationToken cancellationToken)
         => NewResult(await Mediator.Send(
             new GetCurriculumDocumentQuery { Id = id },
+            cancellationToken));
+
+    /// <summary>
+    /// Re-enqueues a parse job for an existing curriculum document (BL-02-BE-5).
+    ///
+    /// <para>Admin-only endpoint. Resets the document's parse status to Processing and writes
+    /// a fresh <c>Pending</c> parse job to the DB-outbox for the Python worker to claim.</para>
+    ///
+    /// <para>Returns:
+    /// <list type="bullet">
+    ///   <item>200 OK with the updated document on success.</item>
+    ///   <item>404 Not Found when the document does not exist.</item>
+    ///   <item>409 Conflict when a <c>Pending</c> or <c>Processing</c> parse job is already in flight.</item>
+    ///   <item>401/403 when the caller is unauthenticated or lacks admin/super-admin role.</item>
+    /// </list>
+    /// </para>
+    /// </summary>
+    [HttpPost("{id:int}/reparse")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Reparse(
+        int id,
+        CancellationToken cancellationToken)
+        => NewResult(await Mediator.Send(
+            new ReparseCurriculumDocumentCommand(id),
             cancellationToken));
 }

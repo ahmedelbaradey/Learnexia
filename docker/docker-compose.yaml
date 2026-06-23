@@ -75,6 +75,8 @@ services:
       /usr/bin/mc alias set learnexia-minio http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin};
       echo 'Creating the avatars bucket (private — served via presigned URLs)...';
       /usr/bin/mc mb learnexia-minio/avatars --ignore-existing;
+      echo 'Creating the curriculum bucket (BL-01/BL-02 — uploaded files + parsed JSON artifacts; private)...';
+      /usr/bin/mc mb learnexia-minio/curriculum --ignore-existing;
       echo 'MinIO setup completed. Console: http://localhost:9001';"
     networks:
       - learnexia-network
@@ -140,6 +142,58 @@ services:
     networks:
       - learnexia-network
     restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Curriculum-intelligence — the Python parsing worker (ADR-0004, BL-02).
+  # First Python service in the repo. It is a LONG-RUNNING POLLER: it claims
+  # `parse` jobs off the curriculum."PipelineJobs" DB-outbox, reads the source
+  # file from the `curriculum` MinIO bucket, parses it into a normalized JSON
+  # artifact (written back to the bucket), and advances the job to Done/Failed.
+  # There is NO service-to-service HTTP with .NET — they meet only at the table.
+  # A FastAPI /health endpoint runs in the same process for the healthcheck.
+  #
+  # Parser backend defaults to the deterministic MOCK (no external services).
+  # To go live, devops sets PARSER_BACKEND=azure_di + the AZURE_DI_* / ANTHROPIC
+  # secrets via ${VAR} references (never committed) and rebuilds with EXTRAS=live.
+  # ---------------------------------------------------------------------------
+  curriculum-intelligence:
+    build:
+      context: ../python/curriculum_intelligence
+      dockerfile: Dockerfile
+    container_name: learnexia-curriculum-intelligence
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    networks:
+      - learnexia-network
+    environment:
+      # Same Postgres the .NET backend uses (curriculum schema).
+      - DATABASE_URL=postgresql://postgres:admin@postgres:5432/Learnexia
+      - CURRICULUM_SCHEMA=curriculum
+      # Same MinIO creds as MinIOConfiguration; reads/writes the curriculum bucket.
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
+      - MINIO_USE_SSL=false
+      - CURRICULUM_BUCKET=curriculum
+      # Parser backend: mock by default; flip to azure_di once provisioned.
+      - PARSER_BACKEND=${PARSER_BACKEND:-mock}
+      # DEVOPS-GATED secrets — empty in dev; injected via ${VAR}, NEVER committed.
+      - AZURE_DI_ENDPOINT=${AZURE_DI_ENDPOINT:-}
+      - AZURE_DI_KEY=${AZURE_DI_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - POLL_INTERVAL_SECONDS=5
+      - HEALTH_PORT=8091
+      - LOG_LEVEL=INFO
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; urllib.request.urlopen('http://localhost:8091/health'); sys.exit(0)\" || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   # ---------------------------------------------------------------------------
   # WEB FRONTEND — PLACEHOLDER ONLY (deferred to P1-09).
