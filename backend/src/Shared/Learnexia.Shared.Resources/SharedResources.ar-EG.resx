@@ -2738,4 +2738,43 @@
   <data name="SimulationEventTypeRequired" xml:space="preserve">
     <value>نوع الحدث مطلوب.</value>
   </data>
+  <data name="CurriculumFileRequired" xml:space="preserve">
+    <value>يجب توفير ملف للرفع.</value>
+  </data>
+  <data name="CurriculumFileTooLarge" xml:space="preserve">
+    <value>يتجاوز الملف الحد الأقصى المسموح به وهو 100 ميجابايت.</value>
+  </data>
+  <data name="CurriculumFileInvalidType" xml:space="preserve">
+    <value>نوع الملف غير مسموح به. الأنواع المقبولة: PDF، DOCX، JPEG، PNG، WEBP.</value>
+  </data>
+  <data name="CurriculumFileInvalidMagicBytes" xml:space="preserve">
+    <value>محتوى الملف لا يتوافق مع نوعه المُعلَن. يرجى رفع ملف PDF أو DOCX أو صورة صالحة.</value>
+  </data>
+  <data name="CurriculumUploadFailed" xml:space="preserve">
+    <value>فشل رفع الملف. يرجى المحاولة مرة أخرى.</value>
+  </data>
+  <data name="CurriculumDocumentSaveFailed" xml:space="preserve">
+    <value>حدث خطأ أثناء حفظ المستند. يرجى المحاولة مرة أخرى.</value>
+  </data>
+  <data name="CurriculumDocumentUploadedSuccessfully" xml:space="preserve">
+    <value>تم رفع مستند المنهج بنجاح وإضافته إلى قائمة المعالجة.</value>
+  </data>
+  <data name="CurriculumDocumentsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع مستندات المنهج بنجاح.</value>
+  </data>
+  <data name="CurriculumDocumentRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع مستند المنهج بنجاح.</value>
+  </data>
+  <data name="CurriculumDocumentNotFound" xml:space="preserve">
+    <value>مستند المنهج غير موجود.</value>
+  </data>
+  <data name="CurriculumGradeIdRequired" xml:space="preserve">
+    <value>معرّف الصف الدراسي مطلوب ويجب أن يكون أكبر من صفر.</value>
+  </data>
+  <data name="CurriculumSubjectIdRequired" xml:space="preserve">
+    <value>معرّف المادة مطلوب ويجب أن يكون أكبر من صفر.</value>
+  </data>
+  <data name="CurriculumCountryTooLong" xml:space="preserve">
+    <value>يجب ألا يتجاوز حقل الدولة 64 حرفاً.</value>
+  </data>
 </root>

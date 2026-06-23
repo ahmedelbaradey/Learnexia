@@ -1,4 +1,5 @@
 using Learnexia.Modules.Curriculum.Application.Abstractions;
+using Learnexia.Modules.Curriculum.Infrastructure.Configuration;
 using Learnexia.Modules.Curriculum.Infrastructure.Features.Retrieval;
 using Learnexia.Modules.Curriculum.Infrastructure.Jobs;
 using Learnexia.Modules.Curriculum.Infrastructure.Persistence;
@@ -34,6 +35,11 @@ public static class DependencyInjection
                            .MigrationsAssembly(typeof(CurriculumDbContext).Assembly.FullName)));
 
         services.AddSingleton<ILoggerManager, LoggerManager>();
+
+        // ── BL-01: ICurrentUserService for the upload command handler ─────────────────────────────
+        // Each module owns its own CurrentUserService implementation (module isolation — no cross-module
+        // project references). Mirrors Learning's AddScoped<ICurrentUserService, CurrentUserService>().
+        services.AddScoped<ICurrentUserService, CurriculumCurrentUserService>();
 
         // ── BE-6: EmbeddingSettings + BgeM3EmbeddingProvider typed HttpClient ───────────────────
         // Mirrors Notifications.AddPushSender / ExpoPushSender pattern.
@@ -75,6 +81,16 @@ public static class DependencyInjection
             services.AddScoped<ILearningContextProvider, RagContextProvider>();
             services.AddScoped<ICurriculumContextQuery, RagContextProvider>();
         }
+
+        // ── BL-01 BE-3: CurriculumUploadConfiguration (100 MB cap + curriculum bucket name) ────────
+        // Bound from "CurriculumUpload" appsettings section. Injected into the upload command handler.
+        services.AddOptions<CurriculumUploadConfiguration>()
+            .Bind(configuration.GetSection(CurriculumUploadConfiguration.Section));
+
+        // ── BL-01 Q1: Bucket-ensure service ──────────────────────────────────────────────────────
+        // Called at startup via CurriculumModule.InitializeAsync to provision the curriculum bucket.
+        // Scoped: resolves IStorageService (typed HttpClient, scoped) inside a startup scope.
+        services.AddScoped<CurriculumBucketEnsureService>();
 
         // ── BE-9: CurriculumChunkSeeder — static class; called directly via CurriculumModule.InitializeAsync ──
         // No DI registration needed — CurriculumChunkSeeder.SeedAsync(IServiceProvider) is called

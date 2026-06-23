@@ -2,6 +2,7 @@ using Learnexia.Modules.Curriculum.Application;
 using Learnexia.Modules.Curriculum.Infrastructure;
 using Learnexia.Modules.Curriculum.Infrastructure.Persistence;
 using Learnexia.Modules.Curriculum.Infrastructure.Persistence.Seed;
+using Learnexia.Modules.Curriculum.Infrastructure.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -39,9 +40,13 @@ public static class CurriculumModule
     }
 
     /// <summary>
-    /// Host-callable startup hook. Applies any pending Curriculum migrations, then runs the
-    /// idempotent chunk seeder. Mirrors <c>LearningModule.InitializeAsync</c>:
-    /// MigrateAsync is a no-op when up to date; the seeder skips subjects already seeded.
+    /// Host-callable startup hook. Applies any pending Curriculum migrations, runs the
+    /// idempotent chunk seeder, and ensures the curriculum MinIO bucket exists.
+    ///
+    /// <para>BL-01 Q1: <see cref="CurriculumBucketEnsureService.EnsureBucketAsync"/> is called here
+    /// to provision the dedicated <c>"curriculum"</c> bucket at startup (there is no existing
+    /// bucket-ensure routine — <c>avatars</c> is assumed pre-created). Fail-soft: a bucket error
+    /// is logged but does not block the Host.</para>
     /// </summary>
     public static async Task InitializeAsync(IServiceProvider serviceProvider)
     {
@@ -49,6 +54,11 @@ public static class CurriculumModule
         await dbContext.Database.MigrateAsync();
 
         await CurriculumChunkSeeder.SeedAsync(serviceProvider);
+
+        // BL-01 Q1: Ensure the "curriculum" MinIO bucket exists at startup.
+        // Fail-soft: a bucket-ensure failure is logged but does not crash the Host.
+        var bucketEnsure = serviceProvider.GetRequiredService<CurriculumBucketEnsureService>();
+        await bucketEnsure.EnsureBucketAsync();
     }
 }
 

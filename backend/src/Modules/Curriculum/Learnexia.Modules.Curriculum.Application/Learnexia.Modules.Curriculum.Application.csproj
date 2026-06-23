@@ -3,6 +3,11 @@
     <RootNamespace>Learnexia.Modules.Curriculum.Application</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Required for IFormFile in UploadCurriculumDocumentCommand (BL-01 BE-4). -->
+    <!-- Mirrors Identity.Application which also holds an IFormFile command. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="AutoMapper" />
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
