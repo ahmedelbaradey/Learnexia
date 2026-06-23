@@ -73,9 +73,10 @@ public static class DependencyInjection
         services.AddTransient<BillingGrantJob>();
 
         // ── P10-06: Payment provider seam ───────────────────────────────────────────────
-        // Config-driven selection: Billing:PaymentProvider:Provider = "Fake" (default) | "Paymob" (external).
-        // Only FakePaymentProvider is built here; the real adapter is [EXTERNAL] — swap in later.
-        // Scoped: aligns with the handler / BillingDbContext lifetime.
+        // Config-driven selection: Billing:PaymentProvider:Provider = "Fake" (default, dev/staging)
+        // | "Paymob" (live adapter — currently a STUB until P10-06-BE-3 is implemented + keys exist).
+        // Scoped: aligns with the handler / BillingDbContext lifetime. One interface, one impl per
+        // config value (CLAUDE.md rule 8 — config selection, not a Strategy/Factory).
         var providerName = configuration["Billing:PaymentProvider:Provider"] ?? "Fake";
         if (string.Equals(providerName, "Fake", StringComparison.OrdinalIgnoreCase))
         {
@@ -83,11 +84,12 @@ public static class DependencyInjection
         }
         else
         {
-            // TODO (EXTERNAL): register real PaymobPaymentProvider here when the adapter is built.
-            // FakePaymentProvider is the MVP provider; the real adapter swaps in behind this seam
-            // (config key Billing:PaymentProvider:Provider) — no code change needed.
-            // Until the real adapter is ready, fall back to Fake so the application starts without secrets.
-            services.AddScoped<IPaymentProvider, FakePaymentProvider>();
+            // "Paymob" (or any non-Fake value) → the real-adapter slot. This is the PaymobPaymentProvider
+            // STUB: it boots fine (no secrets needed) but throws a clear "not configured" error on the
+            // first payment call until the live adapter is implemented (P10-06-BE-3) + keys are provisioned.
+            // IMPORTANT: this is intentionally NOT a silent fall-back to FakePaymentProvider — under a
+            // non-Fake (i.e. production) provider config we must NEVER grant paid entitlements via the mock.
+            services.AddScoped<IPaymentProvider, PaymobPaymentProvider>();
         }
 
         // ReconcilePaymentsJob — sweeps stale Initiated/Pending payments.
