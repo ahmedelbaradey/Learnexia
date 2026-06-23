@@ -27,6 +27,13 @@ public interface IStorageService
 
     /// <summary>Checks whether an object exists (HEAD → 200 true / 404 false).</summary>
     Task<bool> FileExistsAsync(string objectKey, string bucketName, CancellationToken ct = default);
+
+    /// <summary>
+    /// Ensures a bucket exists (HEAD → exists; 404 → PUT to create).
+    /// Fail-soft: never throws — logs the outcome and returns a boolean indicating success.
+    /// Called at Host startup to provision module-specific buckets (e.g. "curriculum").
+    /// </summary>
+    Task<bool> EnsureBucketAsync(string bucketName, CancellationToken ct = default);
 }
 
 /// <summary>Result of a file-upload operation. On success carries the stored object key (FilePath).</summary>

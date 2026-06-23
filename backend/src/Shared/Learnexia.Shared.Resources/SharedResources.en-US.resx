@@ -2739,4 +2739,43 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="SimulationEventTypeRequired" xml:space="preserve">
     <value>An event type is required.</value>
   </data>
+  <data name="CurriculumFileRequired" xml:space="preserve">
+    <value>A file is required for upload.</value>
+  </data>
+  <data name="CurriculumFileTooLarge" xml:space="preserve">
+    <value>The file exceeds the maximum allowed size of 100 MB.</value>
+  </data>
+  <data name="CurriculumFileInvalidType" xml:space="preserve">
+    <value>The file type is not allowed. Accepted types: PDF, DOCX, JPEG, PNG, WEBP.</value>
+  </data>
+  <data name="CurriculumFileInvalidMagicBytes" xml:space="preserve">
+    <value>The file content does not match its declared type. Please upload a valid PDF, DOCX, or image file.</value>
+  </data>
+  <data name="CurriculumUploadFailed" xml:space="preserve">
+    <value>The file upload failed. Please try again.</value>
+  </data>
+  <data name="CurriculumDocumentSaveFailed" xml:space="preserve">
+    <value>An error occurred while saving the document. Please try again.</value>
+  </data>
+  <data name="CurriculumDocumentUploadedSuccessfully" xml:space="preserve">
+    <value>Curriculum document uploaded successfully and queued for processing.</value>
+  </data>
+  <data name="CurriculumDocumentsRetrievedSuccessfully" xml:space="preserve">
+    <value>Curriculum documents retrieved successfully.</value>
+  </data>
+  <data name="CurriculumDocumentRetrievedSuccessfully" xml:space="preserve">
+    <value>Curriculum document retrieved successfully.</value>
+  </data>
+  <data name="CurriculumDocumentNotFound" xml:space="preserve">
+    <value>Curriculum document not found.</value>
+  </data>
+  <data name="CurriculumGradeIdRequired" xml:space="preserve">
+    <value>A valid grade id (greater than 0) is required.</value>
+  </data>
+  <data name="CurriculumSubjectIdRequired" xml:space="preserve">
+    <value>A valid subject id (greater than 0) is required.</value>
+  </data>
+  <data name="CurriculumCountryTooLong" xml:space="preserve">
+    <value>Country must not exceed 64 characters.</value>
+  </data>
 </root>

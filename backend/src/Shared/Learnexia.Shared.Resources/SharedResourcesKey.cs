@@ -2311,5 +2311,46 @@
         /// <summary>Validation: EventType is required.</summary>
         public const string SimulationEventTypeRequired = "SimulationEventTypeRequired";
 
+        // ── BL-01 Curriculum document upload ─────────────────────────────────────────────────────
+
+        /// <summary>422: No file was provided (null/empty) in the upload request.</summary>
+        public const string CurriculumFileRequired = "CurriculumFileRequired";
+
+        /// <summary>422: Uploaded file exceeds the configured 100 MB limit.</summary>
+        public const string CurriculumFileTooLarge = "CurriculumFileTooLarge";
+
+        /// <summary>422: Declared content-type is not in the allowed PDF/DOCX/image set.</summary>
+        public const string CurriculumFileInvalidType = "CurriculumFileInvalidType";
+
+        /// <summary>422: Magic-byte signature does not match a supported curriculum file type.</summary>
+        public const string CurriculumFileInvalidMagicBytes = "CurriculumFileInvalidMagicBytes";
+
+        /// <summary>500-shape: Storage upload failed (object-store error).</summary>
+        public const string CurriculumUploadFailed = "CurriculumUploadFailed";
+
+        /// <summary>500-shape: Saving the document row to the database failed.</summary>
+        public const string CurriculumDocumentSaveFailed = "CurriculumDocumentSaveFailed";
+
+        /// <summary>201 success: curriculum document uploaded and queued for processing.</summary>
+        public const string CurriculumDocumentUploadedSuccessfully = "CurriculumDocumentUploadedSuccessfully";
+
+        /// <summary>200 success: curriculum document list retrieved.</summary>
+        public const string CurriculumDocumentsRetrievedSuccessfully = "CurriculumDocumentsRetrievedSuccessfully";
+
+        /// <summary>200 success: curriculum document detail retrieved.</summary>
+        public const string CurriculumDocumentRetrievedSuccessfully = "CurriculumDocumentRetrievedSuccessfully";
+
+        /// <summary>404: Curriculum document with the requested id was not found.</summary>
+        public const string CurriculumDocumentNotFound = "CurriculumDocumentNotFound";
+
+        /// <summary>Validation: GradeId must be a positive integer.</summary>
+        public const string CurriculumGradeIdRequired = "CurriculumGradeIdRequired";
+
+        /// <summary>Validation: SubjectId must be a positive integer.</summary>
+        public const string CurriculumSubjectIdRequired = "CurriculumSubjectIdRequired";
+
+        /// <summary>Validation: Country must not exceed 64 characters.</summary>
+        public const string CurriculumCountryTooLong = "CurriculumCountryTooLong";
+
     }
 }

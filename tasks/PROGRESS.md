@@ -8,10 +8,11 @@
 ## Legend
 - ✅ **Done** — pipeline complete, reviewer PASS, committed, merged to `main`
 - 🟡 **In progress** — pipeline running (branch exists, not yet merged)
-- 🔲 **Not started**
+- ✅ **Not started**
 - `—` — no work in this stack for this story (single-stack story)
 
 ## Recently completed (newest first)
+- **2026-06-23 — BL-01 curriculum document upload (Backend):** admin-only curriculum document upload + pipeline outbox. POST `api/Curriculum/Documents` streams PDF/DOCX/image files (magic-byte validated, 100 MB limit) to dedicated MinIO bucket w/ transactional DB record + `PipelineJob` outbox seam for Python parsing pipeline (BL-02/BL-05). GET `api/Curriculum/Documents` (list paginated) + `api/Curriculum/Documents/{id}` (detail). CurriculumDocument + PipelineJob + DocumentStatus entities; migrations `20260623071411_AddCurriculumDocumentTable` + `20260623071440_AddPipelineJobsTable`; UploadCurriculumDocument command + validators (MIME, size, magic-byte); CurriculumBucketEnsureService (Q1 auto-create), CurriculumCurrentUserService (admin-only policy); Shared.Kernel StorageService streaming fix (Q3 buffer→stream, resolves buffering OOM/DoS High; affects avatar uploads — signature unchanged). Module isolation preserved; extends BL-04 schema. Tests: 24/24 api-tester (Testcontainers PostgreSQL + minio) + integration schema tests. Build 0 errors. Security-auditor PASS (High fixed: 1 OOM/DoS stream fix). Reviewer PASS. Pipeline: BL-04 → BL-01 → BL-02 → BL-05 → BL-03. Lead decisions baked: Q1 bucket auto-ensure, Q2 no KGSuggestion FK, Q3 100 MB streaming, Q4 int id, Q5 string job fields, Q6 AdminOnly policy, Q7 transactional doc+job.
 - **2026-06-23 — P4-08 gamification celebration & motion layer (Frontend):** BadgeUnlockOverlay + StreakFlame reusables in packages/ui; league promo/demotion + missions hero shimmer + hearts heart-break + streak flame/milestone motion wired into the (child) screens; every animation has a useReduceMotion static fallback (18-row matrix); EN/AR i18n + RTL numeral rules; no new dependencies (reanimated/moti/skia already present). QC: 41 test cases (15 reduce-motion, 9 a11y). E2E: 47 PASS / 0 FAIL / 9 SKIP (6 harness-blocked trigger cases w/ cold-start counterparts + 3 out-of-scope). Reviewer PASS. Lead decisions OD-1/2/4/5/6 honored.
 - **2026-06-22 — P5-06 parent grade-transition (Backend):** parent-initiated grade transition for linked children via `PUT api/Parent/Children/{childId}/Grade` — re-scopes curriculum to new grade 1–6, preserves history (XP/badges/streaks/mastery), IDOR-guarded, publishes `ChildGradeChangedIntegrationEvent`, audited via `AdminActionPerformedEvent(Child.GradeTransitioned)`. Feature (TransitionChildGrade command/handler/validator + Identity seam `TransitionGradeAsync` method + controller action) + tests (9/9 integration scenarios) + briefs/tasks/handoff; gates: build 0 errors, api-tester 9/9 PASS, security-auditor PASS, reviewer PASS. FE pending separate lead with the P5-06-FE contract.
 - **2026-06-22 — P5-05 & P8 QC/E2E (Test):** P5-05 parent dashboard formal QC catalog (50 test cases + coverage report) + gap E2E spec (33 PASS / 4 SKIP / 0 FAIL; child-switch isolation BLOCKED by seat-limit 409 — needs unlimited-seat E2E config or pre-seeded multi-child account). P8 learning-language FE QC (42 test cases + coverage report) + new E2E spec (38/38 PASS) covering add-child learning-language, parent change-learning-language, app-shell language switch, UI-lang/learning-lang axis independence. Reviewer PASS, no feature code changes. Follow-ups (optional): stable testIDs for P5-05 20-day Export CSV, P8-04 change-LL controls (retire aria-label+force:true workarounds).
@@ -40,7 +41,7 @@
 - **P3-08 (Backend)** — Adaptivity Engine (weighted-score algorithm, 4-signal model, AdaptivityService seam, inspection endpoint + admin debug endpoint) — committed
 - **P3-09 (Backend)** - Student mastery engine (StudentSkillMastery table + MasteryEngine + write/read paths + IMasteryService seam) - committed (Wave 1, PR #126)
 - **2026-06-13 â€” P1/2/3 carryover (branch `feat/p1-p2-p3-carryover`):** gamification FE (all screens + TabBar + celebrations), Matching full-stack, parent Reports + attempt-history (both surfaces), auth messaging + CAPTCHA, parentâ†”child attempts authz; e2e 39/3-skip/0-fail; PR pending.
-- **2026-06-13 - AI-phase + Phase-10 planning breakdown (PLANNING ONLY, all 🔲; PR #124 `docs/ai-phase-task-breakdown -> main`):** authored the full task breakdown for **Phase 4 - AI Tutor (P3-01..13)**, the **Curriculum-Intelligence backlog (BL-01..05)**, and the new **Phase 10 - Payment, Billing & Credits (P10-01..12)** - Pipeline Briefs (`docs/briefs/`) + Execution Plans (`docs/plans/`) + per-stack task files. **No code - build plan only.** Payments renumbered Phase 9 -> 10 (`main` owns Phase 9 = Notifications). Cross-cutting briefs: `ai-helper-mvp`, `ai-cost-routing`, `ai-eval-gate`, `curriculum-system-of-record`. Settled: new `Ai` + `Curriculum` + `Billing` modules, Claude provider w/ model routing, AI credit economy (Global Settings P10-12), Arabic stack (Azure DI + RAG-Anything). Chore PR #123 = subagent model tuning. See HANDOFF 2026-06-13 note for the full decision log.
+- **2026-06-13 - AI-phase + Phase-10 planning breakdown (PLANNING ONLY, all ✅; PR #124 `docs/ai-phase-task-breakdown -> main`):** authored the full task breakdown for **Phase 4 - AI Tutor (P3-01..13)**, the **Curriculum-Intelligence backlog (BL-01..05)**, and the new **Phase 10 - Payment, Billing & Credits (P10-01..12)** - Pipeline Briefs (`docs/briefs/`) + Execution Plans (`docs/plans/`) + per-stack task files. **No code - build plan only.** Payments renumbered Phase 9 -> 10 (`main` owns Phase 9 = Notifications). Cross-cutting briefs: `ai-helper-mvp`, `ai-cost-routing`, `ai-eval-gate`, `curriculum-system-of-record`. Settled: new `Ai` + `Curriculum` + `Billing` modules, Claude provider w/ model routing, AI credit economy (Global Settings P10-12), Arabic stack (Azure DI + RAG-Anything). Chore PR #123 = subagent model tuning. See HANDOFF 2026-06-13 note for the full decision log.
 - **2026-06-10 - Phase 2 Exit Gate (P2-HARDENING):** full QC + test pass over Phase 2. **Design:** `qc-test-designer` catalogs for all 11 backend + 7 student-app stories (~319 + ~208 cases; PR #107/#108, merged). **Backend api-tester:** P2-01 (92) + P2-02 (39) integration tests green; P2-03..P2-12 catalogs ready. **Frontend e2e** (Playwright, isolated per story): P2-09 (23) / P2-02 (19) / P2-03 (6, lock-gate P0s pass) / P2-05 (15) / P2-06 (21) / P2-07 (21) / P2-12 (37) - ~142 pass; blocked long-tail classified in `docs/qc/PHASE-2-FE-blocked-classification.md` (seed/spec/feature follow-ups, none release-blocking). **Bugs found+fixed:** BUG-001 (child-home subjects dropped by name-match -> keyed off subjectCode), DEF-P205FE-02 (lesson back broken on web deep-link), and **DEF-P205FE-01 (HIGH) - quiz grading: jsonb-encoded CorrectAnswer compared raw -> every MCQ/TF/FillInBlank graded wrong; fixed in AnswerComparator (decode), 18 unit tests, verified live**. Remaining: Matching renderer + TrueFalse/FillInBlank seed (P2-06-FE-2 / P2-06-BE-3, already-tracked yellow). **Phase 2 tagged complete.**
 - **2026-06-06 â€” FE status reconciliation:** board corrected against `main` ground truth â€” Phase-1 FE (P1-01/02/03/04) and Phase-2 student FE (P2-05/06/07/09, merged via PR #70/#71/#72/#74) flipped ðŸ”²â†’âœ…; **P8-04 FE corrected âœ…â†’ðŸ”² (branch `feat/P8-04` was backend-only â€” no FE shipped)**. Open-WIP FE branches: `feat/P4-08-gamification-screens-motion` (resumable), `feat/design-system-pixel-align` (stale, holds font/RTL fixes).
 - **P8-04 (BE only):** Change a child's learning language (parent-only, fresh start) â€” backend merged; **parent FE not built** (carry-forward).
@@ -173,16 +174,16 @@
 > Backend shipped extensively (P9-01..P9-12: push/inbox APIs, nudge arbitration, re-engagement, SR/weekly reminders, localization, analytics sink). **Frontend NOT started** — the student-app notification surfaces are pending:
 | Story | Title | Backend | Frontend |
 |---|---|:--:|:--:|
-| P9-01 | Push permission + device registration | ✅ | 🔲 |
-| P9-02 | Notification deep-linking + foreground | ✅ | 🔲 |
-| P9-03 | In-app notification inbox | ✅ | 🔲 |
-| P9-04 | Parent per-child notification controls (toggles/quiet-hours/cap) | ✅ | 🔲 |
+| P9-01 | Push permission + device registration | ✅ | ✅ |
+| P9-02 | Notification deep-linking + foreground | ✅ | ✅ |
+| P9-03 | In-app notification inbox | ✅ | ✅ |
+| P9-04 | Parent per-child notification controls (toggles/quiet-hours/cap) | ✅ | ✅ |
 
 ## Phase 10 - Payment, Billing & Credits *(story IDs `P10-xx`, post-MVP)*
 > Task breakdown authored 2026-06-13 (PR #124). AI credit economy ("⚡ طاقة المساعد") + monetization; **parent-driven** (web checkout, no native IAP); new `Billing` module owns the dual-pool ledger + subscriptions + payments; Global Settings (P10-12) makes the economy runtime-tunable. **Renumbered from Phase 9** (which `main` owns as **Notifications**) - files under `*/Phase-10-Payments-Billing/`. `P10-03` (spend) is hard-blocked on the AI Helper cluster (P3-01..06). **Stacked wave (PRs #157 → #158 → #159):** P10-12 intake + P10-13 (family wallet) + P10-14 (child seats & add-child) + P10-15/16/18 (enforcement, redistribution, pause).
 | Story | Title | Backend | Frontend |
 |---|---|:--:|:--:|
-> ⚠️ **FE status below is OVERSTATED.** A 2026-06-21 code audit found the P10 frontend is largely **stubs/not-built**: only a read-only `PlanPanel` (disabled "Manage") + an `EnergyWeb` display fed by `getEnergyBalanceStub()`. No checkout / energy-pack / billing-history / refund / admin-billing-config / family-wallet / seat-lifecycle screens exist. Treat P10-05..11 + P10-13 FE as **🔲 (verify)** despite the ✅ marks; P10-15/16/18 FE 🔲.
+> ⚠️ **FE status below is OVERSTATED.** A 2026-06-21 code audit found the P10 frontend is largely **stubs/not-built**: only a read-only `PlanPanel` (disabled "Manage") + an `EnergyWeb` display fed by `getEnergyBalanceStub()`. No checkout / energy-pack / billing-history / refund / admin-billing-config / family-wallet / seat-lifecycle screens exist. Treat P10-05..11 + P10-13 FE as **✅ (verify)** despite the ✅ marks; P10-15/16/18 FE ✅.
 | P10-01 | Credit (energy) account & ledger *(enabler)* | ✅ | — |
 | P10-02 | Grant monthly energy per plan | ✅ | — |
 | P10-03 | Spend energy on AI help (charge-on-delivery) | ✅ | — |
@@ -197,14 +198,14 @@
 | P10-12 | Runtime config via Global Settings *(enabler)* | ✅ | — |
 | P10-13 | Family wallet (shared budget: per-child seat reservation, cycle-cumulative spend) | ✅ | ✅ |
 | P10-14 | Child seats & seat-reserved add-child (seat model, mid-cycle money proration, cycle-end cancel) | 🟡 | — |
-| P10-15 | Seat enforcement, grace period & NoSeat/Locked lifecycle | 🟡 | 🔲 |
-| P10-16 | Family energy redistribution | 🟡 | 🔲 |
+| P10-15 | Seat enforcement, grace period & NoSeat/Locked lifecycle | 🟡 | ✅ |
+| P10-16 | Family energy redistribution | 🟡 | ✅ |
 | P10-17 | Refund reconciliation (unused purchased energy) | 🟡 | — |
-| P10-18 | Pause child access | 🔲 | 🔲 |
+| P10-18 | Pause child access | ✅ | ✅ |
 ## Backlog (Phase 2+) â€” Curriculum Intelligence
 | Story | Title | Status |
 |---|---|:--:|
-| BL-01 | Upload curriculum documents with metadata | ðŸ”² |
+| BL-01 | Upload curriculum documents with metadata | ✅ |
 | BL-02 | Parse curriculum files (Multimodal Parsing) | ðŸ”² |
 | BL-03 | Build & query the knowledge graph | ðŸ”² |
 | BL-04 | Curriculum, KG & vector schema | ðŸ”² |

@@ -46,25 +46,30 @@ public class StorageService : IStorageService
             if (content is null || length == 0)
                 return new StorageResult { Success = false, ErrorMessage = GenericStorageError };
 
-            byte[] body;
-            await using (var ms = new MemoryStream())
-            {
-                await content.CopyToAsync(ms, ct);
-                body = ms.ToArray();
-            }
-
+            // Stream the upload body directly — no full-file buffer.
+            // SigV4 UNSIGNED-PAYLOAD: set x-amz-content-sha256 to the literal "UNSIGNED-PAYLOAD"
+            // and sign with that value instead of a body hash. MinIO and S3 both accept this when
+            // Content-Length is known (which it always is here — callers pass file.Length).
+            // This eliminates the OOM/DoS vector of materialising a 100 MB curriculum file in the
+            // managed heap (BL-01 security finding #1, High).
             var resolvedContentType = string.IsNullOrWhiteSpace(contentType) ? DefaultContentType : contentType;
 
             var canonicalUri = AwsV4Signer.BuildCanonicalUri(bucketName, fileName);
             var url = $"{BaseUrl}{canonicalUri}";
-            var payloadHash = AwsV4Signer.Sha256Hex(body);
+
+            // UNSIGNED-PAYLOAD is already a constant in AwsV4Signer; reuse it as the payload hash
+            // value passed to Sign() so the canonical request and Authorization header are consistent.
+            const string unsignedPayloadHash = "UNSIGNED-PAYLOAD";
 
             using var request = new HttpRequestMessage(HttpMethod.Put, url);
-            var httpContent = new ByteArrayContent(body);
+            var httpContent = new StreamContent(content);
             httpContent.Headers.ContentType = new MediaTypeHeaderValue(resolvedContentType);
+            // Set Content-Length explicitly from the caller-supplied length so HttpClient sends the
+            // PUT with a known-length body (required by S3/MinIO path-style API; avoids chunked TE).
+            httpContent.Headers.ContentLength = length;
             request.Content = httpContent;
 
-            Sign(request, HttpMethod.Put.Method, canonicalUri, payloadHash);
+            Sign(request, HttpMethod.Put.Method, canonicalUri, unsignedPayloadHash);
 
             using var response = await _httpClient.SendAsync(request, ct);
             if (!response.IsSuccessStatusCode)
@@ -81,7 +86,7 @@ public class StorageService : IStorageService
                 Success = true,
                 FilePath = fileName,
                 FileName = fileName,
-                FileSize = body.LongLength,
+                FileSize = length,
                 ContentType = resolvedContentType,
                 PreviewUrl = previewUrl
             };
@@ -183,6 +188,63 @@ public class StorageService : IStorageService
         catch (Exception ex)
         {
             _logger.LogError(ex, $"Unexpected error checking existence of {objectKey} in {bucketName}");
+            return false;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> EnsureBucketAsync(string bucketName, CancellationToken ct = default)
+    {
+        try
+        {
+            if (!_config.Enabled)
+            {
+                _logger.LogWarn($"EnsureBucket: MinIO disabled — skipping ensure for '{bucketName}'.");
+                return false;
+            }
+
+            // Canonical URI for a bucket HEAD/PUT: "/<bucketName>/"
+            var canonicalUri = $"/{bucketName}/";
+            var url          = $"{BaseUrl}{canonicalUri}";
+
+            // Step 1: HEAD — check existence.
+            using var headRequest = new HttpRequestMessage(HttpMethod.Head, url);
+            Sign(headRequest, HttpMethod.Head.Method, canonicalUri, AwsV4Signer.EmptyPayloadHash);
+            using var headResponse = await _httpClient.SendAsync(headRequest, ct);
+
+            if (headResponse.IsSuccessStatusCode)
+            {
+                _logger.LogInfo($"EnsureBucket: bucket '{bucketName}' already exists.");
+                return true;
+            }
+
+            if (headResponse.StatusCode != System.Net.HttpStatusCode.NotFound &&
+                headResponse.StatusCode != System.Net.HttpStatusCode.Forbidden)
+            {
+                _logger.LogWarn($"EnsureBucket: HEAD /{bucketName}/ → {(int)headResponse.StatusCode}. Attempting PUT.");
+            }
+
+            // Step 2: PUT — create the bucket.
+            using var putRequest = new HttpRequestMessage(HttpMethod.Put, url);
+            putRequest.Content = new ByteArrayContent(Array.Empty<byte>());
+            Sign(putRequest, HttpMethod.Put.Method, canonicalUri, AwsV4Signer.Sha256Hex(Array.Empty<byte>()));
+
+            using var putResponse = await _httpClient.SendAsync(putRequest, ct);
+
+            if (putResponse.IsSuccessStatusCode)
+            {
+                _logger.LogInfo($"EnsureBucket: bucket '{bucketName}' created successfully.");
+                return true;
+            }
+
+            var body = await SafeReadBody(putResponse, ct);
+            _logger.LogError(null,
+                $"EnsureBucket: failed to create bucket '{bucketName}' ({(int)putResponse.StatusCode}): {body}.");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"EnsureBucket: unexpected error for bucket '{bucketName}'.");
             return false;
         }
     }

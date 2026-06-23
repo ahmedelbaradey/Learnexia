@@ -1,3 +1,20 @@
+## BL-01 curriculum document upload (front door of the Curriculum pipeline) — 2026-06-23 (`feat/BL-01-curriculum-upload`)
+
+**Status: COMPLETE — reviewer PASS, security PASS, api-tester 24/24 green vs Testcontainers PostgreSQL.** Second story of the Curriculum Intelligence pipeline (build order BL-04 → **BL-01** → BL-02 → BL-05 → BL-03). Branch stacked on the merged BL-04 schema.
+
+**What shipped (all .NET — BL-01 has NO Python; the poller/advance service is BL-02/BL-05):**
+- **Schema (CurriculumDbContext, curriculum schema):** `CurriculumDocument` entity/table + `PipelineJob`→`PipelineJobs` table. Migrations appended after `20260623011907_AddKGSuggestionTable`: `20260623071411_AddCurriculumDocumentTable` (EF batched BOTH tables here) + `20260623071440_AddPipelineJobsTable` (empty checkpoint — same pattern as BL-04). `DocumentStatus` is int-mapped `{Received=0,Processing=1,Done=2,Failed=3}`; `PipelineJob.JobType`/`Status` are **strings** (cross-process contract with the future Python poller — do NOT convert to int enums). Intra-module FK `PipelineJob.DocumentId → CurriculumDocuments` only; `GradeId`/`SubjectId` are plain ints (module isolation).
+- **`PipelineJobs` is the DB-outbox seam (curriculum-system-of-record §4b):** on upload success the handler enqueues a `{JobType="parse", Status="Pending"}` row inside an explicit transaction with the document insert (no Unit of Work — `BeginTransactionAsync`, doc saved first for FK identity, then job, then commit).
+- **Upload surface:** `POST/GET/GET{id} api/curriculum/documents`, all gated by `[Authorize(Policy = AuthorizationPolicies.AdminOnly)]` (admin/superadmin). 100 MB cap enforced at BOTH the route (`[RequestSizeLimit]`+`[RequestFormLimits]`, action-scoped) AND the handler/validator. Magic-byte validation (PDF/DOCX/JPEG/PNG/WEBP) before storage; detected type is authoritative; GUID object key (no user-controlled path).
+- **Storage (LOAD-BEARING, NEW):** dedicated **`curriculum`** MinIO bucket, **auto-ensured at app startup** via `CurriculumBucketEnsureService` in `CurriculumModule.InitializeAsync` (avatars bucket is still assumed pre-created — this is the first ensure routine in the repo). Config: `appsettings.json` → `"CurriculumUpload": { "BucketName": "curriculum", "MaxFileSizeBytes": 104857600 }`.
+- **Shared.Kernel fix (affects avatars too):** `StorageService.UploadFileAsync` no longer buffers the whole file in memory — it now **streams** via `StreamContent` + SigV4 `x-amz-content-sha256: UNSIGNED-PAYLOAD` + explicit `Content-Length`. Fixed a High (OOM/DoS at 100 MB). Method signature unchanged; avatar path unaffected. Residual (Info): MinIO no longer content-hash-verifies the body (operator-controlled transport + downstream re-validation in BL-02 — acceptable; switch to chunked SigV4 if end-to-end integrity is later required).
+- **Tests:** `BL01_CurriculumDocumentEndpoint_Tests.cs` (HTTP) + `BL01_CurriculumDocumentSchema_Tests.cs` (schema) — 24 total, green. Security report: `docs/security/BL-01-audit.md` (PASS; Low #3 DOCX-as-zip + #4 filename-echo accepted, deferred to BL-02 / future admin UI).
+- **Decisions baked in:** Q1 dedicated bucket auto-ensure · Q3 100 MB + streaming · Q5 string job fields · Q6 AdminOnly policy · Q7 transactional doc+job · Q2 no KGSuggestion FK (deferred to BL-03) · Q4 PipelineJob.Id int.
+
+**Next:** BL-02 (multimodal parsing) — first story with a **Python** side (Azure Document Intelligence + MinerU/PaddleOCR; DB-outbox poller consumes `PipelineJobs`). No Python implementer agent exists yet and the Python service has no home in the repo — scope that before BL-02.
+
+---
+
 ## BL-04 curriculum/knowledge-graph schema — 2026-06-23 (`feat/BL-04-curriculum-vector-schema`)
 
 **All BL-04 schema work complete. Reviewer gate PASSED (build clean, BE-6 8/8 green vs `pgvector/pgvector:pg17`). `Curriculum.IntegrationTests` added to `Learnexia.Modular.sln` so the BE-6 gate now runs under solution-wide `dotnet test`.**

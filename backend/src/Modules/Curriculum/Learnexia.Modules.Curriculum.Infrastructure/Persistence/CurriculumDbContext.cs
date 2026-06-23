@@ -41,6 +41,13 @@ public class CurriculumDbContext : DbContext
     // BL-04 BE-10: KG suggestion queue (AddKGSuggestionTable migration)
     public DbSet<KGSuggestion> KGSuggestions => Set<KGSuggestion>();
 
+    // BL-01 BE-1/BE-2: curriculum upload front door (AddCurriculumDocumentTable migration)
+    public DbSet<CurriculumDocument> CurriculumDocuments => Set<CurriculumDocument>();
+
+    // BL-01 BE-9: DB-outbox seam for Python poller (AddPipelineJobsTable migration)
+    // PipelineJobs is the cross-process seam; JobType/Status are STRINGS (not int enums).
+    public DbSet<PipelineJob> PipelineJobs => Set<PipelineJob>();
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 
