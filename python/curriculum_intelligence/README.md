@@ -38,7 +38,9 @@ curriculum_intelligence/
 ├── app/          config, db (atomic claim), storage (MinIO), logging, health (FastAPI)
 ├── parsers/      ParserBackend protocol, mock (default), Azure DI (live), MinerU fallback,
 │                 artifact model + JSON serializer
-├── workers/      pipeline (parse→artifact→result) + poller (claim loop, PY-9)
+├── ingestion/    Extractor protocol, mock (default) + Claude (live), Arabic chunker,
+│                 confidence/flags, SkillKey derivation, ResultJson model + pipeline (BL-05)
+├── workers/      parse pipeline+poller (PY-9) + ingest poller (BL-05)
 ├── benchmarks/   offline Arabic OCR accuracy gate (samples/, results/)
 ├── tests/        pytest: normalization, serialization, diacritics, + Testcontainers contract test
 ├── main.py       entrypoint — FastAPI /health + poll loop in one process
@@ -59,6 +61,80 @@ selects the implementation:
 The **Arabic OCR benchmark** (`benchmarks/benchmark_runner.py`) gates the LIVE
 adoption — run it offline once the corpus + Azure DI resource exist. It is NOT
 part of the default test run.
+
+## Ingest lane (BL-05) — the SECOND poller, same process
+
+The worker now runs **two** poll loops in one process (separate daemon threads,
+one psycopg connection each). The ingest lane mirrors the parse lane exactly,
+parameterized on `JobType='ingest'`:
+
+```
+.NET (on parse-Done) ──INSERT PipelineJobs(JobType='ingest', Status='Pending',
+                         PayloadJson={artifact_key, document_id})──►  outbox
+                                                                       │ IngestPoller polls
+curriculum-intelligence ingest lane:                                   │
+  1. CLAIM a Pending ingest job (same FOR UPDATE SKIP LOCKED claim)    │
+  2. download the BL-02 artifact JSON from the `curriculum` bucket     │
+  3. extractor (mock default / Claude live) → raw hierarchy            │
+  4. derive stable SkillKeys → grade-scoped Arabic-boundary chunking   │
+  5. confidence scoring + advisory low-confidence flags                │
+  6. UPDATE … Status='Done', ResultJson={nodes, chunks, flags, …}      │
+                                                                       ▼
+.NET IngestJobAdvanceService  ──polls Done/Failed──► writes ALL DB rows
+```
+
+**The ingest lane writes NO DB rows and creates NO entities** (lead decision Q6):
+it returns a structured `ResultJson` the .NET `IngestJobAdvanceService` persists
+(chunks, learning-tree nodes, review-queue). It touches only `PipelineJobs` +
+the `curriculum` bucket.
+
+### ResultJson contract (the .NET side deserializes this — keep field names exact)
+
+```json
+{
+  "schema_version": "1.0",
+  "nodes":  [ { "node_type": "Unit|Lesson|Concept|Skill",
+                "skill_key": "math.grade5.fractions.add-fractions",
+                "parent_skill_key": "math.grade5.fractions.fractions",
+                "title": "...", "grade": 5, "subject_code": "math",
+                "language": "ar", "difficulty": 3, "confidence": 0.86 } ],
+  "chunks": [ { "content": "...", "content_type": "text", "source_page": 3,
+                "chapter_number": 1, "node_skill_key": "math.grade5.fractions.add-fractions",
+                "confidence": 0.9 } ],
+  "flags":  [ { "kind": "low_confidence_node|low_confidence_chunk|unmapped_chunk",
+                "ref": "<skill_key or chunk index>", "confidence": 0.55,
+                "reason": "..." } ],
+  "diagnostics": { "extractor": "mock", "node_count": 2, "chunk_count": 3, … }
+}
+```
+
+- `confidence` is a 0..1 float on **every** node + chunk. The worker only EMITS
+  it; the **.NET side applies the 0.7 threshold** and routes sub-threshold items
+  to the review queue. `flags[]` is advisory (a hint), never a gate.
+- `skill_key` format is `{subjectCode}.grade{N}.{unitSlug}.{leafSlug}` (the BL-04
+  format), **derived deterministically** so re-ingest yields byte-identical keys —
+  the anchor that makes the .NET natural-key upsert idempotent.
+- The 4-subject set (`math`/`science`/`arabic`/`english`) is enforced; any other
+  `subject_code` is a terminal extraction failure (no Social Studies).
+- Diacritics (U+064B–U+065F) are preserved through extraction + chunking +
+  serialization (`ensure_ascii=False`).
+
+### Extractor backend: mock (default) vs Claude (live, devops-gated)
+
+The hierarchy-extraction call sits behind the `Extractor` protocol (mirrors
+`ParserBackend`). `EXTRACTOR_BACKEND` selects the implementation:
+
+- **`mock` (default — dev + CI):** deterministic, no network. Echoes an
+  `__ingest_fixture__` block from the artifact, or builds a synthetic Arabic
+  Unit→Lesson→Concept→Skill chain.
+- **`claude` (live — devops-gated):** real Anthropic Messages API. Selected only
+  when `EXTRACTOR_BACKEND=claude` **and** `ANTHROPIC_API_KEY` is set; otherwise it
+  logs a warning and degrades to the mock (so CI can never call out to Claude).
+  Model from `ANTHROPIC_MODEL` (default `claude-sonnet-4-6`). The `anthropic` SDK
+  is in the `[live]` extra and imported lazily — the mock default needs none of it.
+
+**Embeddings are deferred (Q4):** the ingest lane does NOT generate embeddings;
+P3-07 owns vectors. No `embeddings` key in `ResultJson`.
 
 ## Running
 

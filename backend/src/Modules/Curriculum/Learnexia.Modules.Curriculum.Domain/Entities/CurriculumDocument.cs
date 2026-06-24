@@ -90,6 +90,41 @@ public class CurriculumDocument : AggregateRoot
     /// </summary>
     public DateTimeOffset? ParsedAt { get; set; }
 
+    // ── Ingestion axis (BL-05 BE-1) ─────────────────────────────────────────────
+    //
+    // Two-axis status model — intentional (parse and ingest are distinct stages):
+    //   Parse axis  → Status (DocumentStatus)  — tracks the PDF/DOCX extraction stage (BL-02).
+    //   Ingest axis → IngestionStatus          — tracks the hierarchy/chunk structuring stage (BL-05).
+    //
+    // A document is parse-Done before ingestion starts. They can be independently re-triggered
+    // (ReparseCurriculumDocument vs ReIngestCurriculumDocument). Storing them as separate columns
+    // avoids overloading a single enum with cross-concern values and makes each axis independently
+    // queryable. IngestionStatus is NEVER read by the Python worker (it reads PipelineJob.Status strings).
+
+    /// <summary>
+    /// Current ingestion-pipeline status for this document. Starts as <see cref="IngestionStatus.NotStarted"/>
+    /// (set when the document is first uploaded or after a re-ingest reset).
+    /// Stored as int — .NET internal, not read by the Python poller.
+    /// </summary>
+    public IngestionStatus IngestionStatus { get; set; } = IngestionStatus.NotStarted;
+
+    /// <summary>
+    /// UTC timestamp of when ingestion completed (i.e. when <c>IngestJobAdvanceService</c> advanced
+    /// the document to Done from a Done <c>PipelineJobs</c> row of <c>JobType='ingest'</c>).
+    /// Null until ingestion completes successfully.
+    /// </summary>
+    public DateTimeOffset? IngestedAt { get; set; }
+
+    /// <summary>
+    /// Diagnostic message populated by the ingest-advance service on failure.
+    /// Carries the error / partial result from the Python worker's ResultJson, bounded to 2048 chars.
+    /// Null on success or while not yet attempted.
+    /// </summary>
+    public string? IngestionDiagnostics { get; set; }
+
     // Navigation — PipelineJobs for this document (intra-module, same schema).
     public ICollection<PipelineJob> PipelineJobs { get; set; } = new List<PipelineJob>();
+
+    // Navigation — IngestionReviewItems for this document (intra-module, same schema).
+    public ICollection<IngestionReviewItem> IngestionReviewItems { get; set; } = new List<IngestionReviewItem>();
 }

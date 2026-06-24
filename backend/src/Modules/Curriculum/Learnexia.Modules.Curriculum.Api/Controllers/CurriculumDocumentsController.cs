@@ -1,4 +1,5 @@
 using Learnexia.Modules.Curriculum.Application.Features.CurriculumDocuments.Commands.ReparseCurriculumDocument;
+using Learnexia.Modules.Curriculum.Application.Features.CurriculumDocuments.Commands.ReIngestCurriculumDocument;
 using Learnexia.Modules.Curriculum.Application.Features.CurriculumDocuments.Commands.UploadCurriculumDocument;
 using Learnexia.Modules.Curriculum.Application.Features.CurriculumDocuments.Dtos;
 using Learnexia.Modules.Curriculum.Application.Features.CurriculumDocuments.Queries.GetCurriculumDocument;
@@ -134,5 +135,36 @@ public sealed class CurriculumDocumentsController : AppControllerBase
         CancellationToken cancellationToken)
         => NewResult(await Mediator.Send(
             new ReparseCurriculumDocumentCommand(id),
+            cancellationToken));
+
+    /// <summary>
+    /// Re-enqueues an ingest job for an existing curriculum document (BL-05-BE-9).
+    ///
+    /// <para>Admin-only endpoint. Resets the document's ingestion status to InProgress, invalidates
+    /// all stale Pending review items, and writes a fresh <c>Pending</c> ingest job to the
+    /// DB-outbox for the Python worker to claim.</para>
+    ///
+    /// <para>Returns:
+    /// <list type="bullet">
+    ///   <item>200 OK with the updated document on success.</item>
+    ///   <item>400 Bad Request when the document has not been successfully parsed yet.</item>
+    ///   <item>404 Not Found when the document does not exist.</item>
+    ///   <item>409 Conflict when a <c>Pending</c> or <c>Processing</c> ingest job is already in flight.</item>
+    ///   <item>401/403 when the caller is unauthenticated or lacks admin/super-admin role.</item>
+    /// </list>
+    /// </para>
+    /// </summary>
+    [HttpPost("{id:int}/reingest")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ReIngest(
+        int id,
+        CancellationToken cancellationToken)
+        => NewResult(await Mediator.Send(
+            new ReIngestCurriculumDocumentCommand(id),
             cancellationToken));
 }

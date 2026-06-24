@@ -105,6 +105,12 @@ public static class DependencyInjection
         // so it does not participate in any caller's scope. Mirrors StreakSweepJob registration.
         services.AddTransient<SpacedRepetitionSweepJob>();
 
+        // BL-05 seam-impl: Cross-module write seam for curriculum ingest-advance (IPedagogicalTreeWriter).
+        // Curriculum calls this interface to upsert Subject/Unit/Lesson/Concept/Skill/KnowledgeNode
+        // without any project reference curriculum→learning (module isolation rule, CLAUDE.md rule 1).
+        // Scoped: depends on scoped LearningDbContext.
+        services.AddScoped<IPedagogicalTreeWriter, PedagogicalTreeWriterAdapter>();
+
         // P3-04 BE-2: Cross-module seam — allows the Ai module handler to read minimal lesson
         // metadata (title, subject, grade) from LearningDbContext via Shared.Contracts.
         // The Ai module depends only on ILessonContextContract from Shared.Contracts; it never

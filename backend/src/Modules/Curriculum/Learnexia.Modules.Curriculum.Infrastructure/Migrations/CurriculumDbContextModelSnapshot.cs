@@ -323,6 +323,16 @@ namespace Learnexia.Modules.Curriculum.Infrastructure.Migrations
                     b.Property<int>("GradeId")
                         .HasColumnType("integer");
 
+                    b.Property<DateTimeOffset?>("IngestedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("IngestionDiagnostics")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<int>("IngestionStatus")
+                        .HasColumnType("integer");
+
                     b.Property<bool?>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -361,6 +371,9 @@ namespace Learnexia.Modules.Curriculum.Infrastructure.Migrations
 
                     b.HasIndex("GradeId")
                         .HasDatabaseName("ix_curriculum_documents_grade_id");
+
+                    b.HasIndex("IngestionStatus")
+                        .HasDatabaseName("ix_curriculum_documents_ingestion_status");
 
                     b.HasIndex("Status")
                         .HasDatabaseName("ix_curriculum_documents_status");
@@ -435,6 +448,88 @@ namespace Learnexia.Modules.Curriculum.Infrastructure.Migrations
                         .HasFilter("\"Status\" = 1");
 
                     b.ToTable("CurriculumVersions", "curriculum");
+                });
+
+            modelBuilder.Entity("Learnexia.Modules.Curriculum.Domain.Entities.IngestionReviewItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Confidence")
+                        .HasColumnType("decimal(5,4)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("CurriculumDocumentId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("CurriculumVersionId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<bool?>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("PayloadJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("ReviewNotes")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<DateTimeOffset?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("ReviewedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SourceReference")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SuggestedClassification")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CurriculumDocumentId")
+                        .HasDatabaseName("ix_ingestion_review_items_document_id");
+
+                    b.HasIndex("CurriculumVersionId")
+                        .HasDatabaseName("ix_ingestion_review_items_version_id");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_ingestion_review_items_status");
+
+                    b.HasIndex("CurriculumDocumentId", "Status")
+                        .HasDatabaseName("ix_ingestion_review_items_document_status");
+
+                    b.ToTable("IngestionReviewItems", "curriculum");
                 });
 
             modelBuilder.Entity("Learnexia.Modules.Curriculum.Domain.Entities.KGSuggestion", b =>
@@ -679,6 +774,18 @@ namespace Learnexia.Modules.Curriculum.Infrastructure.Migrations
                     b.Navigation("CurriculumVersion");
                 });
 
+            modelBuilder.Entity("Learnexia.Modules.Curriculum.Domain.Entities.IngestionReviewItem", b =>
+                {
+                    b.HasOne("Learnexia.Modules.Curriculum.Domain.Entities.CurriculumDocument", "CurriculumDocument")
+                        .WithMany("IngestionReviewItems")
+                        .HasForeignKey("CurriculumDocumentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_ingestion_review_items_document");
+
+                    b.Navigation("CurriculumDocument");
+                });
+
             modelBuilder.Entity("Learnexia.Modules.Curriculum.Domain.Entities.PipelineJob", b =>
                 {
                     b.HasOne("Learnexia.Modules.Curriculum.Domain.Entities.CurriculumDocument", "Document")
@@ -728,6 +835,8 @@ namespace Learnexia.Modules.Curriculum.Infrastructure.Migrations
 
             modelBuilder.Entity("Learnexia.Modules.Curriculum.Domain.Entities.CurriculumDocument", b =>
                 {
+                    b.Navigation("IngestionReviewItems");
+
                     b.Navigation("PipelineJobs");
                 });
 

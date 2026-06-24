@@ -86,5 +86,30 @@ public class CurriculumDocumentConfig : IEntityTypeConfiguration<CurriculumDocum
         builder.Property(d => d.ParsedAt)
             .HasColumnType("timestamp with time zone")
             .IsRequired(false);
+
+        // ── Ingestion axis (BL-05 BE-1/BE-2) ───────────────────────────────────────
+        // Two-axis status model: parse axis = Status (DocumentStatus); ingest axis = IngestionStatus.
+        // These are distinct stages — parse extracts text, ingest structures the hierarchy/chunks.
+        // They can be independently re-triggered and independently queried.
+
+        // IngestionStatus: stored as int — .NET internal, never read by the Python poller.
+        builder.Property(d => d.IngestionStatus)
+            .HasConversion<int>()
+            .IsRequired();
+
+        // Index on IngestionStatus — fast queue scans (admin filtering, ingest poller).
+        builder.HasIndex(d => d.IngestionStatus)
+            .HasDatabaseName("ix_curriculum_documents_ingestion_status");
+
+        // IngestedAt: nullable timestamptz — stamped by IngestJobAdvanceService on ingest completion.
+        builder.Property(d => d.IngestedAt)
+            .HasColumnType("timestamp with time zone")
+            .IsRequired(false);
+
+        // IngestionDiagnostics: nullable error/diagnostic text from the ingest worker.
+        // Bounded at 2048 chars — mirror ParseJobAdvanceService's reject-vs-truncate discipline.
+        builder.Property(d => d.IngestionDiagnostics)
+            .HasMaxLength(2048)
+            .IsRequired(false);
     }
 }

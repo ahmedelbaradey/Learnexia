@@ -2381,5 +2381,52 @@
         /// </summary>
         public const string CurriculumDocumentParseProcessingFailed = "CurriculumDocumentParseProcessingFailed";
 
+        // ── BL-05 Curriculum ingestion pipeline ───────────────────────────────────────────────────
+
+        /// <summary>200 success: ingest job enqueued for document.</summary>
+        public const string CurriculumIngestJobEnqueued = "CurriculumIngestJobEnqueued";
+
+        /// <summary>409 conflict: an ingest job is already in flight.</summary>
+        public const string CurriculumIngestJobInFlight = "CurriculumIngestJobInFlight";
+
+        /// <summary>200 success: re-ingest job enqueued; document ingestion status reset.</summary>
+        public const string CurriculumReIngestJobEnqueued = "CurriculumReIngestJobEnqueued";
+
+        /// <summary>
+        /// Written to <c>CurriculumDocument.IngestionDiagnostics</c> when the ingest-advance poller
+        /// encounters an unexpected exception. Admin-facing diagnostic.
+        /// </summary>
+        public const string CurriculumIngestProcessingFailed = "CurriculumIngestProcessingFailed";
+
+        /// <summary>
+        /// Written to <c>CurriculumDocument.IngestionDiagnostics</c> when the ingest-advance poller
+        /// cannot parse or validate the ResultJson returned by the Python ingest worker.
+        /// </summary>
+        public const string CurriculumIngestResultInvalid = "CurriculumIngestResultInvalid";
+
+        /// <summary>200 success: ingestion review items retrieved.</summary>
+        public const string IngestionReviewItemsRetrievedSuccessfully = "IngestionReviewItemsRetrievedSuccessfully";
+
+        /// <summary>404 not found: ingestion review item not found.</summary>
+        public const string IngestionReviewItemNotFound = "IngestionReviewItemNotFound";
+
+        /// <summary>409 conflict: ingestion review item already resolved (approved or rejected).</summary>
+        public const string IngestionReviewItemAlreadyResolved = "IngestionReviewItemAlreadyResolved";
+
+        /// <summary>200 success: ingestion review item approved.</summary>
+        public const string IngestionReviewItemApproved = "IngestionReviewItemApproved";
+
+        /// <summary>200 success: ingestion review item rejected.</summary>
+        public const string IngestionReviewItemRejected = "IngestionReviewItemRejected";
+
+        /// <summary>422: Re-ingest requested but document has not completed parsing yet (no ParsedArtifactObjectKey).</summary>
+        public const string CurriculumDocumentNotParsed = "CurriculumDocumentNotParsed";
+
+        /// <summary>
+        /// 400: Approve handler cannot perform tree-write because the review item's PayloadJson
+        /// is missing the required fields (title / skill_key). Admin must re-ingest the document.
+        /// </summary>
+        public const string IngestionReviewItemTreeWriteFailed = "IngestionReviewItemTreeWriteFailed";
+
     }
 }

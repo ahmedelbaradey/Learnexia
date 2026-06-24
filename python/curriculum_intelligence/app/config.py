@@ -25,6 +25,19 @@ class ParserBackendKind(str, Enum):
     AZURE_DI = "azure_di"
 
 
+class ExtractorBackendKind(str, Enum):
+    """Which hierarchy-extraction backend the INGEST lane uses (BL-05-PY-2).
+
+    ``mock`` is the DEFAULT in dev + CI (deterministic, no network). ``claude``
+    is the real backend — only selected once devops sets ``EXTRACTOR_BACKEND=claude``
+    AND ``ANTHROPIC_API_KEY``. Mirrors :class:`ParserBackendKind` exactly so the
+    mock-now/flip-later posture is identical across both lanes (ADR-0004 §5).
+    """
+
+    MOCK = "mock"
+    CLAUDE = "claude"
+
+
 def _get_bool(name: str, default: bool) -> bool:
     raw = os.environ.get(name)
     if raw is None:
@@ -62,9 +75,7 @@ class DatabaseConfig:
         dsn = os.environ.get("DATABASE_URL", "").strip()
         if not dsn:
             # Sensible dev default that matches docker-compose. Never a secret in prod.
-            dsn = (
-                "postgresql://postgres:admin@postgres:5432/Learnexia"
-            )
+            dsn = "postgresql://postgres:admin@postgres:5432/Learnexia"
         return cls(dsn=dsn, schema=os.environ.get("CURRICULUM_SCHEMA", "curriculum"))
 
 
@@ -141,6 +152,57 @@ class PollerConfig:
 
 
 @dataclass(frozen=True)
+class IngestPollerConfig:
+    """Tuning for the SECOND poller lane (BL-05) that claims ``JobType='ingest'``.
+
+    Runs in the same process as the parse poller. ``job_type`` is locked to
+    ``'ingest'`` (a different lane than the parse poller's ``'parse'``).
+    """
+
+    interval_seconds: float = 5.0
+    job_type: str = "ingest"
+    batch_size: int = 1
+
+    @classmethod
+    def from_env(cls) -> IngestPollerConfig:
+        return cls(
+            interval_seconds=_get_float("INGEST_POLL_INTERVAL_SECONDS", 5.0),
+            job_type=os.environ.get("INGEST_POLL_JOB_TYPE", "ingest"),
+            batch_size=_get_int("INGEST_POLL_BATCH_SIZE", 1),
+        )
+
+
+@dataclass(frozen=True)
+class IngestionConfig:
+    """Ingest-lane (hierarchy extraction + chunking) tuning.
+
+    ``confidence_threshold`` is carried as DOCUMENTATION ONLY here — the Python
+    worker does NOT apply the threshold (it only EMITS confidences); the .NET
+    advance service owns the 0.7 cutoff (Q-PY decision). It is surfaced so the
+    worker can optionally annotate flags, never gate them.
+    """
+
+    extractor_backend: ExtractorBackendKind = ExtractorBackendKind.MOCK
+    anthropic_model: str = "claude-sonnet-4-6"
+    max_chunk_chars: int = 1200
+    confidence_threshold: float = 0.7
+
+    @classmethod
+    def from_env(cls) -> IngestionConfig:
+        backend_raw = os.environ.get("EXTRACTOR_BACKEND", ExtractorBackendKind.MOCK.value)
+        try:
+            backend = ExtractorBackendKind(backend_raw.strip().lower())
+        except ValueError:
+            backend = ExtractorBackendKind.MOCK
+        return cls(
+            extractor_backend=backend,
+            anthropic_model=os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6"),
+            max_chunk_chars=_get_int("INGEST_MAX_CHUNK_CHARS", 1200),
+            confidence_threshold=_get_float("INGEST_CONFIDENCE_THRESHOLD", 0.7),
+        )
+
+
+@dataclass(frozen=True)
 class Settings:
     """Top-level settings aggregate."""
 
@@ -150,6 +212,8 @@ class Settings:
         default_factory=AzureDocumentIntelligenceConfig.from_env
     )
     poller: PollerConfig = field(default_factory=PollerConfig.from_env)
+    ingest_poller: IngestPollerConfig = field(default_factory=IngestPollerConfig.from_env)
+    ingestion: IngestionConfig = field(default_factory=IngestionConfig.from_env)
     parser_backend: ParserBackendKind = ParserBackendKind.MOCK
     anthropic_api_key: str | None = None
     log_level: str = "INFO"
@@ -166,10 +230,16 @@ class Settings:
             storage=StorageConfig.from_env(),
             azure_di=AzureDocumentIntelligenceConfig.from_env(),
             poller=PollerConfig.from_env(),
+            ingest_poller=IngestPollerConfig.from_env(),
+            ingestion=IngestionConfig.from_env(),
             parser_backend=backend,
             anthropic_api_key=os.environ.get("ANTHROPIC_API_KEY") or None,
             log_level=os.environ.get("LOG_LEVEL", "INFO"),
         )
+
+    @property
+    def anthropic_configured(self) -> bool:
+        return bool(self.anthropic_api_key)
 
 
 def get_settings() -> Settings:

@@ -34,5 +34,7 @@
     <ProjectReference Include="..\..\src\Shared\Learnexia.Shared.Resources\Learnexia.Shared.Resources.csproj" />
     <!-- Host project — required for WebApplicationFactory<Program> -->
     <ProjectReference Include="..\..\src\Host\Learnexia.Host\Learnexia.Host.csproj" />
+    <!-- Learning Infrastructure — required to resolve LearningDbContext in BL-05 tests -->
+    <ProjectReference Include="..\..\src\Modules\Learning\Learnexia.Modules.Learning.Infrastructure\Learnexia.Modules.Learning.Infrastructure.csproj" />
   </ItemGroup>
 </Project>
