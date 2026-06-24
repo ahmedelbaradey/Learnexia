@@ -627,7 +627,7 @@ namespace Learnexia.Modules.Curriculum.Infrastructure.Migrations
                     b.Property<int?>("DeletedBy")
                         .HasColumnType("integer");
 
-                    b.Property<int>("DocumentId")
+                    b.Property<int?>("DocumentId")
                         .HasColumnType("integer");
 
                     b.Property<string>("ErrorMessage")
@@ -791,8 +791,7 @@ namespace Learnexia.Modules.Curriculum.Infrastructure.Migrations
                     b.HasOne("Learnexia.Modules.Curriculum.Domain.Entities.CurriculumDocument", "Document")
                         .WithMany("PipelineJobs")
                         .HasForeignKey("DocumentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Document");
                 });

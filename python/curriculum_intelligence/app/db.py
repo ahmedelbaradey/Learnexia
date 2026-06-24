@@ -33,6 +33,7 @@ STATUS_PERMANENTLY_FAILED = "PermanentlyFailed"
 
 JOB_TYPE_PARSE = "parse"
 JOB_TYPE_INGEST = "ingest"
+JOB_TYPE_INFER_EDGES = "infer_edges"
 
 
 @dataclass

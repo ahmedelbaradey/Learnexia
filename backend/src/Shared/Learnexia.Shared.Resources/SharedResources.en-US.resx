@@ -1891,6 +1891,39 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="SkillGraphRetrievedSuccessfully" xml:space="preserve">
     <value>Skill graph retrieved successfully.</value>
   </data>
+  <data name="KGBuildNoNodesWithSkillKey" xml:space="preserve">
+    <value>No knowledge nodes with a SkillKey were found for the requested subject and grade. Ensure skills have been ingested before triggering inference.</value>
+  </data>
+  <data name="KGBuildJobEnqueued" xml:space="preserve">
+    <value>Knowledge graph inference job has been enqueued successfully.</value>
+  </data>
+  <data name="KGSuggestionsRetrievedSuccessfully" xml:space="preserve">
+    <value>Knowledge graph suggestions retrieved successfully.</value>
+  </data>
+  <data name="KGSuggestionNotFound" xml:space="preserve">
+    <value>Knowledge graph suggestion not found.</value>
+  </data>
+  <data name="KGSuggestionAlreadyResolved" xml:space="preserve">
+    <value>This knowledge graph suggestion has already been resolved (approved or rejected) and cannot be modified again.</value>
+  </data>
+  <data name="KGSuggestionApproved" xml:space="preserve">
+    <value>Knowledge graph suggestion approved and edge published successfully.</value>
+  </data>
+  <data name="KGSuggestionRejected" xml:space="preserve">
+    <value>Knowledge graph suggestion rejected successfully.</value>
+  </data>
+  <data name="KGSuggestionPublishCycle" xml:space="preserve">
+    <value>Approving this suggestion would create a cycle in the knowledge graph. The suggestion remains pending.</value>
+  </data>
+  <data name="KGSuggestionPublishCrossLanguage" xml:space="preserve">
+    <value>Approving this suggestion would create a cross-language edge, which is not permitted. The suggestion remains pending.</value>
+  </data>
+  <data name="KnowledgeGraphRelatedConceptsRetrievedSuccessfully" xml:space="preserve">
+    <value>Related concepts retrieved successfully.</value>
+  </data>
+  <data name="KnowledgeGraphRemediationPathRetrievedSuccessfully" xml:space="preserve">
+    <value>Remediation path retrieved successfully.</value>
+  </data>
   <data name="QuizQuestionNotFound" xml:space="preserve">
     <value>Quiz question not found.</value>
   </data>

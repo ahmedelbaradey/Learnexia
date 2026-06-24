@@ -1890,6 +1890,39 @@
   <data name="SkillGraphRetrievedSuccessfully" xml:space="preserve">
     <value>تم استرجاع رسم مهارة المعرفة بنجاح.</value>
   </data>
+  <data name="KGBuildNoNodesWithSkillKey" xml:space="preserve">
+    <value>لم يتم العثور على عقد معرفية تحتوي على مفتاح مهارة للموضوع والصف المطلوبين. تأكد من استيراد المهارات قبل تشغيل الاستدلال.</value>
+  </data>
+  <data name="KGBuildJobEnqueued" xml:space="preserve">
+    <value>تم إضافة مهمة استدلال رسم بياني للمعرفة إلى قائمة الانتظار بنجاح.</value>
+  </data>
+  <data name="KGSuggestionsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع اقتراحات الرسم البياني للمعرفة بنجاح.</value>
+  </data>
+  <data name="KGSuggestionNotFound" xml:space="preserve">
+    <value>اقتراح الرسم البياني للمعرفة غير موجود.</value>
+  </data>
+  <data name="KGSuggestionAlreadyResolved" xml:space="preserve">
+    <value>تمت معالجة هذا الاقتراح مسبقاً (موافقة أو رفض) ولا يمكن تعديله مرة أخرى.</value>
+  </data>
+  <data name="KGSuggestionApproved" xml:space="preserve">
+    <value>تمت الموافقة على اقتراح الرسم البياني للمعرفة ونشر الحافة بنجاح.</value>
+  </data>
+  <data name="KGSuggestionRejected" xml:space="preserve">
+    <value>تم رفض اقتراح الرسم البياني للمعرفة بنجاح.</value>
+  </data>
+  <data name="KGSuggestionPublishCycle" xml:space="preserve">
+    <value>الموافقة على هذا الاقتراح ستؤدي إلى إنشاء دورة في الرسم البياني للمعرفة. يبقى الاقتراح معلقاً.</value>
+  </data>
+  <data name="KGSuggestionPublishCrossLanguage" xml:space="preserve">
+    <value>الموافقة على هذا الاقتراح ستؤدي إلى إنشاء حافة بين لغتين مختلفتين، وهو أمر غير مسموح به. يبقى الاقتراح معلقاً.</value>
+  </data>
+  <data name="KnowledgeGraphRelatedConceptsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع المفاهيم المرتبطة بنجاح.</value>
+  </data>
+  <data name="KnowledgeGraphRemediationPathRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع مسار المعالجة بنجاح.</value>
+  </data>
   <data name="QuizQuestionNotFound" xml:space="preserve">
     <value>سؤال الاختبار غير موجود.</value>
   </data>

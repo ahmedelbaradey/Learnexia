@@ -1048,6 +1048,42 @@
         /// <summary>Returned on successful graph retrieval.</summary>
         public const string SkillGraphRetrievedSuccessfully = "SkillGraphRetrievedSuccessfully";
 
+        // ── BL-03: Knowledge graph seams, inference-advance, approval workflow ───────────────────
+
+        /// <summary>Returned when BuildKnowledgeGraphSuggestionsCommand finds no nodes with a SkillKey
+        /// for the requested subject+grade (inference cannot run without SkillKey seeds).</summary>
+        public const string KGBuildNoNodesWithSkillKey = "KGBuildNoNodesWithSkillKey";
+
+        /// <summary>Returned on successful enqueue of an infer_edges PipelineJob.</summary>
+        public const string KGBuildJobEnqueued = "KGBuildJobEnqueued";
+
+        /// <summary>Returned on successful retrieval of a paged KGSuggestion list.</summary>
+        public const string KGSuggestionsRetrievedSuccessfully = "KGSuggestionsRetrievedSuccessfully";
+
+        /// <summary>Returned when the requested KGSuggestion does not exist.</summary>
+        public const string KGSuggestionNotFound = "KGSuggestionNotFound";
+
+        /// <summary>Returned when trying to approve/reject a KGSuggestion that is not Pending.</summary>
+        public const string KGSuggestionAlreadyResolved = "KGSuggestionAlreadyResolved";
+
+        /// <summary>Returned on successful KGSuggestion approval (edge published).</summary>
+        public const string KGSuggestionApproved = "KGSuggestionApproved";
+
+        /// <summary>Returned on successful KGSuggestion rejection.</summary>
+        public const string KGSuggestionRejected = "KGSuggestionRejected";
+
+        /// <summary>Returned when publishing an approved KGSuggestion would create a cycle.</summary>
+        public const string KGSuggestionPublishCycle = "KGSuggestionPublishCycle";
+
+        /// <summary>Returned when publishing an approved KGSuggestion connects nodes from different languages.</summary>
+        public const string KGSuggestionPublishCrossLanguage = "KGSuggestionPublishCrossLanguage";
+
+        /// <summary>Returned on successful retrieval of related concepts for a knowledge node.</summary>
+        public const string KnowledgeGraphRelatedConceptsRetrievedSuccessfully = "KnowledgeGraphRelatedConceptsRetrievedSuccessfully";
+
+        /// <summary>Returned on successful retrieval of the remediation path for a knowledge node.</summary>
+        public const string KnowledgeGraphRemediationPathRetrievedSuccessfully = "KnowledgeGraphRemediationPathRetrievedSuccessfully";
+
         // ── P7-04 Quiz/Question authoring ─────────────────────────────────────────
 
         /// <summary>Returned when a QuizQuestion to modify/delete is not found.</summary>

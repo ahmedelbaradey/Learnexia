@@ -367,6 +367,40 @@ public class LearningRepository : ILearningRepository
             .ToListAsync(ct);
     }
 
+    // ── BL-03 BE-4: GetRelatedConcepts ───────────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public async Task<List<KnowledgeNode>> GetRelatedNodesAsync(int nodeId, CancellationToken ct = default)
+    {
+        // Returns nodes connected via Related edges in EITHER direction.
+        // A Related edge from nodeId → other: the other node is the Related concept.
+        // A Related edge from other → nodeId: the source is also a Related concept.
+        var relatedSourceIds = await RepositoryContext.KnowledgeEdges
+            .AsNoTracking()
+            .Where(e => e.RelationshipType == EdgeRelationshipType.Related && e.TargetNodeId == nodeId)
+            .Select(e => e.SourceNodeId)
+            .ToListAsync(ct);
+
+        var relatedTargetIds = await RepositoryContext.KnowledgeEdges
+            .AsNoTracking()
+            .Where(e => e.RelationshipType == EdgeRelationshipType.Related && e.SourceNodeId == nodeId)
+            .Select(e => e.TargetNodeId)
+            .ToListAsync(ct);
+
+        var allRelatedIds = relatedSourceIds
+            .Concat(relatedTargetIds)
+            .Distinct()
+            .ToList();
+
+        if (allRelatedIds.Count == 0)
+            return new List<KnowledgeNode>();
+
+        return await RepositoryContext.KnowledgeNodes
+            .AsNoTracking()
+            .Where(n => allRelatedIds.Contains(n.Id))
+            .ToListAsync(ct);
+    }
+
     /// <inheritdoc/>
     public async Task<Subject?> GetSubjectByConceptIdAsync(int conceptId, CancellationToken ct = default)
     {
