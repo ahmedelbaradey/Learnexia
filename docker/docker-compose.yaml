@@ -181,6 +181,8 @@ services:
       - CURRICULUM_BUCKET=curriculum
       # Parser backend: mock by default; flip to azure_di once provisioned.
       - PARSER_BACKEND=${PARSER_BACKEND:-mock}
+      # Edge inferer (BL-03): mock by default; flip to lightrag once provisioned.
+      - INFERER_BACKEND=${INFERER_BACKEND:-mock}
       # DEVOPS-GATED secrets — empty in dev; injected via ${VAR}, NEVER committed.
       - AZURE_DI_ENDPOINT=${AZURE_DI_ENDPOINT:-}
       - AZURE_DI_KEY=${AZURE_DI_KEY:-}

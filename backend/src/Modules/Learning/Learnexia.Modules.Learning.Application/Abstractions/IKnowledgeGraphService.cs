@@ -108,4 +108,27 @@ public interface IKnowledgeGraphService
     /// nodes before mapping to StudentKnowledgeNodeDto (security: students must not discover hidden skills).
     /// </summary>
     Task<HashSet<int>> GetActiveSkillIdsAsync(IReadOnlyCollection<int> skillIds, CancellationToken ct = default);
+
+    // ── BL-03 BE-4: GetRelatedConcepts ───────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns nodes connected to the given nodeId via <see cref="EdgeRelationshipType.Related"/> edges
+    /// (either direction: source or target). Inactive-skill nodes are NOT filtered here — the handler
+    /// applies the student-safe filter after calling this method.
+    /// </summary>
+    Task<List<KnowledgeNode>> GetRelatedNodesAsync(int nodeId, CancellationToken ct = default);
+
+    // ── BL-03 BE-5: GetRemediationPath (transitive BFS prerequisite chain) ──────────────────────
+
+    /// <summary>
+    /// Returns all Prerequisite-typed edges for the full graph (used by remediation BFS in the handler).
+    /// Same as <see cref="GetAllPrerequisiteEdgesAsync"/> semantically — materialized for BFS traversal.
+    /// </summary>
+    Task<List<KnowledgeEdge>> GetPrerequisiteEdgesForRemediationAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the KnowledgeNode for the given id (non-tracked), or null when not found.
+    /// Used by GetRemediationPathQueryHandler for the 404 check and node detail lookup.
+    /// </summary>
+    Task<KnowledgeNode?> GetNodeForRemediationAsync(int nodeId, CancellationToken ct = default);
 }

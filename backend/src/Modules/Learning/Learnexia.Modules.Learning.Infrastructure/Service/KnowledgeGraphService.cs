@@ -105,4 +105,20 @@ public class KnowledgeGraphService : LearningBaseService<KnowledgeEdge>, IKnowle
 
         return ids.ToHashSet();
     }
+
+    // ── BL-03 BE-4: GetRelatedConcepts ───────────────────────────────────────────────────────────
+
+    /// <inheritdoc />
+    public async Task<List<KnowledgeNode>> GetRelatedNodesAsync(int nodeId, CancellationToken ct = default)
+        => await _repository.GetRelatedNodesAsync(nodeId, ct);
+
+    // ── BL-03 BE-5: GetRemediationPath ───────────────────────────────────────────────────────────
+
+    /// <inheritdoc />
+    public async Task<List<KnowledgeEdge>> GetPrerequisiteEdgesForRemediationAsync(CancellationToken ct = default)
+        => await _repository.GetAllPrerequisiteEdgesAsync(ct);
+
+    /// <inheritdoc />
+    public async Task<KnowledgeNode?> GetNodeForRemediationAsync(int nodeId, CancellationToken ct = default)
+        => await _repository.GetKnowledgeNodeByIdAsync(nodeId, trackChanges: false, ct);
 }

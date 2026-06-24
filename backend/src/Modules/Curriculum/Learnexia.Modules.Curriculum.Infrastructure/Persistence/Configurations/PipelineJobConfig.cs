@@ -40,14 +40,16 @@ public class PipelineJobConfig : IEntityTypeConfiguration<PipelineJob>
             .HasMaxLength(32)
             .IsRequired();
 
-        // DocumentId: intra-module FK → CurriculumDocuments.Id (same curriculum schema).
-        builder.Property(j => j.DocumentId).IsRequired();
+        // DocumentId: OPTIONAL intra-module FK → CurriculumDocuments.Id (same curriculum schema).
+        // Null for 'infer_edges' jobs (graph-level, no source document).
+        // Set for 'parse'/'ingest' jobs.
+        builder.Property(j => j.DocumentId).IsRequired(false);
 
         builder.HasOne(j => j.Document)
             .WithMany(d => d.PipelineJobs)
             .HasForeignKey(j => j.DocumentId)
             .OnDelete(DeleteBehavior.Cascade)
-            .IsRequired();
+            .IsRequired(false);
 
         // Index on DocumentId — FK lookups and admin queries per document.
         builder.HasIndex(j => j.DocumentId)

@@ -1,4 +1,5 @@
 using Learnexia.Modules.Learning.Application.Abstractions;
+using Learnexia.Modules.Learning.Application.Options;
 using Learnexia.Modules.Learning.Application.Services;
 using Learnexia.Modules.Learning.Domain.Services;
 using Learnexia.Modules.Learning.Infrastructure.Behaviors;
@@ -105,11 +106,28 @@ public static class DependencyInjection
         // so it does not participate in any caller's scope. Mirrors StreakSweepJob registration.
         services.AddTransient<SpacedRepetitionSweepJob>();
 
+        // BL-03-BE-5: KnowledgeGraph remediation traversal options (Application layer; bound here since
+        // Infrastructure DI has IConfiguration access).
+        services.Configure<KnowledgeGraphOptions>(
+            configuration.GetSection(KnowledgeGraphOptions.SectionName));
+
         // BL-05 seam-impl: Cross-module write seam for curriculum ingest-advance (IPedagogicalTreeWriter).
         // Curriculum calls this interface to upsert Subject/Unit/Lesson/Concept/Skill/KnowledgeNode
         // without any project reference curriculum→learning (module isolation rule, CLAUDE.md rule 1).
         // Scoped: depends on scoped LearningDbContext.
         services.AddScoped<IPedagogicalTreeWriter, PedagogicalTreeWriterAdapter>();
+
+        // BL-03 seam-impl: Cross-module write seam — the SINGLE publish path for KnowledgeEdge rows
+        // produced by an approved KGSuggestion (Decision E chokepoint). Encapsulates cross-language +
+        // duplicate + acyclic guards (the exact AddKnowledgeEdgeCommandHandler chain).
+        // Scoped: depends on scoped LearningDbContext.
+        services.AddScoped<IKnowledgeEdgeWriter, KnowledgeEdgeWriterAdapter>();
+
+        // BL-03 seam-impl: Cross-module read seam — lets Curriculum read KnowledgeNode rows (SkillKey,
+        // SubjectCode, GradeId) for inference feed (BuildKnowledgeGraphSuggestionsCommand) and
+        // SkillKey→NodeId resolution (EdgeInferenceAdvanceService).
+        // Scoped: depends on scoped LearningDbContext.
+        services.AddScoped<IKnowledgeNodeReader, KnowledgeNodeReaderAdapter>();
 
         // P3-04 BE-2: Cross-module seam — allows the Ai module handler to read minimal lesson
         // metadata (title, subject, grade) from LearningDbContext via Shared.Contracts.

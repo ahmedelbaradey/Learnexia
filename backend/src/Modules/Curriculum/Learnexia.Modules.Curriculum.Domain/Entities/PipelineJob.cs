@@ -15,10 +15,11 @@ namespace Learnexia.Modules.Curriculum.Domain.Entities;
 /// Design rules:
 /// - <see cref="Id"/> is int identity (module consistency; Q4 resolution).
 /// - <see cref="JobType"/> and <see cref="Status"/> are strings — cross-process contract.
-///   Valid JobType values: 'parse', 'ingest', 'embed'.
+///   Valid JobType values: 'parse', 'ingest', 'embed', 'infer_edges'.
 ///   Valid Status values: 'Pending', 'Processing', 'Done', 'Failed', 'PermanentlyFailed'.
-/// - <see cref="DocumentId"/> is an intra-module FK → CurriculumDocuments.Id (same schema — FK allowed).
-///   ON DELETE CASCADE: deleting a document removes its jobs.
+/// - <see cref="DocumentId"/> is an OPTIONAL intra-module FK → CurriculumDocuments.Id (same schema — FK allowed).
+///   Nullable: 'parse'/'ingest' jobs always set DocumentId; 'infer_edges' jobs are graph-level (no source document).
+///   ON DELETE CASCADE: deleting a document removes its jobs (only applies when DocumentId is non-null).
 /// - <see cref="PayloadJson"/> carries only object_key + content_type — no secrets, no unsanitized client input.
 /// - <c>CreatedAt</c> is inherited as <c>DateTime</c> from <c>CreationAuditedEntity</c> (module convention;
 ///   all existing curriculum entities use the base DateTime CreatedAt — do not shadow it).
@@ -27,7 +28,7 @@ public class PipelineJob : AggregateRoot
 {
     /// <summary>
     /// Type of work to be performed. String — cross-process contract with Python.
-    /// Values: 'parse' | 'ingest' | 'embed'.
+    /// Values: 'parse' | 'ingest' | 'embed' | 'infer_edges'.
     /// </summary>
     public string JobType { get; set; } = null!;
 
@@ -38,9 +39,11 @@ public class PipelineJob : AggregateRoot
     public string Status { get; set; } = "Pending";
 
     /// <summary>
-    /// FK → CurriculumDocuments.Id. Intra-module ref (same curriculum schema — real FK is allowed).
+    /// Optional FK → CurriculumDocuments.Id. Intra-module ref (same curriculum schema — real FK is allowed).
+    /// Null for 'infer_edges' jobs (graph-level job with no source document).
+    /// Set for 'parse'/'ingest' jobs (document-level jobs).
     /// </summary>
-    public int DocumentId { get; set; }
+    public int? DocumentId { get; set; }
 
     /// <summary>
     /// JSON payload for the Python worker. Contains only object_key + content_type.
@@ -78,6 +81,6 @@ public class PipelineJob : AggregateRoot
     /// </summary>
     public int RetryCount { get; set; } = 0;
 
-    // Navigation — owning document (intra-module FK, cascade delete).
-    public CurriculumDocument Document { get; set; } = null!;
+    // Navigation — owning document (intra-module FK, optional — null for infer_edges jobs).
+    public CurriculumDocument? Document { get; set; }
 }

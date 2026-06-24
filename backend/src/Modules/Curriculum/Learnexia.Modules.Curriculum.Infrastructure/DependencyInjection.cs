@@ -142,6 +142,24 @@ public static class DependencyInjection
         services.AddSingleton<IngestJobAdvanceService>();
         services.AddHostedService(sp => sp.GetRequiredService<IngestJobAdvanceService>());
 
+        // ── BL-03 BE-2: IGraphInferenceClient — mock-only test seam ──────────────────────────────
+        // No live HTTP call to Python (DB-outbox lane; Python polls PipelineJobs).
+        // Mirrors IParsingServiceClient / NoOpParsingServiceClient registration.
+        services.AddScoped<IGraphInferenceClient, NoOpGraphInferenceClient>();
+
+        // ── BL-03 BE-3: InferEdgesJobPollerConfiguration + EdgeInferenceAdvanceService ──────────
+        // InferEdgesJobPollerConfiguration is bound from the same "CurriculumPipeline" section
+        // (separate keys: InferEdgesPollerIntervalSeconds, InferEdgesMaxRetries).
+        // EdgeInferenceAdvanceService is a BackgroundService that claims Done/Failed
+        // PipelineJobs WHERE JobType='infer_edges', deserializes ResultJson, resolves SkillKeys via
+        // IKnowledgeNodeReader (cross-module seam), clamps strength/confidence server-side, and
+        // idempotent-inserts KGSuggestion{Pending}. Never writes KnowledgeEdge (Decision E).
+        services.AddOptions<InferEdgesJobPollerConfiguration>()
+            .Bind(configuration.GetSection(InferEdgesJobPollerConfiguration.Section));
+
+        services.AddSingleton<EdgeInferenceAdvanceService>();
+        services.AddHostedService(sp => sp.GetRequiredService<EdgeInferenceAdvanceService>());
+
         return services;
     }
 }

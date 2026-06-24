@@ -38,6 +38,20 @@ class ExtractorBackendKind(str, Enum):
     CLAUDE = "claude"
 
 
+class InfererBackendKind(str, Enum):
+    """Which edge-inference backend the INFER_EDGES lane uses (BL-03-PY-2).
+
+    ``mock`` is the DEFAULT in dev + CI (deterministic, no network). ``lightrag``
+    is the real backend — only selected once devops sets ``INFERER_BACKEND=lightrag``
+    AND ``ANTHROPIC_API_KEY`` (LightRAG drives an LLM under the hood). Mirrors
+    :class:`ParserBackendKind` / :class:`ExtractorBackendKind` exactly so the
+    mock-now/flip-later posture is identical across all three lanes (ADR-0004 §5).
+    """
+
+    MOCK = "mock"
+    LIGHTRAG = "lightrag"
+
+
 def _get_bool(name: str, default: bool) -> bool:
     raw = os.environ.get(name)
     if raw is None:
@@ -173,6 +187,58 @@ class IngestPollerConfig:
 
 
 @dataclass(frozen=True)
+class InferPollerConfig:
+    """Tuning for the THIRD poller lane (BL-03) that claims ``JobType='infer_edges'``.
+
+    Runs in the same process as the parse + ingest pollers, on its own daemon
+    thread + psycopg connection. ``job_type`` is locked to ``'infer_edges'`` (a
+    different lane than parse/ingest), so the three pollers never claim each
+    other's rows (SKIP LOCKED + the JobType filter).
+    """
+
+    interval_seconds: float = 5.0
+    job_type: str = "infer_edges"
+    batch_size: int = 1
+
+    @classmethod
+    def from_env(cls) -> InferPollerConfig:
+        return cls(
+            interval_seconds=_get_float("INFER_POLL_INTERVAL_SECONDS", 5.0),
+            job_type=os.environ.get("INFER_POLL_JOB_TYPE", "infer_edges"),
+            batch_size=_get_int("INFER_POLL_BATCH_SIZE", 1),
+        )
+
+
+@dataclass(frozen=True)
+class InferenceConfig:
+    """Edge-inference-lane (LightRAG/LLM prereq+related inference) tuning.
+
+    ``strength``/``confidence`` are EMITTED 0..1 scores — the worker never gates on
+    them; the .NET ``EdgeInferenceAdvanceService`` re-clamps + admin review is the
+    Decision-E mitigation, so the model's values are advisory only.
+    """
+
+    inferer_backend: InfererBackendKind = InfererBackendKind.MOCK
+    inference_model: str = "lightrag-mock-v1"
+    anthropic_model: str = "claude-sonnet-4-6"
+    min_confidence: float = 0.0
+
+    @classmethod
+    def from_env(cls) -> InferenceConfig:
+        backend_raw = os.environ.get("INFERER_BACKEND", InfererBackendKind.MOCK.value)
+        try:
+            backend = InfererBackendKind(backend_raw.strip().lower())
+        except ValueError:
+            backend = InfererBackendKind.MOCK
+        return cls(
+            inferer_backend=backend,
+            inference_model=os.environ.get("INFERENCE_MODEL", "lightrag-mock-v1"),
+            anthropic_model=os.environ.get("INFER_ANTHROPIC_MODEL", "claude-sonnet-4-6"),
+            min_confidence=_get_float("INFER_MIN_CONFIDENCE", 0.0),
+        )
+
+
+@dataclass(frozen=True)
 class IngestionConfig:
     """Ingest-lane (hierarchy extraction + chunking) tuning.
 
@@ -213,7 +279,9 @@ class Settings:
     )
     poller: PollerConfig = field(default_factory=PollerConfig.from_env)
     ingest_poller: IngestPollerConfig = field(default_factory=IngestPollerConfig.from_env)
+    infer_poller: InferPollerConfig = field(default_factory=InferPollerConfig.from_env)
     ingestion: IngestionConfig = field(default_factory=IngestionConfig.from_env)
+    inference: InferenceConfig = field(default_factory=InferenceConfig.from_env)
     parser_backend: ParserBackendKind = ParserBackendKind.MOCK
     anthropic_api_key: str | None = None
     log_level: str = "INFO"
@@ -231,7 +299,9 @@ class Settings:
             azure_di=AzureDocumentIntelligenceConfig.from_env(),
             poller=PollerConfig.from_env(),
             ingest_poller=IngestPollerConfig.from_env(),
+            infer_poller=InferPollerConfig.from_env(),
             ingestion=IngestionConfig.from_env(),
+            inference=InferenceConfig.from_env(),
             parser_backend=backend,
             anthropic_api_key=os.environ.get("ANTHROPIC_API_KEY") or None,
             log_level=os.environ.get("LOG_LEVEL", "INFO"),

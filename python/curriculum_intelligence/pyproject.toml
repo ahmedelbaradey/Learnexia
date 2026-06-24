@@ -27,6 +27,9 @@ dependencies = [
 # pin exact versions when provisioning.
 live = [
     "azure-ai-documentintelligence==1.0.0",
+    # anthropic drives both the Claude hierarchy extractor (BL-05) and the LightRAG
+    # edge inferer's LLM step (BL-03); the LightRAG graph store (lightrag-hku) is a
+    # devops follow-up pinned at provisioning time.
     "anthropic==0.40.0",
     # "raganything", "lightrag-hku", "mineru", "paddleocr" — pin at provisioning time.
 ]
@@ -49,6 +52,7 @@ packages = [
     "curriculum_intelligence.app",
     "curriculum_intelligence.parsers",
     "curriculum_intelligence.ingestion",
+    "curriculum_intelligence.inference",
     "curriculum_intelligence.workers",
     "curriculum_intelligence.benchmarks",
 ]

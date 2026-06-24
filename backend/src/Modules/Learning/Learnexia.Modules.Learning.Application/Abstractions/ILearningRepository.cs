@@ -173,6 +173,15 @@ public interface ILearningRepository : IGenericRepository
     /// </summary>
     Task<Subject?> GetSubjectByConceptIdAsync(int conceptId, CancellationToken ct = default);
 
+    // ── BL-03 BE-4: GetRelatedConcepts ───────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns nodes connected to the given nodeId via <see cref="EdgeRelationshipType.Related"/> edges
+    /// in either direction (source or target). AsNoTracking.
+    /// Used by <c>GetRelatedConceptsQueryHandler</c>.
+    /// </summary>
+    Task<List<KnowledgeNode>> GetRelatedNodesAsync(int nodeId, CancellationToken ct = default);
+
     // ── P7-05 Content lifecycle / versioning ──────────────────────────────────────────────────────
 
     /// <summary>
