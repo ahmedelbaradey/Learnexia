@@ -336,6 +336,34 @@ public sealed class ParseJobAdvanceService : BackgroundService
 
         // BE-6: build provenance tree.
         await BuildProvenanceTreeAsync(db, document, result, ct);
+
+        // Q8: parse→ingest hand-off (BL-05 BE-13 decision).
+        // Enqueue a 'Pending' ingest job immediately after a successful parse-Done advance.
+        // The ingest job is picked up by IngestJobAdvanceService once the Python ingest worker
+        // processes it and writes 'Done'/'Failed' back to this same PipelineJobs outbox.
+        // Idempotency: if an ingest job already exists for this document at Pending/Processing/Done,
+        // we still enqueue — re-ingest is controlled by the ReIngest command (BE-9), not here.
+        // The payload carries the artifact key so the Python ingest worker knows what to process.
+        var ingestPayload = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            artifact_key = result.ArtifactKey,
+            document_id  = document.Id,
+        });
+
+        db.PipelineJobs.Add(new PipelineJob
+        {
+            JobType     = "ingest",
+            Status      = "Pending",
+            DocumentId  = document.Id,
+            PayloadJson = ingestPayload,
+            RetryCount  = 0,
+        });
+
+        document.IngestionStatus = IngestionStatus.InProgress;
+
+        _logger.LogInfo(
+            $"ParseJobAdvanceService Q8: enqueued ingest PipelineJob for document id={document.Id} " +
+            $"artifactKey={result.ArtifactKey}.");
     }
 
     // ── BE-6: provenance tree builder ─────────────────────────────────────────────────────────────

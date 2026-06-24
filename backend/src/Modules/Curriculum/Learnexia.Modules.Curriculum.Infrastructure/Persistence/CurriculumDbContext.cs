@@ -41,6 +41,11 @@ public class CurriculumDbContext : DbContext
     // BL-04 BE-10: KG suggestion queue (AddKGSuggestionTable migration)
     public DbSet<KGSuggestion> KGSuggestions => Set<KGSuggestion>();
 
+    // BL-05 BE-1/BE-2: ingestion review queue (AddIngestionReviewItems migration)
+    // Holds low-confidence ingestion outputs withheld from the published curriculum tree
+    // pending admin approval. Threshold default 0.7, config-driven (never hardcoded here).
+    public DbSet<IngestionReviewItem> IngestionReviewItems => Set<IngestionReviewItem>();
+
     // BL-01 BE-1/BE-2: curriculum upload front door (AddCurriculumDocumentTable migration)
     public DbSet<CurriculumDocument> CurriculumDocuments => Set<CurriculumDocument>();
 

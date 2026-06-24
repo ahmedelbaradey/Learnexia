@@ -120,6 +120,28 @@ public static class DependencyInjection
         services.AddSingleton<ParseJobAdvanceService>();
         services.AddHostedService(sp => sp.GetRequiredService<ParseJobAdvanceService>());
 
+        // ── BL-05 BE-3: IIngestionServiceClient — mock-only test seam ─────────────────────────
+        // Mirrors IParsingServiceClient / NoOpParsingServiceClient pattern.
+        // NoOpIngestionServiceClient always returns null (Python worker writes ResultJson to DB).
+        services.AddScoped<IIngestionServiceClient, NoOpIngestionServiceClient>();
+
+        // ── BL-05 BE-12: ICurriculumVersionResolver + CurriculumVersionResolver ─────────────────
+        // Draft-only version resolver: finds or creates the Draft CurriculumVersion for
+        // (SubjectId, Language). Called by IngestJobAdvanceService per job.
+        services.AddScoped<ICurriculumVersionResolver, CurriculumVersionResolver>();
+
+        // ── BL-05 BE-13: IngestJobPollerConfiguration + IngestJobAdvanceService ─────────────────
+        // IngestJobPollerConfiguration is bound from the same "CurriculumPipeline" section (separate keys).
+        // IngestJobAdvanceService is a BackgroundService that polls PipelineJobs
+        // WHERE Status IN ('Done','Failed') AND JobType='ingest' using FOR UPDATE SKIP LOCKED.
+        // Resolves IPedagogicalTreeWriter from the Learning module via IServiceProvider
+        // (cross-module seam — BL-05 Batch 2a-0 and Q1 decision).
+        services.AddOptions<IngestJobPollerConfiguration>()
+            .Bind(configuration.GetSection(IngestJobPollerConfiguration.Section));
+
+        services.AddSingleton<IngestJobAdvanceService>();
+        services.AddHostedService(sp => sp.GetRequiredService<IngestJobAdvanceService>());
+
         return services;
     }
 }

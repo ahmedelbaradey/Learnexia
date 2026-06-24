@@ -2795,4 +2795,40 @@
   <data name="CurriculumDocumentParseProcessingFailed" xml:space="preserve">
     <value>حدث خطأ غير متوقع أثناء معالجة نتيجة التحليل. تم تعيين المستند على أنه فاشل.</value>
   </data>
+  <data name="CurriculumIngestJobEnqueued" xml:space="preserve">
+    <value>تم إضافة مهمة الاستيعاب إلى قائمة الانتظار. تمت جدولة المستند لهيكلة المحتوى.</value>
+  </data>
+  <data name="CurriculumIngestJobInFlight" xml:space="preserve">
+    <value>توجد مهمة استيعاب جارية بالفعل لهذا المستند. يرجى انتظار اكتمالها قبل طلب استيعاب جديد.</value>
+  </data>
+  <data name="CurriculumReIngestJobEnqueued" xml:space="preserve">
+    <value>تم إضافة مهمة إعادة الاستيعاب إلى قائمة الانتظار. تمت إعادة تعيين حالة استيعاب المستند إلى قيد المعالجة.</value>
+  </data>
+  <data name="CurriculumIngestProcessingFailed" xml:space="preserve">
+    <value>حدث خطأ غير متوقع أثناء معالجة نتيجة الاستيعاب. تم تعيين المستند على أنه فاشل.</value>
+  </data>
+  <data name="CurriculumIngestResultInvalid" xml:space="preserve">
+    <value>نتيجة الاستيعاب التي أرسلها العامل غير صالحة أو تحتوي على قيم تتجاوز الأطوال المسموح بها. تم تعيين المستند على أنه فاشل.</value>
+  </data>
+  <data name="IngestionReviewItemsRetrievedSuccessfully" xml:space="preserve">
+    <value>تم استرجاع عناصر مراجعة الاستيعاب بنجاح.</value>
+  </data>
+  <data name="IngestionReviewItemNotFound" xml:space="preserve">
+    <value>عنصر مراجعة الاستيعاب غير موجود.</value>
+  </data>
+  <data name="IngestionReviewItemAlreadyResolved" xml:space="preserve">
+    <value>تمت معالجة عنصر مراجعة الاستيعاب هذا بالفعل (قبول أو رفض) ولا يمكن تعديله.</value>
+  </data>
+  <data name="IngestionReviewItemApproved" xml:space="preserve">
+    <value>تمت الموافقة على عنصر مراجعة الاستيعاب. تم تأكيد عقدة التسلسل الهرمي المقترحة.</value>
+  </data>
+  <data name="IngestionReviewItemRejected" xml:space="preserve">
+    <value>تم رفض عنصر مراجعة الاستيعاب. تم تجاهل عقدة التسلسل الهرمي المقترحة.</value>
+  </data>
+  <data name="CurriculumDocumentNotParsed" xml:space="preserve">
+    <value>لا يمكن بدء إعادة الاستيعاب: لم تكتمل عملية تحليل المستند بعد. يرجى الانتظار حتى اكتمال التحليل أو طلب إعادة التحليل أولاً.</value>
+  </data>
+  <data name="IngestionReviewItemTreeWriteFailed" xml:space="preserve">
+    <value>حمولة عنصر المراجعة تفتقر إلى الحقول المطلوبة (title أو skill_key) ولا يمكن ترقيتها إلى شجرة التعلم. يرجى إعادة استيعاب المستند لإعادة توليد الحمولة.</value>
+  </data>
 </root>

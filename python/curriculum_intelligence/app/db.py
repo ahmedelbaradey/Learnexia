@@ -32,6 +32,7 @@ STATUS_FAILED = "Failed"
 STATUS_PERMANENTLY_FAILED = "PermanentlyFailed"
 
 JOB_TYPE_PARSE = "parse"
+JOB_TYPE_INGEST = "ingest"
 
 
 @dataclass

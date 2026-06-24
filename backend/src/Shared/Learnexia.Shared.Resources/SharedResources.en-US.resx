@@ -2796,4 +2796,40 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="CurriculumDocumentParseProcessingFailed" xml:space="preserve">
     <value>An unexpected error occurred while processing the parse result. The document has been marked as failed.</value>
   </data>
+  <data name="CurriculumIngestJobEnqueued" xml:space="preserve">
+    <value>Ingestion job enqueued. The document has been queued for content structuring.</value>
+  </data>
+  <data name="CurriculumIngestJobInFlight" xml:space="preserve">
+    <value>An ingestion job is already in progress for this document. Wait for it to complete before requesting a new ingest.</value>
+  </data>
+  <data name="CurriculumReIngestJobEnqueued" xml:space="preserve">
+    <value>Re-ingest job enqueued. The document ingestion status has been reset to processing.</value>
+  </data>
+  <data name="CurriculumIngestProcessingFailed" xml:space="preserve">
+    <value>An unexpected error occurred while processing the ingestion result. The document has been marked as failed.</value>
+  </data>
+  <data name="CurriculumIngestResultInvalid" xml:space="preserve">
+    <value>The ingestion result returned by the worker is invalid or contains values that exceed allowed lengths. The document has been marked as failed.</value>
+  </data>
+  <data name="IngestionReviewItemsRetrievedSuccessfully" xml:space="preserve">
+    <value>Ingestion review items retrieved successfully.</value>
+  </data>
+  <data name="IngestionReviewItemNotFound" xml:space="preserve">
+    <value>Ingestion review item not found.</value>
+  </data>
+  <data name="IngestionReviewItemAlreadyResolved" xml:space="preserve">
+    <value>This ingestion review item has already been resolved (approved or rejected) and cannot be modified.</value>
+  </data>
+  <data name="IngestionReviewItemApproved" xml:space="preserve">
+    <value>Ingestion review item approved. The proposed hierarchy node has been committed.</value>
+  </data>
+  <data name="IngestionReviewItemRejected" xml:space="preserve">
+    <value>Ingestion review item rejected. The proposed hierarchy node has been discarded.</value>
+  </data>
+  <data name="CurriculumDocumentNotParsed" xml:space="preserve">
+    <value>Re-ingest cannot be started: the document has not been successfully parsed yet. Please wait for parsing to complete or trigger a reparse first.</value>
+  </data>
+  <data name="IngestionReviewItemTreeWriteFailed" xml:space="preserve">
+    <value>The review item's payload is missing required fields (title or skill_key) and cannot be promoted to the learning tree. Please re-ingest the document to regenerate the payload.</value>
+  </data>
 </root>

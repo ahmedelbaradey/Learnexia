@@ -48,6 +48,7 @@ packages = [
     "curriculum_intelligence",
     "curriculum_intelligence.app",
     "curriculum_intelligence.parsers",
+    "curriculum_intelligence.ingestion",
     "curriculum_intelligence.workers",
     "curriculum_intelligence.benchmarks",
 ]
