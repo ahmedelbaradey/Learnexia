@@ -61,16 +61,19 @@ public interface IKnowledgeEdgeWriter
 /// <summary>
 /// Result of <see cref="IKnowledgeEdgeWriter.PublishApprovedEdgeAsync"/>.
 /// Exactly one of <see cref="Published"/>, <see cref="Duplicate"/>, <see cref="Cycle"/>,
-/// or <see cref="CrossLanguage"/> will be true; the others false.
+/// <see cref="CrossLanguage"/>, or <see cref="NodeMissing"/> will be true; the others false.
 /// </summary>
 /// <param name="Published">true when a new edge was inserted successfully.</param>
 /// <param name="Duplicate">true when the triple already exists (hand-authored or prior approval). Treat as 200 no-op.</param>
 /// <param name="Cycle">true when the acyclic guard rejected the edge. No commit. Return 422.</param>
 /// <param name="CrossLanguage">true when the cross-language guard rejected the edge. No commit. Return 422.</param>
+/// <param name="NodeMissing">true when one or both node IDs could not be resolved in the learning module.
+/// Distinct from <see cref="CrossLanguage"/> — the node simply does not exist. Return 422.</param>
 /// <param name="EdgeId">The new KnowledgeEdge.Id when Published=true, null otherwise.</param>
 public sealed record EdgePublishResult(
     bool Published,
     bool Duplicate,
     bool Cycle,
     bool CrossLanguage,
+    bool NodeMissing,
     int? EdgeId);

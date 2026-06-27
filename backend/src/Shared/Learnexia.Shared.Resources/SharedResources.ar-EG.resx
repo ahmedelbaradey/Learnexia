@@ -1917,6 +1917,9 @@
   <data name="KGSuggestionPublishCrossLanguage" xml:space="preserve">
     <value>الموافقة على هذا الاقتراح ستؤدي إلى إنشاء حافة بين لغتين مختلفتين، وهو أمر غير مسموح به. يبقى الاقتراح معلقاً.</value>
   </data>
+  <data name="KGSuggestionPublishNodeMissing" xml:space="preserve">
+    <value>إحدى عقدتَي المعرفة المشار إليهما في هذا الاقتراح أو كلتاهما لم تعد موجودة في وحدة التعلم. لا يمكن الموافقة على هذا الاقتراح. يرجى رفضه وإعادة إنشاء الاقتراحات بعد التحقق من بيانات العقد.</value>
+  </data>
   <data name="KnowledgeGraphRelatedConceptsRetrievedSuccessfully" xml:space="preserve">
     <value>تم استرجاع المفاهيم المرتبطة بنجاح.</value>
   </data>

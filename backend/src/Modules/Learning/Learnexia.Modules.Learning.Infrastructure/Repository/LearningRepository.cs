@@ -401,6 +401,20 @@ public class LearningRepository : ILearningRepository
             .ToListAsync(ct);
     }
 
+    // ── BL-03 polish: batch node load for GetRemediationPath ─────────────────────────────────────
+
+    /// <inheritdoc/>
+    public async Task<List<KnowledgeNode>> GetNodesByIdsAsync(IReadOnlyCollection<int> nodeIds, CancellationToken ct = default)
+    {
+        if (nodeIds.Count == 0)
+            return new List<KnowledgeNode>();
+
+        return await RepositoryContext.KnowledgeNodes
+            .AsNoTracking()
+            .Where(n => nodeIds.Contains(n.Id))
+            .ToListAsync(ct);
+    }
+
     /// <inheritdoc/>
     public async Task<Subject?> GetSubjectByConceptIdAsync(int conceptId, CancellationToken ct = default)
     {

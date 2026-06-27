@@ -11,6 +11,11 @@ namespace Learnexia.Modules.Curriculum.Application.Features.KGSuggestions.Querie
 /// <para>Optionally filtered by <see cref="Status"/>, <see cref="SubjectCode"/>, and
 /// <see cref="GradeId"/>. Default: all Pending suggestions, paged.</para>
 ///
+/// <para>Subject+grade filtering is only applied when BOTH <see cref="SubjectCode"/> and
+/// <see cref="GradeId"/> are provided. The handler resolves matching KnowledgeNode ids via
+/// <c>IKnowledgeNodeReader</c> and returns only suggestions whose <c>SourceNodeId</c> or
+/// <c>TargetNodeId</c> belongs to those nodes.</para>
+///
 /// <para>This is an <see cref="IQuery{TResponse}"/> — ValidationBehavior does NOT run
 /// (queries are not auto-validated). The handler performs its own guards.</para>
 /// </summary>
@@ -22,12 +27,13 @@ public class ListKGSuggestionsQuery : IQuery<PaginatedResult<KGSuggestionDto>>
     /// <summary>Optional filter — only suggestions in this status (default: Pending only).</summary>
     public KGSuggestionStatus? Status { get; init; }
 
-    /// <summary>Optional filter — only suggestions whose SourceNodeId belongs to this SubjectCode.
-    /// Note: KGSuggestion stores only NodeIds (no SubjectCode). This filter is left for future use;
-    /// currently unused if not joined to Learning nodes. Pass null to omit.</summary>
+    /// <summary>Optional filter — only suggestions whose source or target node belongs to this SubjectCode
+    /// (resolved via <c>IKnowledgeNodeReader.GetNodesForSubjectAsync</c>). Requires <see cref="GradeId"/>
+    /// to be set as well; ignored when <see cref="GradeId"/> is absent. SubjectCode int: 0=Math,
+    /// 1=Science, 2=Arabic, 3=English (matches Learning's SubjectCode enum).</summary>
     public int? SubjectCode { get; init; }
 
-    /// <summary>Optional filter — only suggestions whose nodes belong to this GradeId.
-    /// Same note as SubjectCode — pure curriculum data has no GradeId on KGSuggestion.</summary>
+    /// <summary>Optional filter — paired with <see cref="SubjectCode"/> to narrow suggestions to a
+    /// specific grade (Learning module Grade.Id). Both params must be set for the filter to apply.</summary>
     public int? GradeId { get; init; }
 }

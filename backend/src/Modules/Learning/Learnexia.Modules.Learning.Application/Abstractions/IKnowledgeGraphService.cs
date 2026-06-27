@@ -131,4 +131,12 @@ public interface IKnowledgeGraphService
     /// Used by GetRemediationPathQueryHandler for the 404 check and node detail lookup.
     /// </summary>
     Task<KnowledgeNode?> GetNodeForRemediationAsync(int nodeId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all live (non-deleted) KnowledgeNode rows whose Id is in the given set.
+    /// Single <c>WHERE Id IN (...)</c> round-trip — used by GetRemediationPathQueryHandler to
+    /// batch-load all BFS result nodes instead of N separate round-trips.
+    /// AsNoTracking. Absent ids (deleted or never existed) are silently omitted.
+    /// </summary>
+    Task<Dictionary<int, KnowledgeNode>> GetNodesByIdsAsync(IReadOnlyCollection<int> nodeIds, CancellationToken ct = default);
 }

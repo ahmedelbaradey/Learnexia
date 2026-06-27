@@ -1078,6 +1078,11 @@
         /// <summary>Returned when publishing an approved KGSuggestion connects nodes from different languages.</summary>
         public const string KGSuggestionPublishCrossLanguage = "KGSuggestionPublishCrossLanguage";
 
+        /// <summary>Returned when one or both node IDs in a KGSuggestion cannot be resolved in the
+        /// learning module (node was deleted after the suggestion was created, or was never written).
+        /// Distinct from cross-language rejection — the node simply does not exist.</summary>
+        public const string KGSuggestionPublishNodeMissing = "KGSuggestionPublishNodeMissing";
+
         /// <summary>Returned on successful retrieval of related concepts for a knowledge node.</summary>
         public const string KnowledgeGraphRelatedConceptsRetrievedSuccessfully = "KnowledgeGraphRelatedConceptsRetrievedSuccessfully";
 

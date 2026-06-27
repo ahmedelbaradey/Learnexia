@@ -61,13 +61,8 @@ public sealed class KnowledgeEdgeWriterAdapter : IKnowledgeEdgeWriter
         if (sourceNode is null)
         {
             _logger.LogInfo(
-                $"KnowledgeEdgeWriterAdapter: sourceNodeId={sourceNodeId} not found; publish rejected.");
-            // Treat missing node as a CrossLanguage-style domain error (422) to caller.
-            // Use CrossLanguage=false, Cycle=false; but we need a distinguishable outcome.
-            // The brief says "cross-language → 422"; missing node is also a 422-class domain error.
-            // Return CrossLanguage=true as the least-bad flag for now (the caller already validates
-            // node ids exist when approving a KGSuggestion, so this path is defensive only).
-            return new EdgePublishResult(false, false, false, true, null);
+                $"KnowledgeEdgeWriterAdapter: sourceNodeId={sourceNodeId} not found; publish rejected (NodeMissing).");
+            return new EdgePublishResult(false, false, false, false, true, null);
         }
 
         var targetNode = await _db.KnowledgeNodes
@@ -77,8 +72,8 @@ public sealed class KnowledgeEdgeWriterAdapter : IKnowledgeEdgeWriter
         if (targetNode is null)
         {
             _logger.LogInfo(
-                $"KnowledgeEdgeWriterAdapter: targetNodeId={targetNodeId} not found; publish rejected.");
-            return new EdgePublishResult(false, false, false, true, null);
+                $"KnowledgeEdgeWriterAdapter: targetNodeId={targetNodeId} not found; publish rejected (NodeMissing).");
+            return new EdgePublishResult(false, false, false, false, true, null);
         }
 
         // ── Guard 2: cross-language check ─────────────────────────────────────────────────────────
@@ -97,7 +92,7 @@ public sealed class KnowledgeEdgeWriterAdapter : IKnowledgeEdgeWriter
             _logger.LogInfo(
                 $"KnowledgeEdgeWriterAdapter: subject not resolvable for sourceNodeId={sourceNodeId} " +
                 $"or targetNodeId={targetNodeId}; publish rejected (cross-language fail-closed).");
-            return new EdgePublishResult(false, false, false, true, null);
+            return new EdgePublishResult(false, false, false, true, false, null);
         }
 
         if (sourceSubject.Language != targetSubject.Language)
@@ -106,7 +101,7 @@ public sealed class KnowledgeEdgeWriterAdapter : IKnowledgeEdgeWriter
                 $"KnowledgeEdgeWriterAdapter: cross-language edge rejected " +
                 $"sourceNodeId={sourceNodeId} (lang={sourceSubject.Language}) " +
                 $"targetNodeId={targetNodeId} (lang={targetSubject.Language}).");
-            return new EdgePublishResult(false, false, false, true, null);
+            return new EdgePublishResult(false, false, false, true, false, null);
         }
 
         // ── Guard 3: duplicate check ───────────────────────────────────────────────────────────────
@@ -122,7 +117,7 @@ public sealed class KnowledgeEdgeWriterAdapter : IKnowledgeEdgeWriter
             _logger.LogInfo(
                 $"KnowledgeEdgeWriterAdapter: duplicate edge sourceNodeId={sourceNodeId} " +
                 $"targetNodeId={targetNodeId} relationshipType={relationshipType}; treating as no-op.");
-            return new EdgePublishResult(false, true, false, false, null);
+            return new EdgePublishResult(false, true, false, false, false, null);
         }
 
         // ── Guard 4: acyclic check for Prerequisite edges ─────────────────────────────────────────
@@ -155,7 +150,7 @@ public sealed class KnowledgeEdgeWriterAdapter : IKnowledgeEdgeWriter
                     $"KnowledgeEdgeWriterAdapter: acyclic guard rejected edge " +
                     $"sourceNodeId={sourceNodeId} targetNodeId={targetNodeId}. " +
                     $"Cycle detail: {cycleEx.Message}");
-                return new EdgePublishResult(false, false, true, false, null);
+                return new EdgePublishResult(false, false, true, false, false, null);
             }
         }
 
@@ -176,6 +171,6 @@ public sealed class KnowledgeEdgeWriterAdapter : IKnowledgeEdgeWriter
             $"sourceNodeId={sourceNodeId} targetNodeId={targetNodeId} " +
             $"relationshipType={edgeRelType} strength={strength}.");
 
-        return new EdgePublishResult(true, false, false, false, edge.Id);
+        return new EdgePublishResult(true, false, false, false, false, edge.Id);
     }
 }

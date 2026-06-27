@@ -123,13 +123,17 @@ public sealed class KGSuggestionsController : AppControllerBase
     /// <see cref="Learnexia.Modules.Curriculum.Infrastructure.Jobs.EdgeInferenceAdvanceService"/> then
     /// claims Done jobs and writes <c>KGSuggestion{Pending}</c> rows.</para>
     ///
-    /// <para>Admin-only / system-gated. Rate-limit this endpoint in production.</para>
+    /// <para>Admin-only / system-gated. Rate-limited to 5 requests per minute per IP
+    /// (see <c>post:/api/curriculum/kg-suggestions/build</c> in
+    /// <c>ServiceExtensions.ConfigureRateLimitingOptions</c> GeneralRules — AspNetCoreRateLimit)
+    /// to prevent runaway LLM inference job queuing.</para>
     /// </summary>
     [HttpPost("build")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Build(
         [FromQuery] int subjectCode,
         [FromQuery] int gradeId,

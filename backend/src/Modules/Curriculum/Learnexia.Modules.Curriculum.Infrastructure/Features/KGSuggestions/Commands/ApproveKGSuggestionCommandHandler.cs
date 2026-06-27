@@ -127,6 +127,17 @@ public sealed class ApproveKGSuggestionCommandHandler
                     _localizer[SharedResourcesKey.KnowledgeEdgeCrossLanguageForbidden]);
             }
 
+            if (publishResult.NodeMissing)
+            {
+                await tx.RollbackAsync(cancellationToken);
+                _logger.LogInfo(
+                    $"ApproveKGSuggestion: one or both nodes missing for suggestion id={suggestion.Id} " +
+                    $"(SourceNodeId={suggestion.SourceNodeId}, TargetNodeId={suggestion.TargetNodeId}); " +
+                    "suggestion remains Pending.");
+                return UnprocessableEntity<KGSuggestionDto>(
+                    _localizer[SharedResourcesKey.KGSuggestionPublishNodeMissing]);
+            }
+
             // Published=true or Duplicate=true → success (Duplicate = edge already exists, treat as no-op).
             suggestion.Status           = KGSuggestionStatus.Approved;
             suggestion.ReviewedByUserId = userId.Value;
