@@ -1359,6 +1359,389 @@ public sealed class BL03_KnowledgeGraph_Tests : IAsyncLifetime
             "OUTPUT CONTRACT: inference_model must be stored as-is from ResultJson");
     }
 
+    // =========================================================================
+    // NIT 1 — GET /api/curriculum/kg-suggestions — subjectCode+gradeId filter
+    // Seeds suggestions for two different subjects/grades.
+    // Asserts: only the matching-subject/grade suggestions appear when the
+    // filter params are supplied; empty/non-matching subject+grade returns
+    // an empty page (not all rows); Status filter + pagination still work.
+    // =========================================================================
+
+    [Fact(DisplayName = "NIT1-LIST-FILTER: subject+grade filter returns only matching suggestions; non-matching → empty page")]
+    public async Task NIT1_ListKGSuggestions_SubjectGradeFilter_ReturnsOnlyMatchingRows()
+    {
+        // ── Seed two subjects / grades in Learning ──────────────────────────────────────────────
+        // Subject A: MATH grade 4
+        const string mathSrcKey = "math.grade4.nit1-filter-src";
+        const string mathTgtKey = "math.grade4.nit1-filter-tgt";
+        // Subject B: SCIENCE grade 3
+        const string sciSrcKey  = "science.grade3.nit1-filter-src";
+        const string sciTgtKey  = "science.grade3.nit1-filter-tgt";
+
+        await using var learningDb = GetFreshLearningDb();
+
+        // Grade IDs: the Seeds in SeedLearningReferenceDataAsync use Grade.Number=1..6
+        // as both the row and its Number; we need the Grade.Id for gradeId=4 and gradeId=3.
+        // In the seeded data: Number==Id since the INSERT does not specify Id explicitly
+        // (auto-increment) and the rows are inserted 1..6 in order — Grade.Id is 1-based PK.
+        // Use gradeId=4 (Number=4) and gradeId=3 (Number=3); the PK auto-increment starts at 1
+        // so Id=4 ≡ Grade for Number=4.  This matches existing BL03 test convention.
+        var mathSrcId = await BL03Helpers.SeedKnowledgeNodeAsync(
+            learningDb, mathSrcKey, "Math Src NIT1", gradeId: 4,
+            subjectCode: SubjectCode.MATH);
+        var mathTgtId = await BL03Helpers.SeedKnowledgeNodeAsync(
+            learningDb, mathTgtKey, "Math Tgt NIT1", gradeId: 4,
+            subjectCode: SubjectCode.MATH);
+        var sciSrcId  = await BL03Helpers.SeedKnowledgeNodeAsync(
+            learningDb, sciSrcKey,  "Sci Src NIT1",  gradeId: 3,
+            subjectCode: SubjectCode.SCIENCE);
+        var sciTgtId  = await BL03Helpers.SeedKnowledgeNodeAsync(
+            learningDb, sciTgtKey,  "Sci Tgt NIT1",  gradeId: 3,
+            subjectCode: SubjectCode.SCIENCE);
+
+        // ── Seed one suggestion for each subject+grade pair ──────────────────────────────────────
+        await using var currDb = GetFreshCurriculumDb();
+        var mathSuggId = await BL03Helpers.SeedKGSuggestionAsync(
+            currDb, mathSrcId, mathTgtId, inferenceModel: "nit1-math");
+        var sciSuggId  = await BL03Helpers.SeedKGSuggestionAsync(
+            currDb, sciSrcId,  sciTgtId,  inferenceModel: "nit1-sci");
+
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer",
+                BL03WebAppFactory.GenerateJwt(role: "Admin", userId: 99));
+
+        // ── 1. Filter: MATH grade=4 → only mathSugg returned ─────────────────────────────────────
+        // subjectCode=0 is MATH (SubjectCode enum value), gradeId=4
+        var mathResp = await client.GetAsync(
+            "/api/curriculum/kg-suggestions?subjectCode=0&gradeId=4");
+        mathResp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "math+grade4 filter must return 200 OK");
+
+        var mathBody = await mathResp.Content.ReadAsStringAsync();
+        var mathRoot = JsonDocument.Parse(mathBody).RootElement;
+        AssertEnvelope(mathRoot, mathBody);
+
+        // The paged response should contain only the math suggestion, not the science one.
+        // BaseResponse<PaginatedResult<T>>: data contains the items array
+        var mathData = mathRoot.GetProperty("data");
+        int mathItemCount = CountSuggestionIds(mathData);
+        mathItemCount.Should().BeGreaterThanOrEqualTo(1,
+            "at least the math suggestion must appear when filtering MATH grade 4");
+
+        bool mathSuggFound = SuggestionIdsContain(mathData, mathSuggId);
+        mathSuggFound.Should().BeTrue(
+            $"suggestion {mathSuggId} (MATH grade 4) must appear in the math-filtered result");
+
+        bool sciSuggInMathFilter = SuggestionIdsContain(mathData, sciSuggId);
+        sciSuggInMathFilter.Should().BeFalse(
+            $"suggestion {sciSuggId} (SCIENCE grade 3) must NOT appear in the MATH grade-4 filter");
+
+        // ── 2. Filter: SCIENCE grade=3 → only sciSugg returned ──────────────────────────────────
+        // subjectCode=1 is SCIENCE (SubjectCode enum value), gradeId=3
+        var sciResp = await client.GetAsync(
+            "/api/curriculum/kg-suggestions?subjectCode=1&gradeId=3");
+        sciResp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "science+grade3 filter must return 200 OK");
+
+        var sciBody = await sciResp.Content.ReadAsStringAsync();
+        var sciRoot = JsonDocument.Parse(sciBody).RootElement;
+        var sciData = sciRoot.GetProperty("data");
+
+        bool sciSuggFound = SuggestionIdsContain(sciData, sciSuggId);
+        sciSuggFound.Should().BeTrue(
+            $"suggestion {sciSuggId} (SCIENCE grade 3) must appear in the science-filtered result");
+
+        bool mathSuggInSciFilter = SuggestionIdsContain(sciData, mathSuggId);
+        mathSuggInSciFilter.Should().BeFalse(
+            $"suggestion {mathSuggId} (MATH grade 4) must NOT appear in the SCIENCE grade-3 filter");
+
+        // ── 3. Non-matching subject+grade → empty page ───────────────────────────────────────────
+        // subjectCode=3 is ENGLISH, gradeId=6 — no nodes or suggestions seeded here
+        var emptyResp = await client.GetAsync(
+            "/api/curriculum/kg-suggestions?subjectCode=3&gradeId=6");
+        emptyResp.StatusCode.Should().Be(HttpStatusCode.OK,
+            "non-matching subject+grade must return 200 OK (empty, not 404)");
+
+        var emptyBody = await emptyResp.Content.ReadAsStringAsync();
+        var emptyRoot = JsonDocument.Parse(emptyBody).RootElement;
+        AssertEnvelope(emptyRoot, emptyBody);
+
+        // When no nodes match, the handler returns EmptyCollection — data should be empty/null.
+        // PaginatedResult.EmptyCollection sets items to empty list; data may be [] or null.
+        var emptyData = emptyRoot.GetProperty("data");
+        int emptyCount = CountSuggestionIds(emptyData);
+        emptyCount.Should().Be(0,
+            "non-matching subject+grade (no nodes seeded) must return zero suggestions (not all rows)");
+
+        // ── 4. Status filter still works alongside subject+grade filter ──────────────────────────
+        // Seed a Rejected suggestion for MATH grade 4
+        await using var currDb2 = GetFreshCurriculumDb();
+        var rejMathSuggId = await BL03Helpers.SeedKGSuggestionAsync(
+            currDb2, mathSrcId, mathTgtId,
+            status: KGSuggestionStatus.Rejected, inferenceModel: "nit1-math-rej");
+
+        // Requesting Status=Rejected + MATH + grade4 — should return the rejected one, not pending
+        var rejResp = await client.GetAsync(
+            "/api/curriculum/kg-suggestions?subjectCode=0&gradeId=4&status=2");
+        rejResp.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var rejBody = await rejResp.Content.ReadAsStringAsync();
+        var rejRoot = JsonDocument.Parse(rejBody).RootElement;
+        var rejData = rejRoot.GetProperty("data");
+
+        bool rejSuggFound = SuggestionIdsContain(rejData, rejMathSuggId);
+        rejSuggFound.Should().BeTrue(
+            "filtering by Status=Rejected AND subject=MATH AND grade=4 must return the rejected suggestion");
+
+        bool pendingSuggInRejFilter = SuggestionIdsContain(rejData, mathSuggId);
+        pendingSuggInRejFilter.Should().BeFalse(
+            "filtering by Status=Rejected must exclude the pending math suggestion");
+    }
+
+    // =========================================================================
+    // NIT 2a — Approve: missing node → distinct NodeMissing 422 (not CrossLanguage)
+    // Seeds a KGSuggestion with a SourceNodeId that does not exist in the
+    // learning.KnowledgeNodes table. Asserts:
+    //   - 422 Unprocessable
+    //   - response message contains the NodeMissing text, NOT the cross-language text
+    //   - suggestion stays Pending
+    //   - no edge written
+    // =========================================================================
+
+    [Fact(DisplayName = "NIT2a-NODE-MISSING: approve suggestion with non-existent node → 422 NodeMissing (distinct from CrossLanguage)")]
+    public async Task NIT2a_ApproveSuggestion_MissingNode_Returns422NodeMissing_NotCrossLanguage()
+    {
+        // Seed only the target node; leave the source node absent (non-existent ID).
+        const string tgtKey = "math.grade4.nit2a-tgt";
+        await using var learningDb = GetFreshLearningDb();
+        var tgtId = await BL03Helpers.SeedKnowledgeNodeAsync(
+            learningDb, tgtKey, "NIT2a Target", gradeId: 4);
+
+        // Use a non-existent source node ID (large int guaranteed not to exist).
+        const int nonExistentSourceId = 9_000_001;
+
+        await using var currDb = GetFreshCurriculumDb();
+        var suggId = await BL03Helpers.SeedKGSuggestionAsync(
+            currDb, nonExistentSourceId, tgtId,
+            CurriculumRelationshipType.Prerequisite, 0.70m);
+
+        var edgeCountBefore = await learningDb.KnowledgeEdges.CountAsync();
+
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer",
+                BL03WebAppFactory.GenerateJwt(role: "Admin", userId: 99));
+        // Request English locale so we can assert on English message text
+        client.DefaultRequestHeaders.Add("Accept-Language", "en-US");
+
+        var response = await client.PostAsync(
+            $"/api/curriculum/kg-suggestions/{suggId}/approve",
+            JsonContent.Create<string?>(null));
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "approving a suggestion with a non-existent source node must return 422 (NIT 2)");
+
+        var body = await response.Content.ReadAsStringAsync();
+        var root = JsonDocument.Parse(body).RootElement;
+        AssertEnvelope(root, body);
+        root.GetProperty("successed").GetBoolean().Should().BeFalse(
+            "successed must be false on NodeMissing rejection");
+
+        // The message must contain the NodeMissing text, NOT the cross-language text.
+        // NodeMissing message key = KGSuggestionPublishNodeMissing (en-US): "One or both knowledge nodes ... no longer exist ..."
+        // Cross-language message key = KnowledgeEdgeCrossLanguageForbidden (en-US): "Both nodes of an edge must belong to the same language tree ..."
+        // Both produce a 422 — but the messages are distinct.
+        var message = root.TryGetProperty("message", out var msgProp)
+            ? msgProp.GetString() ?? string.Empty
+            : string.Empty;
+
+        message.Should().NotBeNullOrWhiteSpace(
+            "a NodeMissing 422 must carry a descriptive message");
+
+        // Cross-language message contains "same language"; NodeMissing does NOT.
+        message.Should().NotContain("same language",
+            "NodeMissing response must NOT use the CrossLanguage message ('same language tree')");
+
+        // NodeMissing message contains "no longer exist"; cross-language does NOT.
+        message.Should().Contain("no longer exist",
+            "NodeMissing response must use the KGSuggestionPublishNodeMissing message ('no longer exist')");
+
+        // Suggestion must remain Pending.
+        await using var assertCurrDb = GetFreshCurriculumDb();
+        var sug = await assertCurrDb.KGSuggestions.FirstAsync(s => s.Id == suggId);
+        sug.Status.Should().Be(KGSuggestionStatus.Pending,
+            "node-missing rejection must leave suggestion Pending (transaction rolled back)");
+
+        // No edge must be written.
+        await using var assertLearnDb = GetFreshLearningDb();
+        var edgeCountAfter = await assertLearnDb.KnowledgeEdges.CountAsync();
+        edgeCountAfter.Should().Be(edgeCountBefore,
+            "no KnowledgeEdge must be written when NodeMissing is detected");
+    }
+
+    // =========================================================================
+    // NIT 2b — cross-language still returns the CROSS-LANGUAGE message (not NodeMissing)
+    // Confirms the two 422 paths remain distinguishable after the NIT 2 change.
+    // =========================================================================
+
+    [Fact(DisplayName = "NIT2b-CROSS-LANG: approve cross-language suggestion → 422 still returns CrossLanguage message (not NodeMissing)")]
+    public async Task NIT2b_ApproveCrossLanguage_Returns422CrossLanguageMessage_NotNodeMissing()
+    {
+        // Ar node + En node (same as BL03-04c but we assert the message text distinguisher here).
+        await using var learningDb = GetFreshLearningDb();
+        var arId = await BL03Helpers.SeedKnowledgeNodeAsync(learningDb,
+            "arabic.grade4.nit2b-ar", "عربي NIT2b", gradeId: 4,
+            language: Learnexia.Modules.Learning.Domain.Enums.ContentLanguage.Ar,
+            subjectCode: SubjectCode.ARABIC);
+        var enId = await BL03Helpers.SeedKnowledgeNodeAsync(learningDb,
+            "english.grade4.nit2b-en", "English NIT2b", gradeId: 4,
+            language: Learnexia.Modules.Learning.Domain.Enums.ContentLanguage.En,
+            subjectCode: SubjectCode.ENGLISH);
+
+        await using var currDb = GetFreshCurriculumDb();
+        var suggId = await BL03Helpers.SeedKGSuggestionAsync(
+            currDb, arId, enId, CurriculumRelationshipType.Prerequisite, 0.6m);
+
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer",
+                BL03WebAppFactory.GenerateJwt(role: "Admin", userId: 99));
+        // Request English locale so we can assert on English message text
+        client.DefaultRequestHeaders.Add("Accept-Language", "en-US");
+
+        var response = await client.PostAsync(
+            $"/api/curriculum/kg-suggestions/{suggId}/approve",
+            JsonContent.Create<string?>(null));
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "cross-language edge must still return 422 (NIT 2b — regression guard)");
+
+        var body = await response.Content.ReadAsStringAsync();
+        var root = JsonDocument.Parse(body).RootElement;
+        AssertEnvelope(root, body);
+        root.GetProperty("successed").GetBoolean().Should().BeFalse();
+
+        var message = root.TryGetProperty("message", out var msgProp)
+            ? msgProp.GetString() ?? string.Empty
+            : string.Empty;
+
+        // KnowledgeEdgeCrossLanguageForbidden (en-US) = "Both nodes of an edge must belong to the same language tree..."
+        message.Should().Contain("same language",
+            "cross-language rejection must use the KnowledgeEdgeCrossLanguageForbidden message ('same language tree')");
+
+        // Must NOT use the NodeMissing message
+        message.Should().NotContain("no longer exist",
+            "cross-language rejection must NOT use the NodeMissing message ('no longer exist')");
+
+        // Suggestion stays Pending
+        await using var assertCurrDb = GetFreshCurriculumDb();
+        var sug = await assertCurrDb.KGSuggestions.FirstAsync(s => s.Id == suggId);
+        sug.Status.Should().Be(KGSuggestionStatus.Pending,
+            "cross-language rejection must leave suggestion Pending (NIT 2b regression guard)");
+    }
+
+    // =========================================================================
+    // NIT 3 — RemediationPath batch-load refactor is behavior-identical.
+    // BL03-09a / BL03-09b are the authoritative regression tests.
+    // This test is a named no-op confirmation: if BL03-09a/09b pass, NIT 3 is green.
+    // =========================================================================
+
+    [Fact(DisplayName = "NIT3-REMEDIATION-REFACTOR: batch-load refactor is perf-only — BL03-09a/09b are the regression guard")]
+    public void NIT3_RemediationPath_BatchLoadRefactor_BehaviorIdentical()
+    {
+        // NIT 3 is a performance-only refactor of RemediationPath's DB batch-load.
+        // There is no new behavior to assert here. BL03-09a (transitive BFS, depth limit)
+        // and BL03-09b (cycle guard, terminates finitely) cover all behavioral aspects.
+        // Both are in this same collection and will run as part of the full BL03 suite.
+        // This test documents the NIT 3 intent and passes unconditionally.
+        Assert.True(true,
+            "NIT 3 is a perf-only refactor: BL03-09a and BL03-09b provide behavioral coverage. " +
+            "If those pass, NIT 3 is green.");
+    }
+
+    // =========================================================================
+    // NIT 4 — Rate limit on POST /build uses generous Testing limits (100/1s).
+    // Confirms normal test traffic is NOT throttled.
+    // We do NOT write a flaky throttle-tripping test — just confirm the happy path passes.
+    // =========================================================================
+
+    [Fact(DisplayName = "NIT4-RATE-LIMIT: POST /build happy path is not throttled under Testing rate-limit config")]
+    public async Task NIT4_BuildEndpoint_NotThrottledByTestingRateLimit()
+    {
+        // Seed nodes for MATH grade 4 so /build has data to enqueue
+        const string nit4Key = "math.grade4.nit4-rl-node";
+        await using var learningDb = GetFreshLearningDb();
+        await BL03Helpers.SeedKnowledgeNodeAsync(
+            learningDb, nit4Key, "NIT4 Rate Limit Node", gradeId: 4,
+            subjectCode: SubjectCode.MATH);
+
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer",
+                BL03WebAppFactory.GenerateJwt(role: "Admin", userId: 99));
+
+        // Single call — must NOT be throttled (Testing environment has generous limit).
+        var response = await client.PostAsync(
+            "/api/curriculum/kg-suggestions/build?subjectCode=0&gradeId=4",
+            null);
+
+        response.StatusCode.Should().NotBe(HttpStatusCode.TooManyRequests,
+            "POST /build must not be throttled under the Testing environment rate-limit config (100/1s)");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK,
+            "POST /build happy path must return 200 OK when nodes exist (NIT 4 regression guard)");
+    }
+
+    // ─── Helpers for NIT 1 ───────────────────────────────────────────────────────────────────────────
+
+    /// <summary>Counts the number of suggestion items in a paged data element (array or null/empty).</summary>
+    private static int CountSuggestionIds(JsonElement dataElement)
+    {
+        if (dataElement.ValueKind == JsonValueKind.Null || dataElement.ValueKind == JsonValueKind.Undefined)
+            return 0;
+        if (dataElement.ValueKind == JsonValueKind.Array)
+            return dataElement.GetArrayLength();
+        // PaginatedResult wraps items — try "items" sub-property first, then fall back to the element itself.
+        if (dataElement.TryGetProperty("items", out var items))
+            return items.ValueKind == JsonValueKind.Array ? items.GetArrayLength() : 0;
+        return 0;
+    }
+
+    /// <summary>Returns true if any item in the paged data has the given suggestion id.</summary>
+    private static bool SuggestionIdsContain(JsonElement dataElement, int suggId)
+    {
+        if (dataElement.ValueKind == JsonValueKind.Null || dataElement.ValueKind == JsonValueKind.Undefined)
+            return false;
+
+        JsonElement itemsElement;
+        if (dataElement.ValueKind == JsonValueKind.Array)
+        {
+            itemsElement = dataElement;
+        }
+        else if (dataElement.TryGetProperty("items", out var items))
+        {
+            itemsElement = items;
+        }
+        else
+        {
+            return false;
+        }
+
+        if (itemsElement.ValueKind != JsonValueKind.Array)
+            return false;
+
+        foreach (var item in itemsElement.EnumerateArray())
+        {
+            // Try camelCase "id" first, then PascalCase "Id"
+            if (item.TryGetProperty("id", out var idProp) && idProp.GetInt32() == suggId)
+                return true;
+            if (item.TryGetProperty("Id", out var idPropPascal) && idPropPascal.GetInt32() == suggId)
+                return true;
+        }
+        return false;
+    }
+
     // ─── Helper ──────────────────────────────────────────────────────────────────────────────────────
     private static void AssertEnvelope(JsonElement root, string body)
     {

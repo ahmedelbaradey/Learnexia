@@ -74,7 +74,7 @@ public class GetRemediationPathQueryHandler
             // Security: collect unique SkillIds from all result node ids so we can filter
             // inactive-skill nodes.  We need the node→skillId map — load nodes by ids.
             var nodeIds = result.Select(r => r.nodeId).Distinct().ToList();
-            var prereqNodes = await LoadNodesAsync(nodeIds, allPrereqEdges, cancellationToken);
+            var prereqNodes = await LoadNodesAsync(nodeIds, cancellationToken);
 
             var skillIds = prereqNodes.Values
                 .Where(n => n.SkillId.HasValue)
@@ -175,24 +175,14 @@ public class GetRemediationPathQueryHandler
 
     /// <summary>
     /// Returns a dictionary of nodeId → KnowledgeNode for all node ids in the remediation result.
-    /// Pulls from the already-materialized edge list's adjacency data where possible; loads
-    /// missing nodes from the service (via GetNodeForRemediationAsync per id).
+    /// Single batch <c>WHERE Id IN (...)</c> round-trip replaces the prior N-per-node loop.
     /// </summary>
     private async Task<Dictionary<int, KnowledgeNode>> LoadNodesAsync(
         List<int> nodeIds,
-        List<KnowledgeEdge> allEdges,
         CancellationToken ct)
     {
-        // We need the actual KnowledgeNode rows (Name + SkillId). Load each.
-        // The repo call is non-tracked and cached per this handler instance — cost is O(|result|) round-trips.
-        // For the typical max-depth=3 case this is bounded to ≤7 nodes.
-        var map = new Dictionary<int, KnowledgeNode>();
-        foreach (var id in nodeIds)
-        {
-            var node = await _service.KnowledgeGraphService.GetNodeForRemediationAsync(id, ct);
-            if (node is not null)
-                map[id] = node;
-        }
-        return map;
+        // Single batch load — O(1) round-trips regardless of BFS depth.
+        // For the typical max-depth=3 case this replaces up to 7 individual round-trips.
+        return await _service.KnowledgeGraphService.GetNodesByIdsAsync(nodeIds, ct);
     }
 }

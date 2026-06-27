@@ -121,4 +121,11 @@ public class KnowledgeGraphService : LearningBaseService<KnowledgeEdge>, IKnowle
     /// <inheritdoc />
     public async Task<KnowledgeNode?> GetNodeForRemediationAsync(int nodeId, CancellationToken ct = default)
         => await _repository.GetKnowledgeNodeByIdAsync(nodeId, trackChanges: false, ct);
+
+    /// <inheritdoc />
+    public async Task<Dictionary<int, KnowledgeNode>> GetNodesByIdsAsync(IReadOnlyCollection<int> nodeIds, CancellationToken ct = default)
+    {
+        var nodes = await _repository.GetNodesByIdsAsync(nodeIds, ct);
+        return nodes.ToDictionary(n => n.Id);
+    }
 }

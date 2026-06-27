@@ -182,6 +182,16 @@ public interface ILearningRepository : IGenericRepository
     /// </summary>
     Task<List<KnowledgeNode>> GetRelatedNodesAsync(int nodeId, CancellationToken ct = default);
 
+    // ── BL-03 polish: batch node load for GetRemediationPath ─────────────────────────────────────
+
+    /// <summary>
+    /// Returns all live (non-deleted) <see cref="KnowledgeNode"/> rows whose Id is in the given set.
+    /// Single <c>WHERE Id IN (...)</c> round-trip — used by <c>GetRemediationPathQueryHandler</c>
+    /// to batch-load all BFS result nodes instead of one query per node.
+    /// AsNoTracking. Returns only nodes that exist (unresolved ids are simply absent).
+    /// </summary>
+    Task<List<KnowledgeNode>> GetNodesByIdsAsync(IReadOnlyCollection<int> nodeIds, CancellationToken ct = default);
+
     // ── P7-05 Content lifecycle / versioning ──────────────────────────────────────────────────────
 
     /// <summary>

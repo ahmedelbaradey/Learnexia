@@ -100,6 +100,9 @@ public static class ServiceExtensions
                 new() { Endpoint = "post:/api/users/authentication/forgot-password", Limit = 5, Period = "15m" },
                 new() { Endpoint = "post:/api/users/authentication/reset-password", Limit = 10, Period = "15m" },
                 new() { Endpoint = "post:/api/users/account/changepassword", Limit = 5, Period = "15m" },
+                // BL-03 NIT-4: caps runaway LLM inference-job queuing on the kg-suggestions/build endpoint.
+                // 5 requests per minute per IP in Production/Staging — this endpoint enqueues expensive Python jobs.
+                new() { Endpoint = "post:/api/curriculum/kg-suggestions/build", Limit = 5, Period = "1m" },
             }
             : new List<RateLimitRule>
             {
@@ -112,6 +115,8 @@ public static class ServiceExtensions
                 new() { Endpoint = "post:/api/users/authentication/reset-password", Limit = 100, Period = "1s" },
                 // P2-12: tight limit on password-change (brute-force / oracle hardening). 5 attempts per 15 min per IP.
                 new() { Endpoint = "post:/api/users/account/changepassword", Limit = 5, Period = "15m" },
+                // BL-03 NIT-4: generous dev/Testing limit so local iteration and integration tests aren't throttled.
+                new() { Endpoint = "post:/api/curriculum/kg-suggestions/build", Limit = 100, Period = "1s" },
             };
         services.Configure<IpRateLimitOptions>(opt =>
         {

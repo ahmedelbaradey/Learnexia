@@ -1918,6 +1918,9 @@ You should add board members to be able to perform fund activities, at least 2 i
   <data name="KGSuggestionPublishCrossLanguage" xml:space="preserve">
     <value>Approving this suggestion would create a cross-language edge, which is not permitted. The suggestion remains pending.</value>
   </data>
+  <data name="KGSuggestionPublishNodeMissing" xml:space="preserve">
+    <value>One or both knowledge nodes referenced by this suggestion no longer exist in the learning module. The suggestion cannot be approved. Please reject it and rebuild suggestions after verifying the node data.</value>
+  </data>
   <data name="KnowledgeGraphRelatedConceptsRetrievedSuccessfully" xml:space="preserve">
     <value>Related concepts retrieved successfully.</value>
   </data>
