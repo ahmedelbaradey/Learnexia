@@ -6,7 +6,7 @@
 >
 > **Cross-cutting system decisions (A–E) are in `docs/briefs/curriculum-system-of-record.md`.** BL-01 is not directly impacted by Decisions B/C/D/E (those are BL-04/BL-05/BL-03 concerns), but implementers must be aware that: uploaded documents become the root of the provenance tree (Decision B — `ContentSource` created later by BL-02); version context is Draft until publish (Decision C — BL-05 sets this). BL-01 itself only stores and queues.
 
-> **Status: 🔲 Not started** — `CurriculumDocument` entity + upload command (mirror `UploadAvatarCommandHandler`) + list/detail queries + BL-02 trigger event. Lands in whichever module BL-04 establishes.
+> **Status: ✅ BUILT + MERGED** (`feat/BL-01-curriculum-upload`, 2026-06-23) — `CurriculumDocument` entity + upload command (mirror `UploadAvatarCommandHandler`) + list/detail queries + BL-02 trigger event, in the `Curriculum` module. *(Prior "Not started" marker was stale planning-time.)*
 
 > **LEAD DECISIONS REQUIRED (inherit from BL-04 + BL-01 open questions):**
 > - **Q1 — Module placement:** inherits BL-04's new-`curriculum`-module decision. Do not scaffold independently.
