@@ -6,7 +6,7 @@
 >
 > **Cross-cutting system decisions (A–E) are in `docs/briefs/curriculum-system-of-record.md`.** BL-02 is impacted by Decision B (provenance tree initialization — new BE-6) and Decision C (all content stays in Draft version context; BL-02 does not publish). No embedding involvement (Decision D — that is BL-05/P3-07).
 
-> **Status: 🔲 Not started** — .NET orchestration slice (trigger + store artifact + status/diagnostics) + Python parsing service (Azure Document Intelligence OCR + RAG-Anything multimodal extraction).
+> **Status: ✅ BUILT + MERGED** (`feat/BL-02-multimodal-parsing`, 2026-06-23 — first Python in the repo) — .NET orchestration slice (trigger + store artifact + status/diagnostics) + Python parsing service (Azure Document Intelligence OCR + RAG-Anything multimodal extraction). *(Prior "Not started" marker was stale planning-time.)*
 
 > **LEAD DECISIONS:**
 > - ~~**Q1 — .NET-vs-Python boundary:**~~ **DECIDED: DB-outbox + Python poller** (see `docs/briefs/curriculum-system-of-record.md` §4b). .NET writes `PipelineJobs` rows (BL-01-BE-9); Python polls and claims them (BL-02-PY-9); a .NET `BackgroundService` (BL-02-BE-7) advances `CurriculumDocument.ParseStatus` on completion. No MediatR event handler — MediatR events cannot reach a separate Python process.

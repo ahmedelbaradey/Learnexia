@@ -6,7 +6,7 @@
 >
 > **Cross-cutting system decisions (A–E) are in `docs/briefs/curriculum-system-of-record.md`.** BL-03 is impacted by **Decision A** (KG ownership-vs-location: `curriculum` is logical owner, `learning` is physical home) and **Decision E** (KG-as-suggestions-not-truth: LightRAG writes to `KGSuggestion` queue, never directly to `KnowledgeEdge`). These are DECIDED — do not re-litigate.
 
-> **Status: 🔲 Not started** — graph-build orchestration from BL-05 structured curriculum + LightRAG-assisted edge inference (writes to `KGSuggestion` queue, NOT `KnowledgeEdge`) + admin suggestion-review endpoints (list/approve/reject) + query-API additions (`GetRelatedConcepts`, remediation traversal). Writes to existing P2-11 `KnowledgeNode`/`KnowledgeEdge` tables in `learning` **only via admin approval** (Decision E).
+> **Status: ✅ BUILT + MERGED** (`feat/BL-03-knowledge-graph`, 2026-06-24 — the FINAL Curriculum-pipeline story) — graph-build orchestration from BL-05 structured curriculum + LightRAG-assisted edge inference (writes to `KGSuggestion` queue, NOT `KnowledgeEdge`) + admin suggestion-review endpoints (list/approve/reject) + query-API additions (`GetRelatedConcepts`, remediation traversal). Writes to existing P2-11 `KnowledgeNode`/`KnowledgeEdge` tables in `learning` **only via admin approval** (Decision E). *(Prior "Not started" marker was stale planning-time.)*
 
 > **CRITICAL REUSE FACT (do NOT rebuild):** `KnowledgeNode`, `KnowledgeEdge`, `SkillGraphValidator`, `KnowledgeGraphController`, `GetPrerequisitesOf`/`GetUnlockedBy`, `LearningPathEngine` — all built and in `learning` (P2-11, audited 2026-06-07). BL-03 is the automated-build + suggestion-queue + query-gap delta ONLY.
 

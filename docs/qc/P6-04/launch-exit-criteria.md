@@ -15,12 +15,11 @@
 | EC-7 | **AI safety validated** | ⚠️ offline MET · live = devops | P6-02 offline eval (62 cases) PASS; **Gate-B live ar+en run = devops+keys** (harness #215, `prompt-quality-procedure.md`) |
 | EC-8 | **Performance within NFR-1** (API p95<500ms, AI<4s) | ⚠️ deferred to devops | P6-01 harness #220; authoritative numbers = devops live-Kestrel run (local = env-floor) |
 | EC-9 | **Prod secrets/config gated** (JWT, Captcha, HTTPS, DB pwd, keys from env) | ✅ MET | `GuardJwtSecret`/`GuardCaptcha`/`IsProtectedEnvironment`; prod env-var table in HANDOFF |
-| EC-10 | **CORS fail-closed in prod** | 🚫 **OPEN (launch-blocker)** | Credentialed-wildcard CORS — fail-closed when `AllowedOrigins` unset in Prod/Staging (cleanup batch) |
+| EC-10 | **CORS fail-closed in prod** | ✅ **MET (2026-06-23)** | `Host/Extensions/ServiceExtensions.cs ConfigureCors` ("Audit H2 fix"): Prod/Staging THROWS if `AllowedOrigins` unset/`*`; dev = `AllowAnyOrigin` WITHOUT credentials; prod = `WithOrigins`+`AllowCredentials`. (Doc previously marked OPEN — corrected.) |
 | EC-11 | **Automated CI gates running** | 🚫 **OPEN (ops)** | GitHub Actions not provisioning (billing) — **user/devops action**; local gates green meanwhile |
 
 ## Launch-blockers remaining (must close before go-live)
-1. **EC-10 — CORS fail-closed** (Medium, 1-line config guard; in the cleanup batch).
-2. **EC-11 — restore CI** (ops/billing — user/devops action).
+1. **EC-11 — restore CI** (ops/billing — user/devops action). *(This is now the ONLY remaining launch-blocker — EC-10 CORS is resolved.)*
 
 ## Devops-gated activations (own alongside go-live, not code work)
 - AI flip-to-live (keys → BGE-M3 TEI → re-embed → `ContextProvider=Rag`) — `AI-ACTIVATION-RUNBOOK.md`.
@@ -29,6 +28,6 @@
 - Grafana dashboards + alerts on the OTLP stream.
 
 ## Sign-off
-- **Backend launch-readiness: CONDITIONAL-GO** — all product/security exit criteria met; **2 launch-blockers (CORS config + CI restore)** + the devops-gated activations must be closed by the lead/devops. No open Critical/High product defects.
+- **Backend launch-readiness: CONDITIONAL-GO** — all product/security exit criteria met; **1 launch-blocker remaining (CI restore — ops/billing)** + the devops-gated activations + the live Paymob/Fawry adapter (business decision + sandbox keys; stub wired #242) must be closed by the lead/devops. **EC-10 CORS resolved.** No open Critical/High product defects.
 - Frontend readiness: separate (FE lead).
 - _Sign-off owner / date: ______ (lead)._

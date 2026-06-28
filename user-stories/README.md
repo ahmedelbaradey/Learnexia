@@ -198,7 +198,7 @@ These intentional decisions diverge from the source docs; each affected story re
 
 ### Backlog (Phase 2+) — Curriculum Intelligence
 *Three-stage pipeline: Multimodal Parsing (BL-02) → Curriculum Ingestion (BL-05) → Knowledge Graph (BL-03).*
-**Status: deferred post-MVP.** P2-11 ships an MVP launch-bridge — a hand-authored relational knowledge graph (`KnowledgeNode`/`KnowledgeEdge`) modeled as a forward-compatible superset of `BL-04`, with **no OCR / Azure Document Intelligence dependency**. When BL-01..05 is built, the BL-04 schema extends the P2-11 tables rather than replacing them.
+**Status: ✅ BL-01..05 BACKEND BUILT + MERGED (2026-06-23/24).** The full Curriculum-Intelligence pipeline shipped — BL-04 schema, BL-01 upload, BL-02 multimodal parsing (first Python in the repo), BL-05 LLM ingestion, BL-03 knowledge graph (admin-approval-gated `KGSuggestion`). The BL-04 schema extended the P2-11 `KnowledgeNode`/`KnowledgeEdge` tables (didn't replace them). P2-11 remains the MVP launch-bridge (hand-authored graph, no OCR dependency). **Live activation (OCR keys / Python ingestion service / re-embed) = devops** — see the curriculum live-activation runbook. *(BL FE not built — post-MVP, FE-lead.)*
 - BL-01 Upload curriculum documents with metadata
 - BL-02 Parse curriculum files into structured content (Multimodal Parsing)
 - BL-03 Build & query the knowledge graph
