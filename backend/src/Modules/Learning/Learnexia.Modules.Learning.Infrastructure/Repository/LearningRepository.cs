@@ -741,13 +741,53 @@ public class LearningRepository : ILearningRepository
                 Accuracy:     kv.Value.total == 0 ? 0.0 : (double)kv.Value.correct / kv.Value.total))
             .ToList();
 
+        // ── Step 7 (P3-13a): Retry-after-wrong rate ────────────────────────────────────────────────
+        // For each skill with at least one wrong answer, check whether that skill ALSO has at least
+        // one correct answer across any attempt. Uses in-memory grouping on the already-loaded rows.
+        // Definition: "retry after wrong" = the student returned to a skill that they previously
+        // got wrong and eventually got it right (across any attempt, in any order).
+        // Skills with null SkillId (no skill tag) are excluded from this computation.
+        var skillAnswerSets = rawAnswers
+            .Where(a => a.SkillId.HasValue)
+            .GroupBy(a => a.SkillId!.Value)
+            .Select(g => new
+            {
+                SkillId        = g.Key,
+                HadWrong       = g.Any(a => !a.IsCorrect),
+                HadCorrect     = g.Any(a => a.IsCorrect),
+            })
+            .ToList();
+
+        var skillsWithWrong        = skillAnswerSets.Count(s => s.HadWrong);
+        var skillsWithWrongThenOk  = skillAnswerSets.Count(s => s.HadWrong && s.HadCorrect);
+        var retryAfterWrongRate    = skillsWithWrong == 0
+            ? 0.0
+            : (double)skillsWithWrongThenOk / skillsWithWrong;
+
+        // ── Step 8 (P3-13a): Per-attempt accuracy list (chronological) ─────────────────────────────
+        // Group by AttemptId (ascending order = chronological, since AttemptId is a serial PK).
+        // Compute accuracy per attempt. Used by DeriveMasteryVelocity to compute the
+        // rate-of-improvement slope (recent window avg − older window avg).
+        var attemptAccuraciesChronological = rawAnswers
+            .GroupBy(a => a.AttemptId)
+            .OrderBy(g => g.Key)   // ascending AttemptId = chronological proxy
+            .Select(g =>
+            {
+                var total   = g.Count();
+                var correct = g.Count(a => a.IsCorrect);
+                return total == 0 ? 0.0 : (double)correct / total;
+            })
+            .ToList();
+
         return new StudentSignals(
-            AnswersByType:          answersByType,
-            SkillErrorCounts:       skillErrorCounts,
-            SessionAccuracyBuckets: sessionAccuracyBuckets,
-            OverallAccuracy:        overallAccuracy,
-            TotalAnswers:           totalAnswers,
-            HintAnswerCountByType:  hintAnswerCountByType);
+            AnswersByType:                    answersByType,
+            SkillErrorCounts:                 skillErrorCounts,
+            SessionAccuracyBuckets:           sessionAccuracyBuckets,
+            OverallAccuracy:                  overallAccuracy,
+            TotalAnswers:                     totalAnswers,
+            HintAnswerCountByType:            hintAnswerCountByType,
+            RetryAfterWrongRate:              retryAfterWrongRate,
+            AttemptAccuraciesChronological:   attemptAccuraciesChronological);
     }
 
     /// <inheritdoc/>
@@ -795,6 +835,9 @@ public class LearningRepository : ILearningRepository
             existing.PreferredExplanationStyle = profile.PreferredExplanationStyle;
             existing.DataPointCount            = profile.DataPointCount;
             existing.LastRecomputedAt          = profile.LastRecomputedAt;
+            // P3-13a — new behavioral dimensions.
+            existing.GritScore                 = profile.GritScore;
+            existing.MasteryVelocity           = profile.MasteryVelocity;
 
             RepositoryContext.StudentLearningProfiles.Update(existing);
         }

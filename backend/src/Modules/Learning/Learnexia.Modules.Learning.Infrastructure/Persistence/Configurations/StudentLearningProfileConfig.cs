@@ -81,6 +81,18 @@ public class StudentLearningProfileConfig : IEntityTypeConfiguration<StudentLear
             .IsRequired(false)
             .HasColumnType("timestamptz");
 
+        // ── P3-13a new behavioral dimension columns ───────────────────────────────────────────────
+
+        // GritScore — persistence / grit proxy. Nullable float8; null = cold-start / insufficient data.
+        builder.Property(x => x.GritScore)
+            .IsRequired(false)
+            .HasColumnType("double precision");
+
+        // MasteryVelocity — rate-of-improvement slope. Nullable float8; null = cold-start / insufficient data.
+        builder.Property(x => x.MasteryVelocity)
+            .IsRequired(false)
+            .HasColumnType("double precision");
+
         // ── Indexes ───────────────────────────────────────────────────────────────────────────────
         // Unique — exactly one behavioral profile per student.
         // StudentId is a loose int (no FK), but the uniqueness constraint is still enforced at the DB level.

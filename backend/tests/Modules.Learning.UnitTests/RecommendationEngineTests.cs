@@ -31,7 +31,9 @@ public sealed class RecommendationEngineTests
         RecurringErrorSkillIds:    Array.Empty<int>(),
         AttentionSpanMinutes:      null,
         PreferredExplanationStyle: ExplanationStyle.Standard,
-        DataPointCount:            0);
+        DataPointCount:            0,
+        GritScore:                 null,
+        MasteryVelocity:           null);
 
     /// <summary>Rich profile: DataPointCount >= ConfidenceDataPointThreshold (10), no fatigue, no recurring errors.</summary>
     private static DerivedProfile RichProfile() => new(
@@ -39,7 +41,9 @@ public sealed class RecommendationEngineTests
         RecurringErrorSkillIds:    Array.Empty<int>(),
         AttentionSpanMinutes:      null,
         PreferredExplanationStyle: ExplanationStyle.Standard,
-        DataPointCount:            50);
+        DataPointCount:            50,
+        GritScore:                 null,
+        MasteryVelocity:           null);
 
     /// <summary>
     /// Rich profile with specified recurring-error SkillIds — DataPointCount = 50 (full confidence).
@@ -49,7 +53,9 @@ public sealed class RecommendationEngineTests
         RecurringErrorSkillIds:    skillIds,
         AttentionSpanMinutes:      null,
         PreferredExplanationStyle: ExplanationStyle.Simplified,
-        DataPointCount:            50);
+        DataPointCount:            50,
+        GritScore:                 null,
+        MasteryVelocity:           null);
 
     /// <summary>
     /// Full-confidence profile with AttentionSpanMinutes ≤ fatigue threshold (20 min default).
@@ -59,7 +65,9 @@ public sealed class RecommendationEngineTests
         RecurringErrorSkillIds:    Array.Empty<int>(),
         AttentionSpanMinutes:      attentionSpanMinutes,
         PreferredExplanationStyle: ExplanationStyle.Simplified,
-        DataPointCount:            50);
+        DataPointCount:            50,
+        GritScore:                 null,
+        MasteryVelocity:           null);
 
     /// <summary>
     /// Full-confidence profile with AttentionSpanMinutes ≤ fatigue threshold AND recurring-error skills.
@@ -69,7 +77,9 @@ public sealed class RecommendationEngineTests
         RecurringErrorSkillIds:    recurringSkillIds,
         AttentionSpanMinutes:      attentionSpanMinutes,
         PreferredExplanationStyle: ExplanationStyle.Simplified,
-        DataPointCount:            50);
+        DataPointCount:            50,
+        GritScore:                 null,
+        MasteryVelocity:           null);
 
     /// <summary>
     /// Low-confidence profile: 0 &lt; DataPointCount &lt; ConfidenceDataPointThreshold (10).
@@ -79,7 +89,9 @@ public sealed class RecommendationEngineTests
         RecurringErrorSkillIds:    recurringSkillIds,
         AttentionSpanMinutes:      10,
         PreferredExplanationStyle: ExplanationStyle.Simplified,
-        DataPointCount:            5);   // 0 < 5 < 10 threshold
+        DataPointCount:            5,   // 0 < 5 < 10 threshold
+        GritScore:                 null,
+        MasteryVelocity:           null);
 
     private static WeakAreaEntry HighArea(int skillId = 1, int subjectCode = 0, int masteryPct = 20)
         => new(skillId, $"Skill{skillId}", subjectCode, masteryPct, WeakAreaSeverity.High, "ReviewConcept");
@@ -386,7 +398,9 @@ public sealed class RecommendationEngineTests
             RecurringErrorSkillIds:    Array.Empty<int>(),
             AttentionSpanMinutes:      21,   // above threshold
             PreferredExplanationStyle: ExplanationStyle.Standard,
-            DataPointCount:            50);
+            DataPointCount:            50,
+            GritScore:                 null,
+            MasteryVelocity:           null);
 
         var result = RecommendationEngine.Compute(areas, NoDecisions(), profile, grade: null);
 
@@ -545,7 +559,9 @@ public sealed class RecommendationEngineTests
             RecurringErrorSkillIds:    new[] { 2 },  // skillId 2 is recurring
             AttentionSpanMinutes:      10,
             PreferredExplanationStyle: ExplanationStyle.Simplified,
-            DataPointCount:            0);            // cold-start
+            DataPointCount:            0,             // cold-start
+            GritScore:                 null,
+            MasteryVelocity:           null);
 
         var result = RecommendationEngine.Compute(areas, NoDecisions(), profile, grade: null);
 
@@ -606,7 +622,9 @@ public sealed class RecommendationEngineTests
             RecurringErrorSkillIds:    Array.Empty<int>(),
             AttentionSpanMinutes:      null,
             PreferredExplanationStyle: ExplanationStyle.Simplified,
-            DataPointCount:            50);
+            DataPointCount:            50,
+            GritScore:                 null,
+            MasteryVelocity:           null);
 
         var result = RecommendationEngine.Compute(areas, NoDecisions(), profile, grade: null);
 

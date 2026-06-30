@@ -48,15 +48,19 @@ public sealed class StudentProfileEngineTests
         IReadOnlyList<(QuestionType, int correct, int total)>? answersByType = null,
         IReadOnlyList<(int skillId, int wrongCount)>? skillErrorCounts = null,
         IReadOnlyList<(int minuteBucket, double accuracy)>? sessionBuckets = null,
-        IReadOnlyList<(QuestionType type, int hintCount, int total)>? hintByType = null)
+        IReadOnlyList<(QuestionType type, int hintCount, int total)>? hintByType = null,
+        double retryAfterWrongRate = 0.0,
+        IReadOnlyList<double>? attemptAccuraciesChronological = null)
     {
         return new StudentSignals(
-            AnswersByType:          answersByType      ?? Array.Empty<(QuestionType, int, int)>(),
-            SkillErrorCounts:       skillErrorCounts   ?? Array.Empty<(int, int)>(),
-            SessionAccuracyBuckets: sessionBuckets     ?? Array.Empty<(int, double)>(),
-            OverallAccuracy:        overallAccuracy,
-            TotalAnswers:           totalAnswers,
-            HintAnswerCountByType:  hintByType         ?? Array.Empty<(QuestionType, int, int)>());
+            AnswersByType:                  answersByType      ?? Array.Empty<(QuestionType, int, int)>(),
+            SkillErrorCounts:               skillErrorCounts   ?? Array.Empty<(int, int)>(),
+            SessionAccuracyBuckets:         sessionBuckets     ?? Array.Empty<(int, double)>(),
+            OverallAccuracy:                overallAccuracy,
+            TotalAnswers:                   totalAnswers,
+            HintAnswerCountByType:          hintByType         ?? Array.Empty<(QuestionType, int, int)>(),
+            RetryAfterWrongRate:            retryAfterWrongRate,
+            AttemptAccuraciesChronological: attemptAccuraciesChronological ?? Array.Empty<double>());
     }
 
     // ── Case 1: Cold-start → neutral defaults ────────────────────────────────────────────────────
@@ -75,6 +79,9 @@ public sealed class StudentProfileEngineTests
         profile.QuestionTypeAffinity.Should().BeEmpty();
         profile.RecurringErrorSkillIds.Should().BeEmpty();
         profile.AttentionSpanMinutes.Should().BeNull();
+        // P3-13a: new dimensions must also return null on cold-start.
+        profile.GritScore.Should().BeNull();
+        profile.MasteryVelocity.Should().BeNull();
     }
 
     [Fact]
@@ -373,5 +380,236 @@ public sealed class StudentProfileEngineTests
         var profile = StudentProfileEngine.Derive(signals, DefaultOptions());
 
         profile.DataPointCount.Should().Be(30);
+    }
+
+    // ── P3-13a GritScore tests ────────────────────────────────────────────────────────────────────
+
+    // ── Case P1: GritScore null when below MinSampleForGrit threshold ────────────────────────────
+
+    [Fact]
+    public void Derive_GritScore_NullWhenBelowMinSample()
+    {
+        // TotalAnswers = 4 < MinSampleForGrit (5) but ≥ ColdStartDataPointThreshold (10)?
+        // Here we use totalAnswers = 12 (above cold-start) but set MinSampleForGrit = 15 (above totalAnswers).
+        var signals = BuildSignals(totalAnswers: 12, retryAfterWrongRate: 0.8);
+        var opts = DefaultOptions();
+        opts.MinSampleForGrit = 15; // raise so 12 < 15 → null
+
+        var profile = StudentProfileEngine.Derive(signals, opts);
+
+        profile.GritScore.Should().BeNull("insufficient total answers for grit derivation");
+    }
+
+    // ── Case P2: GritScore with high retry + low hint rate = high grit ───────────────────────────
+
+    [Fact]
+    public void Derive_GritScore_HighRetryLowHints_HighGritScore()
+    {
+        // retryAfterWrongRate = 1.0 (always retried after wrong), hint rate = 0 (no hints).
+        // grit = 0.5 * 1.0 + 0.5 * (1.0 - 0.0) = 1.0.
+        var signals = BuildSignals(
+            totalAnswers: 20,
+            retryAfterWrongRate: 1.0,
+            hintByType: new[] { (QuestionType.MCQ, 0, 20) });   // 0 hints out of 20 answers
+
+        var profile = StudentProfileEngine.Derive(signals, DefaultOptions());
+
+        profile.GritScore.Should().NotBeNull();
+        profile.GritScore!.Value.Should().BeApproximately(1.0, 0.001, "max grit = 1.0 when retry=1, hint=0");
+    }
+
+    // ── Case P3: GritScore with zero retry + high hint rate = low grit ───────────────────────────
+
+    [Fact]
+    public void Derive_GritScore_ZeroRetryHighHints_LowGritScore()
+    {
+        // retryAfterWrongRate = 0.0 (never retried), hint rate = 1.0 (100% hint usage).
+        // grit = 0.5 * 0.0 + 0.5 * (1.0 - 1.0) = 0.0.
+        var signals = BuildSignals(
+            totalAnswers: 20,
+            retryAfterWrongRate: 0.0,
+            hintByType: new[] { (QuestionType.MCQ, 20, 20) });   // all 20 answers used hints
+
+        var profile = StudentProfileEngine.Derive(signals, DefaultOptions());
+
+        profile.GritScore.Should().NotBeNull();
+        profile.GritScore!.Value.Should().BeApproximately(0.0, 0.001, "min grit = 0.0 when retry=0, hint=1.0");
+    }
+
+    // ── Case P4: GritScore mid-range blend ───────────────────────────────────────────────────────
+
+    [Fact]
+    public void Derive_GritScore_MidRange_CorrectBlend()
+    {
+        // retryAfterWrongRate = 0.6, hint rate = 10/20 = 0.5, self-sufficiency = 0.5.
+        // grit = 0.5 * 0.6 + 0.5 * 0.5 = 0.3 + 0.25 = 0.55.
+        var signals = BuildSignals(
+            totalAnswers: 20,
+            retryAfterWrongRate: 0.6,
+            hintByType: new[] { (QuestionType.MCQ, 10, 20) });   // 50% hint rate
+
+        var profile = StudentProfileEngine.Derive(signals, DefaultOptions());
+
+        profile.GritScore.Should().NotBeNull();
+        profile.GritScore!.Value.Should().BeApproximately(0.55, 0.001, "expected mid-range blend of 0.55");
+    }
+
+    // ── Case P5: GritScore null on cold-start (inherits global cold-start guard) ─────────────────
+
+    [Fact]
+    public void Derive_GritScore_NullOnColdStart()
+    {
+        // TotalAnswers = 3 < ColdStartDataPointThreshold (10) → cold-start → GritScore = null.
+        var signals = BuildSignals(totalAnswers: 3, retryAfterWrongRate: 1.0);
+
+        var profile = StudentProfileEngine.Derive(signals, DefaultOptions());
+
+        profile.GritScore.Should().BeNull("cold-start always returns null GritScore");
+    }
+
+    // ── P3-13a MasteryVelocity tests ──────────────────────────────────────────────────────────────
+
+    // ── Case P6: MasteryVelocity null when fewer than MinAttemptsForTrajectory ────────────────────
+
+    [Fact]
+    public void Derive_MasteryVelocity_NullWhenFewerThanMinAttempts()
+    {
+        // 2 attempts < MinAttemptsForTrajectory (3) → null.
+        var signals = BuildSignals(
+            totalAnswers: 20,
+            attemptAccuraciesChronological: new[] { 0.5, 0.8 });   // only 2 attempts
+
+        var profile = StudentProfileEngine.Derive(signals, DefaultOptions());
+
+        profile.MasteryVelocity.Should().BeNull("fewer than MinAttemptsForTrajectory → null");
+    }
+
+    // ── Case P7: MasteryVelocity positive when accuracy improves over time ────────────────────────
+
+    [Fact]
+    public void Derive_MasteryVelocity_PositiveWhenImprovingTrend()
+    {
+        // 6 attempts: [0.3, 0.35, 0.4, 0.6, 0.7, 0.8].
+        // Window fraction = 0.4 → windowSize = floor(6 * 0.4) = 2.
+        // Older window (first 2): [0.3, 0.35] avg = 0.325.
+        // Recent window (last 2): [0.7, 0.8] avg = 0.75.
+        // velocity = 0.75 - 0.325 = 0.425.
+        var signals = BuildSignals(
+            totalAnswers: 20,
+            attemptAccuraciesChronological: new[] { 0.3, 0.35, 0.4, 0.6, 0.7, 0.8 });
+
+        var profile = StudentProfileEngine.Derive(signals, DefaultOptions());
+
+        profile.MasteryVelocity.Should().NotBeNull();
+        profile.MasteryVelocity!.Value.Should().BeGreaterThan(0.0, "improving trend → positive velocity");
+        profile.MasteryVelocity.Value.Should().BeApproximately(0.425, 0.001);
+    }
+
+    // ── Case P8: MasteryVelocity negative when accuracy degrades over time ────────────────────────
+
+    [Fact]
+    public void Derive_MasteryVelocity_NegativeWhenRegressingTrend()
+    {
+        // 6 attempts: [0.9, 0.8, 0.7, 0.5, 0.4, 0.3] — steady decline.
+        // Window fraction = 0.4 → windowSize = 2.
+        // Older: [0.9, 0.8] avg = 0.85. Recent: [0.4, 0.3] avg = 0.35.
+        // velocity = 0.35 - 0.85 = -0.5.
+        var signals = BuildSignals(
+            totalAnswers: 20,
+            attemptAccuraciesChronological: new[] { 0.9, 0.8, 0.7, 0.5, 0.4, 0.3 });
+
+        var profile = StudentProfileEngine.Derive(signals, DefaultOptions());
+
+        profile.MasteryVelocity.Should().NotBeNull();
+        profile.MasteryVelocity!.Value.Should().BeLessThan(0.0, "regressing trend → negative velocity");
+        profile.MasteryVelocity.Value.Should().BeApproximately(-0.5, 0.001);
+    }
+
+    // ── Case P9: MasteryVelocity near zero when stable ───────────────────────────────────────────
+
+    [Fact]
+    public void Derive_MasteryVelocity_NearZeroWhenStable()
+    {
+        // Stable accuracy — all attempts at 0.7. velocity = 0.7 - 0.7 = 0.0.
+        var signals = BuildSignals(
+            totalAnswers: 20,
+            attemptAccuraciesChronological: new[] { 0.7, 0.7, 0.7, 0.7, 0.7 });
+
+        var profile = StudentProfileEngine.Derive(signals, DefaultOptions());
+
+        profile.MasteryVelocity.Should().NotBeNull();
+        profile.MasteryVelocity!.Value.Should().BeApproximately(0.0, 0.001, "stable accuracy → velocity ≈ 0");
+    }
+
+    // ── Case P10: MasteryVelocity null on cold-start ─────────────────────────────────────────────
+
+    [Fact]
+    public void Derive_MasteryVelocity_NullOnColdStart()
+    {
+        // TotalAnswers = 2 < ColdStartDataPointThreshold (10) → cold-start → null.
+        var signals = BuildSignals(
+            totalAnswers: 2,
+            attemptAccuraciesChronological: new[] { 0.3, 0.8, 0.9 });   // 3 attempts but cold-start
+
+        var profile = StudentProfileEngine.Derive(signals, DefaultOptions());
+
+        profile.MasteryVelocity.Should().BeNull("cold-start always returns null MasteryVelocity");
+    }
+
+    // ── Case P11: MasteryVelocity clamped to [-1, 1] ─────────────────────────────────────────────
+
+    [Fact]
+    public void Derive_MasteryVelocity_ClampedToMinusOneToOne()
+    {
+        // Extreme case: older window avg = 0.0, recent avg = 1.0 → raw velocity = 1.0 (already clamped).
+        var signals = BuildSignals(
+            totalAnswers: 20,
+            attemptAccuraciesChronological: new[] { 0.0, 0.0, 0.0, 1.0, 1.0, 1.0 });
+
+        var profile = StudentProfileEngine.Derive(signals, DefaultOptions());
+
+        profile.MasteryVelocity.Should().NotBeNull();
+        profile.MasteryVelocity!.Value.Should().BeInRange(-1.0, 1.0, "result must always be clamped to [-1, 1]");
+        profile.MasteryVelocity.Value.Should().BeApproximately(1.0, 0.001);
+    }
+
+    // ── Case P12: GritScore reproducibility — same inputs produce same output ───────────────────
+
+    [Fact]
+    public void Derive_GritScore_Reproducibility_SameInputsSameOutput()
+    {
+        var signals = BuildSignals(
+            totalAnswers: 25,
+            retryAfterWrongRate: 0.6,
+            hintByType: new[] { (QuestionType.MCQ, 8, 25) });
+        var opts = DefaultOptions();
+
+        var first  = StudentProfileEngine.Derive(signals, opts);
+        var second = StudentProfileEngine.Derive(signals, opts);
+
+        first.GritScore.Should().Be(second.GritScore, "GritScore must be deterministic");
+        first.MasteryVelocity.Should().Be(second.MasteryVelocity, "MasteryVelocity must be deterministic");
+    }
+
+    // ── Case P13: MasteryVelocity window respects TrajectoryRecentWindowFraction ─────────────────
+
+    [Fact]
+    public void Derive_MasteryVelocity_CustomFraction_CorrectWindowing()
+    {
+        // 10 attempts. Fraction = 0.3 → windowSize = floor(10 * 0.3) = 3.
+        // Older: [0.1, 0.2, 0.3] avg = 0.2. Recent: [0.8, 0.9, 1.0] avg = 0.9.
+        // velocity = 0.9 - 0.2 = 0.7.
+        var accuracies = new[] { 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 };
+        var signals = BuildSignals(
+            totalAnswers: 20,
+            attemptAccuraciesChronological: accuracies);
+        var opts = DefaultOptions();
+        opts.TrajectoryRecentWindowFraction = 0.3;
+
+        var profile = StudentProfileEngine.Derive(signals, opts);
+
+        profile.MasteryVelocity.Should().NotBeNull();
+        profile.MasteryVelocity!.Value.Should().BeApproximately(0.7, 0.001,
+            "windowSize=3 with fraction=0.3 gives older avg=0.2, recent avg=0.9, diff=0.7");
     }
 }
