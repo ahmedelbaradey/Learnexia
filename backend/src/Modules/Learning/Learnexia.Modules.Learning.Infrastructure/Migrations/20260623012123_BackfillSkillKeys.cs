@@ -19,8 +19,15 @@ namespace Learnexia.Modules.Learning.Infrastructure.Migrations
     ///
     /// Slug rules: lowercase, spaces→hyphens, strip non-alphanumeric except hyphens.
     ///
-    /// SAFE: rows where slug derivation yields a conflict with the partial unique index
-    /// are LEFT NULL rather than aborting the migration (Q3 blast-radius containment).
+    /// SAFE: rows where slug derivation yields a conflict are LEFT NULL rather than aborting.
+    /// Two dedup guards are applied:
+    ///   1. Within-batch dedup: if two or more rows in the same UPDATE batch would receive the
+    ///      same candidate key (e.g. nodes with slugifiable names that produce identical keys
+    ///      within the same subject+grade partition), ALL of them are left NULL.
+    ///   2. Cross-existing-row guard: if the candidate key already exists on a row that already
+    ///      has a SkillKey set, the new row is left NULL.
+    /// Both guards together ensure the partial unique index UX_KnowledgeNodes_SkillKey is never
+    /// violated. Ambiguous/duplicate nodes simply stay NULL — acceptable per Q3 decision.
     ///
     /// Down(): clears backfilled SkillKey values via pattern match on the backfill format.
     /// </summary>
@@ -73,7 +80,10 @@ WITH candidates AS (
 keyed AS (
     SELECT
         ""Id"",
-        subject_code_str || '.grade' || grade_number || '.' || name_slug AS candidate_key
+        subject_code_str || '.grade' || grade_number || '.' || name_slug AS candidate_key,
+        COUNT(*) OVER (
+            PARTITION BY subject_code_str || '.grade' || grade_number || '.' || name_slug
+        ) AS dup_count
     FROM candidates
     WHERE name_slug <> '' AND name_slug IS NOT NULL
 )
@@ -82,10 +92,10 @@ SET ""SkillKey"" = k.candidate_key
 FROM keyed k
 WHERE kn.""Id"" = k.""Id""
   AND kn.""SkillKey"" IS NULL
+  AND k.dup_count = 1
   AND NOT EXISTS (
       SELECT 1 FROM learning.""KnowledgeNodes"" existing
-      WHERE existing.""SkillKey"" = k.candidate_key
-        AND existing.""Id"" <> kn.""Id""
+      WHERE existing.""SkillKey"" = k.candidate_key AND existing.""Id"" <> kn.""Id""
   );
 ");
         }

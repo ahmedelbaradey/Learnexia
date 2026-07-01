@@ -434,8 +434,13 @@ export default function LessonScreen() {
   const handleBack = useCallback(() => {
     if (subjectId > 0) {
       router.replace(`/(child)/subjects/${subjectId}` as `/${string}`);
-    } else {
+    } else if (router.canGoBack()) {
       router.back();
+    } else {
+      // No subjectId param AND no in-app history (e.g. direct deep-link without
+      // ?subjectId — router.back() would silently no-op on web PWA). Fall back
+      // to child home so the screen always exits (DEF-P205FE-02 guard).
+      router.replace('/(child)/' as `/${string}`);
     }
   }, [router, subjectId]);
 
@@ -478,8 +483,12 @@ export default function LessonScreen() {
               // Abandon (quiz stage) still fires via the unmount cleanup.
               if (stage.kind === 'summary' || stage.kind === 'quiz') {
                 handleBack();
-              } else {
+              } else if (router.canGoBack()) {
+                // Intro stage — guarded back: only call router.back() when there IS
+                // a history entry; otherwise fall back to child home (deep-link guard).
                 router.back();
+              } else {
+                router.replace('/(child)/' as `/${string}`);
               }
             }}
             accessibilityRole="button"

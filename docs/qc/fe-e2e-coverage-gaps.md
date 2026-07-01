@@ -8,14 +8,20 @@
 
 ---
 
-## P0 — highest impact (some are backend/seed blockers, not FE)
+## P0 — highest impact
 
-1. **Quiz correct-answer path is entirely blocked — `DEF-P205FE-01` (backend).**
-   The backend grades submitted answers as wrong, so every "correct path" assertion is skipped across `P2-05/06/07-FE.spec.ts` + `carryover-d1.spec.ts`. Untestable until fixed: correct feedback, 100% score, auto-advance, XP-on-correct. **This single backend bug gates the core learning-flow E2E.** Fix it first — it unblocks the most coverage per unit of effort.
+> **CORRECTION (2026-06-24):** items 1 and 2 below were **stale in the original audit** — the audit trusted old spec comments/workarounds, not the current backend. Verified against `main`:
+> - **`DEF-P205FE-01` is already FIXED in the backend** (commit `2c6af203` — `AnswerComparator.NormalizeJsonScalar` unwraps the jsonb-encoded `CorrectAnswer` before comparing; wired into `SubmitAnswerCommandHandler`; `AnswerComparatorTests` 30/30 green). It is **not** a backend bug. The remaining work is purely to **update the stale E2E specs** that still assert the old `isCorrect=false` workaround.
+> - **All four question types ARE seeded** (`LearningSeeder` Step 3 seeds TrueFalse/FillInBlank/Matching on the Grade-1 Math roots, both Ar+En, alongside the Step-2 MCQ). The "MCQ-only" claim was stale.
+>
+> So items 1–2 are **E2E-spec-update work, not backend/seed work**.
 
-2. **Only MCQ questions are seeded.** TrueFalse / FillInBlank / Matching have stub UI but **zero E2E** on both student (`P2-06/07`) and admin (`P7-04` question authoring) because no seed data exists for them. Add seed fixtures for all four question types → unblocks both apps at once.
+1. **Quiz correct-answer path — stale E2E workaround (FE test update).**
+   The backend now grades correctly, but `P2-05/06/07-FE.spec.ts` + `carryover-d1.spec.ts` still carry the `DEF-P205FE-01` workaround (tap "Next", expect `isCorrect=false`). Update them to assert the real correct-answer path: correct feedback, 100% score, auto-advance, XP-on-correct — across all four question types.
 
-3. **Account recovery: `/forgot-password` + `/reset-password` — NONE.** Two critical auth routes with **zero E2E** (email submit, validation, token handling, error states). Cheap to add, high value (these are real user-recovery paths).
+2. **Question-type E2E breadth (FE test update).** All four types are seeded; extend the specs to exercise TrueFalse / FillInBlank / Matching submit+grade paths (student) and confirm admin `P7-04` authoring coverage for them.
+
+3. **Account recovery: `/forgot-password` + `/reset-password` — NONE.** Two critical auth routes with **zero E2E** (email submit, validation, token handling, error states). Genuinely missing — cheap to add, high value.
 
 4. **Admin question CRUD (`P7-04`) — incomplete/truncated spec.** `P7-admin-curriculum-lessons.spec.ts` cuts off mid-questions: only partial MCQ create; FIB/short-answer + **edit/delete untested**. Recover/finish the spec.
 
@@ -61,10 +67,9 @@ Confirmed (find + grep, both audits): there are **no routes, no `api-client` met
 
 ## Suggested order for a coverage wave
 
-1. Fix `DEF-P205FE-01` (backend grading) — unblocks the most E2E.
-2. Add multi-type question seed fixtures — unblocks 3 question types on both apps.
-3. Add `/forgot-password` + `/reset-password` specs — cheap, high value.
-4. Finish the truncated admin questions spec + add publish/unpublish/rollback.
-5. Then work down P1 (hearts/streak-freeze, attempts detail, moderation seed, edit forms).
+1. **Update the stale quiz specs** (P2-05/06/07 + carryover-d1) to assert the now-working correct-answer path across all 4 seeded question types. *(Backend grading + seed are already done — see the P0 correction above.)*
+2. Add `/forgot-password` + `/reset-password` specs — cheap, high value, genuinely missing.
+3. Finish the truncated admin questions spec + add publish/unpublish/rollback.
+4. Then work down P1 (hearts/streak-freeze, attempts detail, moderation seed, edit forms).
 
 > Per CLAUDE.md, anything that becomes a build task should be written up as story/task files first (with lead sign-off) before implementation. This doc is the raw gap inventory feeding that.
