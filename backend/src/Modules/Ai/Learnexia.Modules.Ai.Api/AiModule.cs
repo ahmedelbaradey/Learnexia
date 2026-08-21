@@ -1,8 +1,10 @@
 using Learnexia.Modules.Ai.Application;
+using Learnexia.Modules.Ai.Application.Options;
 using Learnexia.Modules.Ai.Infrastructure;
 using Learnexia.Shared.Kernel.Abstractions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Learnexia.Modules.Ai.Api;
 
@@ -73,6 +75,28 @@ public static class AiModule
                 $"WI-C2 AiModule: AiHelper:ContextProvider='{contextKey}' (absent or non-Rag) — " +
                 "EmptyLearningContextProvider is active (always redirects). " +
                 "Set AiHelper:ContextProvider=Rag after provisioning TEI + re-embed to activate live grounding.");
+
+        // ── P3-15 Batch API — log batch path status ───────────────────────────
+        // Offline jobs (cache-prewarm BE-4, bulk question generation BE-5) are deferred to
+        // P3-15b (need a Learning question/concept-enumeration seam to produce correct cache
+        // keys — see tasks/Backend/Phase-4-AI-Tutor/P3-15-BE.md).
+        // The gateway seam (IAiBatchGateway → ClaudeBatchProvider) is live and registered.
+        var batchOptions = serviceProvider.GetRequiredService<IOptions<AiBatchOptions>>().Value;
+
+        if (!batchOptions.Enabled)
+        {
+            logger.LogInfo(
+                "P3-15 AiModule [BATCH DORMANT]: Ai:Batch:Enabled=false. " +
+                "IAiBatchGateway is registered but dormant — no API calls will be made. " +
+                "Set Ai__Batch__Enabled=true after provisioning keys to activate.");
+        }
+        else
+        {
+            logger.LogInfo(
+                $"P3-15 AiModule [BATCH ACTIVE]: Ai:Batch:Enabled=true. " +
+                $"IAiBatchGateway → ClaudeBatchProvider is active. " +
+                $"PollIntervalMs={batchOptions.PollIntervalMs}, MaxPollAttempts={batchOptions.MaxPollAttempts}.");
+        }
 
         return Task.CompletedTask;
     }

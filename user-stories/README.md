@@ -108,7 +108,8 @@ These intentional decisions diverge from the source docs; each affected story re
 - P3-14 Lexi recommendation narration *(kid-style AI voice over P5-09 recommendations; new HelperIntent, energy-costed — added 2026-06-18)*
 - P3-14a Level- and profile-aware Lexi framing *(enrichment: gamification level → motivational framing + profile encouragement style — added 2026-06-18)*
 - P3-13a Behavioral profile depth (grit/time-of-day derivations) *(**BACKLOG** — deferred; extends P3-13 — added 2026-06-18)*
-- P3-15 AI Batch API & offline pre-generation (cost optimization) *(**BACKLOG** — deferred cost-optimization; tracks the deferred P3-01-BE-13 Batch API + offline pre-gen jobs; not MVP-blocking — added 2026-06-23)*
+- P3-15 AI Batch API & offline pre-generation (cost optimization) *(🟡 **partial: batch GATEWAY built 2026-06-30** — `IAiBatchGateway` + `ClaudeBatchProvider` + fake; the offline JOBS were split to P3-15b)*
+- P3-15b AI offline pre-generation jobs (cache-prewarm + bulk question-gen) *(**BACKLOG** — split from P3-15; consume the built gateway but need a Learning enumeration seam + EXACT runtime cache-key alignment; not MVP-blocking)*
 
 ### Phase 5 — Parent + Analytics
 - P5-01 Generate a weekly student report

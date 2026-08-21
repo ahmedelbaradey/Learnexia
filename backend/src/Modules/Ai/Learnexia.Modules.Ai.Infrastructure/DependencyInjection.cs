@@ -152,6 +152,28 @@ public static class DependencyInjection
             return new AiTutorRateLimiter();
         });
 
+        // ── P3-15 Batch API — IAiBatchGateway + provider + offline jobs ─────────────────
+
+        // Options — binds Ai:Batch config section (all flags default to false — dormant by default).
+        services.Configure<AiBatchOptions>(
+            configuration.GetSection(AiBatchOptions.SectionName));
+
+        // Named HttpClient — Claude Batch API.
+        // BaseAddress is fixed to the Anthropic API; the same API key as the runtime provider is used.
+        services.AddHttpClient(ClaudeBatchProvider.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://api.anthropic.com/");
+            client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+            // Batch API beta header (required while still in beta).
+            client.DefaultRequestHeaders.Add("anthropic-beta", "message-batches-2024-09-24");
+            // Batch polling can take minutes — use a long client timeout.
+            client.Timeout = TimeSpan.FromMinutes(10);
+        });
+
+        // IAiBatchGateway — Scoped; depends on IHttpClientFactory (pooled) + IConfiguration (Singleton).
+        // Dormant when Ai:Providers:Claude:ApiKey is absent (returns AiErrorKind.Unavailable — no crash).
+        services.AddScoped<IAiBatchGateway, ClaudeBatchProvider>();
+
         return services;
     }
 }
