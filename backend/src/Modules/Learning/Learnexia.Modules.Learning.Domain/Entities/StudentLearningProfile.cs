@@ -106,4 +106,22 @@ public class StudentLearningProfile : FullAuditedEntity
     /// (older than 24 h or null).
     /// </summary>
     public DateTime? LastRecomputedAt { get; set; }
+
+    // ── P3-13a new behavioral dimensions ─────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// P3-13a — Behavioral persistence / grit proxy in [0.0 .. 1.0].
+    /// Blends retry-after-wrong rate and inverted hint-usage rate (see <c>StudentProfileEngine</c>).
+    /// Null = cold-start or insufficient data (TotalAnswers &lt; MinSampleForGrit option).
+    /// Stored as <c>double precision</c> (nullable float8 in PostgreSQL).
+    /// </summary>
+    public double? GritScore { get; set; }
+
+    /// <summary>
+    /// P3-13a — Rate-of-improvement slope across attempts, in [-1.0 .. 1.0].
+    /// Positive = improving accuracy trend; negative = regressing; near-zero = stable.
+    /// Null = cold-start or fewer than <c>MinAttemptsForTrajectory</c> attempts.
+    /// Stored as <c>double precision</c> (nullable float8 in PostgreSQL).
+    /// </summary>
+    public double? MasteryVelocity { get; set; }
 }

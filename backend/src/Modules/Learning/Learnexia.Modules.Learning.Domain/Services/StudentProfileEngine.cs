@@ -45,25 +45,31 @@ public static class StudentProfileEngine
         if (signals.TotalAnswers < options.ColdStartDataPointThreshold)
         {
             return new DerivedProfile(
-                QuestionTypeAffinity:     new Dictionary<string, double>(),
-                RecurringErrorSkillIds:   Array.Empty<int>(),
-                AttentionSpanMinutes:     null,
+                QuestionTypeAffinity:      new Dictionary<string, double>(),
+                RecurringErrorSkillIds:    Array.Empty<int>(),
+                AttentionSpanMinutes:      null,
                 PreferredExplanationStyle: ExplanationStyle.Standard,
-                DataPointCount:           0);
+                DataPointCount:            0,
+                GritScore:                 null,
+                MasteryVelocity:           null);
         }
 
-        // ── Four derivations (sequential — order matters for ExplanationStyle which uses affinity) ──
-        var affinity      = DeriveQuestionTypeAffinity(signals, options);
-        var errorClusters = DeriveRecurringErrorClusters(signals, options);
-        var attentionSpan = DeriveAttentionSpan(signals, options);
-        var style         = DeriveExplanationStyle(signals, affinity, options);
+        // ── Six derivations (sequential — ExplanationStyle uses affinity; P3-13a new dims are independent) ──
+        var affinity         = DeriveQuestionTypeAffinity(signals, options);
+        var errorClusters    = DeriveRecurringErrorClusters(signals, options);
+        var attentionSpan    = DeriveAttentionSpan(signals, options);
+        var style            = DeriveExplanationStyle(signals, affinity, options);
+        var gritScore        = DeriveGritScore(signals, options);           // P3-13a
+        var masteryVelocity  = DeriveMasteryVelocity(signals, options);    // P3-13a
 
         return new DerivedProfile(
-            QuestionTypeAffinity:     affinity,
-            RecurringErrorSkillIds:   errorClusters,
-            AttentionSpanMinutes:     attentionSpan,
+            QuestionTypeAffinity:      affinity,
+            RecurringErrorSkillIds:    errorClusters,
+            AttentionSpanMinutes:      attentionSpan,
             PreferredExplanationStyle: style,
-            DataPointCount:           signals.TotalAnswers);
+            DataPointCount:            signals.TotalAnswers,
+            GritScore:                 gritScore,
+            MasteryVelocity:           masteryVelocity);
     }
 
     // ─────────────────────────────────────────────────────────────────────────────────────────────
@@ -230,5 +236,108 @@ public static class StudentProfileEngine
 
         // Default — Standard: no strong pattern detected.
         return ExplanationStyle.Standard;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────────────────────
+    // P3-13a NEW DERIVATIONS — two additional behavioral dimensions.
+    // Same rules apply: private methods only, no new design patterns, deterministic, tested.
+    // ─────────────────────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// P3-13a — Derives the persistence / grit proxy from hint-usage rate and retry-after-wrong
+    /// behavior.
+    ///
+    /// RULE:
+    ///   Min-sample guard: when <c>signals.TotalAnswers &lt; options.MinSampleForGrit</c>, return null
+    ///   (insufficient sample to form a reliable grit estimate).
+    ///
+    ///   GritScore = weighted blend of two independent signals in [0.0 .. 1.0]:
+    ///   (a) RetryComponent  = signals.RetryAfterWrongRate
+    ///       A student who retried after wrong answers scores higher here.
+    ///   (b) SelfSufficiencyComponent = 1.0 − overallHintRate
+    ///       A student who relies less on hints scores higher here.
+    ///
+    ///   Both components are equally weighted (0.5 each) and the result is rounded to 4 d.p.
+    ///   The blend is intentionally simple — a more sophisticated model requires longitudinal data
+    ///   (P5-03) that is not yet available.
+    ///
+    /// NULL: returned when TotalAnswers &lt; MinSampleForGrit (cold-start for this derivation).
+    ///
+    /// DETERMINISTIC: given the same signals, always produces the same output.
+    /// </summary>
+    private static double? DeriveGritScore(
+        StudentSignals signals,
+        StudentProfileOptions options)
+    {
+        // Min-sample guard: grit is meaningless with very few data points.
+        if (signals.TotalAnswers < options.MinSampleForGrit)
+            return null;
+
+        // (a) Retry-after-wrong component: fraction of struggling skills where the student tried again.
+        var retryComponent = signals.RetryAfterWrongRate; // already in [0..1]
+
+        // (b) Self-sufficiency component: inverted overall hint rate.
+        var totalHints = signals.HintAnswerCountByType.Sum(h => h.HintCount);
+        var overallHintRate = signals.TotalAnswers == 0
+            ? 0.0
+            : (double)totalHints / signals.TotalAnswers;
+        var selfSufficiencyComponent = 1.0 - Math.Clamp(overallHintRate, 0.0, 1.0);
+
+        // Weighted blend: equal weights (0.5 each).
+        var grit = 0.5 * retryComponent + 0.5 * selfSufficiencyComponent;
+
+        return Math.Round(Math.Clamp(grit, 0.0, 1.0), 4);
+    }
+
+    /// <summary>
+    /// P3-13a — Derives the mastery trajectory (rate-of-improvement slope) from
+    /// chronologically ordered per-attempt accuracy values.
+    ///
+    /// RULE:
+    ///   Min-attempts guard: when the number of distinct attempts is fewer than
+    ///   <c>options.MinAttemptsForTrajectory</c>, return null (insufficient history for a
+    ///   meaningful slope).
+    ///
+    ///   Window fraction: <c>options.TrajectoryRecentWindowFraction</c> (default 0.4) defines
+    ///   how much of the attempt history (from each end) constitutes the "recent" and "older"
+    ///   windows. E.g. with 10 attempts and fraction 0.4: the 4 oldest form the "older" window,
+    ///   the 4 most recent form the "recent" window, the middle 2 are excluded. This reduces
+    ///   noise at the boundary between windows.
+    ///
+    ///   MasteryVelocity = avgAccuracy(recentWindow) − avgAccuracy(olderWindow), clamped to [-1,1].
+    ///   Positive = improving; negative = regressing; ≈0 = stable.
+    ///   Rounded to 4 d.p.
+    ///
+    /// NULL: returned when AttemptAccuraciesChronological.Count &lt; MinAttemptsForTrajectory.
+    ///
+    /// DETERMINISTIC: given the same signals, always produces the same output. The window
+    /// boundaries use integer division (floor) so the result is reproducible.
+    /// </summary>
+    private static double? DeriveMasteryVelocity(
+        StudentSignals signals,
+        StudentProfileOptions options)
+    {
+        var accuracies = signals.AttemptAccuraciesChronological;
+
+        // Min-attempts guard: need enough attempts for a meaningful "earlier vs. later" comparison.
+        if (accuracies.Count < options.MinAttemptsForTrajectory)
+            return null;
+
+        // Compute window sizes. Integer division (floor) to keep the result deterministic.
+        var fraction    = Math.Clamp(options.TrajectoryRecentWindowFraction, 0.01, 0.5);
+        var windowSize  = Math.Max(1, (int)(accuracies.Count * fraction));
+
+        // "Older" window = earliest windowSize attempts.
+        var olderAvg = accuracies
+            .Take(windowSize)
+            .Average();
+
+        // "Recent" window = latest windowSize attempts.
+        var recentAvg = accuracies
+            .Skip(accuracies.Count - windowSize)
+            .Average();
+
+        var velocity = recentAvg - olderAvg;
+        return Math.Round(Math.Clamp(velocity, -1.0, 1.0), 4);
     }
 }

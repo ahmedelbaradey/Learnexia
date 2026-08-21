@@ -52,4 +52,29 @@ public sealed class StudentProfileOptions
     /// Default: 10.
     /// </summary>
     public int ColdStartDataPointThreshold { get; set; } = 10;
+
+    // ── P3-13a behavioral derivation thresholds ──────────────────────────────────────────────────
+
+    /// <summary>
+    /// P3-13a — Minimum number of total answers required before the grit score derivation is
+    /// attempted. Grit needs enough observations to be meaningful; below this threshold,
+    /// <c>GritScore</c> is null. Default: 5.
+    /// </summary>
+    public int MinSampleForGrit { get; set; } = 5;
+
+    /// <summary>
+    /// P3-13a — Minimum number of distinct attempts required before the mastery-velocity
+    /// (trajectory slope) derivation is attempted. Fewer than this and there is no meaningful
+    /// "earlier vs. later" comparison; <c>MasteryVelocity</c> is null. Default: 3.
+    /// </summary>
+    public int MinAttemptsForTrajectory { get; set; } = 3;
+
+    /// <summary>
+    /// P3-13a — Fraction of the attempt history (from each end) used as the "recent" and
+    /// "older" windows for the mastery-velocity computation. E.g. 0.4 means the 40% newest
+    /// attempts form the "recent" window and the 40% oldest form the "older" window; the
+    /// middle 20% is excluded to reduce noise at the boundary. Must be in (0.0, 0.5].
+    /// Default: 0.4.
+    /// </summary>
+    public double TrajectoryRecentWindowFraction { get; set; } = 0.4;
 }

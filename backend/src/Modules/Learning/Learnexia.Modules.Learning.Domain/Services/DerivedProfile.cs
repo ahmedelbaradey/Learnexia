@@ -35,9 +35,28 @@ namespace Learnexia.Modules.Learning.Domain.Services;
 ///     Number of answer data points that fed this derivation. Zero on cold-start. Used by
 ///     consumers as a confidence indicator.
 /// </param>
+/// <param name="GritScore">
+///     P3-13a — Behavioral persistence / grit proxy in [0.0 .. 1.0].
+///     Blends two signals: the fraction of skills where the student retried after a wrong
+///     answer (<c>RetryAfterWrongRate</c>) and an inverted overall hint rate (i.e. lower
+///     hint reliance = higher self-sufficiency = higher grit contribution). A score near 1.0
+///     means the student pushes through hard problems with low hint reliance; near 0.0 means
+///     high hint-dependence and low retry behavior.
+///     Null on cold-start or when <c>TotalAnswers &lt; MinSampleForGrit</c>.
+/// </param>
+/// <param name="MasteryVelocity">
+///     P3-13a — Rate-of-improvement across attempts (mastery trajectory slope), in [-1.0 .. 1.0].
+///     Computed as the difference between the average accuracy of the most-recent fraction of
+///     attempts and the oldest fraction (controlled by
+///     <c>StudentProfileOptions.TrajectoryRecentWindowFraction</c>). Positive = improving,
+///     negative = regressing, near zero = stable. Null on cold-start or when fewer than
+///     <c>MinAttemptsForTrajectory</c> attempts exist.
+/// </param>
 public record DerivedProfile(
     IReadOnlyDictionary<string, double> QuestionTypeAffinity,
     IReadOnlyList<int> RecurringErrorSkillIds,
     int? AttentionSpanMinutes,
     ExplanationStyle PreferredExplanationStyle,
-    int DataPointCount);
+    int DataPointCount,
+    double? GritScore,
+    double? MasteryVelocity);

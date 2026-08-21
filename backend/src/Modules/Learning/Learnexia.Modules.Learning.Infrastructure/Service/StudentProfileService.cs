@@ -85,12 +85,14 @@ public class StudentProfileService : IStudentProfileService
                 .ToList();
 
             var enrichedSignals = new StudentSignals(
-                AnswersByType:          signals.AnswersByType,
-                SkillErrorCounts:       enrichedErrorCounts,
-                SessionAccuracyBuckets: signals.SessionAccuracyBuckets,
-                OverallAccuracy:        signals.OverallAccuracy,
-                TotalAnswers:           signals.TotalAnswers,
-                HintAnswerCountByType:  signals.HintAnswerCountByType);
+                AnswersByType:                  signals.AnswersByType,
+                SkillErrorCounts:               enrichedErrorCounts,
+                SessionAccuracyBuckets:         signals.SessionAccuracyBuckets,
+                OverallAccuracy:                signals.OverallAccuracy,
+                TotalAnswers:                   signals.TotalAnswers,
+                HintAnswerCountByType:          signals.HintAnswerCountByType,
+                RetryAfterWrongRate:            signals.RetryAfterWrongRate,
+                AttemptAccuraciesChronological: signals.AttemptAccuraciesChronological);
 
             // ── 3. Call the pure engine. ─────────────────────────────────────────────────────────
             var derived = StudentProfileEngine.Derive(enrichedSignals, opts);
@@ -98,11 +100,14 @@ public class StudentProfileService : IStudentProfileService
             // ── 4. Map DerivedProfile → StudentLearningProfile entity. ─────────────────────────
             var profile = await _repository.GetOrCreateStudentLearningProfileAsync(studentId, ct);
 
-            profile.StudentId   = studentId;
+            profile.StudentId                 = studentId;
             profile.DataPointCount            = derived.DataPointCount;
             profile.PreferredExplanationStyle = derived.PreferredExplanationStyle;
             profile.AttentionSpanMinutes      = derived.AttentionSpanMinutes;
             profile.LastRecomputedAt          = DateTime.UtcNow;
+            // P3-13a — new behavioral dimensions.
+            profile.GritScore       = derived.GritScore;
+            profile.MasteryVelocity = derived.MasteryVelocity;
 
             // Serialize the jsonb columns via System.Text.Json (same approach as ContentBlock.Payload).
             profile.QuestionTypeAffinity = derived.QuestionTypeAffinity.Count > 0
@@ -149,7 +154,9 @@ public class StudentProfileService : IStudentProfileService
                 RecurringErrorSkillIds:    Array.Empty<int>(),
                 AttentionSpanMinutes:      null,
                 PreferredExplanationStyle: ExplanationStyle.Standard,
-                DataPointCount:            0);
+                DataPointCount:            0,
+                GritScore:                 null,
+                MasteryVelocity:           null);
         }
 
         // Deserialize the jsonb columns. Null / empty / malformed → safe empty defaults.
@@ -161,7 +168,9 @@ public class StudentProfileService : IStudentProfileService
             RecurringErrorSkillIds:    clusters,
             AttentionSpanMinutes:      row.AttentionSpanMinutes,
             PreferredExplanationStyle: row.PreferredExplanationStyle,
-            DataPointCount:            row.DataPointCount);
+            DataPointCount:            row.DataPointCount,
+            GritScore:                 row.GritScore,
+            MasteryVelocity:           row.MasteryVelocity);
     }
 
     // ── Private helpers ─────────────────────────────────────────────────────────────────────────

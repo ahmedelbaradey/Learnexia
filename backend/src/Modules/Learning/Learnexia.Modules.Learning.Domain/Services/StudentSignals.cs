@@ -42,10 +42,29 @@ namespace Learnexia.Modules.Learning.Domain.Services;
 ///     <c>DeriveExplanationStyle</c> to detect hint-heavy patterns.
 ///     Types with no hint usage are absent.
 /// </param>
+/// <param name="RetryAfterWrongRate">
+///     P3-13a — Fraction of skill-scoped answer sets where the student had at least one wrong
+///     answer AND subsequently had at least one correct answer (across any attempt for the same
+///     skill). Numerator = skills with "wrong then correct" pattern; denominator = skills with
+///     at least one wrong answer. 0.0 when no wrong answers exist. In [0.0 .. 1.0].
+///
+///     Used by <c>DeriveGritScore</c> to measure retry-after-wrong behavior.
+///     "Retry" = returning to a skill after failing it, not necessarily immediately.
+/// </param>
+/// <param name="AttemptAccuraciesChronological">
+///     P3-13a — Per-attempt accuracy values ordered chronologically (ascending AttemptId order,
+///     which is insertion-order and serves as a chronological proxy). Each value is the fraction
+///     of correct answers in that attempt, in [0.0 .. 1.0]. Empty when TotalAnswers == 0.
+///
+///     Used by <c>DeriveMasteryVelocity</c> to compute the rate-of-improvement slope by
+///     comparing the average accuracy of the oldest half of attempts against the newest half.
+/// </param>
 public record StudentSignals(
     IReadOnlyList<(QuestionType Type, int Correct, int Total)> AnswersByType,
     IReadOnlyList<(int SkillId, int WrongCount)> SkillErrorCounts,
     IReadOnlyList<(int MinuteBucket, double Accuracy)> SessionAccuracyBuckets,
     double OverallAccuracy,
     int TotalAnswers,
-    IReadOnlyList<(QuestionType Type, int HintCount, int Total)> HintAnswerCountByType);
+    IReadOnlyList<(QuestionType Type, int HintCount, int Total)> HintAnswerCountByType,
+    double RetryAfterWrongRate,
+    IReadOnlyList<double> AttemptAccuraciesChronological);

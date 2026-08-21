@@ -55,4 +55,24 @@ public class StudentLearningProfileDto
     /// Confidence indicator; NOT raw answer data.
     /// </summary>
     public int DataPointCount { get; set; }
+
+    // ── P3-13a new behavioral dimensions ─────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// P3-13a — Behavioral persistence / grit proxy in [0.0 .. 1.0].
+    /// Blends retry-after-wrong rate (does the student keep trying after failure?) and an
+    /// inverted hint-usage rate (does the student rely on hints or push through alone?).
+    /// Near 1.0 = high persistence + low hint reliance.
+    /// Null = insufficient data (TotalAnswers below threshold).
+    /// NOT raw answer data — derived attribute only.
+    /// </summary>
+    public double? GritScore { get; set; }
+
+    /// <summary>
+    /// P3-13a — Rate-of-improvement across attempts (mastery trajectory slope) in [-1.0 .. 1.0].
+    /// Positive = accuracy improving over time; negative = regressing; near zero = stable.
+    /// Null = insufficient attempt history.
+    /// NOT raw answer data — derived attribute only.
+    /// </summary>
+    public double? MasteryVelocity { get; set; }
 }

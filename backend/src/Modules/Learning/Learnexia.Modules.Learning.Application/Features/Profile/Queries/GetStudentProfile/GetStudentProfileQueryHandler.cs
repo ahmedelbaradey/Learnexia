@@ -69,6 +69,9 @@ public class GetStudentProfileQueryHandler
                 AttentionSpanMinutes      = derived.AttentionSpanMinutes,
                 PreferredExplanationStyle = derived.PreferredExplanationStyle,
                 DataPointCount            = derived.DataPointCount,
+                // P3-13a — new behavioral dimensions.
+                GritScore                 = derived.GritScore,
+                MasteryVelocity           = derived.MasteryVelocity,
             };
 
             var result = Success(dto);
